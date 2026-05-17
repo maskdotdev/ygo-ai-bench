@@ -63,6 +63,46 @@ const battleTriggerSemanticKindCounts = {
   endDamageDestroy: 1,
   mutualBattleDestroyedSegoc: 1,
 } satisfies Record<BattleTriggerSemanticKind, number>;
+const battleSemanticVariantCounts = {
+  alienOfJusticeNullfierBattledDisable: 1,
+  amazonessSwordsWomanReflectDamage: 1,
+  ancientGearGolemPiercingDamage: 1,
+  aojThousandArmsLightOnlyAttackAll: 1,
+  battleDamagePreventionMachineLordUr: 1,
+  blizzardWarriorBattleDestroyingDecktopConfirm: 1,
+  blsSoldierChaosBattleDestroyingSelectEffect: 1,
+  darkRulerHaDesBattledGraveDisable: 1,
+  decoyroidBattleTargetSelectionLock: 1,
+  dimensionalPrisonAttackBanish: 1,
+  drainingShieldLpRecoverNegate: 1,
+  fabledAshenveilDamageStepBoost: 1,
+  gemKnightSardonyxBattleSearch: 1,
+  getsuFuhmaEndDamageDestroy: 1,
+  ghostBirdExtraMonsterAttack: 1,
+  giantRatMutualBattleDestroyedSegoc: 1,
+  grasschopperGeminiAttackAll: 1,
+  gravekeepersVassalBattleDamageToEffect: 1,
+  hayateBattledDeckSend: 1,
+  honestDamageStepBoost: 1,
+  magicCylinderDamageReflect: 1,
+  magicalArmShieldBattleRetargetDamage: 1,
+  miniaturizePersistentDamageStepStat: 1,
+  mirageKnightBattleTargetAtk: 1,
+  naturiaSpiderfangAttackAnnouncementLock: 1,
+  negateAttackBattlePhaseSkipNegate: 1,
+  nightmareMagicianEndDamageControl: 1,
+  numberC96AlsoBattleDamage: 1,
+  predaplantSarraceniantBattledDestroy: 1,
+  reflectBounderBattleConfirmDestroy: 1,
+  ringOfMagnetismOnlyAttackEquipped: 1,
+  sakuretsuArmorAttackDestroy: 1,
+  scrapIronScarecrowSetAgainNegate: 1,
+  shadowSpellGoatDamageCalculationStat: 1,
+  susaSoldierHalfDamage: 1,
+  topologicBomberBattledDamage: 1,
+  wallOfIllusionBattledBounce: 1,
+  yomiShipBattleDestroyedDestroy: 1,
+} satisfies Record<BattleSemanticVariant, number>;
 
 type AttackDeclarationTrapKind =
   | "attackBanish"
@@ -111,6 +151,45 @@ type BattleTriggerSemanticKind =
   | "endDamageControl"
   | "endDamageDestroy"
   | "mutualBattleDestroyedSegoc";
+type BattleSemanticVariant =
+  | "alienOfJusticeNullfierBattledDisable"
+  | "amazonessSwordsWomanReflectDamage"
+  | "ancientGearGolemPiercingDamage"
+  | "aojThousandArmsLightOnlyAttackAll"
+  | "battleDamagePreventionMachineLordUr"
+  | "blizzardWarriorBattleDestroyingDecktopConfirm"
+  | "blsSoldierChaosBattleDestroyingSelectEffect"
+  | "darkRulerHaDesBattledGraveDisable"
+  | "decoyroidBattleTargetSelectionLock"
+  | "dimensionalPrisonAttackBanish"
+  | "drainingShieldLpRecoverNegate"
+  | "fabledAshenveilDamageStepBoost"
+  | "gemKnightSardonyxBattleSearch"
+  | "getsuFuhmaEndDamageDestroy"
+  | "ghostBirdExtraMonsterAttack"
+  | "giantRatMutualBattleDestroyedSegoc"
+  | "grasschopperGeminiAttackAll"
+  | "gravekeepersVassalBattleDamageToEffect"
+  | "hayateBattledDeckSend"
+  | "honestDamageStepBoost"
+  | "magicCylinderDamageReflect"
+  | "magicalArmShieldBattleRetargetDamage"
+  | "miniaturizePersistentDamageStepStat"
+  | "mirageKnightBattleTargetAtk"
+  | "naturiaSpiderfangAttackAnnouncementLock"
+  | "negateAttackBattlePhaseSkipNegate"
+  | "nightmareMagicianEndDamageControl"
+  | "numberC96AlsoBattleDamage"
+  | "predaplantSarraceniantBattledDestroy"
+  | "reflectBounderBattleConfirmDestroy"
+  | "ringOfMagnetismOnlyAttackEquipped"
+  | "sakuretsuArmorAttackDestroy"
+  | "scrapIronScarecrowSetAgainNegate"
+  | "shadowSpellGoatDamageCalculationStat"
+  | "susaSoldierHalfDamage"
+  | "topologicBomberBattledDamage"
+  | "wallOfIllusionBattledBounce"
+  | "yomiShipBattleDestroyedDestroy";
 
 describe("Lua real battle restore coverage", () => {
   it("requires real-script battle fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -318,6 +397,19 @@ describe("Lua real battle restore coverage", () => {
 
   it("keeps battle trigger semantic fixture kinds explicit", () => {
     expect(countBattleTriggerSemanticKinds(realScriptBattleTriggerSemanticFixtureFiles())).toEqual(battleTriggerSemanticKindCounts);
+  });
+
+  it("keeps named battle semantic variants explicit", () => {
+    expect(countBattleSemanticVariants(realScriptBattleSemanticVariants())).toEqual(battleSemanticVariantCounts);
+
+    const weak = realScriptBattleSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -766,6 +858,260 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
     kind: BattleTriggerSemanticKind;
     required: string[];
   }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+}
+
+function realScriptBattleSemanticVariants(): Array<{
+  file: string;
+  kind: BattleSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
+      kind: "alienOfJusticeNullfierBattledDisable",
+      required: ["restores its EVENT_BATTLED label-object trigger and disables the LIGHT battle target", "eventCode: 1138", "code: 8"],
+    },
+    {
+      file: "lua-real-script-amazoness-swords-woman-reflect-battle-damage.test.ts",
+      kind: "amazonessSwordsWomanReflectDamage",
+      required: ["restores Amazoness Swords Woman and reflects battle damage to the attacker", "battleDamage).toEqual({ 0: 500, 1: 0 })", "eventValue: 500"],
+    },
+    {
+      file: "lua-real-script-ancient-gear-golem-pierce-battle-damage.test.ts",
+      kind: "ancientGearGolemPiercingDamage",
+      required: ["restores Ancient Gear Golem and applies piercing battle damage", "battleDamage).toEqual({ 0: 0, 1: 1500 })", "eventValue: 1500"],
+    },
+    {
+      file: "lua-real-script-aoj-thousand-arms-attack-all-light.test.ts",
+      kind: "aojThousandArmsLightOnlyAttackAll",
+      required: ["restores its target-filtered attack-all effect for spent attackers", "lightTarget.uid)).toBe(true)", "darkTarget.uid)).toBe(false)"],
+    },
+    {
+      file: "lua-real-script-battle-damage-prevention.test.ts",
+      kind: "battleDamagePreventionMachineLordUr",
+      required: ["restores Machine Lord Ur and prevents opponent battle damage from its attack", "battleDamage).toEqual({ 0: 0, 1: 0 })", "detail: \"0\""],
+    },
+    {
+      file: "lua-real-script-blizzard-warrior-battle-destroying-decktop.test.ts",
+      kind: "blizzardWarriorBattleDestroyingDecktopConfirm",
+      required: ["restores its battle-destroying trigger through Deck-top confirmation and SelectOption", "api: \"SelectOption\"", "eventName: \"confirmed\""],
+    },
+    {
+      file: "lua-real-script-bls-soldier-chaos-battle-destroying-select-effect.test.ts",
+      kind: "blsSoldierChaosBattleDestroyingSelectEffect",
+      required: ["restores its battle-destroying trigger prompt and applies the selected ATK boost", "api: \"SelectEffect\"", "returned: 1"],
+    },
+    {
+      file: "lua-real-script-dark-ruler-ha-des-battled-disable.test.ts",
+      kind: "darkRulerHaDesBattledGraveDisable",
+      required: ["restores its EVENT_BATTLED continuous disable on a battle-destroyed monster in Graveyard", "ha des target disabled true", "eventCode: 1138"],
+    },
+    {
+      file: "lua-real-script-decoyroid-battle-target-selection-lock.test.ts",
+      kind: "decoyroidBattleTargetSelectionLock",
+      required: ["restores its non-Decoyroid battle target selection lock", "decoyroid.uid)).toBe(true)", "protectedTarget.uid)).toBe(false)"],
+    },
+    {
+      file: "lua-real-script-dimensional-prison-battle-window.test.ts",
+      kind: "dimensionalPrisonAttackBanish",
+      required: ["restores Dimensional Prison's attack-declaration target and banishes the active attacker", "targetUids: [attacker!.uid]", "location: \"banished\""],
+    },
+    {
+      file: "lua-real-script-draining-shield-battle-window.test.ts",
+      kind: "drainingShieldLpRecoverNegate",
+      required: ["restores Draining Shield's attack-declaration target and recovers LP after negating the attack", "attackCanceledUids).toEqual([attacker!.uid])", "players[1].lifePoints).toBe(9800)"],
+    },
+    {
+      file: "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+      kind: "fabledAshenveilDamageStepBoost",
+      required: ["restores its hand cost and pre-damage calculation ATK boost", "battleWindow?.kind).toBe(\"beforeDamageCalculation\")", "currentAttack(boostedAshenveil"],
+    },
+    {
+      file: "lua-real-script-gem-knight-sardonyx-battle-search.test.ts",
+      kind: "gemKnightSardonyxBattleSearch",
+      required: ["restores Gemini-status battle-destroyed reason-card search", "reasonCardUid: sardonyx!.uid", "eventName: \"sentToHandConfirmed\""],
+    },
+    {
+      file: "lua-real-script-getsu-fuhma-damage-step-end.test.ts",
+      kind: "getsuFuhmaEndDamageDestroy",
+      required: ["restores Getsu Fuhma's stored battle target and destroys it at the end of the Damage Step", "battleWindow?.kind).toBe(\"endDamageStep\")", "eventName: \"damageStepEnded\""],
+    },
+    {
+      file: "lua-real-script-ghost-bird-extra-monster-attack.test.ts",
+      kind: "ghostBirdExtraMonsterAttack",
+      required: ["restores sequence-gated monster-only extra attacks without allowing direct attacks", "hasAttack(actions, ghostBird.uid, target.uid)).toBe(true)", "hasDirectAttack(noTargetActions, ghostBird.uid)).toBe(false)"],
+    },
+    {
+      file: "lua-real-script-giant-rat-mutual-battle-destroyed-segoc.test.ts",
+      kind: "giantRatMutualBattleDestroyedSegoc",
+      required: ["restores simultaneous optional EVENT_BATTLE_DESTROYED recruiters as one chain", "triggerBucket: \"turnOptional\"", "triggerBucket: \"opponentOptional\""],
+    },
+    {
+      file: "lua-real-script-grasschopper-gemini-attack-all.test.ts",
+      kind: "grasschopperGeminiAttackAll",
+      required: ["restores Gemini status into repeat monster attacks without reopening direct attacks", "firstTarget.uid)).toBe(true)", "secondTarget.uid)).toBe(true)"],
+    },
+    {
+      file: "lua-real-script-gravekeepers-vassal-battle-damage-to-effect.test.ts",
+      kind: "gravekeepersVassalBattleDamageToEffect",
+      required: ["restores Gravekeeper's Vassal and treats its battle damage as effect damage", "action: \"effectDamage\"", "eventReason: 64"],
+    },
+    {
+      file: "lua-real-script-hayate-battled-send.test.ts",
+      kind: "hayateBattledDeckSend",
+      required: ["restores its direct-attack EVENT_BATTLED trigger and sends a Sky Striker card from Deck to Graveyard", "directAttack === true", "reasonEffectId: 3"],
+    },
+    {
+      file: "lua-real-script-honest-damage-step.test.ts",
+      kind: "honestDamageStepBoost",
+      required: ["restores Honest's damage-step hand effect and battle ATK update", "chainResponderScript", "host.messages).not.toContain"],
+    },
+    {
+      file: "lua-real-script-magic-cylinder-battle-window.test.ts",
+      kind: "magicCylinderDamageReflect",
+      required: ["restores Magic Cylinder's attack-declaration target and resolves effect damage", "targetUids: [attacker!.uid]", "lifePoints).toBe(6200)"],
+    },
+    {
+      file: "lua-real-script-magical-arm-shield-calculate-damage.test.ts",
+      kind: "magicalArmShieldBattleRetargetDamage",
+      required: ["restores temporary control of an opponent monster and resolves CalculateDamage against it", "battleWindow?.kind).toBe(\"attackNegationResponse\")", "eventName: \"controlChanged\""],
+    },
+    {
+      file: "lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
+      kind: "miniaturizePersistentDamageStepStat",
+      required: ["restores official persistent target into Damage Step ATK and Level updates", "miniaturize persistent true/true/1/800/3", "battleDamage[0]).toBe(100)"],
+    },
+    {
+      file: "lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      kind: "mirageKnightBattleTargetAtk",
+      required: ["restores GetBattleTarget damage-calculation ATK and End Phase self-banish after battle", "battleWindow?.kind).toBe(\"duringDamageCalculation\")", "location: \"banished\""],
+    },
+    {
+      file: "lua-real-script-naturia-spiderfang-attack-announce-lock.test.ts",
+      kind: "naturiaSpiderfangAttackAnnouncementLock",
+      required: ["restores its custom-activity conditioned attack-announcement lock", "spiderfang.uid, target.uid)).toBe(false)", "ordinary.uid, target.uid)).toBe(true)"],
+    },
+    {
+      file: "lua-real-script-negate-attack-battle-window.test.ts",
+      kind: "negateAttackBattlePhaseSkipNegate",
+      required: ["restores and resolves Negate Attack from the Project Ignis attack-declaration script", "attackCanceledUids).toEqual([firstAttacker!.uid])", "skippedPhases).toEqual([{ player: 0, phase: \"battle\", remaining: 1 }])"],
+    },
+    {
+      file: "lua-real-script-nightmare-magician-battle-control.test.ts",
+      kind: "nightmareMagicianEndDamageControl",
+      required: ["restores battle-target indestructibility and controls the battled monster at Damage Step end", "luaTargetDescriptor: \"target:source-or-battle-target\"", "previousController: 1"],
+    },
+    {
+      file: "lua-real-script-number-c96-also-battle-damage.test.ts",
+      kind: "numberC96AlsoBattleDamage",
+      required: ["restores Number C96 and applies also battle damage to the opponent", "battleDamage).toEqual({ 0: 800, 1: 800 })", "eventPlayer: 1"],
+    },
+    {
+      file: "lua-real-script-predaplant-sarraceniant-battled-destroy.test.ts",
+      kind: "predaplantSarraceniantBattledDestroy",
+      required: ["restores its EVENT_BATTLED trigger and destroys the monster it battled", "eventCode: 1138", "reasonEffectId: 2"],
+    },
+    {
+      file: "lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
+      kind: "reflectBounderBattleConfirmDestroy",
+      required: ["restores battle-confirm damage into a later battled self-destruction trigger", "eventName: \"battleConfirmed\"", "eventValue: 1700"],
+    },
+    {
+      file: "lua-real-script-ring-of-magnetism-only-attack.test.ts",
+      kind: "ringOfMagnetismOnlyAttackEquipped",
+      required: ["restores its equipped-monster-only attack surface", "equippedTarget.uid)).toBe(true)", "sideTarget.uid)).toBe(false)"],
+    },
+    {
+      file: "lua-real-script-sakuretsu-armor-battle-window.test.ts",
+      kind: "sakuretsuArmorAttackDestroy",
+      required: ["restores Sakuretsu Armor's attack-declaration target and destroys the active attacker", "location: \"graveyard\"", "players[1].lifePoints).toBe(8000)"],
+    },
+    {
+      file: "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
+      kind: "scrapIronScarecrowSetAgainNegate",
+      required: ["restores Scrap-Iron Scarecrow and keeps it set after negating the attack", "attackCanceledUids).toEqual([attacker!.uid])", "position: \"faceDown\", faceUp: false"],
+    },
+    {
+      file: "lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
+      kind: "shadowSpellGoatDamageCalculationStat",
+      required: ["restores a damage-calculation persistent target into ATK loss before battle damage", "battleWindow?.kind).toBe(\"duringDamageCalculation\")", "chainResponderScript"],
+    },
+    {
+      file: "lua-real-script-susa-soldier-half-damage.test.ts",
+      kind: "susaSoldierHalfDamage",
+      required: ["restores aux.ChangeBattleDamage HALF_DAMAGE and halves battle damage it inflicts", "battleDamage[1]).toBe(500)", "eventValue: 500"],
+    },
+    {
+      file: "lua-real-script-topologic-bomber-battled-damage.test.ts",
+      kind: "topologicBomberBattledDamage",
+      required: ["restores its EVENT_BATTLED trigger and deals effect damage from the battle target's base ATK", "eventName: \"damageDealt\"", "eventValue: 1200"],
+    },
+    {
+      file: "lua-real-script-wall-of-illusion-battled.test.ts",
+      kind: "wallOfIllusionBattledBounce",
+      required: ["restores Wall of Illusion after damage calculation and returns its attacker to hand", "eventCode: 1138", "eventName: \"sentToHand\""],
+    },
+    {
+      file: "lua-real-script-yomi-ship-battle-destroyed.test.ts",
+      kind: "yomiShipBattleDestroyedDestroy",
+      required: ["restores Yomi Ship's battle-destroyed trigger and destroys the monster that destroyed it", "eventCode: 1140", "reasonCardUid: attacker!.uid"],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: BattleSemanticVariant;
+    required: string[];
+  }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemanticVariant }>): Record<BattleSemanticVariant, number> {
+  return fixtures.reduce<Record<BattleSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      alienOfJusticeNullfierBattledDisable: 0,
+      amazonessSwordsWomanReflectDamage: 0,
+      ancientGearGolemPiercingDamage: 0,
+      aojThousandArmsLightOnlyAttackAll: 0,
+      battleDamagePreventionMachineLordUr: 0,
+      blizzardWarriorBattleDestroyingDecktopConfirm: 0,
+      blsSoldierChaosBattleDestroyingSelectEffect: 0,
+      darkRulerHaDesBattledGraveDisable: 0,
+      decoyroidBattleTargetSelectionLock: 0,
+      dimensionalPrisonAttackBanish: 0,
+      drainingShieldLpRecoverNegate: 0,
+      fabledAshenveilDamageStepBoost: 0,
+      gemKnightSardonyxBattleSearch: 0,
+      getsuFuhmaEndDamageDestroy: 0,
+      ghostBirdExtraMonsterAttack: 0,
+      giantRatMutualBattleDestroyedSegoc: 0,
+      grasschopperGeminiAttackAll: 0,
+      gravekeepersVassalBattleDamageToEffect: 0,
+      hayateBattledDeckSend: 0,
+      honestDamageStepBoost: 0,
+      magicCylinderDamageReflect: 0,
+      magicalArmShieldBattleRetargetDamage: 0,
+      miniaturizePersistentDamageStepStat: 0,
+      mirageKnightBattleTargetAtk: 0,
+      naturiaSpiderfangAttackAnnouncementLock: 0,
+      negateAttackBattlePhaseSkipNegate: 0,
+      nightmareMagicianEndDamageControl: 0,
+      numberC96AlsoBattleDamage: 0,
+      predaplantSarraceniantBattledDestroy: 0,
+      reflectBounderBattleConfirmDestroy: 0,
+      ringOfMagnetismOnlyAttackEquipped: 0,
+      sakuretsuArmorAttackDestroy: 0,
+      scrapIronScarecrowSetAgainNegate: 0,
+      shadowSpellGoatDamageCalculationStat: 0,
+      susaSoldierHalfDamage: 0,
+      topologicBomberBattledDamage: 0,
+      wallOfIllusionBattledBounce: 0,
+      yomiShipBattleDestroyedDestroy: 0,
+    },
+  );
 }
 
 function countAttackDeclarationTrapKinds(
