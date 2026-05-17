@@ -538,6 +538,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'summonType: "fusion"',
         "summonMaterialUids: [equippedMaterial!.uid, fiendMaterial!.uid]",
         "reason: duelReason.cost | duelReason.material",
+        "expect(restored.session.state.cards.find((card) => card.uid === fiendMaterial!.uid)).toMatchObject({",
         'eventName: "specialSummoned"',
         'eventName === "sentToGraveyard"',
         "event.eventCardUid === fiendMaterial!.uid",
