@@ -5,6 +5,12 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const PREDRAW_FIXTURE_COUNT = 2;
+const predrawKindCounts = {
+  battleDamagePredrawDiscard: 1,
+  spiritPredrawConfirm: 1,
+} satisfies Record<PredrawKind, number>;
+
+type PredrawKind = "battleDamagePredrawDiscard" | "spiritPredrawConfirm";
 
 describe("Lua real predraw restore coverage", () => {
   it("requires representative predraw delayed-effect fixtures to assert clean Lua restore", () => {
@@ -27,12 +33,21 @@ describe("Lua real predraw restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps predraw fixture kinds explicit", () => {
+    expect(countPredrawKinds(realScriptPredrawFixtureFiles())).toEqual(predrawKindCounts);
+  });
 });
 
-function realScriptPredrawFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptPredrawFixtureFiles(): Array<{
+  file: string;
+  kind: PredrawKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-hino-kagu-tsuchi-predraw-discard.test.ts",
+      kind: "battleDamagePredrawDiscard",
       required: [
         'eventName: "battleDamageDealt"',
         "code: 1113",
@@ -42,6 +57,7 @@ function realScriptPredrawFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "test/lua-real-script-maharaghi-predraw.test.ts",
+      kind: "spiritPredrawConfirm",
       required: [
         'action.type === "normalSummon"',
         'action.type === "activateTrigger"',
@@ -49,5 +65,22 @@ function realScriptPredrawFixtureFiles(): Array<{ file: string; required: string
         'eventName: "confirmed"',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: PredrawKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countPredrawKinds(fixtures: Array<{ kind: PredrawKind }>): Record<PredrawKind, number> {
+  return fixtures.reduce<Record<PredrawKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      battleDamagePredrawDiscard: 0,
+      spiritPredrawConfirm: 0,
+    },
+  );
 }
