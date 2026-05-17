@@ -14,6 +14,37 @@ const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
+const unionProcedureKindCounts = {
+  battleTriggerSummonBack: 1,
+  deckEquipBanish: 1,
+  equipAndSummonBack: 1,
+  equippedRitualSummon: 1,
+} satisfies Record<SummonUnionProcedureKind, number>;
+const materialLockKindCounts = {
+  fusionMaterialLock: 1,
+  genericMaterialLock: 1,
+  linkMaterialLock: 1,
+  xyzMaterialLock: 1,
+} satisfies Record<SummonMaterialLockKind, number>;
+const flipSummonSuccessTrapKindCounts = {
+  flipBanishTrap: 1,
+  flipDestroyTrap: 2,
+  flipStatTrap: 1,
+} satisfies Record<FlipSummonSuccessTrapKind, number>;
+
+type SummonUnionProcedureKind =
+  | "battleTriggerSummonBack"
+  | "deckEquipBanish"
+  | "equipAndSummonBack"
+  | "equippedRitualSummon";
+
+type SummonMaterialLockKind =
+  | "fusionMaterialLock"
+  | "genericMaterialLock"
+  | "linkMaterialLock"
+  | "xyzMaterialLock";
+
+type FlipSummonSuccessTrapKind = "flipBanishTrap" | "flipDestroyTrap" | "flipStatTrap";
 
 describe("Lua real summon restore coverage", () => {
   it("requires real-script summon and procedure fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -133,6 +164,10 @@ describe("Lua real summon restore coverage", () => {
     expect(weak).toEqual([]);
   });
 
+  it("keeps Union procedure fixture kinds explicit", () => {
+    expect(countSummonUnionProcedureKinds(realScriptUnionProcedureFixtureSnippets())).toEqual(unionProcedureKindCounts);
+  });
+
   it("requires representative material-lock fixtures to pin restored legal-action suppression and clean Lua restore", () => {
     const files = realScriptMaterialLockFixtureSnippets();
     expect(files).toHaveLength(materialLockFixtureCount);
@@ -148,6 +183,10 @@ describe("Lua real summon restore coverage", () => {
       .map(({ file }) => file);
 
     expect(weak).toEqual([]);
+  });
+
+  it("keeps material-lock fixture kinds explicit", () => {
+    expect(countSummonMaterialLockKinds(realScriptMaterialLockFixtureSnippets())).toEqual(materialLockKindCounts);
   });
 
   it("requires representative Flip Summon success trap fixtures to pin restored chain-response activations", () => {
@@ -176,6 +215,10 @@ describe("Lua real summon restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("keeps Flip Summon success Trap fixture kinds explicit", () => {
+    expect(countFlipSummonSuccessTrapKinds(realScriptFlipSummonSuccessTrapFixtureSnippets())).toEqual(flipSummonSuccessTrapKindCounts);
+  });
 });
 
 function realScriptSummonFixtureFiles(): string[] {
@@ -186,10 +229,15 @@ function realScriptSummonFixtureFiles(): string[] {
     .sort();
 }
 
-function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string; required: string[] }> {
+function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{
+  file: string;
+  kind: FlipSummonSuccessTrapKind;
+  required: string[];
+}> {
   return [
     {
       file: "test/lua-real-script-bottomless-trap-hole-summon-success.test.ts",
+      kind: "flipBanishTrap",
       required: [
         'eventName: "flipSummoned"',
         'effectId).toContain("-1101"',
@@ -202,6 +250,7 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
     },
     {
       file: "test/lua-real-script-house-adhesive-tape-flip-summon.test.ts",
+      kind: "flipDestroyTrap",
       required: [
         'eventName: "flipSummoned"',
         'effectId).toContain("-1101"',
@@ -212,6 +261,7 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
     },
     {
       file: "test/lua-real-script-adhesion-trap-hole-flip-summon.test.ts",
+      kind: "flipStatTrap",
       required: [
         'eventName: "flipSummoned"',
         'effectId).toContain("-1101"',
@@ -224,6 +274,7 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{ file: string;
     },
     {
       file: "test/lua-real-script-trap-hole-flip-summon.test.ts",
+      kind: "flipDestroyTrap",
       required: [
         'eventName: "flipSummoned"',
         'effectId).toContain("-1101"',
@@ -409,10 +460,15 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; requir
   ].map(({ file, required }) => ({ file: path.join("test", file), required }));
 }
 
-function realScriptUnionProcedureFixtureSnippets(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptUnionProcedureFixtureSnippets(): Array<{
+  file: string;
+  kind: SummonUnionProcedureKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-union-procedure-actions.test.ts",
+      kind: "equipAndSummonBack",
       required: [
         "getLuaRestoreLegalActionGroups(restoredEquipWindow, 0).flatMap((group) => group.actions)",
         "findEffectAction(restoredEquipWindow.session, getLuaRestoreLegalActions(restoredEquipWindow, 0), unionDriver!.uid, 1068)",
@@ -424,6 +480,7 @@ function realScriptUnionProcedureFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-union-procedure-actions.test.ts",
+      kind: "deckEquipBanish",
       required: [
         "const platformCode = \"23265594\"",
         "findEffectActionByCategory(restoredDriverDeckEquipWindow.session, getLuaRestoreLegalActions(restoredDriverDeckEquipWindow, 0), unionDriver!.uid, 0x40000)",
@@ -434,6 +491,7 @@ function realScriptUnionProcedureFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-union-procedure-actions.test.ts",
+      kind: "equippedRitualSummon",
       required: [
         "const unionPilotCode = \"89357740\"",
         "findEffectActionByCategory(restoredEquippedState.session, getLuaRestoreLegalActions(restoredEquippedState, 0), unionPilot!.uid, 0x40200)",
@@ -444,6 +502,7 @@ function realScriptUnionProcedureFixtureSnippets(): Array<{ file: string; requir
     },
     {
       file: "lua-real-script-union-procedure-actions.test.ts",
+      kind: "battleTriggerSummonBack",
       required: [
         "const trigonCode = \"48568432\"",
         "findEffectAction(restoredEquipWindow.session, getLuaRestoreLegalActions(restoredEquipWindow, 0), trigon!.uid, 1068)",
@@ -456,13 +515,22 @@ function realScriptUnionProcedureFixtureSnippets(): Array<{ file: string; requir
         'summonType: "special"',
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{
+    file: string;
+    kind: SummonUnionProcedureKind;
+    required: string[];
+  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
-function realScriptMaterialLockFixtureSnippets(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptMaterialLockFixtureSnippets(): Array<{
+  file: string;
+  kind: SummonMaterialLockKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-mysterion-fusion-material-lock.test.ts",
+      kind: "fusionMaterialLock",
       required: [
         "code: 235",
         'action.type === "fusionSummon"',
@@ -471,6 +539,7 @@ function realScriptMaterialLockFixtureSnippets(): Array<{ file: string; required
     },
     {
       file: "lua-real-script-doggy-diver-xyz-material-lock.test.ts",
+      kind: "xyzMaterialLock",
       required: [
         "code: 238",
         'action.type === "xyzSummon"',
@@ -479,6 +548,7 @@ function realScriptMaterialLockFixtureSnippets(): Array<{ file: string; required
     },
     {
       file: "lua-real-script-anger-knuckle-link-material-lock.test.ts",
+      kind: "linkMaterialLock",
       required: [
         "code: 239",
         'action.type === "linkSummon"',
@@ -487,6 +557,7 @@ function realScriptMaterialLockFixtureSnippets(): Array<{ file: string; required
     },
     {
       file: "lua-real-script-fallin-cheatah-generic-material-lock.test.ts",
+      kind: "genericMaterialLock",
       required: [
         "code: 248",
         'action.type === "fusionSummon"',
@@ -496,5 +567,59 @@ function realScriptMaterialLockFixtureSnippets(): Array<{ file: string; required
         "ritualSummonDuelCard",
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{
+    file: string;
+    kind: SummonMaterialLockKind;
+    required: string[];
+  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+}
+
+function countSummonUnionProcedureKinds(
+  fixtures: Array<{ kind: SummonUnionProcedureKind }>,
+): Record<SummonUnionProcedureKind, number> {
+  return fixtures.reduce<Record<SummonUnionProcedureKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      battleTriggerSummonBack: 0,
+      deckEquipBanish: 0,
+      equipAndSummonBack: 0,
+      equippedRitualSummon: 0,
+    },
+  );
+}
+
+function countSummonMaterialLockKinds(
+  fixtures: Array<{ kind: SummonMaterialLockKind }>,
+): Record<SummonMaterialLockKind, number> {
+  return fixtures.reduce<Record<SummonMaterialLockKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      fusionMaterialLock: 0,
+      genericMaterialLock: 0,
+      linkMaterialLock: 0,
+      xyzMaterialLock: 0,
+    },
+  );
+}
+
+function countFlipSummonSuccessTrapKinds(
+  fixtures: Array<{ kind: FlipSummonSuccessTrapKind }>,
+): Record<FlipSummonSuccessTrapKind, number> {
+  return fixtures.reduce<Record<FlipSummonSuccessTrapKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      flipBanishTrap: 0,
+      flipDestroyTrap: 0,
+      flipStatTrap: 0,
+    },
+  );
 }
