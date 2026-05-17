@@ -39,6 +39,11 @@ function checkCardDataManifest(dir) {
     fail("CDB rows manifest must describe browser-cdb-rows payload metadata");
   }
   if (manifest.payload !== path.basename(manifest.payload)) fail(`CDB rows manifest payload must be a file name, got ${manifest.payload}`);
+  const expectedDataFiles = new Set(["manifest.json", manifest.payload]);
+  const extraDataFiles = directoryFiles(dir)
+    .filter((name) => name.endsWith(".json"))
+    .filter((name) => !expectedDataFiles.has(name));
+  if (extraDataFiles.length) fail(`CDB rows export contains unlisted JSON files: ${extraDataFiles.join(", ")}`);
 
   const payloadPath = path.join(dir, manifest.payload);
   const payloadText = readText(payloadPath, "CDB rows payload");
@@ -100,6 +105,11 @@ function checkCardScriptsManifest(dir) {
   }
   if (new Set(manifest.copied).size !== manifest.copied.length) fail("Lua script manifest copied list contains duplicate names");
   if (new Set(manifest.files.map((file) => file.name)).size !== manifest.files.length) fail("Lua script manifest files list contains duplicate names");
+  const copied = new Set(manifest.copied);
+  const unlistedScriptFiles = directoryFiles(dir)
+    .filter((name) => /^c\d+\.lua$/u.test(name))
+    .filter((name) => !copied.has(name));
+  if (unlistedScriptFiles.length) fail(`Lua script export contains unlisted scripts: ${unlistedScriptFiles.join(", ")}`);
   const actualSourceCounts = countBy(manifest.files, (file) => file.source);
   const actualFallbackKindCounts = countBy(
     manifest.files.filter((file) => file.source === "local-fallback"),
@@ -112,7 +122,6 @@ function checkCardScriptsManifest(dir) {
     fail(`Lua script manifest fallbackKindCounts ${formatCountRecord(manifest.fallbackKindCounts)} do not match local fallback files ${formatCountRecord(actualFallbackKindCounts)}`);
   }
 
-  const copied = new Set(manifest.copied);
   for (const file of manifest.files) {
     if (!copied.has(file.name)) fail(`Lua script manifest file ${file.name} is not listed in copied scripts`);
     if (file.source === "local-fallback") {
@@ -129,6 +138,14 @@ function checkCardScriptsManifest(dir) {
   for (const name of copied) {
     if (!manifest.files.some((file) => file.name === name)) fail(`Lua script manifest copied script ${name} is missing file metadata`);
   }
+}
+
+function directoryFiles(dir) {
+  if (!fs.existsSync(dir)) fail(`Asset directory ${dir} does not exist`);
+  return fs.readdirSync(dir, { withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => entry.name)
+    .sort();
 }
 
 function scriptCodeFromName(name) {

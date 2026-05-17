@@ -19,6 +19,9 @@ const sourceCounts = {};
 const fallbackKindCounts = {};
 
 fs.mkdirSync(options.out, { recursive: true });
+for (const entry of fs.readdirSync(options.out, { withFileTypes: true })) {
+  if (entry.isFile() && /^c\d+\.lua$/u.test(entry.name)) fs.rmSync(path.join(options.out, entry.name));
+}
 for (const name of names) {
   const candidate = scriptCandidates(options.scripts, name).find((scriptCandidate) => fs.existsSync(scriptCandidate.path));
   if (!candidate) {

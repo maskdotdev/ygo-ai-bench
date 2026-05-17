@@ -69,9 +69,11 @@ describe("browser Lua script exporter", () => {
     const scriptRoot = path.join(root, "script");
     const outDir = path.join(root, "public", "card-scripts");
     fs.mkdirSync(path.join(scriptRoot, "official"), { recursive: true });
+    fs.mkdirSync(outDir, { recursive: true });
     fs.writeFileSync(path.join(scriptRoot, "official", "c200.lua"), "official 200", "utf8");
     fs.writeFileSync(path.join(scriptRoot, "c100.lua"), "root 100", "utf8");
     fs.writeFileSync(path.join(scriptRoot, "constant.lua"), "not a card script", "utf8");
+    fs.writeFileSync(path.join(outDir, "c999.lua"), "stale", "utf8");
 
     const summary = execFileSync("node", [exporterPath, "--scripts", scriptRoot, "--out", outDir], { encoding: "utf8" });
 
@@ -80,6 +82,7 @@ describe("browser Lua script exporter", () => {
       missing: [],
     });
     expect(fs.readdirSync(outDir).sort()).toEqual(["c100.lua", "c200.lua", "manifest.json"]);
+    expect(fs.existsSync(path.join(outDir, "c999.lua"))).toBe(false);
     expect(execFileSync("node", [checkerPath, "--card-scripts", outDir], { encoding: "utf8" })).toContain("Browser asset manifest check passed");
   });
 

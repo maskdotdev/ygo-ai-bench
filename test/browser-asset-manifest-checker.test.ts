@@ -89,6 +89,18 @@ describe("browser asset manifest checker", () => {
     expect(result.stderr).toContain("CDB rows payload datas ids 100 do not match texts ids 200");
   });
 
+  it("fails when a CDB export directory contains stale unlisted JSON payloads", () => {
+    const root = makeTempRoot();
+    const cardDataDir = path.join(root, "card-data");
+    writeCardDataExport(cardDataDir, { datas: [{ id: 100, type: 1 }], texts: [{ id: 100, name: "Manifest Monster" }] });
+    fs.writeFileSync(path.join(cardDataDir, "old-cdb-rows.json"), `${JSON.stringify({ datas: [], texts: [] })}\n`, "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-data", cardDataDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("CDB rows export contains unlisted JSON files: old-cdb-rows.json");
+  });
+
   it("fails when an exported Lua script hash differs from its manifest", () => {
     const root = makeTempRoot();
     const cardScriptsDir = path.join(root, "card-scripts");
@@ -173,6 +185,18 @@ describe("browser asset manifest checker", () => {
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Lua script manifest sourceCounts");
     expect(result.stderr).toContain("do not match files");
+  });
+
+  it("fails when a Lua script export directory contains stale unlisted card scripts", () => {
+    const root = makeTempRoot();
+    const cardScriptsDir = path.join(root, "card-scripts");
+    writeScriptExport(cardScriptsDir, { "c100.lua": "c100={}\n" });
+    fs.writeFileSync(path.join(cardScriptsDir, "c200.lua"), "c200={}\n", "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-scripts", cardScriptsDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Lua script export contains unlisted scripts: c200.lua");
   });
 
   it("rejects missing asset directory arguments", () => {
