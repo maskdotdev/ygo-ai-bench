@@ -95,7 +95,7 @@ describe("Lua card script movement helpers", () => {
     expect(session.state.cards.find((card) => card.uid === record!.uid)).toMatchObject({ location: "hand", reason: 0x40 });
   });
 
-  it("loads Gurifoh and sets a listed Spell/Trap from Deck", () => {
+  it("resolves Gurifoh's listed Spell/Trap set branch from the pre-release script", () => {
     const cards: DuelCardData[] = [
       { code: "97462632", name: "Gurifoh", kind: "monster" },
       { code: "24749710", name: "Mind Shuffle", kind: "trap", typeFlags: 0x20004, listedNames: ["101305044"] },
@@ -114,7 +114,7 @@ describe("Lua card script movement helpers", () => {
     moveDuelCard(session.state, gurifoh!.uid, "hand", 0);
     moveDuelCard(session.state, records!.uid, "deck", 0);
 
-    const host = createLuaScriptHost(session);
+    const host = createLuaScriptHost(session, undefined, { promptOverrides: [{ api: "SelectEffect", player: 0, returned: 2 }] });
     const loaded = loadLocalAliasCardScript(host, 97462632);
     expect(loaded.ok, loaded.error).toBe(true);
     host.registerInitialEffects();
@@ -127,8 +127,12 @@ describe("Lua card script movement helpers", () => {
     }
 
     expect(session.state.cards.find((card) => card.uid === gurifoh!.uid)).toMatchObject({ location: "graveyard", reason: 0x4080 });
-    expect(host.promptDecisions).toEqual(expect.arrayContaining([expect.objectContaining({ api: "SelectEffect", returned: 1 })]));
-    expect(session.state.cards.find((card) => card.uid === records!.uid)).toMatchObject({ location: "deck" });
+    expect(host.promptDecisions).toEqual(expect.arrayContaining([expect.objectContaining({ api: "SelectEffect", returned: 2 })]));
+    expect(session.state.cards.find((card) => card.uid === records!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      position: "faceDown",
+      faceUp: false,
+    });
   });
 
   it("loads Mystical Celtic Sage and tributes itself to summon a listed Ritual monster", () => {

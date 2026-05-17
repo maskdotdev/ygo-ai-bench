@@ -44,6 +44,14 @@ export type LuaPromptDecision =
   | { id: string; api: "SelectOption" | "SelectEffect" | "AnnounceNumber" | "AnnounceNumberRange" | "AnnounceCard" | "AnnounceType" | "AnnounceLevel" | "AnnounceRace" | "AnnounceAttribute" | "SelectCardsFromCodes" | "SelectDisableField" | "SelectField" | "SelectFieldZone"; player?: PlayerId; options: number[]; descriptions: number[]; descriptionLists?: number[][]; returned: number; returnKind?: "codeIndexTable"; returnValues?: LuaPromptResumeValue[][] }
   | { id: string; api: "SelectYesNo" | "SelectEffectYesNo"; player?: PlayerId; description?: number; returned: boolean };
 
+export type LuaPromptOverride =
+  | { api?: "SelectOption" | "SelectEffect"; player?: PlayerId; returned: number }
+  | { api?: Extract<LuaPromptDecision, { returned: boolean }>["api"]; player?: PlayerId; returned: boolean };
+
+export interface LuaScriptHostOptions {
+  promptOverrides?: LuaPromptOverride[];
+}
+
 export const luaOptionPromptApis: ReadonlyArray<Extract<LuaPromptDecision, { options: number[] }>["api"]> = [
   "SelectOption",
   "SelectEffect",
@@ -143,6 +151,7 @@ export interface LuaHostState {
   usedEffectCounts: Map<string, number>;
   messages: string[];
   promptDecisions: LuaPromptDecision[];
+  promptOverrides: LuaPromptOverride[];
   nextPromptId: number;
   promptBehavior: "default" | "yield";
   activeTargetUids: string[] | undefined;

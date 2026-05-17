@@ -17,13 +17,13 @@ import { installTracebackHandler, loadLuaScriptFile, readLuaError, registerLuaIn
 import { installEffectApi, installGetIdCompatibilityApi, pushLuaEffectTable, majesticCopyLuaEffects, changeLuaChainOperation, registerLuaEffect, runLuaEffectOperationPromptCoroutine, toDuelEffect } from "#lua/host-effect-api.js";
 import { normalizeLuaUnsignedInteger } from "#lua/numeric-utils.js";
 import type { ChainLimit, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
-import type { LuaHostState, LuaScriptHost, LuaScriptSource } from "#lua/host-types.js";
+import type { LuaHostState, LuaScriptHost, LuaScriptHostOptions, LuaScriptSource } from "#lua/host-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 
 export type { LuaInitialEffectRegistrationResult, LuaScriptHost, LuaScriptLoadResult, LuaScriptSource } from "#lua/host-types.js";
 
-export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScriptSource): LuaScriptHost {
+export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScriptSource, options: LuaScriptHostOptions = {}): LuaScriptHost {
   const L = lauxlib.luaL_newstate();
   const hostState: LuaHostState = {
     session,
@@ -34,6 +34,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     usedEffectCounts: new Map(),
     messages: [],
     promptDecisions: [],
+    promptOverrides: options.promptOverrides?.map((override) => ({ ...override })) ?? [],
     nextPromptId: 1,
     promptBehavior: "default",
     activeTargetUids: undefined,

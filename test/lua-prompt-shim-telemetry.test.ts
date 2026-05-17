@@ -222,6 +222,34 @@ describe("Lua prompt shim telemetry", () => {
     expect(session.state.prompt).toBeUndefined();
   });
 
+  it("uses explicit synchronous prompt overrides when provided", () => {
+    const session = createDuel({ seed: 725, startingHandSize: 0, cardReader: createCardReader([]) });
+    loadDecks(session, { 0: { main: [] }, 1: { main: [] } });
+    startDuel(session);
+
+    const host = createLuaScriptHost(session, undefined, {
+      promptOverrides: [
+        { api: "SelectEffect", player: 0, returned: 3 },
+        { api: "SelectYesNo", player: 0, returned: false },
+      ],
+    });
+    const result = host.loadScript(
+      `
+      local effect_choice = Duel.SelectEffect(0, {true, 501}, {true, 502}, {true, 503})
+      local yes = Duel.SelectYesNo(0, 301)
+      Debug.Message("prompt override decisions " .. effect_choice .. "/" .. tostring(yes))
+      `,
+      "prompt-override-telemetry.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toContain("prompt override decisions 3/false");
+    expect(host.promptDecisions).toEqual([
+      { id: "lua-prompt-1", api: "SelectEffect", player: 0, options: [1, 2, 3], descriptions: [501, 502, 503], returned: 3 },
+      { id: "lua-prompt-2", api: "SelectYesNo", player: 0, description: 301, returned: false },
+    ]);
+  });
+
   it("maps captured Lua prompt decisions into serializable duel prompts for browser response windows", () => {
     expect(luaPromptDecisionToDuelPrompt({ id: "lua-prompt-1", api: "SelectOption", player: 1, options: [1, 2], descriptions: [201, 202], returned: 1 }, undefined, 0)).toEqual({
       id: "lua-prompt-1",
