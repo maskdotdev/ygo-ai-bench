@@ -11,12 +11,24 @@ const continuousOperationKindCounts = {
   originalCodeSummonLock: 1,
   summonTriggerBackrowDestroy: 1,
 } satisfies Record<ContinuousOperationKind, number>;
+const continuousOperationSemanticVariantCounts = {
+  changeOfHeartEndPhaseControlReturn: 1,
+  coreOfChaosFaceUpLeaveFieldRedirect: 1,
+  darkMagicianOriginalCodeSummonLock: 1,
+  fenghuangSetBackrowDestroy: 1,
+} satisfies Record<ContinuousOperationSemanticVariant, number>;
 
 type ContinuousOperationKind =
   | "continuousRedirect"
   | "endPhaseControlReturn"
   | "originalCodeSummonLock"
   | "summonTriggerBackrowDestroy";
+
+type ContinuousOperationSemanticVariant =
+  | "changeOfHeartEndPhaseControlReturn"
+  | "coreOfChaosFaceUpLeaveFieldRedirect"
+  | "darkMagicianOriginalCodeSummonLock"
+  | "fenghuangSetBackrowDestroy";
 
 describe("Lua real continuous operation restore coverage", () => {
   it("requires continuous operation fixtures to assert clean restore and restored outcomes", () => {
@@ -44,6 +56,19 @@ describe("Lua real continuous operation restore coverage", () => {
 
   it("keeps continuous operation fixture kinds explicit", () => {
     expect(countContinuousOperationKinds(continuousOperationFixtureFiles())).toEqual(continuousOperationKindCounts);
+  });
+
+  it("keeps named continuous operation semantic variants explicit", () => {
+    expect(countContinuousOperationSemanticVariants(continuousOperationSemanticVariants())).toEqual(continuousOperationSemanticVariantCounts);
+
+    const weak = continuousOperationSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -124,6 +149,84 @@ function countContinuousOperationKinds(
       endPhaseControlReturn: 0,
       originalCodeSummonLock: 0,
       summonTriggerBackrowDestroy: 0,
+    },
+  );
+}
+
+function continuousOperationSemanticVariants(): Array<{
+  file: string;
+  kind: ContinuousOperationSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-change-of-heart-control-return.test.ts",
+      kind: "changeOfHeartEndPhaseControlReturn",
+      required: [
+        'const changeOfHeartCode = "4031928"',
+        "restores Change of Heart's target, control operation, and End Phase return",
+        "temporary-control-return",
+        "eventName: \"controlChanged\"",
+        "previousController: 1",
+        "not.toContain(`lua:${targetCode}:temporary-control-return",
+      ],
+    },
+    {
+      file: "test/lua-real-script-core-of-chaos-faceup-redirect.test.ts",
+      kind: "coreOfChaosFaceUpLeaveFieldRedirect",
+      required: [
+        'const coreOfChaosCode = "3806388"',
+        "restores comma-local face-up-only EFFECT_LEAVE_FIELD_REDIRECT",
+        "restores local-handler face-up-only EFFECT_LEAVE_FIELD_REDIRECT",
+        "restores its face-up-only EFFECT_LEAVE_FIELD_REDIRECT",
+        "condition:source-faceup",
+        "duelReason.effect | duelReason.redirect",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-magician-destruction-original-code-lock.test.ts",
+      kind: "darkMagicianOriginalCodeSummonLock",
+      required: [
+        'const darkMagicianDestructionCode = "59400890"',
+        "restores original-code Fusion or alternate-procedure summon locks without using current code",
+        "target:summon-type-code-any:original:",
+        "restored original/current",
+        "dark magician fusion special 0",
+        "other fusion special 1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fenghuang-set-backrow-destroy.test.ts",
+      kind: "fenghuangSetBackrowDestroy",
+      required: [
+        'const fenghuangCode = "50866755"',
+        "restores its Spirit summon trigger and destroys only opponent set Spell/Trap cards",
+        "operationInfos: [{ category: 0x1",
+        "sortedUids([opponentSetTrap!.uid, opponentSetSpell!.uid])",
+        "eventName: \"destroyed\"",
+        "fenghuang responder resolved",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: ContinuousOperationSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countContinuousOperationSemanticVariants(
+  fixtures: Array<{ kind: ContinuousOperationSemanticVariant }>,
+): Record<ContinuousOperationSemanticVariant, number> {
+  return fixtures.reduce<Record<ContinuousOperationSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      changeOfHeartEndPhaseControlReturn: 0,
+      coreOfChaosFaceUpLeaveFieldRedirect: 0,
+      darkMagicianOriginalCodeSummonLock: 0,
+      fenghuangSetBackrowDestroy: 0,
     },
   );
 }
