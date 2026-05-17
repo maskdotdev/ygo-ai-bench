@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 20;
+const operationFixtureCount = 21;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -12,6 +12,7 @@ const operationKindCounts = {
   groupDestroy: 9,
   releaseDamage: 1,
   searchOrExcavate: 3,
+  targetDestroyRemove: 1,
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
   tossCoin: 1,
@@ -32,6 +33,7 @@ type OperationKind =
   | "groupDestroy"
   | "releaseDamage"
   | "searchOrExcavate"
+  | "targetDestroyRemove"
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
   | "tossCoin"
@@ -227,6 +229,18 @@ function operationFixtureFiles(): Array<{
         'eventName: "discarded"',
         'eventName: "destroyed"',
         'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nobleman-crossout-banish-destroy.test.ts",
+      kind: "targetDestroyRemove",
+      required: [
+        "category: 0x1",
+        "category: 0x4",
+        'eventName: "destroyed"',
+        'eventName: "banished"',
+        'location: "banished"',
         "host.messages).not.toContain",
       ],
     },
@@ -541,6 +555,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       groupDestroy: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
+      targetDestroyRemove: 0,
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
       tossCoin: 0,
