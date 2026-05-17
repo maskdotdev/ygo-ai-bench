@@ -61,6 +61,7 @@ describe("package scripts", () => {
       "bun run probe:top-tier-deck",
       "bun run probe:competitive-decks",
       "bun run probe:fallback-decks",
+      "bun run check:browser-assets",
       "bun run typecheck",
       "bun run test",
       "bun run build",
