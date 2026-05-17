@@ -514,7 +514,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
   const event = luaEffectEvent(card, luaEffect);
   const range = luaEffect.range ?? luaEffectDefaultRange(card, luaEffect, event);
   const triggerEvent = triggerEventFromCode(luaEffect.code);
-  const value = luaEffectValue(luaEffect);
+  const value = luaEffectValue(luaEffect) ?? materializedDisableFieldOperationValue(card, luaEffect, L, hostState);
   if (!luaEffect.isGlobal) luaEffect.sourceUid = card.uid;
   const duelEffect: DuelEffectDefinition = {
     id: luaEffectDuelId(luaEffect),
@@ -586,6 +586,13 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
 
 function luaEffectValue(luaEffect: LuaEffectRecord): number | undefined {
   return luaEffect.value ?? (luaEffect.code === luaEffectDisableField ? luaEffect.label : undefined);
+}
+
+function materializedDisableFieldOperationValue(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, hostState: LuaHostState): number | undefined {
+  if (luaEffect.code !== luaEffectDisableField || luaEffect.value !== undefined || luaEffect.label !== undefined || luaEffect.operationRef === undefined || hostState.activeContext === undefined) return undefined;
+  const value = withLuaCallbackContext(hostState, hostState.activeContext, luaEffect.id, "operation", () => callLuaEffectOperationNumber(L, hostState, luaEffect, card, luaEffect.operationRef!, hostState.activeContext!));
+  if (value !== undefined) luaEffect.value = value;
+  return value;
 }
 
 function defaultLuaValueDescriptor(luaEffect: LuaEffectRecord): Pick<DuelEffectDefinition, "luaValueDescriptor"> { return luaEffect.code === 30 && luaEffect.valueRef === undefined && (luaEffect.value === undefined || luaEffect.value === 0) ? { luaValueDescriptor: "special-summon-condition:false" } : {}; }
@@ -919,6 +926,25 @@ function callLuaEffectOperation(
   const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
   const status = lua.lua_pcall(L, argCount, 0, 0);
   if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+}
+
+function callLuaEffectOperationNumber(
+  L: unknown,
+  hostState: LuaHostState,
+  luaEffect: LuaEffectRecord,
+  card: DuelCardInstance,
+  operationRef: number,
+  ctx: DuelEffectContext,
+): number | undefined {
+  applyLuaEffectContextLabelObject(L, luaEffect, ctx);
+  lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
+  const legacyArgs = secondParameterName(L, -1) === "c";
+  const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
+  const status = lua.lua_pcall(L, argCount, 1, 0);
+  if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+  const value = lua.lua_isnumber(L, -1) ? readLuaEffectValueNumber(L, -1) : undefined;
+  lua.lua_pop(L, 1);
+  return value;
 }
 
 function callLuaEffectOperationCoroutine(

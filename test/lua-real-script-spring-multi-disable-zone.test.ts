@@ -7,6 +7,7 @@ import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions,
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
@@ -117,7 +118,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
       code: 260,
       sourceUid: spring.uid,
       range: ["spellTrapZone"],
+      value: 31,
     });
+    expect(availableMonsterZoneCount(restored.session, 0, [])).toBe(0);
     expect(restored.host.messages).not.toContain("spring responder resolved");
   });
 });
