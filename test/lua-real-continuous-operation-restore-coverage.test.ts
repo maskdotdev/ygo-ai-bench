@@ -5,6 +5,18 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const continuousOperationFixtureCount = 4;
+const continuousOperationKindCounts = {
+  continuousRedirect: 1,
+  endPhaseControlReturn: 1,
+  originalCodeSummonLock: 1,
+  summonTriggerBackrowDestroy: 1,
+} satisfies Record<ContinuousOperationKind, number>;
+
+type ContinuousOperationKind =
+  | "continuousRedirect"
+  | "endPhaseControlReturn"
+  | "originalCodeSummonLock"
+  | "summonTriggerBackrowDestroy";
 
 describe("Lua real continuous operation restore coverage", () => {
   it("requires continuous operation fixtures to assert clean restore and restored outcomes", () => {
@@ -29,12 +41,21 @@ describe("Lua real continuous operation restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps continuous operation fixture kinds explicit", () => {
+    expect(countContinuousOperationKinds(continuousOperationFixtureFiles())).toEqual(continuousOperationKindCounts);
+  });
 });
 
-function continuousOperationFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function continuousOperationFixtureFiles(): Array<{
+  file: string;
+  kind: ContinuousOperationKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-change-of-heart-control-return.test.ts",
+      kind: "endPhaseControlReturn",
       required: [
         "restores Change of Heart's target, control operation, and End Phase return",
         "temporary-control-return",
@@ -47,6 +68,7 @@ function continuousOperationFixtureFiles(): Array<{ file: string; required: stri
     },
     {
       file: "test/lua-real-script-core-of-chaos-faceup-redirect.test.ts",
+      kind: "continuousRedirect",
       required: [
         "condition:source-faceup",
         "code: 60",
@@ -58,6 +80,7 @@ function continuousOperationFixtureFiles(): Array<{ file: string; required: stri
     },
     {
       file: "test/lua-real-script-dark-magician-destruction-original-code-lock.test.ts",
+      kind: "originalCodeSummonLock",
       required: [
         "target:summon-type-code-any:original:",
         "restored original/current",
@@ -68,6 +91,7 @@ function continuousOperationFixtureFiles(): Array<{ file: string; required: stri
     },
     {
       file: "test/lua-real-script-fenghuang-set-backrow-destroy.test.ts",
+      kind: "summonTriggerBackrowDestroy",
       required: [
         "restoredSummonWindow.missingRegistryKeys).toEqual([])",
         "restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([])",
@@ -80,5 +104,26 @@ function continuousOperationFixtureFiles(): Array<{ file: string; required: stri
         "host.messages).not.toContain",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: ContinuousOperationKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countContinuousOperationKinds(
+  fixtures: Array<{ kind: ContinuousOperationKind }>,
+): Record<ContinuousOperationKind, number> {
+  return fixtures.reduce<Record<ContinuousOperationKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      continuousRedirect: 0,
+      endPhaseControlReturn: 0,
+      originalCodeSummonLock: 0,
+      summonTriggerBackrowDestroy: 0,
+    },
+  );
 }
