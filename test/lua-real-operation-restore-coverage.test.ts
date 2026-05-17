@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 28;
+const operationFixtureCount = 29;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -14,6 +14,7 @@ const operationKindCounts = {
   groupDestroy: 9,
   groupToHand: 1,
   handDiscardDraw: 1,
+  handToDeckDraw: 1,
   releaseDamage: 1,
   searchOrExcavate: 3,
   targetBanishDiscardCost: 1,
@@ -42,6 +43,7 @@ type OperationKind =
   | "groupDestroy"
   | "groupToHand"
   | "handDiscardDraw"
+  | "handToDeckDraw"
   | "releaseDamage"
   | "searchOrExcavate"
   | "targetBanishDiscardCost"
@@ -399,6 +401,18 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-reload-hand-to-deck-draw.test.ts",
+      kind: "handToDeckDraw",
+      required: [
+        "category: 0x10",
+        "category: 0x10000",
+        "targetPlayer",
+        'eventName: "sentToDeck"',
+        'eventName: "cardsDrawn"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-saion-toss-coin-restore.test.ts",
       kind: "tossCoin",
       required: [
@@ -651,6 +665,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       groupDestroy: 0,
       groupToHand: 0,
       handDiscardDraw: 0,
+      handToDeckDraw: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
       targetBanishDiscardCost: 0,
