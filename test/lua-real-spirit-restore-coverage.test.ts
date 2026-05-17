@@ -30,6 +30,74 @@ const spiritKindCounts = {
   spiritSummonDraw: 1,
   trapDisable: 1,
 } satisfies Record<SpiritKind, number>;
+const spiritSemanticVariantCounts = {
+  amanoIwatoNonSpiritActivationLock: 1,
+  aratamaNormalSummonSpiritSearch: 1,
+  darkDustSpiritGroupDestroy: 1,
+  fenghuangSetBackrowDestroy: 1,
+  gishkiEmiliaTrapDisable: 1,
+  gishkiNataliaGraveToDeckTrigger: 1,
+  hanShiKyudoColumnReturn: 1,
+  heboSpiritGrantReturn: 1,
+  ichikiSayoriHimeEffectSummonSearch: 1,
+  izanagiMayNotReturnProcedure: 1,
+  izanamiDiscardGraveyardReturn: 1,
+  kaiDenKendoColumnSendPendulum: 1,
+  kinkaByoRelationReviveBanish: 1,
+  konohanasakuyaProcedureReturn: 1,
+  kuroObiKarateColumnSendPendulum: 1,
+  maharaghiPredrawConfirm: 1,
+  nikitamaExtraSpiritSummon: 1,
+  orbYasakaEquipRecoveryReturn: 1,
+  rasetsuCostReturnBounce: 1,
+  sacredSpiritIceBarrierReturn: 1,
+  sakitamaEffectExtraNormalSummon: 1,
+  shinobaronShadePeacockTributeSearchSelfSummon: 1,
+  shinobaronessPeacockShuffleSummon: 1,
+  shinobaronessShadePeacockSearchSelfSummon: 1,
+  shinobirdCraneSpiritSummonDraw: 1,
+  shinobirdPigeonReturn: 1,
+  spiritualEnergySettleMachineReturnLock: 1,
+  spiritsInvitationPersistentTrapBounce: 1,
+  tsukuyomiPositionTriggerSet: 1,
+  tsumuhaKutsunagiDelayedShuffleDraw: 1,
+  yakshaBackrowReturn: 1,
+  yokoZunaSumoColumnSendPendulum: 1,
+} satisfies Record<SpiritSemanticVariant, number>;
+const spiritSemanticVariantByFile: Record<string, SpiritSemanticVariant> = {
+  "test/lua-real-script-amano-iwato-activation-lock.test.ts": "amanoIwatoNonSpiritActivationLock",
+  "test/lua-real-script-aratama-spirit-search.test.ts": "aratamaNormalSummonSpiritSearch",
+  "test/lua-real-script-dark-dust-spirit-destroy.test.ts": "darkDustSpiritGroupDestroy",
+  "test/lua-real-script-fenghuang-set-backrow-destroy.test.ts": "fenghuangSetBackrowDestroy",
+  "test/lua-real-script-gishki-emilia-trap-disable.test.ts": "gishkiEmiliaTrapDisable",
+  "test/lua-real-script-gishki-natalia-spirit-to-deck.test.ts": "gishkiNataliaGraveToDeckTrigger",
+  "test/lua-real-script-han-shi-kyudo-spirit-column-return.test.ts": "hanShiKyudoColumnReturn",
+  "test/lua-real-script-hebo-spirit-grant-return.test.ts": "heboSpiritGrantReturn",
+  "test/lua-real-script-ichiki-sayori-hime-effect-summon-search.test.ts": "ichikiSayoriHimeEffectSummonSearch",
+  "test/lua-real-script-izanagi-spirit-maynot-return.test.ts": "izanagiMayNotReturnProcedure",
+  "test/lua-real-script-izanami-spirit-grave-return.test.ts": "izanamiDiscardGraveyardReturn",
+  "test/lua-real-script-kai-den-kendo-spirit-column-send.test.ts": "kaiDenKendoColumnSendPendulum",
+  "test/lua-real-script-kinka-byo-relation-banish.test.ts": "kinkaByoRelationReviveBanish",
+  "test/lua-real-script-konohanasakuya-spirit-special-return.test.ts": "konohanasakuyaProcedureReturn",
+  "test/lua-real-script-kuro-obi-karate-spirit-column-send.test.ts": "kuroObiKarateColumnSendPendulum",
+  "test/lua-real-script-maharaghi-predraw.test.ts": "maharaghiPredrawConfirm",
+  "test/lua-real-script-nikitama-extra-spirit-summon.test.ts": "nikitamaExtraSpiritSummon",
+  "test/lua-real-script-orb-yasaka-spirit-equip-return.test.ts": "orbYasakaEquipRecoveryReturn",
+  "test/lua-real-script-rasetsu-spirit-cost-return.test.ts": "rasetsuCostReturnBounce",
+  "test/lua-real-script-sacred-spirit-ice-barrier-return.test.ts": "sacredSpiritIceBarrierReturn",
+  "test/lua-real-script-sakitama-spirit-effect-summon.test.ts": "sakitamaEffectExtraNormalSummon",
+  "test/lua-real-script-shinobaron-shade-peacock-tribute-search-self-summon.test.ts": "shinobaronShadePeacockTributeSearchSelfSummon",
+  "test/lua-real-script-shinobaroness-peacock-shuffle-summon.test.ts": "shinobaronessPeacockShuffleSummon",
+  "test/lua-real-script-shinobaroness-shade-peacock-search-self-summon.test.ts": "shinobaronessShadePeacockSearchSelfSummon",
+  "test/lua-real-script-shinobird-crane-spirit-summon-draw.test.ts": "shinobirdCraneSpiritSummonDraw",
+  "test/lua-real-script-shinobird-pigeon-spirit-return.test.ts": "shinobirdPigeonReturn",
+  "test/lua-real-script-spiritual-energy-settle-machine-return-lock.test.ts": "spiritualEnergySettleMachineReturnLock",
+  "test/lua-real-script-spirits-invitation-return-bounce.test.ts": "spiritsInvitationPersistentTrapBounce",
+  "test/lua-real-script-tsukuyomi-position-trigger.test.ts": "tsukuyomiPositionTriggerSet",
+  "test/lua-real-script-tsumuha-kutsunagi-delayed-shuffle.test.ts": "tsumuhaKutsunagiDelayedShuffleDraw",
+  "test/lua-real-script-yaksha-spirit-backrow-return.test.ts": "yakshaBackrowReturn",
+  "test/lua-real-script-yoko-zuna-sumo-spirit-column-send.test.ts": "yokoZunaSumoColumnSendPendulum",
+};
 
 describe("Lua real Spirit restore coverage", () => {
   it("keeps representative Spirit fixture kinds explicit", () => {
@@ -58,6 +126,19 @@ describe("Lua real Spirit restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps named Spirit semantic variants explicit", () => {
+    expect(countSpiritSemanticVariants(spiritSemanticVariants())).toEqual(spiritSemanticVariantCounts);
+
+    const weak = spiritSemanticVariants()
+      .filter(({ file, requiredSnippets }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 type SpiritKind =
@@ -84,6 +165,39 @@ type SpiritKind =
   | "setBackrowDestroy"
   | "spiritSummonDraw"
   | "trapDisable";
+type SpiritSemanticVariant =
+  | "amanoIwatoNonSpiritActivationLock"
+  | "aratamaNormalSummonSpiritSearch"
+  | "darkDustSpiritGroupDestroy"
+  | "fenghuangSetBackrowDestroy"
+  | "gishkiEmiliaTrapDisable"
+  | "gishkiNataliaGraveToDeckTrigger"
+  | "hanShiKyudoColumnReturn"
+  | "heboSpiritGrantReturn"
+  | "ichikiSayoriHimeEffectSummonSearch"
+  | "izanagiMayNotReturnProcedure"
+  | "izanamiDiscardGraveyardReturn"
+  | "kaiDenKendoColumnSendPendulum"
+  | "kinkaByoRelationReviveBanish"
+  | "konohanasakuyaProcedureReturn"
+  | "kuroObiKarateColumnSendPendulum"
+  | "maharaghiPredrawConfirm"
+  | "nikitamaExtraSpiritSummon"
+  | "orbYasakaEquipRecoveryReturn"
+  | "rasetsuCostReturnBounce"
+  | "sacredSpiritIceBarrierReturn"
+  | "sakitamaEffectExtraNormalSummon"
+  | "shinobaronShadePeacockTributeSearchSelfSummon"
+  | "shinobaronessPeacockShuffleSummon"
+  | "shinobaronessShadePeacockSearchSelfSummon"
+  | "shinobirdCraneSpiritSummonDraw"
+  | "shinobirdPigeonReturn"
+  | "spiritualEnergySettleMachineReturnLock"
+  | "spiritsInvitationPersistentTrapBounce"
+  | "tsukuyomiPositionTriggerSet"
+  | "tsumuhaKutsunagiDelayedShuffleDraw"
+  | "yakshaBackrowReturn"
+  | "yokoZunaSumoColumnSendPendulum";
 
 function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritKind, number> {
   return fixtures.reduce<Record<SpiritKind, number>>(
@@ -628,4 +742,65 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
     },
   ] satisfies Array<{ file: string; kind: SpiritKind; required: string[] }>)
     .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+}
+
+function spiritSemanticVariants(): Array<{
+  file: string;
+  kind: SpiritSemanticVariant;
+  requiredSnippets: string[];
+}> {
+  return realScriptSpiritFixtureFiles().map(({ file, required }) => {
+    const kind = spiritSemanticVariantByFile[file];
+    if (kind === undefined) {
+      throw new Error(`Missing Spirit semantic variant for ${file}`);
+    }
+
+    return {
+      file,
+      kind,
+      requiredSnippets: required,
+    };
+  });
+}
+
+function countSpiritSemanticVariants(
+  fixtures: Array<{ kind: SpiritSemanticVariant }>,
+): Record<SpiritSemanticVariant, number> {
+  return fixtures.reduce<Record<SpiritSemanticVariant, number>>(
+    (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
+    {
+      amanoIwatoNonSpiritActivationLock: 0,
+      aratamaNormalSummonSpiritSearch: 0,
+      darkDustSpiritGroupDestroy: 0,
+      fenghuangSetBackrowDestroy: 0,
+      gishkiEmiliaTrapDisable: 0,
+      gishkiNataliaGraveToDeckTrigger: 0,
+      hanShiKyudoColumnReturn: 0,
+      heboSpiritGrantReturn: 0,
+      ichikiSayoriHimeEffectSummonSearch: 0,
+      izanagiMayNotReturnProcedure: 0,
+      izanamiDiscardGraveyardReturn: 0,
+      kaiDenKendoColumnSendPendulum: 0,
+      kinkaByoRelationReviveBanish: 0,
+      konohanasakuyaProcedureReturn: 0,
+      kuroObiKarateColumnSendPendulum: 0,
+      maharaghiPredrawConfirm: 0,
+      nikitamaExtraSpiritSummon: 0,
+      orbYasakaEquipRecoveryReturn: 0,
+      rasetsuCostReturnBounce: 0,
+      sacredSpiritIceBarrierReturn: 0,
+      sakitamaEffectExtraNormalSummon: 0,
+      shinobaronShadePeacockTributeSearchSelfSummon: 0,
+      shinobaronessPeacockShuffleSummon: 0,
+      shinobaronessShadePeacockSearchSelfSummon: 0,
+      shinobirdCraneSpiritSummonDraw: 0,
+      shinobirdPigeonReturn: 0,
+      spiritualEnergySettleMachineReturnLock: 0,
+      spiritsInvitationPersistentTrapBounce: 0,
+      tsukuyomiPositionTriggerSet: 0,
+      tsumuhaKutsunagiDelayedShuffleDraw: 0,
+      yakshaBackrowReturn: 0,
+      yokoZunaSumoColumnSendPendulum: 0,
+    },
+  );
 }
