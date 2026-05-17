@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 25;
+const spiritFixtureCount = 26;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
@@ -12,6 +12,7 @@ const spiritKindCounts = {
   effectExtraNormalSummon: 2,
   graveToDeckTrigger: 1,
   groupMonsterDestroy: 1,
+  nonSpiritActivationLock: 1,
   normalSummonSearch: 2,
   positionTriggerSet: 1,
   predrawConfirm: 1,
@@ -60,6 +61,7 @@ type SpiritKind =
   | "effectExtraNormalSummon"
   | "graveToDeckTrigger"
   | "groupMonsterDestroy"
+  | "nonSpiritActivationLock"
   | "normalSummonSearch"
   | "positionTriggerSet"
   | "predrawConfirm"
@@ -81,6 +83,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       effectExtraNormalSummon: 0,
       graveToDeckTrigger: 0,
       groupMonsterDestroy: 0,
+      nonSpiritActivationLock: 0,
       normalSummonSearch: 0,
       positionTriggerSet: 0,
       predrawConfirm: 0,
@@ -470,6 +473,20 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         'summonType: "special"',
         'location: "banished"',
         'host.messages).not.toContain("kinka responder resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-amano-iwato-activation-lock.test.ts",
+      kind: "nonSpiritActivationLock",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateEffect"',
+        'action.type === "passChain"',
+        'luaValueDescriptor": "cannot-activate:non-spirit-monster-effect"',
+        'action.uid === blockedMonster!.uid)).toBe(false)',
+        "expect(blocked.ok).toBe(false)",
+        "allowed Spirit resolved",
+        'not.toContain("blocked monster resolved")',
       ],
     },
     {
