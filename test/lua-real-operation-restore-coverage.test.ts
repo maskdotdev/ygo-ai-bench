@@ -73,6 +73,12 @@ const potAndSearchOperationVariantCounts = {
   potProsperitySearchDrawLockDamage: 1,
   reinforcementWarriorSearch: 1,
 } satisfies Record<PotAndSearchOperationVariant, number>;
+const chainNegationOperationVariantCounts = {
+  brokenLineColumnNegateDestroy: 1,
+  darkBribeNegateDestroyDraw: 1,
+  magicJammerDiscardNegateDestroy: 1,
+  pitknightLinkedZoneDisable: 1,
+} satisfies Record<ChainNegationOperationVariant, number>;
 
 type OperationKind =
   | "costBanishDraw"
@@ -139,6 +145,11 @@ type PotAndSearchOperationVariant =
   | "potExtravaganceRandomCostDrawLock"
   | "potProsperitySearchDrawLockDamage"
   | "reinforcementWarriorSearch";
+type ChainNegationOperationVariant =
+  | "brokenLineColumnNegateDestroy"
+  | "darkBribeNegateDestroyDraw"
+  | "magicJammerDiscardNegateDestroy"
+  | "pitknightLinkedZoneDisable";
 
 describe("Lua real operation restore coverage", () => {
   it("requires representative simple spell operations to assert clean Lua registry restore and restored operation metadata", () => {
@@ -188,6 +199,19 @@ describe("Lua real operation restore coverage", () => {
     expect(countPotAndSearchOperationVariants(potAndSearchOperationVariants())).toEqual(potAndSearchOperationVariantCounts);
 
     const weak = potAndSearchOperationVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps chain-negation operation semantic variants explicit", () => {
+    expect(countChainNegationOperationVariants(chainNegationOperationVariants())).toEqual(chainNegationOperationVariantCounts);
+
+    const weak = chainNegationOperationVariants()
       .filter(({ file, required }) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return required.some((snippet) => !hasCoverageSnippet(text, snippet));
@@ -1161,6 +1185,70 @@ function countPotAndSearchOperationVariants(fixtures: Array<{ kind: PotAndSearch
       potExtravaganceRandomCostDrawLock: 0,
       potProsperitySearchDrawLockDamage: 0,
       reinforcementWarriorSearch: 0,
+    },
+  );
+}
+
+function chainNegationOperationVariants(): Array<{ file: string; kind: ChainNegationOperationVariant; required: string[] }> {
+  return ([
+    {
+      file: "test/lua-real-script-broken-line-column-negate.test.ts",
+      kind: "brokenLineColumnNegateDestroy",
+      required: [
+        "restores its bit.extract column check and suppresses the negated Spell activation",
+        "const brokenLineCode = \"88086137\"",
+        "bit.extract column check",
+        "{ category: 0x10000000, targetUids: [upstart.uid], count: 1, player: 0, parameter: 0 }",
+        "eventName: \"chainNegated\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-bribe-negate-draw.test.ts",
+      kind: "darkBribeNegateDestroyDraw",
+      required: [
+        "restores activation negation that destroys the source, draws for the opponent, and suppresses the negated Spell",
+        "const darkBribeCode = \"77538567\"",
+        "{ category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 }",
+        "eventName: \"cardsDrawn\"",
+        "eventName: \"chainDisabled\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-magic-jammer-chain-negate.test.ts",
+      kind: "magicJammerDiscardNegateDestroy",
+      required: [
+        "restores a Counter Trap response that discards, negates, destroys, and suppresses the Spell operation",
+        "const magicJammerCode = \"77414722\"",
+        "eventName: \"discarded\"",
+        "{ category: 0x10000000, targetUids: [upstart!.uid], count: 1, player: 0, parameter: 0 }",
+        "eventName: \"chainDisabled\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pitknight-earlie-linked-chain-disable.test.ts",
+      kind: "pitknightLinkedZoneDisable",
+      required: [
+        "restores its bit.extract linked-zone chain condition and disables the selected monster",
+        "const pitknightCode = \"47759571\"",
+        "bit.extract linked-zone chain condition",
+        "targetUids: [starter.uid]",
+        "currentAttack(restoredStarter, restoredPendingResolution.session.state)).toBe(0)",
+      ],
+    },
+  ] satisfies Array<{ file: string; kind: ChainNegationOperationVariant; required: string[] }>).sort((a, b) => a.kind.localeCompare(b.kind));
+}
+
+function countChainNegationOperationVariants(fixtures: Array<{ kind: ChainNegationOperationVariant }>): Record<ChainNegationOperationVariant, number> {
+  return fixtures.reduce<Record<ChainNegationOperationVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      brokenLineColumnNegateDestroy: 0,
+      darkBribeNegateDestroyDraw: 0,
+      magicJammerDiscardNegateDestroy: 0,
+      pitknightLinkedZoneDisable: 0,
     },
   );
 }
