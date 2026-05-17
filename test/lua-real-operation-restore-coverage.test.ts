@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 17;
+const operationFixtureCount = 18;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
-  groupDestroy: 8,
+  groupDestroy: 9,
   releaseDamage: 1,
   searchOrExcavate: 3,
   tossCoin: 1,
@@ -174,6 +174,18 @@ function operationFixtureFiles(): Array<{
         "sortedUids([opponentTrap!.uid, opponentSpell!.uid])",
         'eventName: "destroyed"',
         'location: "spellTrapZone"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hammer-shot-max-attack-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "category: 0x1",
+        "ownHighAttack!.uid",
+        "Hammer Shot Own High Attack Target",
+        'eventName: "destroyed"',
         'location: "graveyard"',
         "host.messages).not.toContain",
       ],
