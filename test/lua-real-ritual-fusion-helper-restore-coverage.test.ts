@@ -167,6 +167,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'eventName === "specialSummoned"',
         'eventName === "banished"',
         "location: \"banished\", reason: duelReason.material | duelReason.ritual",
+        'expect(restored.host.messages).not.toContain("chaos form responder resolved")',
       ],
     },
     {
