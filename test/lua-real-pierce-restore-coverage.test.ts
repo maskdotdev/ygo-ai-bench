@@ -4,24 +4,27 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const PIERCING_FIXTURE_COUNT = 3;
+const PIERCING_FIXTURE_COUNT = 4;
 const piercingKindCounts = {
   equipPierce: 1,
   fieldPierce: 1,
   raceTargetedFieldPierce: 1,
+  singleMonsterPierce: 1,
 } satisfies Record<PiercingKind, number>;
 const piercingSemanticVariantCounts = {
   ancientGearGolemFieldPierce: 1,
   enragedBattleOxRaceTargetedPierce: 1,
   fairyMeteorCrushEquipPierce: 1,
+  lancerDragonuteSingleMonsterPierce: 1,
 } satisfies Record<PiercingSemanticVariant, number>;
 
-type PiercingKind = "equipPierce" | "fieldPierce" | "raceTargetedFieldPierce";
+type PiercingKind = "equipPierce" | "fieldPierce" | "raceTargetedFieldPierce" | "singleMonsterPierce";
 
 type PiercingSemanticVariant =
   | "ancientGearGolemFieldPierce"
   | "enragedBattleOxRaceTargetedPierce"
-  | "fairyMeteorCrushEquipPierce";
+  | "fairyMeteorCrushEquipPierce"
+  | "lancerDragonuteSingleMonsterPierce";
 
 describe("Lua real piercing damage restore coverage", () => {
   it("requires piercing damage fixtures to assert clean Lua registry restore and restored damage semantics", () => {
@@ -110,6 +113,18 @@ function piercingFixtureFiles(): Array<{
         'eventName === "battleDamageDealt" && event.eventPlayer === 1)).toEqual([])',
       ],
     },
+    {
+      file: "test/lua-real-script-lancer-dragonute-pierce.test.ts",
+      kind: "singleMonsterPierce",
+      required: [
+        "code: 203",
+        'registryKey: "lua:11125718:lua-1-203"',
+        "battleDamage).toEqual({ 0: 0, 1: 500 })",
+        "players[1].lifePoints).toBe(7500)",
+        'eventName: "battleDamageDealt"',
+        "eventReason: duelReason.battle",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: PiercingKind;
@@ -127,6 +142,7 @@ function countPiercingKinds(fixtures: Array<{ kind: PiercingKind }>): Record<Pie
       equipPierce: 0,
       fieldPierce: 0,
       raceTargetedFieldPierce: 0,
+      singleMonsterPierce: 0,
     },
   );
 }
@@ -173,6 +189,18 @@ function piercingSemanticVariants(): Array<{
         "battleDamage).toEqual({ 0: 0, 1: 800 })",
       ],
     },
+    {
+      file: "test/lua-real-script-lancer-dragonute-pierce.test.ts",
+      kind: "lancerDragonuteSingleMonsterPierce",
+      required: [
+        'const lancerCode = "11125718"',
+        "restores pure single-monster piercing battle damage",
+        'registryKey: "lua:11125718:lua-1-203"',
+        "battleDamage).toEqual({ 0: 0, 1: 500 })",
+        "players[1].lifePoints).toBe(7500)",
+        "eventReason: duelReason.battle",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: PiercingSemanticVariant;
@@ -190,6 +218,7 @@ function countPiercingSemanticVariants(fixtures: Array<{ kind: PiercingSemanticV
       ancientGearGolemFieldPierce: 0,
       enragedBattleOxRaceTargetedPierce: 0,
       fairyMeteorCrushEquipPierce: 0,
+      lancerDragonuteSingleMonsterPierce: 0,
     },
   );
 }
