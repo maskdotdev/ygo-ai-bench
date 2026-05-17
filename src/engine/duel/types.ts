@@ -904,6 +904,17 @@ export interface ScriptedFixtureDraw {
   relatedEffectId?: number;
 }
 
+export interface ScriptedFixtureLifePointChange {
+  player: PlayerId;
+  amount: number;
+  eventIsLast?: boolean;
+  eventReason?: number;
+  eventReasonPlayer?: PlayerId;
+  eventReasonCardUid?: string;
+  eventReasonEffectId?: number;
+  relatedEffectId?: number;
+}
+
 export interface ScriptedFixtureCardSelector {
   player: PlayerId;
   code: string;
@@ -967,6 +978,8 @@ export interface ScriptedFixtureEffect {
   targetCardsOnActivation?: ScriptedFixtureCardSelector[];
   collectEventsOnResolve?: ScriptedFixtureEvent[];
   drawCardsOnResolve?: ScriptedFixtureDraw[];
+  damagePlayerOnResolve?: ScriptedFixtureLifePointChange[];
+  recoverPlayerOnResolve?: ScriptedFixtureLifePointChange[];
   moveCardsOnResolve?: ScriptedFixtureMove[];
   occurrence?: number;
 }

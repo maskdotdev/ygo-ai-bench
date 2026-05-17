@@ -3,6 +3,7 @@ import {
   applyResponse,
   collectDuelTriggerEffects,
   createDuel,
+  damageDuelPlayer,
   drawDuelCards,
   getGroupedDuelLegalActions,
   getLegalActions,
@@ -13,6 +14,7 @@ import {
   queryPublicState,
   registerEffect,
   restoreDuel,
+  recoverDuelPlayer,
   serializeDuel,
   startDuel,
   type CreateDuelOptions,
@@ -59,6 +61,7 @@ import type {
   ScriptedFixtureDraw,
   ScriptedFixtureEvent,
   ScriptedFixtureEffect,
+  ScriptedFixtureLifePointChange,
   ScriptedFixtureMove,
   ScriptedLegalActionGroupExpectation,
   ScriptedLegalActionExpectation,
@@ -763,6 +766,22 @@ function createFixtureEffectDefinition(effect: ScriptedFixtureEffect, sourceUid:
         if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
         operationMoved = drawDuelCards(ctx.duel, draw.player, draw.count, draw.detail ?? "Fixture draw", fixtureDrawEventPayload(draw)) > 0 || operationMoved;
       }
+      for (const damage of effect.damagePlayerOnResolve ?? []) {
+        if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
+        const applied = damageDuelPlayer(ctx.duel, damage.player, damage.amount, damage.eventReason ?? duelReason.effect);
+        if (applied > 0 && ctx.duel.status !== "ended") {
+          collectDuelTriggerEffects(ctx.duel, "damageDealt", undefined, { eventPlayer: damage.player, eventValue: applied, ...fixtureLifePointEventPayload(damage) });
+          operationMoved = true;
+        }
+      }
+      for (const recover of effect.recoverPlayerOnResolve ?? []) {
+        if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
+        const applied = recoverDuelPlayer(ctx.duel, recover.player, recover.amount);
+        if (applied > 0) {
+          collectDuelTriggerEffects(ctx.duel, "recoveredLifePoints", undefined, { eventPlayer: recover.player, eventValue: applied, ...fixtureLifePointEventPayload(recover) });
+          operationMoved = true;
+        }
+      }
       for (const move of effect.moveCardsOnResolve ?? []) {
         if (timingBoundaryStart !== undefined) markFixtureOperationTimingBoundary(ctx.duel, timingBoundaryStart, operationMoved);
         if (move.occurrence !== undefined && !isSafeCount(move.occurrence)) throw new Error(`Fixture effect move ${move.code} for player ${move.player} has malformed occurrence ${move.occurrence}`);
@@ -912,6 +931,17 @@ function fixtureDrawEventPayload(draw: ScriptedFixtureDraw) {
     ...(draw.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: draw.eventReasonCardUid }),
     ...(draw.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: draw.eventReasonEffectId }),
     ...(draw.relatedEffectId === undefined ? {} : { relatedEffectId: draw.relatedEffectId }),
+  };
+}
+
+function fixtureLifePointEventPayload(change: ScriptedFixtureLifePointChange) {
+  return {
+    ...(change.eventIsLast === undefined ? {} : { eventIsLast: change.eventIsLast }),
+    ...(change.eventReason === undefined ? {} : { eventReason: change.eventReason }),
+    ...(change.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: change.eventReasonPlayer }),
+    ...(change.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: change.eventReasonCardUid }),
+    ...(change.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: change.eventReasonEffectId }),
+    ...(change.relatedEffectId === undefined ? {} : { relatedEffectId: change.relatedEffectId }),
   };
 }
 

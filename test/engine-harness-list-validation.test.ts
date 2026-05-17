@@ -371,6 +371,8 @@ describe("EDOPro compatibility harness list validation", () => {
           targetCardsOnActivation: "target" as never,
           collectEventsOnResolve: { collectEvent: "sentToGraveyard" } as never,
           drawCardsOnResolve: 1 as never,
+          damagePlayerOnResolve: "damage" as never,
+          recoverPlayerOnResolve: 2 as never,
           moveCardsOnResolve: false as never,
         }],
       },
@@ -385,6 +387,8 @@ describe("EDOPro compatibility harness list validation", () => {
       { fixture: "malformed setup effect list fixture", message: "Setup effect effect targetCardsOnActivation has malformed value target" },
       { fixture: "malformed setup effect list fixture", message: "Setup effect effect collectEventsOnResolve has malformed value [object Object]" },
       { fixture: "malformed setup effect list fixture", message: "Setup effect effect drawCardsOnResolve has malformed value 1" },
+      { fixture: "malformed setup effect list fixture", message: "Setup effect effect damagePlayerOnResolve has malformed value damage" },
+      { fixture: "malformed setup effect list fixture", message: "Setup effect effect recoverPlayerOnResolve has malformed value 2" },
       { fixture: "malformed setup effect list fixture", message: "Setup effect effect moveCardsOnResolve has malformed value false" },
     ]);
   });

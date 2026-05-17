@@ -1,6 +1,6 @@
 import { isCardPosition, isDuelEffectEvent } from "#duel/card-kinds.js";
 import { isDuelEventName } from "#duel/event-names.js";
-import type { DuelEffectDefinition, DuelEventCardState, ScriptedFixtureCardSelector, ScriptedFixtureDraw, ScriptedFixtureEffect, ScriptedFixtureEvent, ScriptedFixtureMove } from "#duel/types.js";
+import type { DuelEffectDefinition, DuelEventCardState, ScriptedFixtureCardSelector, ScriptedFixtureDraw, ScriptedFixtureEffect, ScriptedFixtureEvent, ScriptedFixtureLifePointChange, ScriptedFixtureMove } from "#duel/types.js";
 import type { ParityFailure } from "./parity.js";
 import { isRecord, isSafeBoolean, isSafeCount, isSafeLocationKey, isSafePlayerId, isSafeString } from "./parity-validation.js";
 
@@ -9,12 +9,13 @@ const ACTIVATION_CHAINS = new Set<NonNullable<ScriptedFixtureEffect["activationC
 const EFFECT_KEYS = [
   "id", "player", "code", "location", "event", "effectCode", "luaTypeFlags", "value", "valueCardCode", "targetCardCode", "targetRange", "triggerEvent", "triggerCode", "triggerTiming",
   "eventCardCode", "optional", "range", "oncePerTurn", "property", "activationChain", "logMessage", "negateChainEffectOnResolve", "negateAttackOnResolve", "negateSummonOnResolve",
-  "chainLimitOnTarget", "targetCardsOnActivation", "collectEventsOnResolve", "drawCardsOnResolve", "moveCardsOnResolve", "occurrence",
+  "chainLimitOnTarget", "targetCardsOnActivation", "collectEventsOnResolve", "drawCardsOnResolve", "damagePlayerOnResolve", "recoverPlayerOnResolve", "moveCardsOnResolve", "occurrence",
 ];
 const CARD_SELECTOR_KEYS = ["player", "code", "location", "occurrence"];
 const EVENT_KEYS = ["collectEvent", "eventCard", "eventCode", "eventIsLast", "eventPlayer", "eventValue", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId", "eventChainDepth", "eventChainLinkId", "eventUids", "eventPreviousState", "eventCurrentState"];
 const EVENT_CARD_STATE_KEYS = new Set(["controller", "location", "sequence", "position", "faceUp"]);
 const DRAW_KEYS = ["player", "count", "detail", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId"];
+const LIFE_POINT_KEYS = ["player", "amount", "eventIsLast", "eventReason", "eventReasonPlayer", "eventReasonCardUid", "eventReasonEffectId", "relatedEffectId"];
 const MOVE_KEYS = ["player", "code", "from", "to", "controller", "position", "occurrence", "moveReason", "moveReasonPlayer", "collectEvent", ...EVENT_KEYS.slice(2)];
 const CHAIN_LIMIT_KEYS = ["untilChainEnd", "allowPlayer"];
 
@@ -33,10 +34,14 @@ export function malformedFixtureEffectListExpectations(effect: ScriptedFixtureEf
   assertEffectList("targetCardsOnActivation", effect.targetCardsOnActivation, failures);
   assertEffectList("collectEventsOnResolve", effect.collectEventsOnResolve, failures);
   assertEffectList("drawCardsOnResolve", effect.drawCardsOnResolve, failures);
+  assertEffectList("damagePlayerOnResolve", effect.damagePlayerOnResolve, failures);
+  assertEffectList("recoverPlayerOnResolve", effect.recoverPlayerOnResolve, failures);
   assertEffectList("moveCardsOnResolve", effect.moveCardsOnResolve, failures);
   assertCardSelectorList("targetCardsOnActivation", effect.targetCardsOnActivation, failures);
   assertEventList("collectEventsOnResolve", effect.collectEventsOnResolve, failures);
   assertDrawList("drawCardsOnResolve", effect.drawCardsOnResolve, failures);
+  assertLifePointList("damagePlayerOnResolve", effect.damagePlayerOnResolve, failures);
+  assertLifePointList("recoverPlayerOnResolve", effect.recoverPlayerOnResolve, failures);
   assertMoveList("moveCardsOnResolve", effect.moveCardsOnResolve, failures);
   return failures;
 }
@@ -186,6 +191,30 @@ function assertDraw(description: string, draw: Partial<ScriptedFixtureDraw>, fai
   if (draw.eventReasonEffectId !== undefined && !Number.isSafeInteger(draw.eventReasonEffectId)) failures.push(`${description}.eventReasonEffectId has malformed value ${String(draw.eventReasonEffectId)}`);
   if (draw.relatedEffectId !== undefined && !Number.isSafeInteger(draw.relatedEffectId)) failures.push(`${description}.relatedEffectId has malformed value ${String(draw.relatedEffectId)}`);
   for (const key of Object.keys(draw)) if (!DRAW_KEYS.includes(key)) failures.push(`${description} has malformed key ${key}`);
+}
+
+function assertLifePointList(name: string, value: unknown, failures: string[]): void {
+  if (!Array.isArray(value)) return;
+  for (const [index, change] of value.entries()) {
+    const description = `${name}[${index}]`;
+    if (!isRecord(change)) {
+      failures.push(`${description} has malformed value ${String(change)}`);
+      continue;
+    }
+    assertLifePointChange(description, change as Partial<ScriptedFixtureLifePointChange>, failures);
+  }
+}
+
+function assertLifePointChange(description: string, change: Partial<ScriptedFixtureLifePointChange>, failures: string[]): void {
+  if (!isSafePlayerId(change.player as never)) failures.push(`${description}.player has malformed player ${String(change.player)}`);
+  if (!isSafeCount(change.amount as never) || change.amount === 0) failures.push(`${description}.amount has malformed value ${String(change.amount)}`);
+  if (change.eventIsLast !== undefined && !isSafeBoolean(change.eventIsLast)) failures.push(`${description}.eventIsLast has malformed value ${String(change.eventIsLast)}`);
+  if (change.eventReason !== undefined && !Number.isSafeInteger(change.eventReason)) failures.push(`${description}.eventReason has malformed value ${String(change.eventReason)}`);
+  if (change.eventReasonPlayer !== undefined && !isSafePlayerId(change.eventReasonPlayer)) failures.push(`${description}.eventReasonPlayer has malformed player ${String(change.eventReasonPlayer)}`);
+  if (change.eventReasonCardUid !== undefined && !isSafeString(change.eventReasonCardUid)) failures.push(`${description}.eventReasonCardUid has malformed value ${String(change.eventReasonCardUid)}`);
+  if (change.eventReasonEffectId !== undefined && !Number.isSafeInteger(change.eventReasonEffectId)) failures.push(`${description}.eventReasonEffectId has malformed value ${String(change.eventReasonEffectId)}`);
+  if (change.relatedEffectId !== undefined && !Number.isSafeInteger(change.relatedEffectId)) failures.push(`${description}.relatedEffectId has malformed value ${String(change.relatedEffectId)}`);
+  for (const key of Object.keys(change)) if (!LIFE_POINT_KEYS.includes(key)) failures.push(`${description} has malformed key ${key}`);
 }
 
 function assertMoveList(name: string, value: unknown, failures: string[]): void {
