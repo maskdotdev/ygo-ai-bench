@@ -5,6 +5,18 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const damageStepStatFixtureCount = 4;
+const damageStepStatKindCounts = {
+  activatedDamageStepBoost: 1,
+  labelObjectCostBoost: 1,
+  mandatoryPreDamageBoost: 1,
+  persistentDamageStepDebuff: 1,
+} satisfies Record<DamageStepStatKind, number>;
+
+type DamageStepStatKind =
+  | "activatedDamageStepBoost"
+  | "labelObjectCostBoost"
+  | "mandatoryPreDamageBoost"
+  | "persistentDamageStepDebuff";
 
 describe("Lua real damage-step stat restore coverage", () => {
   it("requires damage-step stat fixtures to assert clean restore and restored battle outcome", () => {
@@ -31,12 +43,21 @@ describe("Lua real damage-step stat restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps damage-step stat fixture kinds explicit", () => {
+    expect(countDamageStepStatKinds(damageStepStatFixtureFiles())).toEqual(damageStepStatKindCounts);
+  });
 });
 
-function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function damageStepStatFixtureFiles(): Array<{
+  file: string;
+  kind: DamageStepStatKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+      kind: "activatedDamageStepBoost",
       required: [
         "expectCleanRestore(restoredSetup)",
         "expectCleanRestore(restoredDamageStep)",
@@ -49,6 +70,7 @@ function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] 
     },
     {
       file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
+      kind: "labelObjectCostBoost",
       required: [
         "restoredSetup.missingRegistryKeys).toEqual([])",
         "restoredSetup.missingChainLimitRegistryKeys).toEqual([])",
@@ -67,6 +89,7 @@ function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] 
     },
     {
       file: "test/lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
+      kind: "persistentDamageStepDebuff",
       required: [
         "expectCleanRestore(restoredSetup)",
         "expectCleanRestore(restoredDamageStep)",
@@ -81,6 +104,7 @@ function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] 
     },
     {
       file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
+      kind: "mandatoryPreDamageBoost",
       required: [
         "triggerEvent: \"beforeDamageCalculation\"",
         "eventName: \"beforeDamageCalculation\"",
@@ -90,5 +114,26 @@ function damageStepStatFixtureFiles(): Array<{ file: string; required: string[] 
         "finishBattle(restored.session)",
       ],
     },
-  ];
+  ] satisfies Array<{
+    file: string;
+    kind: DamageStepStatKind;
+    required: string[];
+  }>);
+}
+
+function countDamageStepStatKinds(
+  fixtures: Array<{ kind: DamageStepStatKind }>,
+): Record<DamageStepStatKind, number> {
+  return fixtures.reduce<Record<DamageStepStatKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      activatedDamageStepBoost: 0,
+      labelObjectCostBoost: 0,
+      mandatoryPreDamageBoost: 0,
+      persistentDamageStepDebuff: 0,
+    },
+  );
 }
