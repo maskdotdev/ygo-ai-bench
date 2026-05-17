@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 7;
+const controlFixtureCount = 8;
 const controlKindCounts = {
   cannotChangeControl: 1,
   equipControl: 1,
+  flipSetControl: 1,
   releaseCostControl: 1,
   restrictedTemporaryControl: 2,
   swapControlLock: 1,
@@ -17,6 +18,7 @@ const controlSemanticVariantCounts = {
   brainControlLpCostReturn: 1,
   changeHeartTemporaryReturn: 1,
   creatureSwapControlLock: 1,
+  dharcFlipSetControl: 1,
   enemyControllerReleaseControl: 1,
   matazaCannotChangeControl: 1,
   mindControlRestrictions: 1,
@@ -26,6 +28,7 @@ const controlSemanticVariantCounts = {
 type ControlKind =
   | "cannotChangeControl"
   | "equipControl"
+  | "flipSetControl"
   | "releaseCostControl"
   | "restrictedTemporaryControl"
   | "swapControlLock"
@@ -35,6 +38,7 @@ type ControlSemanticVariant =
   | "brainControlLpCostReturn"
   | "changeHeartTemporaryReturn"
   | "creatureSwapControlLock"
+  | "dharcFlipSetControl"
   | "enemyControllerReleaseControl"
   | "matazaCannotChangeControl"
   | "mindControlRestrictions"
@@ -110,6 +114,17 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-dharc-flip-set-control.test.ts",
+      kind: "flipSetControl",
+      required: [
+        'const dharcCode = "19327348"',
+        "restores Dharc's targeted flip control effect and persistent EFFECT_SET_CONTROL handoff",
+        'action.type === "activateTrigger" && action.uid === dharc.uid',
+        "eventName: \"controlChanged\"",
+        "dharcCardTargets(restoredChain.session, dharc.uid)).toContain(darkTarget.uid)",
+      ],
+    },
+    {
       file: "lua-real-script-enemy-controller-control-cost.test.ts",
       kind: "releaseCostControl",
       required: [
@@ -173,6 +188,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
     {
       cannotChangeControl: 0,
       equipControl: 0,
+      flipSetControl: 0,
       releaseCostControl: 0,
       restrictedTemporaryControl: 0,
       swapControlLock: 0,
@@ -218,6 +234,17 @@ function realScriptControlSemanticVariants(): Array<{
         "targetUids ?? []).toEqual([])",
         "eventUids: [ownMonster!.uid, opponentMonster!.uid]",
         "creature swap position probe false/false",
+      ],
+    },
+    {
+      file: "lua-real-script-dharc-flip-set-control.test.ts",
+      kind: "dharcFlipSetControl",
+      required: [
+        'const dharcCode = "19327348"',
+        "restores Dharc's targeted flip control effect and persistent EFFECT_SET_CONTROL handoff",
+        "EFFECT_SET_CONTROL",
+        "eventName: \"controlChanged\"",
+        "duelReason.effect",
       ],
     },
     {
@@ -282,6 +309,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       brainControlLpCostReturn: 0,
       changeHeartTemporaryReturn: 0,
       creatureSwapControlLock: 0,
+      dharcFlipSetControl: 0,
       enemyControllerReleaseControl: 0,
       matazaCannotChangeControl: 0,
       mindControlRestrictions: 0,

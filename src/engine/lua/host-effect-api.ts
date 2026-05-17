@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
 import { duelLocations } from "#duel/location-kinds.js";
+import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { locationsFromMask, positionMaskFromPosition, readCardUid, readGroupUids, readTableNumberField } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
@@ -12,6 +13,8 @@ import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js
 import { knownLuaEffectValueDescriptor } from "#lua/effect-value-descriptor.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
+import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
+import { applyLuaContinuousSetControlEffects } from "#lua/duel-api/move-control.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { readLuaError, runLuaPromptCoroutineFromStack } from "#lua/host-script-api.js";
@@ -21,14 +24,15 @@ import { activeTypeFlags, canUseLuaEffectCount, clearLuaEffectCountUsage, effect
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaHostState, LuaPromptCoroutineResult } from "#lua/host-types.js";
 const { lua, lauxlib, to_luastring } = fengari;
-const luaEffectTypeSingle = 0x1, luaEffectTypeField = 0x2, luaResetEvent = 0x1000, luaResetToField = 0x1000000;
+const luaEffectTypeSingle = 0x1, luaEffectTypeField = 0x2, luaEffectTypeFlip = 0x20, luaResetEvent = 0x1000, luaResetToField = 0x1000000;
+const luaEventFlip = 1001;
 const luaEffectSummonProc = 32, luaEffectLimitSummonProc = 33, luaEffectSpecialSummonProc = 34, luaEffectFusionSubstitute = 234, luaEffectDisableField = 260;
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
     const id = nextLuaEffectId(hostState);
     const sourceUid = readCardUid(state, 1);
-    hostState.effects.set(id, { id, typeFlags: 0, ...(sourceUid === undefined ? {} : { sourceUid }) });
+    hostState.effects.set(id, { id, typeFlags: 0, ...(sourceUid === undefined ? {} : { sourceUid, ownerUid: sourceUid }) });
     pushLuaEffectTable(state, id, hostState);
     return 1;
   });
@@ -95,11 +99,12 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 1;
   });
   pushEffectMethod(L, effects, "GetOwner", (state, effect) => {
-    if (!effect.sourceUid) {
+    const ownerUid = effect.ownerUid ?? effect.sourceUid;
+    if (!ownerUid) {
       lua.lua_pushnil(state);
       return 1;
     }
-    pushCardTable(state, effect.sourceUid);
+    pushCardTable(state, ownerUid);
     return 1;
   });
   pushEffectMethod(L, effects, "GetActivateLocation", (state, effect) => {
@@ -463,7 +468,8 @@ function getEffectFunctionField(field: "conditionRef" | "costRef" | "targetRef" 
 export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, L: unknown, hostState: LuaHostState): DuelEffectDefinition {
   const event = luaEffectEvent(card, luaEffect);
   const range = luaEffect.range ?? luaEffectDefaultRange(card, luaEffect, event);
-  const triggerEvent = triggerEventFromCode(luaEffect.code);
+  const triggerCode = luaEffectTriggerCode(luaEffect);
+  const triggerEvent = triggerEventFromCode(triggerCode);
   const value = luaEffectValue(luaEffect) ?? materializedDisableFieldOperationValue(card, luaEffect, L, hostState);
   if (!luaEffect.isGlobal) luaEffect.sourceUid = card.uid;
   const duelEffect: DuelEffectDefinition = {
@@ -481,8 +487,8 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.valueDescriptor === undefined ? defaultLuaValueDescriptor(luaEffect) : { luaValueDescriptor: luaEffect.valueDescriptor }),
     ...(luaEffect.targetDescriptor === undefined ? {} : { luaTargetDescriptor: luaEffect.targetDescriptor }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
-    ...(triggerEvent !== undefined && shouldKeepTriggerCode(triggerEvent, luaEffect.code) ? { triggerCode: luaEffect.code } : {}),
-    ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent, luaEffect.code) ? { triggerSourceOnly: true } : {}),
+    ...(triggerEvent !== undefined && shouldKeepTriggerCode(triggerEvent, triggerCode) ? { triggerCode } : {}),
+    ...(event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEvent, triggerCode) ? { triggerSourceOnly: true } : {}),
     ...(event === "trigger" ? { optional: luaEffectTriggerIsOptional(luaEffect.typeFlags) } : {}),
     ...(triggerEvent === undefined ? {} : { triggerTiming: luaEffectTriggerTiming(luaEffect) }),
     range,
@@ -527,6 +533,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
         if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
         if (ctx.chainLink?.effectLabels !== undefined) luaEffect.labels = [...ctx.chainLink.effectLabels];
         callLuaEffectOperation(L, hostState, luaEffect, event === "summonProcedure" && ctx.source !== undefined ? ctx.source : card, operationRef, ctx, readLuaError);
+        if (applyLuaContinuousSetControlEffects(hostState.session, ctx.player, luaEffectReasonPayload(hostState, duelReason.effect, ctx.player))) hostState.activeOperationMoved = true;
         ctx.log("Lua effect operation resolved");
       });
     },
@@ -550,7 +557,7 @@ function defaultLuaValueDescriptor(luaEffect: LuaEffectRecord): Pick<DuelEffectD
 
 function luaEffectEvent(card: DuelCardInstance, luaEffect: LuaEffectRecord): DuelEffectDefinition["event"] {
   const { typeFlags, code } = luaEffect;
-  const triggerEvent = triggerEventFromCode(code);
+  const triggerEvent = triggerEventFromCode(luaEffectTriggerCode(luaEffect));
   if (code === luaEffectSpecialSummonProc) return "summonProcedure";
   if (code === 1027 && (typeFlags & 0x800) !== 0) return "continuous";
   if (code === 1027 && ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0)) return "trigger";
@@ -611,7 +618,7 @@ function luaEffectEvent(card: DuelCardInstance, luaEffect: LuaEffectRecord): Due
     code === 402
   )
     return "continuous";
-  if ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
+  if ((typeFlags & luaEffectTypeFlip) !== 0 || (typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) return "trigger";
   if ((typeFlags & 0x100) !== 0 || (typeFlags & 0x400) !== 0) return "quick";
   if ((typeFlags & 0x2) !== 0) return "continuous";
   if ((typeFlags & 0x800) !== 0) return "continuous";
@@ -627,8 +634,8 @@ function isSummonAttemptTriggerEvent(event: DuelEffectDefinition["triggerEvent"]
 }
 
 function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecord, event: DuelEffectDefinition["event"]): DuelLocation[] {
-  if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code), luaEffect.code)) return [...duelLocations];
-  if (event === "continuous" && luaEffectIsSourceOnlyContinuousEvent(luaEffect.typeFlags, triggerEventFromCode(luaEffect.code))) return [...duelLocations];
+  if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffectTriggerCode(luaEffect)), luaEffectTriggerCode(luaEffect))) return [...duelLocations];
+  if (event === "continuous" && luaEffectIsSourceOnlyContinuousEvent(luaEffect.typeFlags, triggerEventFromCode(luaEffectTriggerCode(luaEffect)))) return [...duelLocations];
   if (event === "continuous" && (luaEffect.typeFlags & 0x4) !== 0) return ["spellTrapZone"];
   if (event === "continuous" && shouldSurviveLuaSingleEffectEnteringField(card, luaEffect)) return [...duelLocations];
   if (event === "continuous" && luaEffect.code === luaEffectFusionSubstitute) return [...duelLocations];
@@ -663,7 +670,7 @@ function shouldKeepTriggerCode(triggerEvent: DuelEventName, code: number | undef
 function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEventName | undefined, triggerCode: number | undefined): boolean {
   return (
     (typeFlags & 0x1) !== 0 &&
-    ((typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) &&
+    ((typeFlags & luaEffectTypeFlip) !== 0 || (typeFlags & 0x80) !== 0 || (typeFlags & 0x200) !== 0) &&
     (triggerEvent === "attackDeclared" ||
       triggerEvent === "attackDisabled" ||
       triggerEvent === "banished" ||
@@ -720,10 +727,15 @@ function luaEffectIsSourceOnlyContinuousEvent(typeFlags: number, triggerEvent: D
 }
 
 function luaEffectTriggerIsOptional(typeFlags: number): boolean {
+  if ((typeFlags & luaEffectTypeFlip) !== 0) return false;
   return (typeFlags & 0x200) === 0;
 }
 
 function luaEffectTriggerTiming(luaEffect: LuaEffectRecord): "if" | "when" { return (luaEffect.property ?? 0) & 0x10000 ? "if" : "when"; }
+
+function luaEffectTriggerCode(luaEffect: LuaEffectRecord): number | undefined {
+  return (luaEffect.typeFlags & luaEffectTypeFlip) !== 0 && luaEffect.code === undefined ? luaEventFlip : luaEffect.code;
+}
 
 function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, kind: LuaEffectCallbackKind, legacyArgs: boolean, ctx?: DuelEffectContext): number {
   const chainLink = luaEffect.code === 1027 ? hostState.session.state.chain[hostState.session.state.chain.length - 1] : undefined;

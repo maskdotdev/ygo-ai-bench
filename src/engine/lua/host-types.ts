@@ -107,6 +107,7 @@ export interface LuaEffectRecord {
   id: number;
   typeFlags: number;
   sourceUid?: string;
+  ownerUid?: string;
   isGlobal?: boolean;
   ownerPlayer?: PlayerId;
   code?: number;

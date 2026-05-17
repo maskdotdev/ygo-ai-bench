@@ -5,6 +5,7 @@ export interface LuaCardApiEffectRecord {
   id: number;
   typeFlags?: number;
   sourceUid?: string;
+  ownerUid?: string;
   ownerPlayer?: PlayerId;
   code?: number;
   property?: number;
