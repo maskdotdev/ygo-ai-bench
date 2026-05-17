@@ -101,7 +101,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
       }
     `);
 
-    const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    const snapshot = serializeDuel(session);
+    const restored = restoreDuelWithLuaScripts(snapshot, workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
@@ -114,11 +115,24 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     expect(actions.some((action) => action.type === "synchroSummon" && action.uid === synchro!.uid)).toBe(false);
     expect(actions.some((action) => action.type === "xyzSummon" && action.uid === xyz!.uid)).toBe(false);
     expect(actions.some((action) => action.type === "linkSummon" && action.uid === link!.uid)).toBe(false);
+    expect(actions.find((action) => action.type === "ritualSummon" && action.uid === ritual!.uid)).toMatchObject({
+      type: "ritualSummon",
+      materialUids: [cheatah!.uid, freeMaterial!.uid],
+    });
     expect(() => fusionSummonDuelCard(restored.session.state, 0, fusion!.uid, [cheatah!.uid, freeMaterial!.uid])).toThrow("cannot be used as fusion material");
     expect(() => synchroSummonDuelCard(restored.session.state, 0, synchro!.uid, [cheatah!.uid, freeMaterial!.uid])).toThrow("cannot be used as synchro material");
     expect(() => xyzSummonDuelCard(restored.session.state, 0, xyz!.uid, [cheatah!.uid, freeMaterial!.uid])).toThrow("cannot be used as Xyz material");
     expect(() => linkSummonDuelCard(restored.session.state, 0, link!.uid, [cheatah!.uid, freeMaterial!.uid])).toThrow("cannot be used as Link material");
-    expect(() => ritualSummonDuelCard(restored.session.state, 0, ritual!.uid, [cheatah!.uid, freeMaterial!.uid])).not.toThrow();
-    expect(restored.session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone" });
+
+    const allowedRestored = restoreDuelWithLuaScripts(snapshot, workspace, reader);
+    ritualSummonDuelCard(allowedRestored.session.state, 0, ritual!.uid, [cheatah!.uid, freeMaterial!.uid]);
+    expect(allowedRestored.session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      faceUp: true,
+      summonType: "ritual",
+    });
+    expect(allowedRestored.session.state.cards.find((card) => card.uid === cheatah!.uid)).toMatchObject({ location: "graveyard" });
+    expect(allowedRestored.session.state.cards.find((card) => card.uid === freeMaterial!.uid)).toMatchObject({ location: "graveyard" });
   });
 });
