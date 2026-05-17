@@ -13,6 +13,90 @@ const battleRoutingFixtureCount = 6;
 const damageStepRestoreFixtureCount = 4;
 const battleDamageSemanticFixtureCount = 8;
 const battleTriggerSemanticFixtureCount = 9;
+const attackDeclarationTrapKindCounts = {
+  attackBanish: 1,
+  attackDestroy: 1,
+  attackNegateSetAgain: 1,
+  battlePhaseSkipNegate: 1,
+  damageReflect: 1,
+  lpRecoverNegate: 1,
+} satisfies Record<AttackDeclarationTrapKind, number>;
+const battleRoutingKindCounts = {
+  attackAllTargetFilter: 2,
+  attackAnnouncementLock: 1,
+  battleTargetSelectionLock: 1,
+  extraMonsterAttack: 1,
+  onlyAttackEquipped: 1,
+} satisfies Record<BattleRoutingKind, number>;
+const damageStepRestoreKindCounts = {
+  activatedDamageStepBoost: 1,
+  honestDamageStepBoost: 1,
+  persistentDamageCalculationStat: 1,
+  persistentDamageStepStat: 1,
+} satisfies Record<DamageStepRestoreKind, number>;
+const battleDamageSemanticKindCounts = {
+  alsoBattleDamage: 1,
+  battleDamagePrevention: 1,
+  battleDamageToEffect: 1,
+  battleRetargetDamage: 1,
+  halfBattleDamage: 1,
+  pierceBattleDamage: 1,
+  reflectBattleDamage: 1,
+  temporaryDamageCalcBoost: 1,
+} satisfies Record<BattleDamageSemanticKind, number>;
+const battleTriggerSemanticKindCounts = {
+  battleConfirmDestroy: 1,
+  battleDestroyedDestroy: 1,
+  battleSearch: 1,
+  battledBounce: 1,
+  battledDamage: 1,
+  battledDisable: 1,
+  endDamageControl: 1,
+  endDamageDestroy: 1,
+  mutualBattleDestroyedSegoc: 1,
+} satisfies Record<BattleTriggerSemanticKind, number>;
+
+type AttackDeclarationTrapKind =
+  | "attackBanish"
+  | "attackDestroy"
+  | "attackNegateSetAgain"
+  | "battlePhaseSkipNegate"
+  | "damageReflect"
+  | "lpRecoverNegate";
+
+type BattleRoutingKind =
+  | "attackAllTargetFilter"
+  | "attackAnnouncementLock"
+  | "battleTargetSelectionLock"
+  | "extraMonsterAttack"
+  | "onlyAttackEquipped";
+
+type DamageStepRestoreKind =
+  | "activatedDamageStepBoost"
+  | "honestDamageStepBoost"
+  | "persistentDamageCalculationStat"
+  | "persistentDamageStepStat";
+
+type BattleDamageSemanticKind =
+  | "alsoBattleDamage"
+  | "battleDamagePrevention"
+  | "battleDamageToEffect"
+  | "battleRetargetDamage"
+  | "halfBattleDamage"
+  | "pierceBattleDamage"
+  | "reflectBattleDamage"
+  | "temporaryDamageCalcBoost";
+
+type BattleTriggerSemanticKind =
+  | "battleConfirmDestroy"
+  | "battleDestroyedDestroy"
+  | "battleSearch"
+  | "battledBounce"
+  | "battledDamage"
+  | "battledDisable"
+  | "endDamageControl"
+  | "endDamageDestroy"
+  | "mutualBattleDestroyedSegoc";
 
 describe("Lua real battle restore coverage", () => {
   it("requires real-script battle fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -73,6 +157,10 @@ describe("Lua real battle restore coverage", () => {
     expect(missing).toEqual([]);
   });
 
+  it("keeps attack-declaration trap fixture kinds explicit", () => {
+    expect(countAttackDeclarationTrapKinds(realScriptAttackDeclarationTrapFixtureFiles())).toEqual(attackDeclarationTrapKindCounts);
+  });
+
   it("requires representative battle routing fixtures to assert clean Lua registry restore", () => {
     const files = realScriptBattleRoutingFixtureFiles();
     expect(files).toHaveLength(battleRoutingFixtureCount);
@@ -93,6 +181,10 @@ describe("Lua real battle restore coverage", () => {
       .map(({ file }) => file);
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps battle routing fixture kinds explicit", () => {
+    expect(countBattleRoutingKinds(realScriptBattleRoutingFixtureFiles())).toEqual(battleRoutingKindCounts);
   });
 
   it("requires real damage-step restore fixtures to pin restorable battle windows and response replay", () => {
@@ -118,6 +210,10 @@ describe("Lua real battle restore coverage", () => {
       });
 
     expect(missing).toEqual([]);
+  });
+
+  it("keeps damage-step restore fixture kinds explicit", () => {
+    expect(countDamageStepRestoreKinds(realScriptDamageStepRestoreFixtures())).toEqual(damageStepRestoreKindCounts);
   });
 
   it("requires representative battle damage fixtures to prove restored damage semantics", () => {
@@ -147,6 +243,10 @@ describe("Lua real battle restore coverage", () => {
     expect(missing).toEqual([]);
   });
 
+  it("keeps battle damage semantic fixture kinds explicit", () => {
+    expect(countBattleDamageSemanticKinds(realScriptBattleDamageSemanticFixtureFiles())).toEqual(battleDamageSemanticKindCounts);
+  });
+
   it("requires representative battle trigger fixtures to prove restored event payloads and outcomes", () => {
     const files = realScriptBattleTriggerSemanticFixtureFiles();
     expect(files).toHaveLength(battleTriggerSemanticFixtureCount);
@@ -173,6 +273,10 @@ describe("Lua real battle restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps battle trigger semantic fixture kinds explicit", () => {
+    expect(countBattleTriggerSemanticKinds(realScriptBattleTriggerSemanticFixtureFiles())).toEqual(battleTriggerSemanticKindCounts);
+  });
 });
 
 function realScriptBattleFixtureFiles(): string[] {
@@ -194,10 +298,15 @@ function realScriptBattleLegalActionFixtureFiles(): string[] {
     .sort();
 }
 
-function realScriptAttackDeclarationTrapFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptAttackDeclarationTrapFixtureFiles(): Array<{
+  file: string;
+  kind: AttackDeclarationTrapKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-magic-cylinder-battle-window.test.ts",
+      kind: "damageReflect",
       required: [
         "targetUids: [attacker!.uid]",
         "attackCanceledUids).toEqual([attacker!.uid])",
@@ -206,6 +315,7 @@ function realScriptAttackDeclarationTrapFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-dimensional-prison-battle-window.test.ts",
+      kind: "attackBanish",
       required: [
         "targetUids: [attacker!.uid]",
         'location: "banished"',
@@ -214,6 +324,7 @@ function realScriptAttackDeclarationTrapFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-draining-shield-battle-window.test.ts",
+      kind: "lpRecoverNegate",
       required: [
         "attackCanceledUids).toEqual([attacker!.uid])",
         "players[1].lifePoints).toBe(9800)",
@@ -221,6 +332,7 @@ function realScriptAttackDeclarationTrapFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-sakuretsu-armor-battle-window.test.ts",
+      kind: "attackDestroy",
       required: [
         'location: "graveyard"',
         "players[1].lifePoints).toBe(8000)",
@@ -228,6 +340,7 @@ function realScriptAttackDeclarationTrapFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",
+      kind: "attackNegateSetAgain",
       required: [
         "attackCanceledUids).toEqual([attacker!.uid])",
         'location: "spellTrapZone", position: "faceDown", faceUp: false',
@@ -235,18 +348,28 @@ function realScriptAttackDeclarationTrapFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-negate-attack-battle-window.test.ts",
+      kind: "battlePhaseSkipNegate",
       required: [
         "attackCanceledUids).toEqual([firstAttacker!.uid])",
         "skippedPhases).toEqual([{ player: 0, phase: \"battle\", remaining: 1 }])",
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{
+    file: string;
+    kind: AttackDeclarationTrapKind;
+    required: string[];
+  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
-function realScriptBattleRoutingFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptBattleRoutingFixtureFiles(): Array<{
+  file: string;
+  kind: BattleRoutingKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-aoj-thousand-arms-attack-all-light.test.ts",
+      kind: "attackAllTargetFilter",
       required: [
         "hasAttack(actions, thousandArms.uid, lightTarget.uid)).toBe(true)",
         "hasAttack(actions, thousandArms.uid, darkTarget.uid)).toBe(false)",
@@ -255,6 +378,7 @@ function realScriptBattleRoutingFixtureFiles(): Array<{ file: string; required: 
     },
     {
       file: "lua-real-script-decoyroid-battle-target-selection-lock.test.ts",
+      kind: "battleTargetSelectionLock",
       required: [
         "hasAttack(actions, attacker.uid, decoyroid.uid)).toBe(true)",
         "hasAttack(actions, attacker.uid, protectedTarget.uid)).toBe(false)",
@@ -262,6 +386,7 @@ function realScriptBattleRoutingFixtureFiles(): Array<{ file: string; required: 
     },
     {
       file: "lua-real-script-ghost-bird-extra-monster-attack.test.ts",
+      kind: "extraMonsterAttack",
       required: [
         "hasAttack(actions, ghostBird.uid, target.uid)).toBe(true)",
         "hasDirectAttack(actions, ghostBird.uid)).toBe(false)",
@@ -270,6 +395,7 @@ function realScriptBattleRoutingFixtureFiles(): Array<{ file: string; required: 
     },
     {
       file: "lua-real-script-grasschopper-gemini-attack-all.test.ts",
+      kind: "attackAllTargetFilter",
       required: [
         "hasAttack(firstActions, grasschopper.uid, firstTarget.uid)).toBe(true)",
         "hasAttack(secondActions, grasschopper.uid, secondTarget.uid)).toBe(true)",
@@ -278,6 +404,7 @@ function realScriptBattleRoutingFixtureFiles(): Array<{ file: string; required: 
     },
     {
       file: "lua-real-script-naturia-spiderfang-attack-announce-lock.test.ts",
+      kind: "attackAnnouncementLock",
       required: [
         "hasAttack(actions, spiderfang.uid, target.uid)).toBe(false)",
         "hasAttack(actions, ordinary.uid, target.uid)).toBe(true)",
@@ -285,32 +412,58 @@ function realScriptBattleRoutingFixtureFiles(): Array<{ file: string; required: 
     },
     {
       file: "lua-real-script-ring-of-magnetism-only-attack.test.ts",
+      kind: "onlyAttackEquipped",
       required: [
         "hasAttack(actions, attacker.uid, equippedTarget.uid)).toBe(true)",
         "hasAttack(actions, attacker.uid, sideTarget.uid)).toBe(false)",
         "directAttack)).toBe(false)",
       ],
     },
-  ]
-    .map(({ file, required }) => ({ file: path.join("test", file), required }))
+  ] satisfies Array<{
+    file: string;
+    kind: BattleRoutingKind;
+    required: string[];
+  }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }
 
 function realScriptDamageStepRestoreFixtureFiles(): string[] {
-  return [
-    "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
-    "lua-real-script-honest-damage-step.test.ts",
-    "lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
-    "lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
-  ]
-    .map((file) => path.join("test", file))
-    .sort();
+  return realScriptDamageStepRestoreFixtures().map(({ file }) => file);
 }
 
-function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptDamageStepRestoreFixtures(): Array<{ file: string; kind: DamageStepRestoreKind }> {
+  return ([
+    {
+      file: "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+      kind: "activatedDamageStepBoost",
+    },
+    {
+      file: "lua-real-script-honest-damage-step.test.ts",
+      kind: "honestDamageStepBoost",
+    },
+    {
+      file: "lua-real-script-miniaturize-persistent-damage-step-stat.test.ts",
+      kind: "persistentDamageStepStat",
+    },
+    {
+      file: "lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
+      kind: "persistentDamageCalculationStat",
+    },
+  ] satisfies Array<{ file: string; kind: DamageStepRestoreKind }>)
+    .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
+    .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function realScriptBattleDamageSemanticFixtureFiles(): Array<{
+  file: string;
+  kind: BattleDamageSemanticKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-ancient-gear-golem-pierce-battle-damage.test.ts",
+      kind: "pierceBattleDamage",
       required: [
         "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 1500 })",
         "eventValue: 1500",
@@ -318,6 +471,7 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
     },
     {
       file: "lua-real-script-amazoness-swords-woman-reflect-battle-damage.test.ts",
+      kind: "reflectBattleDamage",
       required: [
         "expect(restored.session.state.battleDamage).toEqual({ 0: 500, 1: 0 })",
         "eventPlayer: 0",
@@ -326,6 +480,7 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
     },
     {
       file: "lua-real-script-battle-damage-prevention.test.ts",
+      kind: "battleDamagePrevention",
       required: [
         "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 })",
         'expect.objectContaining({ action: "battleDamage", player: 1, detail: "0" })',
@@ -333,6 +488,7 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
     },
     {
       file: "lua-real-script-gravekeepers-vassal-battle-damage-to-effect.test.ts",
+      kind: "battleDamageToEffect",
       required: [
         "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 700 })",
         'expect.objectContaining({ action: "effectDamage", player: 1, detail: "700" })',
@@ -341,6 +497,7 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
     },
     {
       file: "lua-real-script-magical-arm-shield-calculate-damage.test.ts",
+      kind: "battleRetargetDamage",
       required: [
         'battleWindow?.kind).toBe("attackNegationResponse")',
         "action.uid === shield!.uid",
@@ -351,6 +508,7 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
     },
     {
       file: "lua-real-script-mirage-knight-battle-target-atk.test.ts",
+      kind: "temporaryDamageCalcBoost",
       required: [
         'battleWindow?.kind).toBe("duringDamageCalculation")',
         "expect(restoredDamageCalc.session.state.battleDamage).toEqual({ 0: 0, 1: 2800 })",
@@ -360,6 +518,7 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
     },
     {
       file: "lua-real-script-number-c96-also-battle-damage.test.ts",
+      kind: "alsoBattleDamage",
       required: [
         "expect(restored.session.state.battleDamage).toEqual({ 0: 800, 1: 800 })",
         "eventPlayer: 0",
@@ -368,18 +527,28 @@ function realScriptBattleDamageSemanticFixtureFiles(): Array<{ file: string; req
     },
     {
       file: "lua-real-script-susa-soldier-half-damage.test.ts",
+      kind: "halfBattleDamage",
       required: [
         "expect(restored.session.state.battleDamage[1]).toBe(500)",
         "eventValue: 500",
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{
+    file: string;
+    kind: BattleDamageSemanticKind;
+    required: string[];
+  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
-function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
+  file: string;
+  kind: BattleTriggerSemanticKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
+      kind: "battledDisable",
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
@@ -390,6 +559,7 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-wall-of-illusion-battled.test.ts",
+      kind: "battledBounce",
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
@@ -400,6 +570,7 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-topologic-bomber-battled-damage.test.ts",
+      kind: "battledDamage",
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
@@ -411,6 +582,7 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
+      kind: "battleConfirmDestroy",
       required: [
         'battleWindow?.kind).toBe("startDamageStep")',
         'eventName: "battleConfirmed"',
@@ -423,6 +595,7 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-yomi-ship-battle-destroyed.test.ts",
+      kind: "battleDestroyedDestroy",
       required: [
         'eventName: "battleDestroyed"',
         "eventCode: 1140",
@@ -433,6 +606,7 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-giant-rat-mutual-battle-destroyed-segoc.test.ts",
+      kind: "mutualBattleDestroyedSegoc",
       required: [
         'triggerBucket: "turnOptional"',
         'triggerBucket: "opponentOptional"',
@@ -443,6 +617,7 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-gem-knight-sardonyx-battle-search.test.ts",
+      kind: "battleSearch",
       required: [
         'eventName: "battleDestroyed"',
         "eventCode: 1140",
@@ -453,6 +628,7 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-getsu-fuhma-damage-step-end.test.ts",
+      kind: "endDamageDestroy",
       required: [
         'battleWindow?.kind).toBe("endDamageStep")',
         'eventName: "damageStepEnded"',
@@ -463,6 +639,7 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
     },
     {
       file: "lua-real-script-nightmare-magician-battle-control.test.ts",
+      kind: "endDamageControl",
       required: [
         'luaTargetDescriptor: "target:source-or-battle-target"',
         'battleWindow?.kind).toBe("endDamageStep")',
@@ -471,5 +648,104 @@ function realScriptBattleTriggerSemanticFixtureFiles(): Array<{ file: string; re
         "previousController: 1",
       ],
     },
-  ].map(({ file, required }) => ({ file: path.join("test", file), required }));
+  ] satisfies Array<{
+    file: string;
+    kind: BattleTriggerSemanticKind;
+    required: string[];
+  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+}
+
+function countAttackDeclarationTrapKinds(
+  fixtures: Array<{ kind: AttackDeclarationTrapKind }>,
+): Record<AttackDeclarationTrapKind, number> {
+  return fixtures.reduce<Record<AttackDeclarationTrapKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      attackBanish: 0,
+      attackDestroy: 0,
+      attackNegateSetAgain: 0,
+      battlePhaseSkipNegate: 0,
+      damageReflect: 0,
+      lpRecoverNegate: 0,
+    },
+  );
+}
+
+function countBattleRoutingKinds(fixtures: Array<{ kind: BattleRoutingKind }>): Record<BattleRoutingKind, number> {
+  return fixtures.reduce<Record<BattleRoutingKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      attackAllTargetFilter: 0,
+      attackAnnouncementLock: 0,
+      battleTargetSelectionLock: 0,
+      extraMonsterAttack: 0,
+      onlyAttackEquipped: 0,
+    },
+  );
+}
+
+function countDamageStepRestoreKinds(
+  fixtures: Array<{ kind: DamageStepRestoreKind }>,
+): Record<DamageStepRestoreKind, number> {
+  return fixtures.reduce<Record<DamageStepRestoreKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      activatedDamageStepBoost: 0,
+      honestDamageStepBoost: 0,
+      persistentDamageCalculationStat: 0,
+      persistentDamageStepStat: 0,
+    },
+  );
+}
+
+function countBattleDamageSemanticKinds(
+  fixtures: Array<{ kind: BattleDamageSemanticKind }>,
+): Record<BattleDamageSemanticKind, number> {
+  return fixtures.reduce<Record<BattleDamageSemanticKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      alsoBattleDamage: 0,
+      battleDamagePrevention: 0,
+      battleDamageToEffect: 0,
+      battleRetargetDamage: 0,
+      halfBattleDamage: 0,
+      pierceBattleDamage: 0,
+      reflectBattleDamage: 0,
+      temporaryDamageCalcBoost: 0,
+    },
+  );
+}
+
+function countBattleTriggerSemanticKinds(
+  fixtures: Array<{ kind: BattleTriggerSemanticKind }>,
+): Record<BattleTriggerSemanticKind, number> {
+  return fixtures.reduce<Record<BattleTriggerSemanticKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      battleConfirmDestroy: 0,
+      battleDestroyedDestroy: 0,
+      battleSearch: 0,
+      battledBounce: 0,
+      battledDamage: 0,
+      battledDisable: 0,
+      endDamageControl: 0,
+      endDamageDestroy: 0,
+      mutualBattleDestroyedSegoc: 0,
+    },
+  );
 }
