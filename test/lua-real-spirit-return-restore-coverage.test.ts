@@ -5,6 +5,20 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const spiritReturnFixtureCount = 5;
+const spiritReturnKindCounts = {
+  costReturnBounce: 1,
+  fieldReturnLock: 1,
+  grantedEndPhaseReturn: 1,
+  graveyardDiscardReturn: 1,
+  targetedSpiritBounce: 1,
+} satisfies Record<SpiritReturnKind, number>;
+
+type SpiritReturnKind =
+  | "costReturnBounce"
+  | "fieldReturnLock"
+  | "grantedEndPhaseReturn"
+  | "graveyardDiscardReturn"
+  | "targetedSpiritBounce";
 
 describe("Lua real Spirit return restore coverage", () => {
   it("requires Spirit return and bounce fixtures to assert clean Lua registry restore and payload outcomes", () => {
@@ -43,12 +57,21 @@ describe("Lua real Spirit return restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps Spirit return fixture kinds explicit", () => {
+    expect(countSpiritReturnKinds(spiritReturnFixtureFiles())).toEqual(spiritReturnKindCounts);
+  });
 });
 
-function spiritReturnFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function spiritReturnFixtureFiles(): Array<{
+  file: string;
+  kind: SpiritReturnKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "lua-real-script-hebo-spirit-grant-return.test.ts",
+      kind: "grantedEndPhaseReturn",
       required: [
         "Hebo Spirit grant return",
         "target-granted Spirit type",
@@ -60,6 +83,7 @@ function spiritReturnFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "lua-real-script-izanami-spirit-grave-return.test.ts",
+      kind: "graveyardDiscardReturn",
       required: [
         "Izanami Spirit Graveyard return",
         "eventName: \"discarded\"",
@@ -71,6 +95,7 @@ function spiritReturnFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "lua-real-script-rasetsu-spirit-cost-return.test.ts",
+      kind: "costReturnBounce",
       required: [
         "Rasetsu Spirit cost return",
         "confirmed 1:",
@@ -82,6 +107,7 @@ function spiritReturnFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "lua-real-script-shinobird-pigeon-spirit-return.test.ts",
+      kind: "targetedSpiritBounce",
       required: [
         "Shinobird Pigeon Spirit return",
         "operationInfos: [{ category: 0x8",
@@ -92,6 +118,7 @@ function spiritReturnFixtureFiles(): Array<{ file: string; required: string[] }>
     },
     {
       file: "lua-real-script-spiritual-energy-settle-machine-return-lock.test.ts",
+      kind: "fieldReturnLock",
       required: [
         "Spiritual Energy Settle Machine return lock",
         'action.type === "activateTrigger"',
@@ -102,7 +129,27 @@ function spiritReturnFixtureFiles(): Array<{ file: string; required: string[] }>
         "eventCardUid: opponentSpirit.uid",
       ],
     },
-  ]
-    .map(({ file, required }) => ({ file: path.join("test", file), required }))
+  ] satisfies Array<{
+    file: string;
+    kind: SpiritReturnKind;
+    required: string[];
+  }>)
+    .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSpiritReturnKinds(fixtures: Array<{ kind: SpiritReturnKind }>): Record<SpiritReturnKind, number> {
+  return fixtures.reduce<Record<SpiritReturnKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      costReturnBounce: 0,
+      fieldReturnLock: 0,
+      grantedEndPhaseReturn: 0,
+      graveyardDiscardReturn: 0,
+      targetedSpiritBounce: 0,
+    },
+  );
 }
