@@ -268,6 +268,7 @@ function hasDeclineOpenFastRestoreProof(file: string): boolean {
     /triggerTiming:\s*["']when["']/.test(text) &&
     /triggerTiming:\s*["']if["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text) &&
+    hasTriggerBucketWindowProof(text) &&
     /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
     hasPublicWindowEvidence(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
@@ -289,6 +290,7 @@ function hasActivationRestoreProof(file: string): boolean {
     /triggerTiming:\s*["']when["']/.test(text) &&
     /triggerTiming:\s*["']if["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text) &&
+    hasTriggerBucketWindowProof(text) &&
     /after:\s*\{[\s\S]*?windowKind:\s*["']open["']/.test(text) &&
     hasPublicWindowEvidence(text) &&
     /pendingTriggers:\s*\[\]/.test(text) &&
@@ -307,6 +309,15 @@ function hasPublicWindowEvidence(text: string): boolean {
     /windowKind:\s*["'](?:open|triggerBucket)["']/.test(text) &&
     /legalActionCounts:\s*\{/.test(text) &&
     /legalActionGroupCounts:\s*\{/.test(text)
+  );
+}
+
+function hasTriggerBucketWindowProof(text: string): boolean {
+  return (
+    /before:\s*\{[\s\S]*?windowKind:\s*["']triggerBucket["']/.test(text) &&
+    /legalActions:\s*\[[\s\S]*?type:\s*["']activateTrigger["'][\s\S]*?windowKind:\s*["']triggerBucket["']/.test(text) &&
+    /legalActions:\s*\[[\s\S]*?type:\s*["']declineTrigger["'][\s\S]*?windowKind:\s*["']triggerBucket["']/.test(text) &&
+    /legalActionGroups:\s*\[[\s\S]*?windowKind:\s*["']triggerBucket["']/.test(text)
   );
 }
 
