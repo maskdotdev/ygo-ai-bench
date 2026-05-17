@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damagePreventionFixtureCount = 11;
+const damagePreventionFixtureCount = 12;
 const damagePreventionKindCounts: Record<DamagePreventionKind, number> = {
   allDamageZero: 1,
-  battleDamageZero: 1,
+  battleDamageZero: 2,
   effectDamageHalf: 1,
   effectDamageZero: 7,
   noBattleDamage: 1,
@@ -172,6 +172,17 @@ function realScriptDamagePreventionFixtureFiles(): Array<{ file: string; kind: D
         "expect(restored.session.state.players[1].lifePoints).toBe(8000)",
         "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 })",
         'eventName: "battleDamageDealt", eventPlayer: 0',
+      ],
+    },
+    {
+      file: "lua-real-script-primite-howl-battle-damage.test.ts",
+      kind: "battleDamageZero",
+      required: [
+        "expect(restored.session.state.players[0].lifePoints).toBe(8000)",
+        "expect(restored.session.state.battleDamage[0]).toBe(0)",
+        "code: 201",
+        'event.eventName === "battleDamageDealt" && event.eventPlayer === 0)).toEqual([])',
+        'location: "graveyard"',
       ],
     },
     {

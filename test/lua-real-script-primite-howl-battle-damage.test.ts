@@ -151,6 +151,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
 
     expect(restored.session.state.battleDamage[0]).toBe(0);
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt" && event.eventPlayer === 0)).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === darkMagician!.uid)).toMatchObject({ location: "graveyard" });
   });
 });
