@@ -4,6 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
+const activityKindCounts = {
+  mulcharmyChainSummonCounters: 1,
+} satisfies Record<ActivityKind, number>;
+
+type ActivityKind = "mulcharmyChainSummonCounters";
 
 describe("Lua real activity restore coverage", () => {
   it("requires representative activity fixtures to assert clean Lua restore", () => {
@@ -36,12 +41,21 @@ describe("Lua real activity restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps activity fixture kinds explicit", () => {
+    expect(countActivityKinds(realScriptActivityFixtureFiles())).toEqual(activityKindCounts);
+  });
 });
 
-function realScriptActivityFixtureFiles(): Array<{ file: string; requiredSnippets: string[] }> {
+function realScriptActivityFixtureFiles(): Array<{
+  file: string;
+  kind: ActivityKind;
+  requiredSnippets: string[];
+}> {
   return [
     {
       file: "test/lua-real-script-mulcharmy-activity.test.ts",
+      kind: "mulcharmyChainSummonCounters",
       requiredSnippets: [
         "Mulcharmy activity counters",
         "toHaveLength(1)",
@@ -52,4 +66,16 @@ function realScriptActivityFixtureFiles(): Array<{ file: string; requiredSnippet
       ],
     },
   ];
+}
+
+function countActivityKinds(fixtures: Array<{ kind: ActivityKind }>): Record<ActivityKind, number> {
+  return fixtures.reduce<Record<ActivityKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      mulcharmyChainSummonCounters: 0,
+    },
+  );
 }
