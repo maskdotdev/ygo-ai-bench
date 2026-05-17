@@ -5,6 +5,14 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const attackRetargetFixtureCount = 6;
+const attackRetargetKindCounts = {
+  directAttackConversion: 1,
+  selectedTargetRetarget: 1,
+  selfRetarget: 1,
+  summonRetarget: 3,
+} satisfies Record<AttackRetargetKind, number>;
+
+type AttackRetargetKind = "directAttackConversion" | "selectedTargetRetarget" | "selfRetarget" | "summonRetarget";
 
 describe("Lua real attack retarget restore coverage", () => {
   it("requires representative attack-retarget fixtures to assert clean Lua restore and replayed target changes", () => {
@@ -32,12 +40,21 @@ describe("Lua real attack retarget restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps attack-retarget fixture kinds explicit", () => {
+    expect(countAttackRetargetKinds(realScriptAttackRetargetFixtureFiles())).toEqual(attackRetargetKindCounts);
+  });
 });
 
-function realScriptAttackRetargetFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function realScriptAttackRetargetFixtureFiles(): Array<{
+  file: string;
+  kind: AttackRetargetKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-apple-magician-girl-attack-retarget.test.ts",
+      kind: "summonRetarget",
       required: [
         'eventName: "battleTargeted"',
         "targetUid: spellcaster.uid",
@@ -46,6 +63,7 @@ function realScriptAttackRetargetFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "test/lua-real-script-card-blocker-change-attack-target.test.ts",
+      kind: "selfRetarget",
       required: [
         "effectId.endsWith(\"-1131\")",
         "targetUid: blocker!.uid",
@@ -54,6 +72,7 @@ function realScriptAttackRetargetFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "test/lua-real-script-call-earthbound-change-attack-target.test.ts",
+      kind: "selectedTargetRetarget",
       required: [
         'action.type === "activateEffect"',
         "targetUid: newTarget!.uid",
@@ -62,6 +81,7 @@ function realScriptAttackRetargetFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "test/lua-real-script-chocolate-magician-girl-retarget.test.ts",
+      kind: "summonRetarget",
       required: [
         'eventName: "battleTargeted"',
         "targetUid: spellcaster!.uid",
@@ -70,6 +90,7 @@ function realScriptAttackRetargetFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "test/lua-real-script-toon-defense-change-attack-target.test.ts",
+      kind: "directAttackConversion",
       required: [
         'eventName: "attackDeclared"',
         "currentAttack?.targetUid).toBeUndefined()",
@@ -78,11 +99,31 @@ function realScriptAttackRetargetFixtureFiles(): Array<{ file: string; required:
     },
     {
       file: "test/lua-real-script-ultimate-divine-beast-retarget.test.ts",
+      kind: "summonRetarget",
       required: [
         'eventName: "attackDeclared"',
         "targetUid: divine!.uid",
         "battleWindow?.kind).not.toBe(\"replayDecision\")",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: AttackRetargetKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countAttackRetargetKinds(fixtures: Array<{ kind: AttackRetargetKind }>): Record<AttackRetargetKind, number> {
+  return fixtures.reduce<Record<AttackRetargetKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      directAttackConversion: 0,
+      selectedTargetRetarget: 0,
+      selfRetarget: 0,
+      summonRetarget: 0,
+    },
+  );
 }
