@@ -4,11 +4,11 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 175;
-export const summonProcedureFixtureCount = 23;
+export const realScriptSummonFixtureCount = 176;
+export const summonProcedureFixtureCount = 24;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
-export const pendulumHelperFixtureCount = 15;
+export const pendulumHelperFixtureCount = 16;
 export const unionProcedureFixtureCount = 4;
 export const materialLockFixtureCount = 4;
 export const flipSummonSuccessTrapFixtureCount = 4;
@@ -17,7 +17,7 @@ export const tributeMaterialFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
   fusion: 23,
   link: 17,
-  pendulum: 19,
+  pendulum: 20,
   ritual: 21,
   summon: 64,
   synchro: 16,
@@ -26,7 +26,7 @@ export const realScriptSummonKeywordFamilyCounts = {
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
   genericSpecialSummonProcedure: 12,
-  pendulumProcedure: 2,
+  pendulumProcedure: 3,
   ritualProcedure: 3,
   tributeProcedure: 2,
   typedProcedureFilter: 3,
@@ -45,7 +45,7 @@ export const pendulumHelperKindCounts = {
   filteredSetcodeGrant: 3,
   handGrant: 1,
   pendulumSummonLock: 3,
-  procedureAction: 1,
+  procedureAction: 2,
   procedureNoScaleActivation: 1,
 } satisfies Record<PendulumHelperKind, number>;
 export const pendulumGrantKindCounts = {
@@ -450,6 +450,7 @@ export function realScriptSummonProcedureFixtureFiles(): string[] {
       "lua-real-script-palm-ryzeal-special-summon-procedure.test.ts",
       "lua-real-script-pankratops-special-summon-procedure.test.ts",
       "lua-real-script-pendulum-add-procedure-no-scale-activation.test.ts",
+      "lua-real-script-flash-knight-pure-pendulum-procedure.test.ts",
       "lua-real-script-pendulum-procedure-actions.test.ts",
       "lua-real-script-polymerization-fusion-summon.test.ts",
       "lua-real-script-prominence-hand-special-summon-procedure.test.ts",
@@ -492,7 +493,7 @@ export function classifySummonProcedureFamily(file: string): SummonProcedureFami
   if (/^(lua-real-script-link-procedure-filters|lua-real-script-synchro-procedure-filters|lua-real-script-xyz-procedure-filters)\.test\.ts$/.test(basename)) return "typedProcedureFilter";
   if (basename === "lua-real-script-polymerization-fusion-summon.test.ts") return "fusionProcedure";
   if (/ritual/.test(basename)) return "ritualProcedure";
-  if (basename === "lua-real-script-pendulum-add-procedure-no-scale-activation.test.ts" || basename === "lua-real-script-pendulum-procedure-actions.test.ts") return "pendulumProcedure";
+  if (basename === "lua-real-script-flash-knight-pure-pendulum-procedure.test.ts" || basename === "lua-real-script-pendulum-add-procedure-no-scale-activation.test.ts" || basename === "lua-real-script-pendulum-procedure-actions.test.ts") return "pendulumProcedure";
   if (basename === "lua-real-script-emissary-select-tribute-summon-procedure.test.ts" || basename === "lua-real-script-morganite-field-summon-procedure.test.ts") return "tributeProcedure";
   if (basename.endsWith("-special-summon-procedure.test.ts") || basename === "lua-real-script-depth-shark-no-tribute-summon-procedure.test.ts" || basename === "lua-real-script-leo-wizard-opponent-summon-procedure.test.ts") return "genericSpecialSummonProcedure";
   throw new Error(`Unclassified summon procedure fixture: ${file}`);
@@ -598,6 +599,20 @@ export function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string;
         "findPendulumActivation",
         "const restoredPendulumWindow = restoreDuelWithLuaScripts",
         "const pendulumSummon = getLuaRestoreLegalActions(restoredPendulumWindow, 0).find",
+        'summonType: "pendulum"',
+        "expect(restoredPendulumWindow.session.state.players[0].pendulumSummonAvailable).toBe(false)",
+      ],
+    },
+    {
+      file: "lua-real-script-flash-knight-pure-pendulum-procedure.test.ts",
+      kind: "procedureAction",
+      required: [
+        'const flashKnightCode = "17390179"',
+        'const mandragonCode = "19474136"',
+        'const fireOpalHeadCode = "28363749"',
+        "pendulumProcedureEffects(restoredLowScaleWindow.session, mandragon!.uid)",
+        "findPendulumScaleActivation(restoredLowScaleWindow.session, getLuaRestoreLegalActions(restoredLowScaleWindow, 0), mandragon!.uid)",
+        'label: "Pendulum Summon Fire Opal Head"',
         'summonType: "pendulum"',
         "expect(restoredPendulumWindow.session.state.players[0].pendulumSummonAvailable).toBe(false)",
       ],
