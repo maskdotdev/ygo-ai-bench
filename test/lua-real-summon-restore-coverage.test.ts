@@ -6,11 +6,11 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 166;
-const summonProcedureFixtureCount = 20;
+const realScriptSummonFixtureCount = 167;
+const summonProcedureFixtureCount = 21;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 4;
-const pendulumHelperFixtureCount = 13;
+const pendulumHelperFixtureCount = 14;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
@@ -18,7 +18,7 @@ const linkedZoneSpecialSummonFixtureCount = 5;
 const realScriptSummonKeywordFamilyCounts = {
   fusion: 22,
   link: 17,
-  pendulum: 17,
+  pendulum: 18,
   ritual: 20,
   summon: 60,
   synchro: 16,
@@ -27,7 +27,7 @@ const realScriptSummonKeywordFamilyCounts = {
 const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
   genericSpecialSummonProcedure: 10,
-  pendulumProcedure: 1,
+  pendulumProcedure: 2,
   ritualProcedure: 3,
   tributeProcedure: 2,
   typedProcedureFilter: 3,
@@ -46,6 +46,7 @@ const pendulumHelperKindCounts = {
   handGrant: 1,
   pendulumSummonLock: 3,
   procedureAction: 1,
+  procedureNoScaleActivation: 1,
 } satisfies Record<PendulumHelperKind, number>;
 const pendulumGrantKindCounts = {
   extraDeckLocationGrant: 1,
@@ -135,7 +136,8 @@ type PendulumHelperKind =
   | "filteredSetcodeGrant"
   | "handGrant"
   | "pendulumSummonLock"
-  | "procedureAction";
+  | "procedureAction"
+  | "procedureNoScaleActivation";
 type PendulumGrantKind =
   | "extraDeckLocationGrant"
   | "extraSummonCountGrant"
@@ -669,6 +671,7 @@ function realScriptSummonProcedureFixtureFiles(): string[] {
       "lua-real-script-morganite-field-summon-procedure.test.ts",
       "lua-real-script-palm-ryzeal-special-summon-procedure.test.ts",
       "lua-real-script-pankratops-special-summon-procedure.test.ts",
+      "lua-real-script-pendulum-add-procedure-no-scale-activation.test.ts",
       "lua-real-script-pendulum-procedure-actions.test.ts",
       "lua-real-script-polymerization-fusion-summon.test.ts",
       "lua-real-script-prayers-ritual-matfilter.test.ts",
@@ -710,7 +713,7 @@ function classifySummonProcedureFamily(file: string): SummonProcedureFamily {
   if (/^(lua-real-script-link-procedure-filters|lua-real-script-synchro-procedure-filters|lua-real-script-xyz-procedure-filters)\.test\.ts$/.test(basename)) return "typedProcedureFilter";
   if (basename === "lua-real-script-polymerization-fusion-summon.test.ts") return "fusionProcedure";
   if (/ritual/.test(basename)) return "ritualProcedure";
-  if (basename === "lua-real-script-pendulum-procedure-actions.test.ts") return "pendulumProcedure";
+  if (basename === "lua-real-script-pendulum-add-procedure-no-scale-activation.test.ts" || basename === "lua-real-script-pendulum-procedure-actions.test.ts") return "pendulumProcedure";
   if (basename === "lua-real-script-emissary-select-tribute-summon-procedure.test.ts" || basename === "lua-real-script-morganite-field-summon-procedure.test.ts") return "tributeProcedure";
   if (basename.endsWith("-special-summon-procedure.test.ts") || basename === "lua-real-script-depth-shark-no-tribute-summon-procedure.test.ts" || basename === "lua-real-script-leo-wizard-opponent-summon-procedure.test.ts") return "genericSpecialSummonProcedure";
   throw new Error(`Unclassified summon procedure fixture: ${file}`);
@@ -816,6 +819,19 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; kind: 
         "findPendulumActivation",
         "const restoredPendulumWindow = restoreDuelWithLuaScripts",
         "const pendulumSummon = getLuaRestoreLegalActions(restoredPendulumWindow, 0).find",
+        'summonType: "pendulum"',
+        "expect(restoredPendulumWindow.session.state.players[0].pendulumSummonAvailable).toBe(false)",
+      ],
+    },
+    {
+      file: "lua-real-script-pendulum-add-procedure-no-scale-activation.test.ts",
+      kind: "procedureNoScaleActivation",
+      required: [
+        "Pendulum AddProcedure reg=false",
+        "findPendulumScaleActivation",
+        "effect.description === 1160",
+        "description: 1163",
+        "code: effectSummonProcedureGroup",
         'summonType: "pendulum"',
         "expect(restoredPendulumWindow.session.state.players[0].pendulumSummonAvailable).toBe(false)",
       ],
@@ -935,6 +951,7 @@ function countPendulumHelperKinds(
       handGrant: 0,
       pendulumSummonLock: 0,
       procedureAction: 0,
+      procedureNoScaleActivation: 0,
     },
   );
 }
