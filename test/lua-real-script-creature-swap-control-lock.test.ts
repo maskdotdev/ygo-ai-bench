@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -88,6 +89,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
         "sourceUid": "p0-deck-31036355-0",
       }
     `);
+    expect(openedSnapshot.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x2000, targetUids: [], count: 0, player: 0, parameter: 0 },
+    ]);
     expect(openedSnapshot.state.chain[0]?.targetUids ?? []).toEqual([]);
 
     const restoredResponseWindow = restoreDuelWithLuaScripts(openedSnapshot, source, reader);
@@ -113,6 +117,78 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
       location: "monsterZone",
     });
     expect(restoredResponseWindow.session.state.cards.find((card) => card.uid === creatureSwap!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredResponseWindow.session.state.eventHistory.filter((event) => event.eventName === "controlChanged")).toEqual([
+      {
+        eventName: "controlChanged",
+        eventCode: 1120,
+        eventCardUid: ownMonster!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: creatureSwap!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "controlChanged",
+        eventCode: 1120,
+        eventCardUid: opponentMonster!.uid,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: creatureSwap!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+      {
+        eventName: "controlChanged",
+        eventCode: 1120,
+        eventCardUid: ownMonster!.uid,
+        eventUids: [ownMonster!.uid, opponentMonster!.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: creatureSwap!.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(positionLockCodes(restoredResponseWindow.session, ownMonster!.uid)).toEqual([14]);
     expect(positionLockCodes(restoredResponseWindow.session, opponentMonster!.uid)).toEqual([14]);
 

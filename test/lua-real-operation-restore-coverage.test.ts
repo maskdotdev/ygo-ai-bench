@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 49;
+const operationFixtureCount = 50;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
+  controlSwap: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 1,
   banishedToDeckSelfSummon: 1,
@@ -59,6 +60,7 @@ type OperationKind =
   | "costBanishDraw"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
+  | "controlSwap"
   | "banishedToGraveReturn"
   | "banishedToHand"
   | "banishedToDeckSelfSummon"
@@ -192,6 +194,18 @@ function operationFixtureFiles(): Array<{
         "controller: 0",
         "controller: 1",
         "temporary-control-return",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-creature-swap-control-lock.test.ts",
+      kind: "controlSwap",
+      required: [
+        "category: 0x2000",
+        'eventName: "controlChanged"',
+        "eventCardUid: ownMonster!.uid",
+        "eventCardUid: opponentMonster!.uid",
+        "positionLockCodes",
         "host.messages).not.toContain",
       ],
     },
@@ -952,6 +966,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       costBanishDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
+      controlSwap: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
       banishedToDeckSelfSummon: 0,
