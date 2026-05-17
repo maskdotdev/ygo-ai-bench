@@ -4,8 +4,8 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 172;
-export const summonProcedureFixtureCount = 21;
+export const realScriptSummonFixtureCount = 173;
+export const summonProcedureFixtureCount = 22;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
 export const pendulumHelperFixtureCount = 15;
@@ -19,13 +19,13 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 17,
   pendulum: 19,
   ritual: 21,
-  summon: 61,
+  summon: 62,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
-  genericSpecialSummonProcedure: 10,
+  genericSpecialSummonProcedure: 11,
   pendulumProcedure: 2,
   ritualProcedure: 3,
   tributeProcedure: 2,
@@ -451,6 +451,7 @@ export function realScriptSummonProcedureFixtureFiles(): string[] {
       "lua-real-script-pendulum-add-procedure-no-scale-activation.test.ts",
       "lua-real-script-pendulum-procedure-actions.test.ts",
       "lua-real-script-polymerization-fusion-summon.test.ts",
+      "lua-real-script-prominence-hand-special-summon-procedure.test.ts",
       "lua-real-script-prayers-ritual-matfilter.test.ts",
     ].includes(file))
     .map((file) => path.join("test", file))
