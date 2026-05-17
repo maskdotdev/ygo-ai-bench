@@ -5,6 +5,15 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const DRAW_RECOVER_FIXTURE_COUNT = 8;
+const drawRecoverKindCounts = {
+  costBanishDraw: 2,
+  drawRecoverOrDamage: 2,
+  drawTrigger: 2,
+  negateThenDraw: 1,
+  releaseDestroyDraw: 1,
+} satisfies Record<DrawRecoverKind, number>;
+
+type DrawRecoverKind = "costBanishDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "releaseDestroyDraw";
 
 describe("Lua real draw and recover restore coverage", () => {
   it("requires draw/recover fixtures to assert clean Lua registry restore and restored event outcomes", () => {
@@ -33,12 +42,21 @@ describe("Lua real draw and recover restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps draw/recover fixture kinds explicit", () => {
+    expect(countDrawRecoverKinds(drawRecoverFixtureFiles())).toEqual(drawRecoverKindCounts);
+  });
 });
 
-function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function drawRecoverFixtureFiles(): Array<{
+  file: string;
+  kind: DrawRecoverKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-bad-reaction-reverse-recover.test.ts",
+      kind: "drawRecoverOrDamage",
       required: [
         'eventName: "cardsDrawn"',
         'eventName: "damageDealt"',
@@ -51,6 +69,7 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-dark-bribe-negate-draw.test.ts",
+      kind: "negateThenDraw",
       required: [
         'eventName: "cardsDrawn"',
         'eventName: "chainNegated"',
@@ -63,6 +82,7 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-gemini-spark-release-destroy-draw.test.ts",
+      kind: "releaseDestroyDraw",
       required: [
         'eventName: "cardsDrawn"',
         'eventName: "released"',
@@ -75,6 +95,7 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
+      kind: "drawTrigger",
       required: [
         'eventName: "cardsDrawn"',
         "targetPlayer: 1",
@@ -85,6 +106,7 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
+      kind: "costBanishDraw",
       required: [
         'eventName: "cardsDrawn"',
         "targetPlayer: 0",
@@ -97,6 +119,7 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-pot-of-extravagance-extra-cost.test.ts",
+      kind: "costBanishDraw",
       required: [
         'eventName: "cardsDrawn"',
         "targetPlayer: 0",
@@ -110,6 +133,7 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",
+      kind: "drawTrigger",
       required: [
         'eventName: "normalSummoned"',
         "targetPlayer: 0",
@@ -120,6 +144,7 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
     },
     {
       file: "test/lua-real-script-upstart-goblin-draw-recover.test.ts",
+      kind: "drawRecoverOrDamage",
       required: [
         "category: 0x10000",
         "category: 0x100000",
@@ -128,5 +153,25 @@ function drawRecoverFixtureFiles(): Array<{ file: string; required: string[] }> 
         'location: "graveyard"',
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: DrawRecoverKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countDrawRecoverKinds(fixtures: Array<{ kind: DrawRecoverKind }>): Record<DrawRecoverKind, number> {
+  return fixtures.reduce<Record<DrawRecoverKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      costBanishDraw: 0,
+      drawRecoverOrDamage: 0,
+      drawTrigger: 0,
+      negateThenDraw: 0,
+      releaseDestroyDraw: 0,
+    },
+  );
 }
