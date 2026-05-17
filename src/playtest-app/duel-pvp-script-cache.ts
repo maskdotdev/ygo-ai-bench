@@ -144,17 +144,26 @@ function parseBrowserLuaScriptManifest(value: unknown): BrowserLuaScriptManifest
     !value.copied.every((name) => typeof name === "string") ||
     !Array.isArray(value.missing) ||
     !value.missing.every((name) => typeof name === "string") ||
-    !isRecord(value.sourceCounts) ||
-    !Object.values(value.sourceCounts).every((count) => Number.isInteger(count)) ||
-    !isRecord(value.fallbackKindCounts) ||
-    !Object.values(value.fallbackKindCounts).every((count) => Number.isInteger(count)) ||
+    !isCountRecord(value.sourceCounts) ||
+    !isCountRecord(value.fallbackKindCounts) ||
     !Array.isArray(value.files) ||
     !value.files.every(isBrowserLuaScriptManifestFile) ||
     value.copiedCount !== value.copied.length ||
     value.missingCount !== value.missing.length ||
-    value.files.length !== value.copied.length ||
-    sumCounts(value.sourceCounts) !== value.copied.length ||
-    ((value.sourceCounts["local-fallback"] as number | undefined) ?? 0) !== sumCounts(value.fallbackKindCounts)
+    value.files.length !== value.copied.length
+  ) {
+    throw new Error("Lua script manifest must describe browser-lua-scripts payload metadata");
+  }
+  const files = value.files;
+  const sourceCounts = value.sourceCounts as Record<string, number>;
+  const fallbackKindCounts = value.fallbackKindCounts as Record<string, number>;
+  if (
+    !sameCountRecord(sourceCounts, countBy(files, (file) => file.source)) ||
+    !sameCountRecord(
+      fallbackKindCounts,
+      countBy(files.filter((file) => file.source === "local-fallback"), (file) => file.fallbackKind),
+    ) ||
+    files.some((file) => file.source === "local-fallback" ? file.fallbackKind === undefined : file.fallbackKind !== undefined)
   ) {
     throw new Error("Lua script manifest must describe browser-lua-scripts payload metadata");
   }
@@ -164,8 +173,8 @@ function parseBrowserLuaScriptManifest(value: unknown): BrowserLuaScriptManifest
     selectedCodes: [...value.selectedCodes],
     copiedCount: value.copiedCount,
     missingCount: value.missingCount,
-    sourceCounts: { ...value.sourceCounts } as Record<string, number>,
-    fallbackKindCounts: { ...value.fallbackKindCounts } as Record<string, number>,
+    sourceCounts: { ...sourceCounts },
+    fallbackKindCounts: { ...fallbackKindCounts },
     copied: [...value.copied],
     missing: [...value.missing],
     files: value.files.map((file) => ({ ...file })),
@@ -195,8 +204,24 @@ function isBrowserLuaScriptFallbackKind(value: unknown): value is "alias" | "pro
   return value === "alias" || value === "provisional" || value === "other";
 }
 
-function sumCounts(counts: Record<string, unknown>): number {
-  return Object.values(counts).reduce<number>((sum, count) => sum + (typeof count === "number" ? count : 0), 0);
+function isCountRecord(value: unknown): value is Record<string, number> {
+  return isRecord(value) && Object.values(value).every((count) => Number.isInteger(count) && (count as number) >= 0);
+}
+
+function countBy(values: BrowserLuaScriptManifestFile[], keyForValue: (value: BrowserLuaScriptManifestFile) => string | undefined): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const value of values) {
+    const key = keyForValue(value);
+    if (key === undefined) continue;
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+function sameCountRecord(left: Record<string, number>, right: Record<string, number>): boolean {
+  const leftKeys = Object.keys(left).filter((key) => left[key] !== 0).sort();
+  const rightKeys = Object.keys(right).filter((key) => right[key] !== 0).sort();
+  return leftKeys.length === rightKeys.length && leftKeys.every((key, index) => key === rightKeys[index] && left[key] === right[key]);
 }
 
 function isSha256(value: string): boolean {

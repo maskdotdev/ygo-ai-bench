@@ -151,6 +151,30 @@ describe("browser asset manifest checker", () => {
     expect(result.stderr).toContain("Lua script manifest files list contains duplicate names");
   });
 
+  it("fails when Lua script source counts do not match file metadata exactly", () => {
+    const root = makeTempRoot();
+    const cardScriptsDir = path.join(root, "card-scripts");
+    writeScriptExport(cardScriptsDir, {
+      "c100.lua": "c100={}\n",
+      "c200.lua": "c200={}\n",
+      "c300.lua": "c300={}\n",
+    });
+    const manifestPath = path.join(cardScriptsDir, "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+      sourceCounts: Record<string, number>;
+      files: Array<{ name: string; source: string; bytes: number; sha256: string }>;
+    };
+    manifest.sourceCounts = { "upstream-official": 1, "local-override": 2 };
+    manifest.files[1]!.source = "local-override";
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-scripts", cardScriptsDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Lua script manifest sourceCounts");
+    expect(result.stderr).toContain("do not match files");
+  });
+
   it("rejects missing asset directory arguments", () => {
     const result = spawnSync(process.execPath, [checkerPath], { encoding: "utf8" });
 

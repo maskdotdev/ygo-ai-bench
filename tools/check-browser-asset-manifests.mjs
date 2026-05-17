@@ -81,10 +81,8 @@ function checkCardScriptsManifest(dir) {
     !manifest.copied.every((name) => typeof name === "string") ||
     !Array.isArray(manifest.missing) ||
     !manifest.missing.every((name) => typeof name === "string") ||
-    !isRecord(manifest.sourceCounts) ||
-    !Object.values(manifest.sourceCounts).every((count) => Number.isInteger(count)) ||
-    !isRecord(manifest.fallbackKindCounts) ||
-    !Object.values(manifest.fallbackKindCounts).every((count) => Number.isInteger(count)) ||
+    !isCountRecord(manifest.sourceCounts) ||
+    !isCountRecord(manifest.fallbackKindCounts) ||
     !Array.isArray(manifest.files) ||
     !manifest.files.every(isLuaScriptFileManifest)
   ) {
@@ -93,8 +91,6 @@ function checkCardScriptsManifest(dir) {
   if (manifest.copiedCount !== manifest.copied.length) fail(`Lua script manifest copiedCount ${manifest.copiedCount} does not match copied ${manifest.copied.length}`);
   if (manifest.missingCount !== manifest.missing.length) fail(`Lua script manifest missingCount ${manifest.missingCount} does not match missing ${manifest.missing.length}`);
   if (manifest.files.length !== manifest.copied.length) fail(`Lua script manifest files ${manifest.files.length} does not match copied ${manifest.copied.length}`);
-  if (sumCounts(manifest.sourceCounts) !== manifest.copied.length) fail("Lua script manifest sourceCounts does not match copied scripts");
-  if ((manifest.sourceCounts["local-fallback"] ?? 0) !== sumCounts(manifest.fallbackKindCounts)) fail("Lua script manifest fallbackKindCounts does not match local fallback scripts");
   for (const name of [...manifest.copied, ...manifest.missing, ...manifest.files.map((file) => file.name)]) scriptCodeFromName(name);
   if (manifest.selectedCodes.length) {
     const selected = normalizedUniqueStrings(manifest.selectedCodes);
@@ -104,14 +100,23 @@ function checkCardScriptsManifest(dir) {
   }
   if (new Set(manifest.copied).size !== manifest.copied.length) fail("Lua script manifest copied list contains duplicate names");
   if (new Set(manifest.files.map((file) => file.name)).size !== manifest.files.length) fail("Lua script manifest files list contains duplicate names");
+  const actualSourceCounts = countBy(manifest.files, (file) => file.source);
+  const actualFallbackKindCounts = countBy(
+    manifest.files.filter((file) => file.source === "local-fallback"),
+    (file) => file.fallbackKind,
+  );
+  if (!sameCountRecord(manifest.sourceCounts, actualSourceCounts)) {
+    fail(`Lua script manifest sourceCounts ${formatCountRecord(manifest.sourceCounts)} do not match files ${formatCountRecord(actualSourceCounts)}`);
+  }
+  if (!sameCountRecord(manifest.fallbackKindCounts, actualFallbackKindCounts)) {
+    fail(`Lua script manifest fallbackKindCounts ${formatCountRecord(manifest.fallbackKindCounts)} do not match local fallback files ${formatCountRecord(actualFallbackKindCounts)}`);
+  }
 
   const copied = new Set(manifest.copied);
   for (const file of manifest.files) {
     if (!copied.has(file.name)) fail(`Lua script manifest file ${file.name} is not listed in copied scripts`);
-    if (!manifest.sourceCounts[file.source]) fail(`Lua script manifest file ${file.name} has source ${file.source} not represented in sourceCounts`);
     if (file.source === "local-fallback") {
       if (!file.fallbackKind) fail(`Lua script manifest local fallback ${file.name} is missing fallbackKind`);
-      if (!manifest.fallbackKindCounts[file.fallbackKind]) fail(`Lua script manifest local fallback ${file.name} has fallbackKind ${file.fallbackKind} not represented in fallbackKindCounts`);
     } else if (file.fallbackKind !== undefined) {
       fail(`Lua script manifest non-fallback ${file.name} must not include fallbackKind`);
     }
@@ -207,8 +212,28 @@ function isLuaScriptFallbackKind(value) {
   return ["alias", "provisional", "other"].includes(value);
 }
 
-function sumCounts(counts) {
-  return Object.values(counts).reduce((sum, count) => sum + count, 0);
+function isCountRecord(value) {
+  return isRecord(value) && Object.values(value).every((count) => Number.isInteger(count) && count >= 0);
+}
+
+function countBy(values, keyForValue) {
+  const counts = {};
+  for (const value of values) {
+    const key = keyForValue(value);
+    if (key === undefined) continue;
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+function sameCountRecord(left, right) {
+  const leftKeys = Object.keys(left).filter((key) => left[key] !== 0).sort();
+  const rightKeys = Object.keys(right).filter((key) => right[key] !== 0).sort();
+  return leftKeys.length === rightKeys.length && leftKeys.every((key, index) => key === rightKeys[index] && left[key] === right[key]);
+}
+
+function formatCountRecord(counts) {
+  return JSON.stringify(Object.fromEntries(Object.entries(counts).filter(([, count]) => count !== 0).sort(([left], [right]) => left.localeCompare(right))));
 }
 
 function isSha256(value) {

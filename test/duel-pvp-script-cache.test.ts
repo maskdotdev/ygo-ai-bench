@@ -149,4 +149,34 @@ describe("browser PvP Lua script cache", () => {
 
     await expect(loadManifest()).rejects.toThrow("Lua script manifest must describe browser-lua-scripts payload metadata");
   });
+
+  it("rejects browser Lua script sidecar manifests with stale source tallies", async () => {
+    const loadManifest = createBrowserLuaScriptManifestLoader({
+      baseUrl: "/card-scripts",
+      fetchJson: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return {
+            schemaVersion: 1,
+            kind: "browser-lua-scripts",
+            selectedCodes: ["90000017", "90000018", "90000019"],
+            copiedCount: 3,
+            missingCount: 0,
+            sourceCounts: { "upstream-official": 1, "local-override": 2 },
+            fallbackKindCounts: {},
+            copied: ["c90000017.lua", "c90000018.lua", "c90000019.lua"],
+            missing: [],
+            files: [
+              { name: "c90000017.lua", source: "upstream-official", bytes: 16, sha256: manifestHash },
+              { name: "c90000018.lua", source: "local-override", bytes: 16, sha256: manifestHash },
+              { name: "c90000019.lua", source: "upstream-official", bytes: 16, sha256: manifestHash },
+            ],
+          };
+        },
+      }),
+    });
+
+    await expect(loadManifest()).rejects.toThrow("Lua script manifest must describe browser-lua-scripts payload metadata");
+  });
 });
