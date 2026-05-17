@@ -16,6 +16,11 @@ const missedTimingMultiStepFixtureCount = 166;
 const missedTimingOptionalWhenVsIfFixtureCount = 166;
 const missedTimingFullSourceEffectCauseFixtureCount = 126;
 const missedTimingSourceEffectCauseEventCodeFixtureCount = 123;
+const missedTimingSourceEffectCauseEventCodeExceptions = [
+  "parity-missed-timing-activated-fixture.test.ts",
+  "parity-missed-timing-phase-changed-fixture.test.ts",
+  "parity-missed-timing-turn-started-fixture.test.ts",
+];
 const missedTimingChainEventFixtureCount = 14;
 const missedTimingChainActivatingStateFixtureCount = 2;
 const missedTimingChainLifecycleOriginFixtureCount = 12;
@@ -141,9 +146,13 @@ describe("EDOPro parity missed-timing event coverage", () => {
       .sort();
     const sourceEffectCauseEventCodeFiles = multiStepFiles
       .filter((file) => hasSourceEffectCauseMetadata(file) && hasEventCodeMetadata(file));
+    const sourceEffectCauseEventCodeExceptions = multiStepFiles
+      .filter((file) => hasSourceEffectCauseMetadata(file) && !hasEventCodeMetadata(file))
+      .sort();
 
     expect(multiStepFiles).toHaveLength(missedTimingMultiStepFixtureCount);
     expect(sourceEffectCauseEventCodeFiles).toHaveLength(missedTimingSourceEffectCauseEventCodeFixtureCount);
+    expect(sourceEffectCauseEventCodeExceptions).toEqual([...missedTimingSourceEffectCauseEventCodeExceptions].sort());
   });
 
   it("pins multi-step optional when versus optional if missed-timing proof", () => {
