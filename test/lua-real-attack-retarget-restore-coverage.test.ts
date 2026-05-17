@@ -11,8 +11,24 @@ const attackRetargetKindCounts = {
   selfRetarget: 1,
   summonRetarget: 3,
 } satisfies Record<AttackRetargetKind, number>;
+const attackRetargetSemanticVariantCounts = {
+  appleMagicianGirlHandSummonRetarget: 1,
+  callEarthboundSelectedTargetRetarget: 1,
+  cardBlockerSelfRetarget: 1,
+  chocolateMagicianGirlGraveyardSummonRetarget: 1,
+  toonDefenseDirectAttackConversion: 1,
+  ultimateDivineBeastDivineSummonRetarget: 1,
+} satisfies Record<AttackRetargetSemanticVariant, number>;
 
 type AttackRetargetKind = "directAttackConversion" | "selectedTargetRetarget" | "selfRetarget" | "summonRetarget";
+
+type AttackRetargetSemanticVariant =
+  | "appleMagicianGirlHandSummonRetarget"
+  | "callEarthboundSelectedTargetRetarget"
+  | "cardBlockerSelfRetarget"
+  | "chocolateMagicianGirlGraveyardSummonRetarget"
+  | "toonDefenseDirectAttackConversion"
+  | "ultimateDivineBeastDivineSummonRetarget";
 
 describe("Lua real attack retarget restore coverage", () => {
   it("requires representative attack-retarget fixtures to assert clean Lua restore and replayed target changes", () => {
@@ -43,6 +59,19 @@ describe("Lua real attack retarget restore coverage", () => {
 
   it("keeps attack-retarget fixture kinds explicit", () => {
     expect(countAttackRetargetKinds(realScriptAttackRetargetFixtureFiles())).toEqual(attackRetargetKindCounts);
+  });
+
+  it("keeps named attack-retarget semantic variants explicit", () => {
+    expect(countAttackRetargetSemanticVariants(realScriptAttackRetargetSemanticVariants())).toEqual(attackRetargetSemanticVariantCounts);
+
+    const weak = realScriptAttackRetargetSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -124,6 +153,106 @@ function countAttackRetargetKinds(fixtures: Array<{ kind: AttackRetargetKind }>)
       selectedTargetRetarget: 0,
       selfRetarget: 0,
       summonRetarget: 0,
+    },
+  );
+}
+
+function realScriptAttackRetargetSemanticVariants(): Array<{
+  file: string;
+  kind: AttackRetargetSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-apple-magician-girl-attack-retarget.test.ts",
+      kind: "appleMagicianGirlHandSummonRetarget",
+      required: [
+        'const appleCode = "56132807"',
+        "restores her hand Spellcaster summon and redirects the attack to it",
+        'triggerTiming: "if"',
+        'sourceUid": "p1-deck-56132807-0"',
+        "targetUid: spellcaster.uid",
+        "players[1].lifePoints).toBe(7600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-call-earthbound-change-attack-target.test.ts",
+      kind: "callEarthboundSelectedTargetRetarget",
+      required: [
+        'const callCode = "65743242"',
+        "restores Call of the Earthbound and changes the attack target to another legal monster",
+        'const sevenToolsCode = "3819470"',
+        "action.type === \"activateEffect\" && action.uid === sevenTools!.uid)).toBe(true)",
+        "targetUid: newTarget!.uid",
+        "battleDamage).toMatchObject({ 1: 1300 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-card-blocker-change-attack-target.test.ts",
+      kind: "cardBlockerSelfRetarget",
+      required: [
+        'const blockerCode = "42256406"',
+        "restores its field battle-target trigger and redirects to itself",
+        "effectId.endsWith(\"-1131\")",
+        "targetUid: blocker!.uid",
+        "players[1].lifePoints).toBe(6600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-chocolate-magician-girl-retarget.test.ts",
+      kind: "chocolateMagicianGirlGraveyardSummonRetarget",
+      required: [
+        'const chocolateCode = "7198399"',
+        "restores her battle-target trigger and retargets the attack to the summoned Spellcaster",
+        "triggerSourceOnly: true",
+        "moveDuelCard(session.state, spellcaster!.uid, \"graveyard\", 1)",
+        "targetUid: spellcaster!.uid",
+        "players[1].lifePoints).toBe(7600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-toon-defense-change-attack-target.test.ts",
+      kind: "toonDefenseDirectAttackConversion",
+      required: [
+        'const toonDefenseCode = "43509019"',
+        "restores Toon Defense's attack-declaration trigger and changes the attack into a direct attack",
+        "currentAttack?.targetUid).toBeUndefined()",
+        "pendingBattle?.targetUid).toBeUndefined()",
+        "battleDamage).toMatchObject({ 1: 1800 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ultimate-divine-beast-retarget.test.ts",
+      kind: "ultimateDivineBeastDivineSummonRetarget",
+      required: [
+        'const ultimateDivineBeastCode = "32247099"',
+        "restores its attack-announcement trigger and retargets to the summoned DIVINE monster",
+        "moveDuelCard(session.state, discard!.uid, \"hand\", 1)",
+        "targetUid: divine!.uid",
+        "location: \"graveyard\", controller: 1",
+        "position: \"faceUpDefense\"",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: AttackRetargetSemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countAttackRetargetSemanticVariants(fixtures: Array<{ kind: AttackRetargetSemanticVariant }>): Record<AttackRetargetSemanticVariant, number> {
+  return fixtures.reduce<Record<AttackRetargetSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      appleMagicianGirlHandSummonRetarget: 0,
+      callEarthboundSelectedTargetRetarget: 0,
+      cardBlockerSelfRetarget: 0,
+      chocolateMagicianGirlGraveyardSummonRetarget: 0,
+      toonDefenseDirectAttackConversion: 0,
+      ultimateDivineBeastDivineSummonRetarget: 0,
     },
   );
 }
