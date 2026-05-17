@@ -268,6 +268,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "reason: duelReason.material | duelReason.ritual",
         'eventName === "specialSummoned"',
         'eventName === "sentToGraveyard"',
+        'expect(restored.host.messages).not.toContain("miracle raven responder resolved")',
       ],
     },
     {
