@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 157;
+const realScriptSummonFixtureCount = 160;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 4;
@@ -14,12 +14,13 @@ const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
+const linkedZoneSpecialSummonFixtureCount = 1;
 const realScriptSummonKeywordFamilyCounts = {
   fusion: 22,
-  link: 10,
+  link: 12,
   pendulum: 17,
   ritual: 20,
-  summon: 58,
+  summon: 59,
   synchro: 16,
   xyz: 14,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -69,6 +70,9 @@ const flipSummonSuccessTrapKindCounts = {
   flipDestroyTrap: 2,
   flipStatTrap: 1,
 } satisfies Record<FlipSummonSuccessTrapKind, number>;
+const linkedZoneSpecialSummonKindCounts = {
+  releaseCostDeckSummon: 1,
+} satisfies Record<LinkedZoneSpecialSummonKind, number>;
 
 type SummonUnionProcedureKind =
   | "battleTriggerSummonBack"
@@ -83,6 +87,7 @@ type SummonMaterialLockKind =
   | "xyzMaterialLock";
 
 type FlipSummonSuccessTrapKind = "flipBanishTrap" | "flipDestroyTrap" | "flipStatTrap";
+type LinkedZoneSpecialSummonKind = "releaseCostDeckSummon";
 type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -310,6 +315,34 @@ describe("Lua real summon restore coverage", () => {
   it("keeps Flip Summon success Trap fixture kinds explicit", () => {
     expect(countFlipSummonSuccessTrapKinds(realScriptFlipSummonSuccessTrapFixtureSnippets())).toEqual(flipSummonSuccessTrapKindCounts);
   });
+
+  it("requires representative linked-zone Special Summon fixtures to pin player-scoped zones", () => {
+    const files = realScriptLinkedZoneSpecialSummonFixtureSnippets();
+    expect(files).toHaveLength(linkedZoneSpecialSummonFixtureCount);
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps linked-zone Special Summon fixture kinds explicit", () => {
+    expect(countLinkedZoneSpecialSummonKinds(realScriptLinkedZoneSpecialSummonFixtureSnippets())).toEqual(linkedZoneSpecialSummonKindCounts);
+  });
 });
 
 function realScriptSummonFixtureFiles(): string[] {
@@ -406,6 +439,39 @@ function realScriptFlipSummonSuccessTrapFixtureSnippets(): Array<{
       ],
     },
   ];
+}
+
+function realScriptLinkedZoneSpecialSummonFixtureSnippets(): Array<{
+  file: string;
+  kind: LinkedZoneSpecialSummonKind;
+  required: string[];
+}> {
+  return [
+    {
+      file: "test/lua-real-script-altergeist-primebanshee-linked-zone-special-summon.test.ts",
+      kind: "releaseCostDeckSummon",
+      required: [
+        "GetLinkedZone(tp)",
+        "release cost",
+        'location: "monsterZone"',
+        "sequence: 1",
+        '"specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+      ],
+    },
+  ];
+}
+
+function countLinkedZoneSpecialSummonKinds(files: Array<{ kind: LinkedZoneSpecialSummonKind }>): Record<LinkedZoneSpecialSummonKind, number> {
+  return files.reduce<Record<LinkedZoneSpecialSummonKind, number>>(
+    (counts, { kind }) => {
+      counts[kind] += 1;
+      return counts;
+    },
+    {
+      releaseCostDeckSummon: 0,
+    },
+  );
 }
 
 function realScriptSummonProcedureFixtureFiles(): string[] {
