@@ -198,6 +198,8 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "reason: duelReason.material | duelReason.ritual",
         'eventName: "specialSummoned"',
         'eventName === "sentToGraveyard"',
+        "expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([materialA!.uid, materialB!.uid].sort())",
+        'expect(restored.host.messages).not.toContain("dark master responder resolved")',
       ],
     },
     {
