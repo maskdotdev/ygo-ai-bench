@@ -7,8 +7,13 @@ const root = process.cwd();
 const activityKindCounts = {
   mulcharmyChainSummonCounters: 1,
 } satisfies Record<ActivityKind, number>;
+const activitySemanticVariantCounts = {
+  mulcharmySharedChainLimitAndDelayedDraw: 1,
+} satisfies Record<ActivitySemanticVariant, number>;
 
 type ActivityKind = "mulcharmyChainSummonCounters";
+
+type ActivitySemanticVariant = "mulcharmySharedChainLimitAndDelayedDraw";
 
 describe("Lua real activity restore coverage", () => {
   it("requires representative activity fixtures to assert clean Lua restore", () => {
@@ -45,6 +50,19 @@ describe("Lua real activity restore coverage", () => {
   it("keeps activity fixture kinds explicit", () => {
     expect(countActivityKinds(realScriptActivityFixtureFiles())).toEqual(activityKindCounts);
   });
+
+  it("keeps named activity semantic variants explicit", () => {
+    expect(countActivitySemanticVariants(activitySemanticVariants())).toEqual(activitySemanticVariantCounts);
+
+    const weak = activitySemanticVariants()
+      .filter(({ file, requiredSnippets }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function realScriptActivityFixtureFiles(): Array<{
@@ -76,6 +94,42 @@ function countActivityKinds(fixtures: Array<{ kind: ActivityKind }>): Record<Act
     },
     {
       mulcharmyChainSummonCounters: 0,
+    },
+  );
+}
+
+function activitySemanticVariants(): Array<{
+  file: string;
+  kind: ActivitySemanticVariant;
+  requiredSnippets: string[];
+}> {
+  return [
+    {
+      file: "test/lua-real-script-mulcharmy-activity.test.ts",
+      kind: "mulcharmySharedChainLimitAndDelayedDraw",
+      requiredSnippets: [
+        'const fuwalosCode = "42141493"',
+        'const puruliaCode = "84192580"',
+        'const meowlsCode = "87126721"',
+        "counts real Mulcharmy monster effect chain activations for the shared two-activation limit",
+        "delays restored Mulcharmy chain-solving draws until the current chain link is solved",
+        "record.activity === duelActivity.chain",
+        "effectId?.startsWith(\"lua-\")",
+        "action.type === \"activateEffect\" && action.uid === meowls?.uid)).toBe(false)",
+        "chain summoner hand after summon 0",
+      ],
+    },
+  ];
+}
+
+function countActivitySemanticVariants(fixtures: Array<{ kind: ActivitySemanticVariant }>): Record<ActivitySemanticVariant, number> {
+  return fixtures.reduce<Record<ActivitySemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      mulcharmySharedChainLimitAndDelayedDraw: 0,
     },
   );
 }
