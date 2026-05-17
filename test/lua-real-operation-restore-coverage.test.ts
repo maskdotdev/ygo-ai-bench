@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 39;
+const operationFixtureCount = 40;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -16,6 +16,7 @@ const operationKindCounts = {
   drawThenDiscard: 1,
   groupDestroy: 9,
   groupToHand: 1,
+  graveToDeckBottomDraw: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
   lpCostHandDiscard: 1,
@@ -55,6 +56,7 @@ type OperationKind =
   | "drawThenDiscard"
   | "groupDestroy"
   | "groupToHand"
+  | "graveToDeckBottomDraw"
   | "handDiscardDraw"
   | "handToDeckDraw"
   | "lpCostHandDiscard"
@@ -557,6 +559,19 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ryzeal-cross-grave-to-deck-bottom-draw.test.ts",
+      kind: "graveToDeckBottomDraw",
+      required: [
+        "category: 0x10",
+        "category: 0x10000",
+        'eventName: "sentToDeck"',
+        'eventName: "cardsDrawn"',
+        "getCards(restored.session.state, 0, \"deck\")",
+        "eventUids: [graveA!.uid, graveB!.uid]",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-saion-toss-coin-restore.test.ts",
       kind: "tossCoin",
       required: [
@@ -811,6 +826,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       drawThenDiscard: 0,
       groupDestroy: 0,
       groupToHand: 0,
+      graveToDeckBottomDraw: 0,
       handDiscardDraw: 0,
       handToDeckDraw: 0,
       lpCostHandDiscard: 0,
