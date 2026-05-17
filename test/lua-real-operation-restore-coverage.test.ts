@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 33;
+const operationFixtureCount = 34;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -16,6 +16,7 @@ const operationKindCounts = {
   groupToHand: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
+  lpCostHandDiscard: 1,
   releaseDamage: 1,
   searchOrExcavate: 3,
   spellDraw: 1,
@@ -49,6 +50,7 @@ type OperationKind =
   | "groupToHand"
   | "handDiscardDraw"
   | "handToDeckDraw"
+  | "lpCostHandDiscard"
   | "releaseDamage"
   | "searchOrExcavate"
   | "spellDraw"
@@ -183,6 +185,20 @@ function operationFixtureFiles(): Array<{
         "lastDiceResults).toEqual([])",
         'eventName: "diceTossed"',
         'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-confiscation-lp-cost-discard.test.ts",
+      kind: "lpCostHandDiscard",
+      required: [
+        "category: 0x80",
+        "lifePointCostPaid",
+        "eventValue: 1000",
+        'eventName: "confirmed"',
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "discarded"',
+        "duelReason.effect | duelReason.discard",
         "host.messages).not.toContain",
       ],
     },
@@ -723,6 +739,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       groupToHand: 0,
       handDiscardDraw: 0,
       handToDeckDraw: 0,
+      lpCostHandDiscard: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
       spellDraw: 0,
