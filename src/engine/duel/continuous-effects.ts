@@ -7,6 +7,7 @@ import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
 import { isSpecialSummonCostPrevented } from "#duel/special-summon-cost.js";
 import { isSummonOrSetCostPrevented } from "#duel/summon-set-cost.js";
 import { effectiveSpecialSummonTypeCode, summonTypeCodeFromDuelSummonType } from "#duel/summon-type-codes.js";
+import { matchesDestinationReset, matchesLeaveReset, normalizeResetFlags, resetEvent } from "#duel/reset-flags.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelLocation, DuelState, DuelSummonType, PlayerId } from "#duel/types.js";
 
 export type ContinuousEffectContextFactory = (
@@ -735,12 +736,18 @@ export function isCardDisabled(state: DuelState, card: DuelCardInstance, createC
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 2) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
+    if (!source || (!effect.range.includes(source.location) && !survivingSelfDisableAppliesOutOfRange(effect, source, card))) continue;
     const ctx = createContext(effect, source, card);
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
+}
+
+function survivingSelfDisableAppliesOutOfRange(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
+  if (source.uid !== card.uid || effect.sourceUid !== card.uid || !effect.range.includes(source.previousLocation ?? source.location)) return false;
+  const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
+  return (flags & resetEvent) !== 0 && !matchesLeaveReset(flags, source) && !matchesDestinationReset(flags, source);
 }
 
 export function shouldRedirectToGraveyardMove(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): boolean {

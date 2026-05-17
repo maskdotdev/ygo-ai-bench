@@ -6,10 +6,11 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const battleKeywords = ["battle", "attack", "damage"];
-const realScriptBattleFixtureCount = 140;
+const realScriptBattleFixtureCount = 141;
 const battleLegalActionFixtureCount = 4;
 const attackDeclarationTrapFixtureCount = 6;
 const battleRoutingFixtureCount = 6;
+const battleContinuousSemanticFixtureCount = 1;
 const damageStepRestoreFixtureCount = 4;
 const battleDamageSemanticFixtureCount = 8;
 const battleTriggerSemanticFixtureCount = 11;
@@ -28,6 +29,9 @@ const battleRoutingKindCounts = {
   extraMonsterAttack: 1,
   onlyAttackEquipped: 1,
 } satisfies Record<BattleRoutingKind, number>;
+const battleContinuousSemanticKindCounts = {
+  battledGraveDisable: 1,
+} satisfies Record<BattleContinuousSemanticKind, number>;
 const damageStepRestoreKindCounts = {
   activatedDamageStepBoost: 1,
   honestDamageStepBoost: 1,
@@ -72,6 +76,8 @@ type BattleRoutingKind =
   | "battleTargetSelectionLock"
   | "extraMonsterAttack"
   | "onlyAttackEquipped";
+
+type BattleContinuousSemanticKind = "battledGraveDisable";
 
 type DamageStepRestoreKind =
   | "activatedDamageStepBoost"
@@ -189,6 +195,34 @@ describe("Lua real battle restore coverage", () => {
 
   it("keeps battle routing fixture kinds explicit", () => {
     expect(countBattleRoutingKinds(realScriptBattleRoutingFixtureFiles())).toEqual(battleRoutingKindCounts);
+  });
+
+  it("requires representative battle continuous fixtures to prove restored continuous outcomes", () => {
+    const files = realScriptBattleContinuousSemanticFixtureFiles();
+    expect(files).toHaveLength(battleContinuousSemanticFixtureCount);
+
+    const missing = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys")
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || !text.includes("eventHistory")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
+
+  it("keeps battle continuous semantic fixture kinds explicit", () => {
+    expect(countBattleContinuousSemanticKinds(realScriptBattleContinuousSemanticFixtureFiles())).toEqual(battleContinuousSemanticKindCounts);
   });
 
   it("requires real damage-step restore fixtures to pin restorable battle windows and response replay", () => {
@@ -430,6 +464,30 @@ function realScriptBattleRoutingFixtureFiles(): Array<{
   }>)
     .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function realScriptBattleContinuousSemanticFixtureFiles(): Array<{
+  file: string;
+  kind: BattleContinuousSemanticKind;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "lua-real-script-dark-ruler-ha-des-battled-disable.test.ts",
+      kind: "battledGraveDisable",
+      required: [
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        'eventName: "battleDestroyed"',
+        'location: "graveyard"',
+        "ha des target disabled true",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: BattleContinuousSemanticKind;
+    required: string[];
+  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
 function realScriptDamageStepRestoreFixtureFiles(): string[] {
@@ -715,6 +773,20 @@ function countBattleRoutingKinds(fixtures: Array<{ kind: BattleRoutingKind }>): 
       battleTargetSelectionLock: 0,
       extraMonsterAttack: 0,
       onlyAttackEquipped: 0,
+    },
+  );
+}
+
+function countBattleContinuousSemanticKinds(
+  fixtures: Array<{ kind: BattleContinuousSemanticKind }>,
+): Record<BattleContinuousSemanticKind, number> {
+  return fixtures.reduce<Record<BattleContinuousSemanticKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      battledGraveDisable: 0,
     },
   );
 }

@@ -286,13 +286,14 @@ Completed baseline:
 - Real-script `EVENT_BATTLED` effect-damage coverage also restores official Topologic Bomber Dragon after-damage trigger timing through `Duel.GetAttackTarget():GetBaseAttack()`, proving restored effect damage is applied before end-of-Damage-Step battle destruction cleanup.
 - Real-script `EVENT_BATTLED` Deck-send coverage now restores official Sky Striker Ace - Hayate direct-attack after-damage trigger timing, grouped restored trigger actions, and `Duel.SendtoGrave` effect reason metadata for a Sky Striker card sent from Deck after snapshot restore.
 - Real-script `EVENT_BATTLED` effect-destroy coverage now restores official Predaplant Sarraceniant after-damage trigger timing, battle-target lookup through `Duel.GetAttacker()`/`Duel.GetAttackTarget()`, grouped restored trigger actions, and effect-destruction reason metadata for the battled monster after snapshot restore.
+- Real-script `EVENT_BATTLED` continuous-disable coverage now restores official Dark Ruler Ha Des after-damage continuous operation timing and preserves the battle-destroyed monster's self-registered `EFFECT_DISABLE` through Graveyard movement after snapshot restore.
 - Real-script battle-confirm coverage now restores official Reflect Bounder's `EVENT_BATTLE_CONFIRM` damage trigger through `Duel.GetChainInfo`, `Duel.GetAttacker():GetAttack()`, and temporary flag state, then restores its later `EVENT_BATTLED` self-destruction trigger after damage calculation.
 
 Remaining deliverables:
 
 - Continue expanding battle timing coverage beyond the current restored Negate Attack and Alien Hunter real-script fixtures to more Project Ignis scripts that use battle helper APIs.
 - Deepen "during damage calculation" edge behavior for replacement effects and response priority where EDOPro distinguishes sub-steps beyond the current window kinds. Both-player plus half-damage modifier ordering now has always-on snapshot-backed fixture coverage.
-- Continue broadening `EVENT_BATTLED`/after-damage-calculation coverage beyond the restored Wall of Illusion, Ally of Justice Nullfier, Topologic Bomber Dragon, Sky Striker Ace - Hayate, Predaplant Sarraceniant, Divine Knight Ishzark, D.D. Assailant, and D.D. Warrior plus Wall simultaneous-trigger branches.
+- Continue broadening `EVENT_BATTLED`/after-damage-calculation coverage beyond the restored Wall of Illusion, Ally of Justice Nullfier, Dark Ruler Ha Des, Topologic Bomber Dragon, Sky Striker Ace - Hayate, Predaplant Sarraceniant, Divine Knight Ishzark, D.D. Assailant, and D.D. Warrior plus Wall simultaneous-trigger branches.
 - Battle destruction replacement conflicts and redirected branches involving multiple competing field battle-destroy redirects now have snapshot-backed fixture coverage.
 - Keep compatibility helpers for existing `battleStep` users until UI and script consumers fully migrate to `battleWindow`.
 
