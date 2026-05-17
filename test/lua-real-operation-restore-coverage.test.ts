@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 38;
+const operationFixtureCount = 39;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
   deckToGrave: 1,
   deckSplit: 1,
+  discardCostGraveToDeckTop: 1,
   directDamage: 1,
   directRecover: 1,
   drawThenDiscard: 1,
@@ -48,6 +49,7 @@ type OperationKind =
   | "costBanishDraw"
   | "deckToGrave"
   | "deckSplit"
+  | "discardCostGraveToDeckTop"
   | "directDamage"
   | "directRecover"
   | "drawThenDiscard"
@@ -256,6 +258,18 @@ function operationFixtureFiles(): Array<{
         "duelReason.effect | duelReason.discard",
         "confirmed 0",
         "confirmed 1",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-feather-phoenix-discard-grave-to-deck-top.test.ts",
+      kind: "discardCostGraveToDeckTop",
+      required: [
+        "category: 0x10",
+        'eventName: "discarded"',
+        'eventName: "sentToDeck"',
+        'location: "deck", controller: 0, sequence: 0',
+        "getCards(restored.session.state, 0, \"deck\")",
         "host.messages).not.toContain",
       ],
     },
@@ -791,6 +805,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       costBanishDraw: 0,
       deckToGrave: 0,
       deckSplit: 0,
+      discardCostGraveToDeckTop: 0,
       directDamage: 0,
       directRecover: 0,
       drawThenDiscard: 0,
