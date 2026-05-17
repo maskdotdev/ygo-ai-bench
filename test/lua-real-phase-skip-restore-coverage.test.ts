@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const phaseSkipFixtureCount = 13;
+const phaseSkipFixtureCount = 14;
 const phaseSkipKindCounts = {
   battlePhaseSkip: 4,
-  drawPhaseSkip: 2,
+  drawPhaseSkip: 3,
   endTurnLock: 1,
   main1Skip: 3,
   main2Skip: 2,
@@ -78,6 +78,16 @@ function realScriptPhaseSkipFixtures(): Array<{
         "restoredSkip.restoreComplete",
         "getLuaRestoreLegalActionGroups(restoredSkip, 0)",
         'eventName: "destroyed"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-reckless-greed-draw-skip.test.ts",
+      kind: "drawPhaseSkip",
+      requiredSnippets: [
+        'skippedPhases).toEqual([{ player: 0, phase: "draw", remaining: 2 }])',
+        "restoredSkip.restoreComplete",
+        "getLuaRestoreLegalActionGroups(restoredSkip, 0)",
+        'eventName: "cardsDrawn"',
       ],
     },
     {

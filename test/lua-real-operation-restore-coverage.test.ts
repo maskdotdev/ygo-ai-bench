@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 29;
+const operationFixtureCount = 30;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -23,6 +23,7 @@ const operationKindCounts = {
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
   targetToHandDiscardCost: 1,
+  trapDrawSkipDraw: 1,
   tossCoin: 1,
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
@@ -52,6 +53,7 @@ type OperationKind =
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
   | "targetToHandDiscardCost"
+  | "trapDrawSkipDraw"
   | "tossCoin"
   | "tossDiceHandDiscard";
 
@@ -413,6 +415,18 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-reckless-greed-draw-skip.test.ts",
+      kind: "trapDrawSkipDraw",
+      required: [
+        "category: 0x10000",
+        "targetParam: 2",
+        'eventName: "cardsDrawn"',
+        'skippedPhases).toEqual([{ player: 0, phase: "draw", remaining: 2 }])',
+        "restoredSkip.restoreComplete",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-saion-toss-coin-restore.test.ts",
       kind: "tossCoin",
       required: [
@@ -674,6 +688,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
       targetToHandDiscardCost: 0,
+      trapDrawSkipDraw: 0,
       tossCoin: 0,
       tossDiceHandDiscard: 0,
     },
