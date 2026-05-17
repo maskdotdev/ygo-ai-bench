@@ -5,6 +5,13 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const damageCalculationFixtureCount = 4;
+const damageCalculationKindCounts = {
+  calculateDamageRetarget: 2,
+  effectDamageReflection: 1,
+  persistentDamageCalculationDebuff: 1,
+} satisfies Record<DamageCalculationKind, number>;
+
+type DamageCalculationKind = "calculateDamageRetarget" | "effectDamageReflection" | "persistentDamageCalculationDebuff";
 
 describe("Lua real damage calculation restore coverage", () => {
   it("requires restored damage calculation and reflection fixtures to prove clean restore and final outcomes", () => {
@@ -30,12 +37,21 @@ describe("Lua real damage calculation restore coverage", () => {
 
     expect(missing).toEqual([]);
   });
+
+  it("keeps damage-calculation fixture kinds explicit", () => {
+    expect(countDamageCalculationKinds(damageCalculationFixtureFiles())).toEqual(damageCalculationKindCounts);
+  });
 });
 
-function damageCalculationFixtureFiles(): Array<{ file: string; required: string[] }> {
-  return [
+function damageCalculationFixtureFiles(): Array<{
+  file: string;
+  kind: DamageCalculationKind;
+  required: string[];
+}> {
+  return ([
     {
       file: "test/lua-real-script-dispatchparazzi-calculate-damage.test.ts",
+      kind: "calculateDamageRetarget",
       required: [
         'eventName: "battleDamageDealt"',
         "players[1].lifePoints).toBe(6300)",
@@ -46,6 +62,7 @@ function damageCalculationFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "test/lua-real-script-gagaga-samurai-calculate-damage.test.ts",
+      kind: "calculateDamageRetarget",
       required: [
         "pendingBattle).toBeUndefined()",
         'position: "faceUpDefense"',
@@ -55,6 +72,7 @@ function damageCalculationFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "test/lua-real-script-natures-reflection-reflect-damage.test.ts",
+      kind: "effectDamageReflection",
       required: [
         "reflect-damage:opponent-non-continuous",
         'eventName: "damageDealt"',
@@ -64,6 +82,7 @@ function damageCalculationFixtureFiles(): Array<{ file: string; required: string
     },
     {
       file: "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
+      kind: "persistentDamageCalculationDebuff",
       required: [
         'battleWindow?.kind).toBe("duringDamageCalculation")',
         "EFFECT_FLAG_DAMAGE_CAL",
@@ -75,5 +94,25 @@ function damageCalculationFixtureFiles(): Array<{ file: string; required: string
         "reason: duelReason.effect | duelReason.destroy",
       ],
     },
-  ].sort((a, b) => a.file.localeCompare(b.file));
+  ] satisfies Array<{
+    file: string;
+    kind: DamageCalculationKind;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countDamageCalculationKinds(
+  fixtures: Array<{ kind: DamageCalculationKind }>,
+): Record<DamageCalculationKind, number> {
+  return fixtures.reduce<Record<DamageCalculationKind, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      calculateDamageRetarget: 0,
+      effectDamageReflection: 0,
+      persistentDamageCalculationDebuff: 0,
+    },
+  );
 }
