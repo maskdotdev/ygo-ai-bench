@@ -83,6 +83,12 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectYesNoActivationLock: 1,
 };
 
+const officialSelectFieldZoneScriptFixtures: Record<string, string> = {
+  "10584050": "test/lua-real-script-springans-blast-field-zone-loop.test.ts",
+  "15967552": "test/lua-real-script-small-scuffle-mirrored-zone-summon.test.ts",
+  "62941499": "test/lua-real-script-springans-ship-select-field-zone.test.ts",
+};
+
 describe("Lua real prompt helper restore coverage", () => {
   it.skipIf(!fs.existsSync(upstreamOfficialScriptRoot))("pins the official prompt helper scanner corpus", () => {
     const report = JSON.parse(execFileSync(process.execPath, [scannerPath, "--scripts", upstreamOfficialScriptRoot, "--json"], { encoding: "utf8" }));
@@ -122,6 +128,19 @@ describe("Lua real prompt helper restore coverage", () => {
     const representedApis = [...new Set(representativePromptHelperFixtures().flatMap(({ apis }) => apis))].sort();
 
     expect(representedApis).toEqual(officialPromptApisWithOfficialUsage);
+  });
+
+  it("keeps every official SelectFieldZone script represented by a restore fixture", () => {
+    expect(Object.keys(officialSelectFieldZoneScriptFixtures).sort()).toEqual(["10584050", "15967552", "62941499"]);
+
+    const missing = Object.entries(officialSelectFieldZoneScriptFixtures)
+      .filter(([code, file]) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes(`"${code}"`) || !text.includes('api: "SelectFieldZone"') || !text.includes("restoreDuelWithLuaScripts");
+      })
+      .map(([code, file]) => `${code}:${file}`);
+
+    expect(missing).toEqual([]);
   });
 
   it("keeps representative prompt helper fixture kinds explicit", () => {
