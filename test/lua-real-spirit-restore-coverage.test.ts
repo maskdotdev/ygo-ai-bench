@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const spiritFixtureCount = 24;
+const spiritFixtureCount = 25;
 const spiritKindCounts = {
   columnSendPendulum: 3,
   costReturnBounce: 1,
@@ -16,6 +16,7 @@ const spiritKindCounts = {
   positionTriggerSet: 1,
   predrawConfirm: 1,
   procedureReturn: 2,
+  relationReviveBanish: 1,
   returnToHandTrigger: 4,
   ritualSelfSummonSearch: 2,
   ritualShuffleSummon: 1,
@@ -63,6 +64,7 @@ type SpiritKind =
   | "positionTriggerSet"
   | "predrawConfirm"
   | "procedureReturn"
+  | "relationReviveBanish"
   | "returnToHandTrigger"
   | "ritualSelfSummonSearch"
   | "ritualShuffleSummon"
@@ -83,6 +85,7 @@ function countSpiritKinds(fixtures: Array<{ kind: SpiritKind }>): Record<SpiritK
       positionTriggerSet: 0,
       predrawConfirm: 0,
       procedureReturn: 0,
+      relationReviveBanish: 0,
       returnToHandTrigger: 0,
       ritualSelfSummonSearch: 0,
       ritualShuffleSummon: 0,
@@ -449,6 +452,24 @@ function realScriptSpiritFixtureFiles(): Array<{ file: string; kind: SpiritKind;
         'location: "hand", controller: 0',
         'location: "deck", controller: 0',
         "toBeUndefined()",
+      ],
+    },
+    {
+      file: "lua-real-script-kinka-byo-relation-banish.test.ts",
+      kind: "relationReviveBanish",
+      required: [
+        'action.type === "normalSummon"',
+        'action.type === "activateTrigger"',
+        'action.type === "passChain"',
+        'eventName: "normalSummoned"',
+        'eventName: "specialSummoned"',
+        'eventName === "banished"',
+        "kinka relation true/true/true",
+        "kinka leaves 1",
+        "category: 512",
+        'summonType: "special"',
+        'location: "banished"',
+        'host.messages).not.toContain("kinka responder resolved")',
       ],
     },
     {
