@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 55;
+const operationFixtureCount = 56;
 const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -43,6 +43,7 @@ const operationKindCounts = {
   trapDraw: 1,
   targetBanishDiscardCost: 1,
   targetDestroyDiscardCost: 1,
+  targetDestroyDisableField: 1,
   targetDestroyRemove: 1,
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
@@ -90,6 +91,7 @@ type OperationKind =
   | "trapDraw"
   | "targetBanishDiscardCost"
   | "targetDestroyDiscardCost"
+  | "targetDestroyDisableField"
   | "targetDestroyRemove"
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
@@ -699,6 +701,18 @@ function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-rage-kairyu-shin-zone-label.test.ts",
+      kind: "targetDestroyDisableField",
+      required: [
+        "category: 0x1",
+        'eventName: "destroyed"',
+        "previousSequence: 2",
+        "value: 1 << 18",
+        "availableMonsterZoneCount(restored.session, 1, [])",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-reload-hand-to-deck-draw.test.ts",
       kind: "handToDeckDraw",
       required: [
@@ -854,6 +868,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       trapDraw: 0,
       targetBanishDiscardCost: 0,
       targetDestroyDiscardCost: 0,
+      targetDestroyDisableField: 0,
       targetDestroyRemove: 0,
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,

@@ -3,7 +3,7 @@ import { findCard, moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { recordDuelEvent } from "#duel/event-history.js";
 import { createEffectContext } from "#duel/effect-context.js";
-import { installAuxApi, installConstants, installDebugApi } from "#lua/basic-api.js";
+import { installAuxApi, installBitApi, installConstants, installDebugApi } from "#lua/basic-api.js";
 import { installCardApi } from "#lua/card-api.js";
 import { isSetcodeMatch } from "#lua/card-code-utils.js";
 import { installCardProcedureApi } from "#lua/card-procedure-api.js";
@@ -75,6 +75,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   installTracebackHandler(L);
   installTypeCompatibilityApi(L);
   installConstants(L);
+  installBitApi(L);
   installDebugApi(L, hostState.messages);
   installAuxApi(L, readLuaError, session, hostState);
   installDuelApi(L, session, hostState);
