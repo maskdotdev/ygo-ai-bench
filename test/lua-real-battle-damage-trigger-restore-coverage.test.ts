@@ -4,15 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDamageTriggerFixtureCount = 4;
+const battleDamageTriggerFixtureCount = 5;
 const battleDamageTriggerKindCounts = {
   drawUntilFive: 1,
   predrawDiscard: 1,
   recoverLifePoints: 1,
   skipBattlePhase: 1,
+  skipDrawPhase: 1,
 } satisfies Record<BattleDamageTriggerKind, number>;
 
-type BattleDamageTriggerKind = "drawUntilFive" | "predrawDiscard" | "recoverLifePoints" | "skipBattlePhase";
+type BattleDamageTriggerKind = "drawUntilFive" | "predrawDiscard" | "recoverLifePoints" | "skipBattlePhase" | "skipDrawPhase";
 
 describe("Lua real battle-damage trigger restore coverage", () => {
   it("requires battle-damage trigger fixtures to assert clean Lua registry restore and carried event payloads", () => {
@@ -118,6 +119,19 @@ function battleDamageTriggerFixtureFiles(): Array<{
         "eventUids: [drawA!.uid, drawB!.uid, drawC!.uid]",
       ],
     },
+    {
+      file: "lua-real-script-yata-garasu-skip-draw.test.ts",
+      kind: "skipDrawPhase",
+      required: [
+        "Yata-Garasu skip draw",
+        "eventName: \"battleDamageDealt\"",
+        "eventPlayer: 1",
+        "eventValue: 200",
+        'skippedPhases).toEqual([{ player: 1, phase: "draw", remaining: 1 }])',
+        'phase: "main1", waitingFor: 1',
+        'eventName === "preDraw"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: BattleDamageTriggerKind;
@@ -140,6 +154,7 @@ function countBattleDamageTriggerKinds(
       predrawDiscard: 0,
       recoverLifePoints: 0,
       skipBattlePhase: 0,
+      skipDrawPhase: 0,
     },
   );
 }
