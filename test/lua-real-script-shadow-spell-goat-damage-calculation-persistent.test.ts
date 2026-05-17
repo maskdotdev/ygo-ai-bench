@@ -91,10 +91,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GO
     const restoredDamageCalculation = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), source, reader);
     expectCleanRestore(restoredDamageCalculation);
     expect(restoredDamageCalculation.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
-    expect(restoredDamageCalculation.session.state.eventHistory).toContainEqual(expect.objectContaining({
-      eventName: "damageCalculating",
-      eventCode: 1135,
-    }));
+    expect(restoredDamageCalculation.session.state.eventHistory.filter((event) => event.eventName === "damageCalculating")).toEqual([
+      {
+        eventName: "damageCalculating",
+        eventCode: 1135,
+        eventCardUid: attacker!.uid,
+        eventUids: [attacker!.uid, target!.uid],
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(getLuaRestoreLegalActionGroups(restoredDamageCalculation, 0)).toEqual(getGroupedDuelLegalActions(restoredDamageCalculation.session, 0));
     expect(getLuaRestoreLegalActionGroups(restoredDamageCalculation, 0).flatMap((group) => group.actions)).toEqual(
       getLuaRestoreLegalActions(restoredDamageCalculation, 0),

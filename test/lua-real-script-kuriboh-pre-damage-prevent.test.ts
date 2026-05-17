@@ -53,10 +53,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ku
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
-    expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({
-      eventName: "beforeDamageCalculation",
-      eventCode: 1134,
-    }));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "beforeDamageCalculation")).toEqual([
+      {
+        eventName: "beforeDamageCalculation",
+        eventCode: 1134,
+        eventCardUid: attacker!.uid,
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.effects.find((effect) => effect.sourceUid === kuriboh!.uid)).toMatchObject({
       event: "quick",
       triggerEvent: "beforeDamageCalculation",
