@@ -47,7 +47,7 @@ The engine already has useful surfaces to build on:
 - Attack-negation restore coverage now ratchets fixture kinds across monster triggers, counter-placement triggers, phase-skip negation, damage reflection, LP recovery, and set-again cleanup.
 - Battled-removal restore coverage now ratchets fixture kinds across after-damage banish triggers, battle-destroy redirection, battle-destroyed monster targeting, and battle-destroyed backrow destruction.
 - Resource-gate restore coverage now ratchets fixture kinds across Draw Phase draw locks, non-Draw-Phase draw locks, effect-release locks, unreleasable monsters, and extra release costs.
-- Damage Step stat restore coverage now ratchets fixture kinds across activated Damage Step boosts, label-object cost boosts, mandatory pre-damage calculation boosts, and persistent Damage Step debuffs.
+- Damage Step stat restore coverage now ratchets fixture kinds across activated Damage Step boosts, hand-cost pre-damage calculation boosts, label-object cost boosts, mandatory pre-damage calculation boosts, and persistent Damage Step debuffs.
 - Damage-calculation restore coverage now ratchets fixture kinds across script-driven `Duel.CalculateDamage` retargeting, effect-damage reflection, and persistent damage-calculation debuffs.
 - Stat restore coverage now ratchets fixture kinds across static ATK plus extra attack, set-ATK, set-base-ATK, and battle-target ATK boost paths.
 - Stateful gate restore coverage now ratchets fixture kinds across generic must-attack, zone-target must-attack, Deck-to-Grave locks, and summon-count thresholds.

@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 14;
+const battleTimingFixtureCount = 15;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 5,
-  beforeDamageCalculation: 2,
+  beforeDamageCalculation: 3,
   duringDamageCalculation: 2,
   endDamageStep: 4,
   startDamageStep: 1,
@@ -95,6 +95,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "damageStepEnded"',
         'eventName: "destroyed"',
         'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
+      kind: "beforeDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("startDamageStep")',
+        'battleWindow?.kind).toBe("beforeDamageCalculation")',
+        'eventName: "sentToGraveyard"',
+        "eventReasonEffectId: 1",
+        "currentAttack(boostedAshenveil, restoredChain.session.state)).toBe((ashenveil.data.attack ?? 0) + 600)",
+        "battleDamage[1]).toBe((ashenveil.data.attack ?? 0) + 600 - (defender.data.attack ?? 0))",
       ],
     },
     {
