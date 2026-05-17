@@ -51,6 +51,18 @@ const openFastPassResolutionFixtureFileCount = 62;
 const openFastPassResolutionCleanPassesFixtureFileCount = 62;
 const openFastChainResolutionFixtureFileCount = 49;
 const openFastChainResolutionCleanPassesFixtureFileCount = 49;
+const openFastFixtureFamilyCounts = {
+  baseTriggerlessAction: 34,
+  battleQuickEffect: 51,
+  chainEnded: 48,
+  chainResolutionSegoc: 16,
+  damageStepQuickEffect: 2,
+  genericOpenFast: 40,
+  phaseTransition: 68,
+  postActionHandoff: 140,
+  triggerChain: 31,
+  triggerOrdering: 1,
+} satisfies Record<OpenFastFixtureFamily, number>;
 
 const chainEndedOpenFastFiles = [
   "test/parity-chain-ended-open-fast-chain-response-chain-limit-fixture.test.ts",
@@ -245,6 +257,10 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     });
   });
 
+  it("keeps open-fast fixture families explicit", () => {
+    expect(countOpenFastFixtureFamilies(allOpenFastResponsePlayerFixtureFiles())).toEqual(openFastFixtureFamilyCounts);
+  });
+
   it("requires every open-fast response-player fixture to carry parity proof metadata", () => {
     const files = allOpenFastResponsePlayerFixtureFiles();
     const weak = files.filter((file) =>
@@ -281,6 +297,18 @@ describe("EDOPro open fast-effect fixture coverage", () => {
     expect(weak).toEqual([]);
   });
 });
+
+type OpenFastFixtureFamily =
+  | "baseTriggerlessAction"
+  | "battleQuickEffect"
+  | "chainEnded"
+  | "chainResolutionSegoc"
+  | "damageStepQuickEffect"
+  | "genericOpenFast"
+  | "phaseTransition"
+  | "postActionHandoff"
+  | "triggerChain"
+  | "triggerOrdering";
 
 function requiredFiles(base: string, post: string, restore: string): string[] {
   return [
@@ -462,6 +490,47 @@ function countOpenFastHandoffEvidence(files: string[]): {
     chainResolutionFiles: 0,
     chainResolutionCleanPassesFiles: 0,
   });
+}
+
+function countOpenFastFixtureFamilies(files: string[]): Record<OpenFastFixtureFamily, number> {
+  return files.reduce<Record<OpenFastFixtureFamily, number>>(
+    (counts, file) => {
+      counts[classifyOpenFastFixtureFamily(file)] += 1;
+      return counts;
+    },
+    {
+      baseTriggerlessAction: 0,
+      battleQuickEffect: 0,
+      chainEnded: 0,
+      chainResolutionSegoc: 0,
+      damageStepQuickEffect: 0,
+      genericOpenFast: 0,
+      phaseTransition: 0,
+      postActionHandoff: 0,
+      triggerChain: 0,
+      triggerOrdering: 0,
+    },
+  );
+}
+
+function classifyOpenFastFixtureFamily(file: string): OpenFastFixtureFamily {
+  const basename = path.basename(file);
+  if (basename.startsWith("parity-chain-ended-open-fast-")) return "chainEnded";
+  if (basename.startsWith("parity-trigger-chain-open-fast-")) return "triggerChain";
+  if (basename.startsWith("parity-chain-resolution-segoc-")) return "chainResolutionSegoc";
+  if (basename.includes("battle-") && basename.includes("quick-effect")) return "battleQuickEffect";
+  if (basename.startsWith("parity-main2-open-fast-") || basename.startsWith("parity-end-turn-open-fast-") || basename.startsWith("parity-main2-phase-open-fast-")) return "phaseTransition";
+  if (basename.startsWith("parity-post-")) return "postActionHandoff";
+  if (/^parity-(normal-summon|tribute-summon|tribute-set|special-summon|fusion-summon|synchro-summon|xyz-summon|link-summon|ritual-summon|monster-set|flip-summon|pendulum-summon|spell-trap-set|position)-open-fast/.test(basename)) return "baseTriggerlessAction";
+  if (basename.startsWith("parity-open-fast-")) return "genericOpenFast";
+  if (basename.startsWith("parity-mandatory-before-optional-")) return "triggerOrdering";
+  if (
+    basename === "parity-damage-step-only-quick-effect-fixture.test.ts" ||
+    basename === "parity-unflagged-damage-step-quick-effect-fixture.test.ts"
+  ) {
+    return "damageStepQuickEffect";
+  }
+  throw new Error(`Unclassified open-fast fixture: ${file}`);
 }
 
 function hasRawAndGroupedLegalActionProof(file: string): boolean {
