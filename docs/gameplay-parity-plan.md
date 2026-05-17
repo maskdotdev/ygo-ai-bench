@@ -54,7 +54,7 @@ The engine already has useful surfaces to build on:
 - Delayed position restore coverage now ratchets fixture kinds across Damage Step position changes, Battle Phase cleanup, End Phase group setting, and End Phase flip-plus-draw effects.
 - Delayed relation restore coverage now ratchets fixture kinds across delayed banish relations, revive/destroy relations, delayed self-destroy, and delayed return effects.
 - Target-status restore coverage now ratchets fixture kinds across status, not-status, summon-location status, and not-code status descriptors.
-- Direct-attack restore coverage now ratchets fixture kinds across direct-attack permission, direct-attack-only attackers, cannot-direct locks, direct target locks, and direct-attack conversion.
+- Direct-attack restore coverage now ratchets fixture kinds across direct-attack permission, direct-attack-only attackers, cannot-direct locks, direct target locks, direct-attack conversion, and direct-attack-trigger follow-up effects.
 - Extra-attack restore coverage now ratchets fixture kinds across chain attacks, attack-all effects, plain extra attacks, and monster-only extra attacks.
 - Piercing damage restore coverage now ratchets fixture kinds across field-sourced piercing, race-targeted field piercing, and equip-sourced piercing.
 - Movement-lock restore coverage now ratchets fixture kinds across banish locks, Deck-to-Grave locks, and Deck-to-hand search locks.

@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DIRECT_ATTACK_FIXTURE_COUNT = 5;
+const DIRECT_ATTACK_FIXTURE_COUNT = 6;
 const directAttackKindCounts = {
   cannotDirectAttack: 1,
   directAttackConversion: 1,
   directAttackOnly: 1,
   directAttackPermission: 1,
+  directAttackTrigger: 1,
   directTargetLock: 1,
 } satisfies Record<DirectAttackKind, number>;
 
@@ -18,6 +19,7 @@ type DirectAttackKind =
   | "directAttackConversion"
   | "directAttackOnly"
   | "directAttackPermission"
+  | "directAttackTrigger"
   | "directTargetLock";
 
 describe("Lua real direct-attack restore coverage", () => {
@@ -71,6 +73,16 @@ function realScriptDirectAttackFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hayate-battled-send.test.ts",
+      kind: "directAttackTrigger",
+      required: [
+        "directAttack === true",
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        'eventName: "sentToGraveyard"',
+      ],
+    },
+    {
       file: "test/lua-real-script-jinzo-seven-direct-attack.test.ts",
       kind: "directAttackPermission",
       required: [
@@ -116,6 +128,7 @@ function countDirectAttackKinds(fixtures: Array<{ kind: DirectAttackKind }>): Re
       directAttackConversion: 0,
       directAttackOnly: 0,
       directAttackPermission: 0,
+      directAttackTrigger: 0,
       directTargetLock: 0,
     },
   );
