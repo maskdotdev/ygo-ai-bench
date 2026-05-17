@@ -11,12 +11,23 @@ const summonActivityKindCounts = {
   specialSummonOath: 1,
   spiritExtraNormalSummon: 1,
 } satisfies Record<SummonActivityKind, number>;
+const summonActivitySemanticVariantCounts = {
+  constellarLeonisExtraConstellarNormalSummon: 1,
+  doubleSummonSecondNormalSummonGrant: 1,
+  nikitamaAdditionalSpiritNormalSummon: 1,
+  thunderSeaHorseTemporarySpecialSummonOath: 1,
+} satisfies Record<SummonActivitySemanticVariant, number>;
 
 type SummonActivityKind =
   | "archetypeExtraNormalSummon"
   | "genericExtraNormalSummon"
   | "specialSummonOath"
   | "spiritExtraNormalSummon";
+type SummonActivitySemanticVariant =
+  | "constellarLeonisExtraConstellarNormalSummon"
+  | "doubleSummonSecondNormalSummonGrant"
+  | "nikitamaAdditionalSpiritNormalSummon"
+  | "thunderSeaHorseTemporarySpecialSummonOath";
 
 describe("Lua real summon activity restore coverage", () => {
   it("requires summon activity fixtures to assert clean restore and restored legal actions", () => {
@@ -43,6 +54,21 @@ describe("Lua real summon activity restore coverage", () => {
 
   it("keeps summon activity fixture kinds explicit", () => {
     expect(countSummonActivityKinds(summonActivityFixtureFiles())).toEqual(summonActivityKindCounts);
+  });
+
+  it("keeps named summon activity semantic variants explicit", () => {
+    expect(countSummonActivitySemanticVariants(summonActivitySemanticVariants())).toEqual(
+      summonActivitySemanticVariantCounts,
+    );
+
+    const weak = summonActivitySemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -117,6 +143,72 @@ function countSummonActivityKinds(
       genericExtraNormalSummon: 0,
       specialSummonOath: 0,
       spiritExtraNormalSummon: 0,
+    },
+  );
+}
+
+function summonActivitySemanticVariants(): Array<{
+  file: string;
+  kind: SummonActivitySemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-constellar-leonis-extra-summon-count.test.ts",
+      kind: "constellarLeonisExtraConstellarNormalSummon",
+      required: [
+        'const leonisCode = "17129783"',
+        "restores Leonis's extra Constellar Normal Summon after the regular summon is spent",
+        "activityCounts[0].normalSummon).toBe(2)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-double-summon-count-limit.test.ts",
+      kind: "doubleSummonSecondNormalSummonGrant",
+      required: [
+        'const doubleSummonCode = "43422537"',
+        "lets official Double Summon grant a second Normal Summon legal action",
+        "activityCounts[0].normalSummon).toBe(2)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nikitama-extra-spirit-summon.test.ts",
+      kind: "nikitamaAdditionalSpiritNormalSummon",
+      required: [
+        'const nikitamaCode = "24701235"',
+        "restores its official additional Spirit Normal Summon count",
+        "overLimit).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-thunder-sea-horse-special-oath.test.ts",
+      kind: "thunderSeaHorseTemporarySpecialSummonOath",
+      required: [
+        'const seaHorseCode = "48049769"',
+        "restores its cost-created temporary EFFECT_CANNOT_SPECIAL_SUMMON and expires it at End Phase",
+        "sea horse can special locked false",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: SummonActivitySemanticVariant;
+    required: string[];
+  }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countSummonActivitySemanticVariants(
+  fixtures: Array<{ kind: SummonActivitySemanticVariant }>,
+): Record<SummonActivitySemanticVariant, number> {
+  return fixtures.reduce<Record<SummonActivitySemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      constellarLeonisExtraConstellarNormalSummon: 0,
+      doubleSummonSecondNormalSummonGrant: 0,
+      nikitamaAdditionalSpiritNormalSummon: 0,
+      thunderSeaHorseTemporarySpecialSummonOath: 0,
     },
   );
 }
