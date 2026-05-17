@@ -63,12 +63,46 @@ describe("Lua deck probe manifest", () => {
       .filter((command) => Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? 0) > 0)
       .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
       .sort();
+    const localFallbackSplitBudgetOmissions = packageProbeCommands
+      .filter((command) => Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? 0) > 0)
+      .filter(
+        (command) =>
+          !/--max-local-alias-fallbacks \d+/.test(command) ||
+          !/--max-local-provisional-fallbacks \d+/.test(command) ||
+          !/--max-local-other-fallbacks \d+/.test(command),
+      )
+      .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
+      .sort();
+    const localFallbackSplitBudgetMismatches = packageProbeCommands
+      .filter((command) => {
+        const total = Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? 0);
+        if (total === 0) return false;
+        const alias = Number(command.match(/--max-local-alias-fallbacks (\d+)/)?.[1] ?? -1);
+        const provisional = Number(command.match(/--max-local-provisional-fallbacks (\d+)/)?.[1] ?? -1);
+        const other = Number(command.match(/--max-local-other-fallbacks (\d+)/)?.[1] ?? -1);
+        return total !== alias + provisional + other;
+      })
+      .map((command) => command.match(/-- (\S+\.ydk) /)?.[1] ?? command)
+      .sort();
     const localFallbackBudgets = Object.fromEntries(
       packageProbeCommands
         .map((command): [string, number] => [
           command.match(/-- (\S+\.ydk) /)?.[1] ?? command,
           Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? -1),
         ])
+        .sort(([a], [b]) => a.localeCompare(b)),
+    );
+    const localFallbackKindBudgets = Object.fromEntries(
+      packageProbeCommands
+        .filter((command) => Number(command.match(/--max-local-fallbacks (\d+)/)?.[1] ?? 0) > 0)
+        .map((command) => [
+          command.match(/-- (\S+\.ydk) /)?.[1] ?? command,
+          {
+            alias: Number(command.match(/--max-local-alias-fallbacks (\d+)/)?.[1] ?? -1),
+            provisional: Number(command.match(/--max-local-provisional-fallbacks (\d+)/)?.[1] ?? -1),
+            other: Number(command.match(/--max-local-other-fallbacks (\d+)/)?.[1] ?? -1),
+          },
+        ] as const)
         .sort(([a], [b]) => a.localeCompare(b)),
     );
     const expectedMissingScriptCodesByDeck = Object.fromEntries(
@@ -132,6 +166,8 @@ describe("Lua deck probe manifest", () => {
     expect(activateEffectFloorOmissions).toEqual([]);
     expect(expectedMissingBudgetMismatches).toEqual([]);
     expect(localFallbackBudgetMismatches).toEqual([]);
+    expect(localFallbackSplitBudgetOmissions).toEqual([]);
+    expect(localFallbackSplitBudgetMismatches).toEqual([]);
     expect(localFallbackBudgetDecks).toEqual([
       "magician-pendulum-mar-2026.ydk",
       "phantom-knights-mar-2026-v4.ydk",
@@ -160,6 +196,12 @@ describe("Lua deck probe manifest", () => {
       "solfachord-2026.ydk": 0,
       "top_tier_dark_magician_primite_azamina.ydk": 0,
       "voiceless-voice-2026.ydk": 0,
+    });
+    expect(localFallbackKindBudgets).toEqual({
+      "magician-pendulum-mar-2026.ydk": { alias: 1, provisional: 0, other: 0 },
+      "phantom-knights-mar-2026-v4.ydk": { alias: 1, provisional: 0, other: 0 },
+      "ritual-of-light-and-darkness-apr-2026.ydk": { alias: 0, provisional: 10, other: 0 },
+      "rokket-2026.ydk": { alias: 1, provisional: 0, other: 0 },
     });
     expect(expectedMissingScriptCodesByDeck).toEqual({});
     expect(expectedLocalFallbackScriptCodesByDeck).toEqual({

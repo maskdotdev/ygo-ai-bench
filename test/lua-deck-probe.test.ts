@@ -21,6 +21,9 @@ describe("Lua deck probe CLI", () => {
       ["dark-magical-blast-master-duel-day1.ydk", "--unknown"],
       ["dark-magical-blast-master-duel-day1.ydk", "--min-actions"],
       ["dark-magical-blast-master-duel-day1.ydk", "--min-actions", "-1"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--max-local-alias-fallbacks"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--max-local-provisional-fallbacks", "-1"],
+      ["dark-magical-blast-master-duel-day1.ydk", "--max-local-other-fallbacks", "abc"],
       ["dark-magical-blast-master-duel-day1.ydk", "--expected-local-fallback-script-code"],
       ["dark-magical-blast-master-duel-day1.ydk", "--expected-local-fallback-script-code", "abc"],
       ["dark-magical-blast-master-duel-day1.ydk", "--expected-missing-script-code"],
@@ -275,6 +278,70 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Dark Magical Blast
     expect(result.stderr).toContain("Lua deck probe failed:");
     expect(result.stderr).toContain("Unexpected local fallback scripts: c100452015.lua");
     expect(result.stderr).toContain("Expected local fallback script codes were not used: c12345678.lua");
+  }, deckProbeTimeoutMs);
+
+  it("fails strict probes when local fallback kind budgets are exceeded", () => {
+    const aliasResult = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "phantom-knights-mar-2026-v4.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--max-local-fallbacks",
+        "1",
+        "--max-local-alias-fallbacks",
+        "0",
+        "--expected-local-fallback-script-code",
+        "100452015",
+      ],
+      { encoding: "utf8" },
+    );
+    const provisionalResult = spawnSync(
+      "node",
+      [
+        "--experimental-transform-types",
+        "tools/probe-lua-deck.ts",
+        "ritual-of-light-and-darkness-apr-2026.ydk",
+        "--upstream",
+        ".upstream/ignis",
+        "--fail-on-errors",
+        "--max-local-fallbacks",
+        "10",
+        "--max-local-provisional-fallbacks",
+        "9",
+        "--expected-local-fallback-script-code",
+        "98684220",
+        "--expected-local-fallback-script-code",
+        "24088928",
+        "--expected-local-fallback-script-code",
+        "50073633",
+        "--expected-local-fallback-script-code",
+        "97462632",
+        "--expected-local-fallback-script-code",
+        "70405001",
+        "--expected-local-fallback-script-code",
+        "44001993",
+        "--expected-local-fallback-script-code",
+        "24461358",
+        "--expected-local-fallback-script-code",
+        "2372506",
+        "--expected-local-fallback-script-code",
+        "33599853",
+        "--expected-local-fallback-script-code",
+        "24749710",
+      ],
+      { encoding: "utf8" },
+    );
+
+    expect(aliasResult.status).toBe(1);
+    expect(aliasResult.stdout).toContain("Local alias fallback scripts: 1");
+    expect(aliasResult.stderr).toContain("Local alias fallback scripts 1 is above allowed 0");
+    expect(provisionalResult.status).toBe(1);
+    expect(provisionalResult.stdout).toContain("Local provisional fallback scripts: 10");
+    expect(provisionalResult.stderr).toContain("Local provisional fallback scripts 10 is above allowed 9");
   }, deckProbeTimeoutMs);
 
   it("accepts strict probes when scripts load and legal actions are present", () => {

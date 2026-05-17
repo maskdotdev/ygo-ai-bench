@@ -18,6 +18,9 @@ interface ProbeArgs {
   minRegisteredEffects: number | undefined;
   maxLocalOverrides: number | undefined;
   maxLocalFallbacks: number | undefined;
+  maxLocalAliasFallbacks: number | undefined;
+  maxLocalProvisionalFallbacks: number | undefined;
+  maxLocalOtherFallbacks: number | undefined;
   maxExpectedMissingScripts: number | undefined;
   expectedLocalFallbackScriptCodes: string[];
   expectedMissingScriptCodes: string[];
@@ -71,6 +74,9 @@ printReport({
   minRegisteredEffects: args.minRegisteredEffects,
   maxLocalOverrides: args.maxLocalOverrides,
   maxLocalFallbacks: args.maxLocalFallbacks,
+  maxLocalAliasFallbacks: args.maxLocalAliasFallbacks,
+  maxLocalProvisionalFallbacks: args.maxLocalProvisionalFallbacks,
+  maxLocalOtherFallbacks: args.maxLocalOtherFallbacks,
   maxExpectedMissingScripts: args.maxExpectedMissingScripts,
   expectedLocalFallbackScriptCodes: args.expectedLocalFallbackScriptCodes,
   expectedMissingScriptCodes: args.expectedMissingScriptCodes,
@@ -87,6 +93,9 @@ function readArgs(argv: string[]): ProbeArgs {
     "--min-registered-effects",
     "--max-local-overrides",
     "--max-local-fallbacks",
+    "--max-local-alias-fallbacks",
+    "--max-local-provisional-fallbacks",
+    "--max-local-other-fallbacks",
     "--max-expected-missing-scripts",
     "--expected-local-fallback-script-code",
     "--expected-missing-script-code",
@@ -108,6 +117,12 @@ function readArgs(argv: string[]): ProbeArgs {
   const maxLocalOverrides = maxLocalOverridesFlag >= 0 ? Number(argv[maxLocalOverridesFlag + 1]) : undefined;
   const maxLocalFallbacksFlag = argv.indexOf("--max-local-fallbacks");
   const maxLocalFallbacks = maxLocalFallbacksFlag >= 0 ? Number(argv[maxLocalFallbacksFlag + 1]) : undefined;
+  const maxLocalAliasFallbacksFlag = argv.indexOf("--max-local-alias-fallbacks");
+  const maxLocalAliasFallbacks = maxLocalAliasFallbacksFlag >= 0 ? Number(argv[maxLocalAliasFallbacksFlag + 1]) : undefined;
+  const maxLocalProvisionalFallbacksFlag = argv.indexOf("--max-local-provisional-fallbacks");
+  const maxLocalProvisionalFallbacks = maxLocalProvisionalFallbacksFlag >= 0 ? Number(argv[maxLocalProvisionalFallbacksFlag + 1]) : undefined;
+  const maxLocalOtherFallbacksFlag = argv.indexOf("--max-local-other-fallbacks");
+  const maxLocalOtherFallbacks = maxLocalOtherFallbacksFlag >= 0 ? Number(argv[maxLocalOtherFallbacksFlag + 1]) : undefined;
   const maxExpectedMissingScriptsFlag = argv.indexOf("--max-expected-missing-scripts");
   const maxExpectedMissingScripts = maxExpectedMissingScriptsFlag >= 0 ? Number(argv[maxExpectedMissingScriptsFlag + 1]) : undefined;
   const rawExpectedLocalFallbackScriptCodes = readRepeatedValues(argv, "--expected-local-fallback-script-code");
@@ -124,20 +139,23 @@ function readArgs(argv: string[]): ProbeArgs {
     if (minRegisteredEffectsFlag >= 0 && (index === minRegisteredEffectsFlag || index === minRegisteredEffectsFlag + 1)) return false;
     if (maxLocalOverridesFlag >= 0 && (index === maxLocalOverridesFlag || index === maxLocalOverridesFlag + 1)) return false;
     if (maxLocalFallbacksFlag >= 0 && (index === maxLocalFallbacksFlag || index === maxLocalFallbacksFlag + 1)) return false;
+    if (maxLocalAliasFallbacksFlag >= 0 && (index === maxLocalAliasFallbacksFlag || index === maxLocalAliasFallbacksFlag + 1)) return false;
+    if (maxLocalProvisionalFallbacksFlag >= 0 && (index === maxLocalProvisionalFallbacksFlag || index === maxLocalProvisionalFallbacksFlag + 1)) return false;
+    if (maxLocalOtherFallbacksFlag >= 0 && (index === maxLocalOtherFallbacksFlag || index === maxLocalOtherFallbacksFlag + 1)) return false;
     if (maxExpectedMissingScriptsFlag >= 0 && (index === maxExpectedMissingScriptsFlag || index === maxExpectedMissingScriptsFlag + 1)) return false;
     if (argv[index - 1] === "--expected-local-fallback-script-code" || value === "--expected-local-fallback-script-code") return false;
     if (argv[index - 1] === "--expected-missing-script-code" || value === "--expected-missing-script-code") return false;
     return !value.startsWith("--");
   });
   const ydkPath = positional[0];
-  const invalidMinimum = [minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxExpectedMissingScripts].some((value) => value !== undefined && (!Number.isInteger(value) || value < 0));
+  const invalidMinimum = [minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxLocalAliasFallbacks, maxLocalProvisionalFallbacks, maxLocalOtherFallbacks, maxExpectedMissingScripts].some((value) => value !== undefined && (!Number.isInteger(value) || value < 0));
   const invalidExpectedLocalFallbackCode = malformedCodeValues(rawExpectedLocalFallbackScriptCodes, expectedLocalFallbackScriptCodes);
   const invalidExpectedMissingCode = malformedCodeValues(rawExpectedMissingScriptCodes, expectedMissingScriptCodes);
   if (unknownFlag || !ydkPath || !upstreamRoot || invalidMinimum || invalidExpectedLocalFallbackCode || invalidExpectedMissingCode) {
-    console.error("Usage: bun run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis] [--fail-on-errors] [--min-upstream-scripts <count>] [--min-actions <count>] [--min-activate-effects <count>] [--min-initial-effects <count>] [--min-registered-effects <count>] [--max-local-overrides <count>] [--max-local-fallbacks <count>] [--expected-local-fallback-script-code <code>] [--max-expected-missing-scripts <count>] [--expected-missing-script-code <code>]");
+    console.error("Usage: bun run probe:lua-deck -- <deck.ydk> [--upstream .upstream/ignis] [--fail-on-errors] [--min-upstream-scripts <count>] [--min-actions <count>] [--min-activate-effects <count>] [--min-initial-effects <count>] [--min-registered-effects <count>] [--max-local-overrides <count>] [--max-local-fallbacks <count>] [--max-local-alias-fallbacks <count>] [--max-local-provisional-fallbacks <count>] [--max-local-other-fallbacks <count>] [--expected-local-fallback-script-code <code>] [--max-expected-missing-scripts <count>] [--expected-missing-script-code <code>]");
     process.exit(1);
   }
-  return { ydkPath: path.resolve(ydkPath), upstreamRoot: path.resolve(upstreamRoot), failOnErrors, minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxExpectedMissingScripts, expectedLocalFallbackScriptCodes, expectedMissingScriptCodes };
+  return { ydkPath: path.resolve(ydkPath), upstreamRoot: path.resolve(upstreamRoot), failOnErrors, minUpstreamScripts, minActions, minActivateEffects, minInitialEffects, minRegisteredEffects, maxLocalOverrides, maxLocalFallbacks, maxLocalAliasFallbacks, maxLocalProvisionalFallbacks, maxLocalOtherFallbacks, maxExpectedMissingScripts, expectedLocalFallbackScriptCodes, expectedMissingScriptCodes };
 }
 
 function readRepeatedValues(argv: string[], option: string): string[] {
@@ -239,6 +257,9 @@ function printReport(report: {
   minRegisteredEffects: number | undefined;
   maxLocalOverrides: number | undefined;
   maxLocalFallbacks: number | undefined;
+  maxLocalAliasFallbacks: number | undefined;
+  maxLocalProvisionalFallbacks: number | undefined;
+  maxLocalOtherFallbacks: number | undefined;
   maxExpectedMissingScripts: number | undefined;
   expectedLocalFallbackScriptCodes: string[];
   expectedMissingScriptCodes: string[];
@@ -342,6 +363,15 @@ function printReport(report: {
   }
   if (report.maxLocalFallbacks !== undefined && localFallbacks.length > report.maxLocalFallbacks) {
     failures.push(`Local fallback scripts ${localFallbacks.length} is above allowed ${report.maxLocalFallbacks}`);
+  }
+  if (report.maxLocalAliasFallbacks !== undefined && localAliasFallbacks.length > report.maxLocalAliasFallbacks) {
+    failures.push(`Local alias fallback scripts ${localAliasFallbacks.length} is above allowed ${report.maxLocalAliasFallbacks}`);
+  }
+  if (report.maxLocalProvisionalFallbacks !== undefined && localProvisionalFallbacks.length > report.maxLocalProvisionalFallbacks) {
+    failures.push(`Local provisional fallback scripts ${localProvisionalFallbacks.length} is above allowed ${report.maxLocalProvisionalFallbacks}`);
+  }
+  if (report.maxLocalOtherFallbacks !== undefined && localOtherFallbacks.length > report.maxLocalOtherFallbacks) {
+    failures.push(`Local other fallback scripts ${localOtherFallbacks.length} is above allowed ${report.maxLocalOtherFallbacks}`);
   }
   if (unexpectedLocalFallbacks.length) {
     failures.push(`Unexpected local fallback scripts: ${unexpectedLocalFallbacks.map((result) => result.name).join(", ")}`);
