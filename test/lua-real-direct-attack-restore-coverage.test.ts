@@ -13,6 +13,14 @@ const directAttackKindCounts = {
   directAttackTrigger: 1,
   directTargetLock: 1,
 } satisfies Record<DirectAttackKind, number>;
+const directAttackSemanticVariantCounts = {
+  dragonicHalberdCannotDirectLock: 1,
+  hayateDirectAttackBattledSendTrigger: 1,
+  inabaWhiteRabbitDirectOnlyDamage: 1,
+  jinzoSevenDirectAttackOption: 1,
+  reverseBusterDirectFaceUpTargetLock: 1,
+  toonDefenseAttackToDirectConversion: 1,
+} satisfies Record<DirectAttackSemanticVariant, number>;
 
 type DirectAttackKind =
   | "cannotDirectAttack"
@@ -21,6 +29,13 @@ type DirectAttackKind =
   | "directAttackPermission"
   | "directAttackTrigger"
   | "directTargetLock";
+type DirectAttackSemanticVariant =
+  | "dragonicHalberdCannotDirectLock"
+  | "hayateDirectAttackBattledSendTrigger"
+  | "inabaWhiteRabbitDirectOnlyDamage"
+  | "jinzoSevenDirectAttackOption"
+  | "reverseBusterDirectFaceUpTargetLock"
+  | "toonDefenseAttackToDirectConversion";
 
 describe("Lua real direct-attack restore coverage", () => {
   it("requires representative direct-attack fixtures to assert clean Lua restore and replayed legal actions", () => {
@@ -45,6 +60,19 @@ describe("Lua real direct-attack restore coverage", () => {
 
   it("keeps direct-attack fixture kinds explicit", () => {
     expect(countDirectAttackKinds(realScriptDirectAttackFixtureFiles())).toEqual(directAttackKindCounts);
+  });
+
+  it("keeps named direct-attack semantic variants explicit", () => {
+    expect(countDirectAttackSemanticVariants(directAttackSemanticVariants())).toEqual(directAttackSemanticVariantCounts);
+
+    const weak = directAttackSemanticVariants()
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
   });
 });
 
@@ -130,6 +158,98 @@ function countDirectAttackKinds(fixtures: Array<{ kind: DirectAttackKind }>): Re
       directAttackPermission: 0,
       directAttackTrigger: 0,
       directTargetLock: 0,
+    },
+  );
+}
+
+function directAttackSemanticVariants(): Array<{
+  file: string;
+  kind: DirectAttackSemanticVariant;
+  required: string[];
+}> {
+  return ([
+    {
+      file: "test/lua-real-script-dragonic-halberd-cannot-direct.test.ts",
+      kind: "dragonicHalberdCannotDirectLock",
+      required: [
+        'const halberdCode = "2896663"',
+        "restores its direct-attack lock while ordinary attackers stay legal",
+        "hasDirectAttack(actions, halberd.uid)).toBe(false)",
+        "hasDirectAttack(actions, ordinary.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hayate-battled-send.test.ts",
+      kind: "hayateDirectAttackBattledSendTrigger",
+      required: [
+        'const hayateCode = "8491308"',
+        "restores its direct-attack EVENT_BATTLED trigger and sends a Sky Striker card from Deck to Graveyard",
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "sentToGraveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-inaba-white-rabbit-direct-only.test.ts",
+      kind: "inabaWhiteRabbitDirectOnlyDamage",
+      required: [
+        'const inabaCode = "77084837"',
+        "restores its direct-attack-only legal action surface and direct battle damage",
+        "directAttack: true",
+        "battleDamage).toEqual({ 0: 0, 1: 700 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-jinzo-seven-direct-attack.test.ts",
+      kind: "jinzoSevenDirectAttackOption",
+      required: [
+        'const jinzoCode = "32809211"',
+        "restores its direct attack option while preserving monster attacks",
+        "hasAttack(actions, jinzo.uid, defender.uid)).toBe(true)",
+        "hasDirectAttack(actions, jinzo.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-reverse-buster-direct-target-lock.test.ts",
+      kind: "reverseBusterDirectFaceUpTargetLock",
+      required: [
+        'const busterCode = "90640901"',
+        "restores cannot-direct and cannot-select face-up battle target locks",
+        'luaValueDescriptor: "value-card:not-facedown"',
+        "hasAttack(actions, buster.uid, faceDownTarget.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-toon-defense-change-attack-target.test.ts",
+      kind: "toonDefenseAttackToDirectConversion",
+      required: [
+        'const toonDefenseCode = "43509019"',
+        "restores Toon Defense's attack-declaration trigger and changes the attack into a direct attack",
+        "currentAttack?.targetUid).toBeUndefined()",
+        "battleDamage).toMatchObject({ 1: 1800 })",
+      ],
+    },
+  ] satisfies Array<{
+    file: string;
+    kind: DirectAttackSemanticVariant;
+    required: string[];
+  }>);
+}
+
+function countDirectAttackSemanticVariants(
+  fixtures: Array<{ kind: DirectAttackSemanticVariant }>,
+): Record<DirectAttackSemanticVariant, number> {
+  return fixtures.reduce<Record<DirectAttackSemanticVariant, number>>(
+    (counts, fixture) => {
+      counts[fixture.kind] += 1;
+      return counts;
+    },
+    {
+      dragonicHalberdCannotDirectLock: 0,
+      hayateDirectAttackBattledSendTrigger: 0,
+      inabaWhiteRabbitDirectOnlyDamage: 0,
+      jinzoSevenDirectAttackOption: 0,
+      reverseBusterDirectFaceUpTargetLock: 0,
+      toonDefenseAttackToDirectConversion: 0,
     },
   );
 }
