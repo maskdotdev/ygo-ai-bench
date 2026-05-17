@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 20;
+const battleTimingFixtureCount = 21;
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 9,
+  afterDamageCalculation: 10,
   beforeDamageCalculation: 3,
   duringDamageCalculation: 2,
   endDamageStep: 4,
@@ -55,6 +55,18 @@ function countBattleTimingKinds(fixtures: Array<{ kind: BattleTimingKind }>): Re
 
 function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKind; required: string[] }> {
   return ([
+    {
+      file: "test/lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        'triggerBucket: "turnMandatory"',
+        "target disabled true",
+        '"code": 2',
+        '"code": 8',
+      ],
+    },
     {
       file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
       kind: "beforeDamageCalculation",
