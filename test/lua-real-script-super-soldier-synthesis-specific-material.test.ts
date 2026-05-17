@@ -110,6 +110,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x20, targetUids: [], count: 1, player: 0, parameter: 0x3 },
+      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x12 },
+    ]);
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
@@ -152,8 +156,36 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
         },
       ]
     `);
-    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === deckDarkMaterial!.uid)).toMatchInlineSnapshot(`
+    const materialGraveEvents = restored.session.state.eventHistory.filter((event) =>
+      event.eventName === "sentToGraveyard"
+      && (event.eventCardUid === handLightMaterial!.uid || event.eventCardUid === deckDarkMaterial!.uid)
+    );
+    expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([handLightMaterial!.uid, handLightMaterial!.uid, deckDarkMaterial!.uid].sort());
+    expect(materialGraveEvents).toMatchInlineSnapshot(`
       [
+        {
+          "eventCardUid": "p0-deck-45942-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 1048648,
+          "eventReasonCardUid": "p0-deck-45948430-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
         {
           "eventCardUid": "p0-deck-45944-4",
           "eventCode": 1014,
@@ -176,6 +208,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
           "eventReasonCardUid": "p0-deck-45948430-0",
           "eventReasonEffectId": 1,
           "eventReasonPlayer": 0,
+        },
+        {
+          "eventCardUid": "p0-deck-45942-2",
+          "eventCode": 1014,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "sentToGraveyard",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "hand",
+            "position": "faceDown",
+            "sequence": 2,
+          },
+          "eventReason": 1048648,
+          "eventReasonCardUid": "p0-deck-45948430-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+          "eventUids": [
+            "p0-deck-45942-2",
+            "p0-deck-45944-4",
+          ],
         },
       ]
     `);

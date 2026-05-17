@@ -543,9 +543,12 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       required: [
         "{ category: 0x20, targetUids: [], count: 1, player: 0, parameter: 0x3 }",
         "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x12 }",
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([",
         'summonType: "ritual"',
         "summonMaterialUids).toEqual([handLightMaterial!.uid, deckDarkMaterial!.uid])",
         "reason: duelReason.effect | duelReason.material | duelReason.ritual",
+        'eventName === "sentToGraveyard"',
+        "event.eventCardUid === handLightMaterial!.uid",
         'expect(restored.host.messages).not.toContain("super soldier synthesis responder resolved")',
       ],
     },
