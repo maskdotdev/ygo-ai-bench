@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 162;
+const realScriptSummonFixtureCount = 163;
 const summonProcedureFixtureCount = 20;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 4;
@@ -14,10 +14,10 @@ const pendulumHelperFixtureCount = 13;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
-const linkedZoneSpecialSummonFixtureCount = 3;
+const linkedZoneSpecialSummonFixtureCount = 4;
 const realScriptSummonKeywordFamilyCounts = {
   fusion: 22,
-  link: 14,
+  link: 15,
   pendulum: 17,
   ritual: 20,
   summon: 59,
@@ -74,6 +74,7 @@ const linkedZoneSpecialSummonKindCounts = {
   handTriggerLinkSummon: 1,
   opponentFieldLinkedZoneSummon: 1,
   releaseCostDeckSummon: 1,
+  toBeLinkedZoneRevive: 1,
 } satisfies Record<LinkedZoneSpecialSummonKind, number>;
 
 type SummonUnionProcedureKind =
@@ -89,7 +90,11 @@ type SummonMaterialLockKind =
   | "xyzMaterialLock";
 
 type FlipSummonSuccessTrapKind = "flipBanishTrap" | "flipDestroyTrap" | "flipStatTrap";
-type LinkedZoneSpecialSummonKind = "handTriggerLinkSummon" | "opponentFieldLinkedZoneSummon" | "releaseCostDeckSummon";
+type LinkedZoneSpecialSummonKind =
+  | "handTriggerLinkSummon"
+  | "opponentFieldLinkedZoneSummon"
+  | "releaseCostDeckSummon"
+  | "toBeLinkedZoneRevive";
 type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -463,6 +468,20 @@ function realScriptLinkedZoneSpecialSummonFixtureSnippets(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-knightmare-iblee-to-be-linked-zone-summon.test.ts",
+      kind: "toBeLinkedZoneRevive",
+      required: [
+        "GetToBeLinkedZone",
+        "future pointed zone",
+        'type === "activateTrigger"',
+        'windowKind: "triggerBucket"',
+        'location: "monsterZone"',
+        "sequence: 1",
+        "currentAttack",
+        '"specialSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-summon-sorceress-opponent-linked-zone.test.ts",
       kind: "opponentFieldLinkedZoneSummon",
       required: [
@@ -501,6 +520,7 @@ function countLinkedZoneSpecialSummonKinds(files: Array<{ kind: LinkedZoneSpecia
       handTriggerLinkSummon: 0,
       opponentFieldLinkedZoneSummon: 0,
       releaseCostDeckSummon: 0,
+      toBeLinkedZoneRevive: 0,
     },
   );
 }
