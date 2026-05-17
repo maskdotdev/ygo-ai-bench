@@ -39,7 +39,7 @@ describe("Lua dynamic Link marker effects", () => {
       "after-dynamic-markers.lua",
     );
     expect(after.ok, after.error).toBe(true);
-    expect(host.messages).toContain("after dynamic markers 32/2/2/2/1/true/true/true");
+    expect(host.messages).toContain("after dynamic markers 32/131074/131074/2/1/true/true/true");
   });
 
   it("uses changed Link markers for co-linked checks", () => {
@@ -74,7 +74,7 @@ describe("Lua dynamic Link marker effects", () => {
       "after-dynamic-colink.lua",
     );
     expect(after.ok, after.error).toBe(true);
-    expect(host.messages).toContain("after dynamic colink true/true/2/1");
+    expect(host.messages).toContain("after dynamic colink true/true/131074/65537");
   });
 
   it("uses additive and removal Link marker effects for linked groups", () => {
@@ -97,7 +97,7 @@ describe("Lua dynamic Link marker effects", () => {
       "before-add-remove-markers.lua",
     );
     expect(before.ok, before.error).toBe(true);
-    expect(host.messages).toContain("before add remove markers 32/4");
+    expect(host.messages).toContain("before add remove markers 32/262148");
 
     expect(host.loadCardScript(300, { readScript: dynamicMarkerScript }).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
@@ -112,7 +112,7 @@ describe("Lua dynamic Link marker effects", () => {
       "after-add-remove-markers.lua",
     );
     expect(after.ok, after.error).toBe(true);
-    expect(host.messages).toContain("after add remove markers 8/1/1/true/false");
+    expect(host.messages).toContain("after add remove markers 8/65537/1/true/false");
   });
 });
 

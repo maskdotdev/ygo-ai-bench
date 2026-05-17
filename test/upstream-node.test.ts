@@ -128,6 +128,23 @@ describe("Node upstream workspace loader", () => {
     ]);
   });
 
+  it("maps Link monster CDB def values to link markers", () => {
+    const cards = normalizeCdbRows([{ id: 100, type: 0x4000001, atk: 1500, def: 0x120, level: 2 }], [{ id: 100, name: "Link Metadata Probe" }]);
+
+    expect(cards).toEqual([
+      expect.objectContaining({
+        code: "100",
+        name: "Link Metadata Probe",
+        kind: "extra",
+        typeFlags: 0x4000001,
+        attack: 1500,
+        level: 2,
+        linkMarkers: 0x120,
+      }),
+    ]);
+    expect(cards[0]?.defense).toBeUndefined();
+  });
+
   it("merges supplemental local card metadata after CDB rows", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "duel-upstream-"));
     tempRoots.push(root);

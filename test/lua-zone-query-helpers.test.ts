@@ -114,7 +114,7 @@ describe("Lua zone query helpers", () => {
     expect(host.messages).toContain("linked checks true/true/false");
     expect(host.messages).toContain("co-linked checks true/false/true/false");
     expect(host.messages).toContain("linked zone counts 3/2");
-    expect(host.messages).toContain("linked zones 2/3/3/0");
+    expect(host.messages).toContain("linked zones 131074/196611/196611/0");
     expect(host.messages).toContain("mmz pointed 3/2/2");
     expect(host.messages).toContain("group to be linked zone 9/1");
     expect(host.messages).toContain("zpt helpers 1/true/false/true/true");

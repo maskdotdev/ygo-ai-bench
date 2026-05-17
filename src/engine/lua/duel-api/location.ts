@@ -227,7 +227,11 @@ export function linkedGroupUidsForCard(session: DuelSession, card: DuelCardInsta
 
 export function linkedZoneMask(card: DuelCardInstance, state?: DuelState): number {
   if (card.location !== "monsterZone" || !card.faceUp || (cardTypeFlags(card, state) & 0x4000001) !== 0x4000001) return 0;
-  return linkedSequences(card.sequence, currentLinkMarkers(card, state)).reduce((mask, sequence) => mask | (1 << sequence), 0);
+  return linkedSequences(card.sequence, currentLinkMarkers(card, state)).reduce((mask, sequence) => {
+    const ownZone = 1 << sequence;
+    const opponentZone = sequence < 5 ? 1 << (16 + sequence) : 0;
+    return mask | ownZone | opponentZone;
+  }, 0);
 }
 
 function linkedGroupUidsForPlayer(session: DuelSession, player: PlayerId, selfLocations: number, opponentLocations: number): string[] {

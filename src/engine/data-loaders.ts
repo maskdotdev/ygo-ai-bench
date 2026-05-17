@@ -92,7 +92,10 @@ export function normalizeCdbRows(datas: RawCdbDataRow[], texts: RawCdbTextRow[])
       card.leftScale = (level >> 24) & 0xff;
     }
     if (attack !== undefined) card.attack = attack;
-    if (defense !== undefined) card.defense = defense;
+    if (defense !== undefined) {
+      if (((typeFlags ?? 0) & 0x4000000) !== 0) card.linkMarkers = defense;
+      else card.defense = defense;
+    }
     if (race !== undefined) card.race = race;
     if (attribute !== undefined) card.attribute = attribute;
     return card;

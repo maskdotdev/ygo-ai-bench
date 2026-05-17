@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 57;
+const operationFixtureCount = 58;
 const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -17,6 +17,7 @@ const operationKindCounts = {
   chainNegateDiscardDestroy: 1,
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
+  chainLinkedZoneDisable: 1,
   deckToGrave: 1,
   deckSplit: 1,
   discardCostGraveToDeckTop: 1,
@@ -66,6 +67,7 @@ type OperationKind =
   | "chainNegateDiscardDestroy"
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
+  | "chainLinkedZoneDisable"
   | "deckToGrave"
   | "deckSplit"
   | "discardCostGraveToDeckTop"
@@ -153,6 +155,18 @@ function operationFixtureFiles(): Array<{
         "cardsDrawn",
         "recoveredLifePoints",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pitknight-earlie-linked-chain-disable.test.ts",
+      kind: "chainLinkedZoneDisable",
+      required: [
+        "bit.extract linked-zone chain condition",
+        "currentAttack(restoredStarter",
+        "toEqual([2, 8, 102])",
+        "cardsDrawn",
+        "host.messages).not.toContain",
+        "targetUids: [starter.uid]",
       ],
     },
     {
@@ -859,6 +873,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       chainNegateDiscardDestroy: 0,
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
+      chainLinkedZoneDisable: 0,
       deckToGrave: 0,
       deckSplit: 0,
       discardCostGraveToDeckTop: 0,
