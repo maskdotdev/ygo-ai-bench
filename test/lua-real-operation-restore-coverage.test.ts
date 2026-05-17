@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 50;
+const operationFixtureCount = 51;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -32,6 +32,7 @@ const operationKindCounts = {
   mutualHandDiscardDraw: 1,
   opponentHandToDeck: 1,
   overlayAttach: 1,
+  positionSet: 1,
   releaseDamage: 1,
   searchOrExcavate: 3,
   selfEquipFromHand: 1,
@@ -82,6 +83,7 @@ type OperationKind =
   | "mutualHandDiscardDraw"
   | "opponentHandToDeck"
   | "overlayAttach"
+  | "positionSet"
   | "releaseDamage"
   | "searchOrExcavate"
   | "selfEquipFromHand"
@@ -206,6 +208,18 @@ function operationFixtureFiles(): Array<{
         "eventCardUid: ownMonster!.uid",
         "eventCardUid: opponentMonster!.uid",
         "positionLockCodes",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-book-of-moon-free-chain.test.ts",
+      kind: "positionSet",
+      required: [
+        "category: 0x1000",
+        "parameter: 8",
+        'eventName: "positionChanged"',
+        'position: "faceDownDefense"',
+        "faceUp: false",
         "host.messages).not.toContain",
       ],
     },
@@ -988,6 +1002,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       mutualHandDiscardDraw: 0,
       opponentHandToDeck: 0,
       overlayAttach: 0,
+      positionSet: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
