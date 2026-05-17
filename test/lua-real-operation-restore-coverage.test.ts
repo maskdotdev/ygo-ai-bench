@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const operationFixtureCount = 47;
+const operationFixtureCount = 48;
 const summonTriggerOperationFixtureCount = 9;
 const operationKindCounts = {
   costBanishDraw: 2,
@@ -32,6 +32,7 @@ const operationKindCounts = {
   overlayAttach: 1,
   releaseDamage: 1,
   searchOrExcavate: 3,
+  selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
   targetBanishDiscardCost: 1,
@@ -79,6 +80,7 @@ type OperationKind =
   | "overlayAttach"
   | "releaseDamage"
   | "searchOrExcavate"
+  | "selfEquipFromHand"
   | "spellDraw"
   | "trapDraw"
   | "targetBanishDiscardCost"
@@ -433,6 +435,18 @@ function operationFixtureFiles(): Array<{
         "reasonCardUid: pillar!.uid",
         "reasonEffectId: 3",
         'eventName === "detachedMaterial"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wizard-buster-self-equip.test.ts",
+      kind: "selfEquipFromHand",
+      required: [
+        "category: 0x40000",
+        'eventName: "equipped"',
+        "equippedToUid: busterBlader!.uid",
+        'location: "spellTrapZone"',
+        "eventReasonEffectId: 1",
         "host.messages).not.toContain",
       ],
     },
@@ -946,6 +960,7 @@ function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): Record<O
       overlayAttach: 0,
       releaseDamage: 0,
       searchOrExcavate: 0,
+      selfEquipFromHand: 0,
       spellDraw: 0,
       trapDraw: 0,
       targetBanishDiscardCost: 0,
