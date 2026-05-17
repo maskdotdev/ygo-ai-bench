@@ -6,11 +6,11 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 const root = process.cwd();
 const testRoot = path.join(root, "test");
 const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-const realScriptSummonFixtureCount = 167;
+const realScriptSummonFixtureCount = 168;
 const summonProcedureFixtureCount = 21;
 const typedSummonProcedureFixtureCount = 6;
 const pendulumGrantFixtureCount = 4;
-const pendulumHelperFixtureCount = 14;
+const pendulumHelperFixtureCount = 15;
 const unionProcedureFixtureCount = 4;
 const materialLockFixtureCount = 4;
 const flipSummonSuccessTrapFixtureCount = 4;
@@ -18,7 +18,7 @@ const linkedZoneSpecialSummonFixtureCount = 5;
 const realScriptSummonKeywordFamilyCounts = {
   fusion: 22,
   link: 17,
-  pendulum: 18,
+  pendulum: 19,
   ritual: 20,
   summon: 60,
   synchro: 16,
@@ -40,6 +40,7 @@ const typedSummonProcedureKindCounts = {
   xyzProcedure: 1,
 } satisfies Record<TypedSummonProcedureKind, number>;
 const pendulumHelperKindCounts = {
+  directPendulumSummon: 1,
   extraDeckGrant: 3,
   extraSummonCountGrant: 2,
   filteredSetcodeGrant: 3,
@@ -131,6 +132,7 @@ type TypedSummonProcedureKind =
   | "synchroProcedure"
   | "xyzProcedure";
 type PendulumHelperKind =
+  | "directPendulumSummon"
   | "extraDeckGrant"
   | "extraSummonCountGrant"
   | "filteredSetcodeGrant"
@@ -837,6 +839,18 @@ function realScriptPendulumHelperFixtureSnippets(): Array<{ file: string; kind: 
       ],
     },
     {
+      file: "lua-real-script-pendulum-evolution-direct-pendulum-summon.test.ts",
+      kind: "directPendulumSummon",
+      required: [
+        "Duel.PendulumSummon(tp)",
+        "findPendulumEvolutionSummon",
+        'eventName: "specialSummoned"',
+        'summonType: "pendulum"',
+        "expect(restored.session.state.players[0].pendulumSummonAvailable).toBe(false)",
+        "registerDuelFlagEffect",
+      ],
+    },
+    {
       file: "lua-real-script-soul-pendulum-extra-summon.test.ts",
       kind: "extraSummonCountGrant",
       required: [
@@ -945,6 +959,7 @@ function countPendulumHelperKinds(
       return counts;
     },
     {
+      directPendulumSummon: 0,
       extraDeckGrant: 0,
       extraSummonCountGrant: 0,
       filteredSetcodeGrant: 0,
