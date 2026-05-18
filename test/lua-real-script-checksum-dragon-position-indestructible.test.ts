@@ -12,7 +12,9 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasChecksumDragonScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c94136469.lua"));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
 function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance): DuelEffectContext {
   return {
@@ -30,11 +32,11 @@ function targetContext(duel: DuelEffectContext["duel"], source: DuelCardInstance
   };
 }
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Checksum Dragon position indestructible", () => {
+describe.skipIf(!hasUpstreamScripts || !hasChecksumDragonScript)("Lua real script Checksum Dragon position indestructible", () => {
   it("restores comma-local Attack Position and Defense Position predicates", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const checksumDragonCode = "94136469";
-    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === checksumDragonCode);
+    const cards = checksumDragonCards(checksumDragonCode);
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 943, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [checksumDragonCode] }, 1: { main: [] } });
@@ -159,7 +161,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
   it("restores local-handler Attack Position and Defense Position predicates", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const checksumDragonCode = "94136469";
-    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === checksumDragonCode);
+    const cards = checksumDragonCards(checksumDragonCode);
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 942, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [checksumDragonCode] }, 1: { main: [] } });
@@ -284,7 +286,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
   it("restores its Attack Position-only battle indestructible effect", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const checksumDragonCode = "94136469";
-    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === checksumDragonCode);
+    const script = workspace.readScript(`c${checksumDragonCode}.lua`);
+    expect(script).toContain("e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)");
+    expect(script).toContain("e2:SetRange(LOCATION_MZONE)");
+    expect(script).toContain("e2:SetCondition(function(e) return e:GetHandler():IsAttackPos() end)");
+    expect(script).toContain("e2:SetValue(1)");
+    const cards = checksumDragonCards(checksumDragonCode);
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 941, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [checksumDragonCode] }, 1: { main: [] } });
@@ -353,3 +360,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ch
     expect(defensePositionDestroy).toMatchObject({ uid: restoredDragon!.uid, location: "graveyard", reason: duelReason.battle | duelReason.destroy });
   });
 });
+
+function checksumDragonCards(checksumDragonCode: string): DuelCardData[] {
+  return [
+    {
+      code: checksumDragonCode,
+      name: "Checksum Dragon",
+      kind: "monster",
+      typeFlags: typeMonster | typeEffect,
+      level: 6,
+      attack: 400,
+      defense: 2400,
+    },
+  ];
+}
