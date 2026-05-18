@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 9;
+const statFixtureCount = 10;
 const statKindCounts = {
+  battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
   fieldGroupCountStat: 1,
   fieldAttributeAttackUpdate: 2,
@@ -24,9 +25,10 @@ const statSemanticVariantCounts = {
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
+  steamroidDamageStepBattleSwingStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
 type StatSemanticVariant =
   | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
@@ -36,7 +38,8 @@ type StatSemanticVariant =
   | "mukaMukaHandCountAttackDefense"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "shrinkTargetBaseAtkHalving"
-  | "skyscraperFieldDamageCalculationAttackBoost";
+  | "skyscraperFieldDamageCalculationAttackBoost"
+  | "steamroidDamageStepBattleSwingStat";
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
@@ -193,6 +196,18 @@ function statFixtureFiles(): Array<{
         "battleDamage).toEqual({ 0: 0, 1: 700 })",
       ],
     },
+    {
+      file: "test/lua-real-script-steamroid-battle-swing-stat.test.ts",
+      kind: "battleAttackerTargetSwing",
+      required: [
+        "return ph==PHASE_DAMAGE or ph==PHASE_DAMAGE_CAL",
+        "stat:battle-attacker-target-swing:500:-500",
+        "condition:damage-or-damage-calculation",
+        "currentAttack(restoredAttackingSteamroid, restoredAttacking.session.state)).toBe((attacking.steamroid.data.attack ?? 0) + 500)",
+        "currentAttack(restoredDefendingSteamroid, restoredDefending.session.state)).toBe((defending.steamroid.data.attack ?? 0) - 500)",
+        "battleDamage).toEqual({ 0: 500, 1: 0 })",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatKind;
@@ -207,6 +222,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       return counts;
     },
     {
+      battleAttackerTargetSwing: 0,
       battleTargetAttackBoost: 0,
       fieldAttributeAttackUpdate: 0,
       fieldGroupCountStat: 0,
@@ -310,6 +326,16 @@ function statSemanticVariants(): Array<{
         "currentAttack(restoredHero, restoredDamageCalculation.session.state)).toBe(2600)",
       ],
     },
+    {
+      file: "test/lua-real-script-steamroid-battle-swing-stat.test.ts",
+      kind: "steamroidDamageStepBattleSwingStat",
+      required: [
+        'const steamroidCode = "44729197"',
+        "restores Damage Step attacker boost and defender loss callbacks into battle damage",
+        "stat:battle-attacker-target-swing:500:-500",
+        "players[0].lifePoints).toBe(7500)",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatSemanticVariant;
@@ -333,6 +359,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
+      steamroidDamageStepBattleSwingStat: 0,
     },
   );
 }

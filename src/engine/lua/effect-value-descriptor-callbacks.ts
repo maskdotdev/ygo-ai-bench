@@ -24,6 +24,19 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
       };
     }
   }
+  const battleAttackerTargetSwing = luaValueDescriptor?.match(/^stat:battle-attacker-target-swing:(-?\d+):(-?\d+)$/);
+  if (battleAttackerTargetSwing?.[1] && battleAttackerTargetSwing[2]) {
+    const attackingValue = Number(battleAttackerTargetSwing[1]);
+    const defendingValue = Number(battleAttackerTargetSwing[2]);
+    if (Number.isSafeInteger(attackingValue) && Number.isSafeInteger(defendingValue)) {
+      return (ctx, card) => {
+        const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle;
+        if (battle?.attackerUid === card.uid && battle.targetUid) return attackingValue;
+        if (battle?.targetUid === card.uid) return defendingValue;
+        return 0;
+      };
+    }
+  }
   if (luaValueDescriptor === "stat:damage-calculation-attacker-lower-than-target:+1000") {
     return (ctx, card) => {
       if (ctx.duel.phase !== "battle" || currentBattleStep(ctx.duel) !== "damageCalculation") return 0;
