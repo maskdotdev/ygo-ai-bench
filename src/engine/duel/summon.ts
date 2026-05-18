@@ -620,13 +620,18 @@ function findSummonMaterialUidSets(state: DuelState, player: PlayerId, cards: Du
 }
 
 function findFusionMaterialUidSets(state: DuelState, player: PlayerId, cards: DuelCardInstance[], card: DuelCardInstance): string[][] {
-  const requiredCodes = card.data.fusionMaterials;
+  const requiredCodes = card.data.fusionMaterials ?? [];
+  const requiredSetcodes = card.data.fusionRequiredMaterialSetcodes ?? [];
   const reason = duelReason.summon | duelReason.specialSummon | duelReason.fusion;
-  if (requiredCodes?.length && !hasGenericFusionMaterialRequirement(card)) return findSummonMaterialUidSets(state, player, cards, requiredCodes, fusionMaterialMatchOptions(state, card), reason, card);
-  if (!hasGenericFusionMaterialRequirement(card)) return [];
+  if (!hasGenericFusionMaterialRequirement(card)) {
+    if (!requiredCodes.length && !requiredSetcodes.length) return [];
+    return fusionRequiredMaterialSets(state, cards, card)
+      .map((materials) => materials.map((material) => material.uid))
+      .filter((materialUids) => hasSummonZoneAfterMaterials(state, player, materialUids, reason, card));
+  }
   const results: string[][] = [];
   const seen = new Set<string>();
-  const requiredMaterialSets = requiredCodes?.length ? fusionExactMaterialSets(state, cards, requiredCodes, card) : [[]];
+  const requiredMaterialSets = requiredCodes.length || requiredSetcodes.length ? fusionRequiredMaterialSets(state, cards, card) : [[]];
   for (const requiredMaterials of requiredMaterialSets) {
     const requiredUids = new Set(requiredMaterials.map((material) => material.uid));
     const repeatedPool = cards.filter((material) => !requiredUids.has(material.uid));
@@ -657,20 +662,19 @@ export function fusionMaterialMatches(state: DuelState, target: DuelCardInstance
     && (target.data.fusionMaterialType === undefined || (cardTypeFlags(material, state) & target.data.fusionMaterialType) !== 0)
     && (target.data.fusionMaterialSetcode === undefined || currentCardMatchesSetcode(material, state, target.data.fusionMaterialSetcode));
 }
-
 export function fusionMaterialSelectionMatches(state: DuelState, target: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const requiredCodes = target.data.fusionMaterials ?? [];
-  if (!hasGenericFusionMaterialRequirement(target)) return requiredCodes.length > 0 && materialCodesMatch(materials, requiredCodes, fusionMaterialMatchOptions(state, target));
-  if (!requiredCodes.length) return fusionMaterialCountAllowed(target, materials.length) && materials.every((material) => fusionMaterialMatches(state, target, material));
-  for (const requiredMaterials of cardCombinations(materials, requiredCodes.length)) {
-    if (!materialCodesMatch(requiredMaterials, requiredCodes, fusionMaterialMatchOptions(state, target))) continue;
+  const requiredSetcodes = target.data.fusionRequiredMaterialSetcodes ?? [];
+  const requiredCount = requiredCodes.length + requiredSetcodes.length;
+  if (!hasGenericFusionMaterialRequirement(target)) return requiredCount > 0 && materials.length === requiredCount && fusionRequiredMaterialSets(state, materials, target).length > 0;
+  if (requiredCount === 0) return fusionMaterialCountAllowed(target, materials.length) && materials.every((material) => fusionMaterialMatches(state, target, material));
+  for (const requiredMaterials of fusionRequiredMaterialSets(state, materials, target)) {
     const requiredUids = new Set(requiredMaterials.map((material) => material.uid));
     const repeatedMaterials = materials.filter((material) => !requiredUids.has(material.uid));
     if (fusionMaterialCountAllowed(target, repeatedMaterials.length) && repeatedMaterials.every((material) => fusionMaterialMatches(state, target, material))) return true;
   }
   return false;
 }
-
 function fusionExactMaterialSets(state: DuelState, cards: DuelCardInstance[], requiredCodes: string[], target: DuelCardInstance): DuelCardInstance[][] {
   const results: DuelCardInstance[][] = [];
   const seen = new Set<string>();
@@ -682,6 +686,28 @@ function fusionExactMaterialSets(state: DuelState, cards: DuelCardInstance[], re
     results.push(materialUids.map((uid) => materials.find((material) => material.uid === uid)).filter((material): material is DuelCardInstance => material !== undefined));
   }
   return results;
+}
+function fusionRequiredMaterialSets(state: DuelState, cards: DuelCardInstance[], target: DuelCardInstance): DuelCardInstance[][] {
+  const requiredCodes = target.data.fusionMaterials ?? [], requiredSetcodes = target.data.fusionRequiredMaterialSetcodes ?? [];
+  const exactSets = requiredCodes.length ? fusionExactMaterialSets(state, cards, requiredCodes, target) : [[]];
+  const results: DuelCardInstance[][] = [];
+  const seen = new Set<string>();
+  for (const exactMaterials of exactSets) {
+    const exactUids = new Set(exactMaterials.map((material) => material.uid));
+    const remaining = cards.filter((material) => !exactUids.has(material.uid));
+    for (const setcodeMaterials of fusionRequiredSetcodeMaterialSets(state, remaining, requiredSetcodes)) {
+      const materials = [...exactMaterials, ...setcodeMaterials];
+      const key = materialUidSetKey(materials.map((material) => material.uid));
+      if (!seen.has(key)) { seen.add(key); results.push(materials); }
+    }
+  }
+  return results;
+}
+
+function fusionRequiredSetcodeMaterialSets(state: DuelState, cards: DuelCardInstance[], requiredSetcodes: number[]): DuelCardInstance[][] {
+  if (!requiredSetcodes.length) return [[]];
+  const [requiredSetcode, ...rest] = requiredSetcodes;
+  return cards.flatMap((material) => currentCardMatchesSetcode(material, state, requiredSetcode!) ? fusionRequiredSetcodeMaterialSets(state, cards.filter((candidate) => candidate.uid !== material.uid), rest).map((tail) => [material, ...tail]) : []);
 }
 
 function fusionMaterialMatchOptions(state: DuelState, target: DuelCardInstance): MaterialCodeMatchOptions {

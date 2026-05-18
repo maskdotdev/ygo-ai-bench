@@ -70,6 +70,7 @@ function copyCardData(data: DuelCardData): DuelCardData {
     ...data,
     ...(data.setcodes ? { setcodes: [...data.setcodes] } : {}),
     ...(data.fusionMaterials ? { fusionMaterials: [...data.fusionMaterials] } : {}),
+    ...(data.fusionRequiredMaterialSetcodes ? { fusionRequiredMaterialSetcodes: [...data.fusionRequiredMaterialSetcodes] } : {}),
     ...(data.materialSetcodes ? { materialSetcodes: [...data.materialSetcodes] } : {}),
     ...(data.synchroMaterials ? { synchroMaterials: { tuner: data.synchroMaterials.tuner, nonTuners: [...data.synchroMaterials.nonTuners] } } : {}),
     ...(data.xyzMaterials ? { xyzMaterials: [...data.xyzMaterials] } : {}),

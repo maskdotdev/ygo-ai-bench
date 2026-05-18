@@ -674,9 +674,10 @@ function selectFusionMaterialUids(session: DuelSession, candidates: DuelCardInst
     .filter((card): card is DuelCardInstance => card !== undefined);
   if (forced.length !== uniqueForcedUids.length) return [];
   const requiredCodes = target?.data.fusionMaterials ?? [];
+  const requiredCount = requiredCodes.length + (target?.data.fusionRequiredMaterialSetcodes?.length ?? 0);
   if (target && hasGenericFusionMaterialRequirement(target)) {
-    if (requiredCodes.length) {
-      for (let count = Math.max(requiredCodes.length + (target.data.fusionMaterialMin ?? 1), forced.length); count <= candidates.length; count += 1) {
+    if (requiredCount > 0) {
+      for (let count = Math.max(requiredCount + (target.data.fusionMaterialMin ?? 1), forced.length); count <= candidates.length; count += 1) {
         for (const materials of cardCombinations(candidates, count)) {
           if (forced.length && !forced.every((material) => materials.includes(material))) continue;
           if (fusionMaterialSelectionMatches(session.state, target, materials)) return materials.map((material) => material.uid);

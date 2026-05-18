@@ -24,7 +24,7 @@ import {
 } from "#duel/core.js";
 import { duelSummonTypeFromCode, luaSpecialSummonTypeCode, luaSummonTypeFusion, luaSummonTypeLink, luaSummonTypePendulum, luaSummonTypeRitual, luaSummonTypeSynchro, luaSummonTypeXyz } from "#duel/summon-type-codes.js";
 import { hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
-import { currentCardCodes, currentCardMatchesCode } from "#duel/card-code-state.js";
+import { currentCardCodes, currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
@@ -926,9 +926,13 @@ function targetAllowsFusionMaterial(state: DuelState, target: DuelCardInstance |
   if (!target) return true;
   if (target.uid === card.uid) return false;
   const requiredCodes = target.data.fusionMaterials ?? [];
-  if (!requiredCodes.length) return true;
+  const requiredSetcodes = target.data.fusionRequiredMaterialSetcodes ?? [];
+  if (!requiredCodes.length && !requiredSetcodes.length) return true;
   const codes = currentCardCodes(card, state);
-  return requiredCodes.some((code) => codes.includes(code)) || canUseFusionSubstitute(state, card, target) || (hasGenericFusionMaterialRequirement(target) && fusionMaterialMatches(state, target, card));
+  return requiredCodes.some((code) => codes.includes(code))
+    || requiredSetcodes.some((setcode) => currentCardMatchesSetcode(card, state, setcode))
+    || (requiredCodes.length > 0 && canUseFusionSubstitute(state, card, target))
+    || (hasGenericFusionMaterialRequirement(target) && fusionMaterialMatches(state, target, card));
 }
 
 function fusionMaterialMatchOptions(state: DuelState, target: DuelCardInstance): MaterialCodeMatchOptions {
