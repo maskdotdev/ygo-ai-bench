@@ -12,18 +12,25 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const tsukuyomiCode = "34853266";
+const hasTsukuyomiScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${tsukuyomiCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
+const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tsukuyomi position trigger", () => {
+describe.skipIf(!hasUpstreamScripts || !hasTsukuyomiScript)("Lua real script Tsukuyomi position trigger", () => {
   it("restores its Spirit summon trigger and turns a target monster face-down", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const tsukuyomiCode = "34853266";
     const targetCode = "34853267";
     const responderCode = "34853268";
+    const script = workspace.readScript(`c${tsukuyomiCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e2:SetCode(EVENT_SUMMON_SUCCESS)");
+    expect(script).toContain("Duel.ChangePosition(tc,POS_FACEDOWN_DEFENSE)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === tsukuyomiCode),
-      { code: targetCode, name: "Tsukuyomi Position Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
-      { code: responderCode, name: "Tsukuyomi Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: tsukuyomiCode, name: "Tsukuyomi", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1100, defense: 1400 },
+      { code: targetCode, name: "Tsukuyomi Position Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1000 },
+      { code: responderCode, name: "Tsukuyomi Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 348, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });

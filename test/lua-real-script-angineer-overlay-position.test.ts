@@ -12,20 +12,26 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const angineerCode = "15914410";
+const hasAngineerScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${angineerCode}.lua`));
+const typeMonster = 0x1;
+const typeXyz = 0x800000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mechquipped Angineer overlay position", () => {
+describe.skipIf(!hasUpstreamScripts || !hasAngineerScript)("Lua real script Mechquipped Angineer overlay position", () => {
   it("restores Angineer after detaching Xyz material and resolves its protected position change", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const angineerCode = "15914410";
     const materialCode = "1591";
     const targetCode = "1592";
     const responderCode = "1593";
+    const script = workspace.readScript(`c${angineerCode}.lua`);
+    expect(script).toContain("e1:SetCost(Cost.DetachFromSelf(1))");
+    expect(script).toContain("Duel.ChangePosition(tc,POS_FACEUP_DEFENSE)");
+    expect(script).toContain("e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === angineerCode),
-      { code: materialCode, name: "Angineer Overlay Material Fixture", kind: "monster", typeFlags: 0x1, level: 3, attack: 800, defense: 800 },
-      { code: targetCode, name: "Angineer Position Target Fixture", kind: "monster", typeFlags: 0x1, level: 4, attack: 1700, defense: 1200 },
-      { code: responderCode, name: "Angineer Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: angineerCode, name: "Mechquipped Angineer", kind: "extra", typeFlags: typeMonster | typeXyz, level: 3, attack: 1800, defense: 1000 },
+      { code: materialCode, name: "Angineer Overlay Material Fixture", kind: "monster", typeFlags: typeMonster, level: 3, attack: 800, defense: 800 },
+      { code: targetCode, name: "Angineer Position Target Fixture", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1700, defense: 1200 },
+      { code: responderCode, name: "Angineer Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 159, startingHandSize: 0, cardReader: reader });

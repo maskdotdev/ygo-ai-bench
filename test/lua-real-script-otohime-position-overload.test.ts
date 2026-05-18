@@ -12,17 +12,23 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const otohimeCode = "39751093";
+const hasOtohimeScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${otohimeCode}.lua`));
 const typeMonster = 0x1;
+const typeEffect = 0x20;
+const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Otohime position overload", () => {
+describe.skipIf(!hasUpstreamScripts || !hasOtohimeScript)("Lua real script Otohime position overload", () => {
   it("restores its summon trigger and changes a face-up Defense target to Attack", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const otohimeCode = "39751093";
     const targetCode = "39751094";
     const responderCode = "39751095";
+    const script = workspace.readScript(`c${otohimeCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e2:SetCode(EVENT_SUMMON_SUCCESS)");
+    expect(script).toContain("Duel.ChangePosition(tc,POS_FACEUP_DEFENSE,0,POS_FACEUP_ATTACK,0)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === otohimeCode),
+      { code: otohimeCode, name: "Otohime", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 3, attack: 0, defense: 100 },
       { code: targetCode, name: "Otohime Position Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1000 },
       { code: responderCode, name: "Otohime Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];

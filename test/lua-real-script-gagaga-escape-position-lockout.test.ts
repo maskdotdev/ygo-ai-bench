@@ -12,22 +12,29 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const escapeCode = "9591819";
+const hasEscapeScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${escapeCode}.lua`));
+const typeMonster = 0x1;
+const typeTrap = 0x4;
+const setGagaga = 0x54;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gagaga Escape position lockout", () => {
+describe.skipIf(!hasUpstreamScripts || !hasEscapeScript)("Lua real script Gagaga Escape position lockout", () => {
   it("restores Gagaga Escape and keeps IsCanChangePosition-locked Gagaga monsters unchanged", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const escapeCode = "9591819";
     const eligibleCode = "9591";
     const attackedCode = "9592";
     const changedCode = "9593";
     const responderCode = "9594";
+    const script = workspace.readScript(`c${escapeCode}.lua`);
+    expect(script).toContain("e2:SetCost(Cost.SelfBanish)");
+    expect(script).toContain("c:IsSetCard(SET_GAGAGA) and c:IsPosition(POS_FACEUP_ATTACK) and c:IsCanChangePosition()");
+    expect(script).toContain("Duel.ChangePosition(g,POS_FACEUP_DEFENSE,POS_FACEDOWN_DEFENSE,0,0)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === escapeCode),
-      { code: eligibleCode, name: "Gagaga Eligible Fixture", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1000, setcodes: [0x54] },
-      { code: attackedCode, name: "Gagaga Attacked Fixture", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1000, setcodes: [0x54] },
-      { code: changedCode, name: "Gagaga Changed Fixture", kind: "monster", typeFlags: 0x1, level: 4, attack: 1700, defense: 1000, setcodes: [0x54] },
-      { code: responderCode, name: "Gagaga Escape Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: escapeCode, name: "Gagaga Escape", kind: "trap", typeFlags: typeTrap },
+      { code: eligibleCode, name: "Gagaga Eligible Fixture", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1000, setcodes: [setGagaga] },
+      { code: attackedCode, name: "Gagaga Attacked Fixture", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1600, defense: 1000, setcodes: [setGagaga] },
+      { code: changedCode, name: "Gagaga Changed Fixture", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1700, defense: 1000, setcodes: [setGagaga] },
+      { code: responderCode, name: "Gagaga Escape Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 959, startingHandSize: 0, cardReader: reader });
