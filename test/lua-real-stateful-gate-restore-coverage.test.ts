@@ -65,6 +65,20 @@ describe("Lua real stateful gate restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("keeps stateful gate fixtures script-gated and database-independent", () => {
+    const weak = statefulGateSemanticVariants()
+      .filter(({ file }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return text.includes("readDatabaseCards")
+          || text.includes("hasUpstreamDatabase")
+          || !text.includes("workspace.readScript")
+          || !text.includes("describe.skipIf(!hasUpstreamScripts || !has");
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function statefulGateFixtureFiles(): Array<{
