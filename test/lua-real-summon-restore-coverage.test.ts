@@ -54,6 +54,12 @@ import {
   realScriptForceMonsterZoneSummonLockFixtureSnippets,
 } from "./lua-real-force-mzone-summon-restore-fixtures.js";
 import {
+  countFreeChainSpecialSummonKinds,
+  freeChainSpecialSummonFixtureCount,
+  freeChainSpecialSummonKindCounts,
+  realScriptFreeChainSpecialSummonFixtureSnippets,
+} from "./lua-real-free-chain-special-summon-restore-fixtures.js";
+import {
   countReleaseCostSpecialSummonKinds,
   realScriptReleaseCostSpecialSummonFixtureSnippets,
   releaseCostSpecialSummonFixtureCount,
@@ -338,6 +344,34 @@ describe("Lua real summon restore coverage", () => {
 
   it("keeps release-cost Special Summon fixture kinds explicit", () => {
     expect(countReleaseCostSpecialSummonKinds(realScriptReleaseCostSpecialSummonFixtureSnippets())).toEqual(releaseCostSpecialSummonKindCounts);
+  });
+
+  it("requires representative free-chain Special Summon fixtures to pin hand selection and operation info", () => {
+    const files = realScriptFreeChainSpecialSummonFixtureSnippets();
+    expect(files).toHaveLength(freeChainSpecialSummonFixtureCount);
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps free-chain Special Summon fixture kinds explicit", () => {
+    expect(countFreeChainSpecialSummonKinds(realScriptFreeChainSpecialSummonFixtureSnippets())).toEqual(freeChainSpecialSummonKindCounts);
   });
 
   it("requires representative force-Monster-Zone summon locks to pin restored zone counts", () => {
