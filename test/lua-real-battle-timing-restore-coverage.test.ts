@@ -4,19 +4,20 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 31;
-const battleTimingEventCodeFixtureCount = 31;
+const battleTimingFixtureCount = 32;
+const battleTimingEventCodeFixtureCount = 32;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 13,
   beforeDamageCalculation: 7,
   duringDamageCalculation: 4,
-  endDamageStep: 4,
+  endDamageStep: 5,
   startDamageStep: 3,
 };
 const battleTimingSemanticVariantCounts = {
   allyOfJusticeNullfierAfterDamageDisable: 1,
   aojOmniWeaponBattledLabelDrawSummon: 1,
+  bigShieldGardnaEndDamageStepPosition: 1,
   cipherSoldierBeforeDamageCalculationBoost: 1,
   ddAssailantAfterDamageBanishBoth: 1,
   ddWarriorWallMandatoryBattledSegoc: 1,
@@ -110,6 +111,7 @@ type BattleTimingKind = "afterDamageCalculation" | "beforeDamageCalculation" | "
 type BattleTimingSemanticVariant =
   | "allyOfJusticeNullfierAfterDamageDisable"
   | "aojOmniWeaponBattledLabelDrawSummon"
+  | "bigShieldGardnaEndDamageStepPosition"
   | "cipherSoldierBeforeDamageCalculationBoost"
   | "ddAssailantAfterDamageBanishBoth"
   | "ddWarriorWallMandatoryBattledSegoc"
@@ -162,6 +164,17 @@ function battleTimingSemanticVariants(): Array<{
         "eventName: \"battleDestroyed\"",
         "eventName: \"cardsDrawn\"",
         "eventName: \"specialSummoned\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-big-shield-gardna-damage-step-position.test.ts",
+      kind: "bigShieldGardnaEndDamageStepPosition",
+      required: [
+        "restores its end Damage Step position change after being attacked in Defense Position",
+        "e2:SetCode(EVENT_DAMAGE_STEP_END)",
+        "Duel.ChangePosition(c,POS_FACEUP_ATTACK)",
+        "eventName: \"damageStepEnded\"",
+        "eventName: \"positionChanged\"",
       ],
     },
     {
@@ -364,6 +377,7 @@ function countBattleTimingSemanticVariants(
     {
       allyOfJusticeNullfierAfterDamageDisable: 0,
       aojOmniWeaponBattledLabelDrawSummon: 0,
+      bigShieldGardnaEndDamageStepPosition: 0,
       cipherSoldierBeforeDamageCalculationBoost: 0,
       ddAssailantAfterDamageBanishBoth: 0,
       ddWarriorWallMandatoryBattledSegoc: 0,
@@ -442,6 +456,19 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "specialSummoned"',
         "eventReasonEffectId: 2",
         "api: \"SelectYesNo\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-big-shield-gardna-damage-step-position.test.ts",
+      kind: "endDamageStep",
+      required: [
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'eventName: "damageStepEnded"',
+        "eventCode: 1141",
+        'eventName: "positionChanged"',
+        "eventCode: 1016",
+        "eventReasonEffectId: 2",
+        'position: "faceUpAttack"',
       ],
     },
     {
@@ -782,5 +809,8 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
 }
 
 function requiresActivatedTrigger(file: string): boolean {
-  return file !== "test/lua-real-script-dark-ruler-ha-des-battled-disable.test.ts";
+  return ![
+    "test/lua-real-script-big-shield-gardna-damage-step-position.test.ts",
+    "test/lua-real-script-dark-ruler-ha-des-battled-disable.test.ts",
+  ].includes(file);
 }
