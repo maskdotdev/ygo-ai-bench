@@ -123,14 +123,17 @@ function readFusionAddProcMixPredicateMaterials(source: string | undefined): Fus
   const match = source?.match(/Fusion\.AddProcMix\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,([^\n]*)\)/);
   if (!match?.[1]) return [];
   const predicates: FusionMaterialPredicateRequirement[] = [];
-  for (const [, predicate, rawValue] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:AttackAbove|LevelAbove))\s*,\s*(\d+)\s*\)/g)) {
-    if (!rawValue) continue;
-    const value = Number.parseInt(rawValue, 10);
-    if (value <= 0) continue;
-    if (predicate === "Card.IsAttackAbove") predicates.push({ attackMin: value });
-    if (predicate === "Card.IsLevelAbove") predicates.push({ levelMin: value });
-  }
-  for (const [, predicate, expression] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:Attribute|Location|Race|SetCard|Type))\s*,\s*([A-Z0-9_]+(?:\s*\|\s*[A-Z0-9_]+)*)\s*\)/g)) {
+  for (const [, predicate, expression] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:AttackAbove|AttackBelow|LevelAbove|LevelBelow|Attribute|Location|Race|SetCard|Type))\s*,\s*(\d+|[A-Z0-9_]+(?:\s*\|\s*[A-Z0-9_]+)*)\s*\)/g)) {
+    if (!predicate || !expression) continue;
+    if (predicate === "Card.IsAttackBelow" || predicate === "Card.IsAttackAbove" || predicate === "Card.IsLevelBelow" || predicate === "Card.IsLevelAbove") {
+      const value = Number.parseInt(expression, 10);
+      if (value <= 0) continue;
+      if (predicate === "Card.IsAttackBelow") predicates.push({ attackMax: value });
+      if (predicate === "Card.IsAttackAbove") predicates.push({ attackMin: value });
+      if (predicate === "Card.IsLevelBelow") predicates.push({ levelMax: value });
+      if (predicate === "Card.IsLevelAbove") predicates.push({ levelMin: value });
+      continue;
+    }
     const value = readLuaConstantExpression(expression);
     if (value === undefined) continue;
     if (predicate === "Card.IsAttribute") predicates.push({ attribute: value });
