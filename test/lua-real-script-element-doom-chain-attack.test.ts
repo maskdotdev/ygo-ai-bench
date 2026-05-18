@@ -2,7 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
+import { isCardDisabled } from "#duel/continuous-effects.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createEffectContext } from "#duel/effect-context.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -11,24 +13,32 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const elementDoomCode = "23118924";
+const hasElementDoomScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${elementDoomCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 const attributeEarth = 0x1;
 const attributeWind = 0x8;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Element Doom chain attack", () => {
-  it("restores its attribute-gated battled trigger and reopens its attack with Duel.ChainAttack", () => {
+describe.skipIf(!hasUpstreamScripts || !hasElementDoomScript)("Lua real script Element Doom chain attack", () => {
+  it("restores its attribute-gated battled disable and reopens its attack with Duel.ChainAttack", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const elementDoomCode = "23118924";
     const earthSupportCode = "2311";
     const windSupportCode = "2312";
     const firstTargetCode = "2313";
     const followupTargetCode = "2314";
+    const script = workspace.readScript(`official/c${elementDoomCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_BATTLED)");
+    expect(script).toContain("bc:IsStatus(STATUS_BATTLE_DESTROYED)");
+    expect(script).toContain("Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsAttribute,ATTRIBUTE_EARTH)");
+    expect(script).toContain("e2:SetCode(EVENT_BATTLE_DESTROYING)");
+    expect(script).toContain("Duel.ChainAttack()");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === elementDoomCode),
-      { code: earthSupportCode, name: "Element Doom EARTH Support", kind: "monster", typeFlags: 0x1, level: 4, attribute: attributeEarth, attack: 1000, defense: 1000 },
-      { code: windSupportCode, name: "Element Doom WIND Support", kind: "monster", typeFlags: 0x1, level: 4, attribute: attributeWind, attack: 1000, defense: 1000 },
-      { code: firstTargetCode, name: "Element Doom First Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: followupTargetCode, name: "Element Doom Followup Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: elementDoomCode, name: "Element Doom", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1500, defense: 1200 },
+      { code: earthSupportCode, name: "Element Doom EARTH Support", kind: "monster", typeFlags: typeMonster, level: 4, attribute: attributeEarth, attack: 1000, defense: 1000 },
+      { code: windSupportCode, name: "Element Doom WIND Support", kind: "monster", typeFlags: typeMonster, level: 4, attribute: attributeWind, attack: 1000, defense: 1000 },
+      { code: firstTargetCode, name: "Element Doom First Target", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
+      { code: followupTargetCode, name: "Element Doom Followup Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 231, startingHandSize: 0, cardReader: reader });
@@ -121,6 +131,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
       location: "graveyard",
       reasonCardUid: elementDoom!.uid,
     });
+    const defeatedTarget = session.state.cards.find((card) => card.uid === firstTarget!.uid);
+    expect(defeatedTarget).toBeDefined();
+    expect(session.state.effects.filter((effect) => effect.sourceUid === firstTarget!.uid).map((effect) => effect.code).sort()).toEqual([2, 8]);
+    expect(isCardDisabled(session.state, defeatedTarget!, (effect, sourceCard, target) =>
+      createEffectContext(session.state, sourceCard, effect.controller, undefined, target, [], true),
+    )).toBe(true);
     expect(session.state.players[1].lifePoints).toBe(7500);
     expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
       [
@@ -189,6 +205,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
     expect(restored.session.state.cards.find((card) => card.uid === elementDoom!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === firstTarget!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restored.session.state.cards.find((card) => card.uid === followupTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
+    const restoredDefeatedTarget = restored.session.state.cards.find((card) => card.uid === firstTarget!.uid);
+    expect(restoredDefeatedTarget).toBeDefined();
+    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === firstTarget!.uid).map((effect) => effect.code).sort()).toEqual([2, 8]);
+    expect(isCardDisabled(restored.session.state, restoredDefeatedTarget!, (effect, sourceCard, target) =>
+      createEffectContext(restored.session.state, sourceCard, effect.controller, undefined, target, [], true),
+    )).toBe(true);
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ type: "declareAttack", attackerUid: elementDoom!.uid, targetUid: followupTarget!.uid }),

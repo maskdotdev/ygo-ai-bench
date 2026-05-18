@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 32;
-const battleTimingEventCodeFixtureCount = 32;
+const battleTimingFixtureCount = 33;
+const battleTimingEventCodeFixtureCount = 33;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 13,
+  afterDamageCalculation: 14,
   beforeDamageCalculation: 7,
   duringDamageCalculation: 4,
   endDamageStep: 5,
@@ -25,6 +25,7 @@ const battleTimingSemanticVariantCounts = {
   desKangarooEndDamageDestroy: 1,
   destructionPunchEndDamageTrapDestroy: 1,
   divineKnightIshzarkAfterDamageBanish: 1,
+  elementDoomAfterDamageAttributeDisable: 1,
   fabledAshenveilPreDamageBoost: 1,
   geminiSoldierAfterDamageDeckSummon: 1,
   getsuFuhmaEndDamageTargetDestroy: 1,
@@ -119,6 +120,7 @@ type BattleTimingSemanticVariant =
   | "desKangarooEndDamageDestroy"
   | "destructionPunchEndDamageTrapDestroy"
   | "divineKnightIshzarkAfterDamageBanish"
+  | "elementDoomAfterDamageAttributeDisable"
   | "fabledAshenveilPreDamageBoost"
   | "geminiSoldierAfterDamageDeckSummon"
   | "getsuFuhmaEndDamageTargetDestroy"
@@ -215,6 +217,18 @@ function battleTimingSemanticVariants(): Array<{
       file: "test/lua-real-script-divine-knight-ishzark-battled-remove.test.ts",
       kind: "divineKnightIshzarkAfterDamageBanish",
       required: ["restores Divine Knight Ishzark after damage calculation and banishes the battle-destroyed target", "triggerBucket: \"turnMandatory\"", "eventName: \"banished\""],
+    },
+    {
+      file: "test/lua-real-script-element-doom-chain-attack.test.ts",
+      kind: "elementDoomAfterDamageAttributeDisable",
+      required: [
+        "restores its attribute-gated battled disable and reopens its attack with Duel.ChainAttack",
+        "e1:SetCode(EVENT_BATTLED)",
+        "bc:IsStatus(STATUS_BATTLE_DESTROYED)",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsAttribute,ATTRIBUTE_EARTH)",
+        "isCardDisabled(restored.session.state, restoredDefeatedTarget!",
+        "Duel.ChainAttack()",
+      ],
     },
     {
       file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
@@ -385,6 +399,7 @@ function countBattleTimingSemanticVariants(
       desKangarooEndDamageDestroy: 0,
       destructionPunchEndDamageTrapDestroy: 0,
       divineKnightIshzarkAfterDamageBanish: 0,
+      elementDoomAfterDamageAttributeDisable: 0,
       fabledAshenveilPreDamageBoost: 0,
       geminiSoldierAfterDamageDeckSummon: 0,
       getsuFuhmaEndDamageTargetDestroy: 0,
@@ -546,6 +561,20 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "banished"',
         'location: "banished"',
         'eventName === "battleDestroyed"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-element-doom-chain-attack.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        '"code": 2',
+        '"code": 8',
+        "isCardDisabled(restored.session.state, restoredDefeatedTarget!",
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        'type: "declareAttack"',
       ],
     },
     {

@@ -210,7 +210,7 @@ function extraAttackSemanticVariants(): Array<{
       kind: "elementDoomAttributeGatedChainAttack",
       required: [
         'const elementDoomCode = "23118924"',
-        "restores its attribute-gated battled trigger and reopens its attack with Duel.ChainAttack",
+        "restores its attribute-gated battled disable and reopens its attack with Duel.ChainAttack",
         "attributeEarth",
         "attributeWind",
       ],
