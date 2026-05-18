@@ -4,19 +4,21 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackCostAndStatFixtureCount = 8;
-const legalActionFixtureCount = 4;
+const attackCostAndStatFixtureCount = 9;
+const legalActionFixtureCount = 5;
 const attackCostAndStatKindCounts = {
   attackCostLp: 1,
   attackCostRelease: 1,
   baseAttackExtraDeckLock: 1,
   currentAttackExtraDeckLock: 1,
   dynamicFieldStat: 1,
+  ignitionBanishCostAtkBoost: 1,
   dynamicLinkedGroupStat: 1,
   fieldSetAttack: 1,
   targetAttackPredicate: 1,
 } satisfies Record<AttackCostAndStatKind, number>;
 const attackCostAndStatSemanticVariantCounts = {
+  bazooBanishCountAtkBoost: 1,
   burdenMightyLevelBasedFieldAtkUpdate: 1,
   darkElfLpAttackCost: 1,
   elphaseLinkedGroupDynamicAtk: 1,
@@ -33,10 +35,12 @@ type AttackCostAndStatKind =
   | "baseAttackExtraDeckLock"
   | "currentAttackExtraDeckLock"
   | "dynamicFieldStat"
+  | "ignitionBanishCostAtkBoost"
   | "dynamicLinkedGroupStat"
   | "fieldSetAttack"
   | "targetAttackPredicate";
 type AttackCostAndStatSemanticVariant =
+  | "bazooBanishCountAtkBoost"
   | "burdenMightyLevelBasedFieldAtkUpdate"
   | "darkElfLpAttackCost"
   | "elphaseLinkedGroupDynamicAtk"
@@ -106,6 +110,18 @@ function attackCostAndStatFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-bazoo-banish-count-atk.test.ts",
+      kind: "ignitionBanishCostAtkBoost",
+      required: [
+        "restores selected banish cost count into the temporary ATK boost",
+        "Duel.Remove(cg,POS_FACEUP,REASON_COST)",
+        "e:SetLabel(#cg)",
+        "e1:SetValue(count*300)",
+        "reason: duelReason.cost",
+        "value: 900",
+      ],
+    },
     {
       file: "lua-real-script-burden-mighty-dynamic-stat.test.ts",
       kind: "dynamicFieldStat",
@@ -197,6 +213,7 @@ function attackCostAndStatFixtureFiles(): Array<{
 
 function legalActionFixtureFiles(): string[] {
   return [
+    "lua-real-script-bazoo-banish-count-atk.test.ts",
     "lua-real-script-dark-elf-attack-cost.test.ts",
     "lua-real-script-panther-warrior-attack-cost.test.ts",
     "lua-real-script-rb-last-stand-extra-machine-current-attack-lock.test.ts",
@@ -212,6 +229,16 @@ function attackCostAndStatSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-bazoo-banish-count-atk.test.ts",
+      kind: "bazooBanishCountAtkBoost",
+      required: [
+        'const bazooCode = "40133511"',
+        "restores selected banish cost count into the temporary ATK boost",
+        "Duel.Remove(cg,POS_FACEUP,REASON_COST)",
+        "currentAttack(restoredBoosted.session.state.cards.find((card) => card.uid === bazoo!.uid), restoredBoosted.session.state)).toBe(",
+      ],
+    },
     {
       file: "lua-real-script-burden-mighty-dynamic-stat.test.ts",
       kind: "burdenMightyLevelBasedFieldAtkUpdate",
@@ -310,6 +337,7 @@ function countAttackCostAndStatSemanticVariants(
       return counts;
     },
     {
+      bazooBanishCountAtkBoost: 0,
       burdenMightyLevelBasedFieldAtkUpdate: 0,
       darkElfLpAttackCost: 0,
       elphaseLinkedGroupDynamicAtk: 0,
@@ -336,6 +364,7 @@ function countAttackCostAndStatKinds(
       baseAttackExtraDeckLock: 0,
       currentAttackExtraDeckLock: 0,
       dynamicFieldStat: 0,
+      ignitionBanishCostAtkBoost: 0,
       dynamicLinkedGroupStat: 0,
       fieldSetAttack: 0,
       targetAttackPredicate: 0,
