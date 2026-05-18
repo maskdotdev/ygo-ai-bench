@@ -9,12 +9,12 @@ const testRoot = path.join(root, "test");
 const scannerPath = path.join(root, "tools/scan-lua-chain-limit-patterns.mjs");
 const upstreamOfficialScriptRoot = path.join(root, ".upstream/ignis/script/official");
 const noActiveRestoreWindowGroups = new Set(["SetChainLimit:aux.FALSE"]);
-const realScriptChainLimitFixtureCount = 17;
+const realScriptChainLimitFixtureCount = 18;
 const realScriptOwnedScannerGroupCount = 15;
 const realScriptChainLimitKindCounts = {
   activationDenyAll: 2,
   activeTypeBlock: 5,
-  effectTypeBlock: 3,
+  effectTypeBlock: 4,
   handlerExclusion: 4,
   responseMatchesChainPlayer: 3,
 } satisfies Record<RealScriptChainLimitKind, number>;
@@ -31,6 +31,7 @@ const realScriptChainLimitSemanticVariantCounts = {
   goblinPotholeChainEndTrapHoleSetcodeBlock: 1,
   goblinPotholeClonedFieldTrapHoleSetcodeBlock: 1,
   goblinPotholeSummonSuccessTrapActivationBlock: 1,
+  invasionOfFlamesSummonSuccessTrapActivationBlock: 1,
   morganiteNormalSummonMonsterResponseBlock: 1,
   nightBeamSelectedHandlerBlock: 1,
   obeliskAuxFalseSummonSuccessBlock: 1,
@@ -83,7 +84,7 @@ const officialScannerSummary = {
 };
 
 describe("Lua chain-limit restore coverage", () => {
-  it.skipIf(!fs.existsSync(upstreamOfficialScriptRoot))("maps every official chain-limit scanner group to restore coverage", () => {
+  it.skipIf(!hasOfficialChainLimitCorpus())("maps every official chain-limit scanner group to restore coverage", () => {
     const output = execFileSync(process.execPath, [scannerPath, "--scripts", upstreamOfficialScriptRoot, "--limit", "1000", "--fail-on-unclassified"], { encoding: "utf8" });
     const groups = scannerGroups(output);
 
@@ -163,6 +164,7 @@ type RealScriptChainLimitSemanticVariant =
   | "goblinPotholeChainEndTrapHoleSetcodeBlock"
   | "goblinPotholeClonedFieldTrapHoleSetcodeBlock"
   | "goblinPotholeSummonSuccessTrapActivationBlock"
+  | "invasionOfFlamesSummonSuccessTrapActivationBlock"
   | "morganiteNormalSummonMonsterResponseBlock"
   | "nightBeamSelectedHandlerBlock"
   | "obeliskAuxFalseSummonSuccessBlock"
@@ -230,6 +232,11 @@ function realScriptChainLimitFixtureFiles(): string[] {
     .filter((file) => /^lua-real-script-.*chain-limit.*\.test\.ts$/.test(file))
     .map((file) => path.join("test", file))
     .sort();
+}
+
+function hasOfficialChainLimitCorpus(): boolean {
+  return fs.existsSync(upstreamOfficialScriptRoot)
+    && fs.readdirSync(upstreamOfficialScriptRoot).filter((file) => file.endsWith(".lua")).length >= officialScannerSummary.filesWithCalls;
 }
 
 function countRealScriptChainLimitKinds(files: string[]): Record<RealScriptChainLimitKind, number> {
@@ -386,6 +393,17 @@ function realScriptChainLimitSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-invasion-flames-chain-limit.test.ts",
+      kind: "invasionOfFlamesSummonSuccessTrapActivationBlock",
+      required: [
+        'const sourceCode = "26082229"',
+        "restores its summon-success Trap activation limit across the response window",
+        "closure:not-source-type-effect-type:4:16",
+        "blockedTrap!.uid)).toBe(false)",
+        "allowedTrap!.uid)).toBe(true)",
+      ],
+    },
+    {
       file: "test/lua-real-script-morganite-chain-limit.test.ts",
       kind: "morganiteNormalSummonMonsterResponseBlock",
       required: [
@@ -490,6 +508,7 @@ function countRealScriptChainLimitSemanticVariants(
       goblinPotholeChainEndTrapHoleSetcodeBlock: 0,
       goblinPotholeClonedFieldTrapHoleSetcodeBlock: 0,
       goblinPotholeSummonSuccessTrapActivationBlock: 0,
+      invasionOfFlamesSummonSuccessTrapActivationBlock: 0,
       morganiteNormalSummonMonsterResponseBlock: 0,
       nightBeamSelectedHandlerBlock: 0,
       obeliskAuxFalseSummonSuccessBlock: 0,
@@ -521,7 +540,8 @@ function classifyRealScriptChainLimitKind(file: string): RealScriptChainLimitKin
   if (
     basename === "lua-real-script-forbidden-droplet-chain-limit.test.ts" ||
     basename === "lua-real-script-galaxy-destroyer-chain-limit.test.ts" ||
-    basename === "lua-real-script-goblin-pothole-chain-limit.test.ts"
+    basename === "lua-real-script-goblin-pothole-chain-limit.test.ts" ||
+    basename === "lua-real-script-invasion-flames-chain-limit.test.ts"
   ) {
     return "effectTypeBlock";
   }
