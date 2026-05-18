@@ -10,7 +10,7 @@ import { realScriptSummonSuccessTargetSpecialSummonFixtureSnippets, summonSucces
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 215;
+export const realScriptSummonFixtureCount = 216;
 export const summonProcedureFixtureCount = 25;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -19,7 +19,7 @@ export const unionProcedureFixtureCount = 4;
 export const materialLockFixtureCount = 4;
 export const flipSummonSuccessTrapFixtureCount = 4;
 export const linkedZoneSpecialSummonFixtureCount = 5;
-export const selfTributeZoneSpecialSummonFixtureCount = 1;
+export const selfTributeZoneSpecialSummonFixtureCount = 2;
 export const tributeMaterialFixtureCount = 1;
 export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
@@ -27,7 +27,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 22,
-  summon: 78,
+  summon: 79,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -86,7 +86,10 @@ export const linkedZoneSpecialSummonKindCounts = {
   releaseCostDeckSummon: 1,
   toBeLinkedZoneRevive: 1,
 } satisfies Record<LinkedZoneSpecialSummonKind, number>;
-export const selfTributeZoneSpecialSummonKindCounts = { selfTributeFreesMonsterZone: 1 } satisfies Record<SelfTributeZoneSpecialSummonKind, number>;
+export const selfTributeZoneSpecialSummonKindCounts = {
+  selfTributeFreesMonsterZone: 1,
+  selfTributeHandSummonFreesMonsterZone: 1,
+} satisfies Record<SelfTributeZoneSpecialSummonKind, number>;
 export const summonSemanticVariantCounts = {
   realScriptSummonKeywordCorpus: realScriptSummonFixtureCount,
   summonProcedureLegalWindows: summonProcedureFixtureCount,
@@ -127,7 +130,9 @@ export type LinkedZoneSpecialSummonKind =
   | "opponentFieldLinkedZoneSummon"
   | "releaseCostDeckSummon"
   | "toBeLinkedZoneRevive";
-export type SelfTributeZoneSpecialSummonKind = "selfTributeFreesMonsterZone";
+export type SelfTributeZoneSpecialSummonKind =
+  | "selfTributeFreesMonsterZone"
+  | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
   | "realScriptSummonKeywordCorpus"
   | "summonProcedureLegalWindows"
@@ -370,19 +375,38 @@ export function countLinkedZoneSpecialSummonKinds(files: Array<{ kind: LinkedZon
 }
 
 export function realScriptSelfTributeZoneSpecialSummonFixtureSnippets(): Array<{ file: string; kind: SelfTributeZoneSpecialSummonKind; required: string[] }> {
-  return [{
-    file: "test/lua-real-script-chrysalis-larva-self-tribute-neospace-summon.test.ts",
-    kind: "selfTributeFreesMonsterZone",
-    required: [
-      "Neo Space gated self-tribute cost",
-      "sequence: 4",
-      "duelReason.release | duelReason.cost",
-      'eventName: "released"',
-      'eventName: "specialSummoned"',
-      "eventReason: duelReason.summon | duelReason.specialSummon",
-      "parameter: 0x3",
-    ],
-  }];
+  return [
+    {
+      file: "test/lua-real-script-chrysalis-larva-self-tribute-neospace-summon.test.ts",
+      kind: "selfTributeFreesMonsterZone",
+      required: [
+        "Neo Space gated self-tribute cost",
+        "sequence: 4",
+        "duelReason.release | duelReason.cost",
+        'eventName: "released"',
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        "parameter: 0x3",
+      ],
+    },
+    {
+      file: "test/lua-real-script-kaibaman-self-tribute-hand-summon.test.ts",
+      kind: "selfTributeHandSummonFreesMonsterZone",
+      required: [
+        "e1:SetCost(Cost.SelfTribute)",
+        "if e:GetHandler():GetSequence()<5 then ft=ft+1 end",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_HAND,0,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        "duelReason.release | duelReason.cost",
+        'eventName: "released"',
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        "parameter: 0x2",
+        "sequence: 4",
+      ],
+    },
+  ];
 }
 
 export function countSelfTributeZoneSpecialSummonKinds(
@@ -391,7 +415,7 @@ export function countSelfTributeZoneSpecialSummonKinds(
   return files.reduce<Record<SelfTributeZoneSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { selfTributeFreesMonsterZone: 0 });
+  }, { selfTributeFreesMonsterZone: 0, selfTributeHandSummonFreesMonsterZone: 0 });
 }
 
 export function realScriptSummonProcedureFixtureFiles(): string[] {
