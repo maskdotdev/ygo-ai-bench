@@ -12,12 +12,15 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasSettleMachineScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c99173029.lua"));
+const hasYataScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c3078576.lua"));
 const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeContinuous = 0x20000;
 const typeEffect = 0x20;
 const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Spiritual Energy Settle Machine return lock", () => {
+describe.skipIf(!hasUpstreamScripts || !hasSettleMachineScript || !hasYataScript)("Lua real script Spiritual Energy Settle Machine return lock", () => {
   it("restores its Spirit return suppression and leave-field return-all cleanup", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const settleMachineCode = "99173029";
@@ -26,8 +29,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
     const faceDownSpiritCode = "99173031";
     const nonSpiritCode = "99173032";
     const maintenanceCostCode = "99173033";
+    const settleScript = workspace.readScript(`c${settleMachineCode}.lua`);
+    expect(settleScript).toContain("e2:SetCode(EFFECT_SPIRIT_DONOT_RETURN)");
+    expect(settleScript).toContain("e2:SetRange(LOCATION_SZONE)");
+    expect(settleScript).toContain("e2:SetTargetRange(LOCATION_MZONE,LOCATION_MZONE)");
+    expect(settleScript).toContain("e3:SetCode(EVENT_LEAVE_FIELD)");
+    expect(settleScript).toContain("Duel.SendtoHand(g,nil,REASON_EFFECT)");
+    expect(settleScript).toContain("Duel.DiscardHand(tp,nil,1,1,REASON_COST|REASON_DISCARD)");
+    expect(workspace.readScript(`c${yataCode}.lua`)).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === settleMachineCode || card.code === yataCode),
+      { code: settleMachineCode, name: "Spiritual Energy Settle Machine", kind: "spell", typeFlags: typeSpell | typeContinuous },
+      { code: yataCode, name: "Yata-Garasu", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 2, attack: 200, defense: 100 },
       { code: opponentSpiritCode, name: "Settle Machine Opponent Spirit", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1500, defense: 1200 },
       { code: faceDownSpiritCode, name: "Settle Machine Face-Down Spirit", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1000, defense: 1000 },
       { code: nonSpiritCode, name: "Settle Machine Non-Spirit", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1800, defense: 1000 },

@@ -12,12 +12,12 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasRasetsuScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c43378076.lua"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Rasetsu Spirit cost return", () => {
+describe.skipIf(!hasUpstreamScripts || !hasRasetsuScript)("Lua real script Rasetsu Spirit cost return", () => {
   it("restores its reveal cost, temporary Special Summon lock, and targeted monster return", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const rasetsuCode = "43378076";
@@ -25,8 +25,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
     const attackTargetCode = "43378078";
     const defenseTargetCode = "43378079";
     const responderCode = "43378080";
+    const script = workspace.readScript(`c${rasetsuCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCategory(CATEGORY_TOHAND)");
+    expect(script).toContain("e2:SetCost(s.sretcost)");
+    expect(script).toContain("Duel.ConfirmCards(1-tp,g)");
+    expect(script).toContain("e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)");
+    expect(script).toContain("return c:IsAttackPos() and c:IsAbleToHand()");
+    expect(script).toContain("Duel.SendtoHand(tc,nil,REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === rasetsuCode),
+      { code: rasetsuCode, name: "Rasetsu", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1500, defense: 1900 },
       { code: revealSpiritCode, name: "Rasetsu Reveal Spirit", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1000, defense: 1000 },
       { code: attackTargetCode, name: "Rasetsu Attack Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1200 },
       { code: defenseTargetCode, name: "Rasetsu Defense Non-Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1200, defense: 1800 },

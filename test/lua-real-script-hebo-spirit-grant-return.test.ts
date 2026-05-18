@@ -13,21 +13,30 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasHeboScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c90365482.lua"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const typeSpirit = 0x200;
 const effectAddType = 115;
 const phaseEndEvent = 0x1200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hebo Spirit grant return", () => {
+describe.skipIf(!hasUpstreamScripts || !hasHeboScript)("Lua real script Hebo Spirit grant return", () => {
   it("restores target-granted Spirit type and the target-owned End Phase return", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const heboCode = "90365482";
     const targetCode = "90365483";
     const responderCode = "90365484";
+    const script = workspace.readScript(`c${heboCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCode(EVENT_SUMMON_SUCCESS)");
+    expect(script).toContain("e3:SetCode(EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_ADD_TYPE)");
+    expect(script).toContain("e1:SetValue(TYPE_SPIRIT)");
+    expect(script).toContain("e2:SetCode(EVENT_PHASE+PHASE_END)");
+    expect(script).toContain("Duel.SendtoHand(e:GetHandler(),nil,REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === heboCode),
+      { code: heboCode, name: "Hebo, Lord of the River", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1800, defense: 600 },
       { code: targetCode, name: "Hebo Granted Spirit Target", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1400, defense: 1200 },
       { code: responderCode, name: "Hebo Chain Responder", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4 },
     ];

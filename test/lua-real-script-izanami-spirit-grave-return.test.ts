@@ -12,12 +12,12 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasIzanamiScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c43543777.lua"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Izanami Spirit Graveyard return", () => {
+describe.skipIf(!hasUpstreamScripts || !hasIzanamiScript)("Lua real script Izanami Spirit Graveyard return", () => {
   it("restores its summon trigger discard cost, Graveyard Spirit target, and confirm-to-hand resolution", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const izanamiCode = "43543777";
@@ -25,8 +25,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Iz
     const targetSpiritCode = "43543779";
     const invalidMonsterCode = "43543780";
     const responderCode = "43543781";
+    const script = workspace.readScript(`c${izanamiCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCategory(CATEGORY_TOHAND)");
+    expect(script).toContain("e2:SetCost(s.thcost)");
+    expect(script).toContain("Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)");
+    expect(script).toContain("return c:IsType(TYPE_SPIRIT) and c:IsAbleToHand()");
+    expect(script).toContain("Duel.SendtoHand(tc,nil,REASON_EFFECT)");
+    expect(script).toContain("Duel.ConfirmCards(1-tp,tc)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === izanamiCode),
+      { code: izanamiCode, name: "Izanami", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1100, defense: 1800 },
       { code: costCode, name: "Izanami Discard Cost", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
       { code: targetSpiritCode, name: "Izanami Graveyard Spirit", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1200, defense: 1200 },
       { code: invalidMonsterCode, name: "Izanami Graveyard Non-Spirit", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1400, defense: 1400 },

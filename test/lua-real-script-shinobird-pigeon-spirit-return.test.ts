@@ -12,20 +12,29 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasPigeonScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c92200612.lua"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Shinobird Pigeon Spirit return", () => {
+describe.skipIf(!hasUpstreamScripts || !hasPigeonScript)("Lua real script Shinobird Pigeon Spirit return", () => {
   it("restores its field ignition target and returns another Spirit monster to the hand", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const pigeonCode = "92200612";
     const targetSpiritCode = "92200613";
     const invalidMonsterCode = "92200614";
     const responderCode = "92200615";
+    const script = workspace.readScript(`c${pigeonCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCategory(CATEGORY_TOHAND)");
+    expect(script).toContain("e2:SetType(EFFECT_TYPE_IGNITION)");
+    expect(script).toContain("e2:SetRange(LOCATION_MZONE)");
+    expect(script).toContain("return c:IsType(TYPE_SPIRIT) and c:IsAbleToHand()");
+    expect(script).toContain("Duel.SelectTarget(tp,s.cfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,e:GetHandler())");
+    expect(script).toContain("Duel.SendtoHand(tc,nil,REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === pigeonCode),
+      { code: pigeonCode, name: "Shinobird Pigeon", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1000, defense: 1800 },
       { code: targetSpiritCode, name: "Shinobird Pigeon Return Spirit", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1000, defense: 1000 },
       { code: invalidMonsterCode, name: "Shinobird Pigeon Non-Spirit", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1800, defense: 1200 },
       { code: responderCode, name: "Shinobird Pigeon Chain Responder", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4 },
