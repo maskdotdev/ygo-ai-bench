@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 69;
+export const operationFixtureCount = 70;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -39,7 +39,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 2,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 3,
+  searchOrExcavate: 4,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -696,6 +696,7 @@ export function operationFixtureFiles(): Array<{
         "host.messages).not.toContain",
       ],
     },
+    { file: "test/lua-real-script-gather-your-mind-oath-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "return c:IsCode(id) and c:IsAbleToHand()", "category: 0x8", 'eventName: "sentToHand"', 'eventName: "sentToHandConfirmed"', "getLuaRestoreLegalActions(restoredResolved, 0).some((action) => action.type === \"activateEffect\" && action.uid === searchedGather.uid)).toBe(false)", "host.messages).not.toContain"] },
     {
       file: "test/lua-real-script-pot-of-duality-excavate.test.ts",
       kind: "searchOrExcavate",

@@ -11,6 +11,7 @@ export const groupDestroyOperationVariantCounts = {
   smashingGroundMaxDefense: 1,
 } satisfies Record<GroupDestroyOperationVariant, number>;
 export const potAndSearchOperationVariantCounts = {
+  gatherYourMindOathSearch: 1,
   potDesiresFaceDownBanishDraw: 1,
   potDualitySearchSummonLock: 1,
   potExtravaganceRandomCostDrawLock: 1,
@@ -36,6 +37,7 @@ export type GroupDestroyOperationVariant =
   | "raigekiOpponentMonsters"
   | "smashingGroundMaxDefense";
 export type PotAndSearchOperationVariant =
+  | "gatherYourMindOathSearch"
   | "potDesiresFaceDownBanishDraw"
   | "potDualitySearchSummonLock"
   | "potExtravaganceRandomCostDrawLock"
@@ -166,6 +168,17 @@ export function countGroupDestroyOperationVariants(fixtures: Array<{ kind: Group
 export function potAndSearchOperationVariants(): Array<{ file: string; kind: PotAndSearchOperationVariant; required: string[] }> {
   return ([
     {
+      file: "test/lua-real-script-gather-your-mind-oath-search.test.ts",
+      kind: "gatherYourMindOathSearch",
+      required: [
+        "restores its free-chain same-code Deck search, confirmation, and OATH count limit",
+        "const gatherCode = \"7512044\"",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "expect(restoredChain.host.messages).toEqual([`confirmed 1: ${gatherCode}`])",
+        "action.uid === searchedGather.uid)).toBe(false)",
+      ],
+    },
+    {
       file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
       kind: "potDesiresFaceDownBanishDraw",
       required: [
@@ -228,6 +241,7 @@ export function countPotAndSearchOperationVariants(fixtures: Array<{ kind: PotAn
       return counts;
     },
     {
+      gatherYourMindOathSearch: 0,
       potDesiresFaceDownBanishDraw: 0,
       potDualitySearchSummonLock: 0,
       potExtravaganceRandomCostDrawLock: 0,
