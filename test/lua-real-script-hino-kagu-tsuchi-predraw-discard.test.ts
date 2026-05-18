@@ -12,10 +12,11 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasHinoScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c75745607.lua"));
 const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hino-Kagu-Tsuchi predraw discard", () => {
+describe.skipIf(!hasUpstreamScripts || !hasHinoScript)("Lua real script Hino-Kagu-Tsuchi predraw discard", () => {
   it("restores its battle-damage trigger into the opponent's next Draw Phase hand discard", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const hinoCode = "75745607";
@@ -23,8 +24,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
     const discardACode = "75745609";
     const discardBCode = "75745610";
     const drawCode = "75745611";
+    const script = workspace.readScript(`c${hinoCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCode(EVENT_BATTLE_DAMAGE)");
+    expect(script).toContain("e1:SetCode(EVENT_PREDRAW)");
+    expect(script).toContain("e1:SetReset(RESET_PHASE|PHASE_DRAW)");
+    expect(script).toContain("Duel.SendtoGrave(g,REASON_DISCARD|REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === hinoCode),
+      { code: hinoCode, name: "Hino-Kagu-Tsuchi", kind: "monster", typeFlags: typeMonster | typeEffect, level: 8, attack: 2800, defense: 2900 },
       { code: defenderCode, name: "Hino Battle Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
       { code: discardACode, name: "Hino Discard A", kind: "monster", typeFlags: typeMonster, level: 4 },
       { code: discardBCode, name: "Hino Discard B", kind: "monster", typeFlags: typeMonster, level: 4 },
