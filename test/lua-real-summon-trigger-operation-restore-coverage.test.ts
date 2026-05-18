@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 12;
+const summonTriggerOperationFixtureCount = 13;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
-  summonSearch: 4,
+  summonSearch: 5,
   summonSearchSelfSummon: 1,
   summonStepReviveDisable: 1,
   summonToGraveDeckSummon: 1,
@@ -25,6 +25,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   ichikiSayoriHimeEffectSummonSearch: 1,
   izanamiDiscardGraveSpiritReturnOnSummon: 1,
   moonlitPapillonToGraveDeckSummon: 1,
+  senjuClonedSummonRitualMonsterSearch: 1,
   shinobaronessShadePeacockSearchSelfSummon: 1,
   shinobirdCraneDrawOnSpiritSummon: 1,
   yakshaBackrowReturnOnSummon: 1,
@@ -49,6 +50,7 @@ type SummonTriggerOperationSemanticVariant =
   | "ichikiSayoriHimeEffectSummonSearch"
   | "izanamiDiscardGraveSpiritReturnOnSummon"
   | "moonlitPapillonToGraveDeckSummon"
+  | "senjuClonedSummonRitualMonsterSearch"
   | "shinobaronessShadePeacockSearchSelfSummon"
   | "shinobirdCraneDrawOnSpiritSummon"
   | "yakshaBackrowReturnOnSummon";
@@ -247,6 +249,21 @@ function summonTriggerOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-senju-summon-ritual-monster-search.test.ts",
+      kind: "summonSearch",
+      required: [
+        "restores its cloned summon trigger and searches only Ritual Monsters",
+        'const senjuCode = "23401839"',
+        "local e2=e1:Clone()",
+        "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)",
+        "return c:IsRitualMonster() and c:IsAbleToHand()",
+        'eventName: "normalSummoned"',
+        "operationInfos: [{ category: 0x8",
+        'eventName: "sentToHandConfirmed"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-shinobaroness-shade-peacock-search-self-summon.test.ts",
       kind: "summonSearchSelfSummon",
       required: [
@@ -422,6 +439,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-senju-summon-ritual-monster-search.test.ts",
+      kind: "senjuClonedSummonRitualMonsterSearch",
+      requiredSnippets: [
+        'const senjuCode = "23401839"',
+        "restores its cloned summon trigger and searches only Ritual Monsters",
+        "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)",
+        "return c:IsRitualMonster() and c:IsAbleToHand()",
+        'eventName: "sentToHandConfirmed"',
+      ],
+    },
+    {
       file: "test/lua-real-script-shinobaroness-shade-peacock-search-self-summon.test.ts",
       kind: "shinobaronessShadePeacockSearchSelfSummon",
       requiredSnippets: [
@@ -495,6 +523,7 @@ function countSummonTriggerOperationSemanticVariants(
       ichikiSayoriHimeEffectSummonSearch: 0,
       izanamiDiscardGraveSpiritReturnOnSummon: 0,
       moonlitPapillonToGraveDeckSummon: 0,
+      senjuClonedSummonRitualMonsterSearch: 0,
       shinobaronessShadePeacockSearchSelfSummon: 0,
       shinobirdCraneDrawOnSpiritSummon: 0,
       yakshaBackrowReturnOnSummon: 0,
