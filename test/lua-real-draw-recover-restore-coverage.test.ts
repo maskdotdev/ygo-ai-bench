@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 11;
+const DRAW_RECOVER_FIXTURE_COUNT = 12;
 const drawRecoverKindCounts = {
   costBanishDraw: 2,
   costDiscardDraw: 1,
@@ -12,6 +12,7 @@ const drawRecoverKindCounts = {
   drawTrigger: 3,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
+  recoverTrigger: 1,
   releaseDestroyDraw: 1,
 } satisfies Record<DrawRecoverKind, number>;
 const drawRecoverSemanticVariantCounts = {
@@ -23,12 +24,13 @@ const drawRecoverSemanticVariantCounts = {
   potDesiresFaceDownDeckCostDraw: 1,
   potExtravaganceRandomExtraCostDrawLock: 1,
   shinobirdCraneSpiritSummonDraw: 1,
+  skullMarkLadybugToGraveRecover: 1,
   tradeInLevel8DiscardDraw: 1,
   upstartGoblinDrawRecover: 1,
   xyzGiftOverlayDetachDraw: 1,
 } satisfies Record<DrawRecoverSemanticVariant, number>;
 
-type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "overlayDetachDraw" | "releaseDestroyDraw";
+type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "overlayDetachDraw" | "recoverTrigger" | "releaseDestroyDraw";
 
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
@@ -39,6 +41,7 @@ type DrawRecoverSemanticVariant =
   | "potDesiresFaceDownDeckCostDraw"
   | "potExtravaganceRandomExtraCostDrawLock"
   | "shinobirdCraneSpiritSummonDraw"
+  | "skullMarkLadybugToGraveRecover"
   | "tradeInLevel8DiscardDraw"
   | "upstartGoblinDrawRecover"
   | "xyzGiftOverlayDetachDraw";
@@ -63,7 +66,7 @@ describe("Lua real draw and recover restore coverage", () => {
           || !text.includes("applyLuaRestoreResponse")
           || !text.includes("eventHistory")
           || !text.includes("operationInfos")
-          || !text.includes('eventName: "cardsDrawn"')
+          || (!text.includes('eventName: "cardsDrawn"') && !text.includes('eventName: "recoveredLifePoints"'))
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -198,6 +201,20 @@ function drawRecoverFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-skull-mark-ladybug-to-grave-recover.test.ts",
+      kind: "recoverTrigger",
+      required: [
+        'eventName: "destroyed"',
+        'eventName: "recoveredLifePoints"',
+        "targetPlayer: 0",
+        "targetParam: 1000",
+        "category: 0x100000",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        'location: "graveyard"',
+        "lifePoints).toBe(7500)",
+      ],
+    },
+    {
       file: "test/lua-real-script-trade-in-discard-draw.test.ts",
       kind: "costDiscardDraw",
       required: [
@@ -255,6 +272,7 @@ function countDrawRecoverKinds(fixtures: Array<{ kind: DrawRecoverKind }>): Reco
       drawTrigger: 0,
       negateThenDraw: 0,
       overlayDetachDraw: 0,
+      recoverTrigger: 0,
       releaseDestroyDraw: 0,
     },
   );
@@ -364,6 +382,19 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-skull-mark-ladybug-to-grave-recover.test.ts",
+      kind: "skullMarkLadybugToGraveRecover",
+      required: [
+        'const ladybugCode = "64306248"',
+        "restores its EVENT_TO_GRAVE recovery trigger and CHAININFO target parameter",
+        "Duel.SetTargetParam(1000)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"destroyed\"",
+        "eventName: \"recoveredLifePoints\"",
+        "skull-mark ladybug responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-trade-in-discard-draw.test.ts",
       kind: "tradeInLevel8DiscardDraw",
       required: [
@@ -420,6 +451,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       potDesiresFaceDownDeckCostDraw: 0,
       potExtravaganceRandomExtraCostDrawLock: 0,
       shinobirdCraneSpiritSummonDraw: 0,
+      skullMarkLadybugToGraveRecover: 0,
       tradeInLevel8DiscardDraw: 0,
       upstartGoblinDrawRecover: 0,
       xyzGiftOverlayDetachDraw: 0,
