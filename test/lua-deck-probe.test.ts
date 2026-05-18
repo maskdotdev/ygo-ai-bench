@@ -85,7 +85,7 @@ describe.skipIf(!hasUpstreamScripts)("Dark Magical Blast Lua deck probe", () => 
     expect(availableCodes).toHaveLength(35);
     expect(initialResults.filter((result) => result.ok && !result.skipped)).toHaveLength(52);
     expect(initialResults.filter((result) => !result.ok)).toEqual([]);
-    expect(actions).toHaveLength(15);
+    expect(actions).toHaveLength(14);
     expect(actions.filter((action) => action.type === "activateEffect")).toHaveLength(1);
   });
 });

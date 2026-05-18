@@ -1,6 +1,6 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 37, ritual: 17 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 38, ritual: 17 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
@@ -11,7 +11,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionAddProcFun2PredicateMetadata: 1,
   fusionAddProcFunRepSetcodeMetadata: 1,
   fusionAddProcMixMaterialMetadata: 1,
-  fusionAddProcMixAttackBelowPredicateMetadata: 1, fusionAddProcMixAttackPredicateMetadata: 1, fusionAddProcMixNamedFilterMetadata: 1, fusionAddProcMixNamedLevelFilterMetadata: 1, fusionAddProcMixNMixedMetadata: 1, fusionAddProcMixNRepeatedAttackBelowMetadata: 1, fusionAddProcMixNRepeatedCodeMetadata: 1, fusionAddProcMixNRepeatedPlusTypeMetadata: 1, fusionAddProcMixNSetcodeMetadata: 1, fusionAddProcMixPlusTypePredicateMetadata: 1, fusionAddProcMixPredicateMetadata: 1,
+  fusionAddProcMixAttackBelowPredicateMetadata: 1, fusionAddProcMixAttackPredicateMetadata: 1, fusionAddProcMixNamedFilterMetadata: 1, fusionAddProcMixNamedLevelFilterMetadata: 1, fusionAddProcMixNamedPredicateMetadata: 1, fusionAddProcMixNMixedMetadata: 1, fusionAddProcMixNRepeatedAttackBelowMetadata: 1, fusionAddProcMixNRepeatedCodeMetadata: 1, fusionAddProcMixNRepeatedPlusTypeMetadata: 1, fusionAddProcMixNSetcodeMetadata: 1, fusionAddProcMixPlusTypePredicateMetadata: 1, fusionAddProcMixPredicateMetadata: 1,
   fusionAddProcMixRepExactCodeMetadata: 1, fusionAddProcMixRepLocationMetadata: 1, fusionAddProcMixRepNamedFilterMetadata: 1, fusionAddProcMixRepRequiredSetcodeMetadata: 1, fusionAddProcMixRepSetcodeMetadata: 1,
   fusionDeckMaterialOath: 1,
   fusionForcedHandler: 1,
@@ -66,7 +66,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(54);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(55);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -125,7 +125,7 @@ type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummon
   | "fusionAddProcFun2PredicateMetadata"
   | "fusionAddProcFunRepSetcodeMetadata"
   | "fusionAddProcMixMaterialMetadata" | "fusionAddProcMixAttackBelowPredicateMetadata" | "fusionAddProcMixAttackPredicateMetadata"
-  | "fusionAddProcMixNamedFilterMetadata" | "fusionAddProcMixNamedLevelFilterMetadata" | "fusionAddProcMixNMixedMetadata" | "fusionAddProcMixNRepeatedAttackBelowMetadata" | "fusionAddProcMixNRepeatedCodeMetadata" | "fusionAddProcMixNRepeatedPlusTypeMetadata" | "fusionAddProcMixNSetcodeMetadata" | "fusionAddProcMixPlusTypePredicateMetadata" | "fusionAddProcMixPredicateMetadata"
+  | "fusionAddProcMixNamedFilterMetadata" | "fusionAddProcMixNamedLevelFilterMetadata" | "fusionAddProcMixNamedPredicateMetadata" | "fusionAddProcMixNMixedMetadata" | "fusionAddProcMixNRepeatedAttackBelowMetadata" | "fusionAddProcMixNRepeatedCodeMetadata" | "fusionAddProcMixNRepeatedPlusTypeMetadata" | "fusionAddProcMixNSetcodeMetadata" | "fusionAddProcMixPlusTypePredicateMetadata" | "fusionAddProcMixPredicateMetadata"
   | "fusionAddProcMixRepExactCodeMetadata" | "fusionAddProcMixRepLocationMetadata" | "fusionAddProcMixRepNamedFilterMetadata" | "fusionAddProcMixRepRequiredSetcodeMetadata" | "fusionAddProcMixRepSetcodeMetadata"
   | "fusionDeckMaterialOath"
   | "fusionForcedHandler"
@@ -817,6 +817,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       ],
     },
     { file: "test/lua-real-script-black-skull-dragon-addprocmix-fusion.test.ts", kind: "fusionAddProcMixMaterialMetadata", families: ["fusion"], required: ["Fusion.AddProcMix material metadata", "expect(blackSkull!.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])", "expect(restored.session.state.cards.find((card) => card.uid === blackSkull!.uid)?.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])", "operationInfos).toEqual([", "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }", 'summonType: "fusion"', "summonMaterialUids: [summonedSkull!.uid, redEyes!.uid]", "reason: duelReason.effect | duelReason.material | duelReason.fusion", 'eventName === "usedAsMaterial"', 'eventName === "specialSummoned"', 'expect(restored.host.messages).not.toContain("black skull dragon responder resolved")'] },
+    { file: "test/lua-real-script-moa-regina-addprocmix-named-filter-fusion.test.ts", kind: "fusionAddProcMixNamedPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcMix named filter metadata", "fusionRequiredMaterialPredicates).toEqual([{ race: raceIllusion }, { levelMin: 6, race: raceFiend }])", "expect(directFusionActions[0]!.materialUids).toEqual([illusionMaterial!.uid, highFiend!.uid])", "directFusionActions.some((action) => action.materialUids.includes(lowFiendDecoy!.uid))", "summonMaterialUids: [illusionMaterial!.uid, highFiend!.uid]"] },
     { file: "test/lua-real-script-blue-eyes-ultimate-addproccoderep-fusion.test.ts", kind: "fusionAddProcCodeRepRepeatedCodeMetadata", families: ["fusion"], required: ["Fusion.AddProcCodeRep metadata", "expect(blueEyesUltimate!.data.fusionMaterials).toEqual([blueEyesCode, blueEyesCode, blueEyesCode])", "expect(restored.session.state.cards.find((card) => card.uid === blueEyesUltimate!.uid)?.data.fusionMaterials).toEqual([blueEyesCode, blueEyesCode, blueEyesCode])", "operationInfos).toEqual([", "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }", 'summonType: "fusion"', "summonMaterialUids: blueEyesMaterials.map((card) => card.uid)", "reason: duelReason.effect | duelReason.material | duelReason.fusion", 'eventName === "usedAsMaterial"', 'eventName === "specialSummoned"', 'expect(restored.host.messages).not.toContain("blue-eyes ultimate responder resolved")'] },
     { file: "test/lua-real-script-red-eyes-slash-addproccodefun-fusion.test.ts", kind: "fusionAddProcCodeFunPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcCodeFun metadata", "expect(slashDragon!.data.fusionMaterials).toEqual([redEyesCode])", "expect(slashDragon!.data.fusionRequiredMaterialPredicates).toEqual([{ race: raceWarrior }])", "expect(directFusionActions[0]!.materialUids).toEqual([redEyes!.uid, warriorMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(dragonDecoy!.uid))", "summonMaterialUids: [redEyes!.uid, warriorMaterial!.uid]"] },
     { file: "test/lua-real-script-blaze-fenix-addprocfun2-fusion.test.ts", kind: "fusionAddProcFun2PredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcFun2 metadata", "expect(blazeFenix!.data.fusionRequiredMaterialPredicates).toEqual([{ race: raceMachine }, { race: racePyro }])", "expect(blazeFenix!.data.fusionMaterials).toBeUndefined()", "expect(directFusionActions[0]!.materialUids).toEqual([machineMaterial!.uid, pyroMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(warriorDecoy!.uid))", "summonMaterialUids: [machineMaterial!.uid, pyroMaterial!.uid]"] },

@@ -4,7 +4,7 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 201;
+export const realScriptSummonFixtureCount = 202;
 export const summonProcedureFixtureCount = 24;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -17,7 +17,7 @@ export const selfTributeZoneSpecialSummonFixtureCount = 1;
 export const tributeMaterialFixtureCount = 1;
 export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
-  fusion: 44,
+  fusion: 45,
   link: 18,
   pendulum: 20,
   ritual: 21,

@@ -129,7 +129,7 @@ function readFusionAddProcMixNMaterials(L: unknown, card: DuelCardInstance): str
 function readFusionAddProcMixPredicateMaterials(source: string | undefined): FusionMaterialPredicateRequirement[] {
   const match = source?.match(/Fusion\.AddProcMix\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,([^\n]*)\)/);
   if (!match?.[1]) return [];
-  return readFusionPredicateRequirements(match[1]);
+  return [...readFusionPredicateRequirements(match[1]), ...readFusionNamedPredicateRequirements(source, match[1])];
 }
 
 function readFusionAddProcFun2PredicateMaterials(source: string | undefined): FusionMaterialPredicateRequirement[] {
@@ -176,6 +176,43 @@ function readFusionPredicateRequirements(expressionList: string): FusionMaterial
     if (predicate === "Card.IsType") predicates.push({ type: value });
   }
   return predicates;
+}
+
+function readFusionNamedPredicateRequirements(source: string | undefined, expressionList: string): FusionMaterialPredicateRequirement[] {
+  if (!source) return [];
+  const predicates: FusionMaterialPredicateRequirement[] = [];
+  for (const [, functionName] of expressionList.matchAll(/(?:^|,)\s*(s\.[A-Za-z_]\w*)\s*(?=,|$)/g)) {
+    const body = functionName ? readLuaFunctionReturnExpression(source, functionName) : undefined;
+    const predicate = readFusionPredicateRequirementFromLuaBody(body);
+    if (predicate) predicates.push(predicate);
+  }
+  return predicates;
+}
+
+function readFusionPredicateRequirementFromLuaBody(body: string | undefined): FusionMaterialPredicateRequirement | undefined {
+  if (!body || /\bsg\b|:IsExists\(|:IsSummonLocation\(|:IsControler\(|:IsLevel\(|GetOriginalLevel\(|[<>~]=|==/.test(body)) return undefined;
+  if (/\bc:(?!Is(?:AttackAbove|AttackBelow|Level|LevelAbove|LevelBelow|Attribute|Location|Race|SetCard|Type|OnField)\b)[A-Za-z_]\w*\(/.test(body)) return undefined;
+  const predicate: FusionMaterialPredicateRequirement = {};
+  const attribute = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsAttribute\(\s*(${ATTRIBUTE_CONSTANT_EXPRESSION})`))?.[1]);
+  const race = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsRace\(\s*(${RACE_CONSTANT_EXPRESSION})`))?.[1]);
+  const typeMatch = body.match(new RegExp(String.raw`c:IsType\(\s*(${TYPE_CONSTANT_EXPRESSION})`));
+  const type = typeMatch?.index !== undefined && body.slice(Math.max(0, typeMatch.index - 4), typeMatch.index) !== "not " ? readLuaConstantExpression(typeMatch[1]) : undefined;
+  const setcode = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsSetCard\(\s*(${SET_CONSTANT_EXPRESSION})`))?.[1]);
+  const location = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsLocation\(\s*(${LOCATION_CONSTANT_EXPRESSION})`))?.[1]) ?? (/\bc:IsOnField\(\)/.test(body) ? readLuaConstantExpression("LOCATION_ONFIELD") : undefined);
+  const attackMin = readPositiveNumber(body.match(/c:IsAttackAbove\(\s*(\d+)\s*\)/)?.[1]);
+  const attackMax = readPositiveNumber(body.match(/c:IsAttackBelow\(\s*(\d+)\s*\)/)?.[1]);
+  const levelMin = readPositiveNumber(body.match(/c:IsLevelAbove\(\s*(\d+)\s*\)/)?.[1]);
+  const levelMax = readPositiveNumber(body.match(/c:IsLevelBelow\(\s*(\d+)\s*\)/)?.[1]);
+  if (attribute !== undefined) predicate.attribute = attribute;
+  if (race !== undefined) predicate.race = race;
+  if (type !== undefined) predicate.type = type;
+  if (setcode !== undefined) predicate.setcode = setcode;
+  if (location !== undefined) predicate.location = location;
+  if (attackMin !== undefined) predicate.attackMin = attackMin;
+  if (attackMax !== undefined) predicate.attackMax = attackMax;
+  if (levelMin !== undefined) predicate.levelMin = levelMin;
+  if (levelMax !== undefined) predicate.levelMax = levelMax;
+  return Object.keys(predicate).length > 0 ? predicate : undefined;
 }
 
 type FusionRepeatedMaterialMetadata = { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; attackMax?: number; attackMin?: number; attribute?: number; excludedType?: number; level?: number; levelMax?: number; levelMin?: number; race?: number; type?: number; setcode?: number; location?: number };
