@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 67;
+export const operationFixtureCount = 68;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -29,7 +29,7 @@ export const operationKindCounts = {
   graveToDeckBottomDraw: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
-  fiveGraveToDeckShuffleDraw: 1,
+  fiveGraveToDeckShuffleDraw: 2,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
   mutualHandDiscardDraw: 1,
@@ -733,6 +733,7 @@ export function operationFixtureFiles(): Array<{
         "host.messages).not.toContain",
       ],
     },
+    { file: "test/lua-real-script-jar-avarice-grave-shuffle-draw.test.ts", kind: "fiveGraveToDeckShuffleDraw", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,5,5,nil)", "Duel.GetOperatedGroup()", "Duel.BreakEffect()", "category: 0x10", "category: 0x10000", 'eventName: "sentToDeck"', 'eventName: "cardsDrawn"', "host.messages).not.toContain"] },
     {
       file: "test/lua-real-script-raigeki-group-destroy.test.ts",
       kind: "groupDestroy",
