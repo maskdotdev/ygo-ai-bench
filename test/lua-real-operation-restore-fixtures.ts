@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 63;
+export const operationFixtureCount = 64;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -45,6 +45,7 @@ export const operationKindCounts = {
   targetDestroy: 1,
   targetDestroyDiscardCost: 1,
   targetDestroyDisableField: 1,
+  targetDestroyReleaseCost: 1,
   targetDestroyRemove: 1,
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
@@ -97,6 +98,7 @@ export type OperationKind =
   | "targetDestroy"
   | "targetDestroyDiscardCost"
   | "targetDestroyDisableField"
+  | "targetDestroyReleaseCost"
   | "targetDestroyRemove"
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
@@ -799,6 +801,20 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-cynet-crosswipe-release-destroy.test.ts",
+      kind: "targetDestroyReleaseCost",
+      required: [
+        "restores Cynet Crosswipe's Cyberse release cost and targeted destruction from CHAININFO",
+        "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,s.spcheck,nil,dg)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "targetUids: [",
+        'eventName: "released"',
+        'eventName: "destroyed"',
+        "duelReason.release | duelReason.cost",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-shield-crush-target-destroy.test.ts",
       kind: "targetDestroy",
       required: [
@@ -936,6 +952,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDestroy: 0,
       targetDestroyDiscardCost: 0,
       targetDestroyDisableField: 0,
+      targetDestroyReleaseCost: 0,
       targetDestroyRemove: 0,
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
