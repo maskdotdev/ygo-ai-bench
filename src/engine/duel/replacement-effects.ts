@@ -53,7 +53,7 @@ export function applyDestroyReplacement(
   payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance | undefined {
   if ((reason & duelReason.replace) !== 0) return undefined;
-  const matches = findDestroyReplacementEffects(state, uid, handlers.createContinuousContext);
+  const matches = findDestroyReplacementEffects(state, uid, reason, reasonPlayer, handlers.createContinuousContext);
   return applyFirstReplacementEffect(state, matches, controller, reason, "graveyard", reasonPlayer, handlers, "destroyReplace", "Destruction replaced", payload);
 }
 
@@ -86,7 +86,7 @@ export function applyReleaseReplacement(
   payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance | undefined {
   if ((reason & duelReason.release) === 0 || (reason & duelReason.replace) !== 0) return undefined;
-  const matches = findReleaseReplacementEffects(state, uid, handlers.createContinuousContext);
+  const matches = findReleaseReplacementEffects(state, uid, reason, reasonPlayer, handlers.createContinuousContext);
   return applyFirstReplacementEffect(state, matches, controller, reason, "graveyard", reasonPlayer, handlers, "releaseReplace", "Release replaced", payload);
 }
 
@@ -100,7 +100,7 @@ export function applySendReplacement(
   payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {},
 ): DuelCardInstance | undefined {
   if ((reason & duelReason.replace) !== 0) return undefined;
-  const matches = findSendReplacementEffects(state, uid, handlers.createContinuousContext);
+  const matches = findSendReplacementEffects(state, uid, reason, reasonPlayer, handlers.createContinuousContext);
   return applyFirstReplacementEffect(state, matches, controller, reason, "graveyard", reasonPlayer, handlers, "sendReplace", "Send replaced", payload);
 }
 

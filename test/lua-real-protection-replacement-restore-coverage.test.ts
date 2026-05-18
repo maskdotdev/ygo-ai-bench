@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 16;
+const protectionReplacementFixtureCount = 17;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
@@ -16,7 +16,7 @@ const protectionReplacementKindCounts = {
   equipDestroySubstitute: 1,
   handGrantedIndestructible: 1,
   linkedTargetProtection: 1,
-  persistentDestroyReplace: 1,
+  persistentDestroyReplace: 2,
   positionConditionProtection: 1,
   temporaryBattleProtection: 1,
 } satisfies Record<ProtectionReplacementKind, number>;
@@ -33,6 +33,7 @@ const protectionReplacementSemanticVariantCounts = {
   phantomKnightsSwordPersistentDestroyReplace: 1,
   pilgrimContinuousBattleIndestructible: 1,
   redGardnaHandGrantedIndestructible: 1,
+  returnDragonLordsGraveDestroyReplace: 1,
   riderStormWindsEquipDestroySubstitute: 1,
   runickSlumberCountLimitedProtection: 1,
   safeZoneLinkedTargetProtection: 1,
@@ -123,6 +124,7 @@ type ProtectionReplacementSemanticVariant =
   | "phantomKnightsSwordPersistentDestroyReplace"
   | "pilgrimContinuousBattleIndestructible"
   | "redGardnaHandGrantedIndestructible"
+  | "returnDragonLordsGraveDestroyReplace"
   | "riderStormWindsEquipDestroySubstitute"
   | "runickSlumberCountLimitedProtection"
   | "safeZoneLinkedTargetProtection"
@@ -130,6 +132,18 @@ type ProtectionReplacementSemanticVariant =
 
 function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; kind: ProtectionReplacementKind; required: string[] }> {
   return ([
+    {
+      file: "lua-real-script-return-dragon-lords-revive-replace.test.ts",
+      kind: "persistentDestroyReplace",
+      required: [
+        "restores its Dragon Graveyard revive and Graveyard destroy replacement banish",
+        "e2:SetCode(EFFECT_DESTROY_REPLACE)",
+        "return Duel.SelectEffectYesNo(tp,e:GetHandler(),96)",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        'api: "SelectEffectYesNo"',
+        'action: "destroyReplace"',
+      ],
+    },
     {
       file: "lua-real-script-phantom-knights-sword-persistent-replace.test.ts",
       kind: "persistentDestroyReplace",
@@ -427,6 +441,16 @@ function protectionReplacementSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-return-dragon-lords-revive-replace.test.ts",
+      kind: "returnDragonLordsGraveDestroyReplace",
+      requiredSnippets: [
+        'const returnCode = "6853254"',
+        "restores its Dragon Graveyard revive and Graveyard destroy replacement banish",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        'action: "destroyReplace"',
+      ],
+    },
+    {
       file: "test/lua-real-script-rider-storm-winds-equip-pierce.test.ts",
       kind: "riderStormWindsEquipDestroySubstitute",
       requiredSnippets: [
@@ -510,6 +534,7 @@ function countProtectionReplacementSemanticVariants(
       phantomKnightsSwordPersistentDestroyReplace: 0,
       pilgrimContinuousBattleIndestructible: 0,
       redGardnaHandGrantedIndestructible: 0,
+      returnDragonLordsGraveDestroyReplace: 0,
       riderStormWindsEquipDestroySubstitute: 0,
       runickSlumberCountLimitedProtection: 0,
       safeZoneLinkedTargetProtection: 0,

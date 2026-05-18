@@ -6,10 +6,16 @@ import {
   type ContinuousEffectMatch,
 } from "#duel/continuous-effects.js";
 import { orderReplacementEffects } from "#duel/replacement-effect-order.js";
-import type { DuelState, PlayerId } from "#duel/types.js";
+import type { DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
-export function findDestroyReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
-  return findReplacementEffects(state, uid, 50, undefined, createContext);
+export function findDestroyReplacementEffects(
+  state: DuelState,
+  uid: string,
+  reason: number,
+  reasonPlayer: PlayerId | undefined,
+  createContext: ContinuousEffectContextFactory,
+): ContinuousEffectMatch[] {
+  return findReplacementEffects(state, uid, 50, undefined, reason, "graveyard", reasonPlayer, createContext);
 }
 
 export function findDestroySubstituteEffects(
@@ -33,12 +39,24 @@ export function findDestroySubstituteEffects(
   return matches;
 }
 
-export function findReleaseReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
-  return findReplacementEffects(state, uid, 51, undefined, createContext);
+export function findReleaseReplacementEffects(
+  state: DuelState,
+  uid: string,
+  reason: number,
+  reasonPlayer: PlayerId | undefined,
+  createContext: ContinuousEffectContextFactory,
+): ContinuousEffectMatch[] {
+  return findReplacementEffects(state, uid, 51, undefined, reason, "graveyard", reasonPlayer, createContext);
 }
 
-export function findSendReplacementEffects(state: DuelState, uid: string, createContext: ContinuousEffectContextFactory): ContinuousEffectMatch[] {
-  return findReplacementEffects(state, uid, 52, undefined, createContext);
+export function findSendReplacementEffects(
+  state: DuelState,
+  uid: string,
+  reason: number,
+  reasonPlayer: PlayerId | undefined,
+  createContext: ContinuousEffectContextFactory,
+): ContinuousEffectMatch[] {
+  return findReplacementEffects(state, uid, 52, undefined, reason, "graveyard", reasonPlayer, createContext);
 }
 
 function findReplacementEffects(
@@ -46,6 +64,9 @@ function findReplacementEffects(
   uid: string,
   firstCode: number,
   secondCode: number | undefined,
+  reason: number,
+  destination: DuelLocation,
+  reasonPlayer: PlayerId | undefined,
   createContext: ContinuousEffectContextFactory,
 ): ContinuousEffectMatch[] {
   const card = findCard(state, uid);
@@ -55,8 +76,8 @@ function findReplacementEffects(
     if (effect.event !== "continuous" || (effect.code !== firstCode && effect.code !== secondCode)) continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
-    const ctx = createContext(effect, source, card);
-    if (!continuousEffectAffectsCard(effect, source, card)) continue;
+    const ctx = createContext(effect, source, card, { eventReason: reason, eventReasonPlayer: reasonPlayer ?? card.controller, eventDestination: destination });
+    if (!continuousEffectAffectsCard(effect, source, card) && !effect.valueCardPredicate) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) matches.push({ effect, source, card });
   }
   return orderReplacementEffects(state, matches);

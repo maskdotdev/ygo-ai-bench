@@ -1,11 +1,12 @@
-export const freeChainSpecialSummonFixtureCount = 2;
+export const freeChainSpecialSummonFixtureCount = 3;
 
 export const freeChainSpecialSummonKindCounts = {
   handNormalMonsterSummon: 1,
   targetBanishedRockSummonStep: 1,
+  targetGraveDragonSummonReplace: 1,
 } satisfies Record<FreeChainSpecialSummonKind, number>;
 
-export type FreeChainSpecialSummonKind = "handNormalMonsterSummon" | "targetBanishedRockSummonStep";
+export type FreeChainSpecialSummonKind = "handNormalMonsterSummon" | "targetBanishedRockSummonStep" | "targetGraveDragonSummonReplace";
 
 export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -43,6 +44,19 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
         'summonType: "special"',
       ],
     },
+    {
+      file: "test/lua-real-script-return-dragon-lords-revive-replace.test.ts",
+      kind: "targetGraveDragonSummonReplace",
+      required: [
+        "return c:IsRace(RACE_DRAGON) and (c:GetLevel()==7 or c:GetLevel()==8) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "operationInfos: [{ category: 0x200",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'summonType: "special"',
+      ],
+    },
   ];
 }
 
@@ -52,5 +66,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { handNormalMonsterSummon: 0, targetBanishedRockSummonStep: 0 });
+  }, { handNormalMonsterSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0 });
 }
