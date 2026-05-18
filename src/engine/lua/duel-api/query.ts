@@ -674,7 +674,7 @@ function selectFusionMaterialUids(session: DuelSession, candidates: DuelCardInst
     .filter((card): card is DuelCardInstance => card !== undefined);
   if (forced.length !== uniqueForcedUids.length) return [];
   const requiredCodes = target?.data.fusionMaterials ?? [];
-  const requiredCount = requiredCodes.length + (target?.data.fusionRequiredMaterialSetcodes?.length ?? 0);
+  const requiredCount = requiredCodes.length + (target?.data.fusionRequiredMaterialSetcodes?.length ?? 0) + (target?.data.fusionRequiredMaterialPredicates?.length ?? 0);
   if (target && hasGenericFusionMaterialRequirement(target)) {
     if (requiredCount > 0) {
       for (let count = Math.max(requiredCount + (target.data.fusionMaterialMin ?? 1), forced.length); count <= candidates.length; count += 1) {
@@ -696,6 +696,13 @@ function selectFusionMaterialUids(session: DuelSession, candidates: DuelCardInst
       if (selected.length >= desiredCount) break;
     }
     return fusionMaterialCountAllowed(target, selected.length) ? selected.map((card) => card.uid) : [];
+  }
+  if (target && requiredCount !== requiredCodes.length) {
+    for (const materials of cardCombinations(candidates, Math.max(requiredCount, forced.length))) {
+      if (forced.length && !forced.every((material) => materials.includes(material))) continue;
+      if (fusionMaterialSelectionMatches(session.state, target, materials)) return materials.map((material) => material.uid);
+    }
+    return [];
   }
   if (!requiredCodes.length) {
     const selected = [...forced];

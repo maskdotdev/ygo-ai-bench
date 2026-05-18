@@ -29,7 +29,7 @@ import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
-import { fusionMaterialMatches, fusionMaterialSelectionMatches, hasGenericFusionMaterialRequirement, normalSummon, tributeSetDuelCard } from "#duel/summon.js";
+import { fusionMaterialMatches, fusionMaterialSelectionMatches, fusionRequiredMaterialPredicateMatches, hasGenericFusionMaterialRequirement, normalSummon, tributeSetDuelCard } from "#duel/summon.js";
 import { consumePendulumSummon, grantExtraPendulumSummons, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability } from "#duel/pendulum-availability.js";
 import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { pendulumAnyLevelScaleEffectCode, pendulumLevelBypassEffectCode } from "#duel/pendulum-effect-codes.js";
@@ -546,11 +546,13 @@ function isSelectedFusionMaterialLocation(location: DuelLocation): boolean {
 
 function selectedFusionMaterialsMatch(session: DuelSession, target: DuelCardInstance, materials: (DuelCardInstance | undefined)[]): boolean {
   const required = target.data.fusionMaterials ?? [];
+  const requiredPredicateCount = (target.data.fusionRequiredMaterialSetcodes?.length ?? 0) + (target.data.fusionRequiredMaterialPredicates?.length ?? 0);
   const selected = materials.filter((material): material is DuelCardInstance => material !== undefined);
   if (!required.length && hasGenericFusionMaterialRequirement(target)) {
     return selected.length === materials.length && fusionMaterialSelectionMatches(session.state, target, selected);
   }
   if (required.length && hasGenericFusionMaterialRequirement(target)) return selected.length === materials.length && fusionMaterialSelectionMatches(session.state, target, selected);
+  if (requiredPredicateCount > 0) return selected.length === materials.length && fusionMaterialSelectionMatches(session.state, target, selected);
   if (!required.length) return materials.length > 0 && selected.length === materials.length;
   return selected.length === materials.length && materialCodesMatch(selected, required, fusionMaterialMatchOptions(session.state, target));
 }
@@ -927,10 +929,12 @@ function targetAllowsFusionMaterial(state: DuelState, target: DuelCardInstance |
   if (target.uid === card.uid) return false;
   const requiredCodes = target.data.fusionMaterials ?? [];
   const requiredSetcodes = target.data.fusionRequiredMaterialSetcodes ?? [];
-  if (!requiredCodes.length && !requiredSetcodes.length) return true;
+  const requiredPredicates = target.data.fusionRequiredMaterialPredicates ?? [];
+  if (!requiredCodes.length && !requiredSetcodes.length && !requiredPredicates.length) return true;
   const codes = currentCardCodes(card, state);
   return requiredCodes.some((code) => codes.includes(code))
     || requiredSetcodes.some((setcode) => currentCardMatchesSetcode(card, state, setcode))
+    || requiredPredicates.some((predicate) => fusionRequiredMaterialPredicateMatches(state, card, predicate))
     || (requiredCodes.length > 0 && canUseFusionSubstitute(state, card, target))
     || (hasGenericFusionMaterialRequirement(target) && fusionMaterialMatches(state, target, card));
 }

@@ -6,6 +6,13 @@ export type DuelStatus = "setup" | "awaiting" | "resolving" | "ended";
 export type CardPosition = "faceDownDefense" | "faceUpAttack" | "faceUpDefense" | "faceDown";
 export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "graveyard" | "banished" | "extraDeck" | "overlay";
 export type DuelCardKind = "monster" | "spell" | "trap" | "extra";
+export interface FusionMaterialPredicateRequirement {
+  attribute?: number;
+  location?: number;
+  race?: number;
+  setcode?: number;
+  type?: number;
+}
 export type DuelSummonType = "normal" | "tribute" | "flip" | "special" | "fusion" | "synchro" | "xyz" | "link" | "ritual" | "pendulum";
 export type DuelEventName =
   | "normalSummoning"
@@ -126,6 +133,7 @@ export interface DuelCardData {
   fusionMaterialType?: number;
   fusionMaterialSetcode?: number;
   fusionMaterialLocation?: number;
+  fusionRequiredMaterialPredicates?: FusionMaterialPredicateRequirement[];
   fusionRequiredMaterialSetcodes?: number[];
   materialSetcodes?: number[];
   synchroMaterials?: {

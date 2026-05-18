@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { luaArchetypeSetcodeNumericConstants } from "#lua/basic-archetype-setcode-constant-data.js";
 import { luaCardCounterNumericConstants } from "#lua/basic-card-counter-constant-data.js";
 import { luaNumericConstants } from "#lua/basic-constant-data.js";
-import type { DuelCardInstance } from "#duel/types.js";
+import type { DuelCardInstance, FusionMaterialPredicateRequirement } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
 const ATTRIBUTE_CONSTANT_EXPRESSION = String.raw`ATTRIBUTE_[A-Z0-9_]+(?:\s*\|\s*ATTRIBUTE_[A-Z0-9_]+)*`;
@@ -17,6 +17,8 @@ const XYZ_INFINITE_MATERIAL_MAX = 99;
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
   const fusionMaterials = readFusionAddProcMixMaterials(L, card, source);
   if (fusionMaterials.length > 0) card.data.fusionMaterials = fusionMaterials;
+  const fusionRequiredPredicates = readFusionAddProcMixPredicateMaterials(source);
+  if (fusionRequiredPredicates.length > 0) card.data.fusionRequiredMaterialPredicates = fusionRequiredPredicates;
   const fusionRepeatedMaterials = readFusionAddProcMixRepMaterials(source);
   if (fusionRepeatedMaterials) {
     card.data.fusionMaterialMin = fusionRepeatedMaterials.min;
@@ -107,6 +109,22 @@ function readFusionAddProcMixNMaterials(L: unknown, card: DuelCardInstance): str
     for (let copy = 0; copy < count; copy += 1) materials.push(String(code));
   }
   return materials.length >= 2 ? materials : [];
+}
+
+function readFusionAddProcMixPredicateMaterials(source: string | undefined): FusionMaterialPredicateRequirement[] {
+  const match = source?.match(/Fusion\.AddProcMix\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,([^\n]*)\)/);
+  if (!match?.[1]) return [];
+  const predicates: FusionMaterialPredicateRequirement[] = [];
+  for (const [, predicate, expression] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:Attribute|Location|Race|SetCard|Type))\s*,\s*([A-Z0-9_]+(?:\s*\|\s*[A-Z0-9_]+)*)\s*\)/g)) {
+    const value = readLuaConstantExpression(expression);
+    if (value === undefined) continue;
+    if (predicate === "Card.IsAttribute") predicates.push({ attribute: value });
+    if (predicate === "Card.IsLocation") predicates.push({ location: value });
+    if (predicate === "Card.IsRace") predicates.push({ race: value });
+    if (predicate === "Card.IsSetCard") predicates.push({ setcode: value });
+    if (predicate === "Card.IsType") predicates.push({ type: value });
+  }
+  return predicates;
 }
 
 function readFusionAddProcMixRepMaterials(source: string | undefined): { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; race?: number; type?: number; setcode?: number; location?: number } | undefined {

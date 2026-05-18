@@ -196,6 +196,7 @@ function copyCardData(data: DuelCardData): DuelCardData {
     ...data,
     ...(data.setcodes ? { setcodes: [...data.setcodes] } : {}),
     ...(data.fusionMaterials ? { fusionMaterials: [...data.fusionMaterials] } : {}),
+    ...(data.fusionRequiredMaterialPredicates ? { fusionRequiredMaterialPredicates: data.fusionRequiredMaterialPredicates.map((predicate) => ({ ...predicate })) } : {}),
     ...(data.fusionRequiredMaterialSetcodes ? { fusionRequiredMaterialSetcodes: [...data.fusionRequiredMaterialSetcodes] } : {}),
     ...(data.materialSetcodes ? { materialSetcodes: [...data.materialSetcodes] } : {}),
     ...(data.synchroMaterials ? { synchroMaterials: { tuner: data.synchroMaterials.tuner, nonTuners: [...data.synchroMaterials.nonTuners] } } : {}),
