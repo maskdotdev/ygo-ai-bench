@@ -1,6 +1,6 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 25, ritual: 17 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 26, ritual: 17 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
@@ -8,7 +8,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionAddProcCode2ExactCodeMetadata: 1,
   fusionAddProcCodeRepRepeatedCodeMetadata: 1,
   fusionAddProcMixMaterialMetadata: 1,
-  fusionAddProcMixAttackPredicateMetadata: 1, fusionAddProcMixNRepeatedCodeMetadata: 1, fusionAddProcMixPredicateMetadata: 1,
+  fusionAddProcMixAttackPredicateMetadata: 1, fusionAddProcMixNRepeatedCodeMetadata: 1, fusionAddProcMixNSetcodeMetadata: 1, fusionAddProcMixPredicateMetadata: 1,
   fusionAddProcMixRepExactCodeMetadata: 1, fusionAddProcMixRepLocationMetadata: 1, fusionAddProcMixRepRequiredSetcodeMetadata: 1, fusionAddProcMixRepSetcodeMetadata: 1,
   fusionDeckMaterialOath: 1,
   fusionForcedHandler: 1,
@@ -63,7 +63,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(42);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(43);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -115,16 +115,12 @@ describe("Lua real Ritual and Fusion helper restore coverage", () => {
 });
 
 type RitualFusionHelperFamily = "fusion" | "ritual";
-type RitualFusionHelperKind =
-  | "contactFusionBanish"
-  | "contactFusionCustomSummonType"
-  | "contactFusionOpponentMaterial"
-  | "contactFusionSendCost"
-  | "customRitualOperation"
+type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummonType" | "contactFusionOpponentMaterial" | "contactFusionSendCost" | "customRitualOperation"
   | "fusionAddProcCode2ExactCodeMetadata"
   | "fusionAddProcCodeRepRepeatedCodeMetadata"
   | "fusionAddProcMixMaterialMetadata" | "fusionAddProcMixAttackPredicateMetadata"
   | "fusionAddProcMixNRepeatedCodeMetadata"
+  | "fusionAddProcMixNSetcodeMetadata"
   | "fusionAddProcMixPredicateMetadata"
   | "fusionAddProcMixRepExactCodeMetadata" | "fusionAddProcMixRepLocationMetadata" | "fusionAddProcMixRepRequiredSetcodeMetadata" | "fusionAddProcMixRepSetcodeMetadata"
   | "fusionDeckMaterialOath"
@@ -871,6 +867,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'expect(restored.host.messages).not.toContain("cyber end responder resolved")',
       ],
     },
+    { file: "test/lua-real-script-vision-hero-trinity-addprocmixn-setcode-fusion.test.ts", kind: "fusionAddProcMixNSetcodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN setcode metadata", "expect(trinity!.data).toMatchObject({ fusionMaterialMin: 3, fusionMaterialMax: 3, fusionMaterialSetcode: setHero })", "expect(trinity!.data.fusionMaterials).toBeUndefined()", "expect(directFusionActions[0]!.materialUids).toEqual(heroMaterials.map((card) => card.uid))", "directFusionActions.some((action) => action.materialUids.includes(nonHero!.uid))", "summonMaterialUids: heroMaterials.map((card) => card.uid)"] },
     { file: "test/lua-real-script-dracotail-shaulas-addprocmix-predicate-fusion.test.ts", kind: "fusionAddProcMixPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcMix predicate metadata", "expect(shaulas!.data.fusionRequiredMaterialPredicates).toEqual([{ setcode: setDracotail }, { location: locationHand }])", "expect(shaulas!.data.fusionMaterials).toBeUndefined()", "expect(directFusionActions[0]!.materialUids).toEqual([dracotailMaterial!.uid, handMaterial!.uid])", "summonMaterialUids: [dracotailMaterial!.uid, handMaterial!.uid]"] },
     { file: "test/lua-real-script-titaniklad-addprocmix-attack-fusion.test.ts", kind: "fusionAddProcMixAttackPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcMix attack predicate metadata", "expect(titaniklad!.data.fusionRequiredMaterialPredicates).toEqual([{ attackMin: 2500 }])", "expect(directFusionActions[0]!.materialUids).toEqual([albaz!.uid, highMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(lowDecoy!.uid))", "summonMaterialUids: [albaz!.uid, highMaterial!.uid]"] },
     { file: "test/lua-real-script-chimeratech-rampage-addprocmixrep-fusion.test.ts", kind: "fusionAddProcMixRepSetcodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixRep metadata", "expect(rampage!.data.fusionMaterialMin).toBe(2)", "expect(rampage!.data.fusionMaterialSetcode).toBe(setCyberDragon)", "summonMaterialUids: [cyberDragon!.uid, cyberDragonCore!.uid]", "expect(restored.session.state.cards.find((card) => card.uid === decoy!.uid)).toMatchObject({ location: \"hand\", controller: 0 })"] },

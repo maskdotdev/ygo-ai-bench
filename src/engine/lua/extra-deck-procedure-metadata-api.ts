@@ -19,7 +19,7 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (fusionMaterials.length > 0) card.data.fusionMaterials = fusionMaterials;
   const fusionRequiredPredicates = readFusionAddProcMixPredicateMaterials(source);
   if (fusionRequiredPredicates.length > 0) card.data.fusionRequiredMaterialPredicates = fusionRequiredPredicates;
-  const fusionRepeatedMaterials = readFusionAddProcMixRepMaterials(source);
+  const fusionRepeatedMaterials = readFusionAddProcMixRepMaterials(source) ?? readFusionAddProcMixNRepeatedMaterials(source);
   if (fusionRepeatedMaterials) {
     card.data.fusionMaterialMin = fusionRepeatedMaterials.min;
     card.data.fusionMaterialMax = fusionRepeatedMaterials.max;
@@ -147,6 +147,26 @@ function readFusionAddProcMixRepMaterials(source: string | undefined): { min: nu
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location");
+}
+
+function readFusionAddProcMixNRepeatedMaterials(source: string | undefined): { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; race?: number; type?: number; setcode?: number; location?: number } | undefined {
+  return readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
+    ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
+    ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
+    ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location");
+}
+
+function readFusionAddProcMixNRepeatedConstantFilter<K extends "race" | "type" | "setcode" | "location">(
+  source: string | undefined,
+  predicate: string,
+  constantExpression: string,
+  key: K,
+): ({ min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>) | undefined {
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcMixN\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)\s*,\s*(\d+)\s*\)`));
+  const value = readLuaConstantExpression(match?.[1]);
+  const count = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
+  if (value === undefined || count === undefined || count <= 0) return undefined;
+  return { min: count, max: count, extraCodes: [], extraSetcodes: [], [key]: value } as unknown as { min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>;
 }
 
 function readFusionAddProcMixRepConstantFilter<K extends "race" | "type" | "setcode" | "location">(
