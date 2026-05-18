@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 66;
+export const operationFixtureCount = 67;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -45,7 +45,7 @@ export const operationKindCounts = {
   trapDraw: 1,
   targetBanishDiscardCost: 1,
   targetDestroy: 1,
-  targetDestroyDiscardCost: 1,
+  targetDestroyDiscardCost: 2,
   targetDestroyDisableField: 1,
   targetDestroyReleaseCost: 1,
   targetDestroyRemove: 1,
@@ -915,6 +915,7 @@ export function operationFixtureFiles(): Array<{
         "host.messages).not.toContain",
       ],
     },
+    { file: "test/lua-real-script-xy-dragon-cannon-discard-spelltrap-destroy.test.ts", kind: "targetDestroyDiscardCost", required: ["Fusion.AddContactProc(c,s.contactfil,s.contactop,s.splimit)", "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)", "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_ONFIELD,1,1,nil)", "category: 0x1", "targetUids: [opponentFaceupSpell.uid]", 'eventName: "discarded"', 'eventName: "destroyed"', 'location: "graveyard"', "host.messages).not.toContain"] },
     {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
