@@ -10,6 +10,9 @@ import { realScriptSummonSuccessTargetSpecialSummonFixtureSnippets, summonSucces
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
+const nonSummonKeywordFixtures = new Set([
+  "lua-real-script-xyz-reversal-swap-control.test.ts",
+]);
 export const realScriptSummonFixtureCount = 221;
 export const summonProcedureFixtureCount = 26;
 export const typedSummonProcedureFixtureCount = 6;
@@ -191,6 +194,7 @@ export type PendulumGrantKind =
 export function realScriptSummonFixtureFiles(): string[] {
   return fs.readdirSync(testRoot)
     .filter((file) => file.startsWith("lua-real-script-") && file.endsWith(".test.ts"))
+    .filter((file) => !nonSummonKeywordFixtures.has(file))
     .filter((file) => summonKeywords.some((keyword) => file.includes(keyword)))
     .map((file) => path.join("test", file))
     .sort();
