@@ -12,17 +12,27 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasFushiScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c38538445.lua"));
 const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fushi No Tori battle recover", () => {
+describe.skipIf(!hasUpstreamScripts || !hasFushiScript)("Lua real script Fushi No Tori battle recover", () => {
   it("restores its battle-damage trigger into CHAININFO target-param LP recovery", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const fushiCode = "38538445";
     const defenderCode = "38538446";
     const responderCode = "38538447";
+    const script = workspace.readScript(`c${fushiCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCategory(CATEGORY_RECOVER)");
+    expect(script).toContain("e2:SetCode(EVENT_BATTLE_DAMAGE)");
+    expect(script).toContain("Duel.SetTargetPlayer(tp)");
+    expect(script).toContain("Duel.SetTargetParam(ev)");
+    expect(script).toContain("Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)");
+    expect(script).toContain("Duel.Recover(p,d,REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === fushiCode),
+      { code: fushiCode, name: "Fushi No Tori", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1200, defense: 0 },
       { code: defenderCode, name: "Fushi No Tori Battle Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 500, defense: 500 },
       { code: responderCode, name: "Fushi No Tori Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
