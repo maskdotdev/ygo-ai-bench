@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 9;
+const controlFixtureCount = 10;
 const controlKindCounts = {
   cannotChangeControl: 1,
   equipControl: 1,
+  flipGetControl: 1,
   flipSetControl: 1,
   releaseCostControl: 1,
   restrictedTemporaryControl: 2,
@@ -23,6 +24,7 @@ const controlSemanticVariantCounts = {
   enemyControllerReleaseControl: 1,
   matazaCannotChangeControl: 1,
   mindControlRestrictions: 1,
+  rafflesiaFlipGetControl: 1,
   snatchStealEquipControl: 1,
   xyzReversalTargetedSwapControl: 1,
 } satisfies Record<ControlSemanticVariant, number>;
@@ -30,6 +32,7 @@ const controlSemanticVariantCounts = {
 type ControlKind =
   | "cannotChangeControl"
   | "equipControl"
+  | "flipGetControl"
   | "flipSetControl"
   | "releaseCostControl"
   | "restrictedTemporaryControl"
@@ -45,6 +48,7 @@ type ControlSemanticVariant =
   | "enemyControllerReleaseControl"
   | "matazaCannotChangeControl"
   | "mindControlRestrictions"
+  | "rafflesiaFlipGetControl"
   | "snatchStealEquipControl"
   | "xyzReversalTargetedSwapControl";
 
@@ -129,6 +133,17 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-rafflesia-flip-get-control.test.ts",
+      kind: "flipGetControl",
+      required: [
+        'const rafflesiaCode = "31440542"',
+        "restores Rafflesia Seduction's flip target, temporary GetControl, and End Phase return",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'luaValueDescriptor: "temporary-control-return"',
+        "eventName: \"controlChanged\"",
+      ],
+    },
+    {
       file: "lua-real-script-enemy-controller-control-cost.test.ts",
       kind: "releaseCostControl",
       required: [
@@ -204,6 +219,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
     {
       cannotChangeControl: 0,
       equipControl: 0,
+      flipGetControl: 0,
       flipSetControl: 0,
       releaseCostControl: 0,
       restrictedTemporaryControl: 0,
@@ -262,6 +278,17 @@ function realScriptControlSemanticVariants(): Array<{
         "EFFECT_SET_CONTROL",
         "eventName: \"controlChanged\"",
         "duelReason.effect",
+      ],
+    },
+    {
+      file: "lua-real-script-rafflesia-flip-get-control.test.ts",
+      kind: "rafflesiaFlipGetControl",
+      required: [
+        'const rafflesiaCode = "31440542"',
+        "restores Rafflesia Seduction's flip target, temporary GetControl, and End Phase return",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g,#g,0,0)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "previousController: 1",
       ],
     },
     {
@@ -342,6 +369,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       enemyControllerReleaseControl: 0,
       matazaCannotChangeControl: 0,
       mindControlRestrictions: 0,
+      rafflesiaFlipGetControl: 0,
       snatchStealEquipControl: 0,
       xyzReversalTargetedSwapControl: 0,
     },
