@@ -12,6 +12,7 @@ export const groupDestroyOperationVariantCounts = {
 } satisfies Record<GroupDestroyOperationVariant, number>;
 export const potAndSearchOperationVariantCounts = {
   gatherYourMindOathSearch: 1,
+  cyberEggAngelSummonFlipSpecialSearch: 1,
   kotetsuFlipEquipSearch: 1,
   majespecterRaccoonSummonSearchProtection: 1,
   potDesiresFaceDownBanishDraw: 1,
@@ -41,6 +42,7 @@ export type GroupDestroyOperationVariant =
   | "smashingGroundMaxDefense";
 export type PotAndSearchOperationVariant =
   | "gatherYourMindOathSearch"
+  | "cyberEggAngelSummonFlipSpecialSearch"
   | "kotetsuFlipEquipSearch"
   | "majespecterRaccoonSummonSearchProtection"
   | "potDesiresFaceDownBanishDraw"
@@ -185,6 +187,17 @@ export function potAndSearchOperationVariants(): Array<{ file: string; kind: Pot
       ],
     },
     {
+      file: "test/lua-real-script-cyber-egg-angel-summon-flip-special-search.test.ts",
+      kind: "cyberEggAngelSummonFlipSpecialSearch",
+      required: [
+        "restores its delayed cloned summon triggers into a Machine Angel Spell search and confirmation",
+        "const cyberEggCode = \"28053106\"",
+        "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "assertCyberEggSearch(\"special\")",
+      ],
+    },
+    {
       file: "test/lua-real-script-kotetsu-flip-equip-search.test.ts",
       kind: "kotetsuFlipEquipSearch",
       required: [
@@ -281,6 +294,7 @@ export function countPotAndSearchOperationVariants(fixtures: Array<{ kind: PotAn
       return counts;
     },
     {
+      cyberEggAngelSummonFlipSpecialSearch: 0,
       gatherYourMindOathSearch: 0,
       kotetsuFlipEquipSearch: 0,
       majespecterRaccoonSummonSearchProtection: 0,
