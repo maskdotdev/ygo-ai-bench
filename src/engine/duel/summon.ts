@@ -649,22 +649,23 @@ function findFusionMaterialUidSets(state: DuelState, player: PlayerId, cards: Du
 }
 
 export function hasGenericFusionMaterialRequirement(card: DuelCardInstance): boolean {
-  return card.data.fusionMaterialMin !== undefined || card.data.fusionMaterialMax !== undefined || card.data.fusionMaterialRace !== undefined || card.data.fusionMaterialType !== undefined || card.data.fusionMaterialSetcode !== undefined;
+  return card.data.fusionMaterialMin !== undefined || card.data.fusionMaterialMax !== undefined || card.data.fusionMaterialRace !== undefined || card.data.fusionMaterialType !== undefined || card.data.fusionMaterialSetcode !== undefined || card.data.fusionMaterialLocation !== undefined;
 }
 
 export function fusionMaterialCountAllowed(card: DuelCardInstance, count: number): boolean {
-  if (!hasGenericFusionMaterialRequirement(card)) return true;
-  return count >= (card.data.fusionMaterialMin ?? 1) && count <= (card.data.fusionMaterialMax ?? Number.POSITIVE_INFINITY);
+  return !hasGenericFusionMaterialRequirement(card) || (count >= (card.data.fusionMaterialMin ?? 1) && count <= (card.data.fusionMaterialMax ?? Number.POSITIVE_INFINITY));
 }
 
 export function fusionMaterialMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return (target.data.fusionMaterialRace === undefined || (currentRace(material, state) & target.data.fusionMaterialRace) !== 0)
-    && (target.data.fusionMaterialType === undefined || (cardTypeFlags(material, state) & target.data.fusionMaterialType) !== 0)
-    && (target.data.fusionMaterialSetcode === undefined || currentCardMatchesSetcode(material, state, target.data.fusionMaterialSetcode));
+  return (target.data.fusionMaterialRace === undefined || (currentRace(material, state) & target.data.fusionMaterialRace) !== 0) && (target.data.fusionMaterialType === undefined || (cardTypeFlags(material, state) & target.data.fusionMaterialType) !== 0) && (target.data.fusionMaterialSetcode === undefined || currentCardMatchesSetcode(material, state, target.data.fusionMaterialSetcode)) && (target.data.fusionMaterialLocation === undefined || fusionMaterialLocationMatches(material, target.data.fusionMaterialLocation));
+}
+
+function fusionMaterialLocationMatches(material: DuelCardInstance, mask: number): boolean {
+  const locationMask = material.location === "deck" ? 0x01 : material.location === "hand" ? 0x02 : material.location === "monsterZone" ? 0x04 : material.location === "spellTrapZone" ? 0x08 : material.location === "graveyard" ? 0x10 : material.location === "banished" ? 0x20 : material.location === "extraDeck" ? 0x40 : material.location === "overlay" ? 0x80 : 0;
+  return (mask & locationMask) !== 0 || (material.location === "spellTrapZone" && (mask & 0x400) !== 0) || (material.location === "monsterZone" && (((mask & 0x800) !== 0 && material.sequence >= 0 && material.sequence <= 4) || ((mask & 0x1000) !== 0 && material.sequence >= 5 && material.sequence <= 6)));
 }
 export function fusionMaterialSelectionMatches(state: DuelState, target: DuelCardInstance, materials: DuelCardInstance[]): boolean {
-  const requiredCodes = target.data.fusionMaterials ?? [];
-  const requiredSetcodes = target.data.fusionRequiredMaterialSetcodes ?? [];
+  const requiredCodes = target.data.fusionMaterials ?? [], requiredSetcodes = target.data.fusionRequiredMaterialSetcodes ?? [];
   const requiredCount = requiredCodes.length + requiredSetcodes.length;
   if (!hasGenericFusionMaterialRequirement(target)) return requiredCount > 0 && materials.length === requiredCount && fusionRequiredMaterialSets(state, materials, target).length > 0;
   if (requiredCount === 0) return fusionMaterialCountAllowed(target, materials.length) && materials.every((material) => fusionMaterialMatches(state, target, material));

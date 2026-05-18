@@ -10,6 +10,7 @@ const RACE_CONSTANT_EXPRESSION = String.raw`RACES?_[A-Z0-9_]+(?:\s*\|\s*RACES?_[
 const SET_CONSTANT_EXPRESSION = String.raw`SET_[A-Z0-9_]+(?:\s*\|\s*SET_[A-Z0-9_]+)*`;
 const SUMMON_TYPE_CONSTANT_EXPRESSION = String.raw`SUMMON_TYPE_[A-Z0-9_]+(?:\s*\|\s*SUMMON_TYPE_[A-Z0-9_]+)*`;
 const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*\|\s*TYPE_[A-Z0-9_]+)*`;
+const LOCATION_CONSTANT_EXPRESSION = String.raw`LOCATION_[A-Z0-9_]+(?:\s*\|\s*LOCATION_[A-Z0-9_]+)*`;
 const CARD_CODE_EXPRESSION = String.raw`(?:\d+|CARD_[A-Z0-9_]+)`;
 const XYZ_INFINITE_MATERIAL_MAX = 99;
 
@@ -23,6 +24,7 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
     if (fusionRepeatedMaterials.race !== undefined) card.data.fusionMaterialRace = fusionRepeatedMaterials.race;
     if (fusionRepeatedMaterials.type !== undefined) card.data.fusionMaterialType = fusionRepeatedMaterials.type;
     if (fusionRepeatedMaterials.setcode !== undefined) card.data.fusionMaterialSetcode = fusionRepeatedMaterials.setcode;
+    if (fusionRepeatedMaterials.location !== undefined) card.data.fusionMaterialLocation = fusionRepeatedMaterials.location;
     if (fusionRepeatedMaterials.extraCodes.length > 0) card.data.fusionMaterials = fusionRepeatedMaterials.extraCodes.map(String);
     if (fusionRepeatedMaterials.extraSetcodes.length > 0) card.data.fusionRequiredMaterialSetcodes = fusionRepeatedMaterials.extraSetcodes;
   }
@@ -107,13 +109,14 @@ function readFusionAddProcMixNMaterials(L: unknown, card: DuelCardInstance): str
   return materials.length >= 2 ? materials : [];
 }
 
-function readFusionAddProcMixRepMaterials(source: string | undefined): { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; race?: number; type?: number; setcode?: number } | undefined {
+function readFusionAddProcMixRepMaterials(source: string | undefined): { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; race?: number; type?: number; setcode?: number; location?: number } | undefined {
   return readFusionAddProcMixRepConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
-    ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode");
+    ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
+    ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location");
 }
 
-function readFusionAddProcMixRepConstantFilter<K extends "race" | "type" | "setcode">(
+function readFusionAddProcMixRepConstantFilter<K extends "race" | "type" | "setcode" | "location">(
   source: string | undefined,
   predicate: string,
   constantExpression: string,

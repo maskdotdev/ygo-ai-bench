@@ -1,9 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
+import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 22, ritual: 17 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 23, ritual: 17 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1,
   contactFusionCustomSummonType: 1,
@@ -14,7 +13,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionAddProcCodeRepRepeatedCodeMetadata: 1,
   fusionAddProcMixMaterialMetadata: 1,
   fusionAddProcMixNRepeatedCodeMetadata: 1,
-  fusionAddProcMixRepExactCodeMetadata: 1, fusionAddProcMixRepRequiredSetcodeMetadata: 1, fusionAddProcMixRepSetcodeMetadata: 1,
+  fusionAddProcMixRepExactCodeMetadata: 1, fusionAddProcMixRepLocationMetadata: 1, fusionAddProcMixRepRequiredSetcodeMetadata: 1, fusionAddProcMixRepSetcodeMetadata: 1,
   fusionDeckMaterialOath: 1,
   fusionForcedHandler: 1,
   fusionFcheck: 1,
@@ -68,7 +67,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(39);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(40);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -130,7 +129,7 @@ type RitualFusionHelperKind =
   | "fusionAddProcCodeRepRepeatedCodeMetadata"
   | "fusionAddProcMixMaterialMetadata"
   | "fusionAddProcMixNRepeatedCodeMetadata"
-  | "fusionAddProcMixRepExactCodeMetadata" | "fusionAddProcMixRepRequiredSetcodeMetadata" | "fusionAddProcMixRepSetcodeMetadata"
+  | "fusionAddProcMixRepExactCodeMetadata" | "fusionAddProcMixRepLocationMetadata" | "fusionAddProcMixRepRequiredSetcodeMetadata" | "fusionAddProcMixRepSetcodeMetadata"
   | "fusionDeckMaterialOath"
   | "fusionForcedHandler"
   | "fusionFcheck"
@@ -876,6 +875,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       ],
     },
     { file: "test/lua-real-script-chimeratech-rampage-addprocmixrep-fusion.test.ts", kind: "fusionAddProcMixRepSetcodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixRep metadata", "expect(rampage!.data.fusionMaterialMin).toBe(2)", "expect(rampage!.data.fusionMaterialSetcode).toBe(setCyberDragon)", "summonMaterialUids: [cyberDragon!.uid, cyberDragonCore!.uid]", "expect(restored.session.state.cards.find((card) => card.uid === decoy!.uid)).toMatchObject({ location: \"hand\", controller: 0 })"] },
+    { file: "test/lua-real-script-dracotail-arthalion-addprocmixrep-location-fusion.test.ts", kind: "fusionAddProcMixRepLocationMetadata", families: ["fusion"], required: ["Fusion.AddProcMixRep location metadata", "expect(arthalion!.data.fusionMaterialLocation).toBe(locationHand)", "expect(directFusionActions[0]!.materialUids).toEqual([dracotailMaterial!.uid, handMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(fieldDecoy!.uid))", "summonMaterialUids: [dracotailMaterial!.uid, handMaterial!.uid]"] },
     { file: "test/lua-real-script-primite-dragon-nether-berzelius-addprocmixrep-setcode-fusion.test.ts", kind: "fusionAddProcMixRepRequiredSetcodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixRep setcode metadata", "expect(berzelius!.data.fusionRequiredMaterialSetcodes).toEqual([setPrimite])", "expect(berzelius!.data.fusionMaterialType).toBe(typeNormal)", "directFusionActions.every((action) => action.materialUids.includes(primiteMaterial!.uid))", "summonMaterialUids: [primiteMaterial!.uid, normalMaterial!.uid]"] },
     { file: "test/lua-real-script-thunder-dragon-colossus-addprocmixrep-code-fusion.test.ts", kind: "fusionAddProcMixRepExactCodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixRep exact-code metadata", "expect(colossus!.data.fusionMaterials).toEqual([thunderDragonCode])", "expect(colossus!.data.fusionMaterialRace).toBe(raceThunder)", "directFusionActions.every((action) => action.materialUids.length === 2 && action.materialUids.includes(thunderDragon!.uid))", "summonMaterialUids: [thunderDragon!.uid, thunderDecoy!.uid]"] },
     {

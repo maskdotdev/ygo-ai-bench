@@ -125,6 +125,7 @@ export interface DuelCardData {
   fusionMaterialRace?: number;
   fusionMaterialType?: number;
   fusionMaterialSetcode?: number;
+  fusionMaterialLocation?: number;
   fusionRequiredMaterialSetcodes?: number[];
   materialSetcodes?: number[];
   synchroMaterials?: {
