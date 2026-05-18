@@ -4,14 +4,14 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 167;
+export const realScriptBattleFixtureCount = 168;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;
 export const battleContinuousSemanticFixtureCount = 1;
 export const damageStepRestoreFixtureCount = 4;
 export const battleDamageSemanticFixtureCount = 8;
-export const battleTriggerSemanticFixtureCount = 20;
+export const battleTriggerSemanticFixtureCount = 21;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -53,7 +53,7 @@ export const battleTriggerSemanticKindCounts = {
   battleDestroyingDecktopConfirm: 1,
   battleDestroyedDestroy: 1,
   battleDestroyedGroupDestroy: 1,
-  battleDestroyingDamage: 1,
+  battleDestroyingDamage: 2,
   battleDestroyingSelectEffect: 1,
   battleSearch: 2,
   battledBounce: 1,
@@ -90,6 +90,7 @@ export const battleSemanticVariantCounts = {
   hayateBattledDeckSend: 1,
   honestDamageStepBoost: 1,
   keyMouseBattleDestroyedSearch: 1,
+  ka2DesScissorsBattleDestroyingLevelDamage: 1,
   magicCylinderDamageReflect: 1,
   magicalArmShieldBattleRetargetDamage: 1,
   miniaturizePersistentDamageStepStat: 1,
@@ -189,6 +190,7 @@ export type BattleSemanticVariant =
   | "gravekeepersVassalBattleDamageToEffect"
   | "hayateBattledDeckSend"
   | "honestDamageStepBoost"
+  | "ka2DesScissorsBattleDestroyingLevelDamage"
   | "keyMouseBattleDestroyedSearch"
   | "magicCylinderDamageReflect"
   | "magicalArmShieldBattleRetargetDamage"
@@ -574,6 +576,19 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
       ],
     },
     {
+      file: "lua-real-script-ka2-des-scissors-battle-destroying-level-damage.test.ts",
+      kind: "battleDestroyingDamage",
+      required: [
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        "local dam=bc:GetLevel()*500",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        'eventName: "damageDealt"',
+        "eventValue: 3000",
+        "players[1].lifePoints).toBe(4800)",
+      ],
+    },
+    {
       file: "lua-real-script-bls-soldier-chaos-battle-destroying-select-effect.test.ts",
       kind: "battleDestroyingSelectEffect",
       required: [
@@ -747,6 +762,16 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
       file: "lua-real-script-key-mouse-battle-destroyed-search.test.ts",
       kind: "keyMouseBattleDestroyedSearch",
       required: ["restores EVENT_BATTLE_DESTROYED Deck search-to-hand and confirmation", "reasonCardUid: opponent!.uid", "eventName: \"sentToHandConfirmed\""],
+    },
+    {
+      file: "lua-real-script-ka2-des-scissors-battle-destroying-level-damage.test.ts",
+      kind: "ka2DesScissorsBattleDestroyingLevelDamage",
+      required: [
+        "restores KA-2 Des Scissors' battle-destroying Level-scaled damage without player-target property",
+        "expect(script).not.toContain(\"e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET)\")",
+        "local dam=bc:GetLevel()*500",
+        "eventValue: 3000",
+      ],
     },
     {
       file: "lua-real-script-magic-cylinder-battle-window.test.ts",
