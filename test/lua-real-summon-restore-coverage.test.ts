@@ -60,6 +60,12 @@ import {
   realScriptFreeChainSpecialSummonFixtureSnippets,
 } from "./lua-real-free-chain-special-summon-restore-fixtures.js";
 import {
+  countIgnitionCostSpecialSummonKinds,
+  ignitionCostSpecialSummonFixtureCount,
+  ignitionCostSpecialSummonKindCounts,
+  realScriptIgnitionCostSpecialSummonFixtureSnippets,
+} from "./lua-real-ignition-cost-special-summon-restore-fixtures.js";
+import {
   countReleaseCostSpecialSummonKinds,
   realScriptReleaseCostSpecialSummonFixtureSnippets,
   releaseCostSpecialSummonFixtureCount,
@@ -372,6 +378,34 @@ describe("Lua real summon restore coverage", () => {
 
   it("keeps free-chain Special Summon fixture kinds explicit", () => {
     expect(countFreeChainSpecialSummonKinds(realScriptFreeChainSpecialSummonFixtureSnippets())).toEqual(freeChainSpecialSummonKindCounts);
+  });
+
+  it("requires representative ignition-cost Special Summon fixtures to pin cost movement before self summon", () => {
+    const files = realScriptIgnitionCostSpecialSummonFixtureSnippets();
+    expect(files).toHaveLength(ignitionCostSpecialSummonFixtureCount);
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps ignition-cost Special Summon fixture kinds explicit", () => {
+    expect(countIgnitionCostSpecialSummonKinds(realScriptIgnitionCostSpecialSummonFixtureSnippets())).toEqual(ignitionCostSpecialSummonKindCounts);
   });
 
   it("requires representative force-Monster-Zone summon locks to pin restored zone counts", () => {
