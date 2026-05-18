@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 6;
+const directDamageFixtureCount = 7;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
+  continuousCostTargetParamDamage: 1,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
@@ -15,16 +16,18 @@ const directDamageSemanticVariantCounts = {
   hinotamaTargetParamDamage: 1,
   meteorOfDestructionOpponentLpCondition: 1,
   ookaziTargetParamDamage: 1,
+  seismicCrasherContinuousCostTargetParamDamage: 1,
   sparksTargetParamDamage: 1,
   tremendousFireAllPlayerDelayedDamage: 1,
 } satisfies Record<DirectDamageSemanticVariant, number>;
 
-type DirectDamageKind = "allPlayerDelayedDamage" | "lpConditionTargetParamDamage" | "targetParamDamage";
+type DirectDamageKind = "allPlayerDelayedDamage" | "continuousCostTargetParamDamage" | "lpConditionTargetParamDamage" | "targetParamDamage";
 type DirectDamageSemanticVariant =
   | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
   | "meteorOfDestructionOpponentLpCondition"
   | "ookaziTargetParamDamage"
+  | "seismicCrasherContinuousCostTargetParamDamage"
   | "sparksTargetParamDamage"
   | "tremendousFireAllPlayerDelayedDamage";
 
@@ -149,6 +152,19 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
       ],
     },
     {
+      file: "test/lua-real-script-seismic-crasher-continuous-cost-damage.test.ts",
+      kind: "continuousCostTargetParamDamage",
+      required: [
+        'const seismicCrasherCode = "114932"',
+        "restores Seismic Crasher's continuous Spell/Trap cost and target-param damage",
+        "typeFlags: typeSpell | typeContinuous",
+        "reason: duelReason.cost",
+        "targetParam: 500",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7500)",
+      ],
+    },
+    {
       file: "test/lua-real-script-tremendous-fire-delayed-damage.test.ts",
       kind: "allPlayerDelayedDamage",
       required: [
@@ -216,6 +232,16 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
       ],
     },
     {
+      file: "test/lua-real-script-seismic-crasher-continuous-cost-damage.test.ts",
+      kind: "seismicCrasherContinuousCostTargetParamDamage",
+      required: [
+        "Seismic Crasher Chain Responder",
+        "eventValue: 500",
+        "eventReasonCardUid: seismicCrasher.uid",
+        "seismic crasher responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-tremendous-fire-delayed-damage.test.ts",
       kind: "tremendousFireAllPlayerDelayedDamage",
       required: [
@@ -246,6 +272,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
     },
     {
       allPlayerDelayedDamage: 0,
+      continuousCostTargetParamDamage: 0,
       targetParamDamage: 0,
       lpConditionTargetParamDamage: 0,
     },
@@ -263,6 +290,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       hinotamaTargetParamDamage: 0,
       meteorOfDestructionOpponentLpCondition: 0,
       ookaziTargetParamDamage: 0,
+      seismicCrasherContinuousCostTargetParamDamage: 0,
       sparksTargetParamDamage: 0,
       tremendousFireAllPlayerDelayedDamage: 0,
     },
