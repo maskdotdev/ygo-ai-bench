@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 12;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 11;
+const FREE_CHAIN_FIXTURE_COUNT = 13;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 12;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 12;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 13;
 const freeChainKindCounts = {
   banishRemoval: 1,
   graveyardRevive: 1,
   multiTargetDestroy: 2,
-  positionChange: 1,
+  positionChange: 2,
   selectUnselectTargets: 1,
   singleDestroy: 2,
   targetNegation: 1,
@@ -32,6 +32,7 @@ const freeChainSemanticVariantCounts = {
   raigekiBreakDiscardDestroy: 1,
   recurringNightmareChainInfoToHand: 1,
   twinTwistersDiscardDestroy: 1,
+  windstormGroupPositionSwitch: 1,
 } satisfies Record<FreeChainSemanticVariant, number>;
 
 type FreeChainKind =
@@ -56,7 +57,8 @@ type FreeChainSemanticVariant =
   | "phoenixWingDiscardToDeck"
   | "raigekiBreakDiscardDestroy"
   | "recurringNightmareChainInfoToHand"
-  | "twinTwistersDiscardDestroy";
+  | "twinTwistersDiscardDestroy"
+  | "windstormGroupPositionSwitch";
 
 describe("Lua real free-chain restore coverage", () => {
   it("keeps the combined free-chain restore fixture inventory explicit", () => {
@@ -181,7 +183,8 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-infinite-impermanence-target-param.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-monster-reborn-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"))
-    .filter((file) => !file.endsWith("lua-real-script-recurring-nightmare-grave-to-hand.test.ts"));
+    .filter((file) => !file.endsWith("lua-real-script-recurring-nightmare-grave-to-hand.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-windstorm-etaqua-group-position.test.ts"));
 }
 
 function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKind }> {
@@ -233,6 +236,10 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
     {
       file: "lua-real-script-twin-twisters-discard-cost.test.ts",
       kind: "multiTargetDestroy",
+    },
+    {
+      file: "lua-real-script-windstorm-etaqua-group-position.test.ts",
+      kind: "positionChange",
     },
   ] satisfies Array<{ file: string; kind: FreeChainKind }>)
     .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
@@ -351,6 +358,16 @@ function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: Free
         "{ category: 0x1, targetUids: [firstTarget!.uid, secondTarget!.uid], count: 2, player: 0, parameter: 0 }",
       ],
     },
+    {
+      file: "lua-real-script-windstorm-etaqua-group-position.test.ts",
+      kind: "windstormGroupPositionSwitch",
+      required: [
+        "restores Windstorm of Etaqua's opponent-only group position switch",
+        "const windstormCode = \"59744639\"",
+        "{ category: 0x1000, targetUids, count: 2, player: 0, parameter: 0 }",
+        "Duel.ChangePosition(sg,POS_FACEUP_DEFENSE,0,POS_FACEUP_ATTACK,0)",
+      ],
+    },
   ] satisfies Array<{ file: string; kind: FreeChainSemanticVariant; required: string[] }>)
     .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.kind.localeCompare(b.kind));
@@ -395,6 +412,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       raigekiBreakDiscardDestroy: 0,
       recurringNightmareChainInfoToHand: 0,
       twinTwistersDiscardDestroy: 0,
+      windstormGroupPositionSwitch: 0,
     },
   );
 }
