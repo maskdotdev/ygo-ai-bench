@@ -4,14 +4,14 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 166;
+export const realScriptBattleFixtureCount = 167;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;
 export const battleContinuousSemanticFixtureCount = 1;
 export const damageStepRestoreFixtureCount = 4;
 export const battleDamageSemanticFixtureCount = 8;
-export const battleTriggerSemanticFixtureCount = 19;
+export const battleTriggerSemanticFixtureCount = 20;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -53,6 +53,7 @@ export const battleTriggerSemanticKindCounts = {
   battleDestroyingDecktopConfirm: 1,
   battleDestroyedDestroy: 1,
   battleDestroyedGroupDestroy: 1,
+  battleDestroyingDamage: 1,
   battleDestroyingSelectEffect: 1,
   battleSearch: 2,
   battledBounce: 1,
@@ -98,6 +99,7 @@ export const battleSemanticVariantCounts = {
   nightmareMagicianEndDamageControl: 1,
   nitroWarriorBattledChainAttackTarget: 1,
   numberC96AlsoBattleDamage: 1,
+  oddEyesDragonBattleDestroyingDamage: 1,
   predaplantSarraceniantBattledDestroy: 1,
   radiantSpiritBattleDestroyedGroupDestroy: 1,
   reflectBounderBattleConfirmDestroy: 1,
@@ -152,6 +154,7 @@ export type BattleTriggerSemanticKind =
   | "battleDestroyingDecktopConfirm"
   | "battleDestroyedDestroy"
   | "battleDestroyedGroupDestroy"
+  | "battleDestroyingDamage"
   | "battleDestroyingSelectEffect"
   | "battleSearch"
   | "battledBounce"
@@ -196,6 +199,7 @@ export type BattleSemanticVariant =
   | "nightmareMagicianEndDamageControl"
   | "nitroWarriorBattledChainAttackTarget"
   | "numberC96AlsoBattleDamage"
+  | "oddEyesDragonBattleDestroyingDamage"
   | "predaplantSarraceniantBattledDestroy"
   | "radiantSpiritBattleDestroyedGroupDestroy"
   | "reflectBounderBattleConfirmDestroy"
@@ -558,6 +562,18 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
       required: ['triggerBucket: "turnOptional"', 'triggerBucket: "opponentOptional"', "pendingTriggerBuckets", 'event.eventName === "specialSummoned"', 'position: "faceUpAttack"'],
     },
     {
+      file: "lua-real-script-odd-eyes-dragon-battle-destroying-damage.test.ts",
+      kind: "battleDestroyingDamage",
+      required: [
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        'eventName: "damageDealt"',
+        "eventValue: 800",
+        "players[1].lifePoints).toBe(6300)",
+      ],
+    },
+    {
       file: "lua-real-script-bls-soldier-chaos-battle-destroying-select-effect.test.ts",
       kind: "battleDestroyingSelectEffect",
       required: [
@@ -778,6 +794,16 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
       required: ["restores Number C96 and applies also battle damage to the opponent", "battleDamage).toEqual({ 0: 800, 1: 800 })", "eventPlayer: 1"],
     },
     {
+      file: "lua-real-script-odd-eyes-dragon-battle-destroying-damage.test.ts",
+      kind: "oddEyesDragonBattleDestroyingDamage",
+      required: [
+        "restores Odd-Eyes Dragon's battle-destroying trigger into target-player damage from CHAININFO",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,dam)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventValue: 800",
+      ],
+    },
+    {
       file: "lua-real-script-predaplant-sarraceniant-battled-destroy.test.ts",
       kind: "predaplantSarraceniantBattledDestroy",
       required: ["restores its EVENT_BATTLED trigger and destroys the monster it battled", "eventCode: 1138", "reasonEffectId: 2"],
@@ -881,6 +907,7 @@ export function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemant
       nightmareMagicianEndDamageControl: 0,
       nitroWarriorBattledChainAttackTarget: 0,
       numberC96AlsoBattleDamage: 0,
+      oddEyesDragonBattleDestroyingDamage: 0,
       predaplantSarraceniantBattledDestroy: 0,
       radiantSpiritBattleDestroyedGroupDestroy: 0,
       reflectBounderBattleConfirmDestroy: 0,
@@ -999,6 +1026,7 @@ export function countBattleTriggerSemanticKinds(
       battleDestroyingDecktopConfirm: 0,
       battleDestroyedDestroy: 0,
       battleDestroyedGroupDestroy: 0,
+      battleDestroyingDamage: 0,
       battleDestroyingSelectEffect: 0,
       battleSearch: 0,
       battledBounce: 0,
