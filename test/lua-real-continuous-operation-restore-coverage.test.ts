@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 4;
+const continuousOperationFixtureCount = 5;
 const continuousOperationKindCounts = {
+  attributeStatDestroyedToHand: 1,
   continuousRedirect: 1,
   endPhaseControlReturn: 1,
   originalCodeSummonLock: 1,
@@ -16,9 +17,11 @@ const continuousOperationSemanticVariantCounts = {
   coreOfChaosFaceUpLeaveFieldRedirect: 1,
   darkMagicianOriginalCodeSummonLock: 1,
   fenghuangSetBackrowDestroy: 1,
+  missusRadiantAttributeStatDestroyedToHand: 1,
 } satisfies Record<ContinuousOperationSemanticVariant, number>;
 
 type ContinuousOperationKind =
+  | "attributeStatDestroyedToHand"
   | "continuousRedirect"
   | "endPhaseControlReturn"
   | "originalCodeSummonLock"
@@ -28,7 +31,8 @@ type ContinuousOperationSemanticVariant =
   | "changeOfHeartEndPhaseControlReturn"
   | "coreOfChaosFaceUpLeaveFieldRedirect"
   | "darkMagicianOriginalCodeSummonLock"
-  | "fenghuangSetBackrowDestroy";
+  | "fenghuangSetBackrowDestroy"
+  | "missusRadiantAttributeStatDestroyedToHand";
 
 describe("Lua real continuous operation restore coverage", () => {
   it("requires continuous operation fixtures to assert clean restore and restored outcomes", () => {
@@ -78,6 +82,21 @@ function continuousOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-missus-radiant-destroyed-attribute-to-hand.test.ts",
+      kind: "attributeStatDestroyedToHand",
+      required: [
+        "restores cloned EARTH/WIND stat effects and its delayed destroyed target return",
+        "target:attribute:1",
+        "target:attribute:8",
+        "triggerEvent: \"destroyed\"",
+        "triggerSourceOnly: true",
+        'eventName: "destroyed"',
+        'eventName: "sentToHand"',
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === radiant.uid)!",
+        "location: \"hand\", controller: 0",
+      ],
+    },
     {
       file: "test/lua-real-script-change-of-heart-control-return.test.ts",
       kind: "endPhaseControlReturn",
@@ -145,6 +164,7 @@ function countContinuousOperationKinds(
       return counts;
     },
     {
+      attributeStatDestroyedToHand: 0,
       continuousRedirect: 0,
       endPhaseControlReturn: 0,
       originalCodeSummonLock: 0,
@@ -159,6 +179,18 @@ function continuousOperationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-missus-radiant-destroyed-attribute-to-hand.test.ts",
+      kind: "missusRadiantAttributeStatDestroyedToHand",
+      required: [
+        'const radiantCode = "3987233"',
+        "restores cloned EARTH/WIND stat effects and its delayed destroyed target return",
+        "registryKey: \"lua:3987233:lua-6-1029\"",
+        "target:attribute:1",
+        "target:attribute:8",
+        'eventName: "sentToHand"',
+      ],
+    },
     {
       file: "test/lua-real-script-change-of-heart-control-return.test.ts",
       kind: "changeOfHeartEndPhaseControlReturn",
@@ -227,6 +259,7 @@ function countContinuousOperationSemanticVariants(
       coreOfChaosFaceUpLeaveFieldRedirect: 0,
       darkMagicianOriginalCodeSummonLock: 0,
       fenghuangSetBackrowDestroy: 0,
+      missusRadiantAttributeStatDestroyedToHand: 0,
     },
   );
 }
