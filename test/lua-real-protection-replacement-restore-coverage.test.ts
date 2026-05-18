@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 14;
+const protectionReplacementFixtureCount = 15;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
   continuousBattleIndestructible: 1,
-  countLimitedBattleIndestructible: 2,
+  countLimitedBattleIndestructible: 3,
   effectTargetProtection: 2,
   equipBattleProtectionSelfDestroy: 1,
   equipDestroySubstitute: 1,
@@ -25,6 +25,7 @@ const protectionReplacementSemanticVariantCounts = {
   dForcePlasmaFieldTargetProtection: 1,
   forbiddenLanceActivatedImmunityStatLoss: 1,
   geminiSoldierBattleCountDeckSummon: 1,
+  gyroidBattleCountProtection: 1,
   heartClearWaterEquipBattleProtectionSelfDestroy: 1,
   nightmareMagicianBattleTargetControlProtection: 1,
   phantomKnightsSwordPersistentDestroyReplace: 1,
@@ -112,6 +113,7 @@ type ProtectionReplacementSemanticVariant =
   | "dForcePlasmaFieldTargetProtection"
   | "forbiddenLanceActivatedImmunityStatLoss"
   | "geminiSoldierBattleCountDeckSummon"
+  | "gyroidBattleCountProtection"
   | "heartClearWaterEquipBattleProtectionSelfDestroy"
   | "nightmareMagicianBattleTargetControlProtection"
   | "phantomKnightsSwordPersistentDestroyReplace"
@@ -221,6 +223,18 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
         "expect(restoredChain.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: \"monsterZone\", controller: 0 })",
         "expect(restoredChain.session.state.players[0].lifePoints).toBe(7500)",
         'eventName: "battleDamageDealt"',
+      ],
+    },
+    {
+      file: "lua-real-script-gyroid-indestructible-count.test.ts",
+      kind: "countLimitedBattleIndestructible",
+      required: [
+        "restores Gyroid's once-per-turn battle destruction count",
+        'const gyroidCode = "18325492"',
+        'luaValueDescriptor: "value-predicate:reason-mask:32"',
+        "const battleDestroy = destroyDuelCard(restored.session.state, gyroid!.uid, 0, duelReason.battle | duelReason.destroy, 1)",
+        "expect(battleDestroy).toMatchObject({ uid: gyroid!.uid, location: \"monsterZone\" })",
+        "expect(secondBattleDestroy).toMatchObject({ uid: gyroid!.uid, location: \"graveyard\", reason: duelReason.battle | duelReason.destroy })",
       ],
     },
     {
@@ -340,6 +354,15 @@ function protectionReplacementSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gyroid-indestructible-count.test.ts",
+      kind: "gyroidBattleCountProtection",
+      requiredSnippets: [
+        'const gyroidCode = "18325492"',
+        "restores Gyroid's once-per-turn battle destruction count",
+        'luaValueDescriptor: "value-predicate:reason-mask:32"',
+      ],
+    },
+    {
       file: "test/lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
       kind: "heartClearWaterEquipBattleProtectionSelfDestroy",
       requiredSnippets: [
@@ -451,6 +474,7 @@ function countProtectionReplacementSemanticVariants(
       dForcePlasmaFieldTargetProtection: 0,
       forbiddenLanceActivatedImmunityStatLoss: 0,
       geminiSoldierBattleCountDeckSummon: 0,
+      gyroidBattleCountProtection: 0,
       heartClearWaterEquipBattleProtectionSelfDestroy: 0,
       nightmareMagicianBattleTargetControlProtection: 0,
       phantomKnightsSwordPersistentDestroyReplace: 0,
