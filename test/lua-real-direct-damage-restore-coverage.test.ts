@@ -4,14 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 7;
+const directDamageFixtureCount = 8;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   continuousCostTargetParamDamage: 1,
+  eventToGraveChainInfoDamage: 1,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
 const directDamageSemanticVariantCounts = {
+  backfireEventToGraveChainInfoDamage: 1,
   finalFlameTargetParamDamage: 1,
   hinotamaTargetParamDamage: 1,
   meteorOfDestructionOpponentLpCondition: 1,
@@ -21,8 +23,14 @@ const directDamageSemanticVariantCounts = {
   tremendousFireAllPlayerDelayedDamage: 1,
 } satisfies Record<DirectDamageSemanticVariant, number>;
 
-type DirectDamageKind = "allPlayerDelayedDamage" | "continuousCostTargetParamDamage" | "lpConditionTargetParamDamage" | "targetParamDamage";
+type DirectDamageKind =
+  | "allPlayerDelayedDamage"
+  | "continuousCostTargetParamDamage"
+  | "eventToGraveChainInfoDamage"
+  | "lpConditionTargetParamDamage"
+  | "targetParamDamage";
 type DirectDamageSemanticVariant =
+  | "backfireEventToGraveChainInfoDamage"
   | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
   | "meteorOfDestructionOpponentLpCondition"
@@ -94,6 +102,19 @@ describe("Lua real direct damage restore coverage", () => {
 
 function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKind; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-backfire-to-grave-chaininfo-damage.test.ts",
+      kind: "eventToGraveChainInfoDamage",
+      required: [
+        'const backfireCode = "82705573"',
+        "restores its EVENT_TO_GRAVE trigger and resolves target-player target-param damage from CHAININFO",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "operationInfos: [{ category: 0x80000",
+        "targetParam: 500",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7500)",
+      ],
+    },
     {
       file: "test/lua-real-script-final-flame-direct-damage.test.ts",
       kind: "targetParamDamage",
@@ -181,6 +202,16 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
 
 function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> {
   const variants: Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> = [
+    {
+      file: "test/lua-real-script-backfire-to-grave-chaininfo-damage.test.ts",
+      kind: "backfireEventToGraveChainInfoDamage",
+      required: [
+        "Backfire Chain Responder",
+        "eventValue: 500",
+        "eventReasonCardUid: backfire.uid",
+        "backfire responder resolved",
+      ],
+    },
     {
       file: "test/lua-real-script-final-flame-direct-damage.test.ts",
       kind: "finalFlameTargetParamDamage",
@@ -273,6 +304,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
     {
       allPlayerDelayedDamage: 0,
       continuousCostTargetParamDamage: 0,
+      eventToGraveChainInfoDamage: 0,
       targetParamDamage: 0,
       lpConditionTargetParamDamage: 0,
     },
@@ -286,6 +318,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       return counts;
     },
     {
+      backfireEventToGraveChainInfoDamage: 0,
       finalFlameTargetParamDamage: 0,
       hinotamaTargetParamDamage: 0,
       meteorOfDestructionOpponentLpCondition: 0,
