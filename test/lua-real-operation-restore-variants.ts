@@ -14,6 +14,7 @@ export const potAndSearchOperationVariantCounts = {
   gatherYourMindOathSearch: 1,
   cyberEggAngelSummonFlipSpecialSearch: 1,
   kotetsuFlipEquipSearch: 1,
+  ladyDebugSummonSpecialSearch: 1,
   majespecterRaccoonSummonSearchProtection: 1,
   potDesiresFaceDownBanishDraw: 1,
   potDualitySearchSummonLock: 1,
@@ -44,6 +45,7 @@ export type PotAndSearchOperationVariant =
   | "gatherYourMindOathSearch"
   | "cyberEggAngelSummonFlipSpecialSearch"
   | "kotetsuFlipEquipSearch"
+  | "ladyDebugSummonSpecialSearch"
   | "majespecterRaccoonSummonSearchProtection"
   | "potDesiresFaceDownBanishDraw"
   | "potDualitySearchSummonLock"
@@ -209,6 +211,18 @@ export function potAndSearchOperationVariants(): Array<{ file: string; kind: Pot
       ],
     },
     {
+      file: "test/lua-real-script-lady-debug-summon-special-search.test.ts",
+      kind: "ladyDebugSummonSpecialSearch",
+      required: [
+        "restores delayed cloned summon triggers that search only Level 3 or lower Cyberse monsters",
+        "const ladyDebugCode = \"16188701\"",
+        "e1:SetProperty(EFFECT_FLAG_DELAY)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return c:IsLevelBelow(3) and c:IsRace(RACE_CYBERSE) and c:IsAbleToHand()",
+        "assertLadyDebugSearch(\"special\")",
+      ],
+    },
+    {
       file: "test/lua-real-script-majespecter-raccoon-summon-search-protection.test.ts",
       kind: "majespecterRaccoonSummonSearchProtection",
       required: [
@@ -297,6 +311,7 @@ export function countPotAndSearchOperationVariants(fixtures: Array<{ kind: PotAn
       cyberEggAngelSummonFlipSpecialSearch: 0,
       gatherYourMindOathSearch: 0,
       kotetsuFlipEquipSearch: 0,
+      ladyDebugSummonSpecialSearch: 0,
       majespecterRaccoonSummonSearchProtection: 0,
       potDesiresFaceDownBanishDraw: 0,
       potDualitySearchSummonLock: 0,
