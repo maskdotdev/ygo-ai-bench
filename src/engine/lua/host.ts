@@ -17,7 +17,7 @@ import { installTracebackHandler, loadLuaScriptFile, readLuaError, registerLuaIn
 import { installEffectApi, installGetIdCompatibilityApi, pushLuaEffectTable, majesticCopyLuaEffects, changeLuaChainOperation, registerLuaEffect, runLuaEffectOperationPromptCoroutine, toDuelEffect } from "#lua/host-effect-api.js";
 import { normalizeLuaUnsignedInteger } from "#lua/numeric-utils.js";
 import type { ChainLimit, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
-import type { LuaHostState, LuaScriptHost, LuaScriptHostOptions, LuaScriptSource } from "#lua/host-types.js";
+import type { LuaHostState, LuaScriptHost, LuaScriptHostOptions, LuaScriptLoadResult, LuaScriptSource } from "#lua/host-types.js";
 
 const { lua, lauxlib, lualib, to_luastring } = fengari;
 
@@ -85,6 +85,14 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   installGroupApi(L, hostState, session);
   installGetIdCompatibilityApi(L, hostState);
 
+  function loadOptionalCommonScript(source: LuaScriptSource, name: string): LuaScriptLoadResult {
+    if (hostState.loadedScriptBodies.has(name)) return { ok: true, name };
+    const code = source.readScript(name);
+    if (code === undefined) return { ok: true, name };
+    hostState.loadedScriptBodies.set(name, code);
+    return runLuaCardScript(L, hostState, code, name);
+  }
+
   return {
     messages: hostState.messages,
     promptDecisions: hostState.promptDecisions,
@@ -93,6 +101,8 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       return runLuaCardScript(L, hostState, code, name);
     },
     loadCardScript(cardCode, source) {
+      const common = loadOptionalCommonScript(source, "cards_specific_functions.lua");
+      if (!common.ok) return common;
       const name = scriptFilenameForCard(cardCode);
       const code = source.readScript(name);
       if (code === undefined) {

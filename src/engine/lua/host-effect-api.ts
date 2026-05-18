@@ -935,6 +935,10 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
     const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, kind, legacyArgs, ctx);
     const status = lua.lua_pcall(L, argCount, 1, 0);
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+    if (kind === "cost" && !ctx?.checkOnly) {
+      lua.lua_pop(L, 1);
+      return true;
+    }
     const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
     lua.lua_pop(L, 1);
     return result;
