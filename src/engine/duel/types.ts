@@ -136,6 +136,8 @@ export interface DuelCardData {
   fusionMaterialLevel?: number;
   fusionMaterialLevelMax?: number;
   fusionMaterialLevelMin?: number;
+  fusionMaterialAttribute?: number;
+  fusionMaterialExcludedType?: number;
   fusionMaterialMin?: number;
   fusionMaterialMax?: number;
   fusionMaterialRace?: number;

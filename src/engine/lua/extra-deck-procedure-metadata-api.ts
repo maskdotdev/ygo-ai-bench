@@ -29,6 +29,8 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
     if (fusionRepeatedMaterials.location !== undefined) card.data.fusionMaterialLocation = fusionRepeatedMaterials.location;
     if (fusionRepeatedMaterials.attackMax !== undefined) card.data.fusionMaterialAttackMax = fusionRepeatedMaterials.attackMax;
     if (fusionRepeatedMaterials.attackMin !== undefined) card.data.fusionMaterialAttackMin = fusionRepeatedMaterials.attackMin;
+    if (fusionRepeatedMaterials.attribute !== undefined) card.data.fusionMaterialAttribute = fusionRepeatedMaterials.attribute;
+    if (fusionRepeatedMaterials.excludedType !== undefined) card.data.fusionMaterialExcludedType = fusionRepeatedMaterials.excludedType;
     if (fusionRepeatedMaterials.level !== undefined) card.data.fusionMaterialLevel = fusionRepeatedMaterials.level;
     if (fusionRepeatedMaterials.levelMax !== undefined) card.data.fusionMaterialLevelMax = fusionRepeatedMaterials.levelMax;
     if (fusionRepeatedMaterials.levelMin !== undefined) card.data.fusionMaterialLevelMin = fusionRepeatedMaterials.levelMin;
@@ -176,7 +178,7 @@ function readFusionPredicateRequirements(expressionList: string): FusionMaterial
   return predicates;
 }
 
-type FusionRepeatedMaterialMetadata = { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; attackMax?: number; attackMin?: number; level?: number; levelMax?: number; levelMin?: number; race?: number; type?: number; setcode?: number; location?: number };
+type FusionRepeatedMaterialMetadata = { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; attackMax?: number; attackMin?: number; attribute?: number; excludedType?: number; level?: number; levelMax?: number; levelMin?: number; race?: number; type?: number; setcode?: number; location?: number };
 
 function readFusionAddProcMixRepMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
   return readFusionAddProcMixRepConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
@@ -193,8 +195,10 @@ function readFusionAddProcFunRepMaterials(source: string | undefined): FusionRep
 }
 
 function readFusionAddProcMixNRepeatedMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
-  return readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
+  return readFusionAddProcMixNNamedFilterMaterials(source)
+    ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
+    ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsAttribute", ATTRIBUTE_CONSTANT_EXPRESSION, "attribute")
     ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
     ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location")
     ?? readFusionAddProcMixNRepeatedMixedNumberFilter(source, "Card.IsAttackAbove", "attackMin")
@@ -204,6 +208,7 @@ function readFusionAddProcMixNRepeatedMaterials(source: string | undefined): Fus
     ?? readFusionAddProcMixNRepeatedMixedNumberFilter(source, "Card.IsLevelBelow", "levelMax")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
+    ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsAttribute", ATTRIBUTE_CONSTANT_EXPRESSION, "attribute")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location")
     ?? readFusionAddProcMixNRepeatedNumberFilter(source, "Card.IsAttackAbove", "attackMin")
@@ -213,7 +218,30 @@ function readFusionAddProcMixNRepeatedMaterials(source: string | undefined): Fus
     ?? readFusionAddProcMixNRepeatedNumberFilter(source, "Card.IsLevelBelow", "levelMax");
 }
 
-function readFusionAddProcMixNRepeatedMixedConstantFilter<K extends "race" | "type" | "setcode" | "location">(
+function readFusionAddProcMixNNamedFilterMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
+  const match = source?.match(/Fusion\.AddProcMixN\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*(s\.[A-Za-z_]\w*)\s*,\s*(\d+)\s*\)/);
+  const functionName = match?.[1], count = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
+  if (!source || !functionName || count === undefined || count <= 0) return undefined;
+  const body = readLuaFunctionReturnExpression(source, functionName);
+  if (!body || /\bsg\b|:IsExists\(/.test(body)) return undefined;
+  const metadata: FusionRepeatedMaterialMetadata = { min: count, max: count, extraCodes: [], extraSetcodes: [] };
+  const attribute = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsAttribute\(\s*(${ATTRIBUTE_CONSTANT_EXPRESSION})`))?.[1]);
+  const race = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsRace\(\s*(${RACE_CONSTANT_EXPRESSION})`))?.[1]);
+  const typeMatch = body.match(new RegExp(String.raw`c:IsType\(\s*(${TYPE_CONSTANT_EXPRESSION})`));
+  const type = typeMatch?.index !== undefined && body.slice(Math.max(0, typeMatch.index - 4), typeMatch.index) !== "not " ? readLuaConstantExpression(typeMatch[1]) : undefined;
+  const setcode = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsSetCard\(\s*(${SET_CONSTANT_EXPRESSION})`))?.[1]);
+  const location = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsLocation\(\s*(${LOCATION_CONSTANT_EXPRESSION})`))?.[1]) ?? (/\bc:IsOnField\(\)/.test(body) ? readLuaConstantExpression("LOCATION_ONFIELD") : undefined);
+  const excludedType = readLuaConstantExpression(body.match(new RegExp(String.raw`not\s+c:IsType\(\s*(${TYPE_CONSTANT_EXPRESSION})`))?.[1]);
+  if (attribute !== undefined) metadata.attribute = attribute;
+  if (race !== undefined) metadata.race = race;
+  if (type !== undefined) metadata.type = type;
+  if (setcode !== undefined) metadata.setcode = setcode;
+  if (location !== undefined) metadata.location = location;
+  if (excludedType !== undefined) metadata.excludedType = excludedType;
+  return attribute !== undefined || race !== undefined || type !== undefined || setcode !== undefined || location !== undefined || excludedType !== undefined ? metadata : undefined;
+}
+
+function readFusionAddProcMixNRepeatedMixedConstantFilter<K extends "attribute" | "race" | "type" | "setcode" | "location">(
   source: string | undefined,
   predicate: string,
   constantExpression: string,
@@ -237,7 +265,7 @@ function readFusionAddProcMixNRepeatedMixedConstantFilter<K extends "race" | "ty
   } as unknown as { min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>;
 }
 
-function readFusionAddProcMixNRepeatedConstantFilter<K extends "race" | "type" | "setcode" | "location">(
+function readFusionAddProcMixNRepeatedConstantFilter<K extends "attribute" | "race" | "type" | "setcode" | "location">(
   source: string | undefined,
   predicate: string,
   constantExpression: string,
@@ -446,6 +474,11 @@ function readLuaSetcodeFilterList(source: string | undefined): number[] {
   return [...source.matchAll(new RegExp(String.raw`aux\.FilterBoolFunction(?:Ex)?\(\s*Card\.IsSetCard\s*,\s*(${SET_CONSTANT_EXPRESSION})\s*\)`, "g"))]
     .map((match) => readLuaConstantExpression(match[1]))
     .filter((value): value is number => value !== undefined);
+}
+
+function readLuaFunctionReturnExpression(source: string, functionName: string): string | undefined {
+  const match = source.match(new RegExp(String.raw`function\s+${escapeRegExp(functionName)}\([^)]*\)\s*return\s+([\s\S]*?)\nend`));
+  return match?.[1]?.replace(/\s+/g, " ").trim();
 }
 
 function escapeRegExp(value: string): string {
