@@ -232,13 +232,15 @@ function readFusionAddProcMixNNamedFilterMaterials(source: string | undefined): 
   const setcode = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsSetCard\(\s*(${SET_CONSTANT_EXPRESSION})`))?.[1]);
   const location = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsLocation\(\s*(${LOCATION_CONSTANT_EXPRESSION})`))?.[1]) ?? (/\bc:IsOnField\(\)/.test(body) ? readLuaConstantExpression("LOCATION_ONFIELD") : undefined);
   const excludedType = readLuaConstantExpression(body.match(new RegExp(String.raw`not\s+c:IsType\(\s*(${TYPE_CONSTANT_EXPRESSION})`))?.[1]);
+  const levelMin = readPositiveNumber(body.match(/c:IsLevelAbove\(\s*(\d+)\s*\)/)?.[1]);
   if (attribute !== undefined) metadata.attribute = attribute;
   if (race !== undefined) metadata.race = race;
   if (type !== undefined) metadata.type = type;
   if (setcode !== undefined) metadata.setcode = setcode;
   if (location !== undefined) metadata.location = location;
   if (excludedType !== undefined) metadata.excludedType = excludedType;
-  return attribute !== undefined || race !== undefined || type !== undefined || setcode !== undefined || location !== undefined || excludedType !== undefined ? metadata : undefined;
+  if (levelMin !== undefined) metadata.levelMin = levelMin;
+  return attribute !== undefined || race !== undefined || type !== undefined || setcode !== undefined || location !== undefined || excludedType !== undefined || levelMin !== undefined ? metadata : undefined;
 }
 
 function readFusionAddProcMixNRepeatedMixedConstantFilter<K extends "attribute" | "race" | "type" | "setcode" | "location">(
@@ -474,6 +476,11 @@ function readLuaSetcodeFilterList(source: string | undefined): number[] {
   return [...source.matchAll(new RegExp(String.raw`aux\.FilterBoolFunction(?:Ex)?\(\s*Card\.IsSetCard\s*,\s*(${SET_CONSTANT_EXPRESSION})\s*\)`, "g"))]
     .map((match) => readLuaConstantExpression(match[1]))
     .filter((value): value is number => value !== undefined);
+}
+
+function readPositiveNumber(expression: string | undefined): number | undefined {
+  const value = expression === undefined ? undefined : Number.parseInt(expression, 10);
+  return value !== undefined && value > 0 ? value : undefined;
 }
 
 function readLuaFunctionReturnExpression(source: string, functionName: string): string | undefined {
