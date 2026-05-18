@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 6;
+const statFixtureCount = 7;
 const statKindCounts = {
   battleTargetAttackBoost: 1,
   fieldAttributeAttackUpdate: 2,
+  fieldRaceAttackDefenseUpdate: 1,
   setAttack: 1,
   setBaseAttack: 1,
   staticAttackAndExtraAttack: 1,
@@ -16,16 +17,18 @@ const statSemanticVariantCounts = {
   bladeflyFieldAttributeAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
+  jurassicWorldTargetBoolFunctionRaceStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   shrinkTargetBaseAtkHalving: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
+type StatKind = "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
 type StatSemanticVariant =
   | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
+  | "jurassicWorldTargetBoolFunctionRaceStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "shrinkTargetBaseAtkHalving";
@@ -104,6 +107,18 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-jurassic-world-race-field-stat.test.ts",
+      kind: "fieldRaceAttackDefenseUpdate",
+      required: [
+        "aux.TargetBoolFunction Card.IsRace ATK and DEF field updates",
+        "luaTargetDescriptor",
+        "target:race:65536",
+        "currentAttack(restoredDinosaurAttacker, restored.session.state)).toBe(1300)",
+        "currentDefense(restoredDinosaurDefender, restored.session.state)).toBe(1900)",
+        "battleDamage[1]).toBe(100)",
+      ],
+    },
+    {
       file: "test/lua-real-script-d-force-plasma-stat-extra-attack.test.ts",
       kind: "staticAttackAndExtraAttack",
       required: [
@@ -166,6 +181,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
     {
       battleTargetAttackBoost: 0,
       fieldAttributeAttackUpdate: 0,
+      fieldRaceAttackDefenseUpdate: 0,
       setAttack: 0,
       setBaseAttack: 0,
       staticAttackAndExtraAttack: 0,
@@ -205,6 +221,16 @@ function statSemanticVariants(): Array<{
         'const pastCode = "57869175"',
         "restores callback-valued set ATK/DEF effects and uses them for battle calculation",
         "lifePoints).toBe(7700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-jurassic-world-race-field-stat.test.ts",
+      kind: "jurassicWorldTargetBoolFunctionRaceStat",
+      required: [
+        'const jurassicWorldCode = "10080320"',
+        "restores aux.TargetBoolFunction Card.IsRace ATK and DEF field updates into battle damage",
+        "target:race:65536",
+        "e2:SetTarget(aux.TargetBoolFunction(Card.IsRace,RACE_DINOSAUR))",
       ],
     },
     {
@@ -252,6 +278,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       bladeflyFieldAttributeAttackUpdate: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
+      jurassicWorldTargetBoolFunctionRaceStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       shrinkTargetBaseAtkHalving: 0,
