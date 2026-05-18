@@ -11,22 +11,28 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const sunGodCode = "11587414";
+const hasSunGodScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${sunGodCode}.lua`));
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeContinuous = 0x20000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script The True Sun God special-summon attack lock", () => {
+describe.skipIf(!hasUpstreamScripts || !hasSunGodScript)("Lua real script The True Sun God special-summon attack lock", () => {
   it("restores its Special-Summoned-this-turn attack lock while leaving ordinary attackers legal", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const sunGodCode = "11587414";
     const raCode = "10000010";
     const specialAttackerCode = "11587415";
     const normalAttackerCode = "11587416";
     const targetCode = "11587417";
+    const script = workspace.readScript(`c${sunGodCode}.lua`);
+    expect(script).toContain("e2:SetCode(EFFECT_CANNOT_ATTACK)");
+    expect(script).toContain("return not c:IsCode(CARD_RA) and c:IsStatus(STATUS_SPSUMMON_TURN)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === sunGodCode),
-      { code: raCode, name: "The Winged Dragon of Ra", kind: "monster", typeFlags: 0x1, level: 10, attack: -2, defense: -2 },
-      { code: specialAttackerCode, name: "True Sun God Special Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
-      { code: normalAttackerCode, name: "True Sun God Normal Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1700, defense: 1000 },
-      { code: targetCode, name: "True Sun God Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: sunGodCode, name: "The True Sun God", kind: "spell", typeFlags: typeSpell | typeContinuous },
+      { code: raCode, name: "The Winged Dragon of Ra", kind: "monster", typeFlags: typeMonster, level: 10, attack: -2, defense: -2 },
+      { code: specialAttackerCode, name: "True Sun God Special Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1000 },
+      { code: normalAttackerCode, name: "True Sun God Normal Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1700, defense: 1000 },
+      { code: targetCode, name: "True Sun God Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 1158, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });

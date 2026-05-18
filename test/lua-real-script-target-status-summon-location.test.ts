@@ -11,16 +11,26 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const legacyCode = "88851326";
+const hasLegacyScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${legacyCode}.lua`));
 const statusSpecialSummonTurn = 0x40000000;
 const locationExtra = 0x40;
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeContinuous = 0x20000;
+const typeLink = 0x4000000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script target status and summon location", () => {
+describe.skipIf(!hasUpstreamScripts || !hasLegacyScript)("Lua real script target status and summon location", () => {
   it("restores target predicates combining IsStatus and IsSummonLocation", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const legacyCode = "88851326";
     const sprindCode = "72329844";
-    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => [legacyCode, sprindCode].includes(card.code));
+    const script = workspace.readScript(`c${legacyCode}.lua`);
+    expect(script).toContain("e5:SetCode(EFFECT_CANNOT_ATTACK)");
+    expect(script).toContain("return c:IsStatus(STATUS_SPSUMMON_TURN) and c:IsSummonLocation(LOCATION_EXTRA)");
+    const cards: DuelCardData[] = [
+      { code: legacyCode, name: "Legacy of the Duelist", kind: "spell", typeFlags: typeSpell | typeContinuous },
+      { code: sprindCode, name: "Target Status Sprind Probe", kind: "extra", typeFlags: typeMonster | typeLink, level: 2, attack: 1400, defense: 0 },
+    ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 7661, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [legacyCode], extra: [sprindCode] }, 1: { main: [] } });

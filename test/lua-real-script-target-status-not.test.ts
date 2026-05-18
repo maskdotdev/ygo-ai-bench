@@ -11,15 +11,26 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const invitationCode = "86527709";
+const hasInvitationScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${invitationCode}.lua`));
 const statusSummonedThisTurn = 0x800 | 0x20000000 | 0x40000000;
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeContinuous = 0x20000;
+const typeLink = 0x4000000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script target negated status", () => {
+describe.skipIf(!hasUpstreamScripts || !hasInvitationScript)("Lua real script target negated status", () => {
   it("restores target predicates using not IsStatus masks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const invitationCode = "86527709";
     const targetCode = "72329844";
-    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => [invitationCode, targetCode].includes(card.code));
+    const script = workspace.readScript(`c${invitationCode}.lua`);
+    expect(script).toContain("e1:SetCode(EFFECT_CHANGE_RACE)");
+    expect(script).toContain("not c:IsStatus(STATUS_SUMMON_TURN|STATUS_FLIP_SUMMON_TURN|STATUS_SPSUMMON_TURN)");
+    expect(script).toContain("e1:SetValue(RACE_INSECT)");
+    const cards: DuelCardData[] = [
+      { code: invitationCode, name: "Insect Invitation", kind: "spell", typeFlags: typeSpell | typeContinuous },
+      { code: targetCode, name: "Target Status Link Probe", kind: "extra", typeFlags: typeMonster | typeLink, level: 2, attack: 1400, defense: 0 },
+    ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 7901, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [invitationCode], extra: [targetCode] }, 1: { main: [] } });

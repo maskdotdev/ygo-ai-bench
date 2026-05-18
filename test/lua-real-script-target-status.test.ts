@@ -11,15 +11,23 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const mammothCode = "59380081";
+const hasMammothScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${mammothCode}.lua`));
 const statusSummonedThisTurn = 0x800 | 0x20000000 | 0x40000000;
+const typeMonster = 0x1;
+const typeLink = 0x4000000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script target status", () => {
+describe.skipIf(!hasUpstreamScripts || !hasMammothScript)("Lua real script target status", () => {
   it("restores target predicates using IsStatus masks", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const mammothCode = "59380081";
     const targetCode = "72329844";
-    const cards: DuelCardData[] = workspace.readDatabaseCards("cards.cdb").filter((card) => [mammothCode, targetCode].includes(card.code));
+    const script = workspace.readScript(`c${mammothCode}.lua`);
+    expect(script).toContain("e1:SetCode(EFFECT_CANNOT_ATTACK)");
+    expect(script).toContain("return c:IsStatus(STATUS_SUMMON_TURN+STATUS_FLIP_SUMMON_TURN+STATUS_SPSUMMON_TURN)");
+    const cards: DuelCardData[] = [
+      { code: mammothCode, name: "Big-Tusked Mammoth", kind: "monster", typeFlags: typeMonster, level: 5, attack: 2000, defense: 1000 },
+      { code: targetCode, name: "Target Status Link Probe", kind: "extra", typeFlags: typeMonster | typeLink, level: 2, attack: 1400, defense: 0 },
+    ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 7829, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [mammothCode], extra: [targetCode] }, 1: { main: [] } });
