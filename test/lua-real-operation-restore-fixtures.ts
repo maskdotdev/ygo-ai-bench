@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 62;
+export const operationFixtureCount = 63;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -20,6 +20,7 @@ export const operationKindCounts = {
   directDamage: 1,
   directRecover: 1,
   drawThenDiscard: 1,
+  flipDeckSpecialSummon: 1,
   fusionDeckMaterials: 1,
   groupDestroy: 10,
   groupToHand: 1,
@@ -71,6 +72,7 @@ export type OperationKind =
   | "directDamage"
   | "directRecover"
   | "drawThenDiscard"
+  | "flipDeckSpecialSummon"
   | "fusionDeckMaterials"
   | "groupDestroy"
   | "groupToHand"
@@ -245,6 +247,21 @@ export function operationFixtureFiles(): Array<{
         'eventName: "specialSummoned"',
         'location: "banished"',
         'location: "deck"',
+        'summonType: "special"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gravekeeper-spy-flip-deck-summon.test.ts",
+      kind: "flipDeckSpecialSummon",
+      required: [
+        "restores its Flip effect and Special Summons only a low-ATK Gravekeeper's monster from Deck",
+        "EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_DECK)",
+        "return c:IsAttackBelow(1500) and c:IsSetCard(SET_GRAVEKEEPERS)",
+        "operationInfos: [{ category: 0x200",
+        'eventName: "flipSummoned"',
+        'eventName: "specialSummoned"',
         'summonType: "special"',
         "host.messages).not.toContain",
       ],
@@ -894,6 +911,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       directDamage: 0,
       directRecover: 0,
       drawThenDiscard: 0,
+      flipDeckSpecialSummon: 0,
       fusionDeckMaterials: 0,
       groupDestroy: 0,
       groupToHand: 0,
