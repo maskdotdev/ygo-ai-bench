@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 15;
+const protectionReplacementFixtureCount = 16;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
   continuousBattleIndestructible: 1,
   countLimitedBattleIndestructible: 3,
   effectTargetProtection: 2,
+  environmentImmunity: 1,
   equipBattleProtectionSelfDestroy: 1,
   equipDestroySubstitute: 1,
   handGrantedIndestructible: 1,
@@ -23,6 +24,7 @@ const protectionReplacementSemanticVariantCounts = {
   checksumDragonAttackPositionProtection: 1,
   darkFusionOpponentTargetProtection: 1,
   dForcePlasmaFieldTargetProtection: 1,
+  deepseaWarriorUmiSpellImmunity: 1,
   forbiddenLanceActivatedImmunityStatLoss: 1,
   geminiSoldierBattleCountDeckSummon: 1,
   gyroidBattleCountProtection: 1,
@@ -100,6 +102,7 @@ type ProtectionReplacementKind =
   | "continuousBattleIndestructible"
   | "countLimitedBattleIndestructible"
   | "effectTargetProtection"
+  | "environmentImmunity"
   | "equipBattleProtectionSelfDestroy"
   | "equipDestroySubstitute"
   | "handGrantedIndestructible"
@@ -111,6 +114,7 @@ type ProtectionReplacementSemanticVariant =
   | "checksumDragonAttackPositionProtection"
   | "darkFusionOpponentTargetProtection"
   | "dForcePlasmaFieldTargetProtection"
+  | "deepseaWarriorUmiSpellImmunity"
   | "forbiddenLanceActivatedImmunityStatLoss"
   | "geminiSoldierBattleCountDeckSummon"
   | "gyroidBattleCountProtection"
@@ -248,6 +252,20 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
       ],
     },
     {
+      file: "lua-real-script-deepsea-warrior-environment-immunity.test.ts",
+      kind: "environmentImmunity",
+      required: [
+        'const deepseaCode = "24128274"',
+        "restores Umi-gated Spell immunity and blocks a restored Spell destruction effect",
+        "return Duel.IsEnvironment(CARD_UMI)",
+        "return te:IsSpellEffect()",
+        "deepsea environment active true",
+        "deepsea spell immune false",
+        "expect(restored.host.messages).toContain(\"deepsea destroy result 0\")",
+        "event.eventName === \"destroyed\" && event.eventCardUid === deepsea!.uid)).toEqual([])",
+      ],
+    },
+    {
       file: "lua-real-script-battle-protection.test.ts",
       kind: "continuousBattleIndestructible",
       required: [
@@ -333,6 +351,16 @@ function protectionReplacementSemanticVariants(): Array<{
         'const darkFusionCode = "94820406"',
         "restores opponent targeting protection granted to the summoned Fusion monster",
         'summonType: "fusion"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-deepsea-warrior-environment-immunity.test.ts",
+      kind: "deepseaWarriorUmiSpellImmunity",
+      requiredSnippets: [
+        'const deepseaCode = "24128274"',
+        "restores Umi-gated Spell immunity and blocks a restored Spell destruction effect",
+        "deepsea spell immune true",
+        "deepsea destroy result 0",
       ],
     },
     {
@@ -452,6 +480,7 @@ function countProtectionReplacementKinds(
       continuousBattleIndestructible: 0,
       countLimitedBattleIndestructible: 0,
       effectTargetProtection: 0,
+      environmentImmunity: 0,
       equipBattleProtectionSelfDestroy: 0,
       equipDestroySubstitute: 0,
       handGrantedIndestructible: 0,
@@ -472,6 +501,7 @@ function countProtectionReplacementSemanticVariants(
       checksumDragonAttackPositionProtection: 0,
       darkFusionOpponentTargetProtection: 0,
       dForcePlasmaFieldTargetProtection: 0,
+      deepseaWarriorUmiSpellImmunity: 0,
       forbiddenLanceActivatedImmunityStatLoss: 0,
       geminiSoldierBattleCountDeckSummon: 0,
       gyroidBattleCountProtection: 0,
