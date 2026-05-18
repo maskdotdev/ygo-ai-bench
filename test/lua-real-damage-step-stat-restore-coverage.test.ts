@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 4;
+const damageStepStatFixtureCount = 5;
 const damageStepStatKindCounts = {
-  activatedDamageStepBoost: 1,
+  activatedDamageStepBoost: 2,
   labelObjectCostBoost: 1,
   mandatoryPreDamageBoost: 1,
   persistentDamageStepDebuff: 1,
@@ -14,6 +14,7 @@ const damageStepStatKindCounts = {
 const damageStepStatSemanticVariantCounts = {
   cipherSoldierMandatoryPreDamageBoost: 1,
   fabledAshenveilDamageStepHandCostBoost: 1,
+  injectionFairyLilyPreDamageLpBoost: 1,
   miniaturizePersistentDamageStepDebuff: 1,
   shinobirdCrowLabelObjectCostBoost: 1,
 } satisfies Record<DamageStepStatSemanticVariant, number>;
@@ -26,6 +27,7 @@ type DamageStepStatKind =
 type DamageStepStatSemanticVariant =
   | "cipherSoldierMandatoryPreDamageBoost"
   | "fabledAshenveilDamageStepHandCostBoost"
+  | "injectionFairyLilyPreDamageLpBoost"
   | "miniaturizePersistentDamageStepDebuff"
   | "shinobirdCrowLabelObjectCostBoost";
 
@@ -104,6 +106,20 @@ function damageStepStatFixtureFiles(): Array<{
         "currentAttack(boostedAshenveil",
         "battleDamage[1]).toBe",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-injection-fairy-lily-pre-damage-lp-boost.test.ts",
+      kind: "activatedDamageStepBoost",
+      required: [
+        "expectCleanRestore(restoredSetup)",
+        "expectCleanRestore(restoredDamageStep)",
+        "expectCleanRestore(restoredBoost)",
+        "Duel.PayLPCost(tp,2000)",
+        "RegisterFlagEffect(id,RESET_PHASE|PHASE_DAMAGE_CAL,0,1)",
+        "currentAttack(boostedLily",
+        "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+        "flagEffects).toEqual([])",
       ],
     },
     {
@@ -195,6 +211,20 @@ function damageStepStatSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-injection-fairy-lily-pre-damage-lp-boost.test.ts",
+      kind: "injectionFairyLilyPreDamageLpBoost",
+      required: [
+        'const lilyCode = "79575620"',
+        "restores its LP cost, damage-calculation flag, temporary ATK boost, and battle damage",
+        "Duel.PayLPCost(tp,2000)",
+        "RegisterFlagEffect(id,RESET_PHASE|PHASE_DAMAGE_CAL,0,1)",
+        "battleWindow?.kind).toBe(\"beforeDamageCalculation\")",
+        'eventName: "lifePointCostPaid"',
+        "currentAttack(boostedLily",
+        "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
       kind: "shinobirdCrowLabelObjectCostBoost",
       required: [
@@ -248,6 +278,7 @@ function countDamageStepStatSemanticVariants(
     {
       cipherSoldierMandatoryPreDamageBoost: 0,
       fabledAshenveilDamageStepHandCostBoost: 0,
+      injectionFairyLilyPreDamageLpBoost: 0,
       miniaturizePersistentDamageStepDebuff: 0,
       shinobirdCrowLabelObjectCostBoost: 0,
     },

@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 27;
-const battleTimingEventCodeFixtureCount = 27;
+const battleTimingFixtureCount = 28;
+const battleTimingEventCodeFixtureCount = 28;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 12,
-  beforeDamageCalculation: 5,
+  beforeDamageCalculation: 6,
   duringDamageCalculation: 3,
   endDamageStep: 4,
   startDamageStep: 3,
@@ -29,6 +29,7 @@ const battleTimingSemanticVariantCounts = {
   getsuFuhmaEndDamageTargetDestroy: 1,
   gundariStartDamageSynchroBounce: 1,
   hayateAfterDamageDeckSend: 1,
+  injectionFairyLilyBeforeDamageLpBoost: 1,
   kuribohBeforeDamagePrevent: 1,
   mirageKnightDuringDamageAtkBanish: 1,
   nightmareMagicianEndDamageControl: 1,
@@ -118,6 +119,7 @@ type BattleTimingSemanticVariant =
   | "getsuFuhmaEndDamageTargetDestroy"
   | "gundariStartDamageSynchroBounce"
   | "hayateAfterDamageDeckSend"
+  | "injectionFairyLilyBeforeDamageLpBoost"
   | "kuribohBeforeDamagePrevent"
   | "mirageKnightDuringDamageAtkBanish"
   | "nightmareMagicianEndDamageControl"
@@ -221,6 +223,18 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores its direct-attack EVENT_BATTLED trigger and sends a Sky Striker card from Deck to Graveyard", "triggerBucket: \"turnOptional\"", "eventReasonEffectId: 3"],
     },
     {
+      file: "test/lua-real-script-injection-fairy-lily-pre-damage-lp-boost.test.ts",
+      kind: "injectionFairyLilyBeforeDamageLpBoost",
+      required: [
+        "restores its LP cost, damage-calculation flag, temporary ATK boost, and battle damage",
+        "battleWindow?.kind).toBe(\"beforeDamageCalculation\")",
+        "eventName: \"beforeDamageCalculation\"",
+        "eventCode: 1134",
+        "Duel.PayLPCost(tp,2000)",
+        "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-kuriboh-pre-damage-prevent.test.ts",
       kind: "kuribohBeforeDamagePrevent",
       required: ["restores its before-damage hand Quick Effect and prevents battle damage after self-discard cost", "triggerEvent: \"beforeDamageCalculation\"", "battleDamage).toEqual({ 0: 0, 1: 0 })"],
@@ -319,6 +333,7 @@ function countBattleTimingSemanticVariants(
       getsuFuhmaEndDamageTargetDestroy: 0,
       gundariStartDamageSynchroBounce: 0,
       hayateAfterDamageDeckSend: 0,
+      injectionFairyLilyBeforeDamageLpBoost: 0,
       kuribohBeforeDamagePrevent: 0,
       mirageKnightDuringDamageAtkBanish: 0,
       nightmareMagicianEndDamageControl: 0,
@@ -458,6 +473,19 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventReasonEffectId: 1",
         "currentAttack(boostedAshenveil, restoredChain.session.state)).toBe((ashenveil.data.attack ?? 0) + 600)",
         "battleDamage[1]).toBe((ashenveil.data.attack ?? 0) + 600 - (defender.data.attack ?? 0))",
+      ],
+    },
+    {
+      file: "test/lua-real-script-injection-fairy-lily-pre-damage-lp-boost.test.ts",
+      kind: "beforeDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("beforeDamageCalculation")',
+        'eventName: "beforeDamageCalculation"',
+        "eventCode: 1134",
+        "eventCardUid: lily.uid",
+        "Duel.PayLPCost(tp,2000)",
+        "currentAttack(boostedLily, restoredDamageStep.session.state)).toBe(3400)",
+        "battleDamage).toEqual({ 0: 0, 1: 1400 })",
       ],
     },
     {

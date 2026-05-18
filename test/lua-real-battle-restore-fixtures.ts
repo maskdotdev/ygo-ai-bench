@@ -4,7 +4,7 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 172;
+export const realScriptBattleFixtureCount = 173;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;
@@ -91,6 +91,7 @@ export const battleSemanticVariantCounts = {
   gravekeepersVassalBattleDamageToEffect: 1,
   hayateBattledDeckSend: 1,
   honestDamageStepBoost: 1,
+  injectionFairyLilyPreDamageLpBoost: 1,
   keyMouseBattleDestroyedSearch: 1,
   ka2DesScissorsBattleDestroyingLevelDamage: 1,
   magicCylinderDamageReflect: 1,
@@ -153,7 +154,7 @@ export type BattleDamageSemanticKind =
   | "temporaryDamageCalcBoost";
 
 export type BattleTriggerSemanticKind = "battleStartDestroy" | "battleConfirmDestroy" | "battleDestroyedChainAttack" | "battleDestroyingDecktopConfirm" | "battleDestroyedDestroy" | "battleDestroyedGroupDestroy" | "battleDestroyingDamage" | "battleDestroyingSelectEffect" | "battleSearch" | "battledLabelDrawSummon" | "battledBounce" | "battledChainAttackTarget" | "battledDeckSend" | "battledDestroy" | "battledDamage" | "battledDisable" | "endDamageControl" | "endDamageDestroy" | "mutualBattleDestroyedSegoc";
-export type BattleSemanticVariant = "alienHunterBattleDestroyedChainAttack" | "alienOfJusticeNullfierBattledDisable" | "amazonessSwordsWomanReflectDamage" | "ancientGearGolemPiercingDamage" | "aojOmniWeaponBattledLabelDrawSummon" | "aojThousandArmsLightOnlyAttackAll" | "battleDamagePreventionMachineLordUr" | "blizzardWarriorBattleDestroyingDecktopConfirm" | "blsSoldierChaosBattleDestroyingSelectEffect" | "darkRulerHaDesBattledGraveDisable" | "decoyroidBattleTargetSelectionLock" | "dimensionalPrisonAttackBanish" | "drainingShieldLpRecoverNegate" | "elementDoomAttributeChainAttack" | "fabledAshenveilDamageStepBoost" | "gemKnightSardonyxBattleSearch" | "getsuFuhmaEndDamageDestroy" | "ghostBirdExtraMonsterAttack" | "giantRatMutualBattleDestroyedSegoc" | "grasschopperGeminiAttackAll" | "gravekeepersVassalBattleDamageToEffect" | "hayateBattledDeckSend" | "honestDamageStepBoost" | "ka2DesScissorsBattleDestroyingLevelDamage" | "keyMouseBattleDestroyedSearch" | "magicCylinderDamageReflect" | "magicalArmShieldBattleRetargetDamage" | "miniaturizePersistentDamageStepStat" | "mirageKnightBattleTargetAtk" | "naturiaSpiderfangAttackAnnouncementLock" | "negateAttackBattlePhaseSkipNegate" | "nightmareMagicianEndDamageControl" | "nitroWarriorBattledChainAttackTarget" | "numberC96AlsoBattleDamage" | "oddEyesDragonBattleDestroyingDamage" | "predaplantSarraceniantBattledDestroy" | "powerWallPreDamageDeckMillShield" | "radiantSpiritBattleDestroyedGroupDestroy" | "reflectBounderBattleConfirmDestroy" | "ringOfMagnetismOnlyAttackEquipped" | "sakuretsuArmorAttackDestroy" | "sasukeSamuraiBattleStartDestroy" | "scrapIronScarecrowSetAgainNegate" | "shadowSpellGoatDamageCalculationStat" | "smokeMosquitoPreDamageHalfDamageSummon" | "susaSoldierHalfDamage" | "topologicBomberBattledDamage" | "wallOfIllusionBattledBounce" | "yomiShipBattleDestroyedDestroy";
+export type BattleSemanticVariant = "alienHunterBattleDestroyedChainAttack" | "alienOfJusticeNullfierBattledDisable" | "amazonessSwordsWomanReflectDamage" | "ancientGearGolemPiercingDamage" | "aojOmniWeaponBattledLabelDrawSummon" | "aojThousandArmsLightOnlyAttackAll" | "battleDamagePreventionMachineLordUr" | "blizzardWarriorBattleDestroyingDecktopConfirm" | "blsSoldierChaosBattleDestroyingSelectEffect" | "darkRulerHaDesBattledGraveDisable" | "decoyroidBattleTargetSelectionLock" | "dimensionalPrisonAttackBanish" | "drainingShieldLpRecoverNegate" | "elementDoomAttributeChainAttack" | "fabledAshenveilDamageStepBoost" | "gemKnightSardonyxBattleSearch" | "getsuFuhmaEndDamageDestroy" | "ghostBirdExtraMonsterAttack" | "giantRatMutualBattleDestroyedSegoc" | "grasschopperGeminiAttackAll" | "gravekeepersVassalBattleDamageToEffect" | "hayateBattledDeckSend" | "honestDamageStepBoost" | "injectionFairyLilyPreDamageLpBoost" | "ka2DesScissorsBattleDestroyingLevelDamage" | "keyMouseBattleDestroyedSearch" | "magicCylinderDamageReflect" | "magicalArmShieldBattleRetargetDamage" | "miniaturizePersistentDamageStepStat" | "mirageKnightBattleTargetAtk" | "naturiaSpiderfangAttackAnnouncementLock" | "negateAttackBattlePhaseSkipNegate" | "nightmareMagicianEndDamageControl" | "nitroWarriorBattledChainAttackTarget" | "numberC96AlsoBattleDamage" | "oddEyesDragonBattleDestroyingDamage" | "predaplantSarraceniantBattledDestroy" | "powerWallPreDamageDeckMillShield" | "radiantSpiritBattleDestroyedGroupDestroy" | "reflectBounderBattleConfirmDestroy" | "ringOfMagnetismOnlyAttackEquipped" | "sakuretsuArmorAttackDestroy" | "sasukeSamuraiBattleStartDestroy" | "scrapIronScarecrowSetAgainNegate" | "shadowSpellGoatDamageCalculationStat" | "smokeMosquitoPreDamageHalfDamageSummon" | "susaSoldierHalfDamage" | "topologicBomberBattledDamage" | "wallOfIllusionBattledBounce" | "yomiShipBattleDestroyedDestroy";
 
 type RequiredFixture<K extends string> = { file: string; kind: K; required: string[] };
 type KindFixture<K extends string> = { file: string; kind: K };
@@ -729,6 +730,16 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
       file: "lua-real-script-honest-damage-step.test.ts",
       kind: "honestDamageStepBoost",
       required: ["restores Honest's damage-step hand effect and battle ATK update", "chainResponderScript", "host.messages).not.toContain"],
+    },
+    {
+      file: "lua-real-script-injection-fairy-lily-pre-damage-lp-boost.test.ts",
+      kind: "injectionFairyLilyPreDamageLpBoost",
+      required: [
+        "restores its LP cost, damage-calculation flag, temporary ATK boost, and battle damage",
+        "Duel.PayLPCost(tp,2000)",
+        "RegisterFlagEffect(id,RESET_PHASE|PHASE_DAMAGE_CAL,0,1)",
+        "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+      ],
     },
     {
       file: "lua-real-script-key-mouse-battle-destroyed-search.test.ts",
