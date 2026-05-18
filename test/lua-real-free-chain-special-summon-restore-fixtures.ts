@@ -1,8 +1,9 @@
-export const freeChainSpecialSummonFixtureCount = 6;
+export const freeChainSpecialSummonFixtureCount = 7;
 
 export const freeChainSpecialSummonKindCounts = {
   continuousSpellIgnitionHandSummon: 1,
   handNormalMonsterSummon: 1,
+  nonTargetGraveSetcodeDefenseSummon: 1,
   targetBanishedRockSummonStep: 1,
   targetGraveDragonSummonReplace: 1,
   targetGraveSetcodeDefenseSummon: 1,
@@ -12,6 +13,7 @@ export const freeChainSpecialSummonKindCounts = {
 export type FreeChainSpecialSummonKind =
   | "continuousSpellIgnitionHandSummon"
   | "handNormalMonsterSummon"
+  | "nonTargetGraveSetcodeDefenseSummon"
   | "targetBanishedRockSummonStep"
   | "targetGraveDragonSummonReplace"
   | "targetGraveSetcodeDefenseSummon"
@@ -23,6 +25,25 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-darklord-contact-grave-defense-summon.test.ts",
+      kind: "nonTargetGraveSetcodeDefenseSummon",
+      required: [
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return c:IsSetCard(SET_DARKLORD) and c:IsCanBeSpecialSummoned(e,0,tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_GRAVE,0,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "operationInfos: [{ category: 0x200",
+        "parameter: 0x10",
+        'position: "faceUpDefense"',
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        "eventReasonEffectId: 1",
+        'summonType: "special"',
+      ],
+    },
     {
       file: "test/lua-real-script-court-justice-continuous-spell-summon.test.ts",
       kind: "continuousSpellIgnitionHandSummon",
@@ -126,5 +147,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0 });
 }
