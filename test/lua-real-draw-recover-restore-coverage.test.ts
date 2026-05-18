@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 9;
+const DRAW_RECOVER_FIXTURE_COUNT = 10;
 const drawRecoverKindCounts = {
   costBanishDraw: 2,
+  costDiscardDraw: 1,
   drawRecoverOrDamage: 2,
   drawTrigger: 2,
   negateThenDraw: 1,
@@ -21,11 +22,12 @@ const drawRecoverSemanticVariantCounts = {
   potDesiresFaceDownDeckCostDraw: 1,
   potExtravaganceRandomExtraCostDrawLock: 1,
   shinobirdCraneSpiritSummonDraw: 1,
+  tradeInLevel8DiscardDraw: 1,
   upstartGoblinDrawRecover: 1,
   xyzGiftOverlayDetachDraw: 1,
 } satisfies Record<DrawRecoverSemanticVariant, number>;
 
-type DrawRecoverKind = "costBanishDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "overlayDetachDraw" | "releaseDestroyDraw";
+type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "overlayDetachDraw" | "releaseDestroyDraw";
 
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
@@ -35,6 +37,7 @@ type DrawRecoverSemanticVariant =
   | "potDesiresFaceDownDeckCostDraw"
   | "potExtravaganceRandomExtraCostDrawLock"
   | "shinobirdCraneSpiritSummonDraw"
+  | "tradeInLevel8DiscardDraw"
   | "upstartGoblinDrawRecover"
   | "xyzGiftOverlayDetachDraw";
 
@@ -179,6 +182,20 @@ function drawRecoverFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-trade-in-discard-draw.test.ts",
+      kind: "costDiscardDraw",
+      required: [
+        'eventName: "discarded"',
+        'eventName: "cardsDrawn"',
+        "targetPlayer: 0",
+        "targetParam: 2",
+        "category: 0x10000",
+        "duelReason.cost | duelReason.discard",
+        'location: "graveyard"',
+        'location: "hand", controller: 0',
+      ],
+    },
+    {
       file: "test/lua-real-script-upstart-goblin-draw-recover.test.ts",
       kind: "drawRecoverOrDamage",
       required: [
@@ -217,6 +234,7 @@ function countDrawRecoverKinds(fixtures: Array<{ kind: DrawRecoverKind }>): Reco
     },
     {
       costBanishDraw: 0,
+      costDiscardDraw: 0,
       drawRecoverOrDamage: 0,
       drawTrigger: 0,
       negateThenDraw: 0,
@@ -317,6 +335,19 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-trade-in-discard-draw.test.ts",
+      kind: "tradeInLevel8DiscardDraw",
+      required: [
+        'const tradeInCode = "38120068"',
+        "restores Trade-In's Level 8 discard cost, target-player draw metadata, and draw-two resolution",
+        "Duel.DiscardHand(tp,s.filter,1,1,REASON_COST|REASON_DISCARD)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"discarded\"",
+        "eventName: \"cardsDrawn\"",
+        "trade-in responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-upstart-goblin-draw-recover.test.ts",
       kind: "upstartGoblinDrawRecover",
       required: [
@@ -359,6 +390,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       potDesiresFaceDownDeckCostDraw: 0,
       potExtravaganceRandomExtraCostDrawLock: 0,
       shinobirdCraneSpiritSummonDraw: 0,
+      tradeInLevel8DiscardDraw: 0,
       upstartGoblinDrawRecover: 0,
       xyzGiftOverlayDetachDraw: 0,
     },

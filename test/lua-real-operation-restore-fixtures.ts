@@ -1,8 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 68;
+export const operationFixtureCount = 69;
 export const operationKindCounts = {
-  costBanishDraw: 2,
+  costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
   controlSwap: 1,
@@ -57,7 +57,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
-  | "costBanishDraw"
+  | "costBanishDraw" | "costDiscardDraw"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
   | "controlSwap"
@@ -108,8 +108,7 @@ export type OperationKind =
   | "targetDestroySkipDraw"
   | "targetToHandDiscardCost"
   | "trapDrawSkipDraw"
-  | "tossCoin"
-  | "tossDiceHandDiscard";
+  | "tossCoin" | "tossDiceHandDiscard";
 export function operationFixtureFiles(): Array<{
   file: string;
   kind: OperationKind;
@@ -308,6 +307,7 @@ export function operationFixtureFiles(): Array<{
         "host.messages).not.toContain",
       ],
     },
+    { file: "test/lua-real-script-trade-in-discard-draw.test.ts", kind: "costDiscardDraw", required: ["Duel.DiscardHand(tp,s.filter,1,1,REASON_COST|REASON_DISCARD)", "Duel.SetTargetPlayer(tp)", "Duel.SetTargetParam(2)", "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)", "category: 0x10000", 'eventName: "discarded"', 'eventName: "cardsDrawn"', "duelReason.cost | duelReason.discard", "host.messages).not.toContain"] },
     {
       file: "test/lua-real-script-dark-hole-group-destroy.test.ts",
       kind: "groupDestroy",
@@ -942,7 +942,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
-      costBanishDraw: 0,
+      costBanishDraw: 0, costDiscardDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
       controlSwap: 0,
