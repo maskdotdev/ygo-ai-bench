@@ -5,12 +5,12 @@ import { luaNumericConstants } from "#lua/basic-constant-data.js";
 import type { DuelCardInstance, FusionMaterialPredicateRequirement } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
-const ATTRIBUTE_CONSTANT_EXPRESSION = String.raw`ATTRIBUTE_[A-Z0-9_]+(?:\s*\|\s*ATTRIBUTE_[A-Z0-9_]+)*`;
-const RACE_CONSTANT_EXPRESSION = String.raw`RACES?_[A-Z0-9_]+(?:\s*\|\s*RACES?_[A-Z0-9_]+)*`;
-const SET_CONSTANT_EXPRESSION = String.raw`SET_[A-Z0-9_]+(?:\s*\|\s*SET_[A-Z0-9_]+)*`;
-const SUMMON_TYPE_CONSTANT_EXPRESSION = String.raw`SUMMON_TYPE_[A-Z0-9_]+(?:\s*\|\s*SUMMON_TYPE_[A-Z0-9_]+)*`;
-const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*\|\s*TYPE_[A-Z0-9_]+)*`;
-const LOCATION_CONSTANT_EXPRESSION = String.raw`LOCATION_[A-Z0-9_]+(?:\s*\|\s*LOCATION_[A-Z0-9_]+)*`;
+const ATTRIBUTE_CONSTANT_EXPRESSION = String.raw`ATTRIBUTE_[A-Z0-9_]+(?:\s*[|+]\s*ATTRIBUTE_[A-Z0-9_]+)*`;
+const RACE_CONSTANT_EXPRESSION = String.raw`RACES?_[A-Z0-9_]+(?:\s*[|+]\s*RACES?_[A-Z0-9_]+)*`;
+const SET_CONSTANT_EXPRESSION = String.raw`SET_[A-Z0-9_]+(?:\s*[|+]\s*SET_[A-Z0-9_]+)*`;
+const SUMMON_TYPE_CONSTANT_EXPRESSION = String.raw`SUMMON_TYPE_[A-Z0-9_]+(?:\s*[|+]\s*SUMMON_TYPE_[A-Z0-9_]+)*`;
+const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*[|+]\s*TYPE_[A-Z0-9_]+)*`;
+const LOCATION_CONSTANT_EXPRESSION = String.raw`LOCATION_[A-Z0-9_]+(?:\s*[|+]\s*LOCATION_[A-Z0-9_]+)*`;
 const CARD_CODE_EXPRESSION = String.raw`(?:\d+|CARD_[A-Z0-9_]+)`;
 const XYZ_INFINITE_MATERIAL_MAX = 99;
 
@@ -128,7 +128,7 @@ function readFusionAddProcMixPredicateMaterials(source: string | undefined): Fus
   const match = source?.match(/Fusion\.AddProcMix\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,([^\n]*)\)/);
   if (!match?.[1]) return [];
   const predicates: FusionMaterialPredicateRequirement[] = [];
-  for (const [, predicate, expression] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:AttackAbove|AttackBelow|LevelAbove|LevelBelow|Attribute|Location|Race|SetCard|Type))\s*,\s*(\d+|[A-Z0-9_]+(?:\s*\|\s*[A-Z0-9_]+)*)\s*\)/g)) {
+  for (const [, predicate, expression] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:AttackAbove|AttackBelow|LevelAbove|LevelBelow|Attribute|Location|Race|SetCard|Type))\s*,\s*(\d+|[A-Z0-9_]+(?:\s*[|+]\s*[A-Z0-9_]+)*)\s*\)/g)) {
     if (!predicate || !expression) continue;
     if (predicate === "Card.IsAttackBelow" || predicate === "Card.IsAttackAbove" || predicate === "Card.IsLevelBelow" || predicate === "Card.IsLevelAbove") {
       const value = Number.parseInt(expression, 10);
@@ -375,7 +375,7 @@ function readSynchroNonTunerConstantFilter(source: string | undefined, predicate
 function readLuaConstantExpression(expression: string | undefined): number | undefined {
   if (!expression) return undefined;
   let value = 0;
-  for (const constant of expression.split("|").map((part) => part.trim())) {
+  for (const constant of expression.split(/[|+]/).map((part) => part.trim())) {
     const numeric = luaNumericConstants[constant] ?? luaArchetypeSetcodeNumericConstants[constant] ?? luaCardCounterNumericConstants[constant];
     if (numeric === undefined) return undefined;
     value |= numeric;
