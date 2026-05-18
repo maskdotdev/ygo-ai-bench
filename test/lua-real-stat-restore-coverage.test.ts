@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 10;
+const statFixtureCount = 11;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -14,6 +14,7 @@ const statKindCounts = {
   setAttack: 1,
   setBaseAttack: 1,
   staticAttackAndExtraAttack: 1,
+  targetedDamageStepAttackUpdate: 1,
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
   bladeflyFieldAttributeAttackUpdate: 1,
@@ -23,12 +24,13 @@ const statSemanticVariantCounts = {
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mukaMukaHandCountAttackDefense: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
+  rushRecklesslyTargetedDamageStepAttackUpdate: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
   steamroidDamageStepBattleSwingStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate";
 type StatSemanticVariant =
   | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
@@ -37,6 +39,7 @@ type StatSemanticVariant =
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mukaMukaHandCountAttackDefense"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
+  | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
   | "steamroidDamageStepBattleSwingStat";
@@ -185,6 +188,19 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
+      kind: "targetedDamageStepAttackUpdate",
+      required: [
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(700)",
+        "currentAttack(restoredAttacker, restoredBoost.session.state)).toBe(2200)",
+        "battleDamage).toEqual({ 0: 0, 1: 200 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "battleTargetAttackBoost",
       required: [
@@ -230,6 +246,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setAttack: 0,
       setBaseAttack: 0,
       staticAttackAndExtraAttack: 0,
+      targetedDamageStepAttackUpdate: 0,
     },
   );
 }
@@ -308,6 +325,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
+      kind: "rushRecklesslyTargetedDamageStepAttackUpdate",
+      required: [
+        'const rushCode = "70046172"',
+        "restores targeted Damage Step ATK update activation and battle damage",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "currentAttack(restoredAttacker, restoredBoost.session.state)).toBe(2200)",
+        "players[1].lifePoints).toBe(7800)",
+      ],
+    },
+    {
       file: "test/lua-real-script-shrink-set-base-attack.test.ts",
       kind: "shrinkTargetBaseAtkHalving",
       required: [
@@ -357,6 +385,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mukaMukaHandCountAttackDefense: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
+      rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
       steamroidDamageStepBattleSwingStat: 0,
