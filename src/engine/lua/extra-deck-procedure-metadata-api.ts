@@ -14,6 +14,14 @@ const XYZ_INFINITE_MATERIAL_MAX = 99;
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
   const fusionMaterials = readFusionAddProcMixMaterials(L, card, source);
   if (fusionMaterials.length > 0) card.data.fusionMaterials = fusionMaterials;
+  const fusionRepeatedMaterials = readFusionAddProcMixRepMaterials(source);
+  if (fusionRepeatedMaterials) {
+    card.data.fusionMaterialMin = fusionRepeatedMaterials.min;
+    card.data.fusionMaterialMax = fusionRepeatedMaterials.max;
+    if (fusionRepeatedMaterials.race !== undefined) card.data.fusionMaterialRace = fusionRepeatedMaterials.race;
+    if (fusionRepeatedMaterials.type !== undefined) card.data.fusionMaterialType = fusionRepeatedMaterials.type;
+    if (fusionRepeatedMaterials.setcode !== undefined) card.data.fusionMaterialSetcode = fusionRepeatedMaterials.setcode;
+  }
   const synchroTunerMin = readProcedureNumberField(L, card, "synchro_materials", 2);
   const synchroTunerMax = readProcedureNumberField(L, card, "synchro_materials", 3);
   const synchroNonTunerMin = readProcedureNumberField(L, card, "synchro_materials", 5);
@@ -93,6 +101,26 @@ function readFusionAddProcMixNMaterials(L: unknown, card: DuelCardInstance): str
     for (let copy = 0; copy < count; copy += 1) materials.push(String(code));
   }
   return materials.length >= 2 ? materials : [];
+}
+
+function readFusionAddProcMixRepMaterials(source: string | undefined): { min: number; max: number; race?: number; type?: number; setcode?: number } | undefined {
+  return readFusionAddProcMixRepConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
+    ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
+    ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode");
+}
+
+function readFusionAddProcMixRepConstantFilter<K extends "race" | "type" | "setcode">(
+  source: string | undefined,
+  predicate: string,
+  constantExpression: string,
+  key: K,
+): ({ min: number; max: number } & Record<K, number>) | undefined {
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcMixRep\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)\s*,\s*(\d+)\s*,\s*(\d+)`));
+  const value = readLuaConstantExpression(match?.[1]);
+  const min = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
+  const max = match?.[3] === undefined ? undefined : Number.parseInt(match[3], 10);
+  if (value === undefined || min === undefined || max === undefined || min <= 0 || max < min) return undefined;
+  return { min, max, [key]: value } as { min: number; max: number } & Record<K, number>;
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {

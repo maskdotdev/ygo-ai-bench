@@ -490,7 +490,15 @@ export function fusionSummonActions(state: DuelState, player: PlayerId, canUseMa
   const materialPool = getCards(state, player, "hand")
     .filter((card) => card.kind === "monster" && canUseMaterial(card.uid))
     .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid)));
-  return extraDeckSummonActions(state, player, materialPool, "fusionSummon", "Fusion", (card) => card.data.fusionMaterials);
+  const actions: DuelAction[] = [];
+  for (const card of getCards(state, player, "extraDeck")) {
+    if (!isMonsterLike(state, card)) continue;
+    for (const materialUids of findFusionMaterialUidSets(state, player, materialPool, card)) {
+      const materialNames = materialUids.map((materialUid) => findCard(state, materialUid)?.name ?? materialUid).join(", ");
+      actions.push({ type: "fusionSummon", player, uid: card.uid, materialUids, label: `Fusion Summon ${card.name} using ${materialNames}` });
+    }
+  }
+  return actions;
 }
 
 export function synchroSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
@@ -632,6 +640,41 @@ function findMaterialUidSets(cards: DuelCardInstance[], requiredCodes: string[],
 
 function findSummonMaterialUidSets(state: DuelState, player: PlayerId, cards: DuelCardInstance[], requiredCodes: string[], options?: MaterialCodeMatchOptions, reason = duelReason.summon | duelReason.specialSummon, card?: DuelCardInstance): string[][] {
   return findMaterialUidSets(cards, requiredCodes, options).filter((materialUids) => hasSummonZoneAfterMaterials(state, player, materialUids, reason, card));
+}
+
+function findFusionMaterialUidSets(state: DuelState, player: PlayerId, cards: DuelCardInstance[], card: DuelCardInstance): string[][] {
+  const requiredCodes = card.data.fusionMaterials;
+  const reason = duelReason.summon | duelReason.specialSummon | duelReason.fusion;
+  if (requiredCodes?.length) return findSummonMaterialUidSets(state, player, cards, requiredCodes, fusionMaterialMatchOptions(state, card), reason, card);
+  if (!hasGenericFusionMaterialRequirement(card)) return [];
+  const results: string[][] = [];
+  const seen = new Set<string>();
+  const maxCount = Math.min(cards.length, card.data.fusionMaterialMax ?? card.data.fusionMaterialMin ?? cards.length);
+  for (let count = card.data.fusionMaterialMin ?? 1; count <= maxCount; count += 1) {
+    for (const materials of cardCombinations(cards, count)) {
+      if (!materials.every((material) => fusionMaterialMatches(state, card, material))) continue;
+      if (!hasSummonZoneAfterMaterials(state, player, materials.map((material) => material.uid), reason, card)) continue;
+      appendMaterialUidSet(results, seen, materials.map((material) => material.uid));
+    }
+  }
+  return results;
+}
+
+export function hasGenericFusionMaterialRequirement(card: DuelCardInstance): boolean {
+  return card.data.fusionMaterialMin !== undefined || card.data.fusionMaterialMax !== undefined || card.data.fusionMaterialRace !== undefined || card.data.fusionMaterialType !== undefined || card.data.fusionMaterialSetcode !== undefined;
+}
+
+export function fusionMaterialCountAllowed(card: DuelCardInstance, count: number): boolean {
+  if (!hasGenericFusionMaterialRequirement(card)) return true;
+  const min = card.data.fusionMaterialMin ?? 1;
+  const max = card.data.fusionMaterialMax ?? Number.POSITIVE_INFINITY;
+  return count >= min && count <= max;
+}
+
+export function fusionMaterialMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
+  return (target.data.fusionMaterialRace === undefined || (currentRace(material, state) & target.data.fusionMaterialRace) !== 0)
+    && (target.data.fusionMaterialType === undefined || (cardTypeFlags(material, state) & target.data.fusionMaterialType) !== 0)
+    && (target.data.fusionMaterialSetcode === undefined || currentCardMatchesSetcode(material, state, target.data.fusionMaterialSetcode));
 }
 
 function fusionMaterialMatchOptions(state: DuelState, target: DuelCardInstance): MaterialCodeMatchOptions {

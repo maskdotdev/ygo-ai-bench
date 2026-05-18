@@ -12,6 +12,7 @@ import { cardTypeFlags as cardDataTypeFlags, readCardDataByCode } from "#lua/due
 import { changeTargetCard, effectiveTargetUids } from "#lua/duel-api/query-target-state.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import { fusionMaterialCountAllowed, fusionMaterialMatches, hasGenericFusionMaterialRequirement } from "#duel/summon.js";
 import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from "#lua/group-selection-utils.js";
 import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationMatchesCardMask, locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
@@ -674,6 +675,19 @@ function selectFusionMaterialUids(session: DuelSession, candidates: DuelCardInst
   if (forced.length !== uniqueForcedUids.length) return [];
   const requiredCodes = target?.data.fusionMaterials ?? [];
   if (!requiredCodes.length) {
+    if (target && hasGenericFusionMaterialRequirement(target)) {
+      if (!forced.every((material) => fusionMaterialMatches(session.state, target, material))) return [];
+      const matchingCandidates = candidates.filter((card) => fusionMaterialMatches(session.state, target, card));
+      const selected = [...forced];
+      const desiredCount = Math.min(Math.max(target.data.fusionMaterialMin ?? 1, selected.length), matchingCandidates.length, target.data.fusionMaterialMax ?? matchingCandidates.length);
+      if (!fusionMaterialCountAllowed(target, desiredCount)) return [];
+      for (const candidate of matchingCandidates) {
+        if (selected.includes(candidate)) continue;
+        selected.push(candidate);
+        if (selected.length >= desiredCount) break;
+      }
+      return fusionMaterialCountAllowed(target, selected.length) ? selected.map((card) => card.uid) : [];
+    }
     const selected = [...forced];
     const desiredCount = Math.min(Math.max(2, selected.length), candidates.length);
     for (const candidate of candidates) {

@@ -120,6 +120,11 @@ export interface DuelCardData {
   attribute?: number;
   setcodes?: number[];
   fusionMaterials?: string[];
+  fusionMaterialMin?: number;
+  fusionMaterialMax?: number;
+  fusionMaterialRace?: number;
+  fusionMaterialType?: number;
+  fusionMaterialSetcode?: number;
   materialSetcodes?: number[];
   synchroMaterials?: {
     tuner: string;
