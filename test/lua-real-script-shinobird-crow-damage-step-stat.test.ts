@@ -13,20 +13,25 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const crowCode = "39817919";
+const hasCrowScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${crowCode}.lua`));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Shinobird Crow Damage Step stat boost", () => {
+describe.skipIf(!hasUpstreamScripts || !hasCrowScript)("Lua real script Shinobird Crow Damage Step stat boost", () => {
   it("restores its Damage Step discard label object and applies the ATK/DEF boost", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const crowCode = "39817919";
     const costSpiritCode = "39817920";
     const defenderCode = "39817921";
     const responderCode = "39817922";
+    const script = workspace.readScript(`c${crowCode}.lua`);
+    expect(script).toContain("e2:SetProperty(EFFECT_FLAG_DAMAGE_STEP)");
+    expect(script).toContain("e:SetLabelObject(g:GetFirst())");
+    expect(script).toContain("Duel.SendtoGrave(g,REASON_COST|REASON_DISCARD)");
+    expect(script).toContain("c:UpdateAttack(atk,RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_BATTLE)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === crowCode),
+      { code: crowCode, name: "Shinobird Crow", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 0, defense: 0 },
       { code: costSpiritCode, name: "Shinobird Crow Discarded Spirit", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 700, defense: 900 },
       { code: defenderCode, name: "Shinobird Crow Battle Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 500, defense: 500 },
       { code: responderCode, name: "Shinobird Crow Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },

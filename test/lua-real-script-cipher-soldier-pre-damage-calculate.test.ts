@@ -12,17 +12,24 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const cipherSoldierCode = "79853073";
+const hasCipherSoldierScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${cipherSoldierCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 const raceWarrior = 0x1;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cipher Soldier pre-damage calculation", () => {
+describe.skipIf(!hasUpstreamScripts || !hasCipherSoldierScript)("Lua real script Cipher Soldier pre-damage calculation", () => {
   it("restores its EVENT_PRE_DAMAGE_CALCULATE trigger and applies the Warrior battle stat boost", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const cipherSoldierCode = "79853073";
     const warriorTargetCode = "7985";
+    const script = workspace.readScript(`c${cipherSoldierCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)");
+    expect(script).toContain("return bc and bc:IsRace(RACE_WARRIOR)");
+    expect(script).toContain("e1:SetCode(EFFECT_UPDATE_ATTACK)");
+    expect(script).toContain("e1:SetValue(2000)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === cipherSoldierCode),
-      { code: warriorTargetCode, name: "Cipher Soldier Warrior Target", kind: "monster", typeFlags: 0x1, level: 4, race: raceWarrior, attack: 2000, defense: 1000 },
+      { code: cipherSoldierCode, name: "Cipher Soldier", kind: "monster", typeFlags: typeMonster | typeEffect, level: 3, attack: 1350, defense: 1800 },
+      { code: warriorTargetCode, name: "Cipher Soldier Warrior Target", kind: "monster", typeFlags: typeMonster, level: 4, race: raceWarrior, attack: 2000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 798, startingHandSize: 0, cardReader: reader });

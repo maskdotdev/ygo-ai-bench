@@ -11,17 +11,24 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const miniaturizeCode = "34815282";
+const hasMiniaturizeScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${miniaturizeCode}.lua`));
+const typeTrap = 0x4;
+const typeContinuous = 0x20000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Miniaturize persistent Damage Step stats", () => {
+describe.skipIf(!hasUpstreamScripts || !hasMiniaturizeScript)("Lua real script Miniaturize persistent Damage Step stats", () => {
   it("restores official persistent target into Damage Step ATK and Level updates", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const miniaturizeCode = "34815282";
     const targetCode = "613911";
     const attackerCode = "613912";
     const responderCode = "613913";
+    const script = workspace.readScript(`c${miniaturizeCode}.lua`);
+    expect(script).toContain("aux.AddPersistentProcedure(c,nil,s.filter,CATEGORY_ATKCHANGE,EFFECT_FLAG_DAMAGE_STEP");
+    expect(script).toContain("e1:SetCode(EFFECT_UPDATE_ATTACK)");
+    expect(script).toContain("e1:SetValue(-1000)");
+    expect(script).toContain("e2:SetCode(EFFECT_UPDATE_LEVEL)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === miniaturizeCode),
+      { code: miniaturizeCode, name: "Miniaturize", kind: "trap", typeFlags: typeTrap | typeContinuous },
       { code: targetCode, name: "Miniaturize Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1200 },
       { code: attackerCode, name: "Miniaturize Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 900, defense: 900 },
       { code: responderCode, name: "Miniaturize Chain Responder", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },

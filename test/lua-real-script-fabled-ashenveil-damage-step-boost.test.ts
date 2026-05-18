@@ -13,20 +13,27 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const ashenveilCode = "12235475";
+const hasAshenveilScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${ashenveilCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fabled Ashenveil Damage Step boost", () => {
+describe.skipIf(!hasUpstreamScripts || !hasAshenveilScript)("Lua real script Fabled Ashenveil Damage Step boost", () => {
   it("restores its hand cost and pre-damage calculation ATK boost", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const ashenveilCode = "12235475";
     const discardCode = "12235476";
     const defenderCode = "12235477";
     const responderCode = "12235478";
+    const script = workspace.readScript(`c${ashenveilCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)");
+    expect(script).toContain("Duel.SendtoGrave(g,REASON_COST)");
+    expect(script).toContain("e1:SetCode(EFFECT_UPDATE_ATTACK)");
+    expect(script).toContain("e1:SetValue(600)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === ashenveilCode),
-      { code: discardCode, name: "Fabled Ashenveil Cost", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: defenderCode, name: "Fabled Ashenveil Defender", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
-      { code: responderCode, name: "Fabled Ashenveil Chain Responder", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: ashenveilCode, name: "Fabled Ashenveil", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1600, defense: 1200 },
+      { code: discardCode, name: "Fabled Ashenveil Cost", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+      { code: defenderCode, name: "Fabled Ashenveil Defender", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1000 },
+      { code: responderCode, name: "Fabled Ashenveil Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 1223, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
