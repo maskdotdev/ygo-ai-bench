@@ -56,6 +56,20 @@ describe("Lua real position condition restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("keeps position condition fixtures script-gated and database-independent", () => {
+    const weak = positionConditionSemanticVariants()
+      .filter(({ file }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return text.includes("readDatabaseCards")
+          || text.includes("hasUpstreamDatabase")
+          || !text.includes("workspace.readScript")
+          || !text.includes("describe.skipIf(!hasUpstreamScripts || !has");
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function positionConditionFixtureFiles(): Array<{
