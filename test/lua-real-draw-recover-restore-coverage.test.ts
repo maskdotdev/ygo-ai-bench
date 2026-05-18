@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 10;
+const DRAW_RECOVER_FIXTURE_COUNT = 11;
 const drawRecoverKindCounts = {
   costBanishDraw: 2,
   costDiscardDraw: 1,
   drawRecoverOrDamage: 2,
-  drawTrigger: 2,
+  drawTrigger: 3,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
   releaseDestroyDraw: 1,
@@ -17,6 +17,7 @@ const drawRecoverKindCounts = {
 const drawRecoverSemanticVariantCounts = {
   badReactionDrawThenDamage: 1,
   darkBribeNegateDestroyDraw: 1,
+  darkseaFloatDestroyedToGraveDraw: 1,
   geminiSparkReleaseDestroyDraw: 1,
   naturiaRagweedOpponentDrawTrigger: 1,
   potDesiresFaceDownDeckCostDraw: 1,
@@ -32,6 +33,7 @@ type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDama
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
   | "darkBribeNegateDestroyDraw"
+  | "darkseaFloatDestroyedToGraveDraw"
   | "geminiSparkReleaseDestroyDraw"
   | "naturiaRagweedOpponentDrawTrigger"
   | "potDesiresFaceDownDeckCostDraw"
@@ -117,6 +119,20 @@ function drawRecoverFixtureFiles(): Array<{
         'location: "graveyard"',
         'location: "hand", controller: 0',
         'recoveredLifePoints")).toEqual([])',
+      ],
+    },
+    {
+      file: "test/lua-real-script-darksea-float-to-grave-draw.test.ts",
+      kind: "drawTrigger",
+      required: [
+        'eventName: "destroyed"',
+        'eventName: "cardsDrawn"',
+        "targetPlayer: 0",
+        "targetParam: 1",
+        "category: 0x10000",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        'location: "graveyard"',
+        'location: "hand", controller: 0',
       ],
     },
     {
@@ -275,6 +291,19 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-darksea-float-to-grave-draw.test.ts",
+      kind: "darkseaFloatDestroyedToGraveDraw",
+      required: [
+        'const darkseaFloatCode = "70054514"',
+        "restores its destroyed-from-field EVENT_TO_GRAVE draw trigger and CHAININFO target parameter",
+        "c:IsReason(REASON_DESTROY) and c:IsReason(REASON_EFFECT) and c:IsPreviousLocation(LOCATION_ONFIELD)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"destroyed\"",
+        "eventName: \"cardsDrawn\"",
+        "darksea float responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-gemini-spark-release-destroy-draw.test.ts",
       kind: "geminiSparkReleaseDestroyDraw",
       required: [
@@ -385,6 +414,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
     {
       badReactionDrawThenDamage: 0,
       darkBribeNegateDestroyDraw: 0,
+      darkseaFloatDestroyedToGraveDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
       naturiaRagweedOpponentDrawTrigger: 0,
       potDesiresFaceDownDeckCostDraw: 0,
