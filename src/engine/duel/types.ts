@@ -131,6 +131,11 @@ export interface DuelCardData {
   attribute?: number;
   setcodes?: number[];
   fusionMaterials?: string[];
+  fusionMaterialAttackMax?: number;
+  fusionMaterialAttackMin?: number;
+  fusionMaterialLevel?: number;
+  fusionMaterialLevelMax?: number;
+  fusionMaterialLevelMin?: number;
   fusionMaterialMin?: number;
   fusionMaterialMax?: number;
   fusionMaterialRace?: number;

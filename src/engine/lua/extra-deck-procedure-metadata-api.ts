@@ -27,6 +27,11 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
     if (fusionRepeatedMaterials.type !== undefined) card.data.fusionMaterialType = fusionRepeatedMaterials.type;
     if (fusionRepeatedMaterials.setcode !== undefined) card.data.fusionMaterialSetcode = fusionRepeatedMaterials.setcode;
     if (fusionRepeatedMaterials.location !== undefined) card.data.fusionMaterialLocation = fusionRepeatedMaterials.location;
+    if (fusionRepeatedMaterials.attackMax !== undefined) card.data.fusionMaterialAttackMax = fusionRepeatedMaterials.attackMax;
+    if (fusionRepeatedMaterials.attackMin !== undefined) card.data.fusionMaterialAttackMin = fusionRepeatedMaterials.attackMin;
+    if (fusionRepeatedMaterials.level !== undefined) card.data.fusionMaterialLevel = fusionRepeatedMaterials.level;
+    if (fusionRepeatedMaterials.levelMax !== undefined) card.data.fusionMaterialLevelMax = fusionRepeatedMaterials.levelMax;
+    if (fusionRepeatedMaterials.levelMin !== undefined) card.data.fusionMaterialLevelMin = fusionRepeatedMaterials.levelMin;
     if (fusionRepeatedMaterials.extraCodes.length > 0) card.data.fusionMaterials = fusionRepeatedMaterials.extraCodes.map(String);
     if (fusionRepeatedMaterials.extraSetcodes.length > 0) card.data.fusionRequiredMaterialSetcodes = fusionRepeatedMaterials.extraSetcodes;
   }
@@ -145,22 +150,34 @@ function readFusionAddProcMixPredicateMaterials(source: string | undefined): Fus
   return predicates;
 }
 
-function readFusionAddProcMixRepMaterials(source: string | undefined): { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; race?: number; type?: number; setcode?: number; location?: number } | undefined {
+type FusionRepeatedMaterialMetadata = { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; attackMax?: number; attackMin?: number; level?: number; levelMax?: number; levelMin?: number; race?: number; type?: number; setcode?: number; location?: number };
+
+function readFusionAddProcMixRepMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
   return readFusionAddProcMixRepConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location");
 }
 
-function readFusionAddProcMixNRepeatedMaterials(source: string | undefined): { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; race?: number; type?: number; setcode?: number; location?: number } | undefined {
+function readFusionAddProcMixNRepeatedMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
   return readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
     ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
     ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location")
+    ?? readFusionAddProcMixNRepeatedMixedNumberFilter(source, "Card.IsAttackAbove", "attackMin")
+    ?? readFusionAddProcMixNRepeatedMixedNumberFilter(source, "Card.IsAttackBelow", "attackMax")
+    ?? readFusionAddProcMixNRepeatedMixedNumberFilter(source, "Card.IsLevel", "level")
+    ?? readFusionAddProcMixNRepeatedMixedNumberFilter(source, "Card.IsLevelAbove", "levelMin")
+    ?? readFusionAddProcMixNRepeatedMixedNumberFilter(source, "Card.IsLevelBelow", "levelMax")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
-    ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location");
+    ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location")
+    ?? readFusionAddProcMixNRepeatedNumberFilter(source, "Card.IsAttackAbove", "attackMin")
+    ?? readFusionAddProcMixNRepeatedNumberFilter(source, "Card.IsAttackBelow", "attackMax")
+    ?? readFusionAddProcMixNRepeatedNumberFilter(source, "Card.IsLevel", "level")
+    ?? readFusionAddProcMixNRepeatedNumberFilter(source, "Card.IsLevelAbove", "levelMin")
+    ?? readFusionAddProcMixNRepeatedNumberFilter(source, "Card.IsLevelBelow", "levelMax");
 }
 
 function readFusionAddProcMixNRepeatedMixedConstantFilter<K extends "race" | "type" | "setcode" | "location">(
@@ -197,6 +214,41 @@ function readFusionAddProcMixNRepeatedConstantFilter<K extends "race" | "type" |
   const value = readLuaConstantExpression(match?.[1]);
   const count = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
   if (value === undefined || count === undefined || count <= 0) return undefined;
+  return { min: count, max: count, extraCodes: [], extraSetcodes: [], [key]: value } as unknown as { min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>;
+}
+
+function readFusionAddProcMixNRepeatedMixedNumberFilter<K extends "attackMax" | "attackMin" | "level" | "levelMax" | "levelMin">(
+  source: string | undefined,
+  predicate: string,
+  key: K,
+): ({ min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>) | undefined {
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcMixN\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*(${CARD_CODE_EXPRESSION}|aux\.FilterBoolFunction(?:Ex)?\(\s*Card\.IsSetCard\s*,\s*${SET_CONSTANT_EXPRESSION}\s*\))\s*,\s*(\d+)\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(\d+)\s*\)\s*,\s*(\d+)\s*\)`));
+  const required = match?.[1];
+  const requiredCount = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
+  const value = match?.[3] === undefined ? undefined : Number.parseInt(match[3], 10);
+  const count = match?.[4] === undefined ? undefined : Number.parseInt(match[4], 10);
+  if (!required || requiredCount === undefined || value === undefined || count === undefined || requiredCount <= 0 || value <= 0 || count <= 0) return undefined;
+  const requiredCode = readLuaCodeList(`,${required}`).at(0);
+  const requiredSetcode = readLuaSetcodeFilterList(required).at(0);
+  if (requiredCode === undefined && requiredSetcode === undefined) return undefined;
+  return {
+    min: count,
+    max: count,
+    extraCodes: requiredCode === undefined ? [] : Array.from({ length: requiredCount }, () => requiredCode),
+    extraSetcodes: requiredSetcode === undefined ? [] : Array.from({ length: requiredCount }, () => requiredSetcode),
+    [key]: value,
+  } as unknown as { min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>;
+}
+
+function readFusionAddProcMixNRepeatedNumberFilter<K extends "attackMax" | "attackMin" | "level" | "levelMax" | "levelMin">(
+  source: string | undefined,
+  predicate: string,
+  key: K,
+): ({ min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>) | undefined {
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcMixN\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(\d+)\s*\)\s*,\s*(\d+)\s*\)`));
+  const value = match?.[1] === undefined ? undefined : Number.parseInt(match[1], 10);
+  const count = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
+  if (value === undefined || count === undefined || value <= 0 || count <= 0) return undefined;
   return { min: count, max: count, extraCodes: [], extraSetcodes: [], [key]: value } as unknown as { min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>;
 }
 
