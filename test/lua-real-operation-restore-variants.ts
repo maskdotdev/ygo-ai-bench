@@ -13,6 +13,7 @@ export const groupDestroyOperationVariantCounts = {
 export const potAndSearchOperationVariantCounts = {
   gatherYourMindOathSearch: 1,
   kotetsuFlipEquipSearch: 1,
+  majespecterRaccoonSummonSearchProtection: 1,
   potDesiresFaceDownBanishDraw: 1,
   potDualitySearchSummonLock: 1,
   potExtravaganceRandomCostDrawLock: 1,
@@ -40,6 +41,7 @@ export type GroupDestroyOperationVariant =
 export type PotAndSearchOperationVariant =
   | "gatherYourMindOathSearch"
   | "kotetsuFlipEquipSearch"
+  | "majespecterRaccoonSummonSearchProtection"
   | "potDesiresFaceDownBanishDraw"
   | "potDualitySearchSummonLock"
   | "potExtravaganceRandomCostDrawLock"
@@ -192,6 +194,17 @@ export function potAndSearchOperationVariants(): Array<{ file: string; kind: Pot
       ],
     },
     {
+      file: "test/lua-real-script-majespecter-raccoon-summon-search-protection.test.ts",
+      kind: "majespecterRaccoonSummonSearchProtection",
+      required: [
+        "restores its summon search plus opponent targeting and destruction protection",
+        "const raccoonCode = \"31991800\"",
+        "e4:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e5:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "expect(restoredProtection.session.state.chain[0]?.targetUids).not.toContain(raccoon.uid)",
+      ],
+    },
+    {
       file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
       kind: "potDesiresFaceDownBanishDraw",
       required: [
@@ -256,6 +269,7 @@ export function countPotAndSearchOperationVariants(fixtures: Array<{ kind: PotAn
     {
       gatherYourMindOathSearch: 0,
       kotetsuFlipEquipSearch: 0,
+      majespecterRaccoonSummonSearchProtection: 0,
       potDesiresFaceDownBanishDraw: 0,
       potDualitySearchSummonLock: 0,
       potExtravaganceRandomCostDrawLock: 0,

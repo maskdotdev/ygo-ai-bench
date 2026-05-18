@@ -27,7 +27,7 @@ import type { LuaEffectRecord, LuaHostState, LuaPromptCoroutineResult } from "#l
 const { lua, lauxlib, to_luastring } = fengari;
 const luaEffectTypeSingle = 0x1, luaEffectTypeField = 0x2, luaEffectTypeFlip = 0x20, luaResetEvent = 0x1000, luaResetToField = 0x1000000;
 const luaEventFlip = 1001;
-const luaEffectSummonProc = 32, luaEffectLimitSummonProc = 33, luaEffectSpecialSummonProc = 34, luaEffectFusionSubstitute = 234, luaEffectDisableField = 260;
+const luaEffectSummonProc = 32, luaEffectLimitSummonProc = 33, luaEffectSpecialSummonProc = 34, luaEffectIndestructibleEffect = 41, luaEffectFusionSubstitute = 234, luaEffectDisableField = 260;
 export function installEffectApi(L: unknown, hostState: LuaHostState, readLuaError: (state: unknown) => string): void {
   lua.lua_newtable(L);
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -202,12 +202,11 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
   });
   pushEffectMethod(L, effects, "SetValue", (state, effect) => {
     if (effect.valueRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.valueRef);
-    delete effect.valueRef;
-    delete effect.value;
-    delete effect.valueDescriptor;
+    delete effect.valueRef; delete effect.value; delete effect.valueDescriptor;
     if (lua.lua_isfunction(state, 2)) {
       const valueDescriptor = knownLuaEffectValueDescriptor(state, 2, hostState);
-      if (valueDescriptor !== undefined) effect.valueDescriptor = valueDescriptor;
+      if (effect.code === luaEffectIndestructibleEffect && valueDescriptor === "cannot-be-effect-target:opponent") effect.valueDescriptor = "indestructible:opponent";
+      else if (valueDescriptor !== undefined) effect.valueDescriptor = valueDescriptor;
       lua.lua_pushvalue(state, 2);
       effect.valueRef = lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX);
     }

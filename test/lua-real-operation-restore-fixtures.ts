@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 71;
+export const operationFixtureCount = 72;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -39,7 +39,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 2,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 5,
+  searchOrExcavate: 6,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -687,6 +687,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-pot-greed-spell-draw.test.ts", kind: "spellDraw", required: ["category: 0x10000", "targetParam: 2", "targetPlayer: 0", 'eventName: "cardsDrawn"', "eventValue: 2", "host.messages).not.toContain"] },
     { file: "test/lua-real-script-gather-your-mind-oath-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "return c:IsCode(id) and c:IsAbleToHand()", "category: 0x8", 'eventName: "sentToHand"', 'eventName: "sentToHandConfirmed"', "getLuaRestoreLegalActions(restoredResolved, 0).some((action) => action.type === \"activateEffect\" && action.uid === searchedGather.uid)).toBe(false)", "host.messages).not.toContain"] },
     { file: "test/lua-real-script-kotetsu-flip-equip-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP)", "return c:IsType(TYPE_EQUIP) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "flipSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-majespecter-raccoon-summon-search-protection.test.ts", kind: "searchOrExcavate", required: ["e2:SetCode(EVENT_SUMMON_SUCCESS)", "e3:SetCode(EVENT_SPSUMMON_SUCCESS)", "return c:IsSetCard(SET_MAJESPECTER) and c:IsMonster() and c:IsAbleToHand()", 'luaValueDescriptor: "cannot-be-effect-target:opponent"', 'luaValueDescriptor: "indestructible:opponent"', "targetUids).toEqual([vulnerable.uid])", 'eventName: "sentToHandConfirmed"'] },
     {
       file: "test/lua-real-script-pot-of-duality-excavate.test.ts",
       kind: "searchOrExcavate",
