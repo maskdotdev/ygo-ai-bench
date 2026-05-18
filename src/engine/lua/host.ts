@@ -378,7 +378,7 @@ function sourcePrintedTypeFlags(hostState: LuaHostState, sourceUid: string): num
 }
 
 function activeTypeFlags(hostState: LuaHostState, sourceUid: string): number {
-  return cardTypeFlags(hostState.session.state.cards.find((candidate) => candidate.uid === sourceUid), hostState.session.state) & 0x7;
+  return cardTypeFlags(hostState.session.state.cards.find((candidate) => candidate.uid === sourceUid), hostState.session.state);
 }
 
 function sourceHasSetcode(hostState: LuaHostState, sourceUid: string, requested: number): boolean {

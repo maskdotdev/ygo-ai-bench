@@ -703,8 +703,8 @@ describe("Lua effect metadata helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toContain("active type values 1/2/4/0");
-    expect(host.messages).toContain("active type checks true/true/true/false");
+    expect(host.messages).toContain("active type values 33/2/131076/0");
+    expect(host.messages).toContain("active type checks true/true/false/true");
   });
 
   it("enforces Lua special summon condition helpers during summon legality", () => {

@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 11;
-const chainResponseNegationFixtureCount = 10;
+const negationFixtureCount = 12;
+const chainResponseNegationFixtureCount = 11;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 15;
+const negationInventoryFixtureCount = 16;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 4,
+  chainNegateToGrave: 5,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -21,6 +21,7 @@ const destroyOnlyResponseKindCounts = {
   chainMultiDestroyOnly: 1,
 } satisfies Record<DestroyOnlyResponseKind, number>;
 const negationSemanticVariantCounts = {
+  armorBreakEquipActiveTypeNegateDestroy: 1,
   ashBlossomHandTrapDeckSearchNegate: 1,
   darkBribeNegateDestroyOpponentDraw: 1,
   divineWrathDiscardMonsterNegateDestroy: 1,
@@ -48,6 +49,7 @@ type NegationKind =
 
 type DestroyOnlyResponseKind = "chainDestroyOnly" | "chainMultiDestroyOnly";
 type NegationSemanticVariant =
+  | "armorBreakEquipActiveTypeNegateDestroy"
   | "ashBlossomHandTrapDeckSearchNegate"
   | "darkBribeNegateDestroyOpponentDraw"
   | "divineWrathDiscardMonsterNegateDestroy"
@@ -180,6 +182,7 @@ function combinedNegationFixtureFiles(): string[] {
 function realScriptNegationInventoryFiles(): string[] {
   return [
     "lua-real-script-ash-blossom-chain-negate.test.ts",
+    "lua-real-script-armor-break-equip-active-type-negate.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
     "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-effect-veiler-chain-disable.test.ts",
@@ -217,6 +220,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     {
       file: "lua-real-script-ash-blossom-chain-negate.test.ts",
       kind: "handTrapChainNegate",
+    },
+    {
+      file: "lua-real-script-armor-break-equip-active-type-negate.test.ts",
+      kind: "chainNegateToGrave",
     },
     {
       file: "lua-real-script-dark-bribe-negate-draw.test.ts",
@@ -292,6 +299,16 @@ function negationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-armor-break-equip-active-type-negate.test.ts",
+      kind: "armorBreakEquipActiveTypeNegateDestroy",
+      required: [
+        'const armorBreakCode = "79649195"',
+        "restores an IsActiveType(TYPE_EQUIP) activation response that negates, destroys, and suppresses the Equip operation",
+        "re:IsActiveType(TYPE_EQUIP)",
+        'eventName: "chainNegated"',
+      ],
+    },
     {
       file: "lua-real-script-ash-blossom-chain-negate.test.ts",
       kind: "ashBlossomHandTrapDeckSearchNegate",
@@ -478,6 +495,7 @@ function countNegationSemanticVariants(
       return counts;
     },
     {
+      armorBreakEquipActiveTypeNegateDestroy: 0,
       ashBlossomHandTrapDeckSearchNegate: 0,
       darkBribeNegateDestroyOpponentDraw: 0,
       divineWrathDiscardMonsterNegateDestroy: 0,

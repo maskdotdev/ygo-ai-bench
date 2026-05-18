@@ -49,7 +49,7 @@ export function sourceCard(session: DuelSession, effect: LuaEffectRecord): DuelC
 }
 
 export function activeTypeFlags(card: DuelCardInstance | undefined, session: DuelSession): number {
-  return cardTypeFlags(card, session.state) & 0x7;
+  return cardTypeFlags(card, session.state);
 }
 
 export function firstFiniteNumber(...values: Array<number | undefined>): number | undefined {

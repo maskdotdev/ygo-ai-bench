@@ -166,7 +166,7 @@ function pushActivityEffectProxy(L: unknown, session: DuelSession, cardUid: stri
 }
 
 function activeTypeFlags(card: DuelCardInstance | undefined, session: DuelSession): number {
-  return cardTypeFlags(card, session.state) & 0x7;
+  return cardTypeFlags(card, session.state);
 }
 
 function normalizePlayer(value: number): PlayerId {
