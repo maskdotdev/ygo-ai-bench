@@ -255,7 +255,18 @@ export function isKnownTemporaryMonsterExtraAttackEffect(effect: SerializedDuelE
 }
 
 function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEffect): boolean {
-  return isPlainTemporaryStaticValueEffect(effect, 201) && hasPlayerTargetFlag(effect) && targetRangeEquals(effect, 1, 0);
+  return (
+    effect.event === "continuous" &&
+    effect.code === 201 &&
+    effect.sourceUid !== undefined &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaPhaseDamageResetFlags) &&
+    (effect.value === undefined || effect.value === 1) &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    hasPlayerTargetFlag(effect) &&
+    targetRangeEquals(effect, 1, 0) &&
+    hasDefaultLuaFieldRange(effect)
+  );
 }
 
 function isPlainPlayerTargetPhaseEndEffect(effect: SerializedDuelEffect): boolean {

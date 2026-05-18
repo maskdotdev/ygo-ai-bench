@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 25;
-const battleTimingEventCodeFixtureCount = 25;
+const battleTimingFixtureCount = 26;
+const battleTimingEventCodeFixtureCount = 26;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 12,
-  beforeDamageCalculation: 3,
+  beforeDamageCalculation: 4,
   duringDamageCalculation: 3,
   endDamageStep: 4,
   startDamageStep: 3,
@@ -33,6 +33,7 @@ const battleTimingSemanticVariantCounts = {
   mirageKnightDuringDamageAtkBanish: 1,
   nightmareMagicianEndDamageControl: 1,
   predaplantSarraceniantAfterDamageDestroy: 1,
+  powerWallBeforeDamageDeckMillShield: 1,
   reflectBounderStartAndAfterDamageDestroy: 1,
   sasukeSamuraiStartDamageDestroy: 1,
   shadowSpellDuringDamagePersistentStat: 1,
@@ -120,6 +121,7 @@ type BattleTimingSemanticVariant =
   | "mirageKnightDuringDamageAtkBanish"
   | "nightmareMagicianEndDamageControl"
   | "predaplantSarraceniantAfterDamageDestroy"
+  | "powerWallBeforeDamageDeckMillShield"
   | "reflectBounderStartAndAfterDamageDestroy"
   | "sasukeSamuraiStartDamageDestroy"
   | "shadowSpellDuringDamagePersistentStat"
@@ -237,6 +239,11 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores its EVENT_BATTLED trigger and destroys the monster it battled", "eventCode: 1138", "reasonEffectId: 2"],
     },
     {
+      file: "test/lua-real-script-power-wall-pre-damage-deck-mill-shield.test.ts",
+      kind: "powerWallBeforeDamageDeckMillShield",
+      required: ["restores pre-damage battle damage lookup, Deck discard, operated group, and damage prevention", "battleWindow?.kind).toBe(\"beforeDamageCalculation\")", "eventCode: 1134", "Duel.GetBattleDamage(tp)", "Duel.GetOperatedGroup()"],
+    },
+    {
       file: "test/lua-real-script-reflect-bounder-battle-confirm-destroy.test.ts",
       kind: "reflectBounderStartAndAfterDamageDestroy",
       required: ["restores battle-confirm damage into a later battled self-destruction trigger", "eventName: \"battleConfirmed\"", "eventName: \"afterDamageCalculation\""],
@@ -309,6 +316,7 @@ function countBattleTimingSemanticVariants(
       mirageKnightDuringDamageAtkBanish: 0,
       nightmareMagicianEndDamageControl: 0,
       predaplantSarraceniantAfterDamageDestroy: 0,
+      powerWallBeforeDamageDeckMillShield: 0,
       reflectBounderStartAndAfterDamageDestroy: 0,
       sasukeSamuraiStartDamageDestroy: 0,
       shadowSpellDuringDamagePersistentStat: 0,
@@ -518,6 +526,19 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
         'eventName: "battleDamageDealt", eventPlayer: 0',
         "pendingBattle).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-power-wall-pre-damage-deck-mill-shield.test.ts",
+      kind: "beforeDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("beforeDamageCalculation")',
+        'eventName: "beforeDamageCalculation"',
+        "eventCode: 1134",
+        "Duel.GetBattleDamage(tp)",
+        "Duel.DiscardDeck(tp,val,REASON_EFFECT)",
+        "Duel.GetOperatedGroup()",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
