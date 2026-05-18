@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 4;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 5;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   graveBanishCostStatProcedure: 1,
+  handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
   handSendCostProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
 const summonProcedureSemanticVariantCounts = {
   broadTypedExtraDeckSpiritGeminiProcedures: 1,
   gigaraysGandoraTwoMonsterSendCostProcedure: 1,
+  magnetDollBothFieldsGimmickOnlyHandProcedure: 1,
   megarockDragonGraveBanishStatProcedure: 1,
   pankratopsOpponentControlsMoreHandProcedure: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
@@ -21,11 +23,13 @@ const summonProcedureSemanticVariantCounts = {
 type SummonProcedureKind =
   | "broadTypedProcedure"
   | "graveBanishCostStatProcedure"
+  | "handBothFieldsGimmickOnlyProcedure"
   | "handOpponentCountProcedure"
   | "handSendCostProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
   | "gigaraysGandoraTwoMonsterSendCostProcedure"
+  | "magnetDollBothFieldsGimmickOnlyHandProcedure"
   | "megarockDragonGraveBanishStatProcedure"
   | "pankratopsOpponentControlsMoreHandProcedure";
 
@@ -53,6 +57,22 @@ const summonProcedureFixtures = [
     kind: "handOpponentCountProcedure",
     required: [
       "opponent-controls-more-monsters hand Special Summon procedure",
+      'action.type === "specialSummonProcedure"',
+      "getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0))",
+      "getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))",
+      "applyRestoredActionAndAssert(restored, procedure!)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-gimmick-puppet-magnet-doll-special-summon-procedure.test.ts",
+    kind: "handBothFieldsGimmickOnlyProcedure",
+    required: [
+      "both-fields Gimmick Puppet-only hand Special Summon procedure",
+      'fieldCase: "noOpponentMonster"',
+      'fieldCase: "ownNonPuppet"',
+      'fieldCase: "ownFaceDownPuppet"',
       'action.type === "specialSummonProcedure"',
       "getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0))",
       "getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))",
@@ -143,6 +163,7 @@ function countSummonProcedureKinds(
     {
       broadTypedProcedure: 0,
       graveBanishCostStatProcedure: 0,
+      handBothFieldsGimmickOnlyProcedure: 0,
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
     },
@@ -172,6 +193,16 @@ function summonProcedureSemanticVariants(): Array<{
         'const gandoraCode = "58330108"',
         "restores its two-monster send-to-Graveyard hand Special Summon procedure cost",
         'eventName: "sentToGraveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-gimmick-puppet-magnet-doll-special-summon-procedure.test.ts",
+      kind: "magnetDollBothFieldsGimmickOnlyHandProcedure",
+      required: [
+        'const magnetDollCode = "39806198"',
+        "both-fields Gimmick Puppet-only hand Special Summon procedure",
+        'fieldCase: "ownNonPuppet"',
+        'fieldCase: "ownFaceDownPuppet"',
       ],
     },
     {
@@ -210,6 +241,7 @@ function countSummonProcedureSemanticVariants(
     {
       broadTypedExtraDeckSpiritGeminiProcedures: 0,
       gigaraysGandoraTwoMonsterSendCostProcedure: 0,
+      magnetDollBothFieldsGimmickOnlyHandProcedure: 0,
       megarockDragonGraveBanishStatProcedure: 0,
       pankratopsOpponentControlsMoreHandProcedure: 0,
     },

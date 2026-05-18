@@ -4,8 +4,8 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 205;
-export const summonProcedureFixtureCount = 24;
+export const realScriptSummonFixtureCount = 206;
+export const summonProcedureFixtureCount = 25;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
 export const pendulumHelperFixtureCount = 16;
@@ -21,13 +21,13 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 21,
-  summon: 69,
+  summon: 70,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
-  genericSpecialSummonProcedure: 12,
+  genericSpecialSummonProcedure: 13,
   pendulumProcedure: 3,
   ritualProcedure: 3,
   tributeProcedure: 2,
@@ -473,6 +473,7 @@ export function realScriptSummonProcedureFixtureFiles(): string[] {
       "lua-real-script-desert-twister-special-summon-procedure.test.ts",
       "lua-real-script-emissary-select-tribute-summon-procedure.test.ts",
       "lua-real-script-geira-guile-special-summon-procedure.test.ts",
+      "lua-real-script-gimmick-puppet-magnet-doll-special-summon-procedure.test.ts",
       "lua-real-script-gigarays-gandora-special-summon-procedure.test.ts",
       "lua-real-script-guardian-eatos-special-summon-procedure.test.ts",
       "lua-real-script-leo-wizard-opponent-summon-procedure.test.ts",
