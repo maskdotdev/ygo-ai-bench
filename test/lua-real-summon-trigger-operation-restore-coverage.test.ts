@@ -4,17 +4,19 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 10;
+const summonTriggerOperationFixtureCount = 11;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 4,
   summonSearchSelfSummon: 1,
+  summonStepReviveDisable: 1,
   summonToDeck: 1,
   summonToHandBounce: 2,
 } satisfies Record<SummonTriggerOperationKind, number>;
 const summonTriggerOperationSemanticVariantCounts = {
   aratamaSpiritSearchOnSummon: 1,
+  craneCraneStepReviveDisableOnSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
   gemArmadilloNormalSummonSearch: 1,
   gishkiNataliaGraveToDeckTopOnSummon: 1,
@@ -31,10 +33,12 @@ type SummonTriggerOperationKind =
   | "summonMassDestroy"
   | "summonSearch"
   | "summonSearchSelfSummon"
+  | "summonStepReviveDisable"
   | "summonToDeck"
   | "summonToHandBounce";
 type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
+  | "craneCraneStepReviveDisableOnSummon"
   | "darkDustSpiritMassDestroyOnSummon"
   | "gemArmadilloNormalSummonSearch"
   | "gishkiNataliaGraveToDeckTopOnSummon"
@@ -98,6 +102,25 @@ function summonTriggerOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-crane-crane-step-summon-disable.test.ts",
+      kind: "summonStepReviveDisable",
+      required: [
+        "restores summon-success target revive through SpecialSummonStep and disables the revived monster",
+        "expectCleanRestore(restoredSummonWindow)",
+        "expectCleanRestore(restoredTriggerWindow)",
+        "expectCleanRestore(restoredChainWindow)",
+        "expectRestoredLegalActions(restoredSummonWindow, 0)",
+        "expectRestoredLegalActions(restoredTriggerWindow, 0)",
+        "expectRestoredLegalActions(restoredChainWindow, 1)",
+        'eventName: "normalSummoned"',
+        'eventName: "specialSummoned"',
+        "category: 0x200",
+        "toEqual([2, 8])",
+        "isCardDisabled",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",
       kind: "summonDraw",
@@ -300,6 +323,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-crane-crane-step-summon-disable.test.ts",
+      kind: "craneCraneStepReviveDisableOnSummon",
+      requiredSnippets: [
+        'const craneCode = "28637168"',
+        "restores summon-success target revive through SpecialSummonStep and disables the revived monster",
+        'eventName: "specialSummoned"',
+        "toEqual([2, 8])",
+        "isCardDisabled",
+      ],
+    },
+    {
       file: "test/lua-real-script-dark-dust-spirit-destroy.test.ts",
       kind: "darkDustSpiritMassDestroyOnSummon",
       requiredSnippets: [
@@ -404,6 +438,7 @@ function countSummonTriggerOperationKinds(
       summonMassDestroy: 0,
       summonSearch: 0,
       summonSearchSelfSummon: 0,
+      summonStepReviveDisable: 0,
       summonToDeck: 0,
       summonToHandBounce: 0,
     },
@@ -420,6 +455,7 @@ function countSummonTriggerOperationSemanticVariants(
     },
     {
       aratamaSpiritSearchOnSummon: 0,
+      craneCraneStepReviveDisableOnSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
       gemArmadilloNormalSummonSearch: 0,
       gishkiNataliaGraveToDeckTopOnSummon: 0,
