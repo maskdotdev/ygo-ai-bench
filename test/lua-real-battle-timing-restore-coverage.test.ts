@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 28;
-const battleTimingEventCodeFixtureCount = 28;
+const battleTimingFixtureCount = 29;
+const battleTimingEventCodeFixtureCount = 29;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 12,
+  afterDamageCalculation: 13,
   beforeDamageCalculation: 6,
   duringDamageCalculation: 3,
   endDamageStep: 4,
@@ -29,6 +29,7 @@ const battleTimingSemanticVariantCounts = {
   getsuFuhmaEndDamageTargetDestroy: 1,
   gundariStartDamageSynchroBounce: 1,
   hayateAfterDamageDeckSend: 1,
+  heraldicBeastBasiliskAfterDamageBattleTargetDestroy: 1,
   injectionFairyLilyBeforeDamageLpBoost: 1,
   kuribohBeforeDamagePrevent: 1,
   mirageKnightDuringDamageAtkBanish: 1,
@@ -119,6 +120,7 @@ type BattleTimingSemanticVariant =
   | "getsuFuhmaEndDamageTargetDestroy"
   | "gundariStartDamageSynchroBounce"
   | "hayateAfterDamageDeckSend"
+  | "heraldicBeastBasiliskAfterDamageBattleTargetDestroy"
   | "injectionFairyLilyBeforeDamageLpBoost"
   | "kuribohBeforeDamagePrevent"
   | "mirageKnightDuringDamageAtkBanish"
@@ -221,6 +223,18 @@ function battleTimingSemanticVariants(): Array<{
       file: "test/lua-real-script-hayate-battled-send.test.ts",
       kind: "hayateAfterDamageDeckSend",
       required: ["restores its direct-attack EVENT_BATTLED trigger and sends a Sky Striker card from Deck to Graveyard", "triggerBucket: \"turnOptional\"", "eventReasonEffectId: 3"],
+    },
+    {
+      file: "test/lua-real-script-basilisk-battled-target-destroy.test.ts",
+      kind: "heraldicBeastBasiliskAfterDamageBattleTargetDestroy",
+      required: [
+        "restores its GetBattleTarget EVENT_BATTLED trigger and destroys the battled monster",
+        "return e:GetHandler():GetBattleTarget()~=nil",
+        "Duel.SetTargetCard(tc)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "eventName: \"afterDamageCalculation\"",
+        "eventName: \"destroyed\"",
+      ],
     },
     {
       file: "test/lua-real-script-injection-fairy-lily-pre-damage-lp-boost.test.ts",
@@ -333,6 +347,7 @@ function countBattleTimingSemanticVariants(
       getsuFuhmaEndDamageTargetDestroy: 0,
       gundariStartDamageSynchroBounce: 0,
       hayateAfterDamageDeckSend: 0,
+      heraldicBeastBasiliskAfterDamageBattleTargetDestroy: 0,
       injectionFairyLilyBeforeDamageLpBoost: 0,
       kuribohBeforeDamagePrevent: 0,
       mirageKnightDuringDamageAtkBanish: 0,
@@ -360,6 +375,18 @@ function countBattleTimingKinds(fixtures: Array<{ kind: BattleTimingKind }>): Re
 
 function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKind; required: string[] }> {
   return ([
+    {
+      file: "test/lua-real-script-basilisk-battled-target-destroy.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        'triggerBucket: "turnMandatory"',
+        'eventName: "destroyed"',
+        "eventReasonEffectId: 1",
+      ],
+    },
     {
       file: "test/lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
       kind: "afterDamageCalculation",
