@@ -136,6 +136,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fi
       location: "spellTrapZone",
       faceUp: true,
     });
+    expect(restoredNonDestroyLeave.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === fiendish!.uid)).toMatchInlineSnapshot(`[]`);
 
     const restoredTargetDestroyed = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);
     expect(restoredTargetDestroyed.restoreComplete, restoredTargetDestroyed.incompleteReasons.join("; ")).toBe(true);
@@ -149,6 +150,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fi
       previousLocation: "spellTrapZone",
       reason: duelReason.effect | duelReason.destroy,
     });
+    expect(restoredTargetDestroyed.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === fiendish!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-50078509-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-50078509-0",
+          "eventReasonEffectId": 5,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
 
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredTargetDestroyed.session), source, reader);
     expect(restoredDestroyed.restoreComplete, restoredDestroyed.incompleteReasons.join("; ")).toBe(true);

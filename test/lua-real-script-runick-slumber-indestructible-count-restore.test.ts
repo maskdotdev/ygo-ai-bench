@@ -19,13 +19,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const slumberCode = "67835547";
     const targetCode = "67835548";
+    const deckBanishCodes = ["67835549", "67835550", "67835551"];
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === slumberCode),
       { code: targetCode, name: "Runick Slumber Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1200 },
+      ...deckBanishCodes.map((code) => ({ code, name: `Runick Slumber Banish ${code}`, kind: "monster" as const, typeFlags: 0x1, level: 4 })),
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 679, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [slumberCode, targetCode] }, 1: { main: [] } });
+    loadDecks(session, { 0: { main: [slumberCode, targetCode] }, 1: { main: deckBanishCodes } });
     startDuel(session);
 
     const slumber = session.state.cards.find((card) => card.code === slumberCode);

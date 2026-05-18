@@ -152,36 +152,65 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
       location: "graveyard",
       previousEquippedToUid: target!.uid,
     });
+    expect(restoredEquipped.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === premature!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-70828912-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-70828912-0",
+          "eventReasonEffectId": 1,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     expect(restoredEquipped.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
       location: "graveyard",
       previousLocation: "monsterZone",
       reason: duelReason.effect | duelReason.destroy,
     });
-    expect(restoredEquipped.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === target!.uid)).toEqual([
-      {
-        eventName: "destroyed",
-        eventCode: 1029,
-        eventCardUid: target!.uid,
-        eventReason: duelReason.effect | duelReason.destroy,
-        eventReasonPlayer: 0,
-        eventReasonCardUid: premature!.uid,
-        eventReasonEffectId: 2,
-        eventPreviousState: {
-          controller: 0,
-          faceUp: true,
-          location: "monsterZone",
-          position: "faceUpAttack",
-          sequence: 0,
+    expect(restoredEquipped.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === target!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-612601-1",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-70828912-0",
+          "eventReasonEffectId": 2,
+          "eventReasonPlayer": 0,
         },
-        eventCurrentState: {
-          controller: 0,
-          faceUp: true,
-          location: "graveyard",
-          position: "faceUpAttack",
-          sequence: 1,
-        },
-      },
-    ]);
+      ]
+    `);
 
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expect(restoredDestroyed.restoreComplete, restoredDestroyed.incompleteReasons.join("; ")).toBe(true);

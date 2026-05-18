@@ -4,7 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
+const upstreamScriptRoot = path.join(root, ".upstream/ignis/script/official");
 const attackRetargetFixtureCount = 6;
+const upstreamChangeAttackTargetFixtureCount = 6;
 const attackRetargetKindCounts = {
   directAttackConversion: 1,
   selectedTargetRetarget: 1,
@@ -31,6 +33,20 @@ type AttackRetargetSemanticVariant =
   | "ultimateDivineBeastDivineSummonRetarget";
 
 describe("Lua real attack retarget restore coverage", () => {
+  it.skipIf(!fs.existsSync(upstreamScriptRoot))("pins upstream ChangeAttackTarget call shapes for every retarget variant", () => {
+    const fixtures = upstreamChangeAttackTargetFixtures();
+    expect(fixtures).toHaveLength(upstreamChangeAttackTargetFixtureCount);
+
+    const weak = fixtures
+      .filter(({ code, required }) => {
+        const text = fs.readFileSync(path.join(upstreamScriptRoot, `c${code}.lua`), "utf8");
+        return required.some((snippet) => !text.includes(snippet));
+      })
+      .map(({ code }) => code);
+
+    expect(weak).toEqual([]);
+  });
+
   it("requires representative attack-retarget fixtures to assert clean Lua restore and replayed target changes", () => {
     const files = realScriptAttackRetargetFixtureFiles();
     expect(files).toHaveLength(attackRetargetFixtureCount);
@@ -48,6 +64,8 @@ describe("Lua real attack retarget restore coverage", () => {
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
           || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("eventCardUid")
+          || !text.includes("eventCode")
           || !text.includes("currentAttack")
           || !text.includes("pendingBattle")
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
@@ -74,6 +92,17 @@ describe("Lua real attack retarget restore coverage", () => {
     expect(weak).toEqual([]);
   });
 });
+
+function upstreamChangeAttackTargetFixtures(): Array<{ code: string; required: string[] }> {
+  return [
+    { code: "56132807", required: ["e1:SetCode(EVENT_BE_BATTLE_TARGET)", "Duel.ChangeAttackTarget(tc)"] },
+    { code: "42256406", required: ["e4:SetCode(EVENT_BE_BATTLE_TARGET)", "Duel.ChangeAttackTarget(c)"] },
+    { code: "65743242", required: ["e1:SetCode(EVENT_ATTACK_ANNOUNCE)", "Duel.ChangeAttackTarget(nil)", "Duel.ChangeAttackTarget(tc)"] },
+    { code: "7198399", required: ["e2:SetCode(EVENT_BE_BATTLE_TARGET)", "Duel.ChangeAttackTarget(tc)"] },
+    { code: "43509019", required: ["e2:SetCode(EVENT_ATTACK_ANNOUNCE)", "Duel.ChangeAttackTarget(nil)"] },
+    { code: "32247099", required: ["e2:SetCode(EVENT_ATTACK_ANNOUNCE)", "Duel.ChangeAttackTarget(tc)"] },
+  ];
+}
 
 function realScriptAttackRetargetFixtureFiles(): Array<{
   file: string;

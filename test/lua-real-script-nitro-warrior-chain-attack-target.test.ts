@@ -124,6 +124,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
         },
       ]
     `);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "afterDamageCalculation")).toEqual([
+      {
+        eventCardUid: nitro!.uid,
+        eventName: "afterDamageCalculation",
+        eventCode: 1138,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventUids: [nitro!.uid, firstTarget!.uid],
+      },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

@@ -494,7 +494,7 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("double tribute unavailable false");
     expect(host.messages).toContain("double tribute flags true/false");
     expect(host.messages.some((message) => message.startsWith("double tribute proc 1/1/1/"))).toBe(true);
-    expect(host.messages).toContain("card proc queries 2/2/3900/true/2/true");
+    expect(host.messages).toContain("card proc queries 2/2/3900/true/4/true");
   });
 
   it("stores Lua effect metadata setters on registered effects", () => {

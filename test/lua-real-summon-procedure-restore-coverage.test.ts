@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 5;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 6;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 5;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
+  deckTwoMaterialShufflePierceProcedure: 1,
   graveBanishCostStatProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
@@ -14,6 +16,7 @@ const summonProcedureKindCounts = {
 } satisfies Record<SummonProcedureKind, number>;
 const summonProcedureSemanticVariantCounts = {
   broadTypedExtraDeckSpiritGeminiProcedures: 1,
+  familiarPossessedDeckTwoMaterialShufflePierceProcedure: 1,
   gigaraysGandoraTwoMonsterSendCostProcedure: 1,
   magnetDollBothFieldsGimmickOnlyHandProcedure: 1,
   megarockDragonGraveBanishStatProcedure: 1,
@@ -22,12 +25,14 @@ const summonProcedureSemanticVariantCounts = {
 
 type SummonProcedureKind =
   | "broadTypedProcedure"
+  | "deckTwoMaterialShufflePierceProcedure"
   | "graveBanishCostStatProcedure"
   | "handBothFieldsGimmickOnlyProcedure"
   | "handOpponentCountProcedure"
   | "handSendCostProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
+  | "familiarPossessedDeckTwoMaterialShufflePierceProcedure"
   | "gigaraysGandoraTwoMonsterSendCostProcedure"
   | "magnetDollBothFieldsGimmickOnlyHandProcedure"
   | "megarockDragonGraveBanishStatProcedure"
@@ -79,6 +84,25 @@ const summonProcedureFixtures = [
       "applyRestoredActionAndAssert(restored, procedure!)",
       'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-familiar-possessed-hiita-deck-special-summon-procedure.test.ts",
+    kind: "deckTwoMaterialShufflePierceProcedure",
+    required: [
+      "Deck summon procedure material selection, cost send, deck shuffle, and piercing grant",
+      'const hiitaCode = "4376658"',
+      'action.type === "specialSummonProcedure"',
+      "aux.SelectUnselectGroup(g,e,tp,2,2,s.rescon,0)",
+      "Duel.SendtoGrave(g,REASON_COST)",
+      "Duel.ShuffleDeck(tp)",
+      "getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0))",
+      "getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))",
+      "applyRestoredActionAndAssert(restored, procedure!)",
+      'eventName: "sentToGraveyard"',
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "effect.code === 203",
     ],
   },
   {
@@ -150,6 +174,20 @@ describe("Lua real summon procedure restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("requires focused summon procedure fixtures to pin event identity after restore", () => {
+    const fixtures = eventRichSummonProcedureFixtures();
+    expect(fixtures).toHaveLength(EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT);
+
+    const weak = fixtures
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function countSummonProcedureKinds(
@@ -163,6 +201,7 @@ function countSummonProcedureKinds(
     {
       broadTypedProcedure: 0,
       graveBanishCostStatProcedure: 0,
+      deckTwoMaterialShufflePierceProcedure: 0,
       handBothFieldsGimmickOnlyProcedure: 0,
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
@@ -184,6 +223,17 @@ function summonProcedureSemanticVariants(): Array<{
         "restores official Xyz.AddProcedure material counts for real extra deck summons",
         "restores official Synchro.AddProcedure tuner and non-tuner count ranges for real extra deck summons",
         "restores Spirit procedure End Phase return after a real Normal Summon",
+      ],
+    },
+    {
+      file: "test/lua-real-script-familiar-possessed-hiita-deck-special-summon-procedure.test.ts",
+      kind: "familiarPossessedDeckTwoMaterialShufflePierceProcedure",
+      required: [
+        'const hiitaCode = "4376658"',
+        "restores its Deck summon procedure material selection, cost send, deck shuffle, and piercing grant",
+        "aux.SelectUnselectGroup(g,e,tp,2,2,s.rescon,0)",
+        "Duel.ShuffleDeck(tp)",
+        "effect.code === 203",
       ],
     },
     {
@@ -230,6 +280,50 @@ function summonProcedureSemanticVariants(): Array<{
   }>).sort((a, b) => a.file.localeCompare(b.file));
 }
 
+function eventRichSummonProcedureFixtures(): Array<{
+  file: string;
+  kind: SummonProcedureKind;
+  required: string[];
+}> {
+  return summonProcedureFixtures
+    .filter(({ kind }) => kind !== "broadTypedProcedure")
+    .map(({ file, kind }) => ({
+      file,
+      kind,
+      required: [
+        "eventCode: 1102",
+        "eventCardUid:",
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        ...(kind === "handSendCostProcedure"
+          ? [
+              'eventName: "sentToGraveyard"',
+              "eventCode: 1014",
+              "eventReasonCardUid: gandora!.uid",
+              "eventReasonEffectId: 2",
+              "eventUids: [fieldCost!.uid, handCost!.uid]",
+            ]
+          : []),
+        ...(kind === "deckTwoMaterialShufflePierceProcedure"
+          ? [
+              'eventName: "sentToGraveyard"',
+              "eventCode: 1014",
+              "eventReasonCardUid: hiita!.uid",
+              "eventReasonEffectId: 1",
+              "eventUids: [charmer!.uid, fireMaterial!.uid]",
+            ]
+          : []),
+        ...(kind === "graveBanishCostStatProcedure"
+          ? [
+              'eventName: "banished"',
+              "eventCode: 1011",
+              "eventReasonCardUid: megarock!.uid",
+              "eventReasonEffectId: 3",
+            ]
+          : []),
+      ],
+    }));
+}
+
 function countSummonProcedureSemanticVariants(
   fixtures: Array<{ kind: SummonProcedureSemanticVariant }>,
 ): Record<SummonProcedureSemanticVariant, number> {
@@ -240,6 +334,7 @@ function countSummonProcedureSemanticVariants(
     },
     {
       broadTypedExtraDeckSpiritGeminiProcedures: 0,
+      familiarPossessedDeckTwoMaterialShufflePierceProcedure: 0,
       gigaraysGandoraTwoMonsterSendCostProcedure: 0,
       magnetDollBothFieldsGimmickOnlyHandProcedure: 0,
       megarockDragonGraveBanishStatProcedure: 0,

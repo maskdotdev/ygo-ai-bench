@@ -168,7 +168,7 @@ describe.skipIf(!hasUpstreamScripts || !hasPleuroScript)("Lua real script Evolti
     expect(restoredChain.session.state.cards.find((card) => card.uid === evolsaur.uid)).toMatchObject({
       location: "monsterZone",
       controller: 0,
-      sequence: 1,
+      sequence: 0,
       faceUp: true,
       position: "faceUpAttack",
       summonType: "special",
@@ -198,7 +198,7 @@ describe.skipIf(!hasUpstreamScripts || !hasPleuroScript)("Lua real script Evolti
           faceUp: true,
           location: "monsterZone",
           position: "faceUpAttack",
-          sequence: 1,
+          sequence: 0,
         },
       },
     ]);

@@ -196,7 +196,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
           faceUp: true,
           location: "monsterZone",
           position: "faceUpDefense",
-          sequence: 0,
+          sequence: 1,
         },
         eventCurrentState: {
           controller: 0,
@@ -266,7 +266,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
           faceUp: true,
           location: "monsterZone",
           position: "faceUpDefense",
-          sequence: 0,
+          sequence: 1,
         },
         eventCurrentState: {
           controller: 0,

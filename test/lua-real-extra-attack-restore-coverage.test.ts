@@ -39,7 +39,7 @@ describe("Lua real extra attack restore coverage", () => {
     expect(files).toHaveLength(EXTRA_ATTACK_FIXTURE_COUNT);
 
     const missing = files
-      .filter(({ file, required }) => {
+      .filter(({ file, kind, required }) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("restoreDuelWithLuaScripts")
           || !text.includes("restoreComplete")
@@ -48,6 +48,7 @@ describe("Lua real extra attack restore coverage", () => {
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
           || !text.includes("getLuaRestoreLegalActions")
           || !text.includes("declareAttack")
+          || (kind === "chainAttack" && (!text.includes("eventCode") || !text.includes("eventCardUid")))
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);

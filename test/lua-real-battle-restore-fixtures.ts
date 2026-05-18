@@ -4,14 +4,14 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 159;
+export const realScriptBattleFixtureCount = 162;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;
 export const battleContinuousSemanticFixtureCount = 1;
 export const damageStepRestoreFixtureCount = 4;
 export const battleDamageSemanticFixtureCount = 8;
-export const battleTriggerSemanticFixtureCount = 16;
+export const battleTriggerSemanticFixtureCount = 19;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -49,12 +49,14 @@ export const battleDamageSemanticKindCounts = {
 export const battleTriggerSemanticKindCounts = {
   battleStartDestroy: 1,
   battleConfirmDestroy: 1,
+  battleDestroyedChainAttack: 2,
   battleDestroyingDecktopConfirm: 1,
   battleDestroyedDestroy: 1,
   battleDestroyedGroupDestroy: 1,
   battleDestroyingSelectEffect: 1,
   battleSearch: 2,
   battledBounce: 1,
+  battledChainAttackTarget: 1,
   battledDeckSend: 1,
   battledDestroy: 1,
   battledDamage: 1,
@@ -64,6 +66,7 @@ export const battleTriggerSemanticKindCounts = {
   mutualBattleDestroyedSegoc: 1,
 } satisfies Record<BattleTriggerSemanticKind, number>;
 export const battleSemanticVariantCounts = {
+  alienHunterBattleDestroyedChainAttack: 1,
   alienOfJusticeNullfierBattledDisable: 1,
   amazonessSwordsWomanReflectDamage: 1,
   ancientGearGolemPiercingDamage: 1,
@@ -75,6 +78,7 @@ export const battleSemanticVariantCounts = {
   decoyroidBattleTargetSelectionLock: 1,
   dimensionalPrisonAttackBanish: 1,
   drainingShieldLpRecoverNegate: 1,
+  elementDoomAttributeChainAttack: 1,
   fabledAshenveilDamageStepBoost: 1,
   gemKnightSardonyxBattleSearch: 1,
   getsuFuhmaEndDamageDestroy: 1,
@@ -92,6 +96,7 @@ export const battleSemanticVariantCounts = {
   naturiaSpiderfangAttackAnnouncementLock: 1,
   negateAttackBattlePhaseSkipNegate: 1,
   nightmareMagicianEndDamageControl: 1,
+  nitroWarriorBattledChainAttackTarget: 1,
   numberC96AlsoBattleDamage: 1,
   predaplantSarraceniantBattledDestroy: 1,
   radiantSpiritBattleDestroyedGroupDestroy: 1,
@@ -143,12 +148,14 @@ export type BattleDamageSemanticKind =
 export type BattleTriggerSemanticKind =
   | "battleStartDestroy"
   | "battleConfirmDestroy"
+  | "battleDestroyedChainAttack"
   | "battleDestroyingDecktopConfirm"
   | "battleDestroyedDestroy"
   | "battleDestroyedGroupDestroy"
   | "battleDestroyingSelectEffect"
   | "battleSearch"
   | "battledBounce"
+  | "battledChainAttackTarget"
   | "battledDeckSend"
   | "battledDestroy"
   | "battledDamage"
@@ -157,6 +164,7 @@ export type BattleTriggerSemanticKind =
   | "endDamageDestroy"
   | "mutualBattleDestroyedSegoc";
 export type BattleSemanticVariant =
+  | "alienHunterBattleDestroyedChainAttack"
   | "alienOfJusticeNullfierBattledDisable"
   | "amazonessSwordsWomanReflectDamage"
   | "ancientGearGolemPiercingDamage"
@@ -168,6 +176,7 @@ export type BattleSemanticVariant =
   | "decoyroidBattleTargetSelectionLock"
   | "dimensionalPrisonAttackBanish"
   | "drainingShieldLpRecoverNegate"
+  | "elementDoomAttributeChainAttack"
   | "fabledAshenveilDamageStepBoost"
   | "gemKnightSardonyxBattleSearch"
   | "getsuFuhmaEndDamageDestroy"
@@ -185,6 +194,7 @@ export type BattleSemanticVariant =
   | "naturiaSpiderfangAttackAnnouncementLock"
   | "negateAttackBattlePhaseSkipNegate"
   | "nightmareMagicianEndDamageControl"
+  | "nitroWarriorBattledChainAttackTarget"
   | "numberC96AlsoBattleDamage"
   | "predaplantSarraceniantBattledDestroy"
   | "radiantSpiritBattleDestroyedGroupDestroy"
@@ -198,6 +208,9 @@ export type BattleSemanticVariant =
   | "topologicBomberBattledDamage"
   | "wallOfIllusionBattledBounce"
   | "yomiShipBattleDestroyedDestroy";
+
+type RequiredFixture<K extends string> = { file: string; kind: K; required: string[] };
+type KindFixture<K extends string> = { file: string; kind: K };
 
 export function realScriptBattleFixtureFiles(): string[] {
   return fs.readdirSync(testRoot)
@@ -218,11 +231,7 @@ export function realScriptBattleLegalActionFixtureFiles(): string[] {
     .sort();
 }
 
-export function realScriptAttackDeclarationTrapFixtureFiles(): Array<{
-  file: string;
-  kind: AttackDeclarationTrapKind;
-  required: string[];
-}> {
+export function realScriptAttackDeclarationTrapFixtureFiles(): Array<RequiredFixture<AttackDeclarationTrapKind>> {
   return ([
     {
       file: "lua-real-script-magic-cylinder-battle-window.test.ts",
@@ -274,18 +283,10 @@ export function realScriptAttackDeclarationTrapFixtureFiles(): Array<{
         "skippedPhases).toEqual([{ player: 0, phase: \"battle\", remaining: 1 }])",
       ],
     },
-  ] satisfies Array<{
-    file: string;
-    kind: AttackDeclarationTrapKind;
-    required: string[];
-  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+  ] satisfies Array<RequiredFixture<AttackDeclarationTrapKind>>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
-export function realScriptBattleRoutingFixtureFiles(): Array<{
-  file: string;
-  kind: BattleRoutingKind;
-  required: string[];
-}> {
+export function realScriptBattleRoutingFixtureFiles(): Array<RequiredFixture<BattleRoutingKind>> {
   return ([
     {
       file: "lua-real-script-aoj-thousand-arms-attack-all-light.test.ts",
@@ -339,20 +340,12 @@ export function realScriptBattleRoutingFixtureFiles(): Array<{
         "directAttack)).toBe(false)",
       ],
     },
-  ] satisfies Array<{
-    file: string;
-    kind: BattleRoutingKind;
-    required: string[];
-  }>)
+  ] satisfies Array<RequiredFixture<BattleRoutingKind>>)
     .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }
 
-export function realScriptBattleContinuousSemanticFixtureFiles(): Array<{
-  file: string;
-  kind: BattleContinuousSemanticKind;
-  required: string[];
-}> {
+export function realScriptBattleContinuousSemanticFixtureFiles(): Array<RequiredFixture<BattleContinuousSemanticKind>> {
   return ([
     {
       file: "lua-real-script-dark-ruler-ha-des-battled-disable.test.ts",
@@ -365,18 +358,14 @@ export function realScriptBattleContinuousSemanticFixtureFiles(): Array<{
         "ha des target disabled true",
       ],
     },
-  ] satisfies Array<{
-    file: string;
-    kind: BattleContinuousSemanticKind;
-    required: string[];
-  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+  ] satisfies Array<RequiredFixture<BattleContinuousSemanticKind>>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
 export function realScriptDamageStepRestoreFixtureFiles(): string[] {
   return realScriptDamageStepRestoreFixtures().map(({ file }) => file);
 }
 
-export function realScriptDamageStepRestoreFixtures(): Array<{ file: string; kind: DamageStepRestoreKind }> {
+export function realScriptDamageStepRestoreFixtures(): Array<KindFixture<DamageStepRestoreKind>> {
   return ([
     {
       file: "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
@@ -394,16 +383,12 @@ export function realScriptDamageStepRestoreFixtures(): Array<{ file: string; kin
       file: "lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
       kind: "persistentDamageCalculationStat",
     },
-  ] satisfies Array<{ file: string; kind: DamageStepRestoreKind }>)
+  ] satisfies Array<KindFixture<DamageStepRestoreKind>>)
     .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }
 
-export function realScriptBattleDamageSemanticFixtureFiles(): Array<{
-  file: string;
-  kind: BattleDamageSemanticKind;
-  required: string[];
-}> {
+export function realScriptBattleDamageSemanticFixtureFiles(): Array<RequiredFixture<BattleDamageSemanticKind>> {
   return ([
     {
       file: "lua-real-script-ancient-gear-golem-pierce-battle-damage.test.ts",
@@ -477,18 +462,10 @@ export function realScriptBattleDamageSemanticFixtureFiles(): Array<{
         "eventValue: 500",
       ],
     },
-  ] satisfies Array<{
-    file: string;
-    kind: BattleDamageSemanticKind;
-    required: string[];
-  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+  ] satisfies Array<RequiredFixture<BattleDamageSemanticKind>>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
-export function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
-  file: string;
-  kind: BattleTriggerSemanticKind;
-  required: string[];
-}> {
+export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFixture<BattleTriggerSemanticKind>> {
   return ([
     {
       file: "lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
@@ -500,6 +477,21 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
         "code: 2",
         "code: 8",
       ],
+    },
+    {
+      file: "lua-real-script-alien-hunter-chain-attack.test.ts",
+      kind: "battleDestroyedChainAttack",
+      required: ["restores Alien Hunter's battle-destroying trigger and reopens its attack with Duel.ChainAttack", 'eventName: "battleDestroyed"', "eventCode: 1140", "attacksDeclared).not.toContain(alienHunter!.uid)", 'type: "declareAttack", attackerUid: alienHunter!.uid, targetUid: followupTarget!.uid'],
+    },
+    {
+      file: "lua-real-script-element-doom-chain-attack.test.ts",
+      kind: "battleDestroyedChainAttack",
+      required: ["restores its attribute-gated battled trigger and reopens its attack with Duel.ChainAttack", 'eventName: "battleDestroyed"', "eventCode: 1140", "attacksDeclared).not.toContain(elementDoom!.uid)", 'type: "declareAttack", attackerUid: elementDoom!.uid, targetUid: followupTarget!.uid'],
+    },
+    {
+      file: "lua-real-script-nitro-warrior-chain-attack-target.test.ts",
+      kind: "battledChainAttackTarget",
+      required: ["restores its battled trigger and chain-attacks the selected position-changed monster", 'eventName: "afterDamageCalculation"', "eventCode: 1138", "currentAttack).toMatchObject({ attackerUid: nitro!.uid, targetUid: followupTarget!.uid })", "battleDamage).toMatchObject({ 1: 1800 })"],
     },
     {
       file: "lua-real-script-wall-of-illusion-battled.test.ts",
@@ -620,19 +612,16 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<{
         "previousController: 1",
       ],
     },
-  ] satisfies Array<{
-    file: string;
-    kind: BattleTriggerSemanticKind;
-    required: string[];
-  }>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
+  ] satisfies Array<RequiredFixture<BattleTriggerSemanticKind>>).map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }));
 }
 
-export function realScriptBattleSemanticVariants(): Array<{
-  file: string;
-  kind: BattleSemanticVariant;
-  required: string[];
-}> {
+export function realScriptBattleSemanticVariants(): Array<RequiredFixture<BattleSemanticVariant>> {
   return ([
+    {
+      file: "lua-real-script-alien-hunter-chain-attack.test.ts",
+      kind: "alienHunterBattleDestroyedChainAttack",
+      required: ["restores Alien Hunter's battle-destroying trigger and reopens its attack with Duel.ChainAttack", "eventCode: 1140", "attacksDeclared).not.toContain(alienHunter!.uid)"],
+    },
     {
       file: "lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
       kind: "alienOfJusticeNullfierBattledDisable",
@@ -687,6 +676,11 @@ export function realScriptBattleSemanticVariants(): Array<{
       file: "lua-real-script-draining-shield-battle-window.test.ts",
       kind: "drainingShieldLpRecoverNegate",
       required: ["restores Draining Shield's attack-declaration target and recovers LP after negating the attack", "attackCanceledUids).toEqual([attacker!.uid])", "players[1].lifePoints).toBe(9800)"],
+    },
+    {
+      file: "lua-real-script-element-doom-chain-attack.test.ts",
+      kind: "elementDoomAttributeChainAttack",
+      required: ["restores its attribute-gated battled trigger and reopens its attack with Duel.ChainAttack", "eventCode: 1140", "attacksDeclared).not.toContain(elementDoom!.uid)"],
     },
     {
       file: "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
@@ -774,6 +768,11 @@ export function realScriptBattleSemanticVariants(): Array<{
       required: ["restores battle-target indestructibility and controls the battled monster at Damage Step end", "luaTargetDescriptor: \"target:source-or-battle-target\"", "previousController: 1"],
     },
     {
+      file: "lua-real-script-nitro-warrior-chain-attack-target.test.ts",
+      kind: "nitroWarriorBattledChainAttackTarget",
+      required: ["restores its battled trigger and chain-attacks the selected position-changed monster", "eventCode: 1138", "currentAttack).toMatchObject({ attackerUid: nitro!.uid, targetUid: followupTarget!.uid })"],
+    },
+    {
       file: "lua-real-script-number-c96-also-battle-damage.test.ts",
       kind: "numberC96AlsoBattleDamage",
       required: ["restores Number C96 and applies also battle damage to the opponent", "battleDamage).toEqual({ 0: 800, 1: 800 })", "eventPlayer: 1"],
@@ -838,11 +837,7 @@ export function realScriptBattleSemanticVariants(): Array<{
       kind: "yomiShipBattleDestroyedDestroy",
       required: ["restores Yomi Ship's battle-destroyed trigger and destroys the monster that destroyed it", "eventCode: 1140", "reasonCardUid: attacker!.uid"],
     },
-  ] satisfies Array<{
-    file: string;
-    kind: BattleSemanticVariant;
-    required: string[];
-  }>)
+  ] satisfies Array<RequiredFixture<BattleSemanticVariant>>)
     .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
 }
@@ -854,6 +849,7 @@ export function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemant
       return counts;
     },
     {
+      alienHunterBattleDestroyedChainAttack: 0,
       alienOfJusticeNullfierBattledDisable: 0,
       amazonessSwordsWomanReflectDamage: 0,
       ancientGearGolemPiercingDamage: 0,
@@ -865,6 +861,7 @@ export function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemant
       decoyroidBattleTargetSelectionLock: 0,
       dimensionalPrisonAttackBanish: 0,
       drainingShieldLpRecoverNegate: 0,
+      elementDoomAttributeChainAttack: 0,
       fabledAshenveilDamageStepBoost: 0,
       gemKnightSardonyxBattleSearch: 0,
       getsuFuhmaEndDamageDestroy: 0,
@@ -882,6 +879,7 @@ export function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemant
       naturiaSpiderfangAttackAnnouncementLock: 0,
       negateAttackBattlePhaseSkipNegate: 0,
       nightmareMagicianEndDamageControl: 0,
+      nitroWarriorBattledChainAttackTarget: 0,
       numberC96AlsoBattleDamage: 0,
       predaplantSarraceniantBattledDestroy: 0,
       radiantSpiritBattleDestroyedGroupDestroy: 0,
@@ -997,12 +995,14 @@ export function countBattleTriggerSemanticKinds(
     {
       battleStartDestroy: 0,
       battleConfirmDestroy: 0,
+      battleDestroyedChainAttack: 0,
       battleDestroyingDecktopConfirm: 0,
       battleDestroyedDestroy: 0,
       battleDestroyedGroupDestroy: 0,
       battleDestroyingSelectEffect: 0,
       battleSearch: 0,
       battledBounce: 0,
+      battledChainAttackTarget: 0,
       battledDeckSend: 0,
       battledDestroy: 0,
       battledDamage: 0,

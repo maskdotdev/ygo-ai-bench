@@ -208,6 +208,8 @@ describe("Lua real equip restore coverage", () => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/previousEquippedToUid/.test(text)
           || !/location:\s*["']graveyard["']/.test(text)
+          || !/eventCode:\s*1014|eventCode:\s*1029|"eventCode":\s*1014|"eventCode":\s*1029/.test(text)
+          || !/eventCardUid/.test(text)
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")

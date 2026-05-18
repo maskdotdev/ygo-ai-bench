@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 7;
+const statFixtureCount = 8;
 const statKindCounts = {
-  battleTargetAttackBoost: 1,
+  battleTargetAttackBoost: 2,
   fieldAttributeAttackUpdate: 2,
   fieldRaceAttackDefenseUpdate: 1,
   setAttack: 1,
@@ -21,6 +21,7 @@ const statSemanticVariantCounts = {
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   shrinkTargetBaseAtkHalving: 1,
+  skyscraperFieldDamageCalculationAttackBoost: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
 type StatKind = "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
@@ -31,7 +32,8 @@ type StatSemanticVariant =
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
-  | "shrinkTargetBaseAtkHalving";
+  | "shrinkTargetBaseAtkHalving"
+  | "skyscraperFieldDamageCalculationAttackBoost";
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
@@ -165,6 +167,18 @@ function statFixtureFiles(): Array<{
         "host.messages).not.toContain",
       ],
     },
+    {
+      file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
+      kind: "battleTargetAttackBoost",
+      required: [
+        "e2:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.IsPhase(PHASE_DAMAGE_CAL) and Duel.GetAttackTarget()",
+        "c==Duel.GetAttacker() and c:IsSetCard(SET_ELEMENTAL_HERO)",
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        "currentAttack(restoredHero, restoredDamageCalculation.session.state)).toBe(2600)",
+        "battleDamage).toEqual({ 0: 0, 1: 700 })",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatKind;
@@ -261,6 +275,16 @@ function statSemanticVariants(): Array<{
         "value: 1000",
       ],
     },
+    {
+      file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
+      kind: "skyscraperFieldDamageCalculationAttackBoost",
+      required: [
+        'const skyscraperCode = "63035430"',
+        "restores PHASE_DAMAGE_CAL attacker-vs-target field ATK boost into battle damage",
+        "stat:damage-calculation-attacker-lower-than-target:+1000",
+        "currentAttack(restoredHero, restoredDamageCalculation.session.state)).toBe(2600)",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatSemanticVariant;
@@ -282,6 +306,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       shrinkTargetBaseAtkHalving: 0,
+      skyscraperFieldDamageCalculationAttackBoost: 0,
     },
   );
 }

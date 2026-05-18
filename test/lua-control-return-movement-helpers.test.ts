@@ -674,7 +674,7 @@ describe("Lua control and return movement helpers", () => {
     expect(host.messages).toContain("self usable excluding taken 2");
     expect(host.messages).toContain("opponent usable mzone 4");
     expect(session.state.cards.filter((card) => card.controller === 0 && card.location === "monsterZone")).toHaveLength(5);
-    expect(session.state.cards.find((card) => card.code === "800")).toMatchObject({ controller: 1, location: "monsterZone", sequence: 0 });
+    expect(session.state.cards.find((card) => card.code === "800")).toMatchObject({ controller: 1, location: "monsterZone", sequence: 2 });
   });
 
   it("queues Lua control-change triggers after Duel.GetControl succeeds", () => {

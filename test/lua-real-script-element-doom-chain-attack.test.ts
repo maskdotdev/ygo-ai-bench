@@ -155,6 +155,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
         },
       ]
     `);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "battleDestroyed")).toEqual([
+      {
+        eventCardUid: firstTarget!.uid,
+        eventName: "battleDestroyed",
+        eventCode: 1140,
+        eventPreviousState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventCurrentState: { controller: 1, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
+        eventReason: 33,
+        eventReasonCardUid: elementDoom!.uid,
+        eventReasonPlayer: 0,
+      },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);

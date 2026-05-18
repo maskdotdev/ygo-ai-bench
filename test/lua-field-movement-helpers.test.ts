@@ -359,9 +359,9 @@ describe("Lua field movement helpers", () => {
     expect(host.messages).toContain("return operated second 1/200");
     expect(host.messages).toContain("return invalid false");
     expect(host.messages).toContain("return operated invalid 0");
-    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 1, position: "faceUpAttack", faceUp: true });
-    expect(session.state.cards.find((card) => card.code === "60")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 3 });
-    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 2, position: "faceUpDefense", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "100")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 2, position: "faceUpAttack", faceUp: true });
+    expect(session.state.cards.find((card) => card.code === "60")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 4 });
+    expect(session.state.cards.find((card) => card.code === "200")).toMatchObject({ controller: 0, location: "monsterZone", sequence: 1, position: "faceUpDefense", faceUp: true });
     expect(session.state.cards.find((card) => card.code === "300")).toMatchObject({ controller: 0, location: "hand" });
   });
 

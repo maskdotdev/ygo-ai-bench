@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 22;
-const battleTimingEventCodeFixtureCount = 22;
+const battleTimingFixtureCount = 24;
+const battleTimingEventCodeFixtureCount = 24;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 10,
+  afterDamageCalculation: 11,
   beforeDamageCalculation: 3,
-  duringDamageCalculation: 2,
+  duringDamageCalculation: 3,
   endDamageStep: 4,
   startDamageStep: 3,
 };
@@ -19,6 +19,7 @@ const battleTimingSemanticVariantCounts = {
   cipherSoldierBeforeDamageCalculationBoost: 1,
   ddAssailantAfterDamageBanishBoth: 1,
   ddWarriorWallMandatoryBattledSegoc: 1,
+  darkRulerHaDesAfterDamageContinuousDisable: 1,
   desKangarooEndDamageDestroy: 1,
   destructionPunchEndDamageTrapDestroy: 1,
   divineKnightIshzarkAfterDamageBanish: 1,
@@ -35,6 +36,7 @@ const battleTimingSemanticVariantCounts = {
   sasukeSamuraiStartDamageDestroy: 1,
   shadowSpellDuringDamagePersistentStat: 1,
   shinobirdCrowStartDamageStatBoost: 1,
+  skyscraperDuringDamageFieldStatBoost: 1,
   topologicBomberAfterDamageBurn: 1,
   wallOfIllusionAfterDamageBounce: 1,
 } satisfies Record<BattleTimingSemanticVariant, number>;
@@ -57,7 +59,7 @@ describe("Lua real battle timing restore coverage", () => {
     expect(exceptions).toEqual([...battleTimingEventCodeExceptions].sort());
   });
 
-  it("requires battle timing fixtures to assert clean Lua restore and restored trigger outcomes", () => {
+  it("requires battle timing fixtures to assert clean Lua restore and restored timing outcomes", () => {
     const files = battleTimingFixtureFiles();
     expect(files).toHaveLength(battleTimingFixtureCount);
 
@@ -73,8 +75,9 @@ describe("Lua real battle timing restore coverage", () => {
           || !text.includes("getLuaRestoreLegalActionGroups")
           || !text.includes("getGroupedDuelLegalActions")
           || !text.includes("flatMap((group) => group.actions)")
-          || !text.includes("applyLuaRestoreResponse")
+          || (requiresActivatedTrigger(file) && !text.includes("applyLuaRestoreResponse"))
           || !text.includes("eventHistory")
+          || !text.includes("eventCardUid")
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -102,6 +105,7 @@ type BattleTimingSemanticVariant =
   | "cipherSoldierBeforeDamageCalculationBoost"
   | "ddAssailantAfterDamageBanishBoth"
   | "ddWarriorWallMandatoryBattledSegoc"
+  | "darkRulerHaDesAfterDamageContinuousDisable"
   | "desKangarooEndDamageDestroy"
   | "destructionPunchEndDamageTrapDestroy"
   | "divineKnightIshzarkAfterDamageBanish"
@@ -118,6 +122,7 @@ type BattleTimingSemanticVariant =
   | "sasukeSamuraiStartDamageDestroy"
   | "shadowSpellDuringDamagePersistentStat"
   | "shinobirdCrowStartDamageStatBoost"
+  | "skyscraperDuringDamageFieldStatBoost"
   | "topologicBomberAfterDamageBurn"
   | "wallOfIllusionAfterDamageBounce";
 
@@ -146,6 +151,15 @@ function battleTimingSemanticVariants(): Array<{
       file: "test/lua-real-script-dd-warrior-wall-battled-segoc.test.ts",
       kind: "ddWarriorWallMandatoryBattledSegoc",
       required: ["restores simultaneous EVENT_BATTLED mandatory triggers and respects chain order battle relation", "triggerBucket: \"turnMandatory\"", "triggerBucket: \"opponentMandatory\""],
+    },
+    {
+      file: "test/lua-real-script-dark-ruler-ha-des-battled-disable.test.ts",
+      kind: "darkRulerHaDesAfterDamageContinuousDisable",
+      required: [
+        "restores its EVENT_BATTLED continuous disable on a battle-destroyed monster in Graveyard",
+        "ha des target disabled true",
+        "eventName: \"battleDestroyed\"",
+      ],
     },
     {
       file: "test/lua-real-script-des-kangaroo-damage-step-end.test.ts",
@@ -228,6 +242,15 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores its Damage Step discard label object and applies the ATK/DEF boost", "battleWindow?.kind).toBe(\"startDamageStep\")", "effectLabelObjectUid"],
     },
     {
+      file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
+      kind: "skyscraperDuringDamageFieldStatBoost",
+      required: [
+        "restores PHASE_DAMAGE_CAL attacker-vs-target field ATK boost into battle damage",
+        "eventCode: 1135",
+        "stat:damage-calculation-attacker-lower-than-target:+1000",
+      ],
+    },
+    {
       file: "test/lua-real-script-topologic-bomber-battled-damage.test.ts",
       kind: "topologicBomberAfterDamageBurn",
       required: ["restores its EVENT_BATTLED trigger and deals effect damage from the battle target's base ATK", "eventName: \"damageDealt\"", "eventValue: 1200"],
@@ -257,6 +280,7 @@ function countBattleTimingSemanticVariants(
       cipherSoldierBeforeDamageCalculationBoost: 0,
       ddAssailantAfterDamageBanishBoth: 0,
       ddWarriorWallMandatoryBattledSegoc: 0,
+      darkRulerHaDesAfterDamageContinuousDisable: 0,
       desKangarooEndDamageDestroy: 0,
       destructionPunchEndDamageTrapDestroy: 0,
       divineKnightIshzarkAfterDamageBanish: 0,
@@ -273,6 +297,7 @@ function countBattleTimingSemanticVariants(
       sasukeSamuraiStartDamageDestroy: 0,
       shadowSpellDuringDamagePersistentStat: 0,
       shinobirdCrowStartDamageStatBoost: 0,
+      skyscraperDuringDamageFieldStatBoost: 0,
       topologicBomberAfterDamageBurn: 0,
       wallOfIllusionAfterDamageBounce: 0,
     },
@@ -309,6 +334,17 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventCode: 1134",
         "currentAttack(restored.session.state.cards.find((card) => card.uid === cipherSoldier!.uid), restored.session.state)).toBe(3350)",
         'location: "monsterZone", controller: 1',
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-ruler-ha-des-battled-disable.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        "ha des target disabled true",
+        'eventName: "battleDestroyed"',
+        "reasonCardUid: haDes!.uid",
       ],
     },
     {
@@ -487,6 +523,17 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       ],
     },
     {
+      file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
+      kind: "duringDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        'eventName: "damageCalculating"',
+        "eventCode: 1135",
+        "currentAttack(restoredHero, restoredDamageCalculation.session.state)).toBe(2600)",
+        "battleDamage).toEqual({ 0: 0, 1: 700 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
       kind: "startDamageStep",
       required: [
@@ -545,4 +592,8 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       ],
     },
   ] satisfies Array<{ file: string; kind: BattleTimingKind; required: string[] }>).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function requiresActivatedTrigger(file: string): boolean {
+  return file !== "test/lua-real-script-dark-ruler-ha-des-battled-disable.test.ts";
 }

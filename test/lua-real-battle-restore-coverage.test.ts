@@ -38,6 +38,14 @@ import {
 } from "./lua-real-battle-restore-fixtures.js";
 
 const root = process.cwd();
+const scriptedCalculateDamageFixtureCount = 4;
+const scriptedCalculateDamageKindCounts = {
+  attackNegationRecalculation: 2,
+  battleTargetRecalculation: 2,
+} satisfies Record<ScriptedCalculateDamageKind, number>;
+
+type ScriptedCalculateDamageKind = "attackNegationRecalculation" | "battleTargetRecalculation";
+type ScriptedCalculateDamageFixture = { file: string; kind: ScriptedCalculateDamageKind; required: string[] };
 
 describe("Lua real battle restore coverage", () => {
   it("requires real-script battle fixtures to assert Lua-aware complete restore with diagnostics", () => {
@@ -185,6 +193,40 @@ describe("Lua real battle restore coverage", () => {
     expect(countDamageStepRestoreKinds(realScriptDamageStepRestoreFixtures())).toEqual(damageStepRestoreKindCounts);
   });
 
+  it("requires scripted CalculateDamage fixtures to prove restored battle recalculation outcomes", () => {
+    const files = realScriptCalculateDamageFixtures();
+    expect(files).toHaveLength(scriptedCalculateDamageFixtureCount);
+
+    const missing = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys")
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("pendingBattle).toBeUndefined()")
+          || !text.includes("currentAttack).toBeUndefined()")
+          || !text.includes("eventCode")
+          || !text.includes("eventCardUid")
+          || !text.includes("battleDamage")
+          || !text.includes("lifePoints")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(missing).toEqual([]);
+  });
+
+  it("keeps scripted CalculateDamage fixture kinds explicit", () => {
+    expect(countScriptedCalculateDamageKinds(realScriptCalculateDamageFixtures())).toEqual(scriptedCalculateDamageKindCounts);
+  });
+
   it("requires representative battle damage fixtures to prove restored damage semantics", () => {
     const files = realScriptBattleDamageSemanticFixtureFiles();
     expect(files).toHaveLength(battleDamageSemanticFixtureCount);
@@ -260,3 +302,19 @@ describe("Lua real battle restore coverage", () => {
     expect(weak).toEqual([]);
   });
 });
+
+function realScriptCalculateDamageFixtures(): ScriptedCalculateDamageFixture[] {
+  return ([
+    { file: "test/lua-real-script-dispatchparazzi-calculate-damage.test.ts", kind: "battleTargetRecalculation", required: ["Duel.CalculateDamage(at,c)", "pendingBattle).toBeUndefined()", 'eventName: "battleDamageDealt"', "players[1].lifePoints).toBe(7200)"] },
+    { file: "test/lua-real-script-gagaga-samurai-calculate-damage.test.ts", kind: "battleTargetRecalculation", required: ["Duel.CalculateDamage(at,c)", "pendingBattle).toBeUndefined()", "position: \"faceUpDefense\"", "players[1].lifePoints).toBe(8000)"] },
+    { file: "test/lua-real-script-magical-arm-shield-calculate-damage.test.ts", kind: "attackNegationRecalculation", required: ['battleWindow?.kind).toBe("attackNegationResponse")', 'eventName: "controlChanged"', "battleDamage).toEqual({ 0: 1500, 1: 0 })", 'eventName: "battleDamageDealt"'] },
+    { file: "test/lua-real-script-super-junior-confrontation-calculate-damage.test.ts", kind: "attackNegationRecalculation", required: ['battleWindow?.kind).toBe("attackNegationResponse")', "skippedPhases).toEqual([{ player: 1, phase: \"battle\", remaining: 1 }])", "battleDamage).toEqual({ 0: 0, 1: 0 })", 'eventName: "attackDisabled"'] },
+  ] satisfies ScriptedCalculateDamageFixture[]).sort((a, b) => a.file.localeCompare(b.file));
+}
+
+function countScriptedCalculateDamageKinds(fixtures: Array<{ kind: ScriptedCalculateDamageKind }>): Record<ScriptedCalculateDamageKind, number> {
+  return fixtures.reduce<Record<ScriptedCalculateDamageKind, number>>((counts, fixture) => {
+    counts[fixture.kind] += 1;
+    return counts;
+  }, { attackNegationRecalculation: 0, battleTargetRecalculation: 0 });
+}

@@ -11,6 +11,7 @@ import { knownLuaEffectConditionDescriptor } from "#lua/effect-condition-descrip
 import { knownLuaEffectCostDescriptor } from "#lua/effect-cost-descriptor.js";
 import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js";
 import { knownLuaEffectValueDescriptor } from "#lua/effect-value-descriptor.js";
+import { luaValueDescriptorStatValue } from "#lua/effect-value-descriptor-callbacks.js";
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
@@ -471,9 +472,10 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
   const triggerCode = luaEffectTriggerCode(luaEffect);
   const triggerEvent = triggerEventFromCode(triggerCode);
   const value = luaEffectValue(luaEffect) ?? materializedDisableFieldOperationValue(card, luaEffect, L, hostState);
+  const duelEffectId = luaEffectDuelId(luaEffect), luaValueDescriptor = luaEffect.valueDescriptor ?? defaultLuaValueDescriptor(luaEffect).luaValueDescriptor, descriptorStatValue = luaValueDescriptorStatValue(luaValueDescriptor, duelEffectId);
   if (!luaEffect.isGlobal) luaEffect.sourceUid = card.uid;
   const duelEffect: DuelEffectDefinition = {
-    id: luaEffectDuelId(luaEffect),
+    id: duelEffectId,
     registryKey: luaEffectRegistryKey(card, luaEffect),
     sourceUid: card.uid,
     controller: luaEffect.ownerPlayer ?? card.controller,
@@ -484,7 +486,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(value === undefined ? {} : { value }),
     ...(luaEffect.conditionDescriptor === undefined ? {} : { luaConditionDescriptor: luaEffect.conditionDescriptor }),
     ...(luaEffect.costDescriptor === undefined ? {} : { luaCostDescriptor: luaEffect.costDescriptor }),
-    ...(luaEffect.valueDescriptor === undefined ? defaultLuaValueDescriptor(luaEffect) : { luaValueDescriptor: luaEffect.valueDescriptor }),
+    ...(luaValueDescriptor === undefined ? {} : { luaValueDescriptor }),
     ...(luaEffect.targetDescriptor === undefined ? {} : { luaTargetDescriptor: luaEffect.targetDescriptor }),
     ...(triggerEvent === undefined ? {} : { triggerEvent }),
     ...(triggerEvent !== undefined && shouldKeepTriggerCode(triggerEvent, triggerCode) ? { triggerCode } : {}),
@@ -506,7 +508,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.valueRef === undefined ? {} : { battleDamageValue: (ctx, player, amount) => callLuaEffectBattleDamageValue(L, hostState, luaEffect, ctx, player, amount, readLuaError) }),
     ...(luaEffect.valueRef === undefined || luaEffect.code !== 265 ? {} : { forceMonsterZoneValue: (ctx, forcePlayer, reason) => callLuaEffectForceMonsterZoneValue(L, hostState, luaEffect, ctx, forcePlayer, reason, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { lifePointValue: (ctx, player, amount) => callLuaEffectLifePointValue(L, hostState, luaEffect, ctx, player, amount, readLuaError) }),
-    ...(luaEffect.valueRef === undefined ? {} : { statValue: (ctx, targetCard) => callLuaEffectStatValue(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
+    ...(descriptorStatValue === undefined ? luaEffect.valueRef === undefined ? {} : { statValue: (ctx, targetCard) => callLuaEffectStatValue(L, hostState, luaEffect, ctx, targetCard, readLuaError) } : { statValue: descriptorStatValue }),
     ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer, readLuaError) }),
     ...(luaEffect.targetRef === undefined ? {} : { targetCardPredicate: (ctx, targetCard) => callLuaEffectCardTargetPredicate(L, hostState, luaEffect, ctx, targetCard) }),

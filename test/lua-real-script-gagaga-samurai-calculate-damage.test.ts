@@ -131,6 +131,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSamuraiScript)("Lua real script Gagag
     expect(restored.session.state.pendingBattle).toBeUndefined();
     expect(restored.session.state.cards.find((card) => card.uid === samurai!.uid)).toMatchObject({ location: "graveyard", controller: 1, position: "faceUpDefense" });
     expect(restored.session.state.cards.find((card) => card.uid === originalTarget!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
+    expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
     expect(restored.session.state.players[0].lifePoints).toBe(8000);
     expect(restored.session.state.players[1].lifePoints).toBe(8000);
   });

@@ -127,6 +127,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
       previousLocation: "spellTrapZone",
       reason: duelReason.effect | duelReason.destroy,
     });
+    expect(restoredLock.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === circle!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-18807108-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-18807108-0",
+          "eventReasonEffectId": 5,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredLock.session), source, reader);
     expectCleanRestore(restoredDestroyed);
     expectRestoredLegalActions(restoredDestroyed, 1);

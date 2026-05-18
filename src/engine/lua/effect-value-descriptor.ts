@@ -50,6 +50,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     return "stat:all-grave-monster-count-x100";
   }
   const params = luaFunctionParams(snippet);
+  const damageCalculationAttackBoost = damageCalculationAttackerLowerAttackBoostDescriptor(snippet, params);
+  if (damageCalculationAttackBoost) return damageCalculationAttackBoost;
   const summonTypeCondition = specialSummonConditionDescriptor(L, index, snippet, params);
   if (summonTypeCondition) return summonTypeCondition;
   const reasonMaskPredicate = reasonMaskPredicateDescriptor(snippet, params);
@@ -109,6 +111,16 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${effectTypeContinuousPattern}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
   );
   return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
+}
+
+function damageCalculationAttackerLowerAttackBoostDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const cardParam = params?.[1];
+  if (!cardParam || !/Duel\s*\.\s*GetAttackTarget\s*\(\s*\)/.test(snippet) || !/\breturn\s+1000\b/.test(snippet)) return undefined;
+  const card = escapeRegExp(cardParam);
+  const targetLocal = new RegExp(String.raw`\blocal\s+(\w+)\s*=\s*Duel\s*\.\s*GetAttackTarget\s*\(\s*\)`).exec(snippet)?.[1];
+  const target = targetLocal ? escapeRegExp(targetLocal) : String.raw`Duel\s*\.\s*GetAttackTarget\s*\(\s*\)`;
+  const attackComparison = new RegExp(String.raw`${card}\s*:\s*GetAttack\s*\(\s*\)\s*<\s*${target}\s*:\s*GetAttack\s*\(\s*\)`);
+  return attackComparison.test(snippet) ? "stat:damage-calculation-attacker-lower-than-target:+1000" : undefined;
 }
 
 function knownNamedSummonTypeLimitDescriptor(L: unknown, index: number): string | undefined {

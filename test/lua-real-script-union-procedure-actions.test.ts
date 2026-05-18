@@ -613,7 +613,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
           faceUp: true,
           location: "monsterZone",
           position: "faceUpAttack",
-          sequence: 1,
+          sequence: 0,
         },
       },
     ]);

@@ -878,7 +878,7 @@ function pushChainLink(
   });
   if (source) {
     recordChainActivity(state, player, source, effectId);
-    collectTriggerEffects(state, "chainActivating", source);
+    collectTriggerEffects(state, "chainActivating", source, relatedEffectPayload(effectId));
     collectDuelTriggerEffects(state, "chaining", source, {
       eventPlayer: player,
       eventValue: state.chain.length,

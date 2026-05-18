@@ -116,6 +116,16 @@ describe("Lua real Ritual and Fusion helper restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("requires event-rich Ritual/Fusion helper fixtures to pin restored summon and material event identity", () => {
+    const files = ["test/lua-real-script-machine-angel-absolute-grave-ritual.test.ts", "test/lua-real-script-chaos-form-grave-ritual.test.ts", "test/lua-real-script-branded-fusion-deck-material.test.ts", "test/lua-real-script-fallen-of-albaz-opponent-fusion.test.ts", "test/lua-real-script-miracle-fusion-extra-material.test.ts", "test/lua-real-script-primite-fusion-extra-check.test.ts", "test/lua-real-script-gladiator-beast-andabata-contact-fusion.test.ts", "test/lua-real-script-dark-fusion-stage2-protection.test.ts"].sort();
+    expect(files).toHaveLength(8);
+    const weak = files.filter((file) => {
+      const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+      return !text.includes("eventCode") || !text.includes("eventCardUid") || !text.includes("eventReasonCardUid") || !text.includes("eventReasonEffectId") || !/eventCode:\s*1102|"eventCode":\s*1102/.test(text) || !/eventCode:\s*1011|eventCode:\s*1013|eventCode:\s*1014|"eventCode":\s*1011|"eventCode":\s*1013|"eventCode":\s*1014/.test(text);
+    });
+    expect(weak).toEqual([]);
+  });
 });
 
 type RitualFusionHelperFamily = "fusion" | "ritual";

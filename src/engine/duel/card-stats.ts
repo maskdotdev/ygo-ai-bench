@@ -34,6 +34,13 @@ export function currentAttack(card: DuelCardInstance | undefined, state?: DuelSt
   return setStatEffectValue(card, state, 102) ?? setStatEffectValue(card, state, 101) ?? updatedAttack;
 }
 
+export function currentAttackWithoutEffect(card: DuelCardInstance | undefined, state: DuelState | undefined, excludedEffectId: string): number {
+  if (card?.assumedProperties?.[7] !== undefined) return card.assumedProperties[7];
+  const baseAttack = setStatEffectValue(card, state, 103, excludedEffectId) ?? card?.data.attack ?? 0;
+  const updatedAttack = baseAttack + (card?.attackModifier ?? 0) + statUpdateEffectValue(card, state, 100, excludedEffectId);
+  return setStatEffectValue(card, state, 102, excludedEffectId) ?? setStatEffectValue(card, state, 101, excludedEffectId) ?? updatedAttack;
+}
+
 export function currentDefense(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[8] !== undefined) return card.assumedProperties[8];
   const updatedDefense = currentBaseDefense(card, state) + (card?.defenseModifier ?? 0) + statUpdateEffectValue(card, state, 104);
@@ -119,23 +126,24 @@ function finiteMaskValue(value: number | undefined): number {
   return value !== undefined && Number.isFinite(value) ? Math.trunc(value) : 0;
 }
 
-function statUpdateEffectValue(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): number {
+function statUpdateEffectValue(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number, excludedEffectId?: string): number {
   if (!card) return 0;
-  return matchingStatEffects(card, state, code)
+  return matchingStatEffects(card, state, code, excludedEffectId)
     .reduce((total, { effect, ctx }) => total + (statEffectValue(card, state, effect, ctx) ?? 0), 0);
 }
 
-function setStatEffectValue(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): number | undefined {
-  const match = matchingStatEffects(card, state, code)
+function setStatEffectValue(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number, excludedEffectId?: string): number | undefined {
+  const match = matchingStatEffects(card, state, code, excludedEffectId)
     .filter(({ effect }) => effect.value !== undefined || effect.statValue !== undefined)
     .at(-1);
   return card && match ? statEffectValue(card, state, match.effect, match.ctx) : undefined;
 }
 
-function matchingStatEffects(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number): Array<{ effect: DuelEffectDefinition; ctx: DuelEffectContext }> {
+function matchingStatEffects(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number, excludedEffectId?: string): Array<{ effect: DuelEffectDefinition; ctx: DuelEffectContext }> {
   if (!card || !state) return [];
   const matches: Array<{ effect: DuelEffectDefinition; ctx: DuelEffectContext }> = [];
   for (const effect of state.effects) {
+    if (effect.id === excludedEffectId) continue;
     if (effect.event !== "continuous" || effect.code !== code) continue;
     const source = state.cards.find((candidate) => candidate.uid === effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;

@@ -27,6 +27,7 @@ import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
 import { specialSummonTypeIsCostDescriptor, specialSummonTypeNotCostDescriptor } from "#lua/effect-cost-descriptor.js";
+import { luaValueDescriptorStatValue } from "#lua/effect-value-descriptor-callbacks.js";
 import { locationMatchesCardMask, positionMaskFromPosition } from "#lua/api-utils.js"; import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
@@ -844,9 +845,8 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
 }
 
 function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "statValue" | "valueCardPredicate" | "valuePredicate"> {
-  if (effect.luaValueDescriptor === "stat:all-grave-monster-count-x100") {
-    return { statValue: (ctx) => ctx.duel.cards.filter((card) => card.location === "graveyard" && (cardTypeFlags(card, ctx.duel) & luaTypeMonster) !== 0).length * 100 };
-  }
+  const descriptorStatValue = luaValueDescriptorStatValue(effect.luaValueDescriptor, effect.id);
+  if (descriptorStatValue) return { statValue: descriptorStatValue };
   if (effect.luaValueDescriptor === "cannot-be-effect-target:opponent") {
     return { valuePredicate: (_ctx, player) => player !== undefined && player !== effect.controller };
   }

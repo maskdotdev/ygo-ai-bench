@@ -21,6 +21,10 @@ const missedTimingSourceEffectCauseEventCodeExceptions = [
   "parity-missed-timing-phase-changed-fixture.test.ts",
   "parity-missed-timing-turn-started-fixture.test.ts",
 ];
+const missedTimingSourceEffectCauseEventCodeExceptionFamilyCounts = {
+  syntheticActivationBoundary: 1,
+  syntheticPhaseTurnBoundary: 2,
+} satisfies Record<MissedTimingSourceEffectCauseEventCodeExceptionFamily, number>;
 const missedTimingChainEventFixtureCount = 14;
 const missedTimingChainActivatingStateFixtureCount = 2;
 const missedTimingChainLifecycleOriginFixtureCount = 12;
@@ -28,6 +32,11 @@ const missedTimingBattleDamageCauseFixtureCount = 4;
 const missedTimingPhaseBoundaryFixtureCount = 22;
 const missedTimingPhaseEndBoundaryCauseFixtureCount = 4;
 const missedTimingPostDeclineOpenFastResolutionFixtureCount = 85;
+const missedTimingSourceEffectCauseExceptionFamilyCounts = {
+  battleDamageCause: 4,
+  chainLifecycleOrigin: 14,
+  phaseBoundary: 22,
+} satisfies Record<MissedTimingSourceEffectCauseExceptionFamily, number>;
 const missedTimingEventFamilyCounts = {
   battle: 28,
   chain: 14,
@@ -156,6 +165,24 @@ describe("EDOPro parity missed-timing event coverage", () => {
     expect(sourceEffectCauseEventCodeExceptions).toEqual([...missedTimingSourceEffectCauseEventCodeExceptions].sort());
   });
 
+  it("accounts for every source-effect cause event-code exception with a dedicated metadata guard", () => {
+    const multiStepFiles = fs.readdirSync(testRoot)
+      .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts"))
+      .filter((file) => readTestFile(file).includes("eventIsLast: false"))
+      .sort();
+    const eventCodeExceptionFiles = multiStepFiles
+      .filter((file) => hasSourceEffectCauseMetadata(file) && !hasEventCodeMetadata(file))
+      .sort();
+    const guardedExceptionFiles = eventCodeExceptionFiles
+      .filter((file) => hasSyntheticNoEventCodeSourceEffectCauseMetadata(file))
+      .sort();
+
+    expect(eventCodeExceptionFiles).toEqual([...missedTimingSourceEffectCauseEventCodeExceptions].sort());
+    expect(guardedExceptionFiles).toEqual(eventCodeExceptionFiles);
+    expect(countMissedTimingSourceEffectCauseEventCodeExceptionFamilies(guardedExceptionFiles))
+      .toEqual(missedTimingSourceEffectCauseEventCodeExceptionFamilyCounts);
+  });
+
   it("pins multi-step optional when versus optional if missed-timing proof", () => {
     const multiStepFiles = fs.readdirSync(testRoot)
       .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts"))
@@ -219,6 +246,7 @@ describe("EDOPro parity missed-timing event coverage", () => {
       .sort();
 
     expect(guardedExceptionFiles).toEqual([...missedTimingSourceEffectCauseExceptions].sort());
+    expect(countMissedTimingSourceEffectCauseExceptionFamilies(guardedExceptionFiles)).toEqual(missedTimingSourceEffectCauseExceptionFamilyCounts);
   });
 
   it("pins post-decline open fast-effect resolution coverage after missed-timing filtering", () => {
@@ -243,6 +271,15 @@ type MissedTimingEventFamily =
   | "phaseTurn"
   | "stateChange"
   | "summonMaterialSet";
+
+type MissedTimingSourceEffectCauseExceptionFamily =
+  | "battleDamageCause"
+  | "chainLifecycleOrigin"
+  | "phaseBoundary";
+
+type MissedTimingSourceEffectCauseEventCodeExceptionFamily =
+  | "syntheticActivationBoundary"
+  | "syntheticPhaseTurnBoundary";
 
 function camelToKebab(value: string): string {
   return value.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
@@ -291,6 +328,48 @@ function classifyMissedTimingEventFamily(file: string): MissedTimingEventFamily 
   }
 
   throw new Error(`Unclassified missed-timing fixture event: ${file}`);
+}
+
+function countMissedTimingSourceEffectCauseExceptionFamilies(files: string[]): Record<MissedTimingSourceEffectCauseExceptionFamily, number> {
+  return files.reduce<Record<MissedTimingSourceEffectCauseExceptionFamily, number>>(
+    (counts, file) => {
+      counts[classifyMissedTimingSourceEffectCauseExceptionFamily(file)] += 1;
+      return counts;
+    },
+    {
+      battleDamageCause: 0,
+      chainLifecycleOrigin: 0,
+      phaseBoundary: 0,
+    },
+  );
+}
+
+function classifyMissedTimingSourceEffectCauseExceptionFamily(file: string): MissedTimingSourceEffectCauseExceptionFamily {
+  if (/^parity-missed-timing-(?:before-battle-damage|battle-damage)(?:-decline)?-fixture\.test\.ts$/.test(file)) return "battleDamageCause";
+  if (/^parity-missed-timing-(?:chain-activating|chain-disabled|chain-ended|chain-negated|chain-solved|chain-solving|chaining)(?:-decline)?-fixture\.test\.ts$/.test(file)) return "chainLifecycleOrigin";
+  if (/^parity-missed-timing-(?:phase-(?:draw|standby|main1|battle|main2)|phase-start-(?:draw|standby|main1|battle|main2)|startup)(?:-decline)?-fixture\.test\.ts$/.test(file)) return "phaseBoundary";
+  throw new Error(`Unclassified missed-timing source-effect cause exception: ${file}`);
+}
+
+function countMissedTimingSourceEffectCauseEventCodeExceptionFamilies(
+  files: string[],
+): Record<MissedTimingSourceEffectCauseEventCodeExceptionFamily, number> {
+  return files.reduce<Record<MissedTimingSourceEffectCauseEventCodeExceptionFamily, number>>(
+    (counts, file) => {
+      counts[classifyMissedTimingSourceEffectCauseEventCodeExceptionFamily(file)] += 1;
+      return counts;
+    },
+    {
+      syntheticActivationBoundary: 0,
+      syntheticPhaseTurnBoundary: 0,
+    },
+  );
+}
+
+function classifyMissedTimingSourceEffectCauseEventCodeExceptionFamily(file: string): MissedTimingSourceEffectCauseEventCodeExceptionFamily {
+  if (file === "parity-missed-timing-activated-fixture.test.ts") return "syntheticActivationBoundary";
+  if (/^parity-missed-timing-(?:phase-changed|turn-started)-fixture\.test\.ts$/.test(file)) return "syntheticPhaseTurnBoundary";
+  throw new Error(`Unclassified missed-timing source-effect cause event-code exception: ${file}`);
 }
 
 function hasDeclineOpenFastRestoreProof(file: string): boolean {
@@ -372,6 +451,18 @@ function hasEventCodeMetadata(file: string): boolean {
   return /eventCode:\s*(?:0x[0-9a-fA-F]+|\d+)/.test(text) || /\beventCode\s*,/.test(text);
 }
 
+function hasSyntheticNoEventCodeSourceEffectCauseMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    hasSourceEffectCauseMetadata(file) &&
+    !hasEventCodeMetadata(file) &&
+    /collectEventsOnResolve:\s*\[\s*\{[\s\S]*collectEvent:\s*["'](?:activated|phaseChanged|turnStarted)["']/.test(text) &&
+    /eventName:\s*["'](?:activated|phaseChanged|turnStarted)["']/.test(text) &&
+    /eventReasonEffectId:\s*\d+/.test(text) &&
+    /eventTriggerTiming:\s*["']if["']/.test(text)
+  );
+}
+
 function hasOptionalWhenVsIfMissedTimingProof(file: string): boolean {
   const text = readTestFile(file);
   return (
@@ -395,8 +486,10 @@ function hasChainActivatingStateMetadata(file: string): boolean {
   const text = readTestFile(file);
   return (
     /eventName:\s*["']chainActivating["']/.test(text) &&
+    /eventCardUid:\s*["']p0-deck-100-0["']/.test(text) &&
     /eventReason:\s*1024/.test(text) &&
     /eventReasonPlayer:\s*0/.test(text) &&
+    /relatedEffectId:\s*1/.test(text) &&
     /eventPreviousState:\s*\{/.test(text) &&
     /eventCurrentState:\s*\{/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)
@@ -407,8 +500,10 @@ function hasChainLifecycleOriginMetadata(file: string): boolean {
   const text = readTestFile(file);
   return (
     !/eventName:\s*["']chainActivating["']/.test(text) &&
+    /eventCardUid:\s*["']p0-deck-100-0["']/.test(text) &&
     /eventValue:\s*1/.test(text) &&
     /eventReasonPlayer:\s*0/.test(text) &&
+    /relatedEffectId:\s*1/.test(text) &&
     /eventChainDepth:\s*1/.test(text) &&
     /eventChainLinkId:\s*["']fixture-chain-1["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)

@@ -158,6 +158,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
       previousLocation: "monsterZone",
       reason: duelReason.effect | duelReason.destroy,
     });
+    expect(restoredRevive.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === target!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-612701-1",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-97077563-0",
+          "eventReasonEffectId": 3,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     const restoredTrapDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredRevive.session), source, reader);
     expect(restoredTrapDestroyed.restoreComplete, restoredTrapDestroyed.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredTrapDestroyed, 0);
@@ -176,6 +203,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
       previousLocation: "spellTrapZone",
       reason: duelReason.effect | duelReason.destroy,
     });
+    expect(restoredTargetDestroy.session.state.eventHistory.filter((event) => event.eventName === "destroyed" && event.eventCardUid === call!.uid)).toMatchInlineSnapshot(`
+      [
+        {
+          "eventCardUid": "p0-deck-97077563-0",
+          "eventCode": 1029,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "graveyard",
+            "position": "faceDown",
+            "sequence": 1,
+          },
+          "eventName": "destroyed",
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "spellTrapZone",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 65,
+          "eventReasonCardUid": "p0-deck-97077563-0",
+          "eventReasonEffectId": 4,
+          "eventReasonPlayer": 0,
+        },
+      ]
+    `);
     const restoredMonsterDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredTargetDestroy.session), source, reader);
     expect(restoredMonsterDestroyed.restoreComplete, restoredMonsterDestroyed.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restoredMonsterDestroyed, 0);

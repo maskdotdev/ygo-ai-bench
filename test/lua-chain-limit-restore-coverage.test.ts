@@ -82,6 +82,27 @@ const officialScannerSummary = {
   calls: 141,
   unclassifiedCalls: 0,
 };
+const boundedStatelessSourceChainLimitFixtureCount = 1;
+const boundedStatelessSourceChainLimitFixtures = [
+  {
+    file: "test/lua-chain-limit-stateless-source-restore.test.ts",
+    required: [
+      "restores descriptor-backed stateless source predicates without requiring the original script body",
+      "readScript: () => undefined",
+      "closure:source:",
+      "restores inline no-upvalue source predicates from snapshots",
+      "restores inline no-upvalue source predicates until chain end",
+      "keeps unsafe no-upvalue source predicates fail-closed",
+      "Debug.Message(\"unsafe chain limit\")",
+      "expect(snapshot.state.chainLimits).toEqual([])",
+      "expect(getLuaRestoreLegalActions(restored, 1)).toEqual([])",
+      "tamperedRegistryKey",
+      "expect(tamperedRestored.restoreComplete).toBe(false)",
+      "expect(tamperedRestored.missingChainLimitRegistryKeys).toEqual([tamperedRegistryKey])",
+      "expect(getLuaRestoreLegalActionGroups(tamperedRestored, 1)).toEqual([])",
+    ],
+  },
+] satisfies Array<{ file: string; required: string[] }>;
 
 describe("Lua chain-limit restore coverage", () => {
   it.skipIf(!hasOfficialChainLimitCorpus())("maps every official chain-limit scanner group to restore coverage", () => {
@@ -142,6 +163,19 @@ describe("Lua chain-limit restore coverage", () => {
       .length;
 
     expect(realScriptOwnedGroups).toBe(realScriptOwnedScannerGroupCount);
+  });
+
+  it("ratchets bounded stateless-source chain-limit restore and fail-closed behavior", () => {
+    expect(boundedStatelessSourceChainLimitFixtures).toHaveLength(boundedStatelessSourceChainLimitFixtureCount);
+
+    const weak = boundedStatelessSourceChainLimitFixtures
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
   });
 });
 
