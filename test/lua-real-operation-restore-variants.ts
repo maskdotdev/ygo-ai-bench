@@ -19,6 +19,7 @@ export const potAndSearchOperationVariantCounts = {
   potExtravaganceRandomCostDrawLock: 1,
   potProsperitySearchDrawLockDamage: 1,
   reinforcementWarriorSearch: 1,
+  yellowGadgetSummonSpecialSearch: 1,
 } satisfies Record<PotAndSearchOperationVariant, number>;
 export const chainNegationOperationVariantCounts = {
   brokenLineColumnNegateDestroy: 1,
@@ -46,7 +47,8 @@ export type PotAndSearchOperationVariant =
   | "potDualitySearchSummonLock"
   | "potExtravaganceRandomCostDrawLock"
   | "potProsperitySearchDrawLockDamage"
-  | "reinforcementWarriorSearch";
+  | "reinforcementWarriorSearch"
+  | "yellowGadgetSummonSpecialSearch";
 export type ChainNegationOperationVariant =
   | "brokenLineColumnNegateDestroy"
   | "darkBribeNegateDestroyDraw"
@@ -257,6 +259,18 @@ export function potAndSearchOperationVariants(): Array<{ file: string; kind: Pot
         "expect(restored.host.messages).toEqual([`confirmed 1: ${warriorCode}`])",
       ],
     },
+    {
+      file: "test/lua-real-script-yellow-gadget-summon-special-search.test.ts",
+      kind: "yellowGadgetSummonSpecialSearch",
+      required: [
+        "restores its cloned normal-summon and special-summon search triggers without selection prompts",
+        "const yellowGadgetCode = \"13839120\"",
+        "local e2=e1:Clone()",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.GetFirstMatchingCard(s.filter,tp,LOCATION_DECK,0,nil)",
+        "assertYellowGadgetSearch(\"special\")",
+      ],
+    },
   ] satisfies Array<{ file: string; kind: PotAndSearchOperationVariant; required: string[] }>).sort((a, b) => a.kind.localeCompare(b.kind));
 }
 
@@ -275,6 +289,7 @@ export function countPotAndSearchOperationVariants(fixtures: Array<{ kind: PotAn
       potExtravaganceRandomCostDrawLock: 0,
       potProsperitySearchDrawLockDamage: 0,
       reinforcementWarriorSearch: 0,
+      yellowGadgetSummonSpecialSearch: 0,
     },
   );
 }
