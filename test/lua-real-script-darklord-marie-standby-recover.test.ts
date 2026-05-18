@@ -12,11 +12,11 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasMarieScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c57579381.lua"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Darklord Marie Standby recover", () => {
+describe.skipIf(!hasUpstreamScripts || !hasMarieScript)("Lua real script Darklord Marie Standby recover", () => {
   it("restores its mandatory Standby Phase graveyard recovery from CHAININFO target player and param", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const marieCode = "57579381";
@@ -35,7 +35,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(script).toContain("Duel.Recover(p,d,REASON_EFFECT)");
 
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === marieCode),
+      { code: marieCode, name: "Darklord Marie", kind: "monster", typeFlags: typeMonster | typeEffect, level: 5, attack: 1700, defense: 1200 },
       { code: responderCode, name: "Marie Chain Responder", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4 },
     ];
     const reader = createCardReader(cards);
