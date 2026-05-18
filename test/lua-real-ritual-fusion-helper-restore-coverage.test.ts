@@ -1,11 +1,12 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 33, ritual: 17 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 34, ritual: 17 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
   customRitualOperation: 1,
   fusionAddProcCode2ExactCodeMetadata: 1,
+  fusionAddProcCodeFunPredicateMetadata: 1,
   fusionAddProcCodeRepRepeatedCodeMetadata: 1,
   fusionAddProcFun2PredicateMetadata: 1,
   fusionAddProcFunRepSetcodeMetadata: 1,
@@ -65,7 +66,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(50);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(51);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -119,6 +120,7 @@ describe("Lua real Ritual and Fusion helper restore coverage", () => {
 type RitualFusionHelperFamily = "fusion" | "ritual";
 type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummonType" | "contactFusionOpponentMaterial" | "contactFusionSendCost" | "customRitualOperation"
   | "fusionAddProcCode2ExactCodeMetadata"
+  | "fusionAddProcCodeFunPredicateMetadata"
   | "fusionAddProcCodeRepRepeatedCodeMetadata"
   | "fusionAddProcFun2PredicateMetadata"
   | "fusionAddProcFunRepSetcodeMetadata"
@@ -816,6 +818,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
     },
     { file: "test/lua-real-script-black-skull-dragon-addprocmix-fusion.test.ts", kind: "fusionAddProcMixMaterialMetadata", families: ["fusion"], required: ["Fusion.AddProcMix material metadata", "expect(blackSkull!.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])", "expect(restored.session.state.cards.find((card) => card.uid === blackSkull!.uid)?.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])", "operationInfos).toEqual([", "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }", 'summonType: "fusion"', "summonMaterialUids: [summonedSkull!.uid, redEyes!.uid]", "reason: duelReason.effect | duelReason.material | duelReason.fusion", 'eventName === "usedAsMaterial"', 'eventName === "specialSummoned"', 'expect(restored.host.messages).not.toContain("black skull dragon responder resolved")'] },
     { file: "test/lua-real-script-blue-eyes-ultimate-addproccoderep-fusion.test.ts", kind: "fusionAddProcCodeRepRepeatedCodeMetadata", families: ["fusion"], required: ["Fusion.AddProcCodeRep metadata", "expect(blueEyesUltimate!.data.fusionMaterials).toEqual([blueEyesCode, blueEyesCode, blueEyesCode])", "expect(restored.session.state.cards.find((card) => card.uid === blueEyesUltimate!.uid)?.data.fusionMaterials).toEqual([blueEyesCode, blueEyesCode, blueEyesCode])", "operationInfos).toEqual([", "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }", 'summonType: "fusion"', "summonMaterialUids: blueEyesMaterials.map((card) => card.uid)", "reason: duelReason.effect | duelReason.material | duelReason.fusion", 'eventName === "usedAsMaterial"', 'eventName === "specialSummoned"', 'expect(restored.host.messages).not.toContain("blue-eyes ultimate responder resolved")'] },
+    { file: "test/lua-real-script-red-eyes-slash-addproccodefun-fusion.test.ts", kind: "fusionAddProcCodeFunPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcCodeFun metadata", "expect(slashDragon!.data.fusionMaterials).toEqual([redEyesCode])", "expect(slashDragon!.data.fusionRequiredMaterialPredicates).toEqual([{ race: raceWarrior }])", "expect(directFusionActions[0]!.materialUids).toEqual([redEyes!.uid, warriorMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(dragonDecoy!.uid))", "summonMaterialUids: [redEyes!.uid, warriorMaterial!.uid]"] },
     { file: "test/lua-real-script-blaze-fenix-addprocfun2-fusion.test.ts", kind: "fusionAddProcFun2PredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcFun2 metadata", "expect(blazeFenix!.data.fusionRequiredMaterialPredicates).toEqual([{ race: raceMachine }, { race: racePyro }])", "expect(blazeFenix!.data.fusionMaterials).toBeUndefined()", "expect(directFusionActions[0]!.materialUids).toEqual([machineMaterial!.uid, pyroMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(warriorDecoy!.uid))", "summonMaterialUids: [machineMaterial!.uid, pyroMaterial!.uid]"] },
     { file: "test/lua-real-script-earthbound-geo-kraken-addprocfunrep-fusion.test.ts", kind: "fusionAddProcFunRepSetcodeMetadata", families: ["fusion"], required: ["Fusion.AddProcFunRep metadata", "expect(geoKraken!.data).toMatchObject({ fusionMaterialMin: 2, fusionMaterialMax: 2, fusionMaterialSetcode: setEarthbound })", "expect(directFusionActions[0]!.materialUids).toEqual(earthboundMaterials.map((card) => card.uid))", "directFusionActions.some((action) => action.materialUids.includes(offSetDecoy!.uid))", "summonMaterialUids: earthboundMaterials.map((card) => card.uid)"] },
     { file: "test/lua-real-script-marine-neos-addproccode2-contact-fusion.test.ts", kind: "fusionAddProcCode2ExactCodeMetadata", families: ["fusion"], required: ["Fusion.AddProcCode2 exact material metadata", "expect(marineNeos!.data.fusionMaterials).toEqual([neosCode, marineDolphinCode])", "expect(restored.session.state.cards.find((card) => card.uid === marineNeos!.uid)?.data.fusionMaterials).toEqual([neosCode, marineDolphinCode])", 'summonType: "fusion"', "summonMaterialUids: [neos!.uid, marineDolphin!.uid]", "reason: duelReason.cost | duelReason.material", 'eventName === "sentToDeck"', 'eventName === "specialSummoned"', "expect(getLegalActions(restored.session, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === marineNeos!.uid)).toBe(false)"] },

@@ -15,9 +15,9 @@ const CARD_CODE_EXPRESSION = String.raw`(?:\d+|CARD_[A-Z0-9_]+)`;
 const XYZ_INFINITE_MATERIAL_MAX = 99;
 
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
-  const fusionMaterials = readFusionAddProcMixMaterials(L, card, source);
+  const fusionMaterials = [...readFusionAddProcMixMaterials(L, card, source), ...readFusionAddProcCodeFunMaterials(source)];
   if (fusionMaterials.length > 0) card.data.fusionMaterials = fusionMaterials;
-  const fusionRequiredPredicates = [...readFusionAddProcMixPredicateMaterials(source), ...readFusionAddProcFun2PredicateMaterials(source)];
+  const fusionRequiredPredicates = [...readFusionAddProcMixPredicateMaterials(source), ...readFusionAddProcFun2PredicateMaterials(source), ...readFusionAddProcCodeFunPredicateMaterials(source)];
   if (fusionRequiredPredicates.length > 0) card.data.fusionRequiredMaterialPredicates = fusionRequiredPredicates;
   const fusionRepeatedMaterials = readFusionAddProcMixRepMaterials(source) ?? readFusionAddProcMixNRepeatedMaterials(source) ?? readFusionAddProcFunRepMaterials(source);
   if (fusionRepeatedMaterials) {
@@ -135,6 +135,21 @@ function readFusionAddProcFun2PredicateMaterials(source: string | undefined): Fu
   if (!match?.[1]) return [];
   const predicates = readFusionPredicateRequirements(match[1]);
   return predicates.length === 2 ? predicates : [];
+}
+
+function readFusionAddProcCodeFunMaterials(source: string | undefined): string[] {
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcCodeFun\(\s*c\s*,\s*(${CARD_CODE_EXPRESSION})\s*,`));
+  const code = readLuaCodeList(match?.[1]).at(0);
+  return code === undefined ? [] : [String(code)];
+}
+
+function readFusionAddProcCodeFunPredicateMaterials(source: string | undefined): FusionMaterialPredicateRequirement[] {
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcCodeFun\(\s*c\s*,\s*${CARD_CODE_EXPRESSION}\s*,\s*(aux\.FilterBoolFunction(?:Ex)?\([^)]*\))\s*,\s*(\d+)\s*,`));
+  if (!match?.[1] || !match[2]) return [];
+  const count = Number.parseInt(match[2], 10);
+  if (count <= 0) return [];
+  const predicates = readFusionPredicateRequirements(match[1]);
+  return predicates.length === 1 ? Array.from({ length: count }, () => ({ ...predicates[0]! })) : [];
 }
 
 function readFusionPredicateRequirements(expressionList: string): FusionMaterialPredicateRequirement[] {
