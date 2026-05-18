@@ -4,17 +4,21 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const TO_DECK_FIXTURE_COUNT = 1;
+const TO_DECK_FIXTURE_COUNT = 2;
 const toDeckKindCounts = {
   flipGraveTargetShuffleToDeck: 1,
+  toGraveSelfShuffleToDeck: 1,
 } satisfies Record<ToDeckKind, number>;
 const toDeckSemanticVariantCounts = {
   desFeralImpFlipGraveTargetShuffleToDeck: 1,
+  outstandingDogMarronToGraveSelfShuffleToDeck: 1,
 } satisfies Record<ToDeckSemanticVariant, number>;
 
-type ToDeckKind = "flipGraveTargetShuffleToDeck";
+type ToDeckKind = "flipGraveTargetShuffleToDeck" | "toGraveSelfShuffleToDeck";
 
-type ToDeckSemanticVariant = "desFeralImpFlipGraveTargetShuffleToDeck";
+type ToDeckSemanticVariant =
+  | "desFeralImpFlipGraveTargetShuffleToDeck"
+  | "outstandingDogMarronToGraveSelfShuffleToDeck";
 
 describe("Lua real to-Deck restore coverage", () => {
   it("requires representative to-Deck operations to assert clean Lua restore and restored movement events", () => {
@@ -85,6 +89,25 @@ function toDeckFixtureFiles(): Array<{
         "eventReasonEffectId: 1",
       ],
     },
+    {
+      file: "test/lua-real-script-outstanding-dog-marron-to-grave-shuffle.test.ts",
+      kind: "toGraveSelfShuffleToDeck",
+      required: [
+        'const marronCode = "11548522"',
+        "restores its mandatory EVENT_TO_GRAVE trigger and shuffles itself from Graveyard into the Deck",
+        "e1:SetCategory(CATEGORY_TODECK)",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)",
+        "e1:SetCode(EVENT_TO_GRAVE)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,e:GetHandler(),1,0,0)",
+        "Duel.SendtoDeck(e:GetHandler(),nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "operationInfos: [{ category: 0x10",
+        'eventName: "sentToGraveyard"',
+        'eventName: "sentToDeck"',
+        "eventCode: 1013",
+        "eventReason: duelReason.effect",
+        "eventReasonEffectId: 1",
+      ],
+    },
   ];
 }
 
@@ -96,6 +119,7 @@ function countToDeckKinds(fixtures: Array<{ kind: ToDeckKind }>): Record<ToDeckK
     },
     {
       flipGraveTargetShuffleToDeck: 0,
+      toGraveSelfShuffleToDeck: 0,
     },
   );
 }
@@ -119,6 +143,20 @@ function toDeckSemanticVariants(): Array<{
         "des feral imp responder resolved",
       ],
     },
+    {
+      file: "test/lua-real-script-outstanding-dog-marron-to-grave-shuffle.test.ts",
+      kind: "outstandingDogMarronToGraveSelfShuffleToDeck",
+      required: [
+        'const marronCode = "11548522"',
+        "restores its mandatory EVENT_TO_GRAVE trigger and shuffles itself from Graveyard into the Deck",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,e:GetHandler(),1,0,0)",
+        "Duel.SendtoDeck(e:GetHandler(),nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "sentToDeck"',
+        "location: \"deck\"",
+        "outstanding dog marron responder resolved",
+      ],
+    },
   ];
 }
 
@@ -130,6 +168,7 @@ function countToDeckSemanticVariants(fixtures: Array<{ kind: ToDeckSemanticVaria
     },
     {
       desFeralImpFlipGraveTargetShuffleToDeck: 0,
+      outstandingDogMarronToGraveSelfShuffleToDeck: 0,
     },
   );
 }
