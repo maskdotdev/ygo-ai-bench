@@ -181,7 +181,8 @@ function readFusionPredicateRequirements(expressionList: string): FusionMaterial
 type FusionRepeatedMaterialMetadata = { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; attackMax?: number; attackMin?: number; attribute?: number; excludedType?: number; level?: number; levelMax?: number; levelMin?: number; race?: number; type?: number; setcode?: number; location?: number };
 
 function readFusionAddProcMixRepMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
-  return readFusionAddProcMixRepConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
+  return readFusionAddProcMixRepNamedFilterMaterials(source)
+    ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location");
@@ -241,6 +242,34 @@ function readFusionAddProcMixNNamedFilterMaterials(source: string | undefined): 
   if (excludedType !== undefined) metadata.excludedType = excludedType;
   if (levelMin !== undefined) metadata.levelMin = levelMin;
   return attribute !== undefined || race !== undefined || type !== undefined || setcode !== undefined || location !== undefined || excludedType !== undefined || levelMin !== undefined ? metadata : undefined;
+}
+
+function readFusionAddProcMixRepNamedFilterMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
+  const match = source?.match(/Fusion\.AddProcMixRep\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*(s\.[A-Za-z_]\w*)\s*,\s*(\d+)\s*,\s*(\d+)([^\n]*)\)/);
+  const functionName = match?.[1], min = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10), max = match?.[3] === undefined ? undefined : Number.parseInt(match[3], 10);
+  if (!source || !functionName || min === undefined || max === undefined || min <= 0 || max < min) return undefined;
+  const body = readLuaFunctionReturnExpression(source, functionName);
+  if (!body || /\bsg\b|:IsExists\(|:IsSummonLocation\(|:IsControler\(/.test(body)) return undefined;
+  const metadata: FusionRepeatedMaterialMetadata = {
+    min,
+    max,
+    extraCodes: readLuaCodeList(match?.[4]),
+    extraSetcodes: readLuaSetcodeFilterList(match?.[4]),
+  };
+  const attribute = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsAttribute\(\s*(${ATTRIBUTE_CONSTANT_EXPRESSION})`))?.[1]);
+  const race = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsRace\(\s*(${RACE_CONSTANT_EXPRESSION})`))?.[1]);
+  const typeMatch = body.match(new RegExp(String.raw`c:IsType\(\s*(${TYPE_CONSTANT_EXPRESSION})`));
+  const type = typeMatch?.index !== undefined && body.slice(Math.max(0, typeMatch.index - 4), typeMatch.index) !== "not " ? readLuaConstantExpression(typeMatch[1]) : undefined;
+  const setcode = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsSetCard\(\s*(${SET_CONSTANT_EXPRESSION})`))?.[1]);
+  const location = readLuaConstantExpression(body.match(new RegExp(String.raw`c:IsLocation\(\s*(${LOCATION_CONSTANT_EXPRESSION})`))?.[1]) ?? (/\bc:IsOnField\(\)/.test(body) ? readLuaConstantExpression("LOCATION_ONFIELD") : undefined);
+  const levelMin = readPositiveNumber(body.match(/c:IsLevelAbove\(\s*(\d+)\s*\)/)?.[1]);
+  if (attribute !== undefined) metadata.attribute = attribute;
+  if (race !== undefined) metadata.race = race;
+  if (type !== undefined) metadata.type = type;
+  if (setcode !== undefined) metadata.setcode = setcode;
+  if (location !== undefined) metadata.location = location;
+  if (levelMin !== undefined) metadata.levelMin = levelMin;
+  return attribute !== undefined || race !== undefined || type !== undefined || setcode !== undefined || location !== undefined || levelMin !== undefined ? metadata : undefined;
 }
 
 function readFusionAddProcMixNRepeatedMixedConstantFilter<K extends "attribute" | "race" | "type" | "setcode" | "location">(
