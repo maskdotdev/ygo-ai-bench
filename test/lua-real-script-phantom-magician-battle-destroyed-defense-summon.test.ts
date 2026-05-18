@@ -12,14 +12,14 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const phantomMagicianCode = "24103628";
+const hasPhantomMagicianScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${phantomMagicianCode}.lua`));
 const typeMonster = 0x1;
 const setHero = 0x8;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Phantom Magician battle destroyed defense summon", () => {
+describe.skipIf(!hasUpstreamScripts || !hasPhantomMagicianScript)("Lua real script Phantom Magician battle destroyed defense summon", () => {
   it("restores Phantom Magician's battle-destroyed HERO filter and face-up Defense Special Summon", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const phantomMagicianCode = "24103628";
     const offSetDecoyCode = "24103629";
     const heroTargetCode = "24103630";
     const attackerCode = "24103631";
@@ -35,7 +35,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     expect(script).toContain("Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP_DEFENSE)");
 
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === phantomMagicianCode),
+      { code: phantomMagicianCode, name: "Phantom Magician", kind: "monster", typeFlags: typeMonster, level: 3, attack: 600, defense: 700 },
       { code: offSetDecoyCode, name: "Phantom Magician Off-Set Decoy", kind: "monster", typeFlags: typeMonster, level: 4, attack: 900, defense: 900, setcodes: [0x123] },
       { code: heroTargetCode, name: "Phantom Magician HERO Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 900, defense: 1200, setcodes: [setHero] },
       { code: attackerCode, name: "Phantom Magician Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1200 },

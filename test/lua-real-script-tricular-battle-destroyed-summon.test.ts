@@ -12,17 +12,25 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const tricularCode = "20797524";
+const hasTricularScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${tricularCode}.lua`));
 const typeMonster = 0x1;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tricular battle destroyed summon", () => {
+describe.skipIf(!hasUpstreamScripts || !hasTricularScript)("Lua real script Tricular battle destroyed summon", () => {
   it("restores Tricular's optional battle-destroyed trigger and Special Summons Bicular from Deck", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const tricularCode = "20797524";
     const bicularId = "83392426";
     const attackerCode = "2079";
+    const script = workspace.readScript(`c${tricularCode}.lua`);
+    expect(script).toContain("e1:SetCategory(CATEGORY_SPECIAL_SUMMON)");
+    expect(script).toContain("e1:SetCode(EVENT_BATTLE_DESTROYED)");
+    expect(script).toContain("return e:GetHandler():IsLocation(LOCATION_GRAVE) and e:GetHandler():IsReason(REASON_BATTLE)");
+    expect(script).toContain("return c:IsCode(83392426) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)");
+    expect(script).toContain("Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND|LOCATION_DECK,0,1,1,nil,e,tp)");
+    expect(script).toContain("Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => [tricularCode, bicularId].includes(card.code)),
+      { code: tricularCode, name: "Tricular", kind: "monster", typeFlags: typeMonster, level: 3, attack: 300, defense: 300 },
+      { code: bicularId, name: "Bicular", kind: "monster", typeFlags: typeMonster, level: 2, attack: 200, defense: 200 },
       { code: attackerCode, name: "Tricular Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1200 },
     ];
     const reader = createCardReader(cards);
