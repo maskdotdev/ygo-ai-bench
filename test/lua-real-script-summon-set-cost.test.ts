@@ -12,19 +12,25 @@ import type { DuelCardData } from "#duel/types.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const chainEnergyCode = "79323590";
+const hasChainEnergyScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${chainEnergyCode}.lua`));
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeContinuous = 0x20000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script summon and set cost gates", () => {
+describe.skipIf(!hasUpstreamScripts || !hasChainEnergyScript)("Lua real script summon and set cost gates", () => {
   it("applies official Chain Energy summon and set costs to legal actions", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const chainEnergyCode = "79323590";
-    const chainEnergy = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === chainEnergyCode);
-    expect(chainEnergy).toBeDefined();
+    const script = workspace.readScript(`c${chainEnergyCode}.lua`);
+    expect(script).toContain("e2:SetCode(EFFECT_ACTIVATE_COST)");
+    expect(script).toContain("e3:SetCode(EFFECT_SUMMON_COST)");
+    expect(script).toContain("e4:SetCode(EFFECT_SPSUMMON_COST)");
+    expect(script).toContain("Duel.PayLPCost(tp,500)");
     const customCards: DuelCardData[] = [
-      chainEnergy!,
-      { code: "90000001", name: "Normal Summon Cost Target", kind: "monster" },
-      { code: "90000002", name: "Monster Set Cost Target", kind: "monster" },
-      { code: "90000004", name: "Special Summon Cost Target", kind: "monster" },
+      { code: chainEnergyCode, name: "Chain Energy", kind: "spell", typeFlags: typeSpell | typeContinuous },
+      { code: "90000001", name: "Normal Summon Cost Target", kind: "monster", typeFlags: typeMonster },
+      { code: "90000002", name: "Monster Set Cost Target", kind: "monster", typeFlags: typeMonster },
+      { code: "90000004", name: "Special Summon Cost Target", kind: "monster", typeFlags: typeMonster },
     ];
     const reader = createCardReader(customCards);
     const session = createDuel({ seed: 793, startingHandSize: 5, drawPerTurn: 0, cardReader: reader });

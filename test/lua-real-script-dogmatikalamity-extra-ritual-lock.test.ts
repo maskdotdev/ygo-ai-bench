@@ -12,23 +12,29 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const dogmatikalamityCode = "31002402";
+const hasDogmatikalamityScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${dogmatikalamityCode}.lua`));
 const setDogmatika = 0x146;
 const typeMonster = 0x1;
+const typeSpell = 0x2;
 const typeRitual = 0x80;
 const typeFusion = 0x40;
 const typePendulum = 0x1000000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dogmatikalamity Extra Deck Ritual lock", () => {
+describe.skipIf(!hasUpstreamScripts || !hasDogmatikalamityScript)("Lua real script Dogmatikalamity Extra Deck Ritual lock", () => {
   it("restores a sole Extra Deck Ritual material and the post-resolution Extra Deck summon lock", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const dogmatikalamityCode = "31002402";
     const ritualTargetCode = "3101";
     const extraMaterialCode = "3102";
     const pendulumExtraCode = "3103";
     const responderCode = "3104";
+    const script = workspace.readScript(`c${dogmatikalamityCode}.lua`);
+    expect(script).toContain("Ritual.CreateProc");
+    expect(script).toContain("Duel.SendtoGrave(extra_mat,REASON_EFFECT|REASON_MATERIAL|REASON_RITUAL)");
+    expect(script).toContain("e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)");
+    expect(script).toContain("e1:SetTarget(function(e,c) return c:IsLocation(LOCATION_EXTRA) end)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === dogmatikalamityCode),
+      { code: dogmatikalamityCode, name: "Dogmatikalamity", kind: "spell", typeFlags: typeSpell | typeRitual },
       { code: ritualTargetCode, name: "Dogmatikalamity Ritual Fixture", kind: "monster", typeFlags: typeMonster | typeRitual, level: 8, attack: 2500, defense: 2500, setcodes: [setDogmatika] },
       { code: extraMaterialCode, name: "Dogmatikalamity Extra Deck Material Fixture", kind: "extra", typeFlags: typeMonster | typeFusion, level: 8, attack: 2400, defense: 2000 },
       { code: pendulumExtraCode, name: "Dogmatikalamity Pendulum Extra Probe", kind: "extra", typeFlags: typeMonster | typePendulum, level: 4, attack: 1200, defense: 1000 },

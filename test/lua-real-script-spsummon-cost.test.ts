@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { luaSummonTypeSpecial } from "#duel/summon-type-codes.js";
+import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -11,13 +12,22 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const kochiCode = "41902352";
+const spiritMessageCode = "30170981";
+const hasKochiScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${kochiCode}.lua`));
+const hasSpiritMessageScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${spiritMessageCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Special Summon cost gates", () => {
+describe.skipIf(!hasUpstreamScripts || !hasKochiScript || !hasSpiritMessageScript)("Lua real script Special Summon cost gates", () => {
   it("restores official EFFECT_SPSUMMON_COST summon-type inequality predicates", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const kochiCode = "41902352";
-    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === kochiCode);
+    const script = workspace.readScript(`c${kochiCode}.lua`);
+    expect(script).toContain("e2:SetCode(EFFECT_SPSUMMON_COST)");
+    expect(script).toContain("return sumtype~=SUMMON_TYPE_SPECIAL+182");
+    const cards: DuelCardData[] = [
+      { code: kochiCode, name: "Blackwing - Kochi the Daybreak", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 700, defense: 1500 },
+    ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 419, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [kochiCode] }, 1: { main: [] } });
@@ -85,8 +95,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
 
   it("restores official EFFECT_SPSUMMON_COST summon-type equality predicates", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const spiritMessageCode = "30170981";
-    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === spiritMessageCode);
+    const script = workspace.readScript(`c${spiritMessageCode}.lua`);
+    expect(script).toContain("e2:SetCode(EFFECT_SPSUMMON_COST)");
+    expect(script).toContain("return sumtype==SUMMON_TYPE_SPECIAL+181");
+    const cards: DuelCardData[] = [
+      { code: spiritMessageCode, name: 'Spirit Message "L" Cost Probe', kind: "monster", typeFlags: typeMonster, level: 1, attack: 0, defense: 0 },
+    ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 301, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [spiritMessageCode] }, 1: { main: [] } });
@@ -147,7 +161,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
       }
     `);
     const restoredCost = restored.session.state.effects.find((effect) => effect.sourceUid === spiritMessage!.uid && effect.code === 92)?.cost;
-    expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 181 } as never)).toBe(true);
-    expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 182 } as never)).toBe(false);
+    expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 181, checkOnly: true } as never)).toBe(true);
+    expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 182, checkOnly: true } as never)).toBe(false);
   });
 });
