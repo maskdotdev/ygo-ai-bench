@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 5;
+const damageStepStatFixtureCount = 6;
 const damageStepStatKindCounts = {
-  activatedDamageStepBoost: 2,
+  activatedDamageStepBoost: 3,
   labelObjectCostBoost: 1,
   mandatoryPreDamageBoost: 1,
   persistentDamageStepDebuff: 1,
@@ -16,6 +16,7 @@ const damageStepStatSemanticVariantCounts = {
   fabledAshenveilDamageStepHandCostBoost: 1,
   injectionFairyLilyPreDamageLpBoost: 1,
   miniaturizePersistentDamageStepDebuff: 1,
+  rushRecklesslyTargetedDamageStepBoost: 1,
   shinobirdCrowLabelObjectCostBoost: 1,
 } satisfies Record<DamageStepStatSemanticVariant, number>;
 
@@ -29,6 +30,7 @@ type DamageStepStatSemanticVariant =
   | "fabledAshenveilDamageStepHandCostBoost"
   | "injectionFairyLilyPreDamageLpBoost"
   | "miniaturizePersistentDamageStepDebuff"
+  | "rushRecklesslyTargetedDamageStepBoost"
   | "shinobirdCrowLabelObjectCostBoost";
 
 describe("Lua real damage-step stat restore coverage", () => {
@@ -120,6 +122,19 @@ function damageStepStatFixtureFiles(): Array<{
         "currentAttack(boostedLily",
         "battleDamage).toEqual({ 0: 0, 1: 1400 })",
         "flagEffects).toEqual([])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
+      kind: "activatedDamageStepBoost",
+      required: [
+        "expectCleanRestore(restoredActivation)",
+        "expectCleanRestore(restoredBoost)",
+        "aux.StatChangeDamageStepCondition",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "currentAttack(restoredAttacker",
+        "battleDamage).toEqual({ 0: 0, 1: 200 })",
+        "eventHistory.filter((event) => event.eventName === \"battleDamageDealt\")",
       ],
     },
     {
@@ -249,6 +264,19 @@ function damageStepStatSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
+      kind: "rushRecklesslyTargetedDamageStepBoost",
+      required: [
+        'const rushCode = "70046172"',
+        "restores targeted Damage Step ATK update activation and battle damage",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "property: 0x4010",
+        "e1:SetValue(700)",
+        "currentAttack(restoredAttacker",
+        "battleDamage).toEqual({ 0: 0, 1: 200 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
       kind: "cipherSoldierMandatoryPreDamageBoost",
       required: [
@@ -280,6 +308,7 @@ function countDamageStepStatSemanticVariants(
       fabledAshenveilDamageStepHandCostBoost: 0,
       injectionFairyLilyPreDamageLpBoost: 0,
       miniaturizePersistentDamageStepDebuff: 0,
+      rushRecklesslyTargetedDamageStepBoost: 0,
       shinobirdCrowLabelObjectCostBoost: 0,
     },
   );

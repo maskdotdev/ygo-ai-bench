@@ -12,13 +12,15 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const rushCode = "70046172";
+const hasRushScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${rushCode}.lua`));
 const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeQuickplay = 0x10000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Rush Recklessly StatChangeDamageStepCondition", () => {
+describe.skipIf(!hasUpstreamScripts || !hasRushScript)("Lua real script Rush Recklessly StatChangeDamageStepCondition", () => {
   it("restores targeted Damage Step ATK update activation and battle damage", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const rushCode = "70046172";
     const attackerCode = "70046173";
     const defenderCode = "70046174";
     const script = workspace.readScript(`official/c${rushCode}.lua`);
@@ -29,7 +31,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
     expect(script).toContain("e1:SetValue(700)");
 
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === rushCode),
+      { code: rushCode, name: "Rush Recklessly", kind: "spell", typeFlags: typeSpell | typeQuickplay },
       { code: attackerCode, name: "Rush Recklessly Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1000 },
       { code: defenderCode, name: "Rush Recklessly Defender", kind: "monster", typeFlags: typeMonster, level: 4, attack: 2000, defense: 1000 },
     ];
@@ -129,6 +131,31 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
     passRestoredBattleResponses(restoredBoost);
     expect(restoredBoost.session.state.battleDamage).toEqual({ 0: 0, 1: 200 });
     expect(restoredBoost.session.state.players[1].lifePoints).toBe(7800);
+    expect(restoredBoost.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker.uid,
+        eventPlayer: 1,
+        eventReason: 32,
+        eventReasonPlayer: 0,
+        eventValue: 200,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredBoost.session.state.cards.find((card) => card.uid === defender.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredBoost.session.state.cards.find((card) => card.uid === attacker.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
   });
