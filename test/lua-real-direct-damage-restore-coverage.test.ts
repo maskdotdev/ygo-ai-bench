@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 8;
+const directDamageFixtureCount = 9;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   continuousCostTargetParamDamage: 1,
   eventToGraveChainInfoDamage: 1,
+  fieldCountTargetPlayerDamage: 1,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
@@ -20,6 +21,7 @@ const directDamageSemanticVariantCounts = {
   ookaziTargetParamDamage: 1,
   seismicCrasherContinuousCostTargetParamDamage: 1,
   sparksTargetParamDamage: 1,
+  thunderShortFieldCountDamage: 1,
   tremendousFireAllPlayerDelayedDamage: 1,
 } satisfies Record<DirectDamageSemanticVariant, number>;
 
@@ -27,6 +29,7 @@ type DirectDamageKind =
   | "allPlayerDelayedDamage"
   | "continuousCostTargetParamDamage"
   | "eventToGraveChainInfoDamage"
+  | "fieldCountTargetPlayerDamage"
   | "lpConditionTargetParamDamage"
   | "targetParamDamage";
 type DirectDamageSemanticVariant =
@@ -37,6 +40,7 @@ type DirectDamageSemanticVariant =
   | "ookaziTargetParamDamage"
   | "seismicCrasherContinuousCostTargetParamDamage"
   | "sparksTargetParamDamage"
+  | "thunderShortFieldCountDamage"
   | "tremendousFireAllPlayerDelayedDamage";
 
 describe("Lua real direct damage restore coverage", () => {
@@ -173,6 +177,19 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
       ],
     },
     {
+      file: "test/lua-real-script-thunder-short-field-count-damage.test.ts",
+      kind: "fieldCountTargetPlayerDamage",
+      required: [
+        'const thunderShortCode = "20264508"',
+        "restores Thunder Short's target-player field-count damage from CHAININFO",
+        "Duel.GetFieldGroupCount(tp,0,LOCATION_MZONE)~=0",
+        "Duel.GetFieldGroupCount(p,LOCATION_MZONE,0)*400",
+        "targetParam: 800",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7200)",
+      ],
+    },
+    {
       file: "test/lua-real-script-seismic-crasher-continuous-cost-damage.test.ts",
       kind: "continuousCostTargetParamDamage",
       required: [
@@ -273,6 +290,16 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
       ],
     },
     {
+      file: "test/lua-real-script-thunder-short-field-count-damage.test.ts",
+      kind: "thunderShortFieldCountDamage",
+      required: [
+        "Thunder Short Chain Responder",
+        "eventValue: 800",
+        "eventReasonCardUid: thunderShort.uid",
+        "thunder short responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-tremendous-fire-delayed-damage.test.ts",
       kind: "tremendousFireAllPlayerDelayedDamage",
       required: [
@@ -305,6 +332,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
       allPlayerDelayedDamage: 0,
       continuousCostTargetParamDamage: 0,
       eventToGraveChainInfoDamage: 0,
+      fieldCountTargetPlayerDamage: 0,
       targetParamDamage: 0,
       lpConditionTargetParamDamage: 0,
     },
@@ -325,6 +353,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       ookaziTargetParamDamage: 0,
       seismicCrasherContinuousCostTargetParamDamage: 0,
       sparksTargetParamDamage: 0,
+      thunderShortFieldCountDamage: 0,
       tremendousFireAllPlayerDelayedDamage: 0,
     },
   );
