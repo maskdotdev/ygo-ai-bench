@@ -95,7 +95,15 @@ function readFusionAddProcMixMaterials(L: unknown, card: DuelCardInstance, sourc
   if (/\bFusion\.AddProcMixN\(/.test(source)) return readFusionAddProcMixNMaterials(L, card);
   if (!/\bFusion\.AddProc(?:Mix|Code[234]|CodeRep)\(/.test(source)) return [];
   const values = readProcedureNumberListField(L, card, "fusion_materials", 3);
-  return values.length >= 2 ? values.map(String) : [];
+  const exactMaterials = readFusionAddProcMixExactMaterials(source);
+  const materials = [...values, ...exactMaterials.filter((code) => !values.includes(code))].map(String);
+  return materials.length >= (exactMaterials.length > 0 ? 1 : 2) ? materials : [];
+}
+
+function readFusionAddProcMixExactMaterials(source: string | undefined): number[] {
+  const match = source?.match(/Fusion\.AddProcMix\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,([^\n]*)\)/);
+  if (!match?.[1]) return [];
+  return readLuaCodeList(match[1].replace(/aux\.FilterBoolFunction(?:Ex)?\([^)]*\)/g, ""));
 }
 
 function readFusionAddProcMixNMaterials(L: unknown, card: DuelCardInstance): string[] {
@@ -115,6 +123,13 @@ function readFusionAddProcMixPredicateMaterials(source: string | undefined): Fus
   const match = source?.match(/Fusion\.AddProcMix\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,([^\n]*)\)/);
   if (!match?.[1]) return [];
   const predicates: FusionMaterialPredicateRequirement[] = [];
+  for (const [, predicate, rawValue] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:AttackAbove|LevelAbove))\s*,\s*(\d+)\s*\)/g)) {
+    if (!rawValue) continue;
+    const value = Number.parseInt(rawValue, 10);
+    if (value <= 0) continue;
+    if (predicate === "Card.IsAttackAbove") predicates.push({ attackMin: value });
+    if (predicate === "Card.IsLevelAbove") predicates.push({ levelMin: value });
+  }
   for (const [, predicate, expression] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:Attribute|Location|Race|SetCard|Type))\s*,\s*([A-Z0-9_]+(?:\s*\|\s*[A-Z0-9_]+)*)\s*\)/g)) {
     const value = readLuaConstantExpression(expression);
     if (value === undefined) continue;

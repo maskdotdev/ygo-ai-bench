@@ -8,7 +8,9 @@ export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "
 export type DuelCardKind = "monster" | "spell" | "trap" | "extra";
 export interface FusionMaterialPredicateRequirement {
   attribute?: number;
+  attackMin?: number;
   location?: number;
+  levelMin?: number;
   race?: number;
   setcode?: number;
   type?: number;
