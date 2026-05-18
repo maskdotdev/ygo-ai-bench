@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = {
-  fusion: 17,
+  fusion: 18,
   ritual: 17,
 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
@@ -14,6 +14,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   contactFusionOpponentMaterial: 1,
   contactFusionSendCost: 1,
   customRitualOperation: 1,
+  fusionAddProcCodeRepRepeatedCodeMetadata: 1,
   fusionAddProcMixMaterialMetadata: 1,
   fusionAddProcMixNRepeatedCodeMetadata: 1,
   fusionDeckMaterialOath: 1,
@@ -44,6 +45,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   ritualStage2: 2,
 };
 const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemanticVariant, number> = {
+  blueEyesUltimateAddProcCodeRep: 1,
   blackSkullDragonAddProcMix: 1,
   cyberEndDragonAddProcMixN: 1,
   doubleSubstituteSuppression: 1,
@@ -68,7 +70,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(34);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(35);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -126,6 +128,7 @@ type RitualFusionHelperKind =
   | "contactFusionOpponentMaterial"
   | "contactFusionSendCost"
   | "customRitualOperation"
+  | "fusionAddProcCodeRepRepeatedCodeMetadata"
   | "fusionAddProcMixMaterialMetadata"
   | "fusionAddProcMixNRepeatedCodeMetadata"
   | "fusionDeckMaterialOath"
@@ -155,6 +158,7 @@ type RitualFusionHelperKind =
   | "ritualSpecificMaterial"
   | "ritualStage2";
 type RitualFusionHelperSemanticVariant =
+  | "blueEyesUltimateAddProcCodeRep"
   | "blackSkullDragonAddProcMix"
   | "cyberEndDragonAddProcMixN"
   | "doubleSubstituteSuppression"
@@ -207,6 +211,16 @@ function countSemanticVariants(fixtures: Array<{ kind: RitualFusionHelperSemanti
 
 function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: RitualFusionHelperSemanticVariant; required: string[] }> {
   return ([
+    {
+      file: "test/lua-real-script-blue-eyes-ultimate-addproccoderep-fusion.test.ts",
+      kind: "blueEyesUltimateAddProcCodeRep",
+      required: [
+        "restores repeated Fusion.AddProcCodeRep material metadata and lets Polymerization summon Blue-Eyes Ultimate Dragon",
+        "const blueEyesUltimateCode = \"511006007\"",
+        "expect(blueEyesUltimate!.data.fusionMaterials).toEqual([blueEyesCode, blueEyesCode, blueEyesCode])",
+        "summonMaterialUids: blueEyesMaterials.map((card) => card.uid)",
+      ],
+    },
     {
       file: "test/lua-real-script-black-skull-dragon-addprocmix-fusion.test.ts",
       kind: "blackSkullDragonAddProcMix",
@@ -822,6 +836,24 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'eventName === "usedAsMaterial"',
         'eventName === "specialSummoned"',
         'expect(restored.host.messages).not.toContain("black skull dragon responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-blue-eyes-ultimate-addproccoderep-fusion.test.ts",
+      kind: "fusionAddProcCodeRepRepeatedCodeMetadata",
+      families: ["fusion"],
+      required: [
+        "Fusion.AddProcCodeRep metadata",
+        "expect(blueEyesUltimate!.data.fusionMaterials).toEqual([blueEyesCode, blueEyesCode, blueEyesCode])",
+        "expect(restored.session.state.cards.find((card) => card.uid === blueEyesUltimate!.uid)?.data.fusionMaterials).toEqual([blueEyesCode, blueEyesCode, blueEyesCode])",
+        "operationInfos).toEqual([",
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
+        'summonType: "fusion"',
+        "summonMaterialUids: blueEyesMaterials.map((card) => card.uid)",
+        "reason: duelReason.effect | duelReason.material | duelReason.fusion",
+        'eventName === "usedAsMaterial"',
+        'eventName === "specialSummoned"',
+        'expect(restored.host.messages).not.toContain("blue-eyes ultimate responder resolved")',
       ],
     },
     {

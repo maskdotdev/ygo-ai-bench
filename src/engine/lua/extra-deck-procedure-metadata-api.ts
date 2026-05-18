@@ -77,7 +77,7 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
 function readFusionAddProcMixMaterials(L: unknown, card: DuelCardInstance, source: string | undefined): string[] {
   if (!source) return [];
   if (/\bFusion\.AddProcMixN\(/.test(source)) return readFusionAddProcMixNMaterials(L, card);
-  if (!/\bFusion\.AddProcMix\(/.test(source)) return [];
+  if (!/\bFusion\.AddProc(?:Mix|Code[234]|CodeRep)\(/.test(source)) return [];
   const values = readProcedureNumberListField(L, card, "fusion_materials", 3);
   return values.length >= 2 ? values.map(String) : [];
 }
