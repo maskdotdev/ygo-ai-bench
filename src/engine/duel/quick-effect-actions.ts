@@ -49,12 +49,13 @@ function battleWindowEventMatchesEffect(kind: NonNullable<ReturnType<typeof curr
     (kind === "beforeDamageCalculation" && effect.triggerEvent === "beforeDamageCalculation") ||
     (kind === "duringDamageCalculation" && effect.triggerEvent === "damageCalculating") ||
     (kind === "afterDamageCalculation" && effect.triggerEvent === "afterDamageCalculation") ||
-    (kind === "endDamageStep" && effect.triggerEvent === "damageStepEnded")
+    (kind === "endDamageStep" && (effect.triggerEvent === "battleDestroyed" || effect.triggerEvent === "damageStepEnded"))
   );
 }
 
 function isBattleWindowTriggerEvent(triggerEvent: DuelEffectDefinition["triggerEvent"]): boolean {
   return triggerEvent === "battleConfirmed"
+    || triggerEvent === "battleDestroyed"
     || triggerEvent === "beforeDamageCalculation"
     || triggerEvent === "damageCalculating"
     || triggerEvent === "afterDamageCalculation"

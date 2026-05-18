@@ -202,6 +202,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
   getAttackValue: (state, card) => getCoreBattleAttackValue(state, card, coreBattleHandlers),
   getDefenseValue: (state, card) => getCoreBattleDefenseValue(state, card, coreBattleHandlers),
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
+  hasQuickEffectResponses: (state, player) => hasQuickEffectResponses(state, player, canChooseEffect),
 };
 
 const coreBattleHandlers: CoreBattleHandlers = {

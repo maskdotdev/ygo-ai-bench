@@ -82,8 +82,10 @@ function liveQuickEffectEventContext(state: DuelState, effect: DuelEffectDefinit
 }
 
 function canUseLiveEventHistoryForQuickEffect(state: DuelState, eventName: DuelEventName | undefined): boolean {
-  if (eventName !== "attackDeclared" || !(state.pendingBattle ?? state.currentAttack)) return false;
+  if (eventName !== "attackDeclared" && eventName !== "battleDestroyed") return false;
   const kind = currentBattleWindowKind(state);
+  if (eventName === "battleDestroyed") return state.phase === "battle" && (kind === "endDamageStep" || kind === undefined);
+  if (!(state.pendingBattle ?? state.currentAttack)) return false;
   return kind === "attackDeclaration" || kind === "attackTargetConfirmation" || kind === "attackNegationResponse";
 }
 

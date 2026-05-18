@@ -4,18 +4,20 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDestroyedSummonFixtureCount = 2;
+const battleDestroyedSummonFixtureCount = 3;
 const battleDestroyedSummonKindCounts = {
+  battleDestroyedTrapActivationDeckSummon: 1,
   optionalDeckDefenseSpecialSummon: 1,
   optionalDeckSpecialSummon: 1,
 } satisfies Record<BattleDestroyedSummonKind, number>;
 const battleDestroyedSummonSemanticVariantCounts = {
+  heroSignalBattleDestroyedTrapDeckSummon: 1,
   phantomMagicianHeroDefenseDeckSummon: 1,
   tricularBattleDestroyedDeckSummon: 1,
 } satisfies Record<BattleDestroyedSummonSemanticVariant, number>;
 
-type BattleDestroyedSummonKind = "optionalDeckDefenseSpecialSummon" | "optionalDeckSpecialSummon";
-type BattleDestroyedSummonSemanticVariant = "phantomMagicianHeroDefenseDeckSummon" | "tricularBattleDestroyedDeckSummon";
+type BattleDestroyedSummonKind = "battleDestroyedTrapActivationDeckSummon" | "optionalDeckDefenseSpecialSummon" | "optionalDeckSpecialSummon";
+type BattleDestroyedSummonSemanticVariant = "heroSignalBattleDestroyedTrapDeckSummon" | "phantomMagicianHeroDefenseDeckSummon" | "tricularBattleDestroyedDeckSummon";
 
 describe("Lua real battle-destroyed summon restore coverage", () => {
   it("requires battle-destroyed summon fixtures to assert clean restore and exact Special Summon outcomes", () => {
@@ -84,6 +86,23 @@ function battleDestroyedSummonFixtureFiles(): Array<{
 }> {
   return [
     {
+      file: "test/lua-real-script-hero-signal-battle-destroyed-trap-summon.test.ts",
+      kind: "battleDestroyedTrapActivationDeckSummon",
+      required: [
+        'const heroSignalCode = "22020907"',
+        "restores Hero Signal's battle-destroyed Trap activation and Special Summons a low-level Elemental HERO",
+        "e1:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e1:SetCode(EVENT_BATTLE_DESTROYED)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_HAND|LOCATION_DECK,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        'activationLocation: "spellTrapZone"',
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        "operationInfos: [{ category: 0x200",
+      ],
+    },
+    {
       file: "test/lua-real-script-phantom-magician-battle-destroyed-defense-summon.test.ts",
       kind: "optionalDeckDefenseSpecialSummon",
       required: [
@@ -121,6 +140,19 @@ function battleDestroyedSummonSemanticVariants(): Array<{
 }> {
   return [
     {
+      file: "test/lua-real-script-hero-signal-battle-destroyed-trap-summon.test.ts",
+      kind: "heroSignalBattleDestroyedTrapDeckSummon",
+      required: [
+        "EFFECT_TYPE_ACTIVATE",
+        "EVENT_BATTLE_DESTROYED",
+        "LOCATION_HAND|LOCATION_DECK",
+        'type === "activateEffect"',
+        "pendingTriggers).toEqual([])",
+        'activationLocation: "spellTrapZone"',
+        "hero signal responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-phantom-magician-battle-destroyed-defense-summon.test.ts",
       kind: "phantomMagicianHeroDefenseDeckSummon",
       required: [
@@ -152,7 +184,7 @@ function countBattleDestroyedSummonKinds(fixtures: Array<{ kind: BattleDestroyed
       counts[fixture.kind] += 1;
       return counts;
     },
-    { optionalDeckDefenseSpecialSummon: 0, optionalDeckSpecialSummon: 0 },
+    { battleDestroyedTrapActivationDeckSummon: 0, optionalDeckDefenseSpecialSummon: 0, optionalDeckSpecialSummon: 0 },
   );
 }
 
@@ -164,6 +196,6 @@ function countBattleDestroyedSummonSemanticVariants(
       counts[fixture.kind] += 1;
       return counts;
     },
-    { phantomMagicianHeroDefenseDeckSummon: 0, tricularBattleDestroyedDeckSummon: 0 },
+    { heroSignalBattleDestroyedTrapDeckSummon: 0, phantomMagicianHeroDefenseDeckSummon: 0, tricularBattleDestroyedDeckSummon: 0 },
   );
 }

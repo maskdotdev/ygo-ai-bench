@@ -1,4 +1,5 @@
 import { resolvePendingDuelBattle, type ResolvePendingDuelBattleOptions } from "#duel/battle.js";
+import { otherPlayer } from "#duel/player-id.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { BattleDamageChangeOptions } from "#duel/core-battle-damage.js";
 import type { DuelCardInstance, DuelEventName, DuelState, PlayerId } from "#duel/types.js";
@@ -30,6 +31,7 @@ export interface BattleContinuationHandlers {
   getAttackValue(state: DuelState, card: DuelCardInstance): number;
   getDefenseValue(state: DuelState, card: DuelCardInstance): number;
   hasPiercingDamage(state: DuelState, card: DuelCardInstance): boolean;
+  hasQuickEffectResponses?(state: DuelState, player: PlayerId): boolean;
 }
 
 export function resolvePendingBattle(state: DuelState, handlers: BattleContinuationHandlers, options: ResolvePendingDuelBattleOptions = {}): void {
@@ -84,6 +86,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
       if (duelHasEnded(state)) return;
     }
   };
+  const eventHistoryLength = state.eventHistory.length;
   resolvePendingDuelBattle(state, {
     canAttackTarget: (attacker, target) => handlers.canAttackTarget?.(state, attacker, target) ?? true,
     applyStoredBattleDamage: (battleCards) => {
@@ -117,6 +120,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
   }, options);
   if (duelHasEnded(state)) return;
   setWaitingForPendingTriggerBucket(state);
+  if (state.pendingTriggers.length === 0 && collectedBattleDestroyedSince(state, eventHistoryLength)) setWaitingForBattleDestroyedQuickResponse(state, handlers);
 }
 
 export function resolvePendingBattleIfReady(state: DuelState, handlers: BattleContinuationHandlers): void {
@@ -126,6 +130,20 @@ export function resolvePendingBattleIfReady(state: DuelState, handlers: BattleCo
 
 function duelHasEnded(state: DuelState): boolean {
   return (state as { status: string }).status === "ended";
+}
+
+function collectedBattleDestroyedSince(state: DuelState, eventHistoryLength: number): boolean {
+  return state.eventHistory.slice(eventHistoryLength).some((event) => event.eventName === "battleDestroyed");
+}
+
+function setWaitingForBattleDestroyedQuickResponse(state: DuelState, handlers: BattleContinuationHandlers): void {
+  if (!handlers.hasQuickEffectResponses) return;
+  const players: PlayerId[] = [state.turnPlayer, otherPlayer(state.turnPlayer)];
+  for (const player of players) {
+    if (!handlers.hasQuickEffectResponses(state, player)) continue;
+    state.waitingFor = player;
+    return;
+  }
 }
 
 function describeBattleDamage(state: DuelState, handlers: BattleContinuationHandlers, damagePlayer: PlayerId, battleCards: DuelCardInstance[] | undefined): PreparedBattleDamage {
