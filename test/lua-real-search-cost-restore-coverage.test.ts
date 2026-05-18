@@ -76,6 +76,20 @@ describe("Lua real search cost restore coverage", () => {
 
     expect(weak).toEqual([]);
   });
+
+  it("keeps search cost fixtures script-gated and database-independent", () => {
+    const weak = searchCostSemanticVariants()
+      .filter(({ file }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return text.includes("readDatabaseCards")
+          || text.includes("hasUpstreamDatabase")
+          || !text.includes("workspace.readScript")
+          || !text.includes("describe.skipIf(!hasUpstreamScripts || !has");
+      })
+      .map(({ kind }) => kind);
+
+    expect(weak).toEqual([]);
+  });
 });
 
 function searchCostFixtureFiles(): Array<{ file: string; kind: SearchCostKind; required: string[] }> {
