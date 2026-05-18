@@ -10,8 +10,8 @@ import { realScriptSummonSuccessTargetSpecialSummonFixtureSnippets, summonSucces
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 218;
-export const summonProcedureFixtureCount = 25;
+export const realScriptSummonFixtureCount = 219;
+export const summonProcedureFixtureCount = 26;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
 export const pendulumHelperFixtureCount = 16;
@@ -27,13 +27,13 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 22,
-  summon: 81,
+  summon: 82,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
-  genericSpecialSummonProcedure: 13,
+  genericSpecialSummonProcedure: 14,
   pendulumProcedure: 3,
   ritualProcedure: 3,
   tributeProcedure: 2,
@@ -431,6 +431,7 @@ export function realScriptSummonProcedureFixtureFiles(): string[] {
       "lua-real-script-gigarays-gandora-special-summon-procedure.test.ts",
       "lua-real-script-guardian-eatos-special-summon-procedure.test.ts",
       "lua-real-script-leo-wizard-opponent-summon-procedure.test.ts",
+      "lua-real-script-malefic-stardust-special-summon-procedure.test.ts",
       "lua-real-script-megarock-dragon-special-summon-procedure.test.ts",
       "lua-real-script-megalith-bethor-ritual-procedure.test.ts",
       "lua-real-script-mitsurugi-mirror-grave-ritual.test.ts",
