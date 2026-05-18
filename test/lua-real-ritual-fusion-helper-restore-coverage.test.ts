@@ -5,7 +5,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = {
-  fusion: 18,
+  fusion: 19,
   ritual: 17,
 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
@@ -14,6 +14,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   contactFusionOpponentMaterial: 1,
   contactFusionSendCost: 1,
   customRitualOperation: 1,
+  fusionAddProcCode2ExactCodeMetadata: 1,
   fusionAddProcCodeRepRepeatedCodeMetadata: 1,
   fusionAddProcMixMaterialMetadata: 1,
   fusionAddProcMixNRepeatedCodeMetadata: 1,
@@ -70,7 +71,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(35);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(36);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -128,6 +129,7 @@ type RitualFusionHelperKind =
   | "contactFusionOpponentMaterial"
   | "contactFusionSendCost"
   | "customRitualOperation"
+  | "fusionAddProcCode2ExactCodeMetadata"
   | "fusionAddProcCodeRepRepeatedCodeMetadata"
   | "fusionAddProcMixMaterialMetadata"
   | "fusionAddProcMixNRepeatedCodeMetadata"
@@ -856,6 +858,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'expect(restored.host.messages).not.toContain("blue-eyes ultimate responder resolved")',
       ],
     },
+    { file: "test/lua-real-script-marine-neos-addproccode2-contact-fusion.test.ts", kind: "fusionAddProcCode2ExactCodeMetadata", families: ["fusion"], required: ["Fusion.AddProcCode2 exact material metadata", "expect(marineNeos!.data.fusionMaterials).toEqual([neosCode, marineDolphinCode])", "expect(restored.session.state.cards.find((card) => card.uid === marineNeos!.uid)?.data.fusionMaterials).toEqual([neosCode, marineDolphinCode])", 'summonType: "fusion"', "summonMaterialUids: [neos!.uid, marineDolphin!.uid]", "reason: duelReason.cost | duelReason.material", 'eventName === "sentToDeck"', 'eventName === "specialSummoned"', "expect(getLegalActions(restored.session, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === marineNeos!.uid)).toBe(false)"] },
     {
       file: "test/lua-real-script-cyber-end-dragon-addprocmixn-fusion.test.ts",
       kind: "fusionAddProcMixNRepeatedCodeMetadata",
