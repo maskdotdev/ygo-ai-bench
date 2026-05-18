@@ -90,7 +90,7 @@ function scanUpstreamConstants(files) {
   for (const file of files) {
     const source = stripLuaComments(fs.readFileSync(file, "utf8"));
     for (const match of source.matchAll(/^\s*([A-Z][A-Z0-9_]+)\s*=\s*([^\n\r]+)/gm)) {
-      if (match[2]?.trim().startsWith("{")) continue;
+      if (match[2]?.trim().startsWith("{") && !match[1]?.startsWith("CARDS_")) continue;
       if (match[1]) constants.add(match[1]);
     }
   }

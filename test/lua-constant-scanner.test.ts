@@ -79,6 +79,20 @@ describe("Lua constant scanner", () => {
     expect(result.stdout).not.toContain("SET_TABLE_FIXTURE");
   });
 
+  it("includes table-valued Project Ignis card-list constants in the parity scan", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "lua-constant-scan-"));
+    const upstream = path.join(root, "card_counter_constants.lua");
+    const source = path.join(root, "source");
+    fs.mkdirSync(source, { recursive: true });
+    fs.writeFileSync(upstream, "CARDS_FIXTURE = {1,2}\nSET_TABLE_FIXTURE = {3,4}\n");
+    fs.writeFileSync(path.join(source, "basic-test-constant-data.ts"), "export const constants = { CARDS_FIXTURE: [1,2] };\n");
+
+    const output = execFileSync(process.execPath, [scannerPath, "--upstream", upstream, "--source", source, "--fail-on-missing"], { encoding: "utf8" });
+
+    expect(output).toContain("No missing constants found.");
+    expect(output).toContain("upstream constants: 1");
+  });
+
   it("keeps local Project Ignis constant names aligned with upstream scalar constant files", () => {
     for (const upstream of [".upstream/ignis/script/constant.lua", ".upstream/ignis/script/archetype_setcode_constants.lua", ".upstream/ignis/script/card_counter_constants.lua"]) {
       if (!fs.existsSync(upstream)) return;

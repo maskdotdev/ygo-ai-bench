@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { luaArchetypeSetcodeNumericConstants } from "#lua/basic-archetype-setcode-constant-data.js";
-import { luaCardCounterNumericConstants } from "#lua/basic-card-counter-constant-data.js";
+import { luaCardCounterListConstants, luaCardCounterNumericConstants } from "#lua/basic-card-counter-constant-data.js";
 import { luaNumericConstants } from "#lua/basic-constant-data.js";
 import type { DuelCardInstance, FusionMaterialPredicateRequirement } from "#duel/types.js";
 
@@ -528,6 +528,11 @@ function readLuaConstantExpression(expression: string | undefined): number | und
 function readLuaCodeList(source: string | undefined): number[] {
   if (!source) return [];
   const codes: number[] = [];
+  for (const [, listName] of source.matchAll(/\btable\.unpack\(\s*(CARDS_[A-Z0-9_]+)\s*\)/g)) {
+    const values = listName ? luaCardCounterListConstants[listName] : undefined;
+    if (!values) return [];
+    codes.push(...values);
+  }
   for (const [, rawCode] of source.matchAll(new RegExp(String.raw`(?:^|,)\s*(${CARD_CODE_EXPRESSION})(?=\s*(?:,|$))`, "g"))) {
     if (!rawCode) return [];
     const code = /^\d+$/.test(rawCode) ? Number.parseInt(rawCode, 10) : luaCardCounterNumericConstants[rawCode];

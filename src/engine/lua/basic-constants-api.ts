@@ -1,6 +1,6 @@
 import fengari from "fengari";
 import { luaArchetypeSetcodeNumericConstants } from "#lua/basic-archetype-setcode-constant-data.js";
-import { luaCardCounterNumericConstants } from "#lua/basic-card-counter-constant-data.js";
+import { luaCardCounterListConstants, luaCardCounterNumericConstants } from "#lua/basic-card-counter-constant-data.js";
 import { luaNumericConstants } from "#lua/basic-constant-data.js";
 import { luaDuelOptionNumericConstants } from "#lua/basic-duel-option-constant-data.js";
 import { luaHintOpcodeNumericConstants } from "#lua/basic-hint-opcode-constant-data.js";
@@ -22,6 +22,14 @@ export function installConstants(L: unknown): void {
       pushLuaNumericConstant(L, value);
       lua.lua_setglobal(L, to_luastring(name));
     }
+  }
+  for (const [name, values] of Object.entries(luaCardCounterListConstants)) {
+    lua.lua_newtable(L);
+    for (const [index, value] of values.entries()) {
+      pushLuaNumericConstant(L, value);
+      lua.lua_rawseti(L, -2, index + 1);
+    }
+    lua.lua_setglobal(L, to_luastring(name));
   }
 }
 

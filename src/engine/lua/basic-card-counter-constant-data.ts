@@ -191,3 +191,8 @@ export const luaCardCounterNumericConstants: Record<string, number> = {
   COUNTER_SPELL: 0x1,
   COUNTER_VENOM: 0x1009,
 };
+
+export const luaCardCounterListConstants: Record<string, number[]> = {
+  CARDS_SANGA_KAZEJIN_SUIJIN: [25955164, 62340868, 98434877],
+  CARDS_SPIRIT_MESSAGE: [31893528, 67287533, 94772232, 30170981],
+};
