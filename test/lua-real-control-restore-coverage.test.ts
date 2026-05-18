@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 8;
+const controlFixtureCount = 9;
 const controlKindCounts = {
   cannotChangeControl: 1,
   equipControl: 1,
@@ -12,6 +12,7 @@ const controlKindCounts = {
   releaseCostControl: 1,
   restrictedTemporaryControl: 2,
   swapControlLock: 1,
+  targetedSwapControl: 1,
   temporaryControl: 1,
 } satisfies Record<ControlKind, number>;
 const controlSemanticVariantCounts = {
@@ -23,6 +24,7 @@ const controlSemanticVariantCounts = {
   matazaCannotChangeControl: 1,
   mindControlRestrictions: 1,
   snatchStealEquipControl: 1,
+  xyzReversalTargetedSwapControl: 1,
 } satisfies Record<ControlSemanticVariant, number>;
 
 type ControlKind =
@@ -32,6 +34,7 @@ type ControlKind =
   | "releaseCostControl"
   | "restrictedTemporaryControl"
   | "swapControlLock"
+  | "targetedSwapControl"
   | "temporaryControl";
 
 type ControlSemanticVariant =
@@ -42,7 +45,8 @@ type ControlSemanticVariant =
   | "enemyControllerReleaseControl"
   | "matazaCannotChangeControl"
   | "mindControlRestrictions"
-  | "snatchStealEquipControl";
+  | "snatchStealEquipControl"
+  | "xyzReversalTargetedSwapControl";
 
 describe("Lua real control restore coverage", () => {
   it("requires representative control-change fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -153,6 +157,18 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-xyz-reversal-swap-control.test.ts",
+      kind: "targetedSwapControl",
+      required: [
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "Duel.SwapControl(a,b)",
+        "targetUids: [opponentXyz.uid, ownXyz.uid]",
+        "eventUids: [opponentXyz.uid, ownXyz.uid]",
+      ],
+    },
+    {
       file: "lua-real-script-mataza-control-extra-attack.test.ts",
       kind: "cannotChangeControl",
       required: [
@@ -192,6 +208,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       releaseCostControl: 0,
       restrictedTemporaryControl: 0,
       swapControlLock: 0,
+      targetedSwapControl: 0,
       temporaryControl: 0,
     },
   );
@@ -292,6 +309,18 @@ function realScriptControlSemanticVariants(): Array<{
         "snatch probe 1/nil/nil",
       ],
     },
+    {
+      file: "lua-real-script-xyz-reversal-swap-control.test.ts",
+      kind: "xyzReversalTargetedSwapControl",
+      required: [
+        'const reversalCode = "66604523"',
+        "restores Xyz Reversal's two selected targets and swaps control from chain target cards",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g1,2,0,0)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "previousController: 0",
+        "previousController: 1",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: ControlSemanticVariant;
@@ -314,6 +343,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       matazaCannotChangeControl: 0,
       mindControlRestrictions: 0,
       snatchStealEquipControl: 0,
+      xyzReversalTargetedSwapControl: 0,
     },
   );
 }
