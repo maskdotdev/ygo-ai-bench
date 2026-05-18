@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 33;
-const battleTimingEventCodeFixtureCount = 33;
+const battleTimingFixtureCount = 34;
+const battleTimingEventCodeFixtureCount = 34;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 14,
+  afterDamageCalculation: 15,
   beforeDamageCalculation: 7,
   duringDamageCalculation: 4,
   endDamageStep: 5,
@@ -47,6 +47,7 @@ const battleTimingSemanticVariantCounts = {
   skyscraperDuringDamageFieldStatBoost: 1,
   steamroidDuringDamageBattleSwingStat: 1,
   topologicBomberAfterDamageBurn: 1,
+  turboRocketAfterDamageGetAttackTargetBurn: 1,
   wallOfIllusionAfterDamageBounce: 1,
 } satisfies Record<BattleTimingSemanticVariant, number>;
 
@@ -142,6 +143,7 @@ type BattleTimingSemanticVariant =
   | "skyscraperDuringDamageFieldStatBoost"
   | "steamroidDuringDamageBattleSwingStat"
   | "topologicBomberAfterDamageBurn"
+  | "turboRocketAfterDamageGetAttackTargetBurn"
   | "wallOfIllusionAfterDamageBounce";
 
 function battleTimingSemanticVariants(): Array<{
@@ -369,6 +371,18 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores its EVENT_BATTLED trigger and deals effect damage from the battle target's base ATK", "eventName: \"damageDealt\"", "eventValue: 1200"],
     },
     {
+      file: "test/lua-real-script-turbo-rocket-battled-damage.test.ts",
+      kind: "turboRocketAfterDamageGetAttackTargetBurn",
+      required: [
+        "restores its GetAttackTarget EVENT_BATTLED burn after battle damage with attacker battle indestructibility",
+        "Duel.GetAttackTarget():GetAttack()/2",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "eventName: \"damageDealt\"",
+        "eventValue: 1000",
+        "eventName === \"battleDestroyed\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-wall-of-illusion-battled.test.ts",
       kind: "wallOfIllusionAfterDamageBounce",
       required: ["restores Wall of Illusion after damage calculation and returns its attacker to hand", "triggerBucket: \"opponentMandatory\"", "eventName: \"sentToHand\""],
@@ -421,6 +435,7 @@ function countBattleTimingSemanticVariants(
       skyscraperDuringDamageFieldStatBoost: 0,
       steamroidDuringDamageBattleSwingStat: 0,
       topologicBomberAfterDamageBurn: 0,
+      turboRocketAfterDamageGetAttackTargetBurn: 0,
       wallOfIllusionAfterDamageBounce: 0,
     },
   );
@@ -819,6 +834,19 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "afterDamageCalculation"',
         'eventName: "damageDealt"',
         "eventValue: 1200",
+        "pendingBattle).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-turbo-rocket-battled-damage.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        'eventName: "damageDealt"',
+        "eventValue: 1000",
+        "deferredBattleDestroyed ?? []).toEqual([])",
         "pendingBattle).toBeUndefined()",
       ],
     },

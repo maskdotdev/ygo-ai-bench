@@ -131,7 +131,7 @@ import { eventCardStatePayload, relatedEffectPayload, type DuelEventPayload } fr
 import { pruneResetEffectsAfterChain, pruneResetEffectsAfterDisable } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterChain, pruneDuelFlagEffectsAfterDisable } from "#duel/flags.js";
 import { collectDuelGroupedTriggerEffectsWithChooser } from "#duel/grouped-trigger-events.js";
-import type { ReplacementEffectHandlers } from "#duel/replacement-effects.js";
+import { applyDestroyPrevention, type ReplacementEffectHandlers } from "#duel/replacement-effects.js";
 import { getPendingTriggerActions } from "#duel/pending-trigger-actions.js";
 import { groupDuelLegalActions } from "#duel/legal-action-groups.js";
 import { hasPendingLuaOperationPrompt, setPendingLuaOperationPrompt, resolvePendingLuaOperationPrompt } from "#duel/lua-operation-prompt.js";
@@ -199,6 +199,7 @@ const battleContinuationHandlers: BattleContinuationHandlers = {
   changeBattleDamage: (state, player, amount, battleCards, options) => changeDuelBattleDamageWithPreventionRule(state, player, amount, createContinuousEffectContext(state), battleCards, options),
   damagePlayer: damageDuelPlayer,
   destroyCard: destroyDuelCard,
+  preventDestroyCard: preventDestroyDuelCard,
   getAttackValue: (state, card) => getCoreBattleAttackValue(state, card, coreBattleHandlers),
   getDefenseValue: (state, card) => getCoreBattleDefenseValue(state, card, coreBattleHandlers),
   hasPiercingDamage: (state, card) => hasCorePiercingBattleDamage(state, card, coreBattleHandlers),
@@ -508,6 +509,10 @@ function requireDuelMoveAllowed(state: DuelState, uid: string, to: DuelLocation,
 export function sendDuelCardToGraveyard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return sendCoreDuelCardToGraveyard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, payload); }
 
 export function destroyDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect | duelReason.destroy, reasonPlayer?: PlayerId, destination: DuelLocation = "graveyard", payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return destroyCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, destination, payload); }
+
+function preventDestroyDuelCard(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number, reasonPlayer: PlayerId | undefined, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance | undefined {
+  return applyDestroyPrevention(state, uid, controller, reason, reasonPlayer, createReplacementEffectHandlers(state), payload);
+}
 
 export function banishDuelCard(state: DuelState, uid: string, controller?: PlayerId, reason: number = duelReason.effect, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}): DuelCardInstance { return banishCoreDuelCard(state, uid, controller, reason, reasonPlayer, coreMovementHandlers, payload); }
 

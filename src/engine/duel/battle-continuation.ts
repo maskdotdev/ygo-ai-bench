@@ -1,4 +1,5 @@
 import { resolvePendingDuelBattle, type ResolvePendingDuelBattleOptions } from "#duel/battle.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import { otherPlayer } from "#duel/player-id.js";
 import { setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { BattleDamageChangeOptions } from "#duel/core-battle-damage.js";
@@ -28,6 +29,7 @@ export interface BattleContinuationHandlers {
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[], options?: BattleDamageChangeOptions): number;
   damagePlayer(state: DuelState, player: PlayerId, amount: number, reason?: number): number;
   destroyCard(state: DuelState, uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
+  preventDestroyCard?(state: DuelState, uid: string, controller: PlayerId | undefined, reason: number, reasonPlayer: PlayerId | undefined, payload?: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">): DuelCardInstance | undefined;
   getAttackValue(state: DuelState, card: DuelCardInstance): number;
   getDefenseValue(state: DuelState, card: DuelCardInstance): number;
   hasPiercingDamage(state: DuelState, card: DuelCardInstance): boolean;
@@ -114,6 +116,7 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
       return applied;
     },
     destroyCard: (uid, controller, reason, reasonPlayer) => handlers.destroyCard(state, uid, controller, reason, reasonPlayer),
+    preventDestroyCard: (uid, controller, reason, reasonPlayer, payload) => handlers.preventDestroyCard?.(state, uid, controller, reason, reasonPlayer, payload),
     getAttackValue: (card) => handlers.getAttackValue(state, card),
     getDefenseValue: (card) => handlers.getDefenseValue(state, card),
     hasPiercingDamage: (card) => handlers.hasPiercingDamage(state, card),

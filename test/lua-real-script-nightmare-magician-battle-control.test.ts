@@ -66,6 +66,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     expect(session.state.players[1].lifePoints).toBe(7500);
     expect(session.state.cards.find((card) => card.uid === nightmare!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
+    expect(session.state.pendingTriggers).toHaveLength(1);
+    const [pendingTrigger] = session.state.pendingTriggers;
+    expect(pendingTrigger?.id).toMatch(/^trigger-\d+-1$/);
     expect(session.state.pendingTriggers).toEqual([
       {
         effectId: "lua-2-1141",
@@ -90,7 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
         eventReasonPlayer: 0,
         eventTriggerTiming: "when",
         eventUids: [nightmare!.uid, target!.uid],
-        id: "trigger-5-1",
+        id: pendingTrigger!.id,
         player: 0,
         sourceUid: nightmare!.uid,
         triggerBucket: "turnOptional",

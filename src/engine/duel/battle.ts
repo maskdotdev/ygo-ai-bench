@@ -17,6 +17,7 @@ export interface DuelBattleCallbacks {
   collectEvent(eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">): void;
   damagePlayer(player: PlayerId, amount: number, battleCards?: DuelCardInstance[]): number;
   destroyCard(uid: string, controller?: PlayerId, reason?: number, reasonPlayer?: PlayerId): DuelCardInstance;
+  preventDestroyCard?(uid: string, controller: PlayerId | undefined, reason: number, reasonPlayer: PlayerId | undefined, payload?: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId">): DuelCardInstance | undefined;
   getAttackValue?(card: DuelCardInstance): number;
   getDefenseValue?(card: DuelCardInstance): number;
   hasPiercingDamage?(card: DuelCardInstance): boolean;
@@ -442,13 +443,13 @@ function resolveWithPreservedBattleContext(
     const targetAttack = getBattleAttack(target, callbacks);
     if (attackerAttack > targetAttack) {
       changePreservedBattleDamage(callbacks, target.controller, attackerAttack - targetAttack, [attacker, target]);
-      deferBattleDestroyed(pending, target.uid, attacker.controller, attacker.uid);
+      deferPreventableBattleDestroyed(pending, target, attacker.controller, attacker.uid, callbacks);
     } else if (attackerAttack < targetAttack) {
       changePreservedBattleDamage(callbacks, attacker.controller, targetAttack - attackerAttack, [attacker, target]);
-      deferBattleDestroyed(pending, attacker.uid, target.controller, target.uid);
+      deferPreventableBattleDestroyed(pending, attacker, target.controller, target.uid, callbacks);
     } else {
-      deferBattleDestroyed(pending, attacker.uid, target.controller, target.uid);
-      deferBattleDestroyed(pending, target.uid, attacker.controller, attacker.uid);
+      deferPreventableBattleDestroyed(pending, attacker, target.controller, target.uid, callbacks);
+      deferPreventableBattleDestroyed(pending, target, attacker.controller, attacker.uid, callbacks);
     }
     markBattleResultApplied(state, options);
     return true;
@@ -456,7 +457,7 @@ function resolveWithPreservedBattleContext(
   const targetDefense = getBattleDefense(target, callbacks);
   if (attackerAttack > targetDefense) {
     if (callbacks.hasPiercingDamage?.(attacker)) return undefined;
-    deferBattleDestroyed(pending, target.uid, attacker.controller, attacker.uid);
+    deferPreventableBattleDestroyed(pending, target, attacker.controller, attacker.uid, callbacks);
     markBattleResultApplied(state, options);
     return true;
   }
@@ -479,6 +480,22 @@ function deferBattleDestroyed(pending: NonNullable<DuelState["pendingBattle"]>, 
   const deferred = pending.deferredBattleDestroyed?.filter((record) => record.uid !== uid) ?? [];
   deferred.push({ uid, reasonPlayer, reasonCardUid });
   pending.deferredBattleDestroyed = deferred;
+}
+
+function deferPreventableBattleDestroyed(
+  pending: NonNullable<DuelState["pendingBattle"]>,
+  card: DuelCardInstance,
+  reasonPlayer: PlayerId,
+  reasonCardUid: string,
+  callbacks: DuelBattleCallbacks,
+): void {
+  const previousReasonCardUid = card.reasonCardUid;
+  card.reasonCardUid = reasonCardUid;
+  const prevented = callbacks.preventDestroyCard?.(card.uid, card.controller, duelReason.battle | duelReason.destroy, reasonPlayer, { eventReasonCardUid: reasonCardUid });
+  if (previousReasonCardUid === undefined) delete card.reasonCardUid;
+  else card.reasonCardUid = previousReasonCardUid;
+  if (prevented) return;
+  deferBattleDestroyed(pending, card.uid, reasonPlayer, reasonCardUid);
 }
 
 function resolveDeferredBattleDestroyed(

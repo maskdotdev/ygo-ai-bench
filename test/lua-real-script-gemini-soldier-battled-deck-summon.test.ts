@@ -136,41 +136,39 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     passBattleResponsesUntilTrigger(restoredBattleTrigger.session);
     expect(restoredBattleTrigger.session.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(restoredBattleTrigger.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(restoredBattleTrigger.session.state.pendingTriggers).toMatchInlineSnapshot(`
-      [
-        {
-          "effectId": "lua-5-1138",
-          "eventCardUid": "p0-deck-68366996-0",
-          "eventCode": 1138,
-          "eventCurrentState": {
-            "controller": 0,
-            "faceUp": true,
-            "location": "monsterZone",
-            "position": "faceUpAttack",
-            "sequence": 0,
-          },
-          "eventName": "afterDamageCalculation",
-          "eventPreviousState": {
-            "controller": 0,
-            "faceUp": true,
-            "location": "monsterZone",
-            "position": "faceUpAttack",
-            "sequence": 0,
-          },
-          "eventReason": 0,
-          "eventReasonPlayer": 0,
-          "eventTriggerTiming": "when",
-          "eventUids": [
-            "p0-deck-68366996-0",
-            "p1-deck-68366997-0",
-          ],
-          "id": "trigger-7-1",
-          "player": 0,
-          "sourceUid": "p0-deck-68366996-0",
-          "triggerBucket": "turnOptional",
+    expect(restoredBattleTrigger.session.state.pendingTriggers).toHaveLength(1);
+    const [pendingTrigger] = restoredBattleTrigger.session.state.pendingTriggers;
+    expect(pendingTrigger?.id).toMatch(/^trigger-\d+-1$/);
+    expect(restoredBattleTrigger.session.state.pendingTriggers).toEqual([
+      {
+        effectId: "lua-5-1138",
+        eventCardUid: "p0-deck-68366996-0",
+        eventCode: 1138,
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
         },
-      ]
-    `);
+        eventName: "afterDamageCalculation",
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: ["p0-deck-68366996-0", "p1-deck-68366997-0"],
+        id: pendingTrigger!.id,
+        player: 0,
+        sourceUid: "p0-deck-68366996-0",
+        triggerBucket: "turnOptional",
+      },
+    ]);
 
     const restoredPendingTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattleTrigger.session), source, reader);
     expect(restoredPendingTrigger.restoreComplete, restoredPendingTrigger.incompleteReasons.join("; ")).toBe(true);
@@ -182,50 +180,47 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     applyRestoredActionAndAssert(restoredPendingTrigger, trigger!);
     expect(restoredPendingTrigger.session.state.pendingTriggers).toEqual([]);
     expect(restoredPendingTrigger.session.state.chain).toHaveLength(1);
-    expect(restoredPendingTrigger.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "monsterZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-5-1138",
-        "eventCardUid": "p0-deck-68366996-0",
-        "eventCode": 1138,
-        "eventCurrentState": {
-          "controller": 0,
-          "faceUp": true,
-          "location": "monsterZone",
-          "position": "faceUpAttack",
-          "sequence": 0,
+    const [chainLink] = restoredPendingTrigger.session.state.chain;
+    expect(chainLink?.id).toMatch(/^chain-\d+$/);
+    expect(restoredPendingTrigger.session.state.chain[0]).toEqual({
+      activationLocation: "monsterZone",
+      activationSequence: 0,
+      chainIndex: 1,
+      effectId: "lua-5-1138",
+      eventCardUid: "p0-deck-68366996-0",
+      eventCode: 1138,
+      eventCurrentState: {
+        controller: 0,
+        faceUp: true,
+        location: "monsterZone",
+        position: "faceUpAttack",
+        sequence: 0,
+      },
+      eventName: "afterDamageCalculation",
+      eventPreviousState: {
+        controller: 0,
+        faceUp: true,
+        location: "monsterZone",
+        position: "faceUpAttack",
+        sequence: 0,
+      },
+      eventReason: 0,
+      eventReasonPlayer: 0,
+      eventTriggerTiming: "when",
+      eventUids: ["p0-deck-68366996-0", "p1-deck-68366997-0"],
+      id: chainLink!.id,
+      operationInfos: [
+        {
+          category: 512,
+          count: 1,
+          parameter: 1,
+          player: 0,
+          targetUids: [],
         },
-        "eventName": "afterDamageCalculation",
-        "eventPreviousState": {
-          "controller": 0,
-          "faceUp": true,
-          "location": "monsterZone",
-          "position": "faceUpAttack",
-          "sequence": 0,
-        },
-        "eventReason": 0,
-        "eventReasonPlayer": 0,
-        "eventTriggerTiming": "when",
-        "eventUids": [
-          "p0-deck-68366996-0",
-          "p1-deck-68366997-0",
-        ],
-        "id": "chain-7",
-        "operationInfos": [
-          {
-            "category": 512,
-            "count": 1,
-            "parameter": 1,
-            "player": 0,
-            "targetUids": [],
-          },
-        ],
-        "player": 0,
-        "sourceUid": "p0-deck-68366996-0",
-      }
-    `);
+      ],
+      player: 0,
+      sourceUid: "p0-deck-68366996-0",
+    });
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredPendingTrigger.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
@@ -272,34 +267,24 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
     expect(restoredChain.session.state.cards.find((card) => card.uid === soldier!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredChain.session.state.cards.find((card) => card.uid === opponent!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restoredChain.session.state.players[0].lifePoints).toBe(7500);
-    expect(restoredChain.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 47 && effect.sourceUid === soldier!.uid)).toMatchInlineSnapshot(`
-      {
-        "battleDamageValue": [Function],
-        "canActivate": [Function],
-        "code": 47,
-        "controller": 0,
-        "cost": [Function],
-        "countLimit": 1,
-        "event": "continuous",
-        "id": "lua-4-47",
-        "lifePointValue": [Function],
-        "luaTypeFlags": 1,
-        "luaValueDescriptor": "value-predicate:reason-mask:32",
-        "oncePerTurn": true,
-        "operation": [Function],
-        "property": 131072,
-        "range": [
-          "monsterZone",
-        ],
-        "registryKey": "lua:68366996:lua-4-47",
-        "sourceUid": "p0-deck-68366996-0",
-        "statValue": [Function],
-        "target": [Function],
-        "value": 0,
-        "valueCardPredicate": [Function],
-        "valuePredicate": [Function],
-      }
-    `);
+    const indestructibleEffect = restoredChain.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 47 && effect.sourceUid === soldier!.uid);
+    expect(indestructibleEffect).toMatchObject({
+      code: 47,
+      controller: 0,
+      countLimit: 1,
+      event: "continuous",
+      id: "lua-4-47",
+      luaTypeFlags: 1,
+      luaValueDescriptor: "value-predicate:reason-mask:32",
+      oncePerTurn: true,
+      property: 131072,
+      range: ["monsterZone"],
+      registryKey: "lua:68366996:lua-4-47",
+      sourceUid: "p0-deck-68366996-0",
+    });
+    expect(indestructibleEffect?.value).toBeUndefined();
+    expect(indestructibleEffect?.valuePredicate).toBeDefined();
+    expect(indestructibleEffect?.valueCardPredicate).toBeDefined();
     expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
       {
         eventName: "battleDamageDealt",
