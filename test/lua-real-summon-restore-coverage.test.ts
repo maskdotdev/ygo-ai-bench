@@ -49,6 +49,12 @@ import {
   unionProcedureKindCounts,
 } from "./lua-real-summon-restore-fixtures.js";
 import {
+  countDiscardTriggerSpecialSummonKinds,
+  discardTriggerSpecialSummonFixtureCount,
+  discardTriggerSpecialSummonKindCounts,
+  realScriptDiscardTriggerSpecialSummonFixtureSnippets,
+} from "./lua-real-discard-trigger-special-summon-restore-fixtures.js";
+import {
   countForceMonsterZoneSummonLockKinds,
   forceMonsterZoneSummonLockKindCounts,
   realScriptForceMonsterZoneSummonLockFixtureSnippets,
@@ -406,6 +412,34 @@ describe("Lua real summon restore coverage", () => {
 
   it("keeps ignition-cost Special Summon fixture kinds explicit", () => {
     expect(countIgnitionCostSpecialSummonKinds(realScriptIgnitionCostSpecialSummonFixtureSnippets())).toEqual(ignitionCostSpecialSummonKindCounts);
+  });
+
+  it("requires representative discard-trigger Special Summon fixtures to pin mandatory to-Graveyard self summon restore", () => {
+    const files = realScriptDiscardTriggerSpecialSummonFixtureSnippets();
+    expect(files).toHaveLength(discardTriggerSpecialSummonFixtureCount);
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps discard-trigger Special Summon fixture kinds explicit", () => {
+    expect(countDiscardTriggerSpecialSummonKinds(realScriptDiscardTriggerSpecialSummonFixtureSnippets())).toEqual(discardTriggerSpecialSummonKindCounts);
   });
 
   it("requires representative force-Monster-Zone summon locks to pin restored zone counts", () => {
