@@ -11,10 +11,11 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasYamataScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c76862289.lua"));
 const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Yamata Dragon battle-damage draw", () => {
+describe.skipIf(!hasUpstreamScripts || !hasYamataScript)("Lua real script Yamata Dragon battle-damage draw", () => {
   it("restores its battle-damage trigger and draws until 5 from CHAININFO_TARGET_PLAYER", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const yamataCode = "76862289";
@@ -24,8 +25,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
     const drawACode = "76862293";
     const drawBCode = "76862294";
     const drawCCode = "76862295";
+    const script = workspace.readScript(`c${yamataCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCode(EVENT_BATTLE_DAMAGE)");
+    expect(script).toContain("e2:SetProperty(EFFECT_FLAG_PLAYER_TARGET)");
+    expect(script).toContain("Duel.SetTargetPlayer(tp)");
+    expect(script).toContain("Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER)");
+    expect(script).toContain("Duel.Draw(p,5-ht,REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === yamataCode),
+      { code: yamataCode, name: "Yamata Dragon", kind: "monster", typeFlags: typeMonster | typeEffect, level: 7, attack: 2600, defense: 3100 },
       { code: defenderCode, name: "Yamata Battle Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
       { code: handACode, name: "Yamata Existing Hand A", kind: "monster", typeFlags: typeMonster, level: 4 },
       { code: handBCode, name: "Yamata Existing Hand B", kind: "monster", typeFlags: typeMonster, level: 4 },
