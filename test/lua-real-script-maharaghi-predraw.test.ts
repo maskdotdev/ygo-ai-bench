@@ -24,18 +24,29 @@ import {
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasMaharaghiScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c40695128.lua"));
 const typeMonster = 0x1;
+const typeEffect = 0x20;
+const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Maharaghi predraw", () => {
+describe.skipIf(!hasUpstreamScripts || !hasMaharaghiScript)("Lua real script Maharaghi predraw", () => {
   it("restores its delayed Draw Phase top-deck confirmation before the turn draw", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const maharaghiCode = "40695128";
     const firstDrawCode = "94695128";
     const secondDrawCode = "94695129";
     const opponentDrawCode = "94695130";
+    const script = workspace.readScript(`c${maharaghiCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCode(EVENT_SUMMON_SUCCESS)");
+    expect(script).toContain("e3:SetCode(EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EVENT_PREDRAW)");
+    expect(script).toContain("e1:SetReset(RESET_PHASE|PHASE_DRAW|RESET_SELF_TURN,1)");
+    expect(script).toContain("Duel.ConfirmCards(tp,g)");
+    expect(script).toContain("Duel.MoveSequence(g:GetFirst(),1)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === maharaghiCode),
+      { code: maharaghiCode, name: "Maharaghi", kind: "monster", typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 1200, defense: 1700 },
       { code: firstDrawCode, name: "Maharaghi First Draw", kind: "monster", typeFlags: typeMonster, level: 4 },
       { code: secondDrawCode, name: "Maharaghi Second Draw", kind: "monster", typeFlags: typeMonster, level: 4 },
       { code: opponentDrawCode, name: "Maharaghi Opponent Draw", kind: "monster", typeFlags: typeMonster, level: 4 },
