@@ -34,6 +34,7 @@ export function hasQuickEffectResponses(state: DuelState, player: PlayerId, canC
 
 function quickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
   const kind = currentBattleWindowKind(state);
+  if (kind !== undefined && isBattleWindowTriggerEvent(effect.triggerEvent)) return battleWindowEventMatchesEffect(kind, effect);
   if (kind === "duringDamageCalculation") return battleWindowEventMatchesEffect(kind, effect) || Boolean((effect.property ?? 0) & 0x8000);
   if (kind === "startDamageStep" || kind === "beforeDamageCalculation" || kind === "afterDamageCalculation" || kind === "endDamageStep") {
     return battleWindowEventMatchesEffect(kind, effect) || Boolean((effect.property ?? 0) & 0x4000);
@@ -50,6 +51,14 @@ function battleWindowEventMatchesEffect(kind: NonNullable<ReturnType<typeof curr
     (kind === "afterDamageCalculation" && effect.triggerEvent === "afterDamageCalculation") ||
     (kind === "endDamageStep" && effect.triggerEvent === "damageStepEnded")
   );
+}
+
+function isBattleWindowTriggerEvent(triggerEvent: DuelEffectDefinition["triggerEvent"]): boolean {
+  return triggerEvent === "battleConfirmed"
+    || triggerEvent === "beforeDamageCalculation"
+    || triggerEvent === "damageCalculating"
+    || triggerEvent === "afterDamageCalculation"
+    || triggerEvent === "damageStepEnded";
 }
 
 function battleOpenQuickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): boolean {

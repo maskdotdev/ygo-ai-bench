@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 11;
+const statFixtureCount = 12;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -15,6 +15,7 @@ const statKindCounts = {
   setBaseAttack: 1,
   staticAttackAndExtraAttack: 1,
   targetedDamageStepAttackUpdate: 1,
+  targetedPreDamageFinalAttack: 1,
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
   bladeflyFieldAttributeAttackUpdate: 1,
@@ -25,12 +26,13 @@ const statSemanticVariantCounts = {
   mukaMukaHandCountAttackDefense: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   rushRecklesslyTargetedDamageStepAttackUpdate: 1,
+  sangaPreDamageFinalAttackZero: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
   steamroidDamageStepBattleSwingStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
@@ -40,6 +42,7 @@ type StatSemanticVariant =
   | "mukaMukaHandCountAttackDefense"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
+  | "sangaPreDamageFinalAttackZero"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
   | "steamroidDamageStepBattleSwingStat";
@@ -201,6 +204,20 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
+      kind: "targetedPreDamageFinalAttack",
+      required: [
+        "e1:SetType(EFFECT_TYPE_QUICK_O)",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "Duel.SetTargetCard(Duel.GetAttacker())",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(0)",
+        "currentAttack(restoredFinalAttack.session.state.cards.find((card) => card.uid === attacker.uid), restoredFinalAttack.session.state)).toBe(0)",
+        "battleDamage).toEqual({ 0: sanga.data.attack, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "battleTargetAttackBoost",
       required: [
@@ -247,6 +264,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setBaseAttack: 0,
       staticAttackAndExtraAttack: 0,
       targetedDamageStepAttackUpdate: 0,
+      targetedPreDamageFinalAttack: 0,
     },
   );
 }
@@ -336,6 +354,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
+      kind: "sangaPreDamageFinalAttackZero",
+      required: [
+        'const sangaCode = "25955164"',
+        "restores optional pre-damage calculation final-ATK Quick Effect activation",
+        "Duel.SetTargetCard(Duel.GetAttacker())",
+        '"registryKey": "lua:25955165:lua-2-102"',
+        "players[0].lifePoints).toBe(8000 - (sanga.data.attack ?? 0))",
+      ],
+    },
+    {
       file: "test/lua-real-script-shrink-set-base-attack.test.ts",
       kind: "shrinkTargetBaseAtkHalving",
       required: [
@@ -386,6 +415,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       mukaMukaHandCountAttackDefense: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
+      sangaPreDamageFinalAttackZero: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
       steamroidDamageStepBattleSwingStat: 0,
