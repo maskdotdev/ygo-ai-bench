@@ -50,6 +50,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     return "stat:all-grave-monster-count-x100";
   }
   const params = luaFunctionParams(snippet);
+  const fieldGroupCountStat = fieldGroupCountStatDescriptor(L, index, snippet, params);
+  if (fieldGroupCountStat) return fieldGroupCountStat;
   const damageCalculationAttackBoost = damageCalculationAttackerLowerAttackBoostDescriptor(snippet, params);
   if (damageCalculationAttackBoost) return damageCalculationAttackBoost;
   const summonTypeCondition = specialSummonConditionDescriptor(L, index, snippet, params);
@@ -111,6 +113,21 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${effectTypeContinuousPattern}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
   );
   return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
+}
+
+function fieldGroupCountStatDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
+  const cardParam = params?.[1];
+  if (!cardParam) return undefined;
+  const card = escapeRegExp(cardParam);
+  const match = new RegExp(
+    String.raw`\breturn\s+Duel\s*\.\s*GetFieldGroupCount\s*\(\s*${card}\s*:\s*GetControler\s*\(\s*\)\s*,\s*(${numericMaskExpressionPattern})\s*,\s*(${numericMaskExpressionPattern})\s*\)\s*\*\s*\(?\s*(-?\d+)\s*\)?`,
+  ).exec(snippet);
+  if (!match?.[1] || !match[2] || !match[3]) return undefined;
+  const selfMask = luaNumberMaskExpressionValue(L, index, match[1]);
+  const opponentMask = luaNumberMaskExpressionValue(L, index, match[2]);
+  const multiplier = Number(match[3]);
+  if (selfMask === undefined || opponentMask === undefined || !Number.isSafeInteger(multiplier)) return undefined;
+  return `stat:controller-field-group-count:${selfMask}:${opponentMask}:x${multiplier}`;
 }
 
 function damageCalculationAttackerLowerAttackBoostDescriptor(snippet: string, params: string[] | undefined): string | undefined {

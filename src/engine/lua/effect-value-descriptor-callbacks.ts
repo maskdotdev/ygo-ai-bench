@@ -1,10 +1,28 @@
 import { currentBattleStep } from "#duel/battle-window-state.js";
 import { cardTypeFlags, currentAttack, currentAttackWithoutEffect } from "#duel/card-stats.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
+import { locationsFromMask } from "#lua/api-utils.js";
 
 export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefined, effectId: string): DuelEffectDefinition["statValue"] | undefined {
   if (luaValueDescriptor === "stat:all-grave-monster-count-x100") {
     return (ctx) => ctx.duel.cards.filter((card) => card.location === "graveyard" && (cardTypeFlags(card, ctx.duel) & 0x1) !== 0).length * 100;
+  }
+  const fieldGroupCount = luaValueDescriptor?.match(/^stat:controller-field-group-count:(\d+):(\d+):x(-?\d+)$/);
+  if (fieldGroupCount?.[1] && fieldGroupCount[2] && fieldGroupCount[3]) {
+    const selfMask = Number(fieldGroupCount[1]);
+    const opponentMask = Number(fieldGroupCount[2]);
+    const multiplier = Number(fieldGroupCount[3]);
+    if (Number.isSafeInteger(selfMask) && Number.isSafeInteger(opponentMask) && Number.isSafeInteger(multiplier)) {
+      const selfLocations = locationsFromMask(selfMask);
+      const opponentLocations = locationsFromMask(opponentMask);
+      return (ctx, card) => {
+        const opponent = card.controller === 0 ? 1 : 0;
+        return ctx.duel.cards.filter((candidate) =>
+          (candidate.controller === card.controller && selfLocations.includes(candidate.location)) ||
+          (candidate.controller === opponent && opponentLocations.includes(candidate.location))
+        ).length * multiplier;
+      };
+    }
   }
   if (luaValueDescriptor === "stat:damage-calculation-attacker-lower-than-target:+1000") {
     return (ctx, card) => {

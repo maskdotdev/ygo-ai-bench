@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 8;
+const statFixtureCount = 9;
 const statKindCounts = {
   battleTargetAttackBoost: 2,
+  fieldGroupCountStat: 1,
   fieldAttributeAttackUpdate: 2,
   fieldRaceAttackDefenseUpdate: 1,
   setAttack: 1,
@@ -19,18 +20,20 @@ const statSemanticVariantCounts = {
   fortuneLadyPastCallbackSetAtkDef: 1,
   jurassicWorldTargetBoolFunctionRaceStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
+  mukaMukaHandCountAttackDefense: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
+type StatKind = "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack";
 type StatSemanticVariant =
   | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
+  | "mukaMukaHandCountAttackDefense"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost";
@@ -153,6 +156,17 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-muka-muka-hand-count-stat.test.ts",
+      kind: "fieldGroupCountStat",
+      required: [
+        "Duel.GetFieldGroupCount(c:GetControler(),LOCATION_HAND,0)*300",
+        "stat:controller-field-group-count:2:0:x300",
+        "currentAttack(restoredMuka, restored.session.state)).toBe((muka!.data.attack ?? 0) + 900)",
+        "currentDefense(restoredMuka, restored.session.state)).toBe((muka!.data.defense ?? 0) + 600)",
+        "battleDamage[1]",
+      ],
+    },
+    {
       file: "test/lua-real-script-shrink-set-base-attack.test.ts",
       kind: "setBaseAttack",
       required: [
@@ -195,6 +209,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
     {
       battleTargetAttackBoost: 0,
       fieldAttributeAttackUpdate: 0,
+      fieldGroupCountStat: 0,
       fieldRaceAttackDefenseUpdate: 0,
       setAttack: 0,
       setBaseAttack: 0,
@@ -257,6 +272,16 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-muka-muka-hand-count-stat.test.ts",
+      kind: "mukaMukaHandCountAttackDefense",
+      required: [
+        'const mukaCode = "46657337"',
+        "restores GetFieldGroupCount hand-size ATK/DEF callbacks and recalculates battle damage",
+        "stat:controller-field-group-count:2:0:x300",
+        "currentAttack(restoredMuka, restored.session.state)).toBe((muka!.data.attack ?? 0) + 600)",
+      ],
+    },
+    {
       file: "test/lua-real-script-mystic-plasma-zone-attribute-stat.test.ts",
       kind: "mysticPlasmaZoneTargetBoolFunctionAttributeStat",
       required: [
@@ -304,6 +329,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       fortuneLadyPastCallbackSetAtkDef: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
+      mukaMukaHandCountAttackDefense: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
