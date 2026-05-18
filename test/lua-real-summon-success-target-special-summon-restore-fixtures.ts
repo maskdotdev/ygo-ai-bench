@@ -1,10 +1,13 @@
-export const summonSuccessTargetSpecialSummonFixtureCount = 1;
+export const summonSuccessTargetSpecialSummonFixtureCount = 2;
 
 export const summonSuccessTargetSpecialSummonKindCounts = {
   graveyardTargetDefenseRevive: 1,
+  deckOrGraveNecroValleySummon: 1,
 } satisfies Record<SummonSuccessTargetSpecialSummonKind, number>;
 
-export type SummonSuccessTargetSpecialSummonKind = "graveyardTargetDefenseRevive";
+export type SummonSuccessTargetSpecialSummonKind =
+  | "deckOrGraveNecroValleySummon"
+  | "graveyardTargetDefenseRevive";
 
 export function realScriptSummonSuccessTargetSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -33,6 +36,23 @@ export function realScriptSummonSuccessTargetSpecialSummonFixtureSnippets(): Arr
       'summonType: "special"',
       "eventReason).toBe(duelReason.summon | duelReason.specialSummon)",
     ],
+  }, {
+    file: "test/lua-real-script-nimble-beaver-necrovalley-summon.test.ts",
+    kind: "deckOrGraveNecroValleySummon",
+    required: [
+      "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+      "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_DECK|LOCATION_GRAVE,0,1,nil,e,tp)",
+      "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(s.filter),tp,LOCATION_DECK|LOCATION_GRAVE,0,1,1,nil,e,tp)",
+      "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+      'eventName: "normalSummoned"',
+      'eventTriggerTiming: "when"',
+      "triggerBucket: \"turnOptional\"",
+      "operationInfos: [{ category: 0x200",
+      "parameter: 0x11",
+      'eventName: "specialSummoned"',
+      'summonType: "special"',
+      "reason: duelReason.summon | duelReason.specialSummon",
+    ],
   }];
 }
 
@@ -42,5 +62,5 @@ export function countSummonSuccessTargetSpecialSummonKinds(
   return files.reduce<Record<SummonSuccessTargetSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { graveyardTargetDefenseRevive: 0 });
+  }, { deckOrGraveNecroValleySummon: 0, graveyardTargetDefenseRevive: 0 });
 }
