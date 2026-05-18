@@ -4,19 +4,19 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 8;
-const equipRelationFixtureCount = 12;
-const equipProbeFixtureCount = 8;
-const equipOperationInfoFixtureCount = 9;
+const equipFixtureCount = 9;
+const equipRelationFixtureCount = 13;
+const equipProbeFixtureCount = 9;
+const equipOperationInfoFixtureCount = 10;
 const equipCleanupFixtureCount = 7;
-const equipInventoryFixtureCount = 15;
+const equipInventoryFixtureCount = 16;
 const equipKindCounts = {
   equipControl: 1,
   equipCost: 1,
   equipDamageLock: 1,
   equipGeminiStatus: 2,
   equipPierce: 2,
-  equipProcedure: 2,
+  equipProcedure: 3,
   equipReturn: 3,
   equipReviveDestroy: 1,
   equipSelfDestroy: 1,
@@ -51,6 +51,7 @@ const equipSemanticVariantCounts = {
   shootingStarBowDirect: 1,
   smokeGrenadeDiscard: 1,
   snatchStealControl: 1,
+  steelShellAttributeStat: 1,
   superviseGeminiRevive: 1,
   trainConnectionCost: 1,
   tryceExtraAttack: 1,
@@ -97,6 +98,7 @@ type EquipSemanticVariant =
   | "shootingStarBowDirect"
   | "smokeGrenadeDiscard"
   | "snatchStealControl"
+  | "steelShellAttributeStat"
   | "superviseGeminiRevive"
   | "trainConnectionCost"
   | "tryceExtraAttack"
@@ -260,6 +262,7 @@ function realScriptEquipFixtureFiles(): string[] {
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
+    "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
   ]
     .map((file) => path.join("test", file))
@@ -278,6 +281,7 @@ function realScriptEquipRelationFixtureFiles(): string[] {
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
+    "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
   ]
@@ -294,6 +298,7 @@ function realScriptEquipProbeFixtureFiles(): string[] {
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
+    "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
   ]
     .map((file) => path.join("test", file))
@@ -309,6 +314,7 @@ function realScriptEquipOperationInfoFixtureFiles(): string[] {
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
+    "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
   ]
@@ -360,6 +366,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     {
       file: "lua-real-script-equip-stat-lock-actions.test.ts",
       kind: "equipStatLock",
+    },
+    {
+      file: "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
+      kind: "equipProcedure",
     },
     {
       file: "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
@@ -661,6 +671,15 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
       ],
     },
     {
+      file: "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
+      kind: "steelShellAttributeStat",
+      required: [
+        "restores AddEquipProcedure Card.IsAttribute target filtering and equip ATK/DEF updates into battle damage",
+        "const steelShellCode = \"2370081\"",
+        "Steel Shell WATER Target",
+      ],
+    },
+    {
       file: "lua-real-script-supervise-gemini-equip-revive.test.ts",
       kind: "superviseGeminiRevive",
       required: [
@@ -757,6 +776,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       shootingStarBowDirect: 0,
       smokeGrenadeDiscard: 0,
       snatchStealControl: 0,
+      steelShellAttributeStat: 0,
       superviseGeminiRevive: 0,
       trainConnectionCost: 0,
       tryceExtraAttack: 0,
