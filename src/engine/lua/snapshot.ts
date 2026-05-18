@@ -65,6 +65,7 @@ const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
 const luaDaiDanceCode = "50696588";
 const luaEndPhaseReviveDestroyCodes = new Set(["32061744", "37745919", "46874015"]);
+const luaLeaveFieldLinkedDestroyCodes = new Set(["29013526", "29139104", "56524813"]);
 const luaSetMegalith = 0x138;
 const luaCategorySpecialSummon = 0x200;
 const luaLocationDeck = 0x1;
@@ -557,6 +558,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
         isKnownEndPhaseReviveDestroyEffect(effect) ||
+        isKnownLeaveFieldLinkedDestroyEffect(effect) ||
         isKnownDarkMagicExpandedChainingLimitEffect(effect) ||
         isKnownTimeTearingMorganiteSummonLimitEffect(effect) ||
         isKnownDaiDanceForceMonsterZoneEffect(effect) ||
@@ -587,6 +589,21 @@ function isKnownEndPhaseReviveDestroyEffect(effect: SerializedDuelEffect): boole
     effect.range[0] === "monsterZone" &&
     effect.countLimit === 1 &&
     effect.reset?.flags === luaResetsStandardPhaseEnd
+  );
+}
+
+function isKnownLeaveFieldLinkedDestroyEffect(effect: SerializedDuelEffect): boolean {
+  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+  return (
+    registryCode !== undefined &&
+    luaLeaveFieldLinkedDestroyCodes.has(registryCode) &&
+    effect.event === "continuous" &&
+    effect.code === 1015 &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    effect.reset?.flags === luaResetEventStandard
   );
 }
 
@@ -812,6 +829,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
+  if (isKnownLeaveFieldLinkedDestroyEffect(effect)) return luaLinkedLeaveFieldDestroyOperation(effect);
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
   if (isKnownDaiDanceAdjustEffect(effect)) return daiDanceAdjustOperation(effect);
@@ -865,6 +883,25 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
 
 function luaHandlerDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
   return (ctx) => {
+    try {
+      destroyDuelCard(ctx.duel, ctx.source.uid, ctx.source.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
+        eventReasonCardUid: effect.sourceUid,
+      });
+    } catch {
+      // EDOPro-style delayed operations ignore handlers that can no longer be destroyed.
+    }
+  };
+}
+
+function luaLinkedLeaveFieldDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+  return (ctx) => {
+    const eventUids = ctx.eventUids ?? (ctx.eventCard ? [ctx.eventCard.uid] : []);
+    const linkedCardLeft = registryCode !== undefined && eventUids.some((uid) => {
+      const card = ctx.duel.cards.find((candidate) => candidate.uid === uid);
+      return Boolean(card && currentCardMatchesCode(card, ctx.duel, registryCode));
+    });
+    if (!linkedCardLeft) return;
     try {
       destroyDuelCard(ctx.duel, ctx.source.uid, ctx.source.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
         eventReasonCardUid: effect.sourceUid,
