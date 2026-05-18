@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 13;
+const chainResponseFixtureCount = 14;
 const chainResponseKindCounts = {
-  destroyOnlyChainedResponse: 3,
+  destroyOnlyChainedResponse: 4,
   flipSummonTrapResponse: 3,
   genericChainResponse: 1,
   summonEffectNegateResponse: 1,
@@ -17,6 +17,7 @@ const chainResponseKindCounts = {
 const chainResponseSemanticVariantCounts = {
   adhesionTrapHoleFlipSummonAtkEffect: 1,
   bottomlessTrapHoleSummonSuccessBanish: 1,
+  crimsonNinjaFlipConfirmTrapDestroy: 1,
   ghostBelleWantedChainNegationAndRecycle: 1,
   houseAdhesiveTapeFlipSummonDestroy: 1,
   mysticalSpaceTyphoonFreeChainDestroy: 1,
@@ -41,6 +42,7 @@ type ChainResponseKind =
 type ChainResponseSemanticVariant =
   | "adhesionTrapHoleFlipSummonAtkEffect"
   | "bottomlessTrapHoleSummonSuccessBanish"
+  | "crimsonNinjaFlipConfirmTrapDestroy"
   | "ghostBelleWantedChainNegationAndRecycle"
   | "houseAdhesiveTapeFlipSummonDestroy"
   | "mysticalSpaceTyphoonFreeChainDestroy"
@@ -135,6 +137,19 @@ function chainResponseFixtureFiles(): Array<{
         'location: "banished"',
         'location: "graveyard"',
         'host.messages).not.toContain("bottomless chain responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-crimson-ninja-flip-confirm-trap-destroy.test.ts",
+      kind: "destroyOnlyChainedResponse",
+      required: [
+        'action.type === "activateTrigger" && action.uid === crimsonNinja.uid',
+        'pass?.windowKind).toBe("chainResponse")',
+        "restoredChainWindow.session.state.chain).toEqual([])",
+        'eventName: "confirmed"',
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        'host.messages).not.toContain("crimson ninja responder resolved")',
       ],
     },
     {
@@ -320,6 +335,18 @@ function chainResponseSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-crimson-ninja-flip-confirm-trap-destroy.test.ts",
+      kind: "crimsonNinjaFlipConfirmTrapDestroy",
+      required: [
+        'const crimsonNinjaCode = "14618326"',
+        "restores Crimson Ninja's flip target, facedown Trap confirmation, and conditional destroy",
+        "EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP",
+        "Duel.ConfirmCards(tp,tc)",
+        "confirmed 0:",
+        "eventName: \"destroyed\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-house-adhesive-tape-flip-summon.test.ts",
       kind: "houseAdhesiveTapeFlipSummonDestroy",
       required: [
@@ -438,6 +465,7 @@ function countChainResponseSemanticVariants(
     {
       adhesionTrapHoleFlipSummonAtkEffect: 0,
       bottomlessTrapHoleSummonSuccessBanish: 0,
+      crimsonNinjaFlipConfirmTrapDestroy: 0,
       ghostBelleWantedChainNegationAndRecycle: 0,
       houseAdhesiveTapeFlipSummonDestroy: 0,
       mysticalSpaceTyphoonFreeChainDestroy: 0,
