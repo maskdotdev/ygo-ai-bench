@@ -11,17 +11,25 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasYataScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c3078576.lua"));
 const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Yata-Garasu skip draw", () => {
+describe.skipIf(!hasUpstreamScripts || !hasYataScript)("Lua real script Yata-Garasu skip draw", () => {
   it("restores its battle-damage trigger into the opponent's next Draw Phase skip", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const yataCode = "3078576";
     const defenderCode = "3078577";
     const drawCode = "3078578";
+    const script = workspace.readScript(`c${yataCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_SPSUMMON_CONDITION)");
+    expect(script).toContain("e2:SetCode(EVENT_BATTLE_DAMAGE)");
+    expect(script).toContain("e2:SetCondition(function(_,tp,_,ep) return ep==1-tp end)");
+    expect(script).toContain("e1:SetCode(EFFECT_SKIP_DP)");
+    expect(script).toContain("e1:SetReset(RESET_PHASE|PHASE_END|RESET_OPPO_TURN)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === yataCode),
+      { code: yataCode, name: "Yata-Garasu", kind: "monster", typeFlags: typeMonster | typeEffect, level: 2, attack: 200, defense: 100 },
       { code: defenderCode, name: "Yata-Garasu Battle Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 0, defense: 0 },
       { code: drawCode, name: "Yata-Garasu Skipped Draw Card", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
