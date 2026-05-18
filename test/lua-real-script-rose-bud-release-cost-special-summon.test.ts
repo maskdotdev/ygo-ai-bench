@@ -13,11 +13,12 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasRoseBudScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c25090294.lua"));
 const typeMonster = 0x1;
+const typeSpell = 0x2;
 const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Rose Bud release-cost Special Summon", () => {
+describe.skipIf(!hasUpstreamScripts || !hasRoseBudScript)("Lua real script Rose Bud release-cost Special Summon", () => {
   it("restores Rose Bud's release-group cost and hand/deck Special Summon operation", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const roseBudCode = "25090294";
@@ -25,6 +26,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ro
     const summonTargetCode = "51085303";
     const releaseDecoyCode = "25090295";
     const summonDecoyCode = "25090296";
+    const blockerCodes = ["25090298", "25090299", "25090300"];
     const responderCode = "25090297";
     const roseBudScript = workspace.readScript(`c${roseBudCode}.lua`);
     expect(roseBudScript).toContain("Duel.CheckReleaseGroupCost");
@@ -32,17 +34,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ro
     expect(roseBudScript).toContain("Duel.Release(g,REASON_COST)");
     expect(roseBudScript).toContain("Duel.SpecialSummon(tc,0,tp,tp,true,false,POS_FACEUP)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === roseBudCode),
+      { code: roseBudCode, name: "Rose Bud", kind: "spell", typeFlags: typeSpell },
       { code: releaseCostCode, name: "Rose Bud Release Cost", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 800, defense: 800 },
       { code: summonTargetCode, name: "Rose Bud Special Summon Target", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1800, defense: 1200 },
       { code: releaseDecoyCode, name: "Rose Bud Release Decoy", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 900, defense: 900 },
       { code: summonDecoyCode, name: "Rose Bud Summon Decoy", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
+      ...blockerCodes.map((code, index) => ({ code, name: `Rose Bud Zone Blocker ${index + 1}`, kind: "monster" as const, typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 })),
       { code: responderCode, name: "Rose Bud Chain Responder", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 25090294, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, {
-      0: { main: [roseBudCode, releaseCostCode, summonTargetCode, releaseDecoyCode, summonDecoyCode] },
+      0: { main: [roseBudCode, releaseCostCode, summonTargetCode, releaseDecoyCode, summonDecoyCode, ...blockerCodes] },
       1: { main: [responderCode] },
     });
     startDuel(session);
@@ -52,9 +55,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ro
     const summonTarget = requireCard(session, summonTargetCode);
     const releaseDecoy = requireCard(session, releaseDecoyCode);
     const summonDecoy = requireCard(session, summonDecoyCode);
+    const blockers = blockerCodes.map((code) => requireCard(session, code));
     const responder = requireCard(session, responderCode);
     moveDuelCard(session.state, roseBud.uid, "hand", 0);
-    moveDuelCard(session.state, releaseDecoy.uid, "monsterZone", 0).position = "faceUpAttack";
+    const movedReleaseDecoy = moveDuelCard(session.state, releaseDecoy.uid, "monsterZone", 0);
+    movedReleaseDecoy.sequence = 0;
+    movedReleaseDecoy.position = "faceUpAttack";
+    blockers.forEach((blocker, index) => {
+      const moved = moveDuelCard(session.state, blocker.uid, "monsterZone", 0);
+      moved.sequence = index + 2;
+      moved.position = "faceUpAttack";
+    });
     moveDuelCard(session.state, responder.uid, "hand", 1);
     session.state.phase = "main1";
     session.state.waitingFor = 0;
@@ -178,7 +189,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ro
           faceUp: false,
           location: "deck",
           position: "faceDown",
-          sequence: 4,
+          sequence: 3,
         },
         eventCurrentState: {
           controller: 0,

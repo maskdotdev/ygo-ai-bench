@@ -1,7 +1,8 @@
 import fengari from "fengari";
-import { canSpecialSummonDuelCard } from "#duel/core.js";
+import { canMoveDuelCardToLocation, canSpecialSummonDuelCard } from "#duel/core.js";
 import { isMonsterSetPrevented, isNormalSummonPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
+import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { luaSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
@@ -44,20 +45,33 @@ function pushCanBeSpecialSummoned<EffectRecord extends LuaCardApiEffectRecord>(L
         card &&
         player !== undefined &&
         canSpecialSummonFromLua(session, card, player, summonType, zoneMask, ignoreSummonCondition, position, {
-          allowNoOpenMonsterZone: activeSelfTributeCostCanFreeMonsterZone(session, hostState, player),
+          allowNoOpenMonsterZone: activeCostCanFreeMonsterZone(session, hostState, player),
         }),
     ),
   );
   return 1;
 }
 
-function activeSelfTributeCostCanFreeMonsterZone<EffectRecord extends LuaCardApiEffectRecord>(session: DuelSession, hostState: LuaCardApiState<EffectRecord>, player: PlayerId): boolean {
+function activeCostCanFreeMonsterZone<EffectRecord extends LuaCardApiEffectRecord>(session: DuelSession, hostState: LuaCardApiState<EffectRecord>, player: PlayerId): boolean {
   if (!hostState.activeContext?.checkOnly || hostState.activeLuaEffectId === undefined) return false;
   const effect = hostState.effects.get(hostState.activeLuaEffectId);
-  if (effect?.costDescriptor !== "cost:self-tribute" && effect?.costDescriptor !== "cost:release-group-can-free-mzone") return false;
+  if (!effect) return false;
+  if (effect.costDescriptor === "cost:release-group-can-free-mzone") return hasReleasableMainMonster(session, player);
+  if (effect.costDescriptor !== "cost:self-tribute") return false;
   if (!effect.sourceUid) return false;
   const source = session.state.cards.find((card) => card.uid === effect.sourceUid);
   return Boolean(source && source.controller === player && source.location === "monsterZone" && source.sequence < 5);
+}
+
+function hasReleasableMainMonster(session: DuelSession, player: PlayerId): boolean {
+  return session.state.cards.some(
+    (card) =>
+      card.controller === player &&
+      card.location === "monsterZone" &&
+      card.sequence < 5 &&
+      (card.kind === "monster" || card.kind === "extra") &&
+      canMoveDuelCardToLocation(session.state, card.uid, "graveyard", duelReason.release | duelReason.cost),
+  );
 }
 
 function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession, kind: "normalSummon" | "setMonster" | "summonOrSet"): void {
