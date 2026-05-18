@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 20, ritual: 17 };
+const representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 21, ritual: 17 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1,
   contactFusionCustomSummonType: 1,
@@ -15,7 +15,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionAddProcCodeRepRepeatedCodeMetadata: 1,
   fusionAddProcMixMaterialMetadata: 1,
   fusionAddProcMixNRepeatedCodeMetadata: 1,
-  fusionAddProcMixRepSetcodeMetadata: 1,
+  fusionAddProcMixRepExactCodeMetadata: 1, fusionAddProcMixRepSetcodeMetadata: 1,
   fusionDeckMaterialOath: 1,
   fusionForcedHandler: 1,
   fusionFcheck: 1,
@@ -69,7 +69,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(37);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(38);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -131,7 +131,7 @@ type RitualFusionHelperKind =
   | "fusionAddProcCodeRepRepeatedCodeMetadata"
   | "fusionAddProcMixMaterialMetadata"
   | "fusionAddProcMixNRepeatedCodeMetadata"
-  | "fusionAddProcMixRepSetcodeMetadata"
+  | "fusionAddProcMixRepExactCodeMetadata" | "fusionAddProcMixRepSetcodeMetadata"
   | "fusionDeckMaterialOath"
   | "fusionForcedHandler"
   | "fusionFcheck"
@@ -877,6 +877,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
       ],
     },
     { file: "test/lua-real-script-chimeratech-rampage-addprocmixrep-fusion.test.ts", kind: "fusionAddProcMixRepSetcodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixRep metadata", "expect(rampage!.data.fusionMaterialMin).toBe(2)", "expect(rampage!.data.fusionMaterialSetcode).toBe(setCyberDragon)", "summonMaterialUids: [cyberDragon!.uid, cyberDragonCore!.uid]", "expect(restored.session.state.cards.find((card) => card.uid === decoy!.uid)).toMatchObject({ location: \"hand\", controller: 0 })"] },
+    { file: "test/lua-real-script-thunder-dragon-colossus-addprocmixrep-code-fusion.test.ts", kind: "fusionAddProcMixRepExactCodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixRep exact-code metadata", "expect(colossus!.data.fusionMaterials).toEqual([thunderDragonCode])", "expect(colossus!.data.fusionMaterialRace).toBe(raceThunder)", "directFusionActions.every((action) => action.materialUids.length === 2 && action.materialUids.includes(thunderDragon!.uid))", "summonMaterialUids: [thunderDragon!.uid, thunderDecoy!.uid]"] },
     {
       file: "test/lua-real-script-necroquip-princess-contact-fusion.test.ts",
       kind: "contactFusionSendCost",

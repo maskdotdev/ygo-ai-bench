@@ -3,7 +3,7 @@ import { moveDuelCard } from "#duel/card-state.js";
 import { isEffectTargetSelectionPrevented, matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { currentCardMatchesCode } from "#duel/card-code-state.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
-import { selectMaterialUidsForCodes } from "#duel/summon-materials.js";
+import { cardCombinations, selectMaterialUidsForCodes } from "#duel/summon-materials.js";
 import { cardTypeFlags as instanceCardTypeFlags } from "#duel/card-stats.js";
 import { cardFieldId, pushCardTable } from "#lua/card-api.js";
 import { canLuaCardBeEffectTarget, createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
@@ -12,7 +12,7 @@ import { cardTypeFlags as cardDataTypeFlags, readCardDataByCode } from "#lua/due
 import { changeTargetCard, effectiveTargetUids } from "#lua/duel-api/query-target-state.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
 import { pushGroupTable } from "#lua/group-api.js";
-import { fusionMaterialCountAllowed, fusionMaterialMatches, hasGenericFusionMaterialRequirement } from "#duel/summon.js";
+import { fusionMaterialCountAllowed, fusionMaterialMatches, fusionMaterialSelectionMatches, hasGenericFusionMaterialRequirement } from "#duel/summon.js";
 import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from "#lua/group-selection-utils.js";
 import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationMatchesCardMask, locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
@@ -674,20 +674,29 @@ function selectFusionMaterialUids(session: DuelSession, candidates: DuelCardInst
     .filter((card): card is DuelCardInstance => card !== undefined);
   if (forced.length !== uniqueForcedUids.length) return [];
   const requiredCodes = target?.data.fusionMaterials ?? [];
-  if (!requiredCodes.length) {
-    if (target && hasGenericFusionMaterialRequirement(target)) {
-      if (!forced.every((material) => fusionMaterialMatches(session.state, target, material))) return [];
-      const matchingCandidates = candidates.filter((card) => fusionMaterialMatches(session.state, target, card));
-      const selected = [...forced];
-      const desiredCount = Math.min(Math.max(target.data.fusionMaterialMin ?? 1, selected.length), matchingCandidates.length, target.data.fusionMaterialMax ?? matchingCandidates.length);
-      if (!fusionMaterialCountAllowed(target, desiredCount)) return [];
-      for (const candidate of matchingCandidates) {
-        if (selected.includes(candidate)) continue;
-        selected.push(candidate);
-        if (selected.length >= desiredCount) break;
+  if (target && hasGenericFusionMaterialRequirement(target)) {
+    if (requiredCodes.length) {
+      for (let count = Math.max(requiredCodes.length + (target.data.fusionMaterialMin ?? 1), forced.length); count <= candidates.length; count += 1) {
+        for (const materials of cardCombinations(candidates, count)) {
+          if (forced.length && !forced.every((material) => materials.includes(material))) continue;
+          if (fusionMaterialSelectionMatches(session.state, target, materials)) return materials.map((material) => material.uid);
+        }
       }
-      return fusionMaterialCountAllowed(target, selected.length) ? selected.map((card) => card.uid) : [];
+      return [];
     }
+    if (!forced.every((material) => fusionMaterialMatches(session.state, target, material))) return [];
+    const matchingCandidates = candidates.filter((card) => fusionMaterialMatches(session.state, target, card));
+    const selected = [...forced];
+    const desiredCount = Math.min(Math.max(target.data.fusionMaterialMin ?? 1, selected.length), matchingCandidates.length, target.data.fusionMaterialMax ?? matchingCandidates.length);
+    if (!fusionMaterialCountAllowed(target, desiredCount)) return [];
+    for (const candidate of matchingCandidates) {
+      if (selected.includes(candidate)) continue;
+      selected.push(candidate);
+      if (selected.length >= desiredCount) break;
+    }
+    return fusionMaterialCountAllowed(target, selected.length) ? selected.map((card) => card.uid) : [];
+  }
+  if (!requiredCodes.length) {
     const selected = [...forced];
     const desiredCount = Math.min(Math.max(2, selected.length), candidates.length);
     for (const candidate of candidates) {

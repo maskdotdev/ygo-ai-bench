@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { luaArchetypeSetcodeNumericConstants } from "#lua/basic-archetype-setcode-constant-data.js";
+import { luaCardCounterNumericConstants } from "#lua/basic-card-counter-constant-data.js";
 import { luaNumericConstants } from "#lua/basic-constant-data.js";
 import type { DuelCardInstance } from "#duel/types.js";
 
@@ -9,6 +10,7 @@ const RACE_CONSTANT_EXPRESSION = String.raw`RACES?_[A-Z0-9_]+(?:\s*\|\s*RACES?_[
 const SET_CONSTANT_EXPRESSION = String.raw`SET_[A-Z0-9_]+(?:\s*\|\s*SET_[A-Z0-9_]+)*`;
 const SUMMON_TYPE_CONSTANT_EXPRESSION = String.raw`SUMMON_TYPE_[A-Z0-9_]+(?:\s*\|\s*SUMMON_TYPE_[A-Z0-9_]+)*`;
 const TYPE_CONSTANT_EXPRESSION = String.raw`TYPE_[A-Z0-9_]+(?:\s*\|\s*TYPE_[A-Z0-9_]+)*`;
+const CARD_CODE_EXPRESSION = String.raw`(?:\d+|CARD_[A-Z0-9_]+)`;
 const XYZ_INFINITE_MATERIAL_MAX = 99;
 
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
@@ -21,6 +23,7 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
     if (fusionRepeatedMaterials.race !== undefined) card.data.fusionMaterialRace = fusionRepeatedMaterials.race;
     if (fusionRepeatedMaterials.type !== undefined) card.data.fusionMaterialType = fusionRepeatedMaterials.type;
     if (fusionRepeatedMaterials.setcode !== undefined) card.data.fusionMaterialSetcode = fusionRepeatedMaterials.setcode;
+    if (fusionRepeatedMaterials.extraCodes.length > 0) card.data.fusionMaterials = fusionRepeatedMaterials.extraCodes.map(String);
   }
   const synchroTunerMin = readProcedureNumberField(L, card, "synchro_materials", 2);
   const synchroTunerMax = readProcedureNumberField(L, card, "synchro_materials", 3);
@@ -103,7 +106,7 @@ function readFusionAddProcMixNMaterials(L: unknown, card: DuelCardInstance): str
   return materials.length >= 2 ? materials : [];
 }
 
-function readFusionAddProcMixRepMaterials(source: string | undefined): { min: number; max: number; race?: number; type?: number; setcode?: number } | undefined {
+function readFusionAddProcMixRepMaterials(source: string | undefined): { min: number; max: number; extraCodes: number[]; race?: number; type?: number; setcode?: number } | undefined {
   return readFusionAddProcMixRepConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode");
@@ -114,13 +117,14 @@ function readFusionAddProcMixRepConstantFilter<K extends "race" | "type" | "setc
   predicate: string,
   constantExpression: string,
   key: K,
-): ({ min: number; max: number } & Record<K, number>) | undefined {
-  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcMixRep\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)\s*,\s*(\d+)\s*,\s*(\d+)`));
+): ({ min: number; max: number; extraCodes: number[] } & Record<K, number>) | undefined {
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcMixRep\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)\s*,\s*(\d+)\s*,\s*(\d+)((?:\s*,\s*${CARD_CODE_EXPRESSION})*)`));
   const value = readLuaConstantExpression(match?.[1]);
   const min = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
   const max = match?.[3] === undefined ? undefined : Number.parseInt(match[3], 10);
+  const extraCodes = readLuaCodeList(match?.[4]);
   if (value === undefined || min === undefined || max === undefined || min <= 0 || max < min) return undefined;
-  return { min, max, [key]: value } as { min: number; max: number } & Record<K, number>;
+  return { min, max, extraCodes, [key]: value } as { min: number; max: number; extraCodes: number[] } & Record<K, number>;
 }
 
 function readXyzProcedureRaceFilter(source: string | undefined): number | undefined {
@@ -231,11 +235,22 @@ function readLuaConstantExpression(expression: string | undefined): number | und
   if (!expression) return undefined;
   let value = 0;
   for (const constant of expression.split("|").map((part) => part.trim())) {
-    const numeric = luaNumericConstants[constant] ?? luaArchetypeSetcodeNumericConstants[constant];
+    const numeric = luaNumericConstants[constant] ?? luaArchetypeSetcodeNumericConstants[constant] ?? luaCardCounterNumericConstants[constant];
     if (numeric === undefined) return undefined;
     value |= numeric;
   }
   return value;
+}
+
+function readLuaCodeList(source: string | undefined): number[] {
+  if (!source) return [];
+  const codes: number[] = [];
+  for (const rawCode of source.split(",").map((part) => part.trim()).filter(Boolean)) {
+    const code = /^\d+$/.test(rawCode) ? Number.parseInt(rawCode, 10) : luaCardCounterNumericConstants[rawCode];
+    if (code === undefined || code <= 0) return [];
+    codes.push(code);
+  }
+  return codes;
 }
 
 function escapeRegExp(value: string): string {
