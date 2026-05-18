@@ -12,6 +12,7 @@ export const groupDestroyOperationVariantCounts = {
 } satisfies Record<GroupDestroyOperationVariant, number>;
 export const potAndSearchOperationVariantCounts = {
   gatherYourMindOathSearch: 1,
+  kotetsuFlipEquipSearch: 1,
   potDesiresFaceDownBanishDraw: 1,
   potDualitySearchSummonLock: 1,
   potExtravaganceRandomCostDrawLock: 1,
@@ -38,6 +39,7 @@ export type GroupDestroyOperationVariant =
   | "smashingGroundMaxDefense";
 export type PotAndSearchOperationVariant =
   | "gatherYourMindOathSearch"
+  | "kotetsuFlipEquipSearch"
   | "potDesiresFaceDownBanishDraw"
   | "potDualitySearchSummonLock"
   | "potExtravaganceRandomCostDrawLock"
@@ -179,6 +181,17 @@ export function potAndSearchOperationVariants(): Array<{ file: string; kind: Pot
       ],
     },
     {
+      file: "test/lua-real-script-kotetsu-flip-equip-search.test.ts",
+      kind: "kotetsuFlipEquipSearch",
+      required: [
+        "restores its FLIP-triggered Equip Spell Deck search and confirmation",
+        "const kotetsuCode = \"73431236\"",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP)",
+        "return c:IsType(TYPE_EQUIP) and c:IsAbleToHand()",
+        "expect(restoredChain.host.messages).toEqual([`confirmed 1: ${equipCode}`])",
+      ],
+    },
+    {
       file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
       kind: "potDesiresFaceDownBanishDraw",
       required: [
@@ -242,6 +255,7 @@ export function countPotAndSearchOperationVariants(fixtures: Array<{ kind: PotAn
     },
     {
       gatherYourMindOathSearch: 0,
+      kotetsuFlipEquipSearch: 0,
       potDesiresFaceDownBanishDraw: 0,
       potDualitySearchSummonLock: 0,
       potExtravaganceRandomCostDrawLock: 0,
