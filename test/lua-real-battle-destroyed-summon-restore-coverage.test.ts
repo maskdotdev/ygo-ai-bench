@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDestroyedSummonFixtureCount = 1;
+const battleDestroyedSummonFixtureCount = 2;
 const battleDestroyedSummonKindCounts = {
+  optionalDeckDefenseSpecialSummon: 1,
   optionalDeckSpecialSummon: 1,
 } satisfies Record<BattleDestroyedSummonKind, number>;
 const battleDestroyedSummonSemanticVariantCounts = {
+  phantomMagicianHeroDefenseDeckSummon: 1,
   tricularBattleDestroyedDeckSummon: 1,
 } satisfies Record<BattleDestroyedSummonSemanticVariant, number>;
 
-type BattleDestroyedSummonKind = "optionalDeckSpecialSummon";
-type BattleDestroyedSummonSemanticVariant = "tricularBattleDestroyedDeckSummon";
+type BattleDestroyedSummonKind = "optionalDeckDefenseSpecialSummon" | "optionalDeckSpecialSummon";
+type BattleDestroyedSummonSemanticVariant = "phantomMagicianHeroDefenseDeckSummon" | "tricularBattleDestroyedDeckSummon";
 
 describe("Lua real battle-destroyed summon restore coverage", () => {
   it("requires battle-destroyed summon fixtures to assert clean restore and exact Special Summon outcomes", () => {
@@ -68,6 +70,20 @@ function battleDestroyedSummonFixtureFiles(): Array<{
 }> {
   return [
     {
+      file: "test/lua-real-script-phantom-magician-battle-destroyed-defense-summon.test.ts",
+      kind: "optionalDeckDefenseSpecialSummon",
+      required: [
+        'const phantomMagicianCode = "24103628"',
+        'const heroTargetCode = "24103630"',
+        "restores Phantom Magician's battle-destroyed HERO filter and face-up Defense Special Summon",
+        'triggerBucket: "opponentOptional"',
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        'position: "faceUpDefense"',
+        'location: "deck", controller: 0',
+      ],
+    },
+    {
       file: "test/lua-real-script-tricular-battle-destroyed-summon.test.ts",
       kind: "optionalDeckSpecialSummon",
       required: [
@@ -91,6 +107,18 @@ function battleDestroyedSummonSemanticVariants(): Array<{
 }> {
   return [
     {
+      file: "test/lua-real-script-phantom-magician-battle-destroyed-defense-summon.test.ts",
+      kind: "phantomMagicianHeroDefenseDeckSummon",
+      required: [
+        'triggerEvent: "battleDestroyed"',
+        "triggerSourceOnly: true",
+        'type === "activateTrigger"',
+        "c:IsSetCard(SET_HERO)",
+        "POS_FACEUP_DEFENSE",
+        "eventReasonCardUid: phantomMagician.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-tricular-battle-destroyed-summon.test.ts",
       kind: "tricularBattleDestroyedDeckSummon",
       required: [
@@ -110,7 +138,7 @@ function countBattleDestroyedSummonKinds(fixtures: Array<{ kind: BattleDestroyed
       counts[fixture.kind] += 1;
       return counts;
     },
-    { optionalDeckSpecialSummon: 0 },
+    { optionalDeckDefenseSpecialSummon: 0, optionalDeckSpecialSummon: 0 },
   );
 }
 
@@ -122,6 +150,6 @@ function countBattleDestroyedSummonSemanticVariants(
       counts[fixture.kind] += 1;
       return counts;
     },
-    { tricularBattleDestroyedDeckSummon: 0 },
+    { phantomMagicianHeroDefenseDeckSummon: 0, tricularBattleDestroyedDeckSummon: 0 },
   );
 }
