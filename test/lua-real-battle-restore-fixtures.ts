@@ -4,14 +4,14 @@ import path from "node:path";
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 169;
+export const realScriptBattleFixtureCount = 170;
 export const battleLegalActionFixtureCount = 4;
 export const attackDeclarationTrapFixtureCount = 6;
 export const battleRoutingFixtureCount = 6;
 export const battleContinuousSemanticFixtureCount = 1;
 export const damageStepRestoreFixtureCount = 4;
 export const battleDamageSemanticFixtureCount = 8;
-export const battleTriggerSemanticFixtureCount = 21;
+export const battleTriggerSemanticFixtureCount = 22;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -56,6 +56,7 @@ export const battleTriggerSemanticKindCounts = {
   battleDestroyingDamage: 2,
   battleDestroyingSelectEffect: 1,
   battleSearch: 2,
+  battledLabelDrawSummon: 1,
   battledBounce: 1,
   battledChainAttackTarget: 1,
   battledDeckSend: 1,
@@ -71,6 +72,7 @@ export const battleSemanticVariantCounts = {
   alienOfJusticeNullfierBattledDisable: 1,
   amazonessSwordsWomanReflectDamage: 1,
   ancientGearGolemPiercingDamage: 1,
+  aojOmniWeaponBattledLabelDrawSummon: 1,
   aojThousandArmsLightOnlyAttackAll: 1,
   battleDamagePreventionMachineLordUr: 1,
   blizzardWarriorBattleDestroyingDecktopConfirm: 1,
@@ -148,30 +150,13 @@ export type BattleDamageSemanticKind =
   | "reflectBattleDamage"
   | "temporaryDamageCalcBoost";
 
-export type BattleTriggerSemanticKind =
-  | "battleStartDestroy"
-  | "battleConfirmDestroy"
-  | "battleDestroyedChainAttack"
-  | "battleDestroyingDecktopConfirm"
-  | "battleDestroyedDestroy"
-  | "battleDestroyedGroupDestroy"
-  | "battleDestroyingDamage"
-  | "battleDestroyingSelectEffect"
-  | "battleSearch"
-  | "battledBounce"
-  | "battledChainAttackTarget"
-  | "battledDeckSend"
-  | "battledDestroy"
-  | "battledDamage"
-  | "battledDisable"
-  | "endDamageControl"
-  | "endDamageDestroy"
-  | "mutualBattleDestroyedSegoc";
+export type BattleTriggerSemanticKind = "battleStartDestroy" | "battleConfirmDestroy" | "battleDestroyedChainAttack" | "battleDestroyingDecktopConfirm" | "battleDestroyedDestroy" | "battleDestroyedGroupDestroy" | "battleDestroyingDamage" | "battleDestroyingSelectEffect" | "battleSearch" | "battledLabelDrawSummon" | "battledBounce" | "battledChainAttackTarget" | "battledDeckSend" | "battledDestroy" | "battledDamage" | "battledDisable" | "endDamageControl" | "endDamageDestroy" | "mutualBattleDestroyedSegoc";
 export type BattleSemanticVariant =
   | "alienHunterBattleDestroyedChainAttack"
   | "alienOfJusticeNullfierBattledDisable"
   | "amazonessSwordsWomanReflectDamage"
   | "ancientGearGolemPiercingDamage"
+  | "aojOmniWeaponBattledLabelDrawSummon"
   | "aojThousandArmsLightOnlyAttackAll"
   | "battleDamagePreventionMachineLordUr"
   | "blizzardWarriorBattleDestroyingDecktopConfirm"
@@ -485,6 +470,11 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
       ],
     },
     {
+      file: "lua-real-script-aoj-omni-weapon-battled-label-draw-summon.test.ts",
+      kind: "battledLabelDrawSummon",
+      required: ["restores EVENT_BATTLED label state into the battle-destroyed draw and optional DARK Special Summon", 'eventName: "afterDamageCalculation"', "eventCode: 1138", 'eventName: "battleDestroyed"', "eventCode: 1140", 'eventName: "cardsDrawn"', 'eventName: "specialSummoned"', "api: \"SelectYesNo\""],
+    },
+    {
       file: "lua-real-script-alien-hunter-chain-attack.test.ts",
       kind: "battleDestroyedChainAttack",
       required: ["restores Alien Hunter's battle-destroying trigger and reopens its attack with Duel.ChainAttack", 'eventName: "battleDestroyed"', "eventCode: 1140", "attacksDeclared).not.toContain(alienHunter!.uid)", 'type: "declareAttack", attackerUid: alienHunter!.uid, targetUid: followupTarget!.uid'],
@@ -657,6 +647,11 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
       file: "lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
       kind: "alienOfJusticeNullfierBattledDisable",
       required: ["restores its EVENT_BATTLED label-object trigger and disables the LIGHT battle target", "eventCode: 1138", "code: 8"],
+    },
+    {
+      file: "lua-real-script-aoj-omni-weapon-battled-label-draw-summon.test.ts",
+      kind: "aojOmniWeaponBattledLabelDrawSummon",
+      required: ["restores EVENT_BATTLED label state into the battle-destroyed draw and optional DARK Special Summon", "e2:SetLabelObject(e1)", "Duel.GetOperatedGroup():GetFirst()", "eventName: \"cardsDrawn\"", "eventName: \"specialSummoned\""],
     },
     {
       file: "lua-real-script-amazoness-swords-woman-reflect-battle-damage.test.ts",
@@ -1012,6 +1007,7 @@ export function countBattleTriggerSemanticKinds(
       battleDestroyingDamage: 0,
       battleDestroyingSelectEffect: 0,
       battleSearch: 0,
+      battledLabelDrawSummon: 0,
       battledBounce: 0,
       battledChainAttackTarget: 0,
       battledDeckSend: 0,

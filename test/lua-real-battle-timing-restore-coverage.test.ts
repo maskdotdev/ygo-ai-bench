@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 24;
-const battleTimingEventCodeFixtureCount = 24;
+const battleTimingFixtureCount = 25;
+const battleTimingEventCodeFixtureCount = 25;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 11,
+  afterDamageCalculation: 12,
   beforeDamageCalculation: 3,
   duringDamageCalculation: 3,
   endDamageStep: 4,
@@ -16,6 +16,7 @@ const battleTimingKindCounts: Record<BattleTimingKind, number> = {
 };
 const battleTimingSemanticVariantCounts = {
   allyOfJusticeNullfierAfterDamageDisable: 1,
+  aojOmniWeaponBattledLabelDrawSummon: 1,
   cipherSoldierBeforeDamageCalculationBoost: 1,
   ddAssailantAfterDamageBanishBoth: 1,
   ddWarriorWallMandatoryBattledSegoc: 1,
@@ -102,6 +103,7 @@ describe("Lua real battle timing restore coverage", () => {
 type BattleTimingKind = "afterDamageCalculation" | "beforeDamageCalculation" | "duringDamageCalculation" | "endDamageStep" | "startDamageStep";
 type BattleTimingSemanticVariant =
   | "allyOfJusticeNullfierAfterDamageDisable"
+  | "aojOmniWeaponBattledLabelDrawSummon"
   | "cipherSoldierBeforeDamageCalculationBoost"
   | "ddAssailantAfterDamageBanishBoth"
   | "ddWarriorWallMandatoryBattledSegoc"
@@ -136,6 +138,19 @@ function battleTimingSemanticVariants(): Array<{
       file: "test/lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
       kind: "allyOfJusticeNullfierAfterDamageDisable",
       required: ["restores its EVENT_BATTLED label-object trigger and disables the LIGHT battle target", "eventName: \"afterDamageCalculation\"", "target disabled true"],
+    },
+    {
+      file: "test/lua-real-script-aoj-omni-weapon-battled-label-draw-summon.test.ts",
+      kind: "aojOmniWeaponBattledLabelDrawSummon",
+      required: [
+        "restores EVENT_BATTLED label state into the battle-destroyed draw and optional DARK Special Summon",
+        "e2:SetLabelObject(e1)",
+        "Duel.GetOperatedGroup():GetFirst()",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "eventName: \"battleDestroyed\"",
+        "eventName: \"cardsDrawn\"",
+        "eventName: \"specialSummoned\"",
+      ],
     },
     {
       file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
@@ -277,6 +292,7 @@ function countBattleTimingSemanticVariants(
     },
     {
       allyOfJusticeNullfierAfterDamageDisable: 0,
+      aojOmniWeaponBattledLabelDrawSummon: 0,
       cipherSoldierBeforeDamageCalculationBoost: 0,
       ddAssailantAfterDamageBanishBoth: 0,
       ddWarriorWallMandatoryBattledSegoc: 0,
@@ -323,6 +339,20 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "target disabled true",
         '"code": 2',
         '"code": 8',
+      ],
+    },
+    {
+      file: "test/lua-real-script-aoj-omni-weapon-battled-label-draw-summon.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        'eventName: "cardsDrawn"',
+        'eventName: "specialSummoned"',
+        "eventReasonEffectId: 2",
+        "api: \"SelectYesNo\"",
       ],
     },
     {
