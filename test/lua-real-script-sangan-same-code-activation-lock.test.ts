@@ -12,27 +12,40 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasSanganScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c26202165.lua"));
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sangan same-code activation lock", () => {
+describe.skipIf(!hasUpstreamScripts || !hasSanganScript)("Lua real script Sangan same-code activation lock", () => {
   it("restores its searched-card same-code activation lock", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const sanganCode = "26202165";
     const searchedCode = "26202166";
     const allowedCode = "26202167";
+    const highAttackCode = "26202168";
+    const spellDecoyCode = "26202169";
+    const sanganScript = workspace.readScript(`c${sanganCode}.lua`);
+    expect(sanganScript).toContain("e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)");
+    expect(sanganScript).toContain("e1:SetCode(EVENT_TO_GRAVE)");
+    expect(sanganScript).toContain("e:GetHandler():IsPreviousLocation(LOCATION_ONFIELD)");
+    expect(sanganScript).toContain("return c:IsAttackBelow(1500) and c:IsMonster() and c:IsAbleToHand()");
+    expect(sanganScript).toContain("Duel.RegisterEffect(e1,tp)");
+    expect(sanganScript).toContain("return re:GetHandler():IsCode(e:GetLabel())");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === sanganCode),
+      { code: sanganCode, name: "Sangan", kind: "monster", typeFlags: 0x21, level: 3, attack: 1000, defense: 600 },
       { code: searchedCode, name: "Sangan Searched Responder", kind: "monster", typeFlags: 0x21, level: 4, attack: 1000, defense: 1000 },
       { code: allowedCode, name: "Sangan Different Responder", kind: "monster", typeFlags: 0x21, level: 4, attack: 1000, defense: 1000 },
+      { code: highAttackCode, name: "Sangan High ATK Decoy", kind: "monster", typeFlags: 0x21, level: 4, attack: 1600, defense: 1000 },
+      { code: spellDecoyCode, name: "Sangan Spell Decoy", kind: "spell", typeFlags: 0x2 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 262, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [sanganCode, searchedCode, allowedCode] }, 1: { main: [] } });
+    loadDecks(session, { 0: { main: [sanganCode, searchedCode, highAttackCode, spellDecoyCode, allowedCode] }, 1: { main: [] } });
     startDuel(session);
 
     const sangan = requireCard(session, sanganCode);
     const searched = requireCard(session, searchedCode);
     const allowed = requireCard(session, allowedCode);
+    const highAttack = requireCard(session, highAttackCode);
+    const spellDecoy = requireCard(session, spellDecoyCode);
     moveDuelCard(session.state, sangan.uid, "monsterZone", 0);
     sangan.position = "faceUpAttack";
     sangan.faceUp = true;
@@ -64,6 +77,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
 
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === searched.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restoredTrigger.session.state.cards.find((card) => card.uid === highAttack.uid)).toMatchObject({ location: "deck", controller: 0 });
+    expect(restoredTrigger.session.state.cards.find((card) => card.uid === spellDecoy.uid)).toMatchObject({ location: "deck", controller: 0 });
 
     const restoredLock = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredLock.restoreComplete, restoredLock.incompleteReasons.join("; ")).toBe(true);
