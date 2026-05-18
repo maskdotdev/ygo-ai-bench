@@ -3,7 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { addDuelChainLimit, applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { addDuelChainLimit, applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
@@ -64,6 +64,7 @@ const luaDarkMagicExpandedCode = "111280";
 const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
 const luaDaiDanceCode = "50696588";
+const luaEndPhaseReviveDestroyCodes = new Set(["32061744", "37745919", "46874015"]);
 const luaSetMegalith = 0x138;
 const luaCategorySpecialSummon = 0x200;
 const luaLocationDeck = 0x1;
@@ -555,6 +556,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) ||
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
+        isKnownEndPhaseReviveDestroyEffect(effect) ||
         isKnownDarkMagicExpandedChainingLimitEffect(effect) ||
         isKnownTimeTearingMorganiteSummonLimitEffect(effect) ||
         isKnownDaiDanceForceMonsterZoneEffect(effect) ||
@@ -569,6 +571,22 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isStaticPlayerPhaseLock(effect) ||
         (effect.code === 102 && effect.value !== undefined && effect.targetRange === undefined) ||
         ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 131 || effect.code === 132 || effect.code === 314) && effect.value !== undefined)))
+  );
+}
+
+function isKnownEndPhaseReviveDestroyEffect(effect: SerializedDuelEffect): boolean {
+  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+  return (
+    registryCode !== undefined &&
+    luaEndPhaseReviveDestroyCodes.has(registryCode) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaResetsStandardPhaseEnd
   );
 }
 
@@ -793,6 +811,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect)) return tsumuhaKutsunagiDelayedShuffleOperation(effect);
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
+  if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
   if (isKnownDaiDanceAdjustEffect(effect)) return daiDanceAdjustOperation(effect);
@@ -840,6 +859,18 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
       });
     } catch {
       // EDOPro-style delayed operations ignore handlers that can no longer move.
+    }
+  };
+}
+
+function luaHandlerDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    try {
+      destroyDuelCard(ctx.duel, ctx.source.uid, ctx.source.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
+        eventReasonCardUid: effect.sourceUid,
+      });
+    } catch {
+      // EDOPro-style delayed operations ignore handlers that can no longer be destroyed.
     }
   };
 }

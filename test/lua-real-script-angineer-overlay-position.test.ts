@@ -129,7 +129,7 @@ describe.skipIf(!hasUpstreamScripts || !hasAngineerScript)("Lua real script Mech
           "range": [
             "monsterZone",
           ],
-          "registryKey": "lua:1592:lua-4-42",
+          "registryKey": "lua:15914410:lua-4-42",
           "reset": {
             "flags": 1107169792,
           },
@@ -153,7 +153,7 @@ describe.skipIf(!hasUpstreamScripts || !hasAngineerScript)("Lua real script Mech
           "range": [
             "monsterZone",
           ],
-          "registryKey": "lua:1592:lua-5-41",
+          "registryKey": "lua:15914410:lua-5-41",
           "reset": {
             "flags": 1107169792,
           },

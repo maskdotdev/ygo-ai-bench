@@ -119,7 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
         "range": [
           "monsterZone",
         ],
-        "registryKey": "lua:1110:lua-3-103",
+        "registryKey": "lua:55713623:lua-3-103",
         "reset": {
           "flags": 1107169792,
         },
@@ -145,7 +145,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
         "range": [
           "monsterZone",
         ],
-        "registryKey": "lua:1110:lua-3-103",
+        "registryKey": "lua:55713623:lua-3-103",
         "reset": {
           "flags": 1107169792,
         },

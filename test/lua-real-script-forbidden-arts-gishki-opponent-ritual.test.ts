@@ -226,7 +226,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fo
           "extraDeck",
           "overlay",
         ],
-        "registryKey": "lua:28421:lua-4-101",
+        "registryKey": "lua:28429121:lua-4-101",
         "reset": {
           "flags": 16650240,
         },

@@ -156,7 +156,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHeboScript)("Lua real script Hebo Spi
           "range": [
             "monsterZone",
           ],
-          "registryKey": "lua:90365483:lua-10-115",
+          "registryKey": "lua:90365482:lua-10-115",
           "reset": {
             "flags": 33427456,
           },
@@ -175,7 +175,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHeboScript)("Lua real script Hebo Spi
           "range": [
             "monsterZone",
           ],
-          "registryKey": "lua:90365483:lua-11-4608",
+          "registryKey": "lua:90365482:lua-11-4608",
           "reset": {
             "flags": 33427456,
           },

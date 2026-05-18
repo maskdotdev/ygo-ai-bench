@@ -1,12 +1,17 @@
-export const freeChainSpecialSummonFixtureCount = 3;
+export const freeChainSpecialSummonFixtureCount = 4;
 
 export const freeChainSpecialSummonKindCounts = {
   handNormalMonsterSummon: 1,
   targetBanishedRockSummonStep: 1,
   targetGraveDragonSummonReplace: 1,
+  targetGraveSetcodeSummonEndDestroy: 1,
 } satisfies Record<FreeChainSpecialSummonKind, number>;
 
-export type FreeChainSpecialSummonKind = "handNormalMonsterSummon" | "targetBanishedRockSummonStep" | "targetGraveDragonSummonReplace";
+export type FreeChainSpecialSummonKind =
+  | "handNormalMonsterSummon"
+  | "targetBanishedRockSummonStep"
+  | "targetGraveDragonSummonReplace"
+  | "targetGraveSetcodeSummonEndDestroy";
 
 export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -57,6 +62,21 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
         'summonType: "special"',
       ],
     },
+    {
+      file: "test/lua-real-script-junk-box-revive-end-destroy.test.ts",
+      kind: "targetGraveSetcodeSummonEndDestroy",
+      required: [
+        "return c:IsSetCard(SET_MORPHTRONIC) and c:IsLevelBelow(4) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "operationInfos: [{ category: 0x200",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'summonType: "special"',
+        'triggerEvent: "phaseEnd"',
+        'location: "graveyard"',
+      ],
+    },
   ];
 }
 
@@ -66,5 +86,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { handNormalMonsterSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0 });
+  }, { handNormalMonsterSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveSetcodeSummonEndDestroy: 0 });
 }

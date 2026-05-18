@@ -141,7 +141,7 @@ describe.skipIf(!hasUpstreamScripts || !hasYellowAlertScript)("Lua real script I
           "range": [
             "monsterZone",
           ],
-          "registryKey": "lua:300:lua-3-332",
+          "registryKey": "lua:59277750:lua-3-332",
           "reset": {
             "flags": 33427456,
           },

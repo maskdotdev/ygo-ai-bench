@@ -4,25 +4,34 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const delayedRelationFixtureCount = 5;
+const delayedRelationFixtureCount = 6;
 const delayedRelationKindCounts = {
   banishedReviveDestroyRelation: 1,
   delayedBanishRelation: 1,
   delayedReturnRelation: 1,
   delayedSelfDestroy: 1,
+  reviveEndPhaseDestroy: 1,
   reviveDestroyRelation: 1,
 } satisfies Record<DelayedRelationKind, number>;
 const delayedRelationSemanticVariantCounts = {
   callOfTheHauntedMutualDestroyRelation: 1,
+  junkBoxMorphtronicReviveEndDestroy: 1,
   kinkaByoReviveLeavesBanishRelation: 1,
   releaseFromStoneBanishedReviveDestroyRelation: 1,
   sunlitSentinelPreviousPositionStandbyCheck: 1,
   yellowAlertBattlePhaseReturnRelation: 1,
 } satisfies Record<DelayedRelationSemanticVariant, number>;
 
-type DelayedRelationKind = "banishedReviveDestroyRelation" | "delayedBanishRelation" | "delayedReturnRelation" | "delayedSelfDestroy" | "reviveDestroyRelation";
+type DelayedRelationKind =
+  | "banishedReviveDestroyRelation"
+  | "delayedBanishRelation"
+  | "delayedReturnRelation"
+  | "delayedSelfDestroy"
+  | "reviveEndPhaseDestroy"
+  | "reviveDestroyRelation";
 type DelayedRelationSemanticVariant =
   | "callOfTheHauntedMutualDestroyRelation"
+  | "junkBoxMorphtronicReviveEndDestroy"
   | "kinkaByoReviveLeavesBanishRelation"
   | "releaseFromStoneBanishedReviveDestroyRelation"
   | "sunlitSentinelPreviousPositionStandbyCheck"
@@ -77,6 +86,20 @@ function delayedRelationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-junk-box-revive-end-destroy.test.ts",
+      kind: "reviveEndPhaseDestroy",
+      required: [
+        "restores its Morphtronic Graveyard revive and target-owned End Phase destruction watcher",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "e1:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
+        "advanceRestoredToPhase(restoredEndPhase, 0, [\"battle\", \"main2\", \"end\"])",
+        'triggerEvent: "phaseEnd"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-kinka-byo-relation-banish.test.ts",
       kind: "delayedBanishRelation",
@@ -162,6 +185,7 @@ function countDelayedRelationKinds(
       delayedBanishRelation: 0,
       delayedReturnRelation: 0,
       delayedSelfDestroy: 0,
+      reviveEndPhaseDestroy: 0,
       reviveDestroyRelation: 0,
     },
   );
@@ -181,6 +205,17 @@ function delayedRelationSemanticVariants(): Array<{
         "restores Call of the Haunted's Continuous Trap revive and mutual destruction",
         "destroyDuelCard(restoredRevive.session.state, call!.uid",
         "destroyDuelCard(restoredTargetDestroy.session.state, target!.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-junk-box-revive-end-destroy.test.ts",
+      kind: "junkBoxMorphtronicReviveEndDestroy",
+      required: [
+        'const junkBoxCode = "37745919"',
+        "restores its Morphtronic Graveyard revive and target-owned End Phase destruction watcher",
+        "return c:IsSetCard(SET_MORPHTRONIC) and c:IsLevelBelow(4) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
+        "advanceRestoredToPhase(restoredEndPhase, 0, [\"battle\", \"main2\", \"end\"])",
       ],
     },
     {
@@ -240,6 +275,7 @@ function countDelayedRelationSemanticVariants(
     },
     {
       callOfTheHauntedMutualDestroyRelation: 0,
+      junkBoxMorphtronicReviveEndDestroy: 0,
       kinkaByoReviveLeavesBanishRelation: 0,
       releaseFromStoneBanishedReviveDestroyRelation: 0,
       sunlitSentinelPreviousPositionStandbyCheck: 0,

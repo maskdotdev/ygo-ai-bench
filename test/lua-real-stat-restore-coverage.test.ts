@@ -360,7 +360,7 @@ function statSemanticVariants(): Array<{
         'const sangaCode = "25955164"',
         "restores optional pre-damage calculation final-ATK Quick Effect activation",
         "Duel.SetTargetCard(Duel.GetAttacker())",
-        '"registryKey": "lua:25955165:lua-2-102"',
+        '"registryKey": "lua:25955164:lua-2-102"',
         "players[0].lifePoints).toBe(8000 - (sanga.data.attack ?? 0))",
       ],
     },
