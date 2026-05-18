@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 10;
+const controlFixtureCount = 11;
 const controlKindCounts = {
   cannotChangeControl: 1,
+  discardCostTemporaryControl: 1,
   equipControl: 1,
   flipGetControl: 1,
   flipSetControl: 1,
@@ -21,6 +22,7 @@ const controlSemanticVariantCounts = {
   changeHeartTemporaryReturn: 1,
   creatureSwapControlLock: 1,
   dharcFlipSetControl: 1,
+  electricVirusDiscardControl: 1,
   enemyControllerReleaseControl: 1,
   matazaCannotChangeControl: 1,
   mindControlRestrictions: 1,
@@ -31,6 +33,7 @@ const controlSemanticVariantCounts = {
 
 type ControlKind =
   | "cannotChangeControl"
+  | "discardCostTemporaryControl"
   | "equipControl"
   | "flipGetControl"
   | "flipSetControl"
@@ -45,6 +48,7 @@ type ControlSemanticVariant =
   | "changeHeartTemporaryReturn"
   | "creatureSwapControlLock"
   | "dharcFlipSetControl"
+  | "electricVirusDiscardControl"
   | "enemyControllerReleaseControl"
   | "matazaCannotChangeControl"
   | "mindControlRestrictions"
@@ -119,6 +123,17 @@ function realScriptControlFixtureFiles(): Array<{
         "lifePointCostPaid",
         "players[0].lifePoints).toBe(7200)",
         'luaValueDescriptor: "temporary-control-return"',
+      ],
+    },
+    {
+      file: "lua-real-script-electric-virus-discard-control.test.ts",
+      kind: "discardCostTemporaryControl",
+      required: [
+        'const electricVirusCode = "24725825"',
+        "restores Electric Virus's discard cost, race-gated target, temporary GetControl, and End Phase return",
+        "duelReason.cost | duelReason.discard",
+        'luaValueDescriptor: "temporary-control-return"',
+        "eventName: \"controlChanged\"",
       ],
     },
     {
@@ -218,6 +233,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
     },
     {
       cannotChangeControl: 0,
+      discardCostTemporaryControl: 0,
       equipControl: 0,
       flipGetControl: 0,
       flipSetControl: 0,
@@ -289,6 +305,17 @@ function realScriptControlSemanticVariants(): Array<{
         "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g,#g,0,0)",
         "Duel.GetControl(tc,tp,PHASE_END,1)",
         "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-electric-virus-discard-control.test.ts",
+      kind: "electricVirusDiscardControl",
+      required: [
+        'const electricVirusCode = "24725825"',
+        "restores Electric Virus's discard cost, race-gated target, temporary GetControl, and End Phase return",
+        "Duel.SendtoGrave(e:GetHandler(),REASON_COST|REASON_DISCARD)",
+        "c:IsRace(RACE_MACHINE|RACE_DRAGON)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
       ],
     },
     {
@@ -366,6 +393,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       changeHeartTemporaryReturn: 0,
       creatureSwapControlLock: 0,
       dharcFlipSetControl: 0,
+      electricVirusDiscardControl: 0,
       enemyControllerReleaseControl: 0,
       matazaCannotChangeControl: 0,
       mindControlRestrictions: 0,
