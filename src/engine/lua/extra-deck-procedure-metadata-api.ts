@@ -150,10 +150,38 @@ function readFusionAddProcMixRepMaterials(source: string | undefined): { min: nu
 }
 
 function readFusionAddProcMixNRepeatedMaterials(source: string | undefined): { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; race?: number; type?: number; setcode?: number; location?: number } | undefined {
-  return readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
+  return readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
+    ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
+    ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
+    ?? readFusionAddProcMixNRepeatedMixedConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location")
+    ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
     ?? readFusionAddProcMixNRepeatedConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location");
+}
+
+function readFusionAddProcMixNRepeatedMixedConstantFilter<K extends "race" | "type" | "setcode" | "location">(
+  source: string | undefined,
+  predicate: string,
+  constantExpression: string,
+  key: K,
+): ({ min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>) | undefined {
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcMixN\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*(${CARD_CODE_EXPRESSION}|aux\.FilterBoolFunction(?:Ex)?\(\s*Card\.IsSetCard\s*,\s*${SET_CONSTANT_EXPRESSION}\s*\))\s*,\s*(\d+)\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)\s*,\s*(\d+)\s*\)`));
+  const required = match?.[1];
+  const requiredCount = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
+  const value = readLuaConstantExpression(match?.[3]);
+  const count = match?.[4] === undefined ? undefined : Number.parseInt(match[4], 10);
+  if (!required || requiredCount === undefined || value === undefined || count === undefined || requiredCount <= 0 || count <= 0) return undefined;
+  const requiredCode = readLuaCodeList(`,${required}`).at(0);
+  const requiredSetcode = readLuaSetcodeFilterList(required).at(0);
+  if (requiredCode === undefined && requiredSetcode === undefined) return undefined;
+  return {
+    min: count,
+    max: count,
+    extraCodes: requiredCode === undefined ? [] : Array.from({ length: requiredCount }, () => requiredCode),
+    extraSetcodes: requiredSetcode === undefined ? [] : Array.from({ length: requiredCount }, () => requiredSetcode),
+    [key]: value,
+  } as unknown as { min: number; max: number; extraCodes: number[]; extraSetcodes: number[] } & Record<K, number>;
 }
 
 function readFusionAddProcMixNRepeatedConstantFilter<K extends "race" | "type" | "setcode" | "location">(
