@@ -12,12 +12,12 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasGardnaScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c43002864.lua"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const setReptilianne = 0x3c;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Reptilianne Gardna to-Grave search", () => {
+describe.skipIf(!hasUpstreamScripts || !hasGardnaScript)("Lua real script Reptilianne Gardna to-Grave search", () => {
   it("restores its mandatory destroyed-from-field EVENT_TO_GRAVE Reptilianne search", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const gardnaCode = "43002864";
@@ -37,7 +37,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
     expect(script).toContain("Duel.ConfirmCards(1-tp,g)");
 
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gardnaCode),
+      { code: gardnaCode, name: "Reptilianne Gardna", kind: "monster", typeFlags: typeMonster | typeEffect, setcodes: [setReptilianne], level: 4, attack: 0, defense: 2000 },
       { code: searchTargetCode, name: "Reptilianne Search Target", kind: "monster", typeFlags: typeMonster | typeEffect, setcodes: [setReptilianne], level: 4 },
       { code: offSetMonsterCode, name: "Reptilianne Off-Set Monster", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4 },
       { code: destroyerCode, name: "Reptilianne Gardna Destroyer", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4 },

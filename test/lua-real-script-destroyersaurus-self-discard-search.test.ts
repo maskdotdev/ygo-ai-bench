@@ -12,13 +12,13 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasDestroyersaurusScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c80186010.lua"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const typeSpell = 0x2;
 const typeField = 0x80000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Destroyersaurus self-discard search", () => {
+describe.skipIf(!hasUpstreamScripts || !hasDestroyersaurusScript)("Lua real script Destroyersaurus self-discard search", () => {
   it("restores its self-discard ignition search and confirms the first matching Deck card", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const destroyersaurusCode = "80186010";
@@ -38,7 +38,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
     expect(script).toContain("Duel.ConfirmCards(1-tp,tg)");
 
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === destroyersaurusCode),
+      { code: destroyersaurusCode, name: "Destroyersaurus", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1800, defense: 1100 },
       { code: jurassicWorldCode, name: "Jurassic World", kind: "spell", typeFlags: typeSpell | typeField },
       { code: decoyCode, name: "Search Decoy", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4 },
       { code: responderCode, name: "Destroyersaurus Chain Responder", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4 },
