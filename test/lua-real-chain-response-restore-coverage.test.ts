@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 12;
+const chainResponseFixtureCount = 13;
 const chainResponseKindCounts = {
-  destroyOnlyChainedResponse: 2,
+  destroyOnlyChainedResponse: 3,
   flipSummonTrapResponse: 3,
   genericChainResponse: 1,
   summonEffectNegateResponse: 1,
@@ -23,6 +23,7 @@ const chainResponseSemanticVariantCounts = {
   overwhelmTributeGateTrapNegateDestroy: 1,
   raigekiBreakDiscardCostDestroy: 1,
   solemnWarningSpecialSummonEffectNegate: 1,
+  synchBlastWaveSynchroGateTargetDestroy: 1,
   torrentialTributeSummonSuccessDestroyAll: 1,
   trapHoleFlipSummonAtkGateDestroy: 1,
   trapHoleSummonSuccessDestroy: 1,
@@ -46,6 +47,7 @@ type ChainResponseSemanticVariant =
   | "overwhelmTributeGateTrapNegateDestroy"
   | "raigekiBreakDiscardCostDestroy"
   | "solemnWarningSpecialSummonEffectNegate"
+  | "synchBlastWaveSynchroGateTargetDestroy"
   | "torrentialTributeSummonSuccessDestroyAll"
   | "trapHoleFlipSummonAtkGateDestroy"
   | "trapHoleSummonSuccessDestroy"
@@ -196,6 +198,18 @@ function chainResponseFixtureFiles(): Array<{
         'eventName: "cardsDrawn"',
         '["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([])',
         'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-synch-blast-wave-target-destroy.test.ts",
+      kind: "destroyOnlyChainedResponse",
+      required: [
+        'candidate.type === "activateEffect" && candidate.uid === synchBlastWave.uid',
+        'pass?.windowKind).toBe("chainResponse")',
+        "restoredChainWindow.session.state.chain).toEqual([])",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        'host.messages).not.toContain("synch blast wave responder resolved")',
       ],
     },
     {
@@ -356,6 +370,17 @@ function chainResponseSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-synch-blast-wave-target-destroy.test.ts",
+      kind: "synchBlastWaveSynchroGateTargetDestroy",
+      required: [
+        'const synchBlastWaveCode = "35537860"',
+        "restores Synch Blast Wave's face-up Synchro gate, opponent monster target, and destroy operation",
+        "return c:IsFaceup() and c:IsType(TYPE_SYNCHRO)",
+        "Duel.SelectTarget(tp,aux.TRUE,tp,0,LOCATION_MZONE,1,1,nil)",
+        "eventName: \"destroyed\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-torrential-tribute-summon-success.test.ts",
       kind: "torrentialTributeSummonSuccessDestroyAll",
       required: [
@@ -419,6 +444,7 @@ function countChainResponseSemanticVariants(
       overwhelmTributeGateTrapNegateDestroy: 0,
       raigekiBreakDiscardCostDestroy: 0,
       solemnWarningSpecialSummonEffectNegate: 0,
+      synchBlastWaveSynchroGateTargetDestroy: 0,
       torrentialTributeSummonSuccessDestroyAll: 0,
       trapHoleFlipSummonAtkGateDestroy: 0,
       trapHoleSummonSuccessDestroy: 0,
