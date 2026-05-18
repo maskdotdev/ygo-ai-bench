@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import type { DuelAction, DuelCardData, DuelResponse, DuelSession } from "#duel/types.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -12,12 +12,12 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasPleuroScript = fs.existsSync(path.join(upstreamRoot, "script", "official", "c20855340.lua"));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const setEvolsaur = 0x604e;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Evoltile Pleuro destroyed hand summon", () => {
+describe.skipIf(!hasUpstreamScripts || !hasPleuroScript)("Lua real script Evoltile Pleuro destroyed hand summon", () => {
   it("restores delayed destroyed-from-field EVENT_TO_GRAVE hand Special Summon", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const pleuroCode = "20855340";
@@ -35,7 +35,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
     expect(script).toContain("Duel.SpecialSummon(g,153,tp,tp,false,false,POS_FACEUP)");
 
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === pleuroCode),
+      { code: pleuroCode, name: "Evoltile Pleuro", kind: "monster", typeFlags: typeMonster | typeEffect, level: 1, attack: 200, defense: 200 },
       { code: evolsaurCode, name: "Evoltile Pleuro Evolsaur Target", kind: "monster", typeFlags: typeMonster | typeEffect, setcodes: [setEvolsaur], level: 4, attack: 1700, defense: 1200 },
       { code: offSetCode, name: "Evoltile Pleuro Off-Set Hand Decoy", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1500, defense: 1000 },
       { code: destroyerCode, name: "Evoltile Pleuro Destroyer", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
@@ -258,7 +258,7 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
-function applyAndAssert(session: DuelSession, action: DuelAction): DuelResponse {
+function applyAndAssert(session: DuelSession, action: DuelAction): ApplyDuelResponseResult {
   const response = applyResponse(session, action);
   expect(response.ok, response.error).toBe(true);
   const waitingFor = response.state.waitingFor;

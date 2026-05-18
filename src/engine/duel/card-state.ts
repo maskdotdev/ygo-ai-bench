@@ -109,7 +109,7 @@ export function pushDuelLog(state: DuelState, action: string, player: PlayerId |
 }
 
 function nextSequence(state: DuelState, player: PlayerId, location: DuelLocation, movingUid?: string): number {
-  if (isFieldLocation(location)) return firstOpenFieldZoneSequence(state, player, location, movingUid === undefined ? [] : [movingUid]) ?? getCards(state, player, location).length;
+  if (location === "monsterZone" || location === "spellTrapZone") return firstOpenFieldZoneSequence(state, player, location, movingUid === undefined ? [] : [movingUid]) ?? getCards(state, player, location).length;
   return getCards(state, player, location).length;
 }
 
