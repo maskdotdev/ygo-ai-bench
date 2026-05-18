@@ -11,16 +11,22 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const giantOrcCode = "73698349";
+const hasGiantOrcScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${giantOrcCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Giant Orc Battle Phase position", () => {
+describe.skipIf(!hasUpstreamScripts || !hasGiantOrcScript)("Lua real script Giant Orc Battle Phase position", () => {
   it("restores the Battle Phase event after an attack and changes itself to Defense Position", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const giantOrcCode = "73698349";
     const targetCode = "7369";
+    const script = workspace.readScript(`c${giantOrcCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_PHASE|PHASE_BATTLE)");
+    expect(script).toContain("return e:GetHandler():GetAttackedCount()>0");
+    expect(script).toContain("Duel.ChangePosition(c,POS_FACEUP_DEFENSE)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === giantOrcCode),
-      { code: targetCode, name: "Giant Orc Fixture Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: giantOrcCode, name: "Giant Orc", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 2200, defense: 0 },
+      { code: targetCode, name: "Giant Orc Fixture Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 736, startingHandSize: 0, cardReader: reader });

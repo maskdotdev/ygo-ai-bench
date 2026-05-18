@@ -12,16 +12,22 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const gardnaCode = "65240384";
+const hasGardnaScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${gardnaCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Big Shield Gardna damage step position", () => {
+describe.skipIf(!hasUpstreamScripts || !hasGardnaScript)("Lua real script Big Shield Gardna damage step position", () => {
   it("restores its end Damage Step position change after being attacked in Defense Position", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const gardnaCode = "65240384";
     const attackerCode = "6524";
+    const script = workspace.readScript(`c${gardnaCode}.lua`);
+    expect(script).toContain("e2:SetCode(EVENT_DAMAGE_STEP_END)");
+    expect(script).toContain("c==Duel.GetAttackTarget() and c:IsDefensePos() and c:IsRelateToBattle()");
+    expect(script).toContain("Duel.ChangePosition(c,POS_FACEUP_ATTACK)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gardnaCode),
-      { code: attackerCode, name: "Big Shield Gardna Fixture Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: gardnaCode, name: "Big Shield Gardna", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 100, defense: 2600 },
+      { code: attackerCode, name: "Big Shield Gardna Fixture Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 652, startingHandSize: 0, cardReader: reader });

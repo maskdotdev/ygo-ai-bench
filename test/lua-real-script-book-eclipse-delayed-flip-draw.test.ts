@@ -11,8 +11,10 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const bookCode = "35480699";
+const hasBookScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${bookCode}.lua`));
 const typeMonster = 0x1;
+const typeSpell = 0x2;
 const typeEffect = 0x20;
 const phaseEndEventCode = 0x1200;
 const phaseEndReset = 0x40000200;
@@ -23,17 +25,21 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Book of Eclipse delayed flip and draw", () => {
+describe.skipIf(!hasUpstreamScripts || !hasBookScript)("Lua real script Book of Eclipse delayed flip and draw", () => {
   it("restores grouped turn-set resolution and the End Phase opponent flip/draw watcher", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const bookCode = "35480699";
     const ownMonsterCode = "614601";
     const opponentMonsterCode = "614602";
     const opponentDrawCode = "614603";
     const opponentSecondDrawCode = "614604";
     const responderCode = "614605";
+    const script = workspace.readScript(`c${bookCode}.lua`);
+    expect(script).toContain("Duel.ChangePosition(g,POS_FACEDOWN_DEFENSE)");
+    expect(script).toContain("e1:SetCode(EVENT_PHASE+PHASE_END)");
+    expect(script).toContain("local ct=Duel.ChangePosition(g,POS_FACEUP_DEFENSE)");
+    expect(script).toContain("Duel.Draw(1-tp,ct,REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bookCode),
+      { code: bookCode, name: "Book of Eclipse", kind: "spell", typeFlags: typeSpell },
       { code: ownMonsterCode, name: "Book of Eclipse Own Monster", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1000 },
       { code: opponentMonsterCode, name: "Book of Eclipse Opponent Monster", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1200 },
       { code: opponentDrawCode, name: "Book of Eclipse Draw Card", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },

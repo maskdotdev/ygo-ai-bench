@@ -11,21 +11,28 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const unleashCode = "73567374";
+const hasUnleashScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${unleashCode}.lua`));
 const typeMonster = 0x1;
+const typeSpell = 0x2;
 const typeEffect = 0x20;
 const typeGemini = 0x800;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Unleash Your Power Gemini delayed set", () => {
+describe.skipIf(!hasUpstreamScripts || !hasUnleashScript)("Lua real script Unleash Your Power Gemini delayed set", () => {
   it("restores group-wide Gemini status and delayed End Phase position change", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const unleashCode = "73567374";
     const slimeCode = "3918345";
     const soldierCode = "68366996";
     const opponentGeminiCode = "73567375";
     const responderCode = "73567376";
+    const script = workspace.readScript(`c${unleashCode}.lua`);
+    expect(script).toContain("g:ForEach(Card.EnableGeminiStatus)");
+    expect(script).toContain("aux.DelayedOperation(g,PHASE_END,id,e,tp,function(ag) Duel.ChangePosition(ag,POS_FACEDOWN_DEFENSE) end)");
+    expect(script).toContain("return c:IsFaceup() and c:IsType(TYPE_GEMINI) and not c:IsGeminiStatus()");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => [unleashCode, slimeCode, soldierCode].includes(card.code)),
+      { code: unleashCode, name: "Unleash Your Power!", kind: "spell", typeFlags: typeSpell },
+      { code: slimeCode, name: "Magical Reflect Slime", kind: "monster", typeFlags: typeMonster | typeEffect | typeGemini, level: 3, attack: 700, defense: 1200 },
+      { code: soldierCode, name: "Gemini Soldier", kind: "monster", typeFlags: typeMonster | typeEffect | typeGemini, level: 2, attack: 500, defense: 300 },
       { code: opponentGeminiCode, name: "Unleash Opponent Gemini", kind: "monster", typeFlags: typeMonster | typeEffect | typeGemini, level: 4, attack: 1600, defense: 1200 },
       { code: responderCode, name: "Unleash Chain Responder", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 1000, defense: 1000 },
     ];
