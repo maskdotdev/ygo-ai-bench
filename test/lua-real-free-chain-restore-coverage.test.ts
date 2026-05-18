@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 11;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 10;
+const FREE_CHAIN_FIXTURE_COUNT = 12;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 11;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 11;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 12;
 const freeChainKindCounts = {
   banishRemoval: 1,
   graveyardRevive: 1,
@@ -17,7 +17,7 @@ const freeChainKindCounts = {
   singleDestroy: 2,
   targetNegation: 1,
   toDeckDiscard: 1,
-  toHand: 1,
+  toHand: 2,
 } satisfies Record<FreeChainKind, number>;
 const freeChainSemanticVariantCounts = {
   armorBlastMergedTargets: 1,
@@ -30,6 +30,7 @@ const freeChainSemanticVariantCounts = {
   omegaJudgmentSelectUnselect: 1,
   phoenixWingDiscardToDeck: 1,
   raigekiBreakDiscardDestroy: 1,
+  recurringNightmareChainInfoToHand: 1,
   twinTwistersDiscardDestroy: 1,
 } satisfies Record<FreeChainSemanticVariant, number>;
 
@@ -54,6 +55,7 @@ type FreeChainSemanticVariant =
   | "omegaJudgmentSelectUnselect"
   | "phoenixWingDiscardToDeck"
   | "raigekiBreakDiscardDestroy"
+  | "recurringNightmareChainInfoToHand"
   | "twinTwistersDiscardDestroy";
 
 describe("Lua real free-chain restore coverage", () => {
@@ -178,7 +180,8 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-book-of-moon-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-infinite-impermanence-target-param.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-monster-reborn-free-chain.test.ts"))
-    .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"));
+    .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-recurring-nightmare-grave-to-hand.test.ts"));
 }
 
 function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKind }> {
@@ -222,6 +225,10 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
     {
       file: "lua-real-script-raigeki-break-discard-cost.test.ts",
       kind: "singleDestroy",
+    },
+    {
+      file: "lua-real-script-recurring-nightmare-grave-to-hand.test.ts",
+      kind: "toHand",
     },
     {
       file: "lua-real-script-twin-twisters-discard-cost.test.ts",
@@ -325,6 +332,17 @@ function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: Free
       ],
     },
     {
+      file: "lua-real-script-recurring-nightmare-grave-to-hand.test.ts",
+      kind: "recurringNightmareChainInfoToHand",
+      required: [
+        "restores Recurring Nightmare's two Graveyard targets from CHAININFO_TARGET_CARDS and returns only related DARK 0 DEF monsters",
+        "const recurringNightmareCode = \"81191584\"",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "g:Filter(Card.IsRelateToEffect,nil,e)",
+        "{ category: 0x8, targetUids: [firstTarget!.uid, secondTarget!.uid], count: 2, player: 0, parameter: 0 }",
+      ],
+    },
+    {
       file: "lua-real-script-twin-twisters-discard-cost.test.ts",
       kind: "twinTwistersDiscardDestroy",
       required: [
@@ -375,6 +393,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       omegaJudgmentSelectUnselect: 0,
       phoenixWingDiscardToDeck: 0,
       raigekiBreakDiscardDestroy: 0,
+      recurringNightmareChainInfoToHand: 0,
       twinTwistersDiscardDestroy: 0,
     },
   );
