@@ -11,18 +11,23 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const pyroClockCode = "1082946";
+const hasPyroClockScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${pyroClockCode}.lua`));
+const typeMonster = 0x1;
+const typeTrap = 0x4;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pyro Clock SelectOption table.unpack", () => {
+describe.skipIf(!hasUpstreamScripts || !hasPyroClockScript)("Lua real script Pyro Clock SelectOption table.unpack", () => {
   it("restores table-unpacked SelectOption into the selected turn-count effect operation", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const pyroClockCode = "1082946";
     const turnEffectCarrierCode = "1082947";
     const responderCode = "1082948";
+    const script = workspace.readScript(`c${pyroClockCode}.lua`);
+    expect(script).toContain("local op=Duel.SelectOption(tp,table.unpack(seld))+1");
+    expect(script).toContain("local eff={tc:GetCardEffect(id)}");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === pyroClockCode),
-      { code: turnEffectCarrierCode, name: "Pyro Clock Turn Effect Carrier", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: responderCode, name: "Pyro Clock Chain Responder", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: pyroClockCode, name: "Pyro Clock of Destiny", kind: "trap", typeFlags: typeTrap },
+      { code: turnEffectCarrierCode, name: "Pyro Clock Turn Effect Carrier", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+      { code: responderCode, name: "Pyro Clock Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 1082, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });

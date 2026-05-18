@@ -12,25 +12,33 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const magikeyDuoCode = "51510279";
+const hasMagikeyDuoScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${magikeyDuoCode}.lua`));
 const setMagikey = 0x167;
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeNormal = 0x10;
+const typeRitual = 0x80;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Magikey Duo defense Ritual", () => {
+describe.skipIf(!hasUpstreamScripts || !hasMagikeyDuoScript)("Lua real script Magikey Duo defense Ritual", () => {
   it("restores a target-returning Ritual.Operation branch with sumpos face-up Defense", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const magikeyDuoCode = "51510279";
     const returnOptionDescription = Number(magikeyDuoCode) * 16 + 1;
     const ritualOptionDescription = Number(magikeyDuoCode) * 16 + 3;
     const ritualTargetCode = "51510270";
     const graveTargetCode = "51510271";
     const materialCode = "51510272";
     const responderCode = "51510273";
+    const script = workspace.readScript(`c${magikeyDuoCode}.lua`);
+    expect(script).toContain("sumpos=POS_FACEUP_DEFENSE");
+    expect(script).toContain("local res=Duel.SelectOption(tp,false,table.unpack(sel))");
+    expect(script).toContain("Ritual.Operation(rparams)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === magikeyDuoCode),
-      { code: ritualTargetCode, name: "Magikey Duo Ritual Target Fixture", kind: "monster", typeFlags: 0x81, level: 4, attack: 1900, defense: 1600, setcodes: [setMagikey] },
-      { code: graveTargetCode, name: "Magikey Duo Graveyard Target Fixture", kind: "monster", typeFlags: 0x11, level: 4, attack: 1500, defense: 1200 },
-      { code: materialCode, name: "Magikey Duo Ritual Material Fixture", kind: "monster", typeFlags: 0x1, level: 4, attack: 1200, defense: 1000 },
-      { code: responderCode, name: "Magikey Duo Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: magikeyDuoCode, name: "Magikey Duo", kind: "spell", typeFlags: typeSpell },
+      { code: ritualTargetCode, name: "Magikey Duo Ritual Target Fixture", kind: "monster", typeFlags: typeMonster | typeRitual, level: 4, attack: 1900, defense: 1600, setcodes: [setMagikey] },
+      { code: graveTargetCode, name: "Magikey Duo Graveyard Target Fixture", kind: "monster", typeFlags: typeMonster | typeNormal, level: 4, attack: 1500, defense: 1200 },
+      { code: materialCode, name: "Magikey Duo Ritual Material Fixture", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1200, defense: 1000 },
+      { code: responderCode, name: "Magikey Duo Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 515, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });

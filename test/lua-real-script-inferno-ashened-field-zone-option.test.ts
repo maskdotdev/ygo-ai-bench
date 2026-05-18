@@ -11,19 +11,27 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const infernoCode = "62767644";
+const hasInfernoScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${infernoCode}.lua`));
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeContinuous = 0x20000;
+const typeField = 0x80000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Inferno of the Ashened Field Zone option", () => {
+describe.skipIf(!hasUpstreamScripts || !hasInfernoScript)("Lua real script Inferno of the Ashened Field Zone option", () => {
   it("restores a leading-false SelectOption branch that places Obsidim in the opponent Field Zone", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const infernoCode = "62767644";
     const fieldZoneOptionDescription = Number(infernoCode) * 16 + 3;
     const opponentFieldZoneOptionDescription = Number(infernoCode) * 16 + 4;
     const obsidimCode = "3055018";
     const responderCode = "62767645";
+    const script = workspace.readScript(`c${infernoCode}.lua`);
+    expect(script).toContain("Duel.SelectOption(tp,false,aux.Stringid(id,3),aux.Stringid(id,4))");
+    expect(script).toContain("Duel.MoveToField(sc,tp,target_player,LOCATION_FZONE,POS_FACEUP,true)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === infernoCode || card.code === obsidimCode),
-      { code: responderCode, name: "Inferno of the Ashened Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: infernoCode, name: "Inferno of the Ashened", kind: "spell", typeFlags: typeSpell | typeContinuous },
+      { code: obsidimCode, name: "Obsidim, the Ashened City", kind: "spell", typeFlags: typeSpell | typeField },
+      { code: responderCode, name: "Inferno of the Ashened Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 627, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
