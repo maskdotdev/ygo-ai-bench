@@ -81,6 +81,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
 
     advanceToRestoredSangaActivation(restoredSetup, sanga.uid);
     expect(restoredSetup.session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
+    expect(restoredSetup.session.state.eventHistory.filter((event) => event.eventName === "beforeDamageCalculation")).toEqual([
+      {
+        eventName: "beforeDamageCalculation",
+        eventCode: 1134,
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          location: "deck",
+          sequence: 0,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          controller: 0,
+          location: "monsterZone",
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventUids: [attacker.uid, sanga.uid],
+        eventCardUid: attacker.uid,
+      },
+    ]);
     expect(restoredSetup.session.state.waitingFor).toBe(1);
     expect(currentAttack(restoredSetup.session.state.cards.find((card) => card.uid === attacker.uid), restoredSetup.session.state)).toBe(3000);
 

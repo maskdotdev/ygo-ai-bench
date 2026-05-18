@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 30;
-const battleTimingEventCodeFixtureCount = 30;
+const battleTimingFixtureCount = 31;
+const battleTimingEventCodeFixtureCount = 31;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 13,
-  beforeDamageCalculation: 6,
+  beforeDamageCalculation: 7,
   duringDamageCalculation: 4,
   endDamageStep: 4,
   startDamageStep: 3,
@@ -38,6 +38,7 @@ const battleTimingSemanticVariantCounts = {
   powerWallBeforeDamageDeckMillShield: 1,
   reflectBounderStartAndAfterDamageDestroy: 1,
   sasukeSamuraiStartDamageDestroy: 1,
+  sangaBeforeDamageFinalAttack: 1,
   shadowSpellDuringDamagePersistentStat: 1,
   shinobirdCrowStartDamageStatBoost: 1,
   smokeMosquitoBeforeDamageHalfDamageSummon: 1,
@@ -130,6 +131,7 @@ type BattleTimingSemanticVariant =
   | "powerWallBeforeDamageDeckMillShield"
   | "reflectBounderStartAndAfterDamageDestroy"
   | "sasukeSamuraiStartDamageDestroy"
+  | "sangaBeforeDamageFinalAttack"
   | "shadowSpellDuringDamagePersistentStat"
   | "shinobirdCrowStartDamageStatBoost"
   | "smokeMosquitoBeforeDamageHalfDamageSummon"
@@ -286,6 +288,19 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores its EVENT_BATTLE_START mandatory trigger and destroys the face-down Defense target", "battleWindow?.kind).toBe(\"startDamageStep\")", "eventName: \"destroyed\""],
     },
     {
+      file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
+      kind: "sangaBeforeDamageFinalAttack",
+      required: [
+        "restores optional pre-damage calculation final-ATK Quick Effect activation",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(0)",
+        "eventName: \"beforeDamageCalculation\"",
+        "eventCode: 1134",
+        "currentAttack(restoredFinalAttack.session.state.cards.find((card) => card.uid === attacker.uid), restoredFinalAttack.session.state)).toBe(0)",
+        "battleDamage).toEqual({ 0: sanga.data.attack, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
       kind: "shadowSpellDuringDamagePersistentStat",
       required: ["restores a damage-calculation persistent target into ATK loss before battle damage", "battleWindow?.kind).toBe(\"duringDamageCalculation\")", "shadow spell persistent true/true/1/1500"],
@@ -370,6 +385,7 @@ function countBattleTimingSemanticVariants(
       powerWallBeforeDamageDeckMillShield: 0,
       reflectBounderStartAndAfterDamageDestroy: 0,
       sasukeSamuraiStartDamageDestroy: 0,
+      sangaBeforeDamageFinalAttack: 0,
       shadowSpellDuringDamagePersistentStat: 0,
       shinobirdCrowStartDamageStatBoost: 0,
       smokeMosquitoBeforeDamageHalfDamageSummon: 0,
@@ -617,6 +633,21 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "Duel.DiscardDeck(tp,val,REASON_EFFECT)",
         "Duel.GetOperatedGroup()",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
+      kind: "beforeDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("beforeDamageCalculation")',
+        'eventName: "beforeDamageCalculation"',
+        "eventCode: 1134",
+        "eventCardUid: attacker.uid",
+        "eventUids: [attacker.uid, sanga.uid]",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(0)",
+        "currentAttack(restoredActivation.session.state.cards.find((card) => card.uid === attacker.uid), restoredActivation.session.state)).toBe(0)",
+        "battleDamage).toEqual({ 0: sanga.data.attack, 1: 0 })",
       ],
     },
     {
