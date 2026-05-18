@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 11;
+const summonTriggerOperationFixtureCount = 12;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 4,
   summonSearchSelfSummon: 1,
   summonStepReviveDisable: 1,
+  summonToGraveDeckSummon: 1,
   summonToDeck: 1,
   summonToHandBounce: 2,
 } satisfies Record<SummonTriggerOperationKind, number>;
@@ -23,6 +24,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   hanShiKyudoColumnReturnOnSummon: 1,
   ichikiSayoriHimeEffectSummonSearch: 1,
   izanamiDiscardGraveSpiritReturnOnSummon: 1,
+  moonlitPapillonToGraveDeckSummon: 1,
   shinobaronessShadePeacockSearchSelfSummon: 1,
   shinobirdCraneDrawOnSpiritSummon: 1,
   yakshaBackrowReturnOnSummon: 1,
@@ -34,6 +36,7 @@ type SummonTriggerOperationKind =
   | "summonSearch"
   | "summonSearchSelfSummon"
   | "summonStepReviveDisable"
+  | "summonToGraveDeckSummon"
   | "summonToDeck"
   | "summonToHandBounce";
 type SummonTriggerOperationSemanticVariant =
@@ -45,6 +48,7 @@ type SummonTriggerOperationSemanticVariant =
   | "hanShiKyudoColumnReturnOnSummon"
   | "ichikiSayoriHimeEffectSummonSearch"
   | "izanamiDiscardGraveSpiritReturnOnSummon"
+  | "moonlitPapillonToGraveDeckSummon"
   | "shinobaronessShadePeacockSearchSelfSummon"
   | "shinobirdCraneDrawOnSpiritSummon"
   | "yakshaBackrowReturnOnSummon";
@@ -119,6 +123,22 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "toEqual([2, 8])",
         "isCardDisabled",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-moonlit-papillon-to-grave-deck-summon.test.ts",
+      kind: "summonToGraveDeckSummon",
+      required: [
+        "restores its Damage Step EVENT_TO_GRAVE trigger and Special Summons a Butterspy from Deck",
+        "expectCleanRestore(restoredBattle)",
+        "expectCleanRestore(restoredTrigger)",
+        "expectRestoredLegalActions(restoredBattle, 1)",
+        "expectRestoredLegalActions(restoredTrigger, 0)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "category: 0x200",
+        "operationInfos",
+        "setButterspy",
       ],
     },
     {
@@ -391,6 +411,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-moonlit-papillon-to-grave-deck-summon.test.ts",
+      kind: "moonlitPapillonToGraveDeckSummon",
+      requiredSnippets: [
+        'const papillonCode = "16366944"',
+        "restores its Damage Step EVENT_TO_GRAVE trigger and Special Summons a Butterspy from Deck",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "setButterspy",
+      ],
+    },
+    {
       file: "test/lua-real-script-shinobaroness-shade-peacock-search-self-summon.test.ts",
       kind: "shinobaronessShadePeacockSearchSelfSummon",
       requiredSnippets: [
@@ -439,6 +470,7 @@ function countSummonTriggerOperationKinds(
       summonSearch: 0,
       summonSearchSelfSummon: 0,
       summonStepReviveDisable: 0,
+      summonToGraveDeckSummon: 0,
       summonToDeck: 0,
       summonToHandBounce: 0,
     },
@@ -462,6 +494,7 @@ function countSummonTriggerOperationSemanticVariants(
       hanShiKyudoColumnReturnOnSummon: 0,
       ichikiSayoriHimeEffectSummonSearch: 0,
       izanamiDiscardGraveSpiritReturnOnSummon: 0,
+      moonlitPapillonToGraveDeckSummon: 0,
       shinobaronessShadePeacockSearchSelfSummon: 0,
       shinobirdCraneDrawOnSpiritSummon: 0,
       yakshaBackrowReturnOnSummon: 0,
