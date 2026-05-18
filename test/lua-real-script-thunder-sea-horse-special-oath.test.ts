@@ -11,18 +11,26 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const seaHorseCode = "48049769";
+const hasSeaHorseScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${seaHorseCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
+const raceThunder = 0x2000;
+const attributeLight = 0x10;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Thunder Sea Horse special summon oath", () => {
+describe.skipIf(!hasUpstreamScripts || !hasSeaHorseScript)("Lua real script Thunder Sea Horse special summon oath", () => {
   it("restores its cost-created temporary EFFECT_CANNOT_SPECIAL_SUMMON and expires it at End Phase", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const seaHorseCode = "48049769";
     const searchCode = "900000282";
     const summonProbeCode = "900000283";
+    const script = workspace.readScript(`c${seaHorseCode}.lua`);
+    expect(script).toContain("e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)");
+    expect(script).toContain("Duel.GetActivityCount(tp,ACTIVITY_SPSUMMON)==0");
+    expect(script).toContain("return c:IsRace(RACE_THUNDER) and c:IsAttribute(ATTRIBUTE_LIGHT) and c:IsLevel(4) and c:IsAttackBelow(1600)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === seaHorseCode),
-      { code: searchCode, name: "Thunder Sea Horse Search Probe", kind: "monster", typeFlags: 0x1, race: 0x2000, attribute: 0x10, level: 4, attack: 1500, defense: 1000 },
-      { code: summonProbeCode, name: "Thunder Sea Horse Summon Probe", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: seaHorseCode, name: "Thunder Sea Horse", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceThunder, attribute: attributeLight, level: 4, attack: 1600, defense: 1200 },
+      { code: searchCode, name: "Thunder Sea Horse Search Probe", kind: "monster", typeFlags: typeMonster, race: raceThunder, attribute: attributeLight, level: 4, attack: 1500, defense: 1000 },
+      { code: summonProbeCode, name: "Thunder Sea Horse Summon Probe", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 480, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });

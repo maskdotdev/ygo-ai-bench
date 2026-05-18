@@ -10,18 +10,19 @@ import type { DuelCardData } from "#duel/types.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const doubleSummonCode = "43422537";
+const hasDoubleSummonScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${doubleSummonCode}.lua`));
+const typeMonster = 0x1;
+const typeSpell = 0x2;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Double Summon count limit", () => {
+describe.skipIf(!hasUpstreamScripts || !hasDoubleSummonScript)("Lua real script Double Summon count limit", () => {
   it("restores official Double Summon's activation before granting the second Normal Summon", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const doubleSummonCode = "43422537";
-    const doubleSummon = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === doubleSummonCode);
-    expect(doubleSummon).toBeDefined();
+    assertDoubleSummonScript(workspace);
     const cards: DuelCardData[] = [
-      doubleSummon!,
-      { code: "90000023", name: "Double Summon Restore First", kind: "monster", level: 4 },
-      { code: "90000024", name: "Double Summon Restore Second", kind: "monster", level: 4 },
+      doubleSummonCard(),
+      { code: "90000023", name: "Double Summon Restore First", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: "90000024", name: "Double Summon Restore Second", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 435, startingHandSize: 3, drawPerTurn: 0, cardReader: reader });
@@ -109,13 +110,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
 
   it("lets official Double Summon grant a second Normal Summon legal action", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const doubleSummonCode = "43422537";
-    const doubleSummon = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === doubleSummonCode);
-    expect(doubleSummon).toBeDefined();
+    assertDoubleSummonScript(workspace);
     const cards: DuelCardData[] = [
-      doubleSummon!,
-      { code: "90000021", name: "Double Summon First", kind: "monster", level: 4 },
-      { code: "90000022", name: "Double Summon Second", kind: "monster", level: 4 },
+      doubleSummonCard(),
+      { code: "90000021", name: "Double Summon First", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: "90000022", name: "Double Summon Second", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 434, startingHandSize: 3, drawPerTurn: 0, cardReader: reader });
@@ -224,3 +223,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
     expect(restored.session.state.activityCounts[0].normalSummon).toBe(2);
   });
 });
+
+function doubleSummonCard(): DuelCardData {
+  return { code: doubleSummonCode, name: "Double Summon", kind: "spell", typeFlags: typeSpell };
+}
+
+function assertDoubleSummonScript(workspace: ReturnType<typeof createUpstreamNodeWorkspace>): void {
+  const script = workspace.readScript(`c${doubleSummonCode}.lua`);
+  expect(script).toContain("e1:SetCode(EVENT_FREE_CHAIN)");
+  expect(script).toContain("e1:SetCode(EFFECT_SET_SUMMON_COUNT_LIMIT)");
+  expect(script).toContain("e1:SetValue(2)");
+}

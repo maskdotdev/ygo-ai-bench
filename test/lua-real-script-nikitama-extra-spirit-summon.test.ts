@@ -11,18 +11,22 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const nikitamaCode = "24701235";
+const hasNikitamaScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${nikitamaCode}.lua`));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
 const typeSpirit = 0x200;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nikitama extra Spirit summon", () => {
+describe.skipIf(!hasUpstreamScripts || !hasNikitamaScript)("Lua real script Nikitama extra Spirit summon", () => {
   it("restores its official additional Spirit Normal Summon count", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const nikitamaCode = "24701235";
     const spiritCodes = ["94701235", "94701236"];
+    const script = workspace.readScript(`c${nikitamaCode}.lua`);
+    expect(script).toContain("Spirit.AddProcedure(c,EVENT_SUMMON_SUCCESS,EVENT_FLIP)");
+    expect(script).toContain("e1:SetCode(EFFECT_EXTRA_SUMMON_COUNT)");
+    expect(script).toContain("e1:SetTarget(aux.TargetBoolFunction(Card.IsType,TYPE_SPIRIT))");
     const cards = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === nikitamaCode),
+      { code: nikitamaCode, name: "Nikitama", kind: "monster" as const, typeFlags: typeMonster | typeEffect | typeSpirit, level: 4, attack: 800, defense: 1800 },
       ...spiritCodes.map((code, index) => ({
         code,
         name: `Nikitama Spirit Target ${index + 1}`,

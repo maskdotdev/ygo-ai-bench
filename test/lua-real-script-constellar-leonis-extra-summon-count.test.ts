@@ -12,19 +12,24 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const leonisCode = "17129783";
+const hasLeonisScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${leonisCode}.lua`));
 const setConstellar = 0x53;
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Constellar Leonis extra summon count", () => {
+describe.skipIf(!hasUpstreamScripts || !hasLeonisScript)("Lua real script Constellar Leonis extra summon count", () => {
   it("restores Leonis's extra Constellar Normal Summon after the regular summon is spent", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const leonisCode = "17129783";
     const firstSummonCode = "17129784";
     const extraSummonCode = "17129785";
+    const script = workspace.readScript(`c${leonisCode}.lua`);
+    expect(script).toContain("e1:SetCode(EFFECT_EXTRA_SUMMON_COUNT)");
+    expect(script).toContain("e1:SetTarget(aux.TargetBoolFunction(Card.IsSetCard,SET_CONSTELLAR))");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === leonisCode),
-      { code: firstSummonCode, name: "Constellar First Summon", kind: "monster", typeFlags: 0x1, setcodes: [setConstellar], level: 4, attack: 1200, defense: 1000 },
-      { code: extraSummonCode, name: "Constellar Extra Summon", kind: "monster", typeFlags: 0x1, setcodes: [setConstellar], level: 4, attack: 1300, defense: 1000 },
+      { code: leonisCode, name: "Constellar Leonis", kind: "monster", typeFlags: typeMonster | typeEffect, setcodes: [setConstellar], level: 3, attack: 1000, defense: 1800 },
+      { code: firstSummonCode, name: "Constellar First Summon", kind: "monster", typeFlags: typeMonster, setcodes: [setConstellar], level: 4, attack: 1200, defense: 1000 },
+      { code: extraSummonCode, name: "Constellar Extra Summon", kind: "monster", typeFlags: typeMonster, setcodes: [setConstellar], level: 4, attack: 1300, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 171, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
