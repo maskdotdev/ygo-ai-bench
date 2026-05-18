@@ -5,11 +5,12 @@ import { realScriptForceMonsterZoneSummonLockFixtureSnippets } from "./lua-real-
 import { freeChainSpecialSummonFixtureCount, realScriptFreeChainSpecialSummonFixtureSnippets } from "./lua-real-free-chain-special-summon-restore-fixtures.js";
 import { ignitionCostSpecialSummonFixtureCount, realScriptIgnitionCostSpecialSummonFixtureSnippets } from "./lua-real-ignition-cost-special-summon-restore-fixtures.js";
 import { releaseCostSpecialSummonFixtureCount, realScriptReleaseCostSpecialSummonFixtureSnippets } from "./lua-real-release-cost-special-summon-restore-fixtures.js";
+import { realScriptSummonSuccessTargetSpecialSummonFixtureSnippets, summonSuccessTargetSpecialSummonFixtureCount } from "./lua-real-summon-success-target-special-summon-restore-fixtures.js";
 
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 210;
+export const realScriptSummonFixtureCount = 211;
 export const summonProcedureFixtureCount = 25;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -26,7 +27,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 21,
-  summon: 74,
+  summon: 75,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -101,6 +102,7 @@ export const summonSemanticVariantCounts = {
   freeChainSpecialSummons: freeChainSpecialSummonFixtureCount,
   ignitionCostSpecialSummons: ignitionCostSpecialSummonFixtureCount,
   discardTriggerSpecialSummons: discardTriggerSpecialSummonFixtureCount,
+  summonSuccessTargetSpecialSummons: summonSuccessTargetSpecialSummonFixtureCount,
   tributeMaterialValuePredicates: tributeMaterialFixtureCount,
   unsummonableSummonSetLocks: unsummonableSummonSetLockFixtureCount,
   forceMonsterZoneSummonLocks: 4,
@@ -141,6 +143,7 @@ export type SummonSemanticVariant =
   | "freeChainSpecialSummons"
   | "ignitionCostSpecialSummons"
   | "discardTriggerSpecialSummons"
+  | "summonSuccessTargetSpecialSummons"
   | "tributeMaterialValuePredicates"
   | "unsummonableSummonSetLocks"
   | "forceMonsterZoneSummonLocks";
@@ -904,6 +907,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     ...realScriptFreeChainSpecialSummonFixtureSnippets().map(({ file }) => ({ file, kind: "freeChainSpecialSummons" as const })),
     ...realScriptIgnitionCostSpecialSummonFixtureSnippets().map(({ file }) => ({ file, kind: "ignitionCostSpecialSummons" as const })),
     ...realScriptDiscardTriggerSpecialSummonFixtureSnippets().map(({ file }) => ({ file, kind: "discardTriggerSpecialSummons" as const })),
+    ...realScriptSummonSuccessTargetSpecialSummonFixtureSnippets().map(({ file }) => ({ file, kind: "summonSuccessTargetSpecialSummons" as const })),
     { file: "test/lua-real-script-kaiser-sea-horse-double-tribute-summon.test.ts", kind: "tributeMaterialValuePredicates" as const },
     { file: "test/lua-real-script-rare-metal-dragon-unsummonable.test.ts", kind: "unsummonableSummonSetLocks" as const },
     ...realScriptForceMonsterZoneSummonLockFixtureSnippets().map(({ file }) => ({ file, kind: "forceMonsterZoneSummonLocks" as const })),
@@ -933,6 +937,7 @@ export function countSummonSemanticVariants(
       freeChainSpecialSummons: 0,
       ignitionCostSpecialSummons: 0,
       discardTriggerSpecialSummons: 0,
+      summonSuccessTargetSpecialSummons: 0,
       tributeMaterialValuePredicates: 0,
       unsummonableSummonSetLocks: 0,
       forceMonsterZoneSummonLocks: 0,
@@ -963,6 +968,7 @@ export function groupSummonSemanticVariantFiles(
       freeChainSpecialSummons: [],
       ignitionCostSpecialSummons: [],
       discardTriggerSpecialSummons: [],
+      summonSuccessTargetSpecialSummons: [],
       tributeMaterialValuePredicates: [],
       unsummonableSummonSetLocks: [],
       forceMonsterZoneSummonLocks: [],
