@@ -4,7 +4,6 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 import {
   countFlipSummonSuccessTrapKinds,
-  countForceMonsterZoneSummonLockKinds,
   countLinkedZoneSpecialSummonKinds,
   countPendulumGrantKinds,
   countPendulumHelperKinds,
@@ -17,7 +16,6 @@ import {
   countTypedSummonProcedureKinds,
   flipSummonSuccessTrapFixtureCount,
   flipSummonSuccessTrapKindCounts,
-  forceMonsterZoneSummonLockKindCounts,
   groupSummonSemanticVariantFiles,
   linkedZoneSpecialSummonFixtureCount,
   linkedZoneSpecialSummonKindCounts,
@@ -28,7 +26,6 @@ import {
   pendulumHelperFixtureCount,
   pendulumHelperKindCounts,
   realScriptFlipSummonSuccessTrapFixtureSnippets,
-  realScriptForceMonsterZoneSummonLockFixtureSnippets,
   realScriptLinkedZoneSpecialSummonFixtureSnippets,
   realScriptMaterialLockFixtureSnippets,
   realScriptPendulumGrantFixtureFiles,
@@ -51,6 +48,17 @@ import {
   unionProcedureFixtureCount,
   unionProcedureKindCounts,
 } from "./lua-real-summon-restore-fixtures.js";
+import {
+  countForceMonsterZoneSummonLockKinds,
+  forceMonsterZoneSummonLockKindCounts,
+  realScriptForceMonsterZoneSummonLockFixtureSnippets,
+} from "./lua-real-force-mzone-summon-restore-fixtures.js";
+import {
+  countReleaseCostSpecialSummonKinds,
+  realScriptReleaseCostSpecialSummonFixtureSnippets,
+  releaseCostSpecialSummonFixtureCount,
+  releaseCostSpecialSummonKindCounts,
+} from "./lua-real-release-cost-special-summon-restore-fixtures.js";
 
 const root = process.cwd();
 
@@ -302,6 +310,34 @@ describe("Lua real summon restore coverage", () => {
 
   it("keeps self-tribute Special Summon fixture kinds explicit", () => {
     expect(countSelfTributeZoneSpecialSummonKinds(realScriptSelfTributeZoneSpecialSummonFixtureSnippets())).toEqual(selfTributeZoneSpecialSummonKindCounts);
+  });
+
+  it("requires representative release-cost Special Summon fixtures to pin release group costs", () => {
+    const files = realScriptReleaseCostSpecialSummonFixtureSnippets();
+    expect(files).toHaveLength(releaseCostSpecialSummonFixtureCount);
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps release-cost Special Summon fixture kinds explicit", () => {
+    expect(countReleaseCostSpecialSummonKinds(realScriptReleaseCostSpecialSummonFixtureSnippets())).toEqual(releaseCostSpecialSummonKindCounts);
   });
 
   it("requires representative force-Monster-Zone summon locks to pin restored zone counts", () => {
