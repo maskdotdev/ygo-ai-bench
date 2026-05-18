@@ -9,6 +9,7 @@ export function knownLuaEffectCostDescriptor(L: unknown, index: number, hostStat
   if (isGlobalFunction(L, index, "Cost", "SelfTribute") || isGlobalFunction(L, index, "Cost", "SelfRelease")) return "cost:self-tribute";
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
+  if (releaseGroupCostCanFreeMonsterZone(snippet)) return "cost:release-group-can-free-mzone";
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
   if (!summonTypeParam) return undefined;
   const comparison = new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*(==|~=)\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`);
@@ -16,6 +17,15 @@ export function knownLuaEffectCostDescriptor(L: unknown, index: number, hostStat
   const value = match?.[2] ? luaSummonTypeTokenValue(L, index, match[2]) : undefined;
   if (value === undefined) return undefined;
   return match?.[1] === "==" ? `cost:special-summon-type-is:${value}` : `cost:special-summon-type-not:${value}`;
+}
+
+function releaseGroupCostCanFreeMonsterZone(snippet: string): boolean {
+  return (
+    /\bDuel\s*\.\s*GetLocationCount\s*\([^)]*\bLOCATION_MZONE\b/.test(snippet) &&
+    /\bDuel\s*\.\s*CheckReleaseGroupCost\s*\(/.test(snippet) &&
+    /\bDuel\s*\.\s*SelectReleaseGroupCost\s*\(/.test(snippet) &&
+    /\bDuel\s*\.\s*Release\s*\([^)]*\bREASON_COST\b/.test(snippet)
+  );
 }
 
 export function specialSummonTypeIsCostDescriptor(descriptor: string | undefined): number | undefined {

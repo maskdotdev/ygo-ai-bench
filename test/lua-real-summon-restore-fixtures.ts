@@ -10,7 +10,7 @@ import { realScriptSummonSuccessTargetSpecialSummonFixtureSnippets, summonSucces
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
-export const realScriptSummonFixtureCount = 219;
+export const realScriptSummonFixtureCount = 220;
 export const summonProcedureFixtureCount = 26;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -27,7 +27,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 22,
-  summon: 82,
+  summon: 83,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;

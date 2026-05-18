@@ -4,7 +4,7 @@ import { removeAllDuelCardCounters } from "#duel/counters.js";
 import { nextDuelCardFieldId } from "#duel/card-field-id.js";
 import { currentCardCodes, currentCardSetcodes } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttack, currentAttribute, currentDefense, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
-import { availableFieldZoneCount, disabledFieldZoneMask, firstOpenFieldZoneSequence, isFieldZoneDisabled } from "#duel/disabled-field-zones.js";
+import { availableFieldZoneCount, firstOpenFieldZoneSequence, isFieldZoneDisabled } from "#duel/disabled-field-zones.js";
 import type { DuelCardInstance, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, controller?: PlayerId, reason = 0, reasonPlayer?: PlayerId): DuelCardInstance {
@@ -100,6 +100,7 @@ export function requireMoveAllowed(state: DuelState, uid: string, to: DuelLocati
 }
 
 export function resequence(state: DuelState, player: PlayerId, location: DuelLocation): void {
+  if (isFieldLocation(location)) return;
   for (const [sequence, card] of getCards(state, player, location).entries()) card.sequence = sequence;
 }
 
@@ -108,7 +109,7 @@ export function pushDuelLog(state: DuelState, action: string, player: PlayerId |
 }
 
 function nextSequence(state: DuelState, player: PlayerId, location: DuelLocation, movingUid?: string): number {
-  if ((location === "monsterZone" || location === "spellTrapZone") && disabledFieldZoneMask(state, player, location) !== 0) return firstOpenFieldZoneSequence(state, player, location, movingUid === undefined ? [] : [movingUid]) ?? getCards(state, player, location).length;
+  if (isFieldLocation(location)) return firstOpenFieldZoneSequence(state, player, location, movingUid === undefined ? [] : [movingUid]) ?? getCards(state, player, location).length;
   return getCards(state, player, location).length;
 }
 

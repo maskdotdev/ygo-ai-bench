@@ -7,15 +7,19 @@ import { createLuaScriptHost } from "#lua/host.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 describe("Lua special summon procedure restore", () => {
-  it("rolls back restored Lua procedure costs when release count falls short", () => {
+  it("rolls back restored Lua procedure costs when replacement costs leave no monster zone", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Rollback Procedure Source", kind: "monster" },
       { code: "200", name: "Rollback Release Material", kind: "monster" },
       { code: "300", name: "Rollback Replacement", kind: "monster" },
+      { code: "401", name: "Rollback Zone Blocker 1", kind: "monster" },
+      { code: "402", name: "Rollback Zone Blocker 2", kind: "monster" },
+      { code: "403", name: "Rollback Zone Blocker 3", kind: "monster" },
+      { code: "404", name: "Rollback Zone Blocker 4", kind: "monster" },
     ];
-    const session = createDuel({ seed: 82, startingHandSize: 3, cardReader: createCardReader(cards) });
+    const session = createDuel({ seed: 82, startingHandSize: 7, cardReader: createCardReader(cards) });
     loadDecks(session, {
-      0: { main: ["100", "200", "300"] },
+      0: { main: ["100", "200", "300", "401", "402", "403", "404"] },
       1: { main: [] },
     });
     startDuel(session);
@@ -23,10 +27,13 @@ describe("Lua special summon procedure restore", () => {
     const source = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
     const material = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "200");
     const replacement = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const blockers = ["401", "402", "403", "404"].map((code) => session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === code));
     expect(source).toBeTruthy();
     expect(material).toBeTruthy();
     expect(replacement).toBeTruthy();
-    moveDuelCard(session.state, material!.uid, "monsterZone", 0);
+    expect(blockers.every(Boolean)).toBe(true);
+    moveDuelCard(session.state, material!.uid, "monsterZone", 0).sequence = 0;
+    blockers.forEach((blocker, index) => { moveDuelCard(session.state, blocker!.uid, "monsterZone", 0).sequence = index + 1; });
 
     const sourceScript = {
       readScript(name: string) {

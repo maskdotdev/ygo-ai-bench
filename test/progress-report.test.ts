@@ -1,8 +1,12 @@
 import { execFileSync } from "node:child_process";
+import fs from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+const upstreamConstantFile = path.resolve(".upstream/ignis/script/constant.lua");
+
 describe("parity progress report", () => {
-  it("reports scanner-backed parity counts without treating per-card fixture counts as full parity", () => {
+  it.skipIf(!fs.existsSync(upstreamConstantFile))("reports scanner-backed parity counts without treating per-card fixture counts as full parity", () => {
     const output = execFileSync("node", ["tools/report-parity-progress.mjs", "--json"], { encoding: "utf8" });
     const report = JSON.parse(output) as {
       luaParity: {
@@ -46,16 +50,16 @@ describe("parity progress report", () => {
     expect(report.luaParity.missingConstants).toBe(0);
 
     expect(report.cleanRestore.restoredFixtures).toBe(report.cleanRestore.totalFixtures);
-    expect(report.cleanRestore.totalFixtures).toBe(734);
+    expect(report.cleanRestore.totalFixtures).toBe(735);
     expect(report.cleanRestore.restorePercent).toBe(100);
     expect(report.cleanRestore.legalActionFixtures).toBe(report.cleanRestore.legalActionTotalFixtures);
-    expect(report.cleanRestore.legalActionTotalFixtures).toBe(734);
+    expect(report.cleanRestore.legalActionTotalFixtures).toBe(735);
     expect(report.provenance.files).toBe(945);
     expect(report.provenance.expectationBlocks).toBe(4939);
     expect(report.provenance.edoproBlocks).toBe(report.provenance.expectationBlocks);
     expect(report.provenance.backlogBlocks).toBe(0);
 
-    expect(report.directScriptFixtureEstimate.realScriptFixtures).toBe(734);
+    expect(report.directScriptFixtureEstimate.realScriptFixtures).toBe(735);
     expect(report.directScriptFixtureEstimate.officialScripts).toBe(13299);
     expect(report.directScriptFixtureEstimate.allScripts).toBe(22326);
     expect(report.directScriptFixtureEstimate.remainingOfficialOnePerScript).toBe(

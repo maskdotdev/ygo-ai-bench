@@ -54,7 +54,8 @@ function pushCanBeSpecialSummoned<EffectRecord extends LuaCardApiEffectRecord>(L
 function activeSelfTributeCostCanFreeMonsterZone<EffectRecord extends LuaCardApiEffectRecord>(session: DuelSession, hostState: LuaCardApiState<EffectRecord>, player: PlayerId): boolean {
   if (!hostState.activeContext?.checkOnly || hostState.activeLuaEffectId === undefined) return false;
   const effect = hostState.effects.get(hostState.activeLuaEffectId);
-  if (effect?.costDescriptor !== "cost:self-tribute" || !effect.sourceUid) return false;
+  if (effect?.costDescriptor !== "cost:self-tribute" && effect?.costDescriptor !== "cost:release-group-can-free-mzone") return false;
+  if (!effect.sourceUid) return false;
   const source = session.state.cards.find((card) => card.uid === effect.sourceUid);
   return Boolean(source && source.controller === player && source.location === "monsterZone" && source.sequence < 5);
 }

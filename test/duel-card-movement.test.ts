@@ -57,6 +57,30 @@ describe("duel card movement", () => {
     expect(hasZoneSpace(session.state, 0, "monsterZone")).toBe(false);
   });
 
+  it("preserves field zone slots when a card leaves the field", () => {
+    const session = createDuel({ seed: 261, startingHandSize: 3, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100", "300", "500"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const first = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "100");
+    const second = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "300");
+    const third = session.state.cards.find((card) => card.controller === 0 && card.location === "hand" && card.code === "500");
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(third).toBeDefined();
+    moveDuelCard(session.state, first!.uid, "monsterZone", 0).sequence = 0;
+    moveDuelCard(session.state, second!.uid, "monsterZone", 0).sequence = 1;
+    moveDuelCard(session.state, third!.uid, "monsterZone", 0).sequence = 2;
+
+    sendDuelCardToGraveyard(session.state, first!.uid, 0, duelReason.effect);
+
+    expect(session.state.cards.find((card) => card.uid === second!.uid)).toMatchObject({ location: "monsterZone", sequence: 1 });
+    expect(session.state.cards.find((card) => card.uid === third!.uid)).toMatchObject({ location: "monsterZone", sequence: 2 });
+  });
+
   it("collects trigger effects after a card is sent to the graveyard", () => {
     const session = createDuel({ seed: 1, startingHandSize: 3, cardReader: createCardReader(cards) });
     loadDecks(session, {
