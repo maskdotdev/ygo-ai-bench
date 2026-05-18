@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const delayedRelationFixtureCount = 4;
+const delayedRelationFixtureCount = 5;
 const delayedRelationKindCounts = {
+  banishedReviveDestroyRelation: 1,
   delayedBanishRelation: 1,
   delayedReturnRelation: 1,
   delayedSelfDestroy: 1,
@@ -14,14 +15,16 @@ const delayedRelationKindCounts = {
 const delayedRelationSemanticVariantCounts = {
   callOfTheHauntedMutualDestroyRelation: 1,
   kinkaByoReviveLeavesBanishRelation: 1,
+  releaseFromStoneBanishedReviveDestroyRelation: 1,
   sunlitSentinelPreviousPositionStandbyCheck: 1,
   yellowAlertBattlePhaseReturnRelation: 1,
 } satisfies Record<DelayedRelationSemanticVariant, number>;
 
-type DelayedRelationKind = "delayedBanishRelation" | "delayedReturnRelation" | "delayedSelfDestroy" | "reviveDestroyRelation";
+type DelayedRelationKind = "banishedReviveDestroyRelation" | "delayedBanishRelation" | "delayedReturnRelation" | "delayedSelfDestroy" | "reviveDestroyRelation";
 type DelayedRelationSemanticVariant =
   | "callOfTheHauntedMutualDestroyRelation"
   | "kinkaByoReviveLeavesBanishRelation"
+  | "releaseFromStoneBanishedReviveDestroyRelation"
   | "sunlitSentinelPreviousPositionStandbyCheck"
   | "yellowAlertBattlePhaseReturnRelation";
 
@@ -104,6 +107,19 @@ function delayedRelationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-release-from-stone-banished-revive-destroy.test.ts",
+      kind: "banishedReviveDestroyRelation",
+      required: [
+        "restores its banished Rock target, SpecialSummonStep relation, and mutual destruction cleanup",
+        "Duel.SpecialSummonStep(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "c:SetCardTarget(tc)",
+        "release probe 0/26956671/1",
+        "destroyDuelCard(restoredRelation.session.state, release.uid",
+        "destroyDuelCard(restoredTargetDestroy.session.state, rockTarget.uid",
+        "previousLocation: \"spellTrapZone\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-sunlit-sentinel-set-destroy-standby.test.ts",
       kind: "delayedSelfDestroy",
       required: [
@@ -142,6 +158,7 @@ function countDelayedRelationKinds(
       return counts;
     },
     {
+      banishedReviveDestroyRelation: 0,
       delayedBanishRelation: 0,
       delayedReturnRelation: 0,
       delayedSelfDestroy: 0,
@@ -174,6 +191,16 @@ function delayedRelationSemanticVariants(): Array<{
         "restores its revive relation and banishes the revived monster when Kinka-byo leaves",
         "kinka relation true/true/true",
         'eventName: "banished"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-release-from-stone-banished-revive-destroy.test.ts",
+      kind: "releaseFromStoneBanishedReviveDestroyRelation",
+      required: [
+        'const releaseCode = "26956670"',
+        "restores its banished Rock target, SpecialSummonStep relation, and mutual destruction cleanup",
+        "Duel.SpecialSummonStep(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "release probe 0/26956671/1",
       ],
     },
     {
@@ -214,6 +241,7 @@ function countDelayedRelationSemanticVariants(
     {
       callOfTheHauntedMutualDestroyRelation: 0,
       kinkaByoReviveLeavesBanishRelation: 0,
+      releaseFromStoneBanishedReviveDestroyRelation: 0,
       sunlitSentinelPreviousPositionStandbyCheck: 0,
       yellowAlertBattlePhaseReturnRelation: 0,
     },
