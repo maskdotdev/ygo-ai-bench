@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 64;
+export const operationFixtureCount = 65;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -16,6 +16,7 @@ export const operationKindCounts = {
   chainLinkedZoneDisable: 1,
   deckToGrave: 1,
   deckSplit: 1,
+  discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
   directRecover: 1,
@@ -69,6 +70,7 @@ export type OperationKind =
   | "chainLinkedZoneDisable"
   | "deckToGrave"
   | "deckSplit"
+  | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
   | "directDamage"
   | "directRecover"
@@ -863,6 +865,20 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-special-hurricane-discard-group-destroy.test.ts",
+      kind: "discardCostSpecialSummonGroupDestroy",
+      required: [
+        "restores Special Hurricane's discard cost and non-targeting Special Summoned group destruction",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)",
+        "return c:IsSpecialSummoned()",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "eventName: \"discarded\"",
+        "eventName: \"destroyed\"",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-transmigration-prophecy-grave-shuffle.test.ts",
       kind: "crossPlayerGraveToDeckTrap",
       required: [
@@ -923,6 +939,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainLinkedZoneDisable: 0,
       deckToGrave: 0,
       deckSplit: 0,
+      discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
       directRecover: 0,
