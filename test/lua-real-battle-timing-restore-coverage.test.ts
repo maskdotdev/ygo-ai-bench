@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 29;
-const battleTimingEventCodeFixtureCount = 29;
+const battleTimingFixtureCount = 30;
+const battleTimingEventCodeFixtureCount = 30;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 13,
   beforeDamageCalculation: 6,
-  duringDamageCalculation: 3,
+  duringDamageCalculation: 4,
   endDamageStep: 4,
   startDamageStep: 3,
 };
@@ -42,6 +42,7 @@ const battleTimingSemanticVariantCounts = {
   shinobirdCrowStartDamageStatBoost: 1,
   smokeMosquitoBeforeDamageHalfDamageSummon: 1,
   skyscraperDuringDamageFieldStatBoost: 1,
+  steamroidDuringDamageBattleSwingStat: 1,
   topologicBomberAfterDamageBurn: 1,
   wallOfIllusionAfterDamageBounce: 1,
 } satisfies Record<BattleTimingSemanticVariant, number>;
@@ -133,6 +134,7 @@ type BattleTimingSemanticVariant =
   | "shinobirdCrowStartDamageStatBoost"
   | "smokeMosquitoBeforeDamageHalfDamageSummon"
   | "skyscraperDuringDamageFieldStatBoost"
+  | "steamroidDuringDamageBattleSwingStat"
   | "topologicBomberAfterDamageBurn"
   | "wallOfIllusionAfterDamageBounce";
 
@@ -308,6 +310,18 @@ function battleTimingSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-steamroid-battle-swing-stat.test.ts",
+      kind: "steamroidDuringDamageBattleSwingStat",
+      required: [
+        "restores Damage Step attacker boost and defender loss callbacks into battle damage",
+        "stat:battle-attacker-target-swing:500:-500",
+        "eventName: \"damageCalculating\"",
+        "eventCode: 1135",
+        "eventUids: [attacking.steamroid.uid, attacking.opposing.uid]",
+        "eventUids: [defending.opposing.uid, defending.steamroid.uid]",
+      ],
+    },
+    {
       file: "test/lua-real-script-topologic-bomber-battled-damage.test.ts",
       kind: "topologicBomberAfterDamageBurn",
       required: ["restores its EVENT_BATTLED trigger and deals effect damage from the battle target's base ATK", "eventName: \"damageDealt\"", "eventValue: 1200"],
@@ -360,6 +374,7 @@ function countBattleTimingSemanticVariants(
       shinobirdCrowStartDamageStatBoost: 0,
       smokeMosquitoBeforeDamageHalfDamageSummon: 0,
       skyscraperDuringDamageFieldStatBoost: 0,
+      steamroidDuringDamageBattleSwingStat: 0,
       topologicBomberAfterDamageBurn: 0,
       wallOfIllusionAfterDamageBounce: 0,
     },
@@ -657,6 +672,21 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventCode: 1135",
         "currentAttack(restoredHero, restoredDamageCalculation.session.state)).toBe(2600)",
         "battleDamage).toEqual({ 0: 0, 1: 700 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-steamroid-battle-swing-stat.test.ts",
+      kind: "duringDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        'eventName: "damageCalculating"',
+        "eventCode: 1135",
+        "eventCardUid: attacking.steamroid.uid",
+        "eventCardUid: defending.opposing.uid",
+        "currentAttack(restoredAttackingSteamroid, restoredAttacking.session.state)).toBe((attacking.steamroid.data.attack ?? 0) + 500)",
+        "currentAttack(restoredDefendingSteamroid, restoredDefending.session.state)).toBe((defending.steamroid.data.attack ?? 0) - 500)",
+        "battleDamage).toEqual({ 0: 0, 1: 300 })",
+        "battleDamage).toEqual({ 0: 500, 1: 0 })",
       ],
     },
     {

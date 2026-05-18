@@ -65,6 +65,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script St
     const restoredAttacking = restoreDuelWithLuaScripts(serializeDuel(attacking.session), workspace, reader);
     expectCleanRestore(restoredAttacking);
     expect(restoredAttacking.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(restoredAttacking.session.state.eventHistory.filter((event) => event.eventName === "damageCalculating")).toEqual([
+      {
+        eventName: "damageCalculating",
+        eventCode: 1135,
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          location: "deck",
+          sequence: 0,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          controller: 0,
+          location: "monsterZone",
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventUids: [attacking.steamroid.uid, attacking.opposing.uid],
+        eventCardUid: attacking.steamroid.uid,
+      },
+    ]);
     const restoredAttackingSteamroid = restoredAttacking.session.state.cards.find((card) => card.uid === attacking.steamroid.uid)!;
     expect(currentAttack(restoredAttackingSteamroid, restoredAttacking.session.state)).toBe((attacking.steamroid.data.attack ?? 0) + 500);
     passRestoredBattleResponses(restoredAttacking);
@@ -84,6 +108,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script St
     const restoredDefending = restoreDuelWithLuaScripts(serializeDuel(defending.session), workspace, reader);
     expectCleanRestore(restoredDefending);
     expect(restoredDefending.session.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(restoredDefending.session.state.eventHistory.filter((event) => event.eventName === "damageCalculating")).toEqual([
+      {
+        eventName: "damageCalculating",
+        eventCode: 1135,
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          location: "deck",
+          sequence: 0,
+          position: "faceDown",
+          faceUp: false,
+        },
+        eventCurrentState: {
+          controller: 1,
+          location: "monsterZone",
+          sequence: 0,
+          position: "faceUpAttack",
+          faceUp: true,
+        },
+        eventUids: [defending.opposing.uid, defending.steamroid.uid],
+        eventCardUid: defending.opposing.uid,
+      },
+    ]);
     const restoredDefendingSteamroid = restoredDefending.session.state.cards.find((card) => card.uid === defending.steamroid.uid)!;
     expect(currentAttack(restoredDefendingSteamroid, restoredDefending.session.state)).toBe((defending.steamroid.data.attack ?? 0) - 500);
     passRestoredBattleResponses(restoredDefending);
