@@ -11,20 +11,23 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const bottomlessCode = "29401950";
+const hasBottomlessScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${bottomlessCode}.lua`));
+const typeMonster = 0x1;
+const typeTrap = 0x4;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bottomless Trap Hole summon-success window", () => {
+describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bottomless Trap Hole summon-success window", () => {
   it("restores Bottomless Trap Hole's summon-success event target and banishes the destroyed monster", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const bottomlessCode = "29401950";
     const starterCode = "870";
     const responderCode = "871";
     const summonedCode = "872";
+    assertBottomlessScript(workspace);
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bottomlessCode),
-      { code: starterCode, name: "Bottomless Chain Starter", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: responderCode, name: "Bottomless Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: summonedCode, name: "Bottomless Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1200 },
+      bottomlessTrapCard(),
+      { code: starterCode, name: "Bottomless Chain Starter", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: responderCode, name: "Bottomless Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: summonedCode, name: "Bottomless Summoned Monster", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1200 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 462, startingHandSize: 0, cardReader: reader });
@@ -236,13 +239,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
 
   it("restores Bottomless Trap Hole's Flip Summon success chain response and banishes the destroyed monster", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const bottomlessCode = "29401950";
     const starterCode = "29401951";
     const flipTargetCode = "29401952";
+    assertBottomlessScript(workspace);
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bottomlessCode),
-      { code: starterCode, name: "Bottomless Flip Chain Starter", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: flipTargetCode, name: "Bottomless Flip Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1200 },
+      bottomlessTrapCard(),
+      { code: starterCode, name: "Bottomless Flip Chain Starter", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: flipTargetCode, name: "Bottomless Flip Summoned Monster", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1200 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 464, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
@@ -367,19 +370,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
 
   it("restores Bottomless Trap Hole's special-summon group target and banishes every eligible monster", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const bottomlessCode = "29401950";
     const specialStarterCode = "873";
     const triggerStarterCode = "874";
     const responderCode = "875";
     const firstSummonedCode = "876";
     const secondSummonedCode = "877";
+    assertBottomlessScript(workspace);
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === bottomlessCode),
-      { code: specialStarterCode, name: "Bottomless Special Summon Starter", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: triggerStarterCode, name: "Bottomless Special Trigger Starter", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: responderCode, name: "Bottomless Special Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: firstSummonedCode, name: "Bottomless First Special Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1200 },
-      { code: secondSummonedCode, name: "Bottomless Second Special Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1700, defense: 1200 },
+      bottomlessTrapCard(),
+      { code: specialStarterCode, name: "Bottomless Special Summon Starter", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: triggerStarterCode, name: "Bottomless Special Trigger Starter", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: responderCode, name: "Bottomless Special Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: firstSummonedCode, name: "Bottomless First Special Summoned Monster", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1200 },
+      { code: secondSummonedCode, name: "Bottomless Second Special Summoned Monster", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1700, defense: 1200 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 463, startingHandSize: 0, cardReader: reader });
@@ -562,6 +565,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bo
     expect(restored.host.messages).not.toContain("bottomless chain responder resolved");
   });
 });
+
+function bottomlessTrapCard(): DuelCardData {
+  return { code: bottomlessCode, name: "Bottomless Trap Hole", kind: "trap", typeFlags: typeTrap };
+}
+
+function assertBottomlessScript(workspace: ReturnType<typeof createUpstreamNodeWorkspace>): void {
+  const script = workspace.readScript(`c${bottomlessCode}.lua`);
+  expect(script).toContain("e1:SetCode(EVENT_SUMMON_SUCCESS)");
+  expect(script).toContain("e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)");
+  expect(script).toContain("e3:SetCode(EVENT_SPSUMMON_SUCCESS)");
+  expect(script).toContain("Duel.Destroy(tc,REASON_EFFECT,LOCATION_REMOVED)");
+}
 
 function chainStarterScript(): string {
   return `

@@ -11,26 +11,33 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const torrentialCode = "53582587";
+const hasTorrentialScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${torrentialCode}.lua`));
+const typeMonster = 0x1;
+const typeTrap = 0x4;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Torrential Tribute summon-success window", () => {
+describe.skipIf(!hasUpstreamScripts || !hasTorrentialScript)("Lua real script Torrential Tribute summon-success window", () => {
   it("restores Torrential Tribute's summon-success operation info and destroys every monster", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const torrentialCode = "53582587";
     const starterCode = "882";
     const responderCode = "883";
     const summonedCode = "884";
     const turnAllyCode = "885";
     const opponentFirstCode = "886";
     const opponentSecondCode = "887";
+    const script = workspace.readScript(`c${torrentialCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_SUMMON_SUCCESS)");
+    expect(script).toContain("e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)");
+    expect(script).toContain("e3:SetCode(EVENT_SPSUMMON_SUCCESS)");
+    expect(script).toContain("Duel.Destroy(g,REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === torrentialCode),
-      { code: starterCode, name: "Torrential Chain Starter", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: responderCode, name: "Torrential Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: summonedCode, name: "Torrential Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1200 },
-      { code: turnAllyCode, name: "Torrential Turn Ally", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1000 },
-      { code: opponentFirstCode, name: "Torrential Opponent First", kind: "monster", typeFlags: 0x1, level: 4, attack: 1700, defense: 1000 },
-      { code: opponentSecondCode, name: "Torrential Opponent Second", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
+      { code: torrentialCode, name: "Torrential Tribute", kind: "trap", typeFlags: typeTrap },
+      { code: starterCode, name: "Torrential Chain Starter", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: responderCode, name: "Torrential Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: summonedCode, name: "Torrential Summoned Monster", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1200 },
+      { code: turnAllyCode, name: "Torrential Turn Ally", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1600, defense: 1000 },
+      { code: opponentFirstCode, name: "Torrential Opponent First", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1700, defense: 1000 },
+      { code: opponentSecondCode, name: "Torrential Opponent Second", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 464, startingHandSize: 0, cardReader: reader });

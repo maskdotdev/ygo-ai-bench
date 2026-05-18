@@ -11,20 +11,27 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const trapHoleCode = "4206964";
+const hasTrapHoleScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${trapHoleCode}.lua`));
+const typeMonster = 0x1;
+const typeTrap = 0x4;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Trap Hole summon-success window", () => {
+describe.skipIf(!hasUpstreamScripts || !hasTrapHoleScript)("Lua real script Trap Hole summon-success window", () => {
   it("restores Trap Hole's summon-success event target and destroys the summoned monster", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const trapHoleCode = "4206964";
     const starterCode = "860";
     const responderCode = "861";
     const summonedCode = "100";
+    const script = workspace.readScript(`c${trapHoleCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_SUMMON_SUCCESS)");
+    expect(script).toContain("e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)");
+    expect(script).toContain("tc:GetAttack()>=1000");
+    expect(script).toContain("Duel.Destroy(tc,REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === trapHoleCode),
-      { code: starterCode, name: "Trap Hole Chain Starter", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: responderCode, name: "Trap Hole Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
-      { code: summonedCode, name: "Trap Hole Summoned Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1200 },
+      { code: trapHoleCode, name: "Trap Hole", kind: "trap", typeFlags: typeTrap },
+      { code: starterCode, name: "Trap Hole Chain Starter", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: responderCode, name: "Trap Hole Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4 },
+      { code: summonedCode, name: "Trap Hole Summoned Monster", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1200 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 461, startingHandSize: 0, cardReader: reader });
