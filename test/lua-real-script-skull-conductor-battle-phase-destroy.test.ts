@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import type { DuelCardData } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -11,14 +12,23 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const skullConductorCode = "62782218";
+const hasSkullConductorScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${skullConductorCode}.lua`));
 const effectDestroyReason = duelReason.effect | duelReason.destroy;
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Skull Conductor Battle Phase destroy", () => {
+describe.skipIf(!hasUpstreamScripts || !hasSkullConductorScript)("Lua real script Skull Conductor Battle Phase destroy", () => {
   it("restores its mandatory Battle Phase trigger and destroys itself", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const skullConductorCode = "62782218";
-    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === skullConductorCode);
+    const script = workspace.readScript(`c${skullConductorCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_PHASE|PHASE_BATTLE)");
+    expect(script).toContain("e1:SetRange(LOCATION_MZONE)");
+    expect(script).toContain("c:IsRelateToEffect(e) and c:IsFaceup()");
+    expect(script).toContain("Duel.Destroy(c,REASON_EFFECT)");
+    const cards: DuelCardData[] = [
+      { code: skullConductorCode, name: "Skull Conductor", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 2000, defense: 0 },
+    ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 627, startingHandSize: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [skullConductorCode] }, 1: { main: [] } });

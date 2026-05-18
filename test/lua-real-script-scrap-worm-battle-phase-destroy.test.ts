@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import type { DuelAction, DuelSession } from "#duel/types.js";
+import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -12,14 +12,23 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const scrapWormCode = "32761286";
+const hasScrapWormScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${scrapWormCode}.lua`));
 const effectDestroyReason = duelReason.effect | duelReason.destroy;
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Scrap Worm Battle Phase destroy", () => {
+describe.skipIf(!hasUpstreamScripts || !hasScrapWormScript)("Lua real script Scrap Worm Battle Phase destroy", () => {
   it("restores its attack flag and mandatory Battle Phase trigger destruction", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const scrapWormCode = "32761286";
-    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === scrapWormCode);
+    const script = workspace.readScript(`c${scrapWormCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_ATTACK_ANNOUNCE)");
+    expect(script).toContain("e2:SetCode(EVENT_PHASE|PHASE_BATTLE)");
+    expect(script).toContain("e:GetHandler():GetFlagEffect(id)>0");
+    expect(script).toContain("Duel.Destroy(e:GetHandler(),REASON_EFFECT)");
+    const cards: DuelCardData[] = [
+      { code: scrapWormCode, name: "Scrap Worm", kind: "monster", typeFlags: typeMonster | typeEffect, level: 2, attack: 500, defense: 100 },
+    ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 327, startingHandSize: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [scrapWormCode] }, 1: { main: [] } });

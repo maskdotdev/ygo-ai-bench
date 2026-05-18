@@ -11,18 +11,25 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const yellowAlertCode = "59277750";
+const hasYellowAlertScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${yellowAlertCode}.lua`));
+const typeMonster = 0x1;
+const typeTrap = 0x4;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Intruder Alarm - Yellow Alert delayed return", () => {
+describe.skipIf(!hasUpstreamScripts || !hasYellowAlertScript)("Lua real script Intruder Alarm - Yellow Alert delayed return", () => {
   it("restores the temporary battle target lock and returns the summoned monster at the end of the Battle Phase", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const yellowAlertCode = "59277750";
+    const script = workspace.readScript(`c${yellowAlertCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_ATTACK_ANNOUNCE)");
+    expect(script).toContain("aux.DelayedOperation(sc,PHASE_BATTLE,id,e,tp,function(ag) Duel.SendtoHand(ag,nil,REASON_EFFECT) end");
+    expect(script).toContain("e1:SetCode(EFFECT_CANNOT_SELECT_BATTLE_TARGET)");
+    expect(script).toContain("return c~=e:GetHandler()");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === yellowAlertCode),
-      { code: "100", name: "Yellow Alert First Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 500, defense: 500 },
-      { code: "101", name: "Yellow Alert Second Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1500, defense: 1000 },
-      { code: "200", name: "Yellow Alert Original Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 2000, defense: 2000 },
-      { code: "300", name: "Yellow Alert Hand Summon", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: yellowAlertCode, name: "Intruder Alarm - Yellow Alert", kind: "trap", typeFlags: typeTrap },
+      { code: "100", name: "Yellow Alert First Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 500, defense: 500 },
+      { code: "101", name: "Yellow Alert Second Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1500, defense: 1000 },
+      { code: "200", name: "Yellow Alert Original Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 2000, defense: 2000 },
+      { code: "300", name: "Yellow Alert Hand Summon", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 592, startingHandSize: 0, cardReader: reader });
