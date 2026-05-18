@@ -25,16 +25,24 @@ import {
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const fuwalosCode = "42141493";
+const puruliaCode = "84192580";
+const meowlsCode = "87126721";
+const hasFuwalosScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${fuwalosCode}.lua`));
+const hasPuruliaScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${puruliaCode}.lua`));
+const hasMeowlsScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${meowlsCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
+const setMulcharmy = 0x1ac;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mulcharmy activity counters", () => {
+describe.skipIf(!hasUpstreamScripts || !hasFuwalosScript || !hasPuruliaScript || !hasMeowlsScript)("Lua real script Mulcharmy activity counters", () => {
   it("counts real Mulcharmy monster effect chain activations for the shared two-activation limit", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const fuwalosCode = "42141493";
-    const puruliaCode = "84192580";
-    const meowlsCode = "87126721";
     const codes = [fuwalosCode, puruliaCode, meowlsCode];
-    const cards = workspace.readDatabaseCards("cards.cdb").filter((card) => codes.includes(card.code));
+    expect(workspace.readScript(`c${fuwalosCode}.lua`)).toContain("Duel.AddCustomActivityCounter(id,ACTIVITY_CHAIN");
+    expect(workspace.readScript(`c${puruliaCode}.lua`)).toContain("Duel.GetCustomActivityCount(id,tp,ACTIVITY_CHAIN)<2");
+    expect(workspace.readScript(`c${meowlsCode}.lua`)).toContain("re:GetHandler():IsSetCard(SET_MULCHARMY) and re:IsMonsterEffect()");
+    const cards = mulcharmyCards();
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 292, startingHandSize: 0, cardReader: reader });
     loadDecks(session, { 0: { main: codes }, 1: { main: [] } });
@@ -99,12 +107,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mu
 
   it("delays restored Mulcharmy chain-solving draws until the current chain link is solved", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const fuwalosCode = "42141493";
     const summonerCode = "99042101";
     const summonedCode = "99042102";
     const drawCode = "99042103";
+    expect(workspace.readScript(`c${fuwalosCode}.lua`)).toContain("Duel.IsChainSolving()");
+    expect(workspace.readScript(`c${fuwalosCode}.lua`)).toContain("e1:SetCode(EVENT_CHAIN_SOLVED)");
+    expect(workspace.readScript(`c${fuwalosCode}.lua`)).toContain("Duel.Draw(tp,e:GetLabel(),REASON_EFFECT)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === fuwalosCode),
+      ...mulcharmyCards([fuwalosCode]),
       { code: summonerCode, name: "Mulcharmy Chain Summoner", kind: "monster", typeFlags: 0x1 | 0x20, level: 4 },
       { code: summonedCode, name: "Mulcharmy Deck Summon Target", kind: "monster", typeFlags: 0x1, level: 4 },
       { code: drawCode, name: "Mulcharmy Draw Card", kind: "monster", typeFlags: 0x1, level: 4 },
@@ -168,6 +178,15 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mu
     expect(restoredSummoner.session.state.cards.find((card) => card.uid === drawCard!.uid)).toMatchObject({ location: "hand", controller: 0 });
   });
 });
+
+function mulcharmyCards(codes: string[] = [fuwalosCode, puruliaCode, meowlsCode]): DuelCardData[] {
+  const cards: Record<string, DuelCardData> = {
+    [fuwalosCode]: { code: fuwalosCode, name: "Mulcharmy Fuwalos", kind: "monster", typeFlags: typeMonster | typeEffect, setcodes: [setMulcharmy], level: 4 },
+    [puruliaCode]: { code: puruliaCode, name: "Mulcharmy Purulia", kind: "monster", typeFlags: typeMonster | typeEffect, setcodes: [setMulcharmy], level: 4 },
+    [meowlsCode]: { code: meowlsCode, name: "Mulcharmy Meowls", kind: "monster", typeFlags: typeMonster | typeEffect, setcodes: [setMulcharmy], level: 4 },
+  };
+  return codes.map((code) => cards[code]).filter((card): card is DuelCardData => card !== undefined);
+}
 
 function chainSummonerScript(summonedCode: string): string {
   return `
