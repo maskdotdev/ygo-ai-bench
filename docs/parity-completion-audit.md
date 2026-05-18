@@ -17,9 +17,9 @@ Achieve a working Yu-Gi-Oh! duel engine with EDOPro/Project Ignis behavioral par
 - `bun run report:parity-progress` reports:
   - Lua APIs: 898 upstream-used, 1222 implemented, 0 missing
   - Lua constants: 1777 upstream, 1818 local, 0 missing
-  - Clean restore: 750/750 fixtures, 100.0%
+  - Clean restore: 751/751 fixtures, 100.0%
   - Fixture provenance: 945 files, 4939 expectation blocks, 0 backlog
-  - Direct real-script fixtures: 750
+  - Direct real-script fixtures: 751
 - The package guardrails reject committed parity backlog blocks, missing fixture provenance, broad event/chain/effect assertions, missing legal-action evidence, missing browser assets, local fallback scripts in deck probes, and oversized bridge bundles.
 - The gameplay parity plan records broad restored coverage across battle timing, trigger buckets, open fast effects, Lua prompts, summon procedures, movement/control helpers, real-script families, and app-facing restore paths.
 
@@ -45,7 +45,7 @@ The engine is in a strong parity baseline, but the documented end-state requires
 - Battle parity still has edge work. Current coverage ratchets 24 battle-timing restore fixtures, including continuous `EVENT_BATTLED` disable timing, field-sourced damage-calculation ATK boosts, event-code assertions, and source event-card UID evidence, explicitly ratchets restored Project Ignis `Duel.ChainAttack` behavior across Alien Hunter, Element Doom, and Nitro Warrior with event-code and source event-card UID evidence, family-guards 4 restored real-script `Duel.CalculateDamage` recalculation fixtures across attack-negation and battle-target paths with event-code and source event-card UID evidence, and pins 6 upstream `Duel.ChangeAttackTarget` call shapes across restored retarget variants with event-code and source event-card UID evidence. The plan still calls for more battle-helper fixtures, deeper during-damage-calculation sub-step behavior, and broader after-damage-calculation real-script coverage.
 - Lua chain-limit predicate restore is intentionally bounded and now guarded. Known descriptor-backed predicates restore, tampered descriptor snapshots report missing chain-limit registry keys and hide restored legal actions, while arbitrary captured or side-effecting closures fail closed and hide restored legal actions because browser snapshots cannot safely replay arbitrary Lua functions.
 - Summon/procedure helpers are broad but still simplified compared with EDOPro helpers. Equip restore now ratchets representative procedure, relation, operation-info, probe, continuation, and leave-field cleanup fixtures; cleanup fixtures pin previous equip targets plus event-code and event-card UID evidence. Focused Special Summon procedure fixtures now require restored event identity for summon outcomes and cost movement, including a Deck-sourced two-material Familiar-Possessed procedure with `aux.SelectUnselectGroup`, cost sends, Deck shuffle, and post-summon piercing grant. Representative Ritual/Fusion helper fixtures now also guard restored summon and material-movement event identity across Ritual material movement, Fusion Deck/opponent/grave material paths, contact Fusion, and stage2 protection. Persistent Trap coverage now pins Safe Zone and Spellbinding Circle cleanup through restored `destroyed` event-code/card UID evidence. Ritual, Fusion, Pendulum, Union, Equip, Spirit, Gemini, persistent Trap, and long-tail procedure variants still need fixture-driven expansion.
-- Direct real-script fixtures are representative, not exhaustive. The current progress report estimates 750 direct real-script fixtures against 13,299 official scripts, and explicitly notes that the estimate is not proof of unique per-card EDOPro parity.
+- Direct real-script fixtures are representative, not exhaustive. The current progress report estimates 751 direct real-script fixtures against 13,299 official scripts, and explicitly notes that the estimate is not proof of unique per-card EDOPro parity.
 
 ## Practical Next Goal
 

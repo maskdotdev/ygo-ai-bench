@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 65;
+export const operationFixtureCount = 66;
 export const operationKindCounts = {
   costBanishDraw: 2,
   crossPlayerGraveToDeckTrap: 1,
@@ -22,6 +22,7 @@ export const operationKindCounts = {
   directRecover: 1,
   drawThenDiscard: 1,
   flipDeckSpecialSummon: 1,
+  flipTargetDestroy: 1,
   fusionDeckMaterials: 1,
   groupDestroy: 10,
   groupToHand: 1,
@@ -76,6 +77,7 @@ export type OperationKind =
   | "directRecover"
   | "drawThenDiscard"
   | "flipDeckSpecialSummon"
+  | "flipTargetDestroy"
   | "fusionDeckMaterials"
   | "groupDestroy"
   | "groupToHand"
@@ -828,6 +830,19 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-old-vindictive-magician-flip-target-destroy.test.ts",
+      kind: "flipTargetDestroy",
+      required: [
+        "restores Old Vindictive Magician's Flip target, chain response window, and opponent monster destruction",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP)",
+        "Duel.SelectTarget(tp,aux.TRUE,tp,0,LOCATION_MZONE,1,1,nil)",
+        "targetUids: [target.uid]",
+        'eventName: "flipSummoned"',
+        'eventName: "destroyed"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-igknight-paladin-pzone-search.test.ts",
       kind: "pzoneDestroySearch",
       required: [
@@ -945,6 +960,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       directRecover: 0,
       drawThenDiscard: 0,
       flipDeckSpecialSummon: 0,
+      flipTargetDestroy: 0,
       fusionDeckMaterials: 0,
       groupDestroy: 0,
       groupToHand: 0,
