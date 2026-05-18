@@ -874,54 +874,12 @@ export function countBattleSemanticVariants(fixtures: Array<{ kind: BattleSemant
       counts[fixture.kind] += 1;
       return counts;
     },
-    {
-      alienHunterBattleDestroyedChainAttack: 0,
-      alienOfJusticeNullfierBattledDisable: 0,
-      amazonessSwordsWomanReflectDamage: 0,
-      ancientGearGolemPiercingDamage: 0,
-      aojThousandArmsLightOnlyAttackAll: 0,
-      battleDamagePreventionMachineLordUr: 0,
-      blizzardWarriorBattleDestroyingDecktopConfirm: 0,
-      blsSoldierChaosBattleDestroyingSelectEffect: 0,
-      darkRulerHaDesBattledGraveDisable: 0,
-      decoyroidBattleTargetSelectionLock: 0,
-      dimensionalPrisonAttackBanish: 0,
-      drainingShieldLpRecoverNegate: 0,
-      elementDoomAttributeChainAttack: 0,
-      fabledAshenveilDamageStepBoost: 0,
-      gemKnightSardonyxBattleSearch: 0,
-      getsuFuhmaEndDamageDestroy: 0,
-      ghostBirdExtraMonsterAttack: 0,
-      giantRatMutualBattleDestroyedSegoc: 0,
-      grasschopperGeminiAttackAll: 0,
-      gravekeepersVassalBattleDamageToEffect: 0,
-      hayateBattledDeckSend: 0,
-      honestDamageStepBoost: 0,
-      keyMouseBattleDestroyedSearch: 0,
-      magicCylinderDamageReflect: 0,
-      magicalArmShieldBattleRetargetDamage: 0,
-      miniaturizePersistentDamageStepStat: 0,
-      mirageKnightBattleTargetAtk: 0,
-      naturiaSpiderfangAttackAnnouncementLock: 0,
-      negateAttackBattlePhaseSkipNegate: 0,
-      nightmareMagicianEndDamageControl: 0,
-      nitroWarriorBattledChainAttackTarget: 0,
-      numberC96AlsoBattleDamage: 0,
-      oddEyesDragonBattleDestroyingDamage: 0,
-      predaplantSarraceniantBattledDestroy: 0,
-      radiantSpiritBattleDestroyedGroupDestroy: 0,
-      reflectBounderBattleConfirmDestroy: 0,
-      ringOfMagnetismOnlyAttackEquipped: 0,
-      sakuretsuArmorAttackDestroy: 0,
-      sasukeSamuraiBattleStartDestroy: 0,
-      scrapIronScarecrowSetAgainNegate: 0,
-      shadowSpellGoatDamageCalculationStat: 0,
-      susaSoldierHalfDamage: 0,
-      topologicBomberBattledDamage: 0,
-      wallOfIllusionBattledBounce: 0,
-      yomiShipBattleDestroyedDestroy: 0,
-    },
+    zeroBattleSemanticVariantCounts(),
   );
+}
+
+function zeroBattleSemanticVariantCounts(): Record<BattleSemanticVariant, number> {
+  return Object.fromEntries(Object.keys(battleSemanticVariantCounts).map((kind) => [kind, 0])) as Record<BattleSemanticVariant, number>;
 }
 
 export function countAttackDeclarationTrapKinds(
