@@ -60,6 +60,7 @@ The engine already has useful surfaces to build on:
 - Extra-attack restore coverage now ratchets fixture kinds across chain attacks, attack-all effects, plain extra attacks, and monster-only extra attacks.
 - Piercing damage restore coverage now ratchets fixture kinds across field-sourced piercing, race-targeted field piercing, and equip-sourced piercing.
 - Movement-lock restore coverage now ratchets fixture kinds across banish locks, Deck-to-Grave locks, and Deck-to-hand search locks.
+- To-Deck restore coverage now ratchets official Des Feral Imp's Flip trigger path, including Graveyard target selection, `CATEGORY_TODECK` operation info, chain-response restore, and `SendtoDeck(..., SEQ_DECKSHUFFLE, REASON_EFFECT)` event identity.
 - Position restore coverage now ratchets fixture kinds across overlay-target position change, banish-cost group change, summon-trigger attack-position change, and summon-trigger Set.
 - Cost-gate restore coverage now ratchets fixture kinds across summon-type cost predicates, action cost gates, Ritual-created Extra Deck locks, and cost-created Special Summon oaths.
 - Attack-cost/stat restore coverage now ratchets fixture kinds across LP attack costs, release attack costs, dynamic field stats, field set-ATK, current/base ATK Extra Deck locks, and target ATK predicates.
