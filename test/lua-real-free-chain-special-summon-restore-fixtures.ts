@@ -1,6 +1,7 @@
-export const freeChainSpecialSummonFixtureCount = 4;
+export const freeChainSpecialSummonFixtureCount = 5;
 
 export const freeChainSpecialSummonKindCounts = {
+  continuousSpellIgnitionHandSummon: 1,
   handNormalMonsterSummon: 1,
   targetBanishedRockSummonStep: 1,
   targetGraveDragonSummonReplace: 1,
@@ -8,6 +9,7 @@ export const freeChainSpecialSummonKindCounts = {
 } satisfies Record<FreeChainSpecialSummonKind, number>;
 
 export type FreeChainSpecialSummonKind =
+  | "continuousSpellIgnitionHandSummon"
   | "handNormalMonsterSummon"
   | "targetBanishedRockSummonStep"
   | "targetGraveDragonSummonReplace"
@@ -19,6 +21,24 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-court-justice-continuous-spell-summon.test.ts",
+      kind: "continuousSpellIgnitionHandSummon",
+      required: [
+        "e2:SetRange(LOCATION_SZONE)",
+        "return c:IsFaceup() and c:GetLevel()==1 and c:IsRace(RACE_FAIRY)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND)",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        'activationLocation: "spellTrapZone"',
+        "category: 0x200",
+        "parameter: 0x2",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        "eventReasonEffectId: 2",
+        'summonType: "special"',
+      ],
+    },
     {
       file: "test/lua-real-script-ancient-rules-hand-special-summon.test.ts",
       kind: "handNormalMonsterSummon",
@@ -86,5 +106,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { handNormalMonsterSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveSetcodeSummonEndDestroy: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveSetcodeSummonEndDestroy: 0 });
 }
