@@ -18,9 +18,16 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const nibiruCode = "27204311";
+const tokenCode = "27204312";
+const hasNibiruScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${nibiruCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
+const typeToken = 0x4000;
+const raceRock = 0x800;
+const attributeLight = 0x10;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nibiru flag counts", () => {
+describe.skipIf(!hasUpstreamScripts || !hasNibiruScript)("Lua real script Nibiru flag counts", () => {
   it("stacks summon-count flags so Nibiru becomes legal after five opponent summons", () => {
     const belowThreshold = createNibiruSession(4);
     expect(nibiruActions(belowThreshold.session, belowThreshold.nibiru)).toHaveLength(0);
@@ -52,15 +59,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
 
 function createNibiruSession(flagCount: number): { session: ReturnType<typeof createDuel>; nibiru: DuelCardInstance; reader: ReturnType<typeof createCardReader>; workspace: ReturnType<typeof createUpstreamNodeWorkspace> } {
   const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-  const nibiruCode = "27204311";
-  const tokenCode = "27204312";
   const fieldCodes = ["10000021", "10000022"];
-  const databaseCards = workspace.readDatabaseCards("cards.cdb").filter((card) => [nibiruCode, tokenCode].includes(card.code));
-  const fieldCards: DuelCardData[] = [
-    { code: fieldCodes[0]!, name: "Release Body A", kind: "monster", typeFlags: 0x21, attack: 1200, defense: 1000 },
-    { code: fieldCodes[1]!, name: "Release Body B", kind: "monster", typeFlags: 0x21, attack: 800, defense: 2000 },
+  const script = workspace.readScript(`c${nibiruCode}.lua`);
+  expect(script).toContain("Duel.GetFlagEffect(1-tp,id)>=5");
+  expect(script).toContain("Duel.RegisterFlagEffect(tc:GetSummonPlayer(),id,RESET_PHASE|PHASE_END,0,1)");
+  expect(script).toContain("Duel.IsPlayerCanSpecialSummonMonster(tp,id+1,0,TYPES_TOKEN");
+  const nibiruCards: DuelCardData[] = [
+    { code: nibiruCode, name: "Nibiru, the Primal Being", kind: "monster", typeFlags: typeMonster | typeEffect, level: 11, race: raceRock, attribute: attributeLight, attack: 3000, defense: 600 },
+    { code: tokenCode, name: "Primal Being Token", kind: "monster", typeFlags: typeMonster | typeToken, level: 11, race: raceRock, attribute: attributeLight, attack: 0, defense: 0 },
   ];
-  const reader = createCardReader([...databaseCards, ...fieldCards]);
+  const fieldCards: DuelCardData[] = [
+    { code: fieldCodes[0]!, name: "Release Body A", kind: "monster", typeFlags: typeMonster | typeEffect, attack: 1200, defense: 1000 },
+    { code: fieldCodes[1]!, name: "Release Body B", kind: "monster", typeFlags: typeMonster | typeEffect, attack: 800, defense: 2000 },
+  ];
+  const reader = createCardReader([...nibiruCards, ...fieldCards]);
   const session = createDuel({ seed: 295 + flagCount, startingHandSize: 0, cardReader: reader });
   loadDecks(session, { 0: { main: [nibiruCode, fieldCodes[0]!] }, 1: { main: [fieldCodes[1]!] } });
   startDuel(session);

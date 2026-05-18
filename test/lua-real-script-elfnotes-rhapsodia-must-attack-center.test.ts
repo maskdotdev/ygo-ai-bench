@@ -12,20 +12,27 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const rhapsodiaCode = "24092792";
+const hasRhapsodiaScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${rhapsodiaCode}.lua`));
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeContinuous = 0x20000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Elfnotes: Rhapsodia of Madness must attack center", () => {
+describe.skipIf(!hasUpstreamScripts || !hasRhapsodiaScript)("Lua real script Elfnotes: Rhapsodia of Madness must attack center", () => {
   it("restores its center-zone must-attack-monster target filter", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const rhapsodiaCode = "24092792";
     const attackerCode = "24092793";
     const centerTargetCode = "24092794";
     const sideTargetCode = "24092795";
+    const script = workspace.readScript(`c${rhapsodiaCode}.lua`);
+    expect(script).toContain("e1:SetCode(EFFECT_MUST_ATTACK_MONSTER)");
+    expect(script).toContain("Duel.GetFieldCard(e:GetHandlerPlayer(),LOCATION_MZONE,2)~=nil");
+    expect(script).toContain("return c:IsSequence(2)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === rhapsodiaCode),
-      { code: attackerCode, name: "Rhapsodia Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1000 },
-      { code: centerTargetCode, name: "Rhapsodia Center Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: sideTargetCode, name: "Rhapsodia Side Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: rhapsodiaCode, name: "Elfnotes: Rhapsodia of Madness", kind: "spell", typeFlags: typeSpell | typeContinuous },
+      { code: attackerCode, name: "Rhapsodia Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1000 },
+      { code: centerTargetCode, name: "Rhapsodia Center Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+      { code: sideTargetCode, name: "Rhapsodia Side Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 2409, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });

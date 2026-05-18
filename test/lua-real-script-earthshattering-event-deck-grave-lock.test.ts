@@ -17,20 +17,27 @@ import {
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const earthshatteringCode = "54407825";
+const hasEarthshatteringScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${earthshatteringCode}.lua`));
+const typeMonster = 0x1;
+const typeTrap = 0x4;
+const typeContinuous = 0x20000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Earthshattering Event deck grave lock", () => {
+describe.skipIf(!hasUpstreamScripts || !hasEarthshatteringScript)("Lua real script Earthshattering Event deck grave lock", () => {
   it("restores its deck-to-GY trigger and temporary EFFECT_CANNOT_TO_GRAVE lock", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const earthshatteringCode = "54407825";
     const sentFromDeckCode = "900000269";
     const lockedSelfCode = "900000270";
     const lockedOpponentCode = "900000271";
+    const script = workspace.readScript(`c${earthshatteringCode}.lua`);
+    expect(script).toContain("e2:SetCode(EVENT_TO_GRAVE)");
+    expect(script).toContain("return c:IsPreviousLocation(LOCATION_DECK)");
+    expect(script).toContain("e1:SetCode(EFFECT_CANNOT_TO_GRAVE)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === earthshatteringCode),
-      { code: sentFromDeckCode, name: "Earthshattering Sent From Deck", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: lockedSelfCode, name: "Earthshattering Self Locked Mill", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
-      { code: lockedOpponentCode, name: "Earthshattering Opponent Locked Mill", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: earthshatteringCode, name: "Earthshattering Event", kind: "trap", typeFlags: typeTrap | typeContinuous },
+      { code: sentFromDeckCode, name: "Earthshattering Sent From Deck", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+      { code: lockedSelfCode, name: "Earthshattering Self Locked Mill", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+      { code: lockedOpponentCode, name: "Earthshattering Opponent Locked Mill", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 544, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });

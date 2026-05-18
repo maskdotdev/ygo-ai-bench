@@ -11,16 +11,21 @@ import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelW
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const gorillaCode = "39168895";
+const hasGorillaScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${gorillaCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Berserk Gorilla must attack", () => {
+describe.skipIf(!hasUpstreamScripts || !hasGorillaScript)("Lua real script Berserk Gorilla must attack", () => {
   it("restores official EFFECT_MUST_ATTACK and locks battle progression while an attack is legal", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const gorillaCode = "39168895";
     const targetCode = "900000560";
+    const script = workspace.readScript(`c${gorillaCode}.lua`);
+    expect(script).toContain("e1:SetCode(EFFECT_MUST_ATTACK)");
+    expect(script).toContain("e3:SetCode(EFFECT_SELF_DESTROY)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === gorillaCode),
-      { code: targetCode, name: "Must Attack Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      { code: gorillaCode, name: "Berserk Gorilla", kind: "monster", typeFlags: typeMonster | typeEffect, level: 4, attack: 2000, defense: 1000 },
+      { code: targetCode, name: "Must Attack Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 3916, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
