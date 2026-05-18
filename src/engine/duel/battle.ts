@@ -123,11 +123,15 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
   if (pending.targetUid !== undefined && (!target || target.location !== "monsterZone")) {
     if (options.preserveBattleContext) return false;
+    if (!canResolveAsBattleReplay(state, pending)) {
+      clearPendingBattleState(state);
+      return false;
+    }
     openReplayDecisionWindow(state, attacker);
     return false;
   }
   const currentTargets = getAttackTargets(state, attacker.controller, attacker, (target) => callbacks.canAttackTarget?.(attacker, target) ?? true);
-  if (didReplayTargetsChange(pending, currentTargets)) {
+  if (canResolveAsBattleReplay(state, pending) && didReplayTargetsChange(pending, currentTargets)) {
     if (options.preserveBattleContext) return false;
     openReplayDecisionWindow(state, attacker);
     return false;
@@ -149,6 +153,25 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   } finally {
     if (!shouldPreserveBattleContext(state, options)) clearPendingBattleState(state);
   }
+}
+
+export function markDuelBattleReplayPendingIfNeeded(
+  state: DuelState,
+  canAttackTarget: (attacker: DuelCardInstance, target: DuelCardInstance) => boolean = () => true,
+): boolean {
+  const pending = state.pendingBattle;
+  if (!pending) return false;
+  const attacker = findCard(state, pending.attackerUid);
+  if (!attacker || attacker.location !== "monsterZone") return false;
+  const target = pending.targetUid === undefined ? undefined : findCard(state, pending.targetUid);
+  if (pending.targetUid !== undefined && (!target || target.location !== "monsterZone")) {
+    pending.replayPending = true;
+    return true;
+  }
+  const currentTargets = getAttackTargets(state, attacker.controller, attacker, (target) => canAttackTarget(attacker, target));
+  if (!didReplayTargetsChange(pending, currentTargets)) return false;
+  pending.replayPending = true;
+  return true;
 }
 
 export function replayAttackActions(
@@ -537,6 +560,14 @@ function createBattleAttackState(attackerUid: string, targetUid: string | undefi
 function didReplayTargetsChange(pending: NonNullable<DuelState["pendingBattle"]>, currentTargets: DuelCardInstance[]): boolean {
   if (pending.replayTargetCount !== undefined && pending.replayTargetCount !== currentTargets.length) return true;
   return pending.replayTargetUids !== undefined && !sameReplayTargets(pending.replayTargetUids, replayTargetUids(currentTargets));
+}
+
+function canOpenBattleReplay(state: DuelState): boolean {
+  return currentBattleWindowKind(state) === "attackNegationResponse";
+}
+
+function canResolveAsBattleReplay(state: DuelState, pending: NonNullable<DuelState["pendingBattle"]>): boolean {
+  return pending.replayPending === true || canOpenBattleReplay(state);
 }
 
 function replayTargetUids(targets: DuelCardInstance[]): string[] {

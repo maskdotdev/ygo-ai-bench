@@ -383,16 +383,16 @@ export function changedBattleDamageAmount(state: DuelState, player: PlayerId, am
     const next = effect.battleDamageValue?.(ctx, player, value) ?? effect.value;
     value = applyBattleDamageValue(value, next);
   }
-  for (const card of battleCards) {
-    for (const effect of state.effects) {
-      if (effect.event !== "continuous" || effect.code !== 208 || effect.sourceUid !== card.uid) continue;
-      const source = findCard(state, effect.sourceUid);
-      if (!source || !effect.range.includes(source.location)) continue;
-      const ctx = createContext(effect, source, card);
-      if (effect.canActivate && !effect.canActivate(ctx)) continue;
-      const next = effect.battleDamageValue?.(ctx, player, value) ?? effect.value;
-      value = applyBattleDamageValue(value, next);
-    }
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 208) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const sourceBattleCard = battleCards.find((card) => card.uid === source.uid);
+    if (!sourceBattleCard && (!continuousEffectIsPlayerTarget(effect) || !continuousEffectTargetsPlayer(effect, source, player))) continue;
+    const ctx = createContext(effect, source, sourceBattleCard ?? source);
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    const next = effect.battleDamageValue?.(ctx, player, value) ?? effect.value;
+    value = applyBattleDamageValue(value, next);
   }
   return value;
 }

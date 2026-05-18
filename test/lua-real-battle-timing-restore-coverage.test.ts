@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 26;
-const battleTimingEventCodeFixtureCount = 26;
+const battleTimingFixtureCount = 27;
+const battleTimingEventCodeFixtureCount = 27;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 12,
-  beforeDamageCalculation: 4,
+  beforeDamageCalculation: 5,
   duringDamageCalculation: 3,
   endDamageStep: 4,
   startDamageStep: 3,
@@ -38,6 +38,7 @@ const battleTimingSemanticVariantCounts = {
   sasukeSamuraiStartDamageDestroy: 1,
   shadowSpellDuringDamagePersistentStat: 1,
   shinobirdCrowStartDamageStatBoost: 1,
+  smokeMosquitoBeforeDamageHalfDamageSummon: 1,
   skyscraperDuringDamageFieldStatBoost: 1,
   topologicBomberAfterDamageBurn: 1,
   wallOfIllusionAfterDamageBounce: 1,
@@ -126,6 +127,7 @@ type BattleTimingSemanticVariant =
   | "sasukeSamuraiStartDamageDestroy"
   | "shadowSpellDuringDamagePersistentStat"
   | "shinobirdCrowStartDamageStatBoost"
+  | "smokeMosquitoBeforeDamageHalfDamageSummon"
   | "skyscraperDuringDamageFieldStatBoost"
   | "topologicBomberAfterDamageBurn"
   | "wallOfIllusionAfterDamageBounce";
@@ -264,6 +266,11 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores its Damage Step discard label object and applies the ATK/DEF boost", "battleWindow?.kind).toBe(\"startDamageStep\")", "effectLabelObjectUid"],
     },
     {
+      file: "test/lua-real-script-smoke-mosquito-pre-damage-half-battle-damage.test.ts",
+      kind: "smokeMosquitoBeforeDamageHalfDamageSummon",
+      required: ["restores pre-damage self Special Summon, temporary HALF_DAMAGE battle modifier, and battle skip", "battleWindow?.kind).not.toBe(\"replayDecision\")", "EFFECT_CHANGE_BATTLE_DAMAGE", "HALF_DAMAGE", "battleDamage).toEqual({ 0: 750, 1: 0 })"],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "skyscraperDuringDamageFieldStatBoost",
       required: [
@@ -321,6 +328,7 @@ function countBattleTimingSemanticVariants(
       sasukeSamuraiStartDamageDestroy: 0,
       shadowSpellDuringDamagePersistentStat: 0,
       shinobirdCrowStartDamageStatBoost: 0,
+      smokeMosquitoBeforeDamageHalfDamageSummon: 0,
       skyscraperDuringDamageFieldStatBoost: 0,
       topologicBomberAfterDamageBurn: 0,
       wallOfIllusionAfterDamageBounce: 0,
@@ -539,6 +547,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "Duel.DiscardDeck(tp,val,REASON_EFFECT)",
         "Duel.GetOperatedGroup()",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-smoke-mosquito-pre-damage-half-battle-damage.test.ts",
+      kind: "beforeDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("beforeDamageCalculation")',
+        'eventName: "beforeDamageCalculation"',
+        "eventCode: 1134",
+        "EFFECT_CHANGE_BATTLE_DAMAGE",
+        "HALF_DAMAGE",
+        "battleDamage).toEqual({ 0: 750, 1: 0 })",
       ],
     },
     {

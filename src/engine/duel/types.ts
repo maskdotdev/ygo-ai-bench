@@ -637,6 +637,7 @@ export interface DuelState {
     targetUid?: string;
     replayTargetCount?: number;
     replayTargetUids?: string[];
+    replayPending?: boolean;
     battleDamageOverrides?: Partial<Record<PlayerId, number>>;
     resultApplied?: boolean;
     deferredBattleDestroyed?: {

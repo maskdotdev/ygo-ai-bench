@@ -1,5 +1,6 @@
 import { findCard } from "#duel/card-state.js";
 import { currentBattleStep, currentBattleWindowKind, isBattleDamageStep, openBattleWindowState, setBattleWindowResponsePlayer } from "#duel/battle-window-state.js";
+import { markDuelBattleReplayPendingIfNeeded } from "#duel/battle.js";
 import { pruneResetEffectsAfterPhaseFlag } from "#duel/effect-reset.js";
 import { pruneDuelFlagEffectsAfterPhaseFlag } from "#duel/flags.js";
 import { resolvePendingBattle, type BattleContinuationHandlers } from "#duel/battle-continuation.js";
@@ -28,6 +29,7 @@ export function passAttackResponseWindow(state: DuelState, player: PlayerId, han
     return;
   }
   state.attackPasses = [];
+  markDuelBattleReplayPendingIfNeeded(state, (attacker, target) => handlers.canAttackTarget?.(state, attacker, target) ?? true);
   openDamageResponseWindow(state, player);
   collectBattleTimingEvent(state, handlers, "battleStarted");
   collectBattleTimingEvent(state, handlers, "battleConfirmed");

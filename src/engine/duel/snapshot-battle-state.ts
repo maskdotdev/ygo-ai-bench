@@ -3,6 +3,7 @@ import type { DuelState, PlayerId } from "#duel/types.js";
 export function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingBattle"]>): NonNullable<DuelState["pendingBattle"]> {
   return {
     ...copyBattleAttack(pendingBattle),
+    ...(pendingBattle.replayPending === undefined ? {} : { replayPending: pendingBattle.replayPending }),
     ...(pendingBattle.battleDamageOverrides === undefined ? {} : { battleDamageOverrides: { ...pendingBattle.battleDamageOverrides } }),
     ...(pendingBattle.resultApplied === undefined ? {} : { resultApplied: pendingBattle.resultApplied }),
     ...(pendingBattle.deferredBattleDestroyed === undefined ? {} : { deferredBattleDestroyed: pendingBattle.deferredBattleDestroyed.map((record) => ({ ...record })) }),
