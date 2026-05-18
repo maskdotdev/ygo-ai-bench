@@ -12,15 +12,20 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const shadowSpellCode = "504700050";
+const hasGoatShadowSpellScript = fs.existsSync(path.join(upstreamRoot, "script", "goat", `c${shadowSpellCode}.lua`));
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script GOAT Shadow Spell persistent damage calculation", () => {
+describe.skipIf(!hasUpstreamScripts || !hasGoatShadowSpellScript)("Lua real script GOAT Shadow Spell persistent damage calculation", () => {
   it("restores a damage-calculation persistent target into ATK loss before battle damage", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const shadowSpellCode = "504700050";
     const targetCode = "613921";
     const attackerCode = "613922";
     const responderCode = "613923";
+    const script = workspace.readScript(`goat/c${shadowSpellCode}.lua`);
+    expect(script).toContain("aux.AddPersistentProcedure(c,1,aux.FilterBoolFunction(Card.IsFaceup),CATEGORY_POSITION,EFFECT_FLAG_DAMAGE_CAL");
+    expect(script).toContain("e2:SetCode(EFFECT_CANNOT_ATTACK)");
+    expect(script).toContain("e3:SetCode(EFFECT_UPDATE_ATTACK)");
+    expect(script).toContain("e3:SetValue(-700)");
     const cards: DuelCardData[] = [
       { code: shadowSpellCode, name: "Shadow Spell (GOAT)", kind: "trap", typeFlags: 0x20004 },
       { code: targetCode, name: "Shadow Spell Defender", kind: "monster", typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },

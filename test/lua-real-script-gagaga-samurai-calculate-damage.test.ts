@@ -11,18 +11,26 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const samuraiCode = "91499077";
+const hasSamuraiScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${samuraiCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
+const typeXyz = 0x800000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gagaga Samurai CalculateDamage", () => {
+describe.skipIf(!hasUpstreamScripts || !hasSamuraiScript)("Lua real script Gagaga Samurai CalculateDamage", () => {
   it("restores Samurai's battle-target trigger and resolves CalculateDamage as a finished battle", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const samuraiCode = "91499077";
     const attackerCode = "9149";
     const originalTargetCode = "9150";
+    const script = workspace.readScript(`c${samuraiCode}.lua`);
+    expect(script).toContain("e2:SetCode(EVENT_BE_BATTLE_TARGET)");
+    expect(script).toContain("e:GetHandler():IsPosition(POS_ATTACK)");
+    expect(script).toContain("Duel.ChangePosition(c,POS_FACEUP_DEFENSE)");
+    expect(script).toContain("Duel.CalculateDamage(at,c)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === samuraiCode),
-      { code: attackerCode, name: "Gagaga Samurai Fixture Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1200 },
-      { code: originalTargetCode, name: "Gagaga Samurai Original Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 500, defense: 500 },
+      { code: samuraiCode, name: "Gagaga Samurai", kind: "extra", typeFlags: typeMonster | typeEffect | typeXyz, level: 4, attack: 1900, defense: 1600 },
+      { code: attackerCode, name: "Gagaga Samurai Fixture Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1200 },
+      { code: originalTargetCode, name: "Gagaga Samurai Original Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 500, defense: 500 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 914, startingHandSize: 0, cardReader: reader });

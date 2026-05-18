@@ -12,17 +12,29 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const naturesReflectionCode = "83467607";
+const tremendousFireCode = "46918794";
+const hasNaturesReflectionScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${naturesReflectionCode}.lua`));
+const hasTremendousFireScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${tremendousFireCode}.lua`));
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeTrap = 0x4;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nature's Reflection reflect damage", () => {
+describe.skipIf(!hasUpstreamScripts || !hasNaturesReflectionScript || !hasTremendousFireScript)("Lua real script Nature's Reflection reflect damage", () => {
   it("restores Nature's Reflection and reflects real effect damage after snapshot restore", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const naturesReflectionCode = "83467607";
-    const tremendousFireCode = "46918794";
     const starterCode = "83467";
+    const reflectionScript = workspace.readScript(`c${naturesReflectionCode}.lua`);
+    expect(reflectionScript).toContain("e1:SetCode(EFFECT_REFLECT_DAMAGE)");
+    expect(reflectionScript).toContain("e1:SetTargetRange(1,0)");
+    expect(reflectionScript).toContain("return re and not re:IsHasType(EFFECT_TYPE_CONTINUOUS) and rp==1-e:GetOwnerPlayer()");
+    const fireScript = workspace.readScript(`c${tremendousFireCode}.lua`);
+    expect(fireScript).toContain("Duel.Damage(1-tp,1000,REASON_EFFECT,true)");
+    expect(fireScript).toContain("Duel.Damage(tp,500,REASON_EFFECT,true)");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => [naturesReflectionCode, tremendousFireCode].includes(card.code)),
-      { code: starterCode, name: "Nature Reflection Chain Starter", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: naturesReflectionCode, name: "Nature's Reflection", kind: "trap", typeFlags: typeTrap },
+      { code: tremendousFireCode, name: "Tremendous Fire", kind: "spell", typeFlags: typeSpell },
+      { code: starterCode, name: "Nature Reflection Chain Starter", kind: "monster", typeFlags: typeMonster, level: 4 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 83467, startingHandSize: 0, cardReader: reader });

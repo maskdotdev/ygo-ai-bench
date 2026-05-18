@@ -12,18 +12,26 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
-const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const dispatchCode = "64966519";
+const hasDispatchScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${dispatchCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
+const typeLink = 0x4000000;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dispatchparazzi CalculateDamage", () => {
+describe.skipIf(!hasUpstreamScripts || !hasDispatchScript)("Lua real script Dispatchparazzi CalculateDamage", () => {
   it("restores its redirect battle and destroyed trigger using the post-battle target", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const dispatchCode = "64966519";
     const attackerCode = "6496";
     const originalTargetCode = "6497";
+    const script = workspace.readScript(`c${dispatchCode}.lua`);
+    expect(script).toContain("e1:SetCode(EVENT_BE_BATTLE_TARGET)");
+    expect(script).toContain("Duel.CalculateDamage(at,c)");
+    expect(script).toContain("e2:SetCode(EVENT_DESTROYED)");
+    expect(script).toContain("tc:GetBaseAttack()/2");
     const cards: DuelCardData[] = [
-      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === dispatchCode),
-      { code: attackerCode, name: "Dispatchparazzi Fixture Attacker", kind: "monster", typeFlags: 0x1, level: 4, attack: 1800, defense: 1200 },
-      { code: originalTargetCode, name: "Dispatchparazzi Original Target", kind: "monster", typeFlags: 0x1, level: 4, attack: 500, defense: 500 },
+      { code: dispatchCode, name: "Dispatchparazzi", kind: "extra", typeFlags: typeMonster | typeEffect | typeLink, level: 2, attack: 100, defense: -2 },
+      { code: attackerCode, name: "Dispatchparazzi Fixture Attacker", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1800, defense: 1200 },
+      { code: originalTargetCode, name: "Dispatchparazzi Original Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 500, defense: 500 },
     ];
     const reader = createCardReader(cards);
     const session = createDuel({ seed: 649, startingHandSize: 0, cardReader: reader });
