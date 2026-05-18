@@ -1,6 +1,6 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 30, ritual: 17 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 31, ritual: 17 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
@@ -8,7 +8,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionAddProcCode2ExactCodeMetadata: 1,
   fusionAddProcCodeRepRepeatedCodeMetadata: 1,
   fusionAddProcMixMaterialMetadata: 1,
-  fusionAddProcMixAttackBelowPredicateMetadata: 1, fusionAddProcMixAttackPredicateMetadata: 1, fusionAddProcMixNMixedMetadata: 1, fusionAddProcMixNRepeatedAttackBelowMetadata: 1, fusionAddProcMixNRepeatedCodeMetadata: 1, fusionAddProcMixNRepeatedPlusTypeMetadata: 1, fusionAddProcMixNSetcodeMetadata: 1, fusionAddProcMixPredicateMetadata: 1,
+  fusionAddProcMixAttackBelowPredicateMetadata: 1, fusionAddProcMixAttackPredicateMetadata: 1, fusionAddProcMixNMixedMetadata: 1, fusionAddProcMixNRepeatedAttackBelowMetadata: 1, fusionAddProcMixNRepeatedCodeMetadata: 1, fusionAddProcMixNRepeatedPlusTypeMetadata: 1, fusionAddProcMixNSetcodeMetadata: 1, fusionAddProcMixPlusTypePredicateMetadata: 1, fusionAddProcMixPredicateMetadata: 1,
   fusionAddProcMixRepExactCodeMetadata: 1, fusionAddProcMixRepLocationMetadata: 1, fusionAddProcMixRepRequiredSetcodeMetadata: 1, fusionAddProcMixRepSetcodeMetadata: 1,
   fusionDeckMaterialOath: 1,
   fusionForcedHandler: 1,
@@ -63,7 +63,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(47);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(48);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -119,7 +119,7 @@ type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummon
   | "fusionAddProcCode2ExactCodeMetadata"
   | "fusionAddProcCodeRepRepeatedCodeMetadata"
   | "fusionAddProcMixMaterialMetadata" | "fusionAddProcMixAttackBelowPredicateMetadata" | "fusionAddProcMixAttackPredicateMetadata"
-  | "fusionAddProcMixNMixedMetadata" | "fusionAddProcMixNRepeatedAttackBelowMetadata" | "fusionAddProcMixNRepeatedCodeMetadata" | "fusionAddProcMixNRepeatedPlusTypeMetadata" | "fusionAddProcMixNSetcodeMetadata" | "fusionAddProcMixPredicateMetadata"
+  | "fusionAddProcMixNMixedMetadata" | "fusionAddProcMixNRepeatedAttackBelowMetadata" | "fusionAddProcMixNRepeatedCodeMetadata" | "fusionAddProcMixNRepeatedPlusTypeMetadata" | "fusionAddProcMixNSetcodeMetadata" | "fusionAddProcMixPlusTypePredicateMetadata" | "fusionAddProcMixPredicateMetadata"
   | "fusionAddProcMixRepExactCodeMetadata" | "fusionAddProcMixRepLocationMetadata" | "fusionAddProcMixRepRequiredSetcodeMetadata" | "fusionAddProcMixRepSetcodeMetadata"
   | "fusionDeckMaterialOath"
   | "fusionForcedHandler"
@@ -818,6 +818,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
     { file: "test/lua-real-script-elder-entity-norden-addprocmixn-plus-type-fusion.test.ts", kind: "fusionAddProcMixNRepeatedPlusTypeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN plus-type metadata", "fusionMaterialType: typeXyz | typeSynchro", "expect(directFusionActions[0]!.materialUids).toEqual(materials.map((card) => card.uid))", "directFusionActions.some((action) => action.materialUids.includes(fusionDecoy!.uid))", "summonMaterialUids: materials.map((card) => card.uid)"] },
     { file: "test/lua-real-script-ultimate-ancient-gear-golem-addprocmixn-mixed-fusion.test.ts", kind: "fusionAddProcMixNMixedMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN mixed metadata", "expect(ultimateGolem!.data).toMatchObject({ fusionMaterials: [ancientGearGolemCode], fusionMaterialMin: 2, fusionMaterialMax: 2, fusionMaterialSetcode: setAncientGear })", "expect(directFusionActions[0]!.materialUids).toEqual([ancientGearGolem!.uid, ...ancientGearMaterials.map((card) => card.uid)])", "directFusionActions.some((action) => action.materialUids.includes(offSet!.uid))", "summonMaterialUids: [ancientGearGolem!.uid, ...ancientGearMaterials.map((card) => card.uid)]"] },
     { file: "test/lua-real-script-metalfoes-crimsonite-addprocmixn-atk-below-fusion.test.ts", kind: "fusionAddProcMixNRepeatedAttackBelowMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN attack-below repeated metadata", "expect(crimsonite!.data).toMatchObject({", "fusionMaterialAttackMax: 3000", "fusionRequiredMaterialSetcodes: [setMetalfoes]", "expect(directFusionActions[0]!.materialUids).toEqual([metalfoesMaterial!.uid, ...lowMaterials.map((card) => card.uid)])", "directFusionActions.some((action) => action.materialUids.includes(highDecoy!.uid))", "summonMaterialUids: [metalfoesMaterial!.uid, ...lowMaterials.map((card) => card.uid)]"] },
+    { file: "test/lua-real-script-mirrorjade-addprocmix-plus-type-fusion.test.ts", kind: "fusionAddProcMixPlusTypePredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcMix plus-type metadata", "expect(mirrorjade!.data.fusionRequiredMaterialPredicates).toEqual([{ type: typeFusion | typeSynchro | typeXyz | typeLink }])", "expect(mirrorjade!.data.fusionMaterials).toEqual([albazCode])", "expect(directFusionActions[0]!.materialUids).toEqual([albaz!.uid, linkMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(normalDecoy!.uid))", "summonMaterialUids: [albaz!.uid, linkMaterial!.uid]"] },
     { file: "test/lua-real-script-dracotail-shaulas-addprocmix-predicate-fusion.test.ts", kind: "fusionAddProcMixPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcMix predicate metadata", "expect(shaulas!.data.fusionRequiredMaterialPredicates).toEqual([{ setcode: setDracotail }, { location: locationHand }])", "expect(shaulas!.data.fusionMaterials).toBeUndefined()", "expect(directFusionActions[0]!.materialUids).toEqual([dracotailMaterial!.uid, handMaterial!.uid])", "summonMaterialUids: [dracotailMaterial!.uid, handMaterial!.uid]"] },
     { file: "test/lua-real-script-metalfoes-adamante-addprocmix-atk-below-fusion.test.ts", kind: "fusionAddProcMixAttackBelowPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcMix attack-below predicate metadata", "expect(adamante!.data.fusionRequiredMaterialPredicates).toEqual([{ setcode: setMetalfoes }, { attackMax: 2500 }])", "expect(adamante!.data.fusionMaterials).toBeUndefined()", "expect(directFusionActions[0]!.materialUids).toEqual([metalfoesMaterial!.uid, lowMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(highDecoy!.uid))", "summonMaterialUids: [metalfoesMaterial!.uid, lowMaterial!.uid]"] },
     { file: "test/lua-real-script-titaniklad-addprocmix-attack-fusion.test.ts", kind: "fusionAddProcMixAttackPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcMix attack predicate metadata", "expect(titaniklad!.data.fusionRequiredMaterialPredicates).toEqual([{ attackMin: 2500 }])", "expect(directFusionActions[0]!.materialUids).toEqual([albaz!.uid, highMaterial!.uid])", "directFusionActions.some((action) => action.materialUids.includes(lowDecoy!.uid))", "summonMaterialUids: [albaz!.uid, highMaterial!.uid]"] },
