@@ -17,7 +17,7 @@ const XYZ_INFINITE_MATERIAL_MAX = 99;
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
   const fusionMaterials = readFusionAddProcMixMaterials(L, card, source);
   if (fusionMaterials.length > 0) card.data.fusionMaterials = fusionMaterials;
-  const fusionRequiredPredicates = readFusionAddProcMixPredicateMaterials(source);
+  const fusionRequiredPredicates = [...readFusionAddProcMixPredicateMaterials(source), ...readFusionAddProcFun2PredicateMaterials(source)];
   if (fusionRequiredPredicates.length > 0) card.data.fusionRequiredMaterialPredicates = fusionRequiredPredicates;
   const fusionRepeatedMaterials = readFusionAddProcMixRepMaterials(source) ?? readFusionAddProcMixNRepeatedMaterials(source) ?? readFusionAddProcFunRepMaterials(source);
   if (fusionRepeatedMaterials) {
@@ -127,8 +127,19 @@ function readFusionAddProcMixNMaterials(L: unknown, card: DuelCardInstance): str
 function readFusionAddProcMixPredicateMaterials(source: string | undefined): FusionMaterialPredicateRequirement[] {
   const match = source?.match(/Fusion\.AddProcMix\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,([^\n]*)\)/);
   if (!match?.[1]) return [];
+  return readFusionPredicateRequirements(match[1]);
+}
+
+function readFusionAddProcFun2PredicateMaterials(source: string | undefined): FusionMaterialPredicateRequirement[] {
+  const match = source?.match(/Fusion\.AddProcFun2\(\s*c\s*,([^\n]*)\)/);
+  if (!match?.[1]) return [];
+  const predicates = readFusionPredicateRequirements(match[1]);
+  return predicates.length === 2 ? predicates : [];
+}
+
+function readFusionPredicateRequirements(expressionList: string): FusionMaterialPredicateRequirement[] {
   const predicates: FusionMaterialPredicateRequirement[] = [];
-  for (const [, predicate, expression] of match[1].matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:AttackAbove|AttackBelow|LevelAbove|LevelBelow|Attribute|Location|Race|SetCard|Type))\s*,\s*(\d+|[A-Z0-9_]+(?:\s*[|+]\s*[A-Z0-9_]+)*)\s*\)/g)) {
+  for (const [, predicate, expression] of expressionList.matchAll(/aux\.FilterBoolFunction(?:Ex)?\(\s*(Card\.Is(?:AttackAbove|AttackBelow|LevelAbove|LevelBelow|Attribute|Location|Race|SetCard|Type))\s*,\s*(\d+|[A-Z0-9_]+(?:\s*[|+]\s*[A-Z0-9_]+)*)\s*\)/g)) {
     if (!predicate || !expression) continue;
     if (predicate === "Card.IsAttackBelow" || predicate === "Card.IsAttackAbove" || predicate === "Card.IsLevelBelow" || predicate === "Card.IsLevelAbove") {
       const value = Number.parseInt(expression, 10);
