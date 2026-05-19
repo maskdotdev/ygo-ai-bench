@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 10;
-const equipRelationFixtureCount = 14;
-const equipProbeFixtureCount = 9;
-const equipOperationInfoFixtureCount = 11;
-const equipCleanupFixtureCount = 8;
-const equipInventoryFixtureCount = 17;
+const equipFixtureCount = 11;
+const equipRelationFixtureCount = 15;
+const equipProbeFixtureCount = 10;
+const equipOperationInfoFixtureCount = 12;
+const equipCleanupFixtureCount = 9;
+const equipInventoryFixtureCount = 18;
 const equipKindCounts = {
-  equipControl: 1,
+  equipControl: 2,
   equipCost: 1,
   equipDamageLock: 1,
   equipGeminiStatus: 2,
@@ -35,6 +35,7 @@ const equipSemanticVariantCounts = {
   fairyMeteorCrushPierce: 1,
   geminiBoosterStatus: 1,
   gravityAxePositionLock: 1,
+  graydleEagleBattleDestroyStealEquip: 1,
   guardianGrarlProcedure: 1,
   heartClearWaterSelfDestroy: 1,
   herculesBattleDraw: 1,
@@ -83,6 +84,7 @@ type EquipSemanticVariant =
   | "fairyMeteorCrushPierce"
   | "geminiBoosterStatus"
   | "gravityAxePositionLock"
+  | "graydleEagleBattleDestroyStealEquip"
   | "guardianGrarlProcedure"
   | "heartClearWaterSelfDestroy"
   | "herculesBattleDraw"
@@ -263,6 +265,7 @@ function realScriptEquipFixtureFiles(): string[] {
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+    "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
@@ -282,6 +285,7 @@ function realScriptEquipRelationFixtureFiles(): string[] {
     "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+    "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
@@ -302,6 +306,7 @@ function realScriptEquipProbeFixtureFiles(): string[] {
     "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
+    "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
@@ -319,6 +324,7 @@ function realScriptEquipOperationInfoFixtureFiles(): string[] {
     "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
+    "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
@@ -334,6 +340,7 @@ function realScriptEquipCleanupFixtureFiles(): string[] {
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
+    "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
@@ -390,6 +397,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     {
       file: "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
       kind: "equipGeminiStatus",
+    },
+    {
+      file: "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
+      kind: "equipControl",
     },
     {
       file: "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
@@ -536,6 +547,19 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "restores Gravity Axe equip stat and opponent position-change lock",
         "const gravityAxeCode = \"32022366\"",
         "Gravity Axe Opponent Monster",
+      ],
+    },
+    {
+      file: "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
+      kind: "graydleEagleBattleDestroyStealEquip",
+      required: [
+        "restores its destroyed-to-Grave target prompt into equip control and leave-field return",
+        'const graydleCode = "29834183"',
+        "Duel.SelectTarget(tp,aux.CheckStealEquip,tp,0,LOCATION_MZONE,1,1,nil,e,tp)",
+        "EFFECT_SET_CONTROL",
+        "EVENT_LEAVE_FIELD_P",
+        "EVENT_LEAVE_FIELD",
+        "graydle probe 0/29834183/298341830/true",
       ],
     },
     {
@@ -781,6 +805,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       fairyMeteorCrushPierce: 0,
       geminiBoosterStatus: 0,
       gravityAxePositionLock: 0,
+      graydleEagleBattleDestroyStealEquip: 0,
       guardianGrarlProcedure: 0,
       heartClearWaterSelfDestroy: 0,
       herculesBattleDraw: 0,

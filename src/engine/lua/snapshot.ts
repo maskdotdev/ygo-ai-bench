@@ -548,6 +548,9 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownSetcodeTypeExtraSummonRestriction(effect) ||
         isKnownSetSummonCountLimitEffect(effect) ||
         isKnownExtraSummonCountEffect(effect) ||
+        isKnownEquipControlEffect(effect) ||
+        isKnownEquipLeaveFieldPrecheckEffect(effect) ||
+        isKnownEquipLeaveFieldDestroyTargetEffect(effect) ||
         effect.code === 25 ||
         (effect.code === 60 && effect.value !== undefined) ||
         (effect.code === 92 && (specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor) !== undefined || specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor) !== undefined)) ||
@@ -604,6 +607,15 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
 function isKnownChangeBattleStatToDefenseEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 198 && effect.luaValueDescriptor === "stat:current-defense" && effect.luaTargetDescriptor === "target:source-or-battle-target" && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange?.[0] === 4 && effect.targetRange?.[1] === 4 && effect.reset !== undefined; }
 
 function isKnownStatValueEffect(effect: SerializedDuelEffect): boolean { return effect.code !== undefined && [100, 103, 104, 107, 130, 131, 132, 134, 135, 136, 137, 314].includes(effect.code) && (effect.value !== undefined || luaValueDescriptorStatValue(effect.luaValueDescriptor, effect.id) !== undefined); }
+function isKnownEquipControlEffect(effect: SerializedDuelEffect): boolean {
+  return effect.event === "continuous" && effect.code === 4 && effect.sourceUid !== undefined && effect.value !== undefined && effect.reset !== undefined;
+}
+function isKnownEquipLeaveFieldPrecheckEffect(effect: SerializedDuelEffect): boolean {
+  return effect.event === "continuous" && effect.code === 1019 && effect.sourceUid !== undefined && effect.reset !== undefined;
+}
+function isKnownEquipLeaveFieldDestroyTargetEffect(effect: SerializedDuelEffect): boolean {
+  return effect.event === "continuous" && effect.code === 1015 && effect.sourceUid !== undefined && effect.reset !== undefined;
+}
 function isKnownDelayedBattleDestroyMarkerEffect(effect: SerializedDuelEffect): boolean {
   const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
   return (
@@ -889,6 +901,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
   if (isKnownLeaveFieldLinkedDestroyEffect(effect)) return luaLinkedLeaveFieldDestroyOperation(effect);
+  if (isKnownEquipLeaveFieldDestroyTargetEffect(effect)) return luaEquipLeaveFieldDestroyTargetOperation(effect);
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
   if (isKnownDaiDanceAdjustEffect(effect)) return daiDanceAdjustOperation(effect);
@@ -898,6 +911,22 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function luaEquipLeaveFieldDestroyTargetOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    const targetUid = source?.previousEquippedToUid ?? source?.equippedToUid;
+    const target = targetUid === undefined ? undefined : findCard(ctx.duel, targetUid);
+    if (!target || target.location !== "monsterZone") return;
+    try {
+      destroyDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
+        eventReasonCardUid: effect.sourceUid,
+      });
+    } catch {
+      // EDOPro-style equip cleanup ignores targets that are no longer destroyable.
+    }
+  };
 }
 
 function delayedBattleDestroyPhaseOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
