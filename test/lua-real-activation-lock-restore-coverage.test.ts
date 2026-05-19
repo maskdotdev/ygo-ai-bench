@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const activationLockFixtureCount = 6;
-const activationLockAllowListFixtureCount = 5;
+const activationLockFixtureCount = 7;
+const activationLockAllowListFixtureCount = 6;
 const activationLockVariantFixtureCount = 14;
-const activationLockInventoryFixtureCount = 17;
+const activationLockInventoryFixtureCount = 18;
 const activationLockVariantKindCounts = {
   attributeMonsterActivationLock: 6,
   cardActivationLock: 2,
@@ -34,6 +34,7 @@ const activationLockSemanticVariantCounts = {
   ultimateFalconDetachAtkLossOpponentLock: 1,
   vernusylphSharedEarthAttributeLock: 1,
   wattgiraffeBattleDamageOpponentLock: 1,
+  witchDefenseSameCodeSearchLock: 1,
   wynnWindChannelerAttributeLock: 1,
 } satisfies Record<ActivationLockSemanticVariant, number>;
 
@@ -62,6 +63,7 @@ type ActivationLockSemanticVariant =
   | "ultimateFalconDetachAtkLossOpponentLock"
   | "vernusylphSharedEarthAttributeLock"
   | "wattgiraffeBattleDamageOpponentLock"
+  | "witchDefenseSameCodeSearchLock"
   | "wynnWindChannelerAttributeLock";
 
 describe("Lua real activation-lock restore coverage", () => {
@@ -181,6 +183,7 @@ function realScriptActivationLockInventoryFiles(): string[] {
     "lua-real-script-ultimate-falcon-activation-lock.test.ts",
     "lua-real-script-vernusylph-attribute-activation-lock.test.ts",
     "lua-real-script-wattgiraffe-battle-activation-lock.test.ts",
+    "lua-real-script-witch-black-forest-same-code-activation-lock.test.ts",
     "lua-real-script-wynn-channeler-attribute-activation-lock.test.ts",
   ]
     .map((file) => path.join("test", file))
@@ -195,6 +198,7 @@ function realScriptActivationLockFixtureFiles(): string[] {
     "lua-real-script-sangan-same-code-activation-lock.test.ts",
     "lua-real-script-timegazer-trap-activation-lock.test.ts",
     "lua-real-script-wattgiraffe-battle-activation-lock.test.ts",
+    "lua-real-script-witch-black-forest-same-code-activation-lock.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();
@@ -546,6 +550,18 @@ function realScriptActivationLockSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-witch-black-forest-same-code-activation-lock.test.ts",
+      kind: "witchDefenseSameCodeSearchLock",
+      requiredSnippets: [
+        'const witchCode = "78010363"',
+        "restores its Defense-filtered search into a same-code activation lock",
+        "return c:IsDefenseBelow(1500) and c:IsMonster() and c:IsAbleToHand()",
+        'luaValueDescriptor: "cannot-activate:same-code"',
+        "targetRange: [1, 0]",
+        "action.uid === searched.uid)).toBe(false)",
+      ],
+    },
+    {
       file: "test/lua-real-script-wynn-channeler-attribute-activation-lock.test.ts",
       kind: "wynnWindChannelerAttributeLock",
       requiredSnippets: [
@@ -588,6 +604,7 @@ function countActivationLockSemanticVariants(
       ultimateFalconDetachAtkLossOpponentLock: 0,
       vernusylphSharedEarthAttributeLock: 0,
       wattgiraffeBattleDamageOpponentLock: 0,
+      witchDefenseSameCodeSearchLock: 0,
       wynnWindChannelerAttributeLock: 0,
     },
   );
