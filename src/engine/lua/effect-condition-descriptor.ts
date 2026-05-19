@@ -13,6 +13,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const customActivityChainAtLeast = snippet.match(/\breturn\s+Duel\s*\.\s*GetCustomActivityCount\s*\(\s*[^,]+,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s*,\s*ACTIVITY_CHAIN\s*\)\s*>=\s*(\d+)/);
   if (customActivityChainAtLeast?.[1]) return `condition:custom-activity-chain-count-at-least:${customActivityChainAtLeast[1]}`;
   if (/\breturn\s+Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s*~=\s*PHASE_DRAW\b/.test(snippet)) return "condition:not-draw-phase";
+  const ownFaceupNormalSummonProcedure = ownFaceupNormalSummonProcedureDescriptor(L, index, snippet, hostState);
+  if (ownFaceupNormalSummonProcedure !== undefined) return ownFaceupNormalSummonProcedure;
   const damageSourceRelateBattleTargetAttribute = /\bDuel\s*\.\s*GetCurrentPhase\s*\(\s*\)/.test(snippet) && /\bPHASE_DAMAGE\b/.test(snippet) && /\bPHASE_DAMAGE_CAL\b/.test(snippet) && /\bIsRelateToBattle\s*\(\s*\)/.test(snippet) && /\bGetBattleTarget\s*\(\s*\)/.test(snippet)
     ? snippet.match(new RegExp(`\\bIsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`))
     : undefined;
@@ -359,6 +361,53 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const identifier = String.raw`[A-Za-z_]\w*`;
   const sourceController = new RegExp(String.raw`\breturn\s+${identifier}\s*:\s*IsControler\s*\(\s*${identifier}\s*\)\s*(?:end\b|$)`);
   return sourceController.test(snippet) ? "condition:source-controller" : undefined;
+}
+
+function ownFaceupNormalSummonProcedureDescriptor(L: unknown, functionIndex: number, snippet: string, hostState: LuaHostState): string | undefined {
+  const params = luaFunctionParams(snippet);
+  const cardParam = params?.[1], minParam = params?.[2];
+  if (!cardParam || !minParam) return undefined;
+  const card = escapeRegExp(cardParam), min = escapeRegExp(minParam);
+  if (!new RegExp(`\\bif\\s+${card}\\s*==\\s*nil\\s+then\\s+return\\s+true\\s+end`).test(snippet)) return undefined;
+  if (!new RegExp(`\\breturn\\s+${min}\\s*==\\s*0\\b`).test(snippet)) return undefined;
+  if (!new RegExp(`\\bDuel\\s*\\.\\s*GetLocationCount\\s*\\(\\s*${card}\\s*:\\s*GetControler\\s*\\(\\s*\\)\\s*,\\s*LOCATION_MZONE\\s*\\)\\s*>\\s*0\\b`).test(snippet)) return undefined;
+  const filter = new RegExp(`\\bDuel\\s*\\.\\s*IsExistingMatchingCard\\s*\\(\\s*([A-Za-z_]\\w*(?:\\s*\\.\\s*[A-Za-z_]\\w*)?)\\s*,\\s*${card}\\s*:\\s*GetControler\\s*\\(\\s*\\)\\s*,\\s*LOCATION_MZONE\\s*,\\s*0\\s*,\\s*1\\s*,\\s*nil\\s*\\)`).exec(snippet)?.[1]?.replace(/\s+/g, "");
+  if (!filter) return undefined;
+  const filterSnippet = luaNamedFunctionSnippet(hostState, filter);
+  if (!filterSnippet) return undefined;
+  const sourceLevelAbove = new RegExp(`\\b${card}\\s*:\\s*GetLevel\\s*\\(\\s*\\)\\s*>\\s*(\\d+)`).exec(snippet)?.[1] ?? "0";
+  const ownFaceupFilter = ownFaceupNormalSummonFilterDescriptor(L, functionIndex, filterSnippet);
+  return ownFaceupFilter === undefined ? undefined : `condition:normal-summon-proc-own-faceup:${ownFaceupFilter.kind}:${ownFaceupFilter.value}:source-level-above:${sourceLevelAbove}`;
+}
+
+function ownFaceupNormalSummonFilterDescriptor(L: unknown, functionIndex: number, snippet: string): { kind: "attribute" | "code" | "level"; value: number } | undefined {
+  const params = luaFunctionParams(snippet);
+  const cardParam = params?.[0];
+  if (!cardParam) return undefined;
+  const card = escapeRegExp(cardParam);
+  const attribute = new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsFaceup\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`).exec(snippet)?.[1];
+  if (attribute) {
+    const value = luaNumberTokenValue(L, functionIndex, attribute);
+    if (value !== undefined) return { kind: "attribute", value };
+  }
+  const code = new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsFaceup\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(\\d+)\\s*\\)`).exec(snippet)?.[1];
+  if (code) return { kind: "code", value: Number(code) };
+  const level = new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsFaceup\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*GetLevel\\s*\\(\\s*\\)\\s*==\\s*(\\d+)`).exec(snippet)?.[1];
+  return level === undefined ? undefined : { kind: "level", value: Number(level) };
+}
+
+function luaNamedFunctionSnippet(hostState: LuaHostState, functionName: string): string | undefined {
+  const escapedName = functionName.split(".").map(escapeRegExp).join(String.raw`\s*\.\s*`);
+  const pattern = new RegExp(`\\bfunction\\s+${escapedName}\\s*\\([^)]*\\)[\\s\\S]*?\\nend\\b`);
+  for (const source of hostState.loadedScriptBodies.values()) {
+    const match = source.match(pattern);
+    if (match) return match[0].replace(/\s+/g, " ");
+  }
+  return undefined;
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): number | undefined {

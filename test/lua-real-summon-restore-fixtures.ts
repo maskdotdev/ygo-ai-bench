@@ -14,8 +14,8 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 240;
-export const summonProcedureFixtureCount = 28;
+export const realScriptSummonFixtureCount = 241;
+export const summonProcedureFixtureCount = 29;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
 export const pendulumHelperFixtureCount = 16;
@@ -31,13 +31,13 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 22,
-  summon: 102,
+  summon: 103,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
-  genericSpecialSummonProcedure: 16,
+  genericSpecialSummonProcedure: 17,
   pendulumProcedure: 3,
   ritualProcedure: 3,
   tributeProcedure: 2,
@@ -412,6 +412,7 @@ export function realScriptSummonProcedureFixtureFiles(): string[] {
     .filter((file) => /^lua-real-script-(?:link|xyz|synchro)-procedure-filters\.test\.ts$/.test(file) || [
       "lua-real-script-chronomaly-moai-special-summon-procedure.test.ts",
       "lua-real-script-caligo-claw-crow-special-summon-procedure.test.ts",
+      "lua-real-script-cyber-shark-no-tribute-summon-procedure.test.ts",
       "lua-real-script-cyber-dragon-special-summon-procedure.test.ts",
       "lua-real-script-depth-shark-no-tribute-summon-procedure.test.ts",
       "lua-real-script-desert-twister-special-summon-procedure.test.ts",
@@ -475,7 +476,7 @@ export function classifySummonProcedureFamily(file: string): SummonProcedureFami
   if (/ritual/.test(basename)) return "ritualProcedure";
   if (basename === "lua-real-script-flash-knight-pure-pendulum-procedure.test.ts" || basename === "lua-real-script-pendulum-add-procedure-no-scale-activation.test.ts" || basename === "lua-real-script-pendulum-procedure-actions.test.ts") return "pendulumProcedure";
   if (basename === "lua-real-script-emissary-select-tribute-summon-procedure.test.ts" || basename === "lua-real-script-morganite-field-summon-procedure.test.ts") return "tributeProcedure";
-  if (basename.endsWith("-special-summon-procedure.test.ts") || basename === "lua-real-script-depth-shark-no-tribute-summon-procedure.test.ts" || basename === "lua-real-script-leo-wizard-opponent-summon-procedure.test.ts") return "genericSpecialSummonProcedure";
+  if (basename.endsWith("-special-summon-procedure.test.ts") || basename === "lua-real-script-cyber-shark-no-tribute-summon-procedure.test.ts" || basename === "lua-real-script-depth-shark-no-tribute-summon-procedure.test.ts" || basename === "lua-real-script-leo-wizard-opponent-summon-procedure.test.ts") return "genericSpecialSummonProcedure";
   throw new Error(`Unclassified summon procedure fixture: ${file}`);
 }
 
