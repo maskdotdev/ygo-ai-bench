@@ -136,10 +136,11 @@ function pushCanSetSpellTrap(L: unknown, session: DuelSession): number {
 
 function pushCanSpecialSummon(L: unknown, session: DuelSession): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const summonType = luaSpecialSummonTypeCode(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0);
   const positionMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0x1;
   const targetPlayer = normalizePlayer(lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : player);
   const uid = readCardUid(L, 5) ?? readCardUid(L, 2);
-  lua.lua_pushboolean(L, canSpecialSummon(session, player, targetPlayer, positionMask, uid));
+  lua.lua_pushboolean(L, canSpecialSummon(session, player, targetPlayer, positionMask, uid, summonType));
   return 1;
 }
 
@@ -329,7 +330,7 @@ function actionHasUid(action: { type: string }, uid: string): action is { type: 
   return "uid" in action && action.uid === uid;
 }
 
-function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: PlayerId, positionMask: number, uid: string | undefined): boolean {
+function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: PlayerId, positionMask: number, uid: string | undefined, summonType?: number): boolean {
   const position = positionFromMask(positionMask);
   if (!position) return false;
   if (availableMonsterZoneCount(session, targetPlayer, []) <= 0) return false;
@@ -337,7 +338,13 @@ function canSpecialSummon(session: DuelSession, player: PlayerId, targetPlayer: 
   const card = findCard(session.state, uid);
   if (!card || !isMonsterLike(card.kind)) return false;
   if (card.controller !== player && card.owner !== player) return false;
-  return canSpecialSummonDuelCard(session.state, uid, targetPlayer, undefined, undefined, false, position);
+  if (card.location === "extraDeck") {
+    return (
+      canPlayerSpecialSummon(session.state, targetPlayer, card, summonType, undefined, position) &&
+      canMoveDuelCardToLocation(session.state, uid, "monsterZone", duelReason.summon | duelReason.specialSummon)
+    );
+  }
+  return canSpecialSummonDuelCard(session.state, uid, targetPlayer, summonType, undefined, false, position);
 }
 
 function canSpecialSummonCount(session: DuelSession, player: PlayerId, count: number): boolean {

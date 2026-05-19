@@ -1,6 +1,6 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 39, ritual: 17 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 40, ritual: 17 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
@@ -19,6 +19,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionFcheck: 1,
   fusionGraveBanishMaterial: 1,
   fusionHandMaterial: 1,
+  fusionHexSealedExtraRelease: 1,
   fusionMaterialCheck: 1,
   fusionOpponentExtrafil: 1,
   fusionPartialExtraop: 1,
@@ -67,7 +68,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(56);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(57);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -143,6 +144,7 @@ type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummon
   | "fusionFcheck"
   | "fusionGraveBanishMaterial"
   | "fusionHandMaterial"
+  | "fusionHexSealedExtraRelease"
   | "fusionMaterialCheck"
   | "fusionOpponentExtrafil"
   | "fusionPartialExtraop"
@@ -934,6 +936,25 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "event.eventCardUid === normalMaterial!.uid",
         'expect(restored.host.messages).not.toContain("primite responder resolved")',
         "does not expose Primite Fusion when the selected material set has no Normal Monster",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hex-sealed-fusion-extra-release.test.ts",
+      kind: "fusionHexSealedExtraRelease",
+      families: ["fusion"],
+      required: [
+        "c:CheckFusionMaterial(m,gc,chkf)",
+        "c:IsHasEffect(EFFECT_EXTRA_RELEASE_NONSUM)",
+        "Fusion.CheckAdditional=s.fcheck(mg2)",
+        "Duel.SelectFusionMaterial(tp,g:GetFirst(),mg+mg2,c,chkf)",
+        "Duel.Release(mat,REASON_COST)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "operationInfos: [{ category: categorySpecialSummon, targetUids: [], count: 1, player: 0, parameter: 0x40 }]",
+        'summonType: "special"',
+        "reason: duelReason.release | duelReason.cost",
+        "reason: duelReason.summon | duelReason.specialSummon",
+        'eventName: "specialSummoned"',
+        'expect(restoredChainWindow.host.messages).not.toContain("hex-sealed responder resolved")',
       ],
     },
     {

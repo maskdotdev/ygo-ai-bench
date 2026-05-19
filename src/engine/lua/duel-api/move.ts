@@ -962,7 +962,7 @@ function specialSummonExplicitExtraDeckCard(
   hostState: LuaDuelMoveApiHostState,
   collectSuccess = true,
 ): DuelCardInstance | undefined {
-  if (card.location !== "extraDeck" || summonType === 0 || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card, summonType, hostState.activeLuaEffectId, requestedPosition)) return undefined;
+  if (card.location !== "extraDeck" || !hasOpenMonsterZone(session, player, zoneMask) || !canPlayerSpecialSummon(session.state, player, card, summonType, hostState.activeLuaEffectId, requestedPosition)) return undefined;
   try {
     collectDuelTriggerEffects(session.state, "specialSummoning", card, payload);
     const existingMonsterSequences = zoneMask === undefined ? [] : monsterZoneSequenceSnapshot(session, player, card.uid);

@@ -785,7 +785,6 @@ function specialSummonStepCard(
   const canSummon =
     canSpecialSummonDuelCard(session.state, card.uid, player, summonType, payload.eventReasonEffectId) ||
     (card.location === "extraDeck" &&
-      summonType !== 0 &&
       canPlayerSpecialSummon(session.state, player, card, summonType, payload.eventReasonEffectId) &&
       canMoveDuelCardToLocation(session.state, card.uid, "monsterZone", duelReason.summon | duelReason.specialSummon));
   if (!canSummon) return undefined;

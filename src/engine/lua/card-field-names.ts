@@ -516,6 +516,7 @@ export const cardFieldNames = [
   "IsMaximumModeSide",
   "IsNotMaximumModeSide",
   "IsCanBeFusionMaterial",
+  "CheckFusionMaterial",
   "IsCanBeSynchroMaterial",
   "IsCanBeXyzMaterial",
   "IsCanBeLinkMaterial",

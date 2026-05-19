@@ -2,6 +2,8 @@ import fengari from "fengari";
 import { hasZoneSpace } from "#duel/card-state.js";
 import { canChangeDuelCardPosition } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
+import { fusionMaterialSelectionMatches } from "#duel/summon.js";
+import { cardCombinations } from "#duel/summon-materials.js";
 import type { MaterialUseKind } from "#duel/continuous-effects.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import { canBeMaterial } from "#lua/card-eligibility-api.js";
@@ -42,6 +44,8 @@ export function installCardMaterialApi(L: unknown, session: DuelSession): void {
   pushMaterialPredicate(L, "IsCanBeXyzMaterial", session, "xyz");
   pushMaterialPredicate(L, "IsCanBeLinkMaterial", session, "link");
   pushMaterialPredicate(L, "IsCanBeRitualMaterial", session, "ritual");
+  lua.lua_pushcfunction(L, (state: unknown) => pushCheckFusionMaterial(state, session));
+  lua.lua_setfield(L, -2, to_luastring("CheckFusionMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     if (session.state.status === "ended") return 0;
     const card = readCard(state, session);
@@ -89,6 +93,51 @@ function pushMaterialPredicate(L: unknown, fieldName: string, session: DuelSessi
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
+}
+
+function pushCheckFusionMaterial(L: unknown, session: DuelSession): number {
+  const target = readCard(L, session);
+  const poolUids = uniqueUids(readGroupUids(L, 2));
+  const forcedUids = uniqueUids(readCardOrGroupUids(L, 3));
+  if (!target || poolUids.length === 0) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+
+  const candidates = poolUids
+    .map((uid) => session.state.cards.find((card) => card.uid === uid))
+    .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== target.uid && canUseAsFusionMaterial(session.state, card)));
+  const forced = forcedUids
+    .map((uid) => candidates.find((card) => card.uid === uid))
+    .filter((card): card is DuelCardInstance => card !== undefined);
+  if (forced.length !== forcedUids.length) {
+    lua.lua_pushboolean(L, false);
+    return 1;
+  }
+
+  for (let count = Math.max(1, forced.length); count <= candidates.length; count += 1) {
+    for (const materials of cardCombinations(candidates, count)) {
+      if (forced.some((material) => !materials.includes(material))) continue;
+      if (fusionMaterialSelectionMatches(session.state, target, materials)) {
+        lua.lua_pushboolean(L, true);
+        return 1;
+      }
+    }
+  }
+  lua.lua_pushboolean(L, false);
+  return 1;
+}
+
+function canUseAsFusionMaterial(state: DuelState, card: DuelCardInstance): boolean {
+  return isFusionMaterialLocation(card.location) && (cardTypeFlags(card, state) & 0x1) !== 0;
+}
+
+function isFusionMaterialLocation(location: DuelCardInstance["location"]): boolean {
+  return location === "hand" || location === "monsterZone" || location === "graveyard" || location === "banished" || location === "deck" || location === "extraDeck" || location === "spellTrapZone";
+}
+
+function uniqueUids(uids: string[]): string[] {
+  return [...new Set(uids)];
 }
 
 function defaultMaterialReason(kind: MaterialUseKind): number {

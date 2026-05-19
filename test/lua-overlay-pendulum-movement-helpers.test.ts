@@ -680,14 +680,14 @@ describe("Lua overlay and pendulum movement helpers", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("can pendulum summon true");
     expect(host.messages).toContain("pendulum can special true");
-    expect(host.messages).toContain("extra can special false");
+    expect(host.messages).toContain("extra can special true");
     expect(host.messages).toContain("pendulum special 1");
     expect(host.messages).toContain("can pendulum after summon false");
     expect(host.messages).toContain("pendulum operated 301");
-    expect(host.messages).toContain("extra special 0");
-    expect(host.messages).toContain("extra operated 0");
+    expect(host.messages).toContain("extra special 1");
+    expect(host.messages).toContain("extra operated 1");
     expect(session.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
-    expect(session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
+    expect(session.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
   });
 
   it("lets Lua scripts pendulum summon legal hand and face-up extra deck monsters", () => {
@@ -874,12 +874,12 @@ describe("Lua overlay and pendulum movement helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toContain("restored pendulum can special true");
-    expect(host.messages).toContain("restored extra can special false");
+    expect(host.messages).toContain("restored extra can special true");
     expect(host.messages).toContain("restored pendulum special 1");
-    expect(host.messages).toContain("restored extra special 0");
-    expect(host.messages).toContain("restored operated 0");
+    expect(host.messages).toContain("restored extra special 1");
+    expect(host.messages).toContain("restored operated 1");
     expect(restored.state.cards.find((card) => card.uid === pendulum!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
-    expect(restored.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "extraDeck", faceUp: false });
+    expect(restored.state.cards.find((card) => card.uid === extra!.uid)).toMatchObject({ location: "monsterZone", faceUp: true, summonType: "special" });
   });
 });
 
