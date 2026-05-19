@@ -4,28 +4,31 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const POSITION_FIXTURE_COUNT = 5;
+const POSITION_FIXTURE_COUNT = 6;
 const positionKindCounts = {
   banishCostGroupChange: 1,
   battlePhaseSelfDefenseLock: 1,
   overlayTargetChange: 1,
   summonTriggerAttackPosition: 1,
   summonTriggerSet: 1,
+  unionEquipTargetDefense: 1,
 } satisfies Record<PositionKind, number>;
 const positionSemanticVariantCounts = {
   angineerDetachOverlayProtectedPositionChange: 1,
   gagagaEscapeBanishCostGroupPositionChange: 1,
   goblinAttackForceBattlePhasePositionLock: 1,
   otohimeSummonTriggerAttackPosition: 1,
+  protectiveSoulAilinUnionPositionIgnition: 1,
   tsukuyomiSpiritSummonFaceDownSet: 1,
 } satisfies Record<PositionSemanticVariant, number>;
 
-type PositionKind = "banishCostGroupChange" | "battlePhaseSelfDefenseLock" | "overlayTargetChange" | "summonTriggerAttackPosition" | "summonTriggerSet";
+type PositionKind = "banishCostGroupChange" | "battlePhaseSelfDefenseLock" | "overlayTargetChange" | "summonTriggerAttackPosition" | "summonTriggerSet" | "unionEquipTargetDefense";
 type PositionSemanticVariant =
   | "angineerDetachOverlayProtectedPositionChange"
   | "gagagaEscapeBanishCostGroupPositionChange"
   | "goblinAttackForceBattlePhasePositionLock"
   | "otohimeSummonTriggerAttackPosition"
+  | "protectiveSoulAilinUnionPositionIgnition"
   | "tsukuyomiSpiritSummonFaceDownSet";
 
 describe("Lua real position restore coverage", () => {
@@ -137,6 +140,17 @@ function positionFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-protective-soul-ailin-union-position.test.ts",
+      kind: "unionEquipTargetDefense",
+      required: [
+        "Duel.ChangePosition(c:GetEquipTarget(),POS_FACEUP_DEFENSE,0,POS_FACEUP_ATTACK,0)",
+        "e1:SetCondition(aux.IsUnionState)",
+        "category: 0x1000",
+        "targetUids: [target!.uid]",
+        'position: "faceUpDefense"',
+      ],
+    },
+    {
       file: "test/lua-real-script-tsukuyomi-position-trigger.test.ts",
       kind: "summonTriggerSet",
       required: [
@@ -164,6 +178,7 @@ function countPositionKinds(fixtures: Array<{ kind: PositionKind }>): Record<Pos
       overlayTargetChange: 0,
       summonTriggerAttackPosition: 0,
       summonTriggerSet: 0,
+      unionEquipTargetDefense: 0,
     },
   );
 }
@@ -211,6 +226,15 @@ function positionSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-protective-soul-ailin-union-position.test.ts",
+      kind: "protectiveSoulAilinUnionPositionIgnition",
+      required: [
+        'const ailinCode = "11678191"',
+        "restores old-rule Union equip state into its Spell/Trap-zone position ignition",
+        "protective soul ailin union state true/true",
+      ],
+    },
+    {
       file: "test/lua-real-script-tsukuyomi-position-trigger.test.ts",
       kind: "tsukuyomiSpiritSummonFaceDownSet",
       required: [
@@ -239,6 +263,7 @@ function countPositionSemanticVariants(
       gagagaEscapeBanishCostGroupPositionChange: 0,
       goblinAttackForceBattlePhasePositionLock: 0,
       otohimeSummonTriggerAttackPosition: 0,
+      protectiveSoulAilinUnionPositionIgnition: 0,
       tsukuyomiSpiritSummonFaceDownSet: 0,
     },
   );

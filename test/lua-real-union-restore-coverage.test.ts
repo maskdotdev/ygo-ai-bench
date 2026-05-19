@@ -4,22 +4,25 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const UNION_FIXTURE_COUNT = 2;
+const UNION_FIXTURE_COUNT = 3;
 const UNION_PROCEDURE_FIXTURE_COUNT = 1;
 const EQUIPPED_UNION_LOCK_FIXTURE_COUNT = 1;
+const UNION_POSITION_IGNITION_FIXTURE_COUNT = 1;
 const unionKindCounts = {
   equippedUnionLock: 1,
+  unionPositionIgnition: 1,
   unionEquipProcedure: 1,
 } satisfies Record<UnionKind, number>;
 const unionProcedureVariantCounts = {
+  ailinOldUnionPositionIgnition: 1,
   driverDeckReplace: 1,
   driverEquipSummonBack: 1,
   pilotBanishedEquipSelfSummon: 1,
   trigonBattleSummon: 1,
 } satisfies Record<UnionProcedureVariant, number>;
 
-type UnionKind = "equippedUnionLock" | "unionEquipProcedure";
-type UnionProcedureVariant = "driverDeckReplace" | "driverEquipSummonBack" | "pilotBanishedEquipSelfSummon" | "trigonBattleSummon";
+type UnionKind = "equippedUnionLock" | "unionPositionIgnition" | "unionEquipProcedure";
+type UnionProcedureVariant = "ailinOldUnionPositionIgnition" | "driverDeckReplace" | "driverEquipSummonBack" | "pilotBanishedEquipSelfSummon" | "trigonBattleSummon";
 
 describe("Lua real Union restore coverage", () => {
   it("requires representative Union fixtures to assert clean Lua registry restore", () => {
@@ -87,6 +90,25 @@ describe("Lua real Union restore coverage", () => {
     expect(weak).toEqual([]);
   });
 
+  it("requires Union position ignition fixtures to restore old-rule Union status into Spell/Trap-zone effects", () => {
+    const files = unionPositionIgnitionFixtureFiles();
+    expect(files).toHaveLength(UNION_POSITION_IGNITION_FIXTURE_COUNT);
+
+    const missing = files
+      .filter((file) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("aux.AddUnionProcedure(c,aux.FilterBoolFunction(Card.IsCode,84173492),true)")
+          || !text.includes("e1:SetRange(LOCATION_SZONE)")
+          || !text.includes("e1:SetCondition(aux.IsUnionState)")
+          || !text.includes("protective soul ailin union state true/true")
+          || !text.includes("category: 0x1000")
+          || !text.includes('eventName: "positionChanged"')
+          || !text.includes("host.messages).not.toContain");
+      });
+
+    expect(missing).toEqual([]);
+  });
+
   it("requires equipped Union lock fixtures to preserve source-equipped lizard descriptors after restore", () => {
     const files = equippedUnionLockFixtureFiles();
     expect(files).toHaveLength(EQUIPPED_UNION_LOCK_FIXTURE_COUNT);
@@ -117,6 +139,10 @@ function unionFixtures(): Array<{ file: string; kind: UnionKind }> {
       kind: "unionEquipProcedure",
     },
     {
+      file: "lua-real-script-protective-soul-ailin-union-position.test.ts",
+      kind: "unionPositionIgnition",
+    },
+    {
       file: "lua-real-script-dragon-buster-equipped-lizard-lock.test.ts",
       kind: "equippedUnionLock",
     },
@@ -139,6 +165,18 @@ function unionProcedureFixtureFiles(): string[] {
 
 function unionProcedureVariants(): Array<{ file: string; kind: UnionProcedureVariant; required: string[] }> {
   return ([
+    {
+      file: "lua-real-script-protective-soul-ailin-union-position.test.ts",
+      kind: "ailinOldUnionPositionIgnition",
+      required: [
+        "restores old-rule Union equip state into its Spell/Trap-zone position ignition",
+        "findEffectActionByCategory(restoredUnionState.session, getLuaRestoreLegalActions(restoredUnionState, 0), ailin!.uid, 0x1000)",
+        "protective soul ailin union state true/true",
+        'location: "spellTrapZone"',
+        "equippedToUid: target!.uid",
+        'position: "faceUpDefense"',
+      ],
+    },
     {
       file: "lua-real-script-union-procedure-actions.test.ts",
       kind: "driverEquipSummonBack",
@@ -201,6 +239,14 @@ function equippedUnionLockFixtureFiles(): string[] {
     .sort();
 }
 
+function unionPositionIgnitionFixtureFiles(): string[] {
+  return [
+    "lua-real-script-protective-soul-ailin-union-position.test.ts",
+  ]
+    .map((file) => path.join("test", file))
+    .sort();
+}
+
 function countUnionKinds(fixtures: Array<{ kind: UnionKind }>): Record<UnionKind, number> {
   return fixtures.reduce<Record<UnionKind, number>>(
     (counts, fixture) => {
@@ -209,6 +255,7 @@ function countUnionKinds(fixtures: Array<{ kind: UnionKind }>): Record<UnionKind
     },
     {
       equippedUnionLock: 0,
+      unionPositionIgnition: 0,
       unionEquipProcedure: 0,
     },
   );
@@ -221,6 +268,7 @@ function countUnionProcedureVariants(fixtures: Array<{ kind: UnionProcedureVaria
       return counts;
     },
     {
+      ailinOldUnionPositionIgnition: 0,
       driverDeckReplace: 0,
       driverEquipSummonBack: 0,
       pilotBanishedEquipSelfSummon: 0,
