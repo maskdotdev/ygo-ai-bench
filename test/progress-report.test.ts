@@ -50,16 +50,16 @@ describe("parity progress report", () => {
     expect(report.luaParity.missingConstants).toBe(0);
 
     expect(report.cleanRestore.restoredFixtures).toBe(report.cleanRestore.totalFixtures);
-    expect(report.cleanRestore.totalFixtures).toBe(876);
+    expect(report.cleanRestore.totalFixtures).toBe(877);
     expect(report.cleanRestore.restorePercent).toBe(100);
     expect(report.cleanRestore.legalActionFixtures).toBe(report.cleanRestore.legalActionTotalFixtures);
-    expect(report.cleanRestore.legalActionTotalFixtures).toBe(876);
+    expect(report.cleanRestore.legalActionTotalFixtures).toBe(877);
     expect(report.provenance.files).toBe(945);
     expect(report.provenance.expectationBlocks).toBe(4939);
     expect(report.provenance.edoproBlocks).toBe(report.provenance.expectationBlocks);
     expect(report.provenance.backlogBlocks).toBe(0);
 
-    expect(report.directScriptFixtureEstimate.realScriptFixtures).toBe(876);
+    expect(report.directScriptFixtureEstimate.realScriptFixtures).toBe(877);
     expect(report.directScriptFixtureEstimate.officialScripts).toBe(13299);
     expect(report.directScriptFixtureEstimate.allScripts).toBe(22326);
     expect(report.directScriptFixtureEstimate.remainingOfficialOnePerScript).toBe(

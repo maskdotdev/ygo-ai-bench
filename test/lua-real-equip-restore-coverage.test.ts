@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 11;
-const equipRelationFixtureCount = 15;
-const equipProbeFixtureCount = 10;
-const equipOperationInfoFixtureCount = 12;
-const equipCleanupFixtureCount = 9;
-const equipInventoryFixtureCount = 18;
+const equipFixtureCount = 12;
+const equipRelationFixtureCount = 16;
+const equipProbeFixtureCount = 11;
+const equipOperationInfoFixtureCount = 13;
+const equipCleanupFixtureCount = 10;
+const equipInventoryFixtureCount = 19;
 const equipKindCounts = {
   equipControl: 2,
   equipCost: 1,
@@ -18,6 +18,7 @@ const equipKindCounts = {
   equipPierce: 2,
   equipProcedure: 4,
   equipReturn: 3,
+  equipReviveBanish: 1,
   equipReviveDestroy: 1,
   equipSelfDestroy: 1,
   equipStatLock: 1,
@@ -33,6 +34,7 @@ const equipSemanticVariantCounts = {
   cestusBattleRecovery: 1,
   dragonTreasureRaceStat: 1,
   fairyMeteorCrushPierce: 1,
+  fulfillmentContractRitualReviveBanish: 1,
   geminiBoosterStatus: 1,
   gravityAxePositionLock: 1,
   graydleEagleBattleDestroyStealEquip: 1,
@@ -68,6 +70,7 @@ type EquipKind =
   | "equipPierce"
   | "equipProcedure"
   | "equipReturn"
+  | "equipReviveBanish"
   | "equipReviveDestroy"
   | "equipSelfDestroy"
   | "equipStatLock";
@@ -82,6 +85,7 @@ type EquipSemanticVariant =
   | "cestusBattleRecovery"
   | "dragonTreasureRaceStat"
   | "fairyMeteorCrushPierce"
+  | "fulfillmentContractRitualReviveBanish"
   | "geminiBoosterStatus"
   | "gravityAxePositionLock"
   | "graydleEagleBattleDestroyStealEquip"
@@ -179,7 +183,7 @@ describe("Lua real equip restore coverage", () => {
       .filter((file) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("operationInfos")
-          || !/"category":\s*262144/.test(text);
+          || !/(?:category|"category"):\s*(?:262144|0x40000)/.test(text);
       });
 
     expect(missing).toEqual([]);
@@ -211,13 +215,13 @@ describe("Lua real equip restore coverage", () => {
       .filter((file) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !/previousEquippedToUid/.test(text)
-          || !/location:\s*["']graveyard["']/.test(text)
-          || !/eventCode:\s*1014|eventCode:\s*1029|"eventCode":\s*1014|"eventCode":\s*1029/.test(text)
+          || !/location:\s*["'](?:graveyard|banished)["']/.test(text)
+          || !/eventCode:\s*1011|eventCode:\s*1014|eventCode:\s*1029|"eventCode":\s*1011|"eventCode":\s*1014|"eventCode":\s*1029/.test(text)
           || !/eventCardUid/.test(text)
           || !text.includes("missingRegistryKeys")
           || !text.includes("missingRegistryKeys).toEqual([])")
           || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
-          || !/eventName:\s*["']sentToGraveyard["']|eventName:\s*["']destroyed["']|previousController/.test(text);
+          || !/eventName:\s*["']sentToGraveyard["']|eventName:\s*["']destroyed["']|eventName:\s*["']banished["']|previousController/.test(text);
       });
 
     expect(missing).toEqual([]);
@@ -264,6 +268,7 @@ function realScriptEquipFixtureFiles(): string[] {
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
@@ -284,6 +289,7 @@ function realScriptEquipRelationFixtureFiles(): string[] {
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
@@ -304,6 +310,7 @@ function realScriptEquipProbeFixtureFiles(): string[] {
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
+    "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
@@ -323,6 +330,7 @@ function realScriptEquipOperationInfoFixtureFiles(): string[] {
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
@@ -340,6 +348,7 @@ function realScriptEquipCleanupFixtureFiles(): string[] {
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
+    "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
@@ -393,6 +402,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     {
       file: "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
       kind: "equipPierce",
+    },
+    {
+      file: "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
+      kind: "equipReviveBanish",
     },
     {
       file: "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
@@ -529,6 +542,20 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "restores equip-sourced piercing damage only for the equipped monster",
         "Fairy Meteor Crush",
         "equip-sourced piercing",
+      ],
+    },
+    {
+      file: "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
+      kind: "fulfillmentContractRitualReviveBanish",
+      required: [
+        "restores LP-cost Ritual revival into equip relation and destroyed-equip banish cleanup",
+        'const contractCode = "48206762"',
+        "Duel.CheckLPCost(tp,800)",
+        "Duel.PayLPCost(tp,800)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.Equip(tp,c,tc)",
+        "Duel.Remove(tc,POS_FACEUP,REASON_EFFECT)",
+        "fulfillment probe 48206762/482067620/true",
       ],
     },
     {
@@ -779,6 +806,7 @@ function countEquipKinds(fixtures: Array<{ kind: EquipKind }>): Record<EquipKind
       equipPierce: 0,
       equipProcedure: 0,
       equipReturn: 0,
+      equipReviveBanish: 0,
       equipReviveDestroy: 0,
       equipSelfDestroy: 0,
       equipStatLock: 0,
@@ -803,6 +831,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       cestusBattleRecovery: 0,
       dragonTreasureRaceStat: 0,
       fairyMeteorCrushPierce: 0,
+      fulfillmentContractRitualReviveBanish: 0,
       geminiBoosterStatus: 0,
       gravityAxePositionLock: 0,
       graydleEagleBattleDestroyStealEquip: 0,

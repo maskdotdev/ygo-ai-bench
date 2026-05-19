@@ -3,7 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { addDuelChainLimit, applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
@@ -50,6 +50,7 @@ const luaEffectFlagClientHint = 0x4000000;
 const luaEffectFlagPlayerTarget = 0x800;
 const luaEventAdjust = 1040;
 const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
+const luaEquipLeaveFieldBanishTargetCodes = new Set(["48206762", "74694807"]);
 const luaStaticSingleCardRestrictionCodes = new Set([43, 44, 85]);
 const luaIndestructibleValueDescriptors = new Set(["indestructible:opponent", "indestructible:self"]);
 const luaLifePointReasonPredicateEffectCodes = new Set([80, 81]);
@@ -548,8 +549,10 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownSetcodeTypeExtraSummonRestriction(effect) ||
         isKnownSetSummonCountLimitEffect(effect) ||
         isKnownExtraSummonCountEffect(effect) ||
+        isKnownEquipLimitEffect(effect) ||
         isKnownEquipControlEffect(effect) ||
         isKnownEquipLeaveFieldPrecheckEffect(effect) ||
+        isKnownEquipLeaveFieldBanishTargetEffect(effect) ||
         isKnownEquipLeaveFieldDestroyTargetEffect(effect) ||
         effect.code === 25 ||
         (effect.code === 60 && effect.value !== undefined) ||
@@ -610,8 +613,22 @@ function isKnownStatValueEffect(effect: SerializedDuelEffect): boolean { return 
 function isKnownEquipControlEffect(effect: SerializedDuelEffect): boolean {
   return effect.event === "continuous" && effect.code === 4 && effect.sourceUid !== undefined && effect.value !== undefined && effect.reset !== undefined;
 }
+function isKnownEquipLimitEffect(effect: SerializedDuelEffect): boolean {
+  return effect.event === "continuous" && effect.code === luaEffectEquipLimit && effect.sourceUid !== undefined && effect.reset !== undefined;
+}
 function isKnownEquipLeaveFieldPrecheckEffect(effect: SerializedDuelEffect): boolean {
   return effect.event === "continuous" && effect.code === 1019 && effect.sourceUid !== undefined && effect.reset !== undefined;
+}
+function isKnownEquipLeaveFieldBanishTargetEffect(effect: SerializedDuelEffect): boolean {
+  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+  return (
+    registryCode !== undefined &&
+    luaEquipLeaveFieldBanishTargetCodes.has(registryCode) &&
+    effect.event === "continuous" &&
+    effect.code === 1015 &&
+    effect.sourceUid !== undefined &&
+    effect.reset !== undefined
+  );
 }
 function isKnownEquipLeaveFieldDestroyTargetEffect(effect: SerializedDuelEffect): boolean {
   return effect.event === "continuous" && effect.code === 1015 && effect.sourceUid !== undefined && effect.reset !== undefined;
@@ -901,6 +918,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
   if (isKnownLeaveFieldLinkedDestroyEffect(effect)) return luaLinkedLeaveFieldDestroyOperation(effect);
+  if (isKnownEquipLeaveFieldBanishTargetEffect(effect)) return luaEquipLeaveFieldBanishTargetOperation(effect);
   if (isKnownEquipLeaveFieldDestroyTargetEffect(effect)) return luaEquipLeaveFieldDestroyTargetOperation(effect);
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
@@ -925,6 +943,24 @@ function luaEquipLeaveFieldDestroyTargetOperation(effect: SerializedDuelEffect):
       });
     } catch {
       // EDOPro-style equip cleanup ignores targets that are no longer destroyable.
+    }
+  };
+}
+
+function luaEquipLeaveFieldBanishTargetOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    const targetUid = source?.previousEquippedToUid ?? source?.equippedToUid;
+    const target = targetUid === undefined ? undefined : findCard(ctx.duel, targetUid);
+    if (!target || target.location !== "monsterZone") return;
+    try {
+      banishDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect, ctx.player, {
+        eventReasonCardUid: effect.sourceUid,
+        ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+      });
+    } catch {
+      // EDOPro-style equip cleanup ignores targets that are no longer removable.
     }
   };
 }
