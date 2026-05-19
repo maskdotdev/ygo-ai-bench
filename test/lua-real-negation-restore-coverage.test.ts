@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 14;
-const chainResponseNegationFixtureCount = 11;
+const negationFixtureCount = 15;
+const chainResponseNegationFixtureCount = 12;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 18;
+const negationInventoryFixtureCount = 19;
 const negationKindCounts = {
   chainDisable: 1,
+  chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
   chainNegateToGrave: 7,
@@ -24,6 +25,7 @@ const negationSemanticVariantCounts = {
   armorBreakEquipActiveTypeNegateDestroy: 1,
   ashBlossomHandTrapDeckSearchNegate: 1,
   darkBribeNegateDestroyOpponentDraw: 1,
+  disarmGladiatorCostToDeckSpellNegateDestroy: 1,
   divineWrathDiscardMonsterNegateDestroy: 1,
   effectVeilerHandQuickDisableChainLink: 1,
   ghostOgreDestroyOnlyNoNegation: 1,
@@ -43,6 +45,7 @@ const negationSemanticVariantCounts = {
 
 type NegationKind =
   | "chainDisable"
+  | "chainNegateCostToDeck"
   | "chainNegateDraw"
   | "chainNegateToDeck"
   | "chainNegateToGrave"
@@ -54,6 +57,7 @@ type NegationSemanticVariant =
   | "armorBreakEquipActiveTypeNegateDestroy"
   | "ashBlossomHandTrapDeckSearchNegate"
   | "darkBribeNegateDestroyOpponentDraw"
+  | "disarmGladiatorCostToDeckSpellNegateDestroy"
   | "divineWrathDiscardMonsterNegateDestroy"
   | "effectVeilerHandQuickDisableChainLink"
   | "ghostOgreDestroyOnlyNoNegation"
@@ -188,6 +192,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-ash-blossom-chain-negate.test.ts",
     "lua-real-script-armor-break-equip-active-type-negate.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
+    "lua-real-script-disarm-gladiator-negate-to-deck-cost.test.ts",
     "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-effect-veiler-chain-disable.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
@@ -236,6 +241,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     {
       file: "lua-real-script-dark-bribe-negate-draw.test.ts",
       kind: "chainNegateDraw",
+    },
+    {
+      file: "lua-real-script-disarm-gladiator-negate-to-deck-cost.test.ts",
+      kind: "chainNegateCostToDeck",
     },
     {
       file: "lua-real-script-divine-wrath-monster-negate.test.ts",
@@ -341,6 +350,21 @@ function negationSemanticVariants(): Array<{
         'const darkBribeCode = "77538567"',
         "restores activation negation that destroys the source, draws for the opponent, and suppresses the negated Spell",
         'eventName: "cardsDrawn"',
+      ],
+    },
+    {
+      file: "lua-real-script-disarm-gladiator-negate-to-deck-cost.test.ts",
+      kind: "disarmGladiatorCostToDeckSpellNegateDestroy",
+      required: [
+        'const disarmCode = "26834022"',
+        "restores its hand Gladiator Beast to-Deck cost, activation negation, source destruction, and suppressed Spell operation",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.SendtoDeck(g,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "Duel.NegateActivation(ev)",
+        'eventName: "confirmed"',
+        'eventName: "sentToDeck"',
+        'eventName: "chainNegated"',
       ],
     },
     {
@@ -505,6 +529,7 @@ function countNegationKinds(fixtures: Array<{ kind: NegationKind }>): Record<Neg
     },
     {
       chainDisable: 0,
+      chainNegateCostToDeck: 0,
       chainNegateDraw: 0,
       chainNegateToDeck: 0,
       chainNegateToGrave: 0,
@@ -541,6 +566,7 @@ function countNegationSemanticVariants(
       armorBreakEquipActiveTypeNegateDestroy: 0,
       ashBlossomHandTrapDeckSearchNegate: 0,
       darkBribeNegateDestroyOpponentDraw: 0,
+      disarmGladiatorCostToDeckSpellNegateDestroy: 0,
       divineWrathDiscardMonsterNegateDestroy: 0,
       effectVeilerHandQuickDisableChainLink: 0,
       ghostOgreDestroyOnlyNoNegation: 0,
