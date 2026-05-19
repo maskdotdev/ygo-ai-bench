@@ -83,6 +83,12 @@ import {
   summonSuccessTargetSpecialSummonFixtureCount,
   summonSuccessTargetSpecialSummonKindCounts,
 } from "./lua-real-summon-success-target-special-summon-restore-fixtures.js";
+import {
+  countSummonSuccessSelfSpecialSummonKinds,
+  realScriptSummonSuccessSelfSpecialSummonFixtureSnippets,
+  summonSuccessSelfSpecialSummonFixtureCount,
+  summonSuccessSelfSpecialSummonKindCounts,
+} from "./lua-real-summon-success-self-special-summon-restore-fixtures.js";
 
 const root = process.cwd();
 
@@ -474,6 +480,34 @@ describe("Lua real summon restore coverage", () => {
 
   it("keeps summon-success target Special Summon fixture kinds explicit", () => {
     expect(countSummonSuccessTargetSpecialSummonKinds(realScriptSummonSuccessTargetSpecialSummonFixtureSnippets())).toEqual(summonSuccessTargetSpecialSummonKindCounts);
+  });
+
+  it("requires representative summon-success self Special Summon fixtures to pin restored hand triggers and material locks", () => {
+    const files = realScriptSummonSuccessSelfSpecialSummonFixtureSnippets();
+    expect(files).toHaveLength(summonSuccessSelfSpecialSummonFixtureCount);
+
+    const weak = files
+      .filter(({ file, required }) => {
+        const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
+        return !text.includes("restoreDuelWithLuaScripts")
+          || !text.includes("restoreComplete")
+          || !text.includes('incompleteReasons.join("; ")')
+          || !text.includes("missingRegistryKeys).toEqual([])")
+          || !text.includes("missingChainLimitRegistryKeys).toEqual([])")
+          || !text.includes("applyLuaRestoreResponse")
+          || !text.includes("getLuaRestoreLegalActions")
+          || !text.includes("getLuaRestoreLegalActionGroups")
+          || !text.includes("getGroupedDuelLegalActions")
+          || !text.includes("flatMap((group) => group.actions)")
+          || required.some((snippet) => !hasCoverageSnippet(text, snippet));
+      })
+      .map(({ file }) => file);
+
+    expect(weak).toEqual([]);
+  });
+
+  it("keeps summon-success self Special Summon fixture kinds explicit", () => {
+    expect(countSummonSuccessSelfSpecialSummonKinds(realScriptSummonSuccessSelfSpecialSummonFixtureSnippets())).toEqual(summonSuccessSelfSpecialSummonKindCounts);
   });
 
   it("requires representative force-Monster-Zone summon locks to pin restored zone counts", () => {

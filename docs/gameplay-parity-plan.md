@@ -418,6 +418,7 @@ Implementation files likely touched:
 Acceptance gates:
 
 - Summon legality, material selection, material movement, and summon-success triggers are fixture-tested separately.
+- Real-script summon-success self Special Summon coverage now includes official Kagetokage's hand-range `EVENT_SUMMON_SUCCESS` trigger, restored operation info and chain identity, self Special Summon from hand, `CompleteProcedure`, and numeric `EFFECT_CANNOT_BE_SYNCHRO_MATERIAL` persistence after the card enters the Monster Zone.
 - Summon negation leaves cards in EDOPro-matching locations.
 - Serialization works during material selection, summon attempt, summon negation window, and summon-success trigger windows.
 

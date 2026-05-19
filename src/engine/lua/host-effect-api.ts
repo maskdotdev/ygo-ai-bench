@@ -639,7 +639,7 @@ function luaEffectDefaultRange(card: DuelCardInstance, luaEffect: LuaEffectRecor
   if (event === "trigger" && luaEffectIsSourceOnlyTrigger(luaEffect.typeFlags, triggerEventFromCode(luaEffectTriggerCode(luaEffect)), luaEffectTriggerCode(luaEffect))) return [...duelLocations];
   if (event === "continuous" && luaEffectIsSourceOnlyContinuousEvent(luaEffect.typeFlags, triggerEventFromCode(luaEffectTriggerCode(luaEffect)))) return [...duelLocations];
   if (event === "continuous" && (luaEffect.typeFlags & 0x4) !== 0) return ["spellTrapZone"];
-  if (event === "continuous" && shouldSurviveLuaSingleEffectEnteringField(card, luaEffect)) return [...duelLocations];
+  if (event === "continuous" && ((luaEffect.typeFlags & luaEffectTypeSingle) !== 0 && [235, 236, 238, 239, 248].includes(luaEffect.code ?? -1) || shouldSurviveLuaSingleEffectEnteringField(card, luaEffect))) return [...duelLocations];
   if (event === "continuous" && luaEffect.code === luaEffectFusionSubstitute) return [...duelLocations];
   if (event === "continuous" && luaEffect.code === 313) return ["monsterZone"];
   if (event === "continuous" || event === "summonProcedure" || event === "trigger") return [card.location];
