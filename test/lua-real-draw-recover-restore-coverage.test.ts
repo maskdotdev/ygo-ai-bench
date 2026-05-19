@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 18;
+const DRAW_RECOVER_FIXTURE_COUNT = 19;
 const drawRecoverKindCounts = {
   costBanishDraw: 3,
   costDiscardDraw: 1,
   costGraveDraw: 1,
   drawRecoverOrDamage: 2,
-  drawTrigger: 6,
+  drawTrigger: 7,
   handToDeckDraw: 1,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
@@ -23,6 +23,7 @@ const drawRecoverSemanticVariantCounts = {
   darkBribeNegateDestroyDraw: 1,
   blizzedBattleDestroyedDraw: 1,
   darkseaFloatDestroyedToGraveDraw: 1,
+  darkseaRescueSynchroMaterialDraw: 1,
   geminiSparkReleaseDestroyDraw: 1,
   morayGreedHandToDeckDraw: 1,
   morayAvariceFieldBanishDraw: 1,
@@ -46,6 +47,7 @@ type DrawRecoverSemanticVariant =
   | "darkBribeNegateDestroyDraw"
   | "blizzedBattleDestroyedDraw"
   | "darkseaFloatDestroyedToGraveDraw"
+  | "darkseaRescueSynchroMaterialDraw"
   | "geminiSparkReleaseDestroyDraw"
   | "kujiKiriLevel9GraveDraw"
   | "morayGreedHandToDeckDraw"
@@ -150,6 +152,21 @@ function drawRecoverFixtureFiles(): Array<{
         "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
         'location: "graveyard"',
         'location: "hand", controller: 0',
+      ],
+    },
+    {
+      file: "test/lua-real-script-darksea-rescue-synchro-material-draw.test.ts",
+      kind: "drawTrigger",
+      required: [
+        'eventName: "usedAsMaterial"',
+        'eventName: "cardsDrawn"',
+        "e1:SetCode(EVENT_BE_MATERIAL)",
+        "r==REASON_SYNCHRO",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(1)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "operationInfos",
+        "darksea rescue responder resolved",
       ],
     },
     {
@@ -427,6 +444,19 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-darksea-rescue-synchro-material-draw.test.ts",
+      kind: "darkseaRescueSynchroMaterialDraw",
+      required: [
+        'const darkseaCode = "34659866"',
+        "restores its Synchro material trigger into CHAININFO-targeted controller draw",
+        "e1:SetCode(EVENT_BE_MATERIAL)",
+        "r==REASON_SYNCHRO",
+        "eventName: \"usedAsMaterial\"",
+        "eventName: \"cardsDrawn\"",
+        "darksea rescue responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-gemini-spark-release-destroy-draw.test.ts",
       kind: "geminiSparkReleaseDestroyDraw",
       required: [
@@ -628,6 +658,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       cardSafeReturnGraveSpecialDraw: 0,
       darkBribeNegateDestroyDraw: 0,
       darkseaFloatDestroyedToGraveDraw: 0,
+      darkseaRescueSynchroMaterialDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
       kujiKiriLevel9GraveDraw: 0,
       morayGreedHandToDeckDraw: 0,
