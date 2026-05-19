@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 40;
-const battleTimingEventCodeFixtureCount = 40;
+const battleTimingFixtureCount = 41;
+const battleTimingEventCodeFixtureCount = 41;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 17,
   beforeDamageCalculation: 8,
   duringDamageCalculation: 5,
   endDamageStep: 6,
-  startDamageStep: 4,
+  startDamageStep: 5,
 };
 const battleTimingSemanticVariantCounts = {
   allyOfJusticeNullfierAfterDamageDisable: 1,
@@ -24,6 +24,7 @@ const battleTimingSemanticVariantCounts = {
   darkRulerHaDesAfterDamageContinuousDisable: 1,
   desKangarooEndDamageDestroy: 1,
   dracoonLampChangeBattleStat: 1,
+  drillroidBattleConfirmDestroy: 1,
   destructionPunchEndDamageTrapDestroy: 1,
   divineKnightIshzarkAfterDamageBanish: 1,
   ehrenBattleConfirmToDeck: 1,
@@ -126,6 +127,7 @@ type BattleTimingSemanticVariant =
   | "darkRulerHaDesAfterDamageContinuousDisable"
   | "desKangarooEndDamageDestroy"
   | "dracoonLampChangeBattleStat"
+  | "drillroidBattleConfirmDestroy"
   | "destructionPunchEndDamageTrapDestroy"
   | "divineKnightIshzarkAfterDamageBanish"
   | "ehrenBattleConfirmToDeck"
@@ -378,6 +380,11 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores battle-confirm damage into a later battled self-destruction trigger", "eventName: \"battleConfirmed\"", "eventName: \"afterDamageCalculation\""],
     },
     {
+      file: "test/lua-real-script-drillroid-battle-confirm-destroy.test.ts",
+      kind: "drillroidBattleConfirmDestroy",
+      required: ["restores battle-confirm defense-target destruction and ends the pending battle", "Duel.GetAttackTarget()", "Duel.Destroy(t,REASON_EFFECT)", "eventName: \"battleConfirmed\"", "eventName: \"destroyed\""],
+    },
+    {
       file: "test/lua-real-script-sasuke-samurai-battle-start-destroy.test.ts",
       kind: "sasukeSamuraiStartDamageDestroy",
       required: ["restores its EVENT_BATTLE_START mandatory trigger and destroys the face-down Defense target", "battleWindow?.kind).toBe(\"startDamageStep\")", "eventName: \"destroyed\""],
@@ -487,6 +494,7 @@ function countBattleTimingSemanticVariants(
       dracoonLampChangeBattleStat: 0,
       ehrenBattleConfirmToDeck: 0,
       elementDoomAfterDamageAttributeDisable: 0,
+      drillroidBattleConfirmDestroy: 0,
       fabledAshenveilPreDamageBoost: 0,
       geminiSoldierAfterDamageDeckSummon: 0,
       getsuFuhmaEndDamageTargetDestroy: 0,
@@ -659,6 +667,19 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       file: "test/lua-real-script-ehren-battle-confirm-to-deck.test.ts",
       kind: "startDamageStep",
       required: ['battleWindow?.kind).toBe("startDamageStep")', 'eventName: "battleConfirmed"', "eventCode: 1133", 'eventName: "sentToDeck"', "eventCode: 1013", "pendingBattle).toBeUndefined()"],
+    },
+    {
+      file: "test/lua-real-script-drillroid-battle-confirm-destroy.test.ts",
+      kind: "startDamageStep",
+      required: [
+        "restores battle-confirm defense-target destruction and ends the pending battle",
+        'battleWindow?.kind).toBe("startDamageStep")',
+        'eventName: "battleConfirmed"',
+        "eventCode: 1133",
+        'eventName: "destroyed"',
+        "eventCode: 1029",
+        "pendingBattle).toBeUndefined()",
+      ],
     },
     {
       file: "test/lua-real-script-element-doom-chain-attack.test.ts",
