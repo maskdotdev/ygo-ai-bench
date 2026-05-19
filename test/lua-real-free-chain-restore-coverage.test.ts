@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 16;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 15;
+const FREE_CHAIN_FIXTURE_COUNT = 17;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 16;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 16;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 17;
 const freeChainKindCounts = {
   banishRemoval: 1,
   graveyardRevive: 1,
-  multiTargetDestroy: 4,
+  multiTargetDestroy: 5,
   positionChange: 2,
   selectUnselectTargets: 1,
   singleDestroy: 3,
@@ -20,6 +20,7 @@ const freeChainKindCounts = {
   toHand: 2,
 } satisfies Record<FreeChainKind, number>;
 const freeChainSemanticVariantCounts = {
+  attentionLevelMismatchGroupDestroy: 1,
   armorBlastMergedTargets: 1,
   bookMoonPositionSet: 1,
   compulsoryToHand: 1,
@@ -49,6 +50,7 @@ type FreeChainKind =
   | "toDeckDiscard"
   | "toHand";
 type FreeChainSemanticVariant =
+  | "attentionLevelMismatchGroupDestroy"
   | "armorBlastMergedTargets"
   | "bookMoonPositionSet"
   | "compulsoryToHand"
@@ -184,6 +186,7 @@ function realScriptFreeChainOperationInfoFixtureFiles(): string[] {
 
 function realScriptChainedFreeChainFixtureFiles(): string[] {
   return realScriptFreeChainFixtureFiles()
+    .filter((file) => !file.endsWith("lua-real-script-attention-level-mismatch-group-destroy.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-armor-blast-multi-target-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-book-of-moon-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-destruction-ring-destroy-both-damage.test.ts"))
@@ -198,6 +201,10 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
 
 function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKind }> {
   return ([
+    {
+      file: "lua-real-script-attention-level-mismatch-group-destroy.test.ts",
+      kind: "multiTargetDestroy",
+    },
     {
       file: "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
       kind: "multiTargetDestroy",
@@ -269,6 +276,18 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
 
 function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: FreeChainSemanticVariant; required: string[] }> {
   return ([
+    {
+      file: "lua-real-script-attention-level-mismatch-group-destroy.test.ts",
+      kind: "attentionLevelMismatchGroupDestroy",
+      required: [
+        "restores target level lookup and destroys the recomputed different-level monster group",
+        "const attentionCode = \"85352446\"",
+        "Duel.GetMatchingGroup(s.filter2,0,LOCATION_MZONE,LOCATION_MZONE,tc,tc:GetLevel())",
+        "{ category: 0x1, targetUids: destroyedUids, count: 2, player: 0, parameter: 0 }",
+        "targetUids: [target.uid]",
+        "eventUids: destroyedUids",
+      ],
+    },
     {
       file: "lua-real-script-armor-blast-multi-target-free-chain.test.ts",
       kind: "armorBlastMergedTargets",
@@ -460,6 +479,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       return counts;
     },
     {
+      attentionLevelMismatchGroupDestroy: 0,
       armorBlastMergedTargets: 0,
       bookMoonPositionSet: 0,
       compulsoryToHand: 0,
