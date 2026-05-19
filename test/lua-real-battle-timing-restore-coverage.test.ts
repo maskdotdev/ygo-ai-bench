@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 34;
-const battleTimingEventCodeFixtureCount = 34;
+const battleTimingFixtureCount = 35;
+const battleTimingEventCodeFixtureCount = 35;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 15,
+  afterDamageCalculation: 16,
   beforeDamageCalculation: 7,
   duringDamageCalculation: 4,
   endDamageStep: 5,
@@ -33,6 +33,7 @@ const battleTimingSemanticVariantCounts = {
   hayateAfterDamageDeckSend: 1,
   heraldicBeastBasiliskAfterDamageBattleTargetDestroy: 1,
   injectionFairyLilyBeforeDamageLpBoost: 1,
+  insectPrincessBattledFlagAtk: 1,
   kuribohBeforeDamagePrevent: 1,
   mirageKnightDuringDamageAtkBanish: 1,
   nightmareMagicianEndDamageControl: 1,
@@ -129,6 +130,7 @@ type BattleTimingSemanticVariant =
   | "hayateAfterDamageDeckSend"
   | "heraldicBeastBasiliskAfterDamageBattleTargetDestroy"
   | "injectionFairyLilyBeforeDamageLpBoost"
+  | "insectPrincessBattledFlagAtk"
   | "kuribohBeforeDamagePrevent"
   | "mirageKnightDuringDamageAtkBanish"
   | "nightmareMagicianEndDamageControl"
@@ -282,6 +284,18 @@ function battleTimingSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-insect-princess-battled-flag-atk.test.ts",
+      kind: "insectPrincessBattledFlagAtk",
+      required: [
+        "restores EVENT_BATTLED flag state into its battle-destroying ATK gain trigger",
+        "RegisterFlagEffect(id,RESET_PHASE|PHASE_DAMAGE,0,1)",
+        "e3:SetCode(EVENT_BATTLE_DESTROYING)",
+        "eventName: \"battleDestroyed\"",
+        "insect princess attack 2400",
+        "insect princess battle flag 1",
+      ],
+    },
+    {
       file: "test/lua-real-script-kuriboh-pre-damage-prevent.test.ts",
       kind: "kuribohBeforeDamagePrevent",
       required: ["restores its before-damage hand Quick Effect and prevents battle damage after self-discard cost", "triggerEvent: \"beforeDamageCalculation\"", "battleDamage).toEqual({ 0: 0, 1: 0 })"],
@@ -421,6 +435,7 @@ function countBattleTimingSemanticVariants(
       hayateAfterDamageDeckSend: 0,
       heraldicBeastBasiliskAfterDamageBattleTargetDestroy: 0,
       injectionFairyLilyBeforeDamageLpBoost: 0,
+      insectPrincessBattledFlagAtk: 0,
       kuribohBeforeDamagePrevent: 0,
       mirageKnightDuringDamageAtkBanish: 0,
       nightmareMagicianEndDamageControl: 0,
@@ -615,6 +630,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "Duel.PayLPCost(tp,2000)",
         "currentAttack(boostedLily, restoredDamageStep.session.state)).toBe(3400)",
         "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-insect-princess-battled-flag-atk.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        "eventReasonCardUid: insectPrincess!.uid",
+        "insect princess attack 2400",
       ],
     },
     {
