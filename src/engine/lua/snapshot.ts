@@ -3,7 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { addDuelChainLimit, applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { addDuelChainLimit, applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
@@ -11,7 +11,9 @@ import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.
 import { cardFieldId } from "#duel/card-field-id.js";
 import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKnownBookOfEclipsePhaseEndEffect } from "#lua/snapshot-book-of-eclipse.js";
 import { isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
+import { luaHandlerDestroyOperation, luaLinkedLeaveFieldDestroyOperation } from "#lua/snapshot-destroy-operations.js";
 import { isKnownLevelNormalEndPhaseDestroyEffect, levelNormalEndPhaseDestroyCanActivate, levelNormalEndPhaseDestroyOperation } from "#lua/snapshot-level-normal-end-phase-destroy.js";
+import { isKnownSelfEndPhaseDestroyEffect, selfEndPhaseDestroyOperation } from "#lua/snapshot-self-end-phase-destroy.js";
 import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
 import { isKnownPlayerDamageZeroEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryArtifactLanceaBanishLockEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryEarthshatteringDeckGraveLockEffect, isKnownTemporaryMonsterExtraAttackEffect, isKnownTemporaryMonsterNoBattleDamageEffect, isKnownTemporaryOpponentCannotBattlePhaseEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryOpponentTurnSkipMain2Effect, isKnownTemporaryOpponentTurnSkipTurnEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporaryPlayerHalfBattleDamageEffect, isKnownTemporarySameCodeActivationOathEffect, isKnownTemporarySelfTurnCannotEndPhaseEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySummonSetLockEffect, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
 import { isKnownMulcharmyDrawWatcherEffect, isKnownMulcharmyEndPhaseShuffleEffect, mulcharmyDrawWatcherOperation, mulcharmyEndPhaseShuffleOperation } from "#lua/snapshot-mulcharmy.js";
@@ -80,6 +82,7 @@ const luaResetOpponentTurn = 0x20000000;
 const luaPhaseBattle = 0x80; const luaPhaseEnd = 0x200;
 const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle; const luaPhaseEndEventCode = luaResetEvent | luaPhaseEnd;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
+const luaResetsStandardPhaseEndRuntime = luaResetsStandardPhaseEnd & ~luaResetEvent;
 const luaResetEventStandard = luaResetEvent | 0x1fe0000;
 const luaTemporaryRestrictionResetFlags = luaResetsStandardPhaseEnd & ~luaResetTurnSet; const luaTemporaryPositionLockResetFlags = luaResetPhase | luaPhaseEnd;
 export interface LuaSnapshotRestoreResult {
@@ -376,7 +379,9 @@ function restoreKnownLuaEffects(
   const restored = new Set(restoredRegistryKeys);
   const added: string[] = [];
   for (const effect of snapshotEffects) {
-    if (!effect.registryKey || !registryKeys.has(effect.registryKey) || restored.has(effect.registryKey)) continue;
+    if (!effect.registryKey || !registryKeys.has(effect.registryKey)) continue;
+    refreshKnownRestoredLuaEffect(session, effect);
+    if (restored.has(effect.registryKey)) continue;
     if (!isKnownRestorableLuaEffect(effect, snapshotEffects)) continue;
     const reset = restoredLuaEffectReset(session, effect);
     session.state.effects.push({
@@ -393,6 +398,17 @@ function restoreKnownLuaEffects(
     added.push(effect.registryKey);
   }
   return added;
+}
+
+function refreshKnownRestoredLuaEffect(session: DuelSession, effect: SerializedDuelEffect): void {
+  if (!effect.registryKey || !isKnownSelfEndPhaseDestroyEffect(effect)) return;
+  const restored = session.state.effects.find((candidate) => candidate.registryKey === effect.registryKey);
+  if (!restored) return;
+  Object.assign(restored, {
+    operation: restoredLuaOperation(effect),
+    ...restoredLuaConditionCallbacks(effect),
+    ...restoredLuaTargetCallbacks(effect),
+  });
 }
 
 function restoredLuaEffectReset(session: DuelSession, effect: SerializedDuelEffect): DuelEffectDefinition["reset"] | undefined {
@@ -509,6 +525,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
   return (
     isClientHintEffect(effect) ||
     isKnownSunlitSentinelDelayedStandbyEffect(effect) ||
+    isKnownSelfEndPhaseDestroyEffect(effect) ||
     (effect.event === "continuous" &&
       (effect.code === 2 ||
         effect.code === 8 ||
@@ -588,7 +605,7 @@ function isKnownEndPhaseReviveDestroyEffect(effect: SerializedDuelEffect): boole
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone" &&
     effect.countLimit === 1 &&
-    effect.reset?.flags === luaResetsStandardPhaseEnd
+    (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaResetsStandardPhaseEndRuntime)
   );
 }
 
@@ -830,6 +847,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return levelNormalEndPhaseDestroyOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
+  if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
   if (isKnownLeaveFieldLinkedDestroyEffect(effect)) return luaLinkedLeaveFieldDestroyOperation(effect);
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
@@ -878,37 +896,6 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
       });
     } catch {
       // EDOPro-style delayed operations ignore handlers that can no longer move.
-    }
-  };
-}
-
-function luaHandlerDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
-  return (ctx) => {
-    try {
-      destroyDuelCard(ctx.duel, ctx.source.uid, ctx.source.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
-        eventReasonCardUid: effect.sourceUid,
-      });
-    } catch {
-      // EDOPro-style delayed operations ignore handlers that can no longer be destroyed.
-    }
-  };
-}
-
-function luaLinkedLeaveFieldDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
-  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
-  return (ctx) => {
-    const eventUids = ctx.eventUids ?? (ctx.eventCard ? [ctx.eventCard.uid] : []);
-    const linkedCardLeft = registryCode !== undefined && eventUids.some((uid) => {
-      const card = ctx.duel.cards.find((candidate) => candidate.uid === uid);
-      return Boolean(card && currentCardMatchesCode(card, ctx.duel, registryCode));
-    });
-    if (!linkedCardLeft) return;
-    try {
-      destroyDuelCard(ctx.duel, ctx.source.uid, ctx.source.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
-        eventReasonCardUid: effect.sourceUid,
-      });
-    } catch {
-      // EDOPro-style delayed operations ignore handlers that can no longer be destroyed.
     }
   };
 }

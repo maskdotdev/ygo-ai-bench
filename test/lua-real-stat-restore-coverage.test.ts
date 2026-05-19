@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 20;
+const statFixtureCount = 21;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -19,6 +19,7 @@ const statKindCounts = {
   setAttack: 1,
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
+  selfFinalAttackEndDestroy: 1,
   staticAttackAndExtraAttack: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedPreDamageFinalAttack: 1,
@@ -44,9 +45,10 @@ const statSemanticVariantCounts = {
   steamroidDamageStepBattleSwingStat: 1,
   gracefulDiceDamageStepGroupStat: 1,
   trianglePowerBaseStatEndDestroy: 1,
+  plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
@@ -61,6 +63,7 @@ type StatSemanticVariant =
   | "mukaMukaHandCountAttackDefense"
   | "neoFlamvellSabreGraveCountThresholdStat"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
+  | "plagueWolfFinalAttackEndDestroy"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
@@ -310,6 +313,20 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-plague-wolf-final-attack-end-destroy.test.ts",
+      kind: "selfFinalAttackEndDestroy",
+      required: [
+        'const plagueWolfCode = "55696885"',
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(c:GetBaseAttack()*2)",
+        "e2:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.Destroy(c,REASON_EFFECT)",
+        "currentAttack(plagueWolf, session.state)).toBe(1000)",
+        "assertBoostedPlagueWolf",
+        "battleDamage).toEqual({ 0: 0, 1: 500 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "battleTargetAttackBoost",
       required: [
@@ -390,6 +407,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
+      selfFinalAttackEndDestroy: 0,
       staticAttackAndExtraAttack: 0,
       targetedDamageStepAttackUpdate: 0,
       targetedPreDamageFinalAttack: 0,
@@ -531,6 +549,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-plague-wolf-final-attack-end-destroy.test.ts",
+      kind: "plagueWolfFinalAttackEndDestroy",
+      required: [
+        'const plagueWolfCode = "55696885"',
+        "restores final ATK doubling through battle damage and the delayed self-destroy trigger",
+        "`lua:${plagueWolfCode}:lua-3-4608`",
+        'eventName: "phaseEnd"',
+        "eventReasonEffectId: 3",
+      ],
+    },
+    {
       file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
       kind: "rushRecklesslyTargetedDamageStepAttackUpdate",
       required: [
@@ -630,6 +659,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       mukaMukaHandCountAttackDefense: 0,
       neoFlamvellSabreGraveCountThresholdStat: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
+      plagueWolfFinalAttackEndDestroy: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,

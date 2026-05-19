@@ -79,6 +79,7 @@ export function pruneResetEffectsAfterPhaseFlag(state: DuelState, phaseFlag: num
       reset.count -= 1;
       return true;
     }
+    if (state.pendingTriggers.some((trigger) => trigger.effectId === effect.id && trigger.sourceUid === effect.sourceUid)) return true;
     return removeResetEffect(state, effect);
   });
 }
