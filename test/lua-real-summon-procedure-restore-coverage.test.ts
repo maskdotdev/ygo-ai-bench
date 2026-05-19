@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 8;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 7;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 9;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 8;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 1,
@@ -14,6 +14,7 @@ const summonProcedureKindCounts = {
   handReleaseEquipTurnCounterProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
+  handOwnFaceupLevelOrLinkOpenZoneProcedure: 1,
   handSendCostProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
 const summonProcedureSemanticVariantCounts = {
@@ -25,6 +26,7 @@ const summonProcedureSemanticVariantCounts = {
   magnetDollBothFieldsGimmickOnlyHandProcedure: 1,
   megarockDragonGraveBanishStatProcedure: 1,
   pankratopsOpponentControlsMoreHandProcedure: 1,
+  sprightRedLevelOrLinkOpenZoneProcedure: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
 
 type SummonProcedureKind =
@@ -35,6 +37,7 @@ type SummonProcedureKind =
   | "handReleaseEquipTurnCounterProcedure"
   | "handBothFieldsGimmickOnlyProcedure"
   | "handOpponentCountProcedure"
+  | "handOwnFaceupLevelOrLinkOpenZoneProcedure"
   | "handSendCostProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
@@ -44,7 +47,8 @@ type SummonProcedureSemanticVariant =
   | "greatMothCocoonEquipTurnCounterReleaseProcedure"
   | "magnetDollBothFieldsGimmickOnlyHandProcedure"
   | "megarockDragonGraveBanishStatProcedure"
-  | "pankratopsOpponentControlsMoreHandProcedure";
+  | "pankratopsOpponentControlsMoreHandProcedure"
+  | "sprightRedLevelOrLinkOpenZoneProcedure";
 
 const summonProcedureFixtures = [
   {
@@ -109,6 +113,20 @@ const summonProcedureFixtures = [
       "return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_DARK)",
       "expectRestoredActionSurfaces(restored, 0)",
       "applyLuaRestoreResponse(restored, procedure as DuelAction)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-spright-red-release-link2-negate.test.ts",
+    kind: "handOwnFaceupLevelOrLinkOpenZoneProcedure",
+    required: [
+      "hand summon procedure, Link-2 release cost",
+      'action.type === "specialSummonProcedure"',
+      "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+      "return c:IsFaceup() and (c:IsLevel(2) or c:IsLink(2))",
+      "expectRestoredLegalActions(restoredSummonWindow, 1)",
+      "applyLuaRestoreResponse(restored, response)",
       'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
     ],
@@ -250,6 +268,7 @@ function countSummonProcedureKinds(
       graveBanishCostStatProcedure: 0,
       deckTwoMaterialShufflePierceProcedure: 0,
       handOwnFaceupAttributeOpenZoneProcedure: 0,
+      handOwnFaceupLevelOrLinkOpenZoneProcedure: 0,
       handReleaseEquipTurnCounterProcedure: 0,
       handBothFieldsGimmickOnlyProcedure: 0,
       handOpponentCountProcedure: 0,
@@ -345,6 +364,17 @@ function summonProcedureSemanticVariants(): Array<{
         'eventName: "specialSummoned"',
       ],
     },
+    {
+      file: "test/lua-real-script-spright-red-release-link2-negate.test.ts",
+      kind: "sprightRedLevelOrLinkOpenZoneProcedure",
+      required: [
+        'const sprightRedCode = "75922381"',
+        "restores its hand summon procedure, Link-2 release cost, yes/no destroy prompt, negation, and suppressed monster operation",
+        "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+        "return c:IsFaceup() and (c:IsLevel(2) or c:IsLink(2))",
+        'action.type === "specialSummonProcedure"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: SummonProcedureSemanticVariant;
@@ -422,6 +452,7 @@ function countSummonProcedureSemanticVariants(
       magnetDollBothFieldsGimmickOnlyHandProcedure: 0,
       megarockDragonGraveBanishStatProcedure: 0,
       pankratopsOpponentControlsMoreHandProcedure: 0,
+      sprightRedLevelOrLinkOpenZoneProcedure: 0,
     },
   );
 }

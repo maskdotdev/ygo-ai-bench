@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const releaseAndTributeFixtureCount = 8;
-const legalActionFixtureCount = 6;
+const releaseAndTributeFixtureCount = 9;
+const legalActionFixtureCount = 7;
 const releaseAndTributeKindCounts = {
   archetypeCannotRelease: 1,
   attributeTributeLimit: 1,
   extraDeckReleaseCost: 1,
   globalCannotRelease: 1,
+  linkReleaseCost: 1,
   plantReleaseCost: 1,
   raceTributeLimit: 1,
   setcodeTributeLimit: 1,
@@ -23,6 +24,7 @@ const releaseAndTributeSemanticVariantCounts = {
   diabolosAttributeTributeLimit: 1,
   maskOfRestrictGlobalCannotRelease: 1,
   pollinosisPlantReleaseCost: 1,
+  sprightRedLinkReleaseCost: 1,
   troposphereRaceTributeLimit: 1,
   yellowDustonUnreleasableTributeLock: 1,
 } satisfies Record<ReleaseAndTributeSemanticVariant, number>;
@@ -32,6 +34,7 @@ type ReleaseAndTributeKind =
   | "attributeTributeLimit"
   | "extraDeckReleaseCost"
   | "globalCannotRelease"
+  | "linkReleaseCost"
   | "plantReleaseCost"
   | "raceTributeLimit"
   | "setcodeTributeLimit"
@@ -43,6 +46,7 @@ type ReleaseAndTributeSemanticVariant =
   | "diabolosAttributeTributeLimit"
   | "maskOfRestrictGlobalCannotRelease"
   | "pollinosisPlantReleaseCost"
+  | "sprightRedLinkReleaseCost"
   | "troposphereRaceTributeLimit"
   | "yellowDustonUnreleasableTributeLock";
 
@@ -178,6 +182,17 @@ function releaseAndTributeFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-spright-red-release-link2-negate.test.ts",
+      kind: "linkReleaseCost",
+      required: [
+        "Duel.CheckReleaseGroupCost(tp,s.discostfilter,1,false,nil,c)",
+        "Duel.SelectReleaseGroupCost(tp,s.discostfilter,1,1,false,nil,c)",
+        "return c:IsLevel(2) or c:IsRank(2) or c:IsLink(2)",
+        "duelReason.cost | duelReason.release",
+        'eventName: "released"',
+      ],
+    },
+    {
       file: "lua-real-script-troposphere-tribute-limit.test.ts",
       kind: "raceTributeLimit",
       required: [
@@ -214,6 +229,7 @@ function legalActionFixtureFiles(): string[] {
     "lua-real-script-assault-zone-extra-deck-release-cost.test.ts",
     "lua-real-script-diabolos-tribute-limit.test.ts",
     "lua-real-script-pollinosis-release-activation-negate.test.ts",
+    "lua-real-script-spright-red-release-link2-negate.test.ts",
     "lua-real-script-troposphere-tribute-limit.test.ts",
     "lua-real-script-yellow-duston-unreleasable-tribute-lock.test.ts",
   ]
@@ -284,6 +300,17 @@ function releaseAndTributeSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-spright-red-release-link2-negate.test.ts",
+      kind: "sprightRedLinkReleaseCost",
+      required: [
+        'const sprightRedCode = "75922381"',
+        "restores its hand summon procedure, Link-2 release cost, yes/no destroy prompt, negation, and suppressed monster operation",
+        "Duel.CheckReleaseGroupCost(tp,s.discostfilter,1,false,nil,c)",
+        "Duel.SelectReleaseGroupCost(tp,s.discostfilter,1,1,false,nil,c)",
+        'eventName: "released"',
+      ],
+    },
+    {
       file: "lua-real-script-troposphere-tribute-limit.test.ts",
       kind: "troposphereRaceTributeLimit",
       required: [
@@ -323,6 +350,7 @@ function countReleaseAndTributeKinds(
       attributeTributeLimit: 0,
       extraDeckReleaseCost: 0,
       globalCannotRelease: 0,
+      linkReleaseCost: 0,
       plantReleaseCost: 0,
       raceTributeLimit: 0,
       setcodeTributeLimit: 0,
@@ -346,6 +374,7 @@ function countReleaseAndTributeSemanticVariants(
       diabolosAttributeTributeLimit: 0,
       maskOfRestrictGlobalCannotRelease: 0,
       pollinosisPlantReleaseCost: 0,
+      sprightRedLinkReleaseCost: 0,
       troposphereRaceTributeLimit: 0,
       yellowDustonUnreleasableTributeLock: 0,
     },

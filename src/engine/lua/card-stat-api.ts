@@ -60,11 +60,11 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   pushNumberMatcher(L, "IsDefenseBelow", session, (card, requested) => hasDefense(card, session.state) && currentDefense(card, session.state) <= requested);
   pushNumberMatcher(L, "IsOriginalDefenseAbove", session, (card, requested) => hasDefense(card, session.state) && (card.data.defense ?? 0) >= requested);
   pushNumberMatcher(L, "IsOriginalDefenseBelow", session, (card, requested) => hasDefense(card, session.state) && (card.data.defense ?? 0) <= requested);
-  pushNumberGetter(L, "GetLevel", session, (card) => currentLevel(card, session.state));
-  pushNumberGetter(L, "Level", session, (card) => currentLevel(card, session.state));
+  pushNumberGetter(L, "GetLevel", session, (card) => hasLevel(card, session.state) ? currentLevel(card, session.state) : 0);
+  pushNumberGetter(L, "Level", session, (card) => hasLevel(card, session.state) ? currentLevel(card, session.state) : 0);
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateLevel(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateLevel"));
-  pushNumberGetter(L, "GetOriginalLevel", session, (card) => card?.data.level ?? 0);
+  pushNumberGetter(L, "GetOriginalLevel", session, (card) => hasLevel(card, session.state) ? card?.data.level ?? 0 : 0);
   pushNumberGetter(L, "GetLeftScale", session, (card) => currentLeftScale(card, session.state));
   pushNumberGetter(L, "GetRightScale", session, (card) => currentRightScale(card, session.state));
   pushNumberGetter(L, "GetOriginalLeftScale", session, (card) => card?.data.leftScale ?? 0);

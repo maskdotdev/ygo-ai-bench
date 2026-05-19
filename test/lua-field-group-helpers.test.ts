@@ -224,6 +224,7 @@ describe("Lua field group helpers", () => {
       Debug.Message("rank " .. xyz:GetRank() .. "/" .. xyz:GetOriginalRank() .. "/" .. tostring(xyz:HasRank()) .. "/" .. tostring(normal:HasRank()) .. "/" .. tostring(xyz:IsRank(4)) .. "/" .. tostring(xyz:IsOriginalRank(4)) .. "/" .. zero_rank:GetRank() .. "/" .. tostring(zero_rank:HasRank()))
       Debug.Message("rank varargs " .. tostring(xyz:IsRank(3,4)) .. "/" .. tostring(xyz:IsRank({3,4})) .. "/" .. tostring(xyz:IsRank(2,3)) .. "/" .. tostring(xyz:IsOriginalRank(3,4)) .. "/" .. tostring(xyz:IsOriginalRank({3,4})))
       Debug.Message("rank level gates " .. tostring(xyz:IsOriginalLevel(4)) .. "/" .. tostring(normal:IsOriginalRank(0)))
+      Debug.Message("rank link levels " .. xyz:GetLevel() .. "/" .. xyz:GetOriginalLevel() .. "/" .. link:GetLevel() .. "/" .. link:GetOriginalLevel())
       Debug.Message("spirit predicate " .. tostring(spirit:IsSpirit()) .. "/" .. tostring(c:IsSpirit()))
       Debug.Message("plus minus predicate " .. tostring(plus:IsPlusOrMinus()) .. "/" .. tostring(minus:IsPlusOrMinus()) .. "/" .. tostring(plus_minus:IsPlusOrMinus()) .. "/" .. tostring(c:IsPlusOrMinus()))
       Debug.Message("rank comparisons " .. tostring(xyz:IsRankAbove(3)) .. "/" .. tostring(xyz:IsRankBelow(3)) .. "/" .. tostring(xyz:IsOriginalRankAbove(4)) .. "/" .. tostring(xyz:IsOriginalRankBelow(4)))
@@ -341,6 +342,7 @@ describe("Lua field group helpers", () => {
     expect(host.messages).toContain("rank 4/4/true/false/true/true/0/true");
     expect(host.messages).toContain("rank varargs true/true/false/true/true");
     expect(host.messages).toContain("rank level gates false/false");
+    expect(host.messages).toContain("rank link levels 0/0/0/0");
     expect(host.messages).toContain("spirit predicate true/false");
     expect(host.messages).toContain("plus minus predicate true/true/false/false");
     expect(host.messages).toContain("has level true/false/false/false/true");
@@ -353,7 +355,7 @@ describe("Lua field group helpers", () => {
     expect(host.messages).toContain("link comparisons true/false/false/true");
     expect(host.messages).toContain("link update 3/5/2/true/true");
     expect(host.messages).toContain("ritual fixed level 5");
-    expect(host.messages).toContain("ritual function level 9");
+    expect(host.messages).toContain("ritual function level 7");
     expect(host.messages).toContain("ritual summoning level 7");
     expect(host.messages).toContain("synchro levels 4/5/8");
     expect(host.messages).toContain("level update -6/1/7/true/true");

@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 13;
+const negationFixtureCount = 14;
 const chainResponseNegationFixtureCount = 11;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 17;
+const negationInventoryFixtureCount = 18;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 6,
+  chainNegateToGrave: 7,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -36,6 +36,7 @@ const negationSemanticVariantCounts = {
   solemnJudgmentActivationNegateCostDestroy: 1,
   solemnStrikeSummonAndMonsterNegate: 1,
   solemnWarningSpecialSummonNegate: 1,
+  sprightRedLinkReleaseMonsterNegateDestroy: 1,
   twinTwistersMultiDestroyOnlyNoNegation: 1,
   wiretapTrapNegateReturnToDeck: 1,
 } satisfies Record<NegationSemanticVariant, number>;
@@ -65,6 +66,7 @@ type NegationSemanticVariant =
   | "solemnJudgmentActivationNegateCostDestroy"
   | "solemnStrikeSummonAndMonsterNegate"
   | "solemnWarningSpecialSummonNegate"
+  | "sprightRedLinkReleaseMonsterNegateDestroy"
   | "twinTwistersMultiDestroyOnlyNoNegation"
   | "wiretapTrapNegateReturnToDeck";
 
@@ -198,6 +200,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
     "lua-real-script-solemn-strike-special-summon-negate.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
+    "lua-real-script-spright-red-release-link2-negate.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
   ]
@@ -212,7 +215,8 @@ function realScriptNegationFixtureFiles(): string[] {
 function realScriptChainResponseNegationFixtureFiles(): string[] {
   return realScriptNegationFixtureFiles()
     .filter((file) => !file.endsWith("lua-real-script-ash-blossom-chain-negate.test.ts"))
-    .filter((file) => !file.endsWith("lua-real-script-pollinosis-release-activation-negate.test.ts"));
+    .filter((file) => !file.endsWith("lua-real-script-pollinosis-release-activation-negate.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-spright-red-release-link2-negate.test.ts"));
 }
 
 function realScriptDestroyOnlyResponseFixtureFiles(): string[] {
@@ -268,6 +272,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     {
       file: "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
       kind: "summonNegateContinuation",
+    },
+    {
+      file: "lua-real-script-spright-red-release-link2-negate.test.ts",
+      kind: "chainNegateToGrave",
     },
     {
       file: "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
@@ -450,6 +458,19 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-spright-red-release-link2-negate.test.ts",
+      kind: "sprightRedLinkReleaseMonsterNegateDestroy",
+      required: [
+        'const sprightRedCode = "75922381"',
+        "restores its hand summon procedure, Link-2 release cost, yes/no destroy prompt, negation, and suppressed monster operation",
+        "Duel.NegateEffect(ev)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.BreakEffect()",
+        'eventName: "chainNegated"',
+        'expect(restoredOpenChain.host.messages).not.toContain("spright red monster resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-twin-twisters-discard-cost.test.ts",
       kind: "twinTwistersMultiDestroyOnlyNoNegation",
       required: [
@@ -532,6 +553,7 @@ function countNegationSemanticVariants(
       solemnJudgmentActivationNegateCostDestroy: 0,
       solemnStrikeSummonAndMonsterNegate: 0,
       solemnWarningSpecialSummonNegate: 0,
+      sprightRedLinkReleaseMonsterNegateDestroy: 0,
       twinTwistersMultiDestroyOnlyNoNegation: 0,
       wiretapTrapNegateReturnToDeck: 0,
     },

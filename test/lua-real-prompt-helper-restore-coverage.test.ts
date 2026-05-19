@@ -82,6 +82,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectOptionRitualBranch: 2,
   selectOptionTurnEffect: 1,
   selectYesNoActivationLock: 1,
+  selectYesNoNegateDestroy: 1,
 };
 const promptHelperSemanticVariantCounts: Record<PromptHelperSemanticVariant, number> = {
   gagagaMagicianAnnounceLevelChange: 1,
@@ -102,6 +103,7 @@ const promptHelperSemanticVariantCounts: Record<PromptHelperSemanticVariant, num
   primiteLordlyLodeAnnounceCardSummonLock: 1,
   pyroClockTurnEffectSelectOption: 1,
   smallScuffleMirroredZoneSummon: 1,
+  sprightRedNegateDestroyPrompt: 1,
   springMultiDisableZoneLoop: 1,
   springansBlastFieldZoneLoop: 1,
   springansShipFieldZoneTarget: 1,
@@ -128,6 +130,7 @@ const promptHelperSemanticVariantByFile: Record<string, PromptHelperSemanticVari
   "test/lua-real-script-primite-lordly-lode.test.ts": "primiteLordlyLodeAnnounceCardSummonLock",
   "test/lua-real-script-pyro-clock-select-option-table-unpack.test.ts": "pyroClockTurnEffectSelectOption",
   "test/lua-real-script-small-scuffle-mirrored-zone-summon.test.ts": "smallScuffleMirroredZoneSummon",
+  "test/lua-real-script-spright-red-release-link2-negate.test.ts": "sprightRedNegateDestroyPrompt",
   "test/lua-real-script-spring-multi-disable-zone.test.ts": "springMultiDisableZoneLoop",
   "test/lua-real-script-springans-blast-field-zone-loop.test.ts": "springansBlastFieldZoneLoop",
   "test/lua-real-script-springans-ship-select-field-zone.test.ts": "springansShipFieldZoneTarget",
@@ -174,7 +177,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(24);
+    expect(representativePromptHelperFixtures()).toHaveLength(25);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -273,7 +276,8 @@ type PromptHelperKind =
   | "selectOptionFieldZone"
   | "selectOptionRitualBranch"
   | "selectOptionTurnEffect"
-  | "selectYesNoActivationLock";
+  | "selectYesNoActivationLock"
+  | "selectYesNoNegateDestroy";
 type PromptHelperSemanticVariant =
   | "gagagaMagicianAnnounceLevelChange"
   | "gachiGachiSelectEffectYesNoReplacement"
@@ -293,6 +297,7 @@ type PromptHelperSemanticVariant =
   | "primiteLordlyLodeAnnounceCardSummonLock"
   | "pyroClockTurnEffectSelectOption"
   | "smallScuffleMirroredZoneSummon"
+  | "sprightRedNegateDestroyPrompt"
   | "springMultiDisableZoneLoop"
   | "springansBlastFieldZoneLoop"
   | "springansShipFieldZoneTarget"
@@ -603,6 +608,17 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         'expect.objectContaining({ api: "SelectYesNo", player: 0, returned: true })',
         "cannot-activate:monster-attribute-except:1",
         "expect(getLuaRestoreLegalActions(restoredLock, 0).some((action) => action.type === \"activateEffect\" && action.uid === fireResponder.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-spright-red-release-link2-negate.test.ts",
+      kind: "selectYesNoNegateDestroy",
+      apis: ["SelectYesNo"],
+      required: [
+        "restores its hand summon procedure, Link-2 release cost, yes/no destroy prompt, negation, and suppressed monster operation",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        'expect.objectContaining({ api: "SelectYesNo", player: 1, returned: true })',
+        'expect(restoredOpenChain.host.messages).not.toContain("spright red monster resolved")',
       ],
     },
   ] satisfies Array<{ file: string; kind: PromptHelperKind; apis: OfficialPromptApi[]; required: string[] }>).sort((a, b) => a.file.localeCompare(b.file));
