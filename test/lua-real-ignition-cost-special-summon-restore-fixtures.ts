@@ -1,9 +1,10 @@
-export const ignitionCostSpecialSummonFixtureCount = 5;
+export const ignitionCostSpecialSummonFixtureCount = 6;
 
 export const ignitionCostSpecialSummonKindCounts = {
   dragonRulerDiscardDeckSummonCannotAttack: 1,
   graveCostSelfSummonSearchRedirect: 1,
   handCostSelfSummon: 1,
+  revealCostSelfSummonSearch: 1,
   releaseBanishLabelBossSummonSearch: 1,
   overlayDetachSelfSummonSearch: 1,
 } satisfies Record<IgnitionCostSpecialSummonKind, number>;
@@ -12,6 +13,7 @@ export type IgnitionCostSpecialSummonKind =
   | "dragonRulerDiscardDeckSummonCannotAttack"
   | "graveCostSelfSummonSearchRedirect"
   | "handCostSelfSummon"
+  | "revealCostSelfSummonSearch"
   | "releaseBanishLabelBossSummonSearch"
   | "overlayDetachSelfSummonSearch";
 
@@ -84,6 +86,23 @@ export function realScriptIgnitionCostSpecialSummonFixtureSnippets(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-libromancer-fire-reveal-summon-search.test.ts",
+      kind: "revealCostSelfSummonSearch",
+      required: [
+        "Duel.SelectMatchingCard(tp,s.spcostfilter,tp,LOCATION_HAND,0,1,1,c)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.ShuffleHand(tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,0,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        'eventName: "confirmed"',
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHandConfirmed"',
+        "sequence: 1",
+      ],
+    },
+    {
       file: "test/lua-real-script-myutant-m05-release-banish-summon-search.test.ts",
       kind: "releaseBanishLabelBossSummonSearch",
       required: [
@@ -128,5 +147,5 @@ export function countIgnitionCostSpecialSummonKinds(
   return files.reduce<Record<IgnitionCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, overlayDetachSelfSummonSearch: 0, releaseBanishLabelBossSummonSearch: 0 });
+  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, overlayDetachSelfSummonSearch: 0, releaseBanishLabelBossSummonSearch: 0, revealCostSelfSummonSearch: 0 });
 }
