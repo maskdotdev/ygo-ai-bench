@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 75;
+export const operationFixtureCount = 76;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -32,6 +32,7 @@ export const operationKindCounts = {
   fiveGraveToDeckShuffleDraw: 2,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
+  monsterIgnitionSpellTrapDestroy: 1,
   mutualHandDiscardDraw: 1,
   opponentHandToDeck: 1,
   overlayAttach: 1,
@@ -87,6 +88,7 @@ export type OperationKind =
   | "fiveGraveToDeckShuffleDraw"
   | "lpCostHandDiscard"
   | "lpCostRandomHandDiscard"
+  | "monsterIgnitionSpellTrapDestroy"
   | "mutualHandDiscardDraw"
   | "opponentHandToDeck"
   | "overlayAttach"
@@ -826,6 +828,19 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-chachaka-archer-ignition-spelltrap-destroy.test.ts",
+      kind: "monsterIgnitionSpellTrapDestroy",
+      required: [
+        "restores its ignition target selection into GetFirstTarget Spell/Trap destruction",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "if tc:IsRelateToEffect(e) then",
+        'eventName: "destroyed"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-old-vindictive-magician-flip-target-destroy.test.ts",
       kind: "flipTargetDestroy",
       required: [
@@ -967,6 +982,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fiveGraveToDeckShuffleDraw: 0,
       lpCostHandDiscard: 0,
       lpCostRandomHandDiscard: 0,
+      monsterIgnitionSpellTrapDestroy: 0,
       mutualHandDiscardDraw: 0,
       opponentHandToDeck: 0,
       overlayAttach: 0,
