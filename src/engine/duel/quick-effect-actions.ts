@@ -8,6 +8,7 @@ import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, Pla
 export type DuelEffectChooser = (state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId) => boolean;
 
 const luaEffectTypeActivate = 0x10;
+const typeCounter = 0x100000;
 const timingBattleStart = 0x8;
 const timingBattleEnd = 0x10;
 const timingBattlePhase = 0x1000000;
@@ -35,12 +36,16 @@ export function hasQuickEffectResponses(state: DuelState, player: PlayerId, canC
 function quickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
   const kind = currentBattleWindowKind(state);
   if (kind !== undefined && isBattleWindowTriggerEvent(effect.triggerEvent)) return battleWindowEventMatchesEffect(kind, effect);
-  if (kind === "duringDamageCalculation") return battleWindowEventMatchesEffect(kind, effect) || Boolean((effect.property ?? 0) & 0x8000);
+  if (kind === "duringDamageCalculation") return battleWindowEventMatchesEffect(kind, effect) || Boolean((effect.property ?? 0) & 0x8000) || isCounterTrapActivation(effect, source);
   if (kind === "startDamageStep" || kind === "beforeDamageCalculation" || kind === "afterDamageCalculation" || kind === "endDamageStep") {
-    return battleWindowEventMatchesEffect(kind, effect) || Boolean((effect.property ?? 0) & 0x4000);
+    return battleWindowEventMatchesEffect(kind, effect) || Boolean((effect.property ?? 0) & 0x4000) || isCounterTrapActivation(effect, source);
   }
   if (state.phase === "battle" && kind === undefined) return battleOpenQuickEffectTimingAllows(state, effect, source);
   return true;
+}
+
+function isCounterTrapActivation(effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  return ((effect.luaTypeFlags ?? 0) & luaEffectTypeActivate) !== 0 && ((source.data.typeFlags ?? 0) & typeCounter) !== 0;
 }
 
 function battleWindowEventMatchesEffect(kind: NonNullable<ReturnType<typeof currentBattleWindowKind>>, effect: DuelEffectDefinition): boolean {

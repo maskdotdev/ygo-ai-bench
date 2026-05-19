@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 20;
-const chainResponseNegationFixtureCount = 17;
+const negationFixtureCount = 21;
+const chainResponseNegationFixtureCount = 18;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 24;
+const negationInventoryFixtureCount = 25;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 12,
+  chainNegateToGrave: 13,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -29,6 +29,7 @@ const negationSemanticVariantCounts = {
   disarmGladiatorCostToDeckSpellNegateDestroy: 1,
   divineWrathDiscardMonsterNegateDestroy: 1,
   effectVeilerHandQuickDisableChainLink: 1,
+  faceOffDamagePhaseCurrentPhaseNegateDestroy: 1,
   ghostOgreDestroyOnlyNoNegation: 1,
   heraldPerfectionDamageCalculationNegateDestroy: 1,
   ironCoreLusterConfirmCostNegateDestroy: 1,
@@ -66,6 +67,7 @@ type NegationSemanticVariant =
   | "disarmGladiatorCostToDeckSpellNegateDestroy"
   | "divineWrathDiscardMonsterNegateDestroy"
   | "effectVeilerHandQuickDisableChainLink"
+  | "faceOffDamagePhaseCurrentPhaseNegateDestroy"
   | "ghostOgreDestroyOnlyNoNegation"
   | "heraldPerfectionDamageCalculationNegateDestroy"
   | "ironCoreLusterConfirmCostNegateDestroy"
@@ -206,6 +208,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-disarm-gladiator-negate-to-deck-cost.test.ts",
     "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-effect-veiler-chain-disable.test.ts",
+    "lua-real-script-face-off-damage-phase-negate.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
     "lua-real-script-iron-core-luster-confirm-negate.test.ts",
@@ -272,6 +275,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     {
       file: "lua-real-script-effect-veiler-chain-disable.test.ts",
       kind: "chainDisable",
+    },
+    {
+      file: "lua-real-script-face-off-damage-phase-negate.test.ts",
+      kind: "chainNegateToGrave",
     },
     {
       file: "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
@@ -432,6 +439,20 @@ function negationSemanticVariants(): Array<{
         'const effectVeilerCode = "97268402"',
         "restores its hand quick effect and negates the related monster chain link",
         'eventName: "chainDisabled"',
+      ],
+    },
+    {
+      file: "lua-real-script-face-off-damage-phase-negate.test.ts",
+      kind: "faceOffDamagePhaseCurrentPhaseNegateDestroy",
+      required: [
+        'const faceOffCode = "39276790"',
+        "restores its Duel.GetCurrentPhase Damage Calculation gate, activation negation, source destruction, and suppressed monster operation",
+        "local ph=Duel.GetCurrentPhase()",
+        "return (ph==PHASE_DAMAGE or ph==PHASE_DAMAGE_CAL)",
+        "and (re:IsMonsterEffect() or re:IsHasType(EFFECT_TYPE_ACTIVATE))",
+        "Duel.NegateActivation(ev)",
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("face-off monster resolved")',
       ],
     },
     {
@@ -678,6 +699,7 @@ function countNegationSemanticVariants(
       disarmGladiatorCostToDeckSpellNegateDestroy: 0,
       divineWrathDiscardMonsterNegateDestroy: 0,
       effectVeilerHandQuickDisableChainLink: 0,
+      faceOffDamagePhaseCurrentPhaseNegateDestroy: 0,
       ghostOgreDestroyOnlyNoNegation: 0,
       heraldPerfectionDamageCalculationNegateDestroy: 0,
       ironCoreLusterConfirmCostNegateDestroy: 0,
