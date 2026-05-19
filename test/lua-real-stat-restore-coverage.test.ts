@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 12;
+const statFixtureCount = 13;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
+  fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 1,
   fieldAttributeAttackUpdate: 2,
   fieldRaceAttackDefenseUpdate: 1,
@@ -18,6 +19,7 @@ const statKindCounts = {
   targetedPreDamageFinalAttack: 1,
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
+  alLumirajLevelOrRankFieldStat: 1,
   bladeflyFieldAttributeAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
@@ -32,8 +34,9 @@ const statSemanticVariantCounts = {
   steamroidDamageStepBattleSwingStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
+  | "alLumirajLevelOrRankFieldStat"
   | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
@@ -96,6 +99,17 @@ function statFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-al-lumiraj-level-rank-field-stat.test.ts",
+      kind: "fieldLevelOrRankAttackDefenseUpdate",
+      required: [
+        "if c:IsType(TYPE_XYZ) then return c:GetRank()*-300",
+        "stat:level-or-rank:x-300",
+        "currentAttack(restoredLevelAttacker, restored.session.state)).toBe(1300)",
+        "currentDefense(restoredRankTarget, restored.session.state)).toBe(1300)",
+        "battleDamage[1]).toBe(300)",
+      ],
+    },
     {
       file: "test/lua-real-script-bladefly-field-attribute-stat.test.ts",
       kind: "fieldAttributeAttackUpdate",
@@ -259,6 +273,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleTargetAttackBoost: 0,
       fieldAttributeAttackUpdate: 0,
       fieldGroupCountStat: 0,
+      fieldLevelOrRankAttackDefenseUpdate: 0,
       fieldRaceAttackDefenseUpdate: 0,
       setAttack: 0,
       setBaseAttack: 0,
@@ -275,6 +290,16 @@ function statSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-al-lumiraj-level-rank-field-stat.test.ts",
+      kind: "alLumirajLevelOrRankFieldStat",
+      required: [
+        'const alLumirajCode = "25795273"',
+        "restores callback-valued Level or Rank ATK/DEF loss into battle damage",
+        "stat:level-or-rank:x-300",
+        "currentAttack(restoredRankTarget, restored.session.state)).toBe(1300)",
+      ],
+    },
     {
       file: "test/lua-real-script-bladefly-field-attribute-stat.test.ts",
       kind: "bladeflyFieldAttributeAttackUpdate",
@@ -407,6 +432,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       return counts;
     },
     {
+      alLumirajLevelOrRankFieldStat: 0,
       bladeflyFieldAttributeAttackUpdate: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,

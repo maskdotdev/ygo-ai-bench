@@ -14,6 +14,7 @@ const locationMonsterZonePattern = "(?:LOCATION_MZONE|4|0x4)";
 const reasonBattlePattern = "(?:REASON_BATTLE|32|0x20)";
 const reasonEffectPattern = "(?:REASON_EFFECT|64|0x40)";
 const typeSpiritPattern = "(?:TYPE_SPIRIT|512|0x200)";
+const typeXyzPattern = "(?:TYPE_XYZ|8388608|0x800000)";
 const summonTypeOnlyLimitDescriptors: Record<string, number> = {
   fuslimit: 0x43000000,
   ritlimit: 0x45000000,
@@ -53,6 +54,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (params?.[1] && new RegExp(String.raw`\breturn\s+${escapeRegExp(params[1])}\s*:\s*GetDefense\s*\(\s*\)\s*(?:end\b|$)`).test(snippet)) {
     return "stat:current-defense";
   }
+  const levelOrRankStat = levelOrRankStatDescriptor(snippet, params);
+  if (levelOrRankStat) return levelOrRankStat;
   const fieldGroupCountStat = fieldGroupCountStatDescriptor(L, index, snippet, params);
   if (fieldGroupCountStat) return fieldGroupCountStat;
   const battleAttackerTargetSwingStat = battleAttackerTargetSwingStatDescriptor(snippet, params);
@@ -133,6 +136,20 @@ function fieldGroupCountStatDescriptor(L: unknown, index: number, snippet: strin
   const multiplier = Number(match[3]);
   if (selfMask === undefined || opponentMask === undefined || !Number.isSafeInteger(multiplier)) return undefined;
   return `stat:controller-field-group-count:${selfMask}:${opponentMask}:x${multiplier}`;
+}
+
+function levelOrRankStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const cardParam = params?.[1];
+  if (!cardParam) return undefined;
+  const card = escapeRegExp(cardParam);
+  const match = new RegExp(
+    String.raw`\bif\s+${card}\s*:\s*IsType\s*\(\s*${typeXyzPattern}\s*\)\s+then\s+return\s+${card}\s*:\s*GetRank\s*\(\s*\)\s*\*\s*\(?\s*(-?\d+)\s*\)?\s+else\s+return\s+${card}\s*:\s*GetLevel\s*\(\s*\)\s*\*\s*\(?\s*(-?\d+)\s*\)?\s+end\b`,
+  ).exec(snippet);
+  if (!match?.[1] || !match[2]) return undefined;
+  const rankMultiplier = Number(match[1]);
+  const levelMultiplier = Number(match[2]);
+  if (!Number.isSafeInteger(rankMultiplier) || rankMultiplier !== levelMultiplier) return undefined;
+  return `stat:level-or-rank:x${rankMultiplier}`;
 }
 
 function battleAttackerTargetSwingStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {

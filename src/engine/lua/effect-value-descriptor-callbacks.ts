@@ -1,5 +1,5 @@
 import { currentBattleStep } from "#duel/battle-window-state.js";
-import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentDefense } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentDefense, currentLevel, currentRank } from "#duel/card-stats.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { locationsFromMask } from "#lua/api-utils.js";
 
@@ -8,6 +8,13 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
     return (ctx) => ctx.duel.cards.filter((card) => card.location === "graveyard" && (cardTypeFlags(card, ctx.duel) & 0x1) !== 0).length * 100;
   }
   if (luaValueDescriptor === "stat:current-defense") return (ctx, card) => currentDefense(card, ctx.duel);
+  const levelOrRank = luaValueDescriptor?.match(/^stat:level-or-rank:x(-?\d+)$/);
+  if (levelOrRank?.[1]) {
+    const multiplier = Number(levelOrRank[1]);
+    if (Number.isSafeInteger(multiplier)) {
+      return (ctx, card) => ((cardTypeFlags(card, ctx.duel) & 0x800000) !== 0 ? currentRank(card, ctx.duel) : currentLevel(card, ctx.duel)) * multiplier;
+    }
+  }
   const fieldGroupCount = luaValueDescriptor?.match(/^stat:controller-field-group-count:(\d+):(\d+):x(-?\d+)$/);
   if (fieldGroupCount?.[1] && fieldGroupCount[2] && fieldGroupCount[3]) {
     const selfMask = Number(fieldGroupCount[1]);
