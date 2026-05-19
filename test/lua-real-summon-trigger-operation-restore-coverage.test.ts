@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 15;
+const summonTriggerOperationFixtureCount = 16;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
-  summonSearch: 5,
+  summonSearch: 6,
   summonSearchSelfSummon: 1,
   summonSuccessHandSpecialSummon: 1,
   summonToGraveGraveyardRevive: 1,
@@ -19,6 +19,7 @@ const summonTriggerOperationKindCounts = {
 } satisfies Record<SummonTriggerOperationKind, number>;
 const summonTriggerOperationSemanticVariantCounts = {
   aratamaSpiritSearchOnSummon: 1,
+  ashokaPillarSearchPositionDamage: 1,
   craneCraneStepReviveDisableOnSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
   gemArmadilloNormalSummonSearch: 1,
@@ -48,6 +49,7 @@ type SummonTriggerOperationKind =
   | "summonToHandBounce";
 type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
+  | "ashokaPillarSearchPositionDamage"
   | "craneCraneStepReviveDisableOnSummon"
   | "darkDustSpiritMassDestroyOnSummon"
   | "gemArmadilloNormalSummonSearch"
@@ -116,6 +118,27 @@ function summonTriggerOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-ashoka-pillar-search-position-damage.test.ts",
+      kind: "summonSearch",
+      required: [
+        "restores its summon search, possible position operation, and destroyed self-damage trigger",
+        'const ashokaCode = "58996839"',
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_POSITION,e:GetHandler(),1,0,0)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.BreakEffect()",
+        "Duel.ChangePosition(c,POS_FACEUP_DEFENSE)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToHand"',
+        'eventName === "damageDealt"',
+        "possibleOperationInfos",
+        "category: 0x8",
+        "category: 0x1000",
+        "category: 0x80000",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-crane-crane-step-summon-disable.test.ts",
       kind: "summonStepReviveDisable",
@@ -406,6 +429,18 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ashoka-pillar-search-position-damage.test.ts",
+      kind: "ashokaPillarSearchPositionDamage",
+      requiredSnippets: [
+        'const ashokaCode = "58996839"',
+        "restores its summon search, possible position operation, and destroyed self-damage trigger",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_POSITION,e:GetHandler(),1,0,0)",
+        "Duel.BreakEffect()",
+        "Duel.ChangePosition(c,POS_FACEUP_DEFENSE)",
+        "Duel.SetTargetParam(2000)",
+      ],
+    },
+    {
       file: "test/lua-real-script-crane-crane-step-summon-disable.test.ts",
       kind: "craneCraneStepReviveDisableOnSummon",
       requiredSnippets: [
@@ -585,6 +620,7 @@ function countSummonTriggerOperationSemanticVariants(
     },
     {
       aratamaSpiritSearchOnSummon: 0,
+      ashokaPillarSearchPositionDamage: 0,
       craneCraneStepReviveDisableOnSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
       gemArmadilloNormalSummonSearch: 0,
