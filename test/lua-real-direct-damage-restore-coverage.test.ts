@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 12;
+const directDamageFixtureCount = 13;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   battleDestroyedChainInfoDamage: 1,
   continuousCostTargetParamDamage: 1,
   eventToGraveChainInfoDamage: 2,
-  fieldCountTargetPlayerDamage: 2,
+  fieldCountTargetPlayerDamage: 3,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
@@ -22,6 +22,7 @@ const directDamageSemanticVariantCounts = {
   justDessertsMonsterCountResolutionDamage: 1,
   meteorOfDestructionOpponentLpCondition: 1,
   ookaziTargetParamDamage: 1,
+  princessTsurugiFlipSpellTrapCountDamage: 1,
   pursuitChaserBattleDestroyedDefenseDamage: 1,
   seismicCrasherContinuousCostTargetParamDamage: 1,
   sparksTargetParamDamage: 1,
@@ -45,6 +46,7 @@ type DirectDamageSemanticVariant =
   | "justDessertsMonsterCountResolutionDamage"
   | "meteorOfDestructionOpponentLpCondition"
   | "ookaziTargetParamDamage"
+  | "princessTsurugiFlipSpellTrapCountDamage"
   | "pursuitChaserBattleDestroyedDefenseDamage"
   | "seismicCrasherContinuousCostTargetParamDamage"
   | "sparksTargetParamDamage"
@@ -86,7 +88,7 @@ describe("Lua real direct damage restore coverage", () => {
           || !text.includes("category: 0x80000")
           || !text.includes('eventName: "damageDealt"')
           || !text.includes("lifePoints")
-          || !text.includes('location: "graveyard"')
+          || (!text.includes('location: "graveyard"') && !text.includes("EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP"))
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -211,6 +213,20 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
         "targetParam: 800",
         "targetPlayer: 1",
         "players[1].lifePoints).toBe(7200)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-princess-tsurugi-flip-field-count-damage.test.ts",
+      kind: "fieldCountTargetPlayerDamage",
+      required: [
+        'const princessCode = "51371017"',
+        "restores its Flip target-player Spell/Trap count damage and resolves through CHAININFO",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP)",
+        "Duel.GetFieldGroupCount(tp,0,LOCATION_SZONE)*500",
+        "Duel.GetFieldGroupCount(p,LOCATION_SZONE,0)*500",
+        "targetParam: 1000",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7000)",
       ],
     },
     {
@@ -350,6 +366,17 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
       ],
     },
     {
+      file: "test/lua-real-script-princess-tsurugi-flip-field-count-damage.test.ts",
+      kind: "princessTsurugiFlipSpellTrapCountDamage",
+      required: [
+        "Princess Chain Responder",
+        "eventName: \"flipSummoned\"",
+        "eventValue: 1000",
+        "eventReasonCardUid: princess.uid",
+        "princess responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-pursuit-chaser-battle-destroyed-defense-damage.test.ts",
       kind: "pursuitChaserBattleDestroyedDefenseDamage",
       required: [
@@ -434,6 +461,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       justDessertsMonsterCountResolutionDamage: 0,
       meteorOfDestructionOpponentLpCondition: 0,
       ookaziTargetParamDamage: 0,
+      princessTsurugiFlipSpellTrapCountDamage: 0,
       pursuitChaserBattleDestroyedDefenseDamage: 0,
       seismicCrasherContinuousCostTargetParamDamage: 0,
       sparksTargetParamDamage: 0,
