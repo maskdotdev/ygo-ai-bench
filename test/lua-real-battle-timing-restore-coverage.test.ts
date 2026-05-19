@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 35;
-const battleTimingEventCodeFixtureCount = 35;
+const battleTimingFixtureCount = 36;
+const battleTimingEventCodeFixtureCount = 36;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 16,
+  afterDamageCalculation: 17,
   beforeDamageCalculation: 7,
   duringDamageCalculation: 4,
   endDamageStep: 5,
@@ -35,6 +35,7 @@ const battleTimingSemanticVariantCounts = {
   injectionFairyLilyBeforeDamageLpBoost: 1,
   insectPrincessBattledFlagAtk: 1,
   kuribohBeforeDamagePrevent: 1,
+  madolcheWaltzAfterDamageFieldBurn: 1,
   mirageKnightDuringDamageAtkBanish: 1,
   nightmareMagicianEndDamageControl: 1,
   predaplantSarraceniantAfterDamageDestroy: 1,
@@ -132,6 +133,7 @@ type BattleTimingSemanticVariant =
   | "injectionFairyLilyBeforeDamageLpBoost"
   | "insectPrincessBattledFlagAtk"
   | "kuribohBeforeDamagePrevent"
+  | "madolcheWaltzAfterDamageFieldBurn"
   | "mirageKnightDuringDamageAtkBanish"
   | "nightmareMagicianEndDamageControl"
   | "predaplantSarraceniantAfterDamageDestroy"
@@ -301,6 +303,19 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores its before-damage hand Quick Effect and prevents battle damage after self-discard cost", "triggerEvent: \"beforeDamageCalculation\"", "battleDamage).toEqual({ 0: 0, 1: 0 })"],
     },
     {
+      file: "test/lua-real-script-madolche-waltz-battled-field-damage.test.ts",
+      kind: "madolcheWaltzAfterDamageFieldBurn",
+      required: [
+        "restores its Spell/Trap-zone EVENT_BATTLED field trigger into target-param effect damage",
+        "e2:SetRange(LOCATION_SZONE)",
+        "e2:SetCode(EVENT_BATTLED)",
+        "c:IsSetCard(SET_MADOLCHE)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"afterDamageCalculation\"",
+        "eventName: \"damageDealt\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-mirage-knight-battle-target-atk.test.ts",
       kind: "mirageKnightDuringDamageAtkBanish",
       required: ["restores GetBattleTarget damage-calculation ATK and End Phase self-banish after battle", "battleWindow?.kind).toBe(\"duringDamageCalculation\")", "eventName: \"banished\""],
@@ -437,6 +452,7 @@ function countBattleTimingSemanticVariants(
       injectionFairyLilyBeforeDamageLpBoost: 0,
       insectPrincessBattledFlagAtk: 0,
       kuribohBeforeDamagePrevent: 0,
+      madolcheWaltzAfterDamageFieldBurn: 0,
       mirageKnightDuringDamageAtkBanish: 0,
       nightmareMagicianEndDamageControl: 0,
       predaplantSarraceniantAfterDamageDestroy: 0,
@@ -642,6 +658,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventCode: 1140",
         "eventReasonCardUid: insectPrincess!.uid",
         "insect princess attack 2400",
+      ],
+    },
+    {
+      file: "test/lua-real-script-madolche-waltz-battled-field-damage.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("afterDamageCalculation")',
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        "eventCardUid: attacker!.uid",
+        'eventName: "damageDealt"',
+        "eventValue: 300",
       ],
     },
     {
