@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 19;
-const chainResponseNegationFixtureCount = 16;
+const negationFixtureCount = 20;
+const chainResponseNegationFixtureCount = 17;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 23;
+const negationInventoryFixtureCount = 24;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 11,
+  chainNegateToGrave: 12,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -31,6 +31,7 @@ const negationSemanticVariantCounts = {
   effectVeilerHandQuickDisableChainLink: 1,
   ghostOgreDestroyOnlyNoNegation: 1,
   heraldPerfectionDamageCalculationNegateDestroy: 1,
+  ironCoreLusterConfirmCostNegateDestroy: 1,
   magicJammerDiscardSpellNegateDestroy: 1,
   mysticalSpaceTyphoonDestroyOnlyNoNegation: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
@@ -67,6 +68,7 @@ type NegationSemanticVariant =
   | "effectVeilerHandQuickDisableChainLink"
   | "ghostOgreDestroyOnlyNoNegation"
   | "heraldPerfectionDamageCalculationNegateDestroy"
+  | "ironCoreLusterConfirmCostNegateDestroy"
   | "magicJammerDiscardSpellNegateDestroy"
   | "mysticalSpaceTyphoonDestroyOnlyNoNegation"
   | "overwhelmTributeGateTrapNegateDestroy"
@@ -206,6 +208,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-effect-veiler-chain-disable.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
+    "lua-real-script-iron-core-luster-confirm-negate.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-overwhelm-tribute-chain-negate.test.ts",
@@ -272,6 +275,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-iron-core-luster-confirm-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -449,6 +456,21 @@ function negationSemanticVariants(): Array<{
         'eventName: "sentToGraveyard"',
         'eventName: "chainNegated"',
         'host.messages).not.toContain("herald monster resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-iron-core-luster-confirm-negate.test.ts",
+      kind: "ironCoreLusterConfirmCostNegateDestroy",
+      required: [
+        'const lusterCode = "34545235"',
+        "restores its hidden Iron Core confirmation cost, hand shuffle, activation negation, destruction, and suppressed Spell operation",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.ShuffleHand(tp)",
+        "Duel.NegateActivation(ev)",
+        'eventName: "confirmed"',
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("iron core luster spell resolved")',
       ],
     },
     {
@@ -658,6 +680,7 @@ function countNegationSemanticVariants(
       effectVeilerHandQuickDisableChainLink: 0,
       ghostOgreDestroyOnlyNoNegation: 0,
       heraldPerfectionDamageCalculationNegateDestroy: 0,
+      ironCoreLusterConfirmCostNegateDestroy: 0,
       magicJammerDiscardSpellNegateDestroy: 0,
       mysticalSpaceTyphoonDestroyOnlyNoNegation: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
