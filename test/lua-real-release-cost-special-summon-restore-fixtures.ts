@@ -1,10 +1,10 @@
-export const releaseCostSpecialSummonFixtureCount = 4;
+export const releaseCostSpecialSummonFixtureCount = 5;
 
 export const releaseCostSpecialSummonKindCounts = {
   releaseGroupCostHandDeckSummon: 1,
   releaseGroupCostHandProcedure: 1,
   releaseGroupCostHandSummonLeaveDestroy: 1,
-  selfReleaseCostDeckSummon: 1,
+  selfReleaseCostDeckSummon: 2,
 } satisfies Record<ReleaseCostSpecialSummonKind, number>;
 
 export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
@@ -63,6 +63,21 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
       "duelReason.release | duelReason.cost",
       'eventName: "released"',
       "eventReasonEffectId: 2",
+    ],
+  }, {
+    file: "test/lua-real-script-skilled-blue-magician-counter-summon.test.ts",
+    kind: "selfReleaseCostDeckSummon",
+    required: [
+      "Duel.Release(e:GetHandler(),REASON_COST)",
+      "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(s.filter),tp,LOCATION_HAND|LOCATION_DECK|LOCATION_GRAVE,0,1,1,nil,e,tp)",
+      "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+      "duelReason.cost | duelReason.release",
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "operationInfos: [{ category: categorySpecialSummon, count: 1, player: 0, parameter: 19, targetUids: [] }]",
+      "tc:AddCounter(COUNTER_SPELL,1)",
+      "operationInfos: [{ category: categoryCounter, count: 1, player: 0, parameter: counterSpell, targetUids: [] }]",
     ],
   }, {
     file: "test/lua-real-script-lonefire-blossom-release-cost-deck-summon.test.ts",
