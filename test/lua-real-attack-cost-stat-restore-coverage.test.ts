@@ -4,14 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackCostAndStatFixtureCount = 10;
-const legalActionFixtureCount = 6;
+const attackCostAndStatFixtureCount = 11;
+const legalActionFixtureCount = 7;
 const attackCostAndStatKindCounts = {
   attackCostLp: 1,
   attackCostRelease: 1,
   baseAttackExtraDeckLock: 1,
   currentAttackExtraDeckLock: 1,
   dynamicFieldStat: 1,
+  handCostBaseAttackLabelBoost: 1,
   ignitionBanishCostAtkBoost: 1,
   dynamicLinkedGroupStat: 1,
   fieldSetAttack: 1,
@@ -27,6 +28,7 @@ const attackCostAndStatSemanticVariantCounts = {
   pantherWarriorReleaseAttackCost: 1,
   rbLastStandCurrentAtkExtraMachineLock: 1,
   rbStageLandingBaseAtkExtraMachineLock: 1,
+  starSeraphSwordHandCostLabelAtkBoost: 1,
   valcanBoosterLizardOriginalMachineAtkPredicate: 1,
   toonSummonedSkullReleaseProcedureLpAttackCost: 1,
 } satisfies Record<AttackCostAndStatSemanticVariant, number>;
@@ -37,6 +39,7 @@ type AttackCostAndStatKind =
   | "baseAttackExtraDeckLock"
   | "currentAttackExtraDeckLock"
   | "dynamicFieldStat"
+  | "handCostBaseAttackLabelBoost"
   | "ignitionBanishCostAtkBoost"
   | "dynamicLinkedGroupStat"
   | "fieldSetAttack"
@@ -51,6 +54,7 @@ type AttackCostAndStatSemanticVariant =
   | "pantherWarriorReleaseAttackCost"
   | "rbLastStandCurrentAtkExtraMachineLock"
   | "rbStageLandingBaseAtkExtraMachineLock"
+  | "starSeraphSwordHandCostLabelAtkBoost"
   | "valcanBoosterLizardOriginalMachineAtkPredicate"
   | "toonSummonedSkullReleaseProcedureLpAttackCost";
 
@@ -124,6 +128,20 @@ function attackCostAndStatFixtureFiles(): Array<{
         "e1:SetValue(count*300)",
         "reason: duelReason.cost",
         "value: 900",
+      ],
+    },
+    {
+      file: "lua-real-script-star-seraph-sword-cost-label-atk.test.ts",
+      kind: "handCostBaseAttackLabelBoost",
+      required: [
+        "restores selected hand cost base ATK through the chain label into its temporary ATK boost",
+        "return c:IsSetCard(SET_STAR_SERAPH) and c:GetBaseAttack()>0 and c:IsAbleToGraveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "e:SetLabel(g:GetFirst():GetBaseAttack())",
+        "e1:SetValue(e:GetLabel())",
+        "reason: duelReason.cost",
+        "currentAttack(restoredBoost.session.state.cards.find",
       ],
     },
     {
@@ -234,6 +252,7 @@ function legalActionFixtureFiles(): string[] {
     "lua-real-script-bazoo-banish-count-atk.test.ts",
     "lua-real-script-dark-elf-attack-cost.test.ts",
     "lua-real-script-panther-warrior-attack-cost.test.ts",
+    "lua-real-script-star-seraph-sword-cost-label-atk.test.ts",
     "lua-real-script-toon-summoned-skull-release-attack-cost.test.ts",
     "lua-real-script-rb-last-stand-extra-machine-current-attack-lock.test.ts",
     "lua-real-script-rb-stage-landing-extra-machine-low-attack-lock.test.ts",
@@ -339,6 +358,16 @@ function attackCostAndStatSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-star-seraph-sword-cost-label-atk.test.ts",
+      kind: "starSeraphSwordHandCostLabelAtkBoost",
+      required: [
+        'const swordCode = "70668285"',
+        "restores selected hand cost base ATK through the chain label into its temporary ATK boost",
+        "e:SetLabel(g:GetFirst():GetBaseAttack())",
+        "currentAttack(restoredChain.session.state.cards.find",
+      ],
+    },
+    {
       file: "lua-real-script-valcan-booster-lizard-attack-lock.test.ts",
       kind: "valcanBoosterLizardOriginalMachineAtkPredicate",
       required: [
@@ -374,6 +403,7 @@ function countAttackCostAndStatSemanticVariants(
       pantherWarriorReleaseAttackCost: 0,
       rbLastStandCurrentAtkExtraMachineLock: 0,
       rbStageLandingBaseAtkExtraMachineLock: 0,
+      starSeraphSwordHandCostLabelAtkBoost: 0,
       toonSummonedSkullReleaseProcedureLpAttackCost: 0,
       valcanBoosterLizardOriginalMachineAtkPredicate: 0,
     },
@@ -397,6 +427,7 @@ function countAttackCostAndStatKinds(
       ignitionBanishCostAtkBoost: 0,
       dynamicLinkedGroupStat: 0,
       fieldSetAttack: 0,
+      handCostBaseAttackLabelBoost: 0,
       targetAttackPredicate: 0,
       toonReleaseProcedureLpAttackCost: 0,
     },
