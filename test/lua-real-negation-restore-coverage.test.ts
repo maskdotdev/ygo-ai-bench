@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 17;
-const chainResponseNegationFixtureCount = 14;
+const negationFixtureCount = 18;
+const chainResponseNegationFixtureCount = 15;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 21;
+const negationInventoryFixtureCount = 22;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 9,
+  chainNegateToGrave: 10,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -42,6 +42,7 @@ const negationSemanticVariantCounts = {
   solemnWarningSpecialSummonNegate: 1,
   sprightRedLinkReleaseMonsterNegateDestroy: 1,
   twinTwistersMultiDestroyOnlyNoNegation: 1,
+  tutanMaskTargetedZombieNegateDestroy: 1,
   wiretapTrapNegateReturnToDeck: 1,
 } satisfies Record<NegationSemanticVariant, number>;
 
@@ -76,6 +77,7 @@ type NegationSemanticVariant =
   | "solemnWarningSpecialSummonNegate"
   | "sprightRedLinkReleaseMonsterNegateDestroy"
   | "twinTwistersMultiDestroyOnlyNoNegation"
+  | "tutanMaskTargetedZombieNegateDestroy"
   | "wiretapTrapNegateReturnToDeck";
 
 describe("Lua real negation restore coverage", () => {
@@ -213,6 +215,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
     "lua-real-script-spright-red-release-link2-negate.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
+    "lua-real-script-tutan-mask-targeted-zombie-negate.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
   ]
     .map((file) => path.join("test", file))
@@ -282,6 +285,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-sinto-oath-chain-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-tutan-mask-targeted-zombie-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -548,6 +555,20 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-tutan-mask-targeted-zombie-negate.test.ts",
+      kind: "tutanMaskTargetedZombieNegateDestroy",
+      required: [
+        'const tutanCode = "3149764"',
+        "restores CHAININFO_TARGET_CARDS gating for a single face-up Zombie target, activation negation, destruction, and suppressed Spell operation",
+        "local tg=Duel.GetChainInfo(ev,CHAININFO_TARGET_CARDS)",
+        "return tg and #tg==1 and s.cfilter(tg:GetFirst()) and Duel.IsChainNegatable(ev)",
+        'targetUids: [zombie.uid]',
+        'eventName: "becameTarget"',
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("tutan targeted spell resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
       kind: "wiretapTrapNegateReturnToDeck",
       required: [
@@ -627,6 +648,7 @@ function countNegationSemanticVariants(
       solemnWarningSpecialSummonNegate: 0,
       sprightRedLinkReleaseMonsterNegateDestroy: 0,
       twinTwistersMultiDestroyOnlyNoNegation: 0,
+      tutanMaskTargetedZombieNegateDestroy: 0,
       wiretapTrapNegateReturnToDeck: 0,
     },
   );
