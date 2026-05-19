@@ -14,8 +14,8 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 238;
-export const summonProcedureFixtureCount = 26;
+export const realScriptSummonFixtureCount = 239;
+export const summonProcedureFixtureCount = 27;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
 export const pendulumHelperFixtureCount = 16;
@@ -31,13 +31,13 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 22,
-  summon: 100,
+  summon: 101,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
-  genericSpecialSummonProcedure: 14,
+  genericSpecialSummonProcedure: 15,
   pendulumProcedure: 3,
   ritualProcedure: 3,
   tributeProcedure: 2,
@@ -411,6 +411,7 @@ export function realScriptSummonProcedureFixtureFiles(): string[] {
   return fs.readdirSync(testRoot)
     .filter((file) => /^lua-real-script-(?:link|xyz|synchro)-procedure-filters\.test\.ts$/.test(file) || [
       "lua-real-script-chronomaly-moai-special-summon-procedure.test.ts",
+      "lua-real-script-caligo-claw-crow-special-summon-procedure.test.ts",
       "lua-real-script-cyber-dragon-special-summon-procedure.test.ts",
       "lua-real-script-depth-shark-no-tribute-summon-procedure.test.ts",
       "lua-real-script-desert-twister-special-summon-procedure.test.ts",

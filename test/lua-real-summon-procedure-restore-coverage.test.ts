@@ -4,18 +4,20 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 6;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 5;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 7;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 6;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 1,
   graveBanishCostStatProcedure: 1,
+  handOwnFaceupAttributeOpenZoneProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
   handSendCostProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
 const summonProcedureSemanticVariantCounts = {
   broadTypedExtraDeckSpiritGeminiProcedures: 1,
+  caligoClawCrowDarkMonsterOpenZoneProcedure: 1,
   familiarPossessedDeckTwoMaterialShufflePierceProcedure: 1,
   gigaraysGandoraTwoMonsterSendCostProcedure: 1,
   magnetDollBothFieldsGimmickOnlyHandProcedure: 1,
@@ -27,11 +29,13 @@ type SummonProcedureKind =
   | "broadTypedProcedure"
   | "deckTwoMaterialShufflePierceProcedure"
   | "graveBanishCostStatProcedure"
+  | "handOwnFaceupAttributeOpenZoneProcedure"
   | "handBothFieldsGimmickOnlyProcedure"
   | "handOpponentCountProcedure"
   | "handSendCostProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
+  | "caligoClawCrowDarkMonsterOpenZoneProcedure"
   | "familiarPossessedDeckTwoMaterialShufflePierceProcedure"
   | "gigaraysGandoraTwoMonsterSendCostProcedure"
   | "magnetDollBothFieldsGimmickOnlyHandProcedure"
@@ -82,6 +86,25 @@ const summonProcedureFixtures = [
       "getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0))",
       "getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))",
       "applyRestoredActionAndAssert(restored, procedure!)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-caligo-claw-crow-special-summon-procedure.test.ts",
+    kind: "handOwnFaceupAttributeOpenZoneProcedure",
+    required: [
+      "face-up DARK monster and open MZONE hand Special Summon procedure",
+      'const caligoCode = "67692580"',
+      'fieldCase: "wrongAttribute"',
+      'fieldCase: "faceDownDark"',
+      'fieldCase: "fullMonsterZone"',
+      'action.type === "specialSummonProcedure"',
+      "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+      "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+      "return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_DARK)",
+      "expectRestoredActionSurfaces(restored, 0)",
+      "applyLuaRestoreResponse(restored, procedure as DuelAction)",
       'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
     ],
@@ -202,6 +225,7 @@ function countSummonProcedureKinds(
       broadTypedProcedure: 0,
       graveBanishCostStatProcedure: 0,
       deckTwoMaterialShufflePierceProcedure: 0,
+      handOwnFaceupAttributeOpenZoneProcedure: 0,
       handBothFieldsGimmickOnlyProcedure: 0,
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
@@ -223,6 +247,18 @@ function summonProcedureSemanticVariants(): Array<{
         "restores official Xyz.AddProcedure material counts for real extra deck summons",
         "restores official Synchro.AddProcedure tuner and non-tuner count ranges for real extra deck summons",
         "restores Spirit procedure End Phase return after a real Normal Summon",
+      ],
+    },
+    {
+      file: "test/lua-real-script-caligo-claw-crow-special-summon-procedure.test.ts",
+      kind: "caligoClawCrowDarkMonsterOpenZoneProcedure",
+      required: [
+        'const caligoCode = "67692580"',
+        "restores its face-up DARK monster and open MZONE hand Special Summon procedure",
+        'fieldCase: "wrongAttribute"',
+        'fieldCase: "faceDownDark"',
+        'fieldCase: "fullMonsterZone"',
+        "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
       ],
     },
     {
@@ -334,6 +370,7 @@ function countSummonProcedureSemanticVariants(
     },
     {
       broadTypedExtraDeckSpiritGeminiProcedures: 0,
+      caligoClawCrowDarkMonsterOpenZoneProcedure: 0,
       familiarPossessedDeckTwoMaterialShufflePierceProcedure: 0,
       gigaraysGandoraTwoMonsterSendCostProcedure: 0,
       magnetDollBothFieldsGimmickOnlyHandProcedure: 0,
