@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 18;
+const statFixtureCount = 19;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -17,6 +17,7 @@ const statKindCounts = {
   fieldSetcodeAttackUpdate: 1,
   setAttack: 1,
   setBaseAttack: 1,
+  setBaseAttackDefenseEndDestroy: 1,
   staticAttackAndExtraAttack: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedPreDamageFinalAttack: 1,
@@ -40,9 +41,10 @@ const statSemanticVariantCounts = {
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
   steamroidDamageStepBattleSwingStat: 1,
+  trianglePowerBaseStatEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
@@ -61,7 +63,8 @@ type StatSemanticVariant =
   | "sangaPreDamageFinalAttackZero"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
-  | "steamroidDamageStepBattleSwingStat";
+  | "steamroidDamageStepBattleSwingStat"
+  | "trianglePowerBaseStatEndDestroy";
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
@@ -327,6 +330,21 @@ function statFixtureFiles(): Array<{
         "battleDamage).toEqual({ 0: 500, 1: 0 })",
       ],
     },
+    {
+      file: "test/lua-real-script-triangle-power-base-stat-end-destroy.test.ts",
+      kind: "setBaseAttackDefenseEndDestroy",
+      required: [
+        'const trianglePowerCode = "32298781"',
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e1:SetValue(tc:GetBaseAttack()+2000)",
+        "e2:SetCode(EFFECT_SET_BASE_DEFENSE)",
+        "e2:SetValue(tc:GetBaseDefense()+2000)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "currentAttack(boostedAttacker, state)).toBe(2500)",
+        "currentDefense(boostedAlly, state)).toBe(2200)",
+        "battleDamage).toEqual({ 0: 0, 1: 1500 })",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatKind;
@@ -352,6 +370,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fieldSetcodeAttackUpdate: 0,
       setAttack: 0,
       setBaseAttack: 0,
+      setBaseAttackDefenseEndDestroy: 0,
       staticAttackAndExtraAttack: 0,
       targetedDamageStepAttackUpdate: 0,
       targetedPreDamageFinalAttack: 0,
@@ -543,6 +562,17 @@ function statSemanticVariants(): Array<{
         "players[0].lifePoints).toBe(7500)",
       ],
     },
+    {
+      file: "test/lua-real-script-triangle-power-base-stat-end-destroy.test.ts",
+      kind: "trianglePowerBaseStatEndDestroy",
+      required: [
+        'const trianglePowerCode = "32298781"',
+        "restores base ATK/DEF boosts for Level 1 Normal monsters and destroys them at End Phase",
+        "de:SetCode(EVENT_PHASE+PHASE_END)",
+        "players[1].lifePoints).toBe(6500)",
+        'eventName: "phaseEnd"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatSemanticVariant;
@@ -575,6 +605,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
       steamroidDamageStepBattleSwingStat: 0,
+      trianglePowerBaseStatEndDestroy: 0,
     },
   );
 }
