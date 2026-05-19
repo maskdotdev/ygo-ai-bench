@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 13;
+const statFixtureCount = 14;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -12,6 +12,7 @@ const statKindCounts = {
   fieldGroupCountStat: 1,
   fieldAttributeAttackUpdate: 2,
   fieldRaceAttackDefenseUpdate: 1,
+  fieldSetcodeAttackUpdate: 1,
   setAttack: 1,
   setBaseAttack: 1,
   staticAttackAndExtraAttack: 1,
@@ -23,6 +24,7 @@ const statSemanticVariantCounts = {
   bladeflyFieldAttributeAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
+  genexTurbineTargetBoolFunctionSetcodeStat: 1,
   jurassicWorldTargetBoolFunctionRaceStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mukaMukaHandCountAttackDefense: 1,
@@ -34,12 +36,13 @@ const statSemanticVariantCounts = {
   steamroidDamageStepBattleSwingStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
   | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
+  | "genexTurbineTargetBoolFunctionSetcodeStat"
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mukaMukaHandCountAttackDefense"
@@ -131,6 +134,18 @@ function statFixtureFiles(): Array<{
         "target:attribute:32",
         "currentAttack(restoredDarkAttacker, restored.session.state)).toBe(1500)",
         "currentDefense(restoredDarkDefender, restored.session.state)).toBe(1200)",
+        "battleDamage[1]).toBe(300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-genex-turbine-setcode-field-stat.test.ts",
+      kind: "fieldSetcodeAttackUpdate",
+      required: [
+        "aux.TargetBoolFunction(Card.IsSetCard,SET_GENEX)",
+        "target:setcode:2",
+        "setGenexAlly",
+        "currentAttack(restoredGenexAllyAttacker, restored.session.state)).toBe(1500)",
+        "currentAttack(restoredOpponentGenex, restored.session.state)).toBe(1200)",
         "battleDamage[1]).toBe(300)",
       ],
     },
@@ -275,6 +290,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fieldGroupCountStat: 0,
       fieldLevelOrRankAttackDefenseUpdate: 0,
       fieldRaceAttackDefenseUpdate: 0,
+      fieldSetcodeAttackUpdate: 0,
       setAttack: 0,
       setBaseAttack: 0,
       staticAttackAndExtraAttack: 0,
@@ -326,6 +342,16 @@ function statSemanticVariants(): Array<{
         'const pastCode = "57869175"',
         "restores callback-valued set ATK/DEF effects and uses them for battle calculation",
         "lifePoints).toBe(7700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-genex-turbine-setcode-field-stat.test.ts",
+      kind: "genexTurbineTargetBoolFunctionSetcodeStat",
+      required: [
+        'const genexTurbineCode = "52222372"',
+        "restores aux.TargetBoolFunction Card.IsSetCard field ATK updates into battle damage",
+        "target:setcode:2",
+        "currentAttack(restoredGenexAllyAttacker, restored.session.state)).toBe(1500)",
       ],
     },
     {
@@ -436,6 +462,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       bladeflyFieldAttributeAttackUpdate: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
+      genexTurbineTargetBoolFunctionSetcodeStat: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mukaMukaHandCountAttackDefense: 0,
