@@ -1,7 +1,9 @@
-import { continuousEffectAppliesToCard } from "#duel/continuous-effects.js";
+import { continuousEffectAppliesToCard, isCardDisabled } from "#duel/continuous-effects.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelState } from "#duel/types.js";
 
 const effectChangeBattleStat = 198;
+const effectFlagCannotDisable = 0x400;
+const statDisabledSourceChecks = new Set<string>();
 
 export function cardTypeFlags(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (!card) return 0;
@@ -157,12 +159,31 @@ function matchingStatEffects(card: DuelCardInstance | undefined, state: DuelStat
     if (effect.event !== "continuous" || effect.code !== code) continue;
     const source = state.cards.find((candidate) => candidate.uid === effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
+    if (statEffectSourceIsDisabled(state, effect, source)) continue;
     const ctx = statEffectContext(state, effect, source);
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (effect.canActivate && !effect.canActivate(ctx)) continue;
     matches.push({ effect, ctx });
   }
   return matches;
+}
+
+function statEffectSourceIsDisabled(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  if (((effect.property ?? 0) & effectFlagCannotDisable) !== 0) return false;
+  if (!statEffectDependsOnEnabledSource(effect)) return false;
+  if (source.location !== "monsterZone" && source.location !== "spellTrapZone") return false;
+  if (statDisabledSourceChecks.has(source.uid)) return false;
+  statDisabledSourceChecks.add(source.uid);
+  try {
+    return isCardDisabled(state, source, (disableEffect, disableSource) => statEffectContext(state, disableEffect, disableSource));
+  } finally {
+    statDisabledSourceChecks.delete(source.uid);
+  }
+}
+
+function statEffectDependsOnEnabledSource(effect: DuelEffectDefinition): boolean {
+  const typeFlags = effect.luaTypeFlags ?? 0;
+  return effect.targetRange !== undefined || (typeFlags & 0x4) !== 0 || (typeFlags & 0x8) !== 0;
 }
 
 function statEffectValue(card: DuelCardInstance, state: DuelState | undefined, effect: DuelEffectDefinition, ctx?: DuelEffectContext): number | undefined {

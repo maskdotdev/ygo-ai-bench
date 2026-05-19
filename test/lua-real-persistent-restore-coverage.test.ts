@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const PERSISTENT_FIXTURE_COUNT = 18;
+const PERSISTENT_FIXTURE_COUNT = 19;
 const TARGETED_PERSISTENT_FIXTURE_COUNT = 13;
 const REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT = 2;
 const SPIRITS_INVITATION_PERSISTENT_FIXTURE_COUNT = 1;
@@ -17,7 +17,7 @@ const persistentKindCounts = {
   ritualOverlay: 1,
   specialSummonLock: 2,
   statModifier: 3,
-  targetedDisableOrLock: 3,
+  targetedDisableOrLock: 4,
 } satisfies Record<PersistentKind, number>;
 const persistentSemanticVariantCounts = {
   callOfTheHauntedReviveDestroyRelation: 1,
@@ -41,6 +41,7 @@ const persistentSemanticVariantCounts = {
   spellbindingCircleTrapTargetLocksCleanup: 1,
   spiritsInvitationReturnBounceMaintenance: 1,
   swordsRevealingLightRemainAttackLock: 1,
+  worldSuppressionFieldSpellDisable: 1,
 } satisfies Record<PersistentSemanticVariant, number>;
 
 type PersistentKind =
@@ -73,7 +74,8 @@ type PersistentSemanticVariant =
   | "shatteredAxeStandbyFlagAtkLoss"
   | "spellbindingCircleTrapTargetLocksCleanup"
   | "spiritsInvitationReturnBounceMaintenance"
-  | "swordsRevealingLightRemainAttackLock";
+  | "swordsRevealingLightRemainAttackLock"
+  | "worldSuppressionFieldSpellDisable";
 
 describe("Lua real persistent restore coverage", () => {
   it("requires representative persistent/remaining-field fixtures to assert grouped legal actions and clean Lua registry restore", () => {
@@ -210,6 +212,7 @@ function realScriptTargetedPersistentFixtureFiles(): string[] {
       && !file.includes("messenger-peace")
       && !file.includes("power-filter")
       && !file.includes("swords-revealing-light")
+      && !file.includes("world-suppression")
     );
 }
 
@@ -345,6 +348,10 @@ function realScriptPersistentFixtures(): Array<{ file: string; kind: PersistentK
     },
     {
       file: "lua-real-script-spellbinding-circle-persistent-lock.test.ts",
+      kind: "targetedDisableOrLock",
+    },
+    {
+      file: "lua-real-script-world-suppression-field-disable.test.ts",
       kind: "targetedDisableOrLock",
     },
     {
@@ -564,6 +571,17 @@ function persistentSemanticVariants(): Array<{
         'type === "declareAttack"',
       ],
     },
+    {
+      file: "lua-real-script-world-suppression-field-disable.test.ts",
+      kind: "worldSuppressionFieldSpellDisable",
+      required: [
+        'const worldSuppressionCode = "12253117"',
+        "restores an EVENT_CHAINING Trap that registers a temporary Field Spell disable",
+        "target:type:524288",
+        "world suppression field disabled true",
+        "currentAttack(restoredDinosaur, restoredResolved.session.state)).toBe(1000)",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: PersistentSemanticVariant;
@@ -622,6 +640,7 @@ function countPersistentSemanticVariants(
       spellbindingCircleTrapTargetLocksCleanup: 0,
       spiritsInvitationReturnBounceMaintenance: 0,
       swordsRevealingLightRemainAttackLock: 0,
+      worldSuppressionFieldSpellDisable: 0,
     },
   );
 }
