@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 16;
+const DRAW_RECOVER_FIXTURE_COUNT = 17;
 const drawRecoverKindCounts = {
-  costBanishDraw: 2,
+  costBanishDraw: 3,
   costDiscardDraw: 1,
   drawRecoverOrDamage: 2,
   drawTrigger: 6,
@@ -24,6 +24,7 @@ const drawRecoverSemanticVariantCounts = {
   darkseaFloatDestroyedToGraveDraw: 1,
   geminiSparkReleaseDestroyDraw: 1,
   morayGreedHandToDeckDraw: 1,
+  morayAvariceFieldBanishDraw: 1,
   maskedSorcererBattleDamageDraw: 1,
   naturiaRagweedOpponentDrawTrigger: 1,
   potDesiresFaceDownDeckCostDraw: 1,
@@ -45,6 +46,7 @@ type DrawRecoverSemanticVariant =
   | "darkseaFloatDestroyedToGraveDraw"
   | "geminiSparkReleaseDestroyDraw"
   | "morayGreedHandToDeckDraw"
+  | "morayAvariceFieldBanishDraw"
   | "maskedSorcererBattleDamageDraw"
   | "naturiaRagweedOpponentDrawTrigger"
   | "potDesiresFaceDownDeckCostDraw"
@@ -172,6 +174,22 @@ function drawRecoverFixtureFiles(): Array<{
         "Duel.ConfirmCards(1-p,sg)",
         "Duel.SendtoDeck(sg,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
         "Duel.Draw(p,3,REASON_EFFECT)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-moray-avarice-field-banish-draw.test.ts",
+      kind: "costBanishDraw",
+      required: [
+        'eventName: "banished"',
+        'eventName: "cardsDrawn"',
+        "Duel.SelectMatchingCard(tp,s.drcostfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SetTargetParam(2)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "category: 0x10000",
+        "targetParam: 2",
+        'location: "banished"',
+        'location: "hand", controller: 0',
       ],
     },
     {
@@ -413,6 +431,19 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-moray-avarice-field-banish-draw.test.ts",
+      kind: "morayAvariceFieldBanishDraw",
+      required: [
+        'const morayCode = "73244186"',
+        "restores its face-up Fish field banish cost into CHAININFO-targeted draw two",
+        "c:IsFaceup() and c:IsRace(RACE_FISH|RACE_SEASERPENT|RACE_AQUA) and c:IsAbleToRemoveAsCost()",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "eventName: \"banished\"",
+        "eventName: \"cardsDrawn\"",
+        "moray of avarice responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-masked-sorcerer-battle-damage-draw.test.ts",
       kind: "maskedSorcererBattleDamageDraw",
       required: [
@@ -566,6 +597,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       darkseaFloatDestroyedToGraveDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
       morayGreedHandToDeckDraw: 0,
+      morayAvariceFieldBanishDraw: 0,
       maskedSorcererBattleDamageDraw: 0,
       naturiaRagweedOpponentDrawTrigger: 0,
       potDesiresFaceDownDeckCostDraw: 0,
