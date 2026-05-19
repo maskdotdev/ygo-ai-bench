@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 13;
+const DRAW_RECOVER_FIXTURE_COUNT = 14;
 const drawRecoverKindCounts = {
   costBanishDraw: 2,
   costDiscardDraw: 1,
   drawRecoverOrDamage: 2,
-  drawTrigger: 3,
+  drawTrigger: 4,
   handToDeckDraw: 1,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
@@ -22,6 +22,7 @@ const drawRecoverSemanticVariantCounts = {
   darkseaFloatDestroyedToGraveDraw: 1,
   geminiSparkReleaseDestroyDraw: 1,
   morayGreedHandToDeckDraw: 1,
+  maskedSorcererBattleDamageDraw: 1,
   naturiaRagweedOpponentDrawTrigger: 1,
   potDesiresFaceDownDeckCostDraw: 1,
   potExtravaganceRandomExtraCostDrawLock: 1,
@@ -40,6 +41,7 @@ type DrawRecoverSemanticVariant =
   | "darkseaFloatDestroyedToGraveDraw"
   | "geminiSparkReleaseDestroyDraw"
   | "morayGreedHandToDeckDraw"
+  | "maskedSorcererBattleDamageDraw"
   | "naturiaRagweedOpponentDrawTrigger"
   | "potDesiresFaceDownDeckCostDraw"
   | "potExtravaganceRandomExtraCostDrawLock"
@@ -166,6 +168,20 @@ function drawRecoverFixtureFiles(): Array<{
         "Duel.ConfirmCards(1-p,sg)",
         "Duel.SendtoDeck(sg,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
         "Duel.Draw(p,3,REASON_EFFECT)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-masked-sorcerer-battle-damage-draw.test.ts",
+      kind: "drawTrigger",
+      required: [
+        'eventName: "battleDamageDealt"',
+        'eventName: "cardsDrawn"',
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(1)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "operationInfos",
+        "masked sorcerer responder resolved",
       ],
     },
     {
@@ -364,6 +380,18 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-masked-sorcerer-battle-damage-draw.test.ts",
+      kind: "maskedSorcererBattleDamageDraw",
+      required: [
+        'const maskedSorcererCode = "10189126"',
+        "restores its mandatory battle-damage trigger into CHAININFO-targeted controller draw",
+        "e1:SetCode(EVENT_BATTLE_DAMAGE)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"battleDamageDealt\"",
+        "eventName: \"cardsDrawn\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
       kind: "naturiaRagweedOpponentDrawTrigger",
       required: [
@@ -478,6 +506,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       darkseaFloatDestroyedToGraveDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
       morayGreedHandToDeckDraw: 0,
+      maskedSorcererBattleDamageDraw: 0,
       naturiaRagweedOpponentDrawTrigger: 0,
       potDesiresFaceDownDeckCostDraw: 0,
       potExtravaganceRandomExtraCostDrawLock: 0,
