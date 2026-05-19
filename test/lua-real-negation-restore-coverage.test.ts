@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 16;
-const chainResponseNegationFixtureCount = 13;
+const negationFixtureCount = 17;
+const chainResponseNegationFixtureCount = 14;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 20;
+const negationInventoryFixtureCount = 21;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 8,
+  chainNegateToGrave: 9,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -36,6 +36,7 @@ const negationSemanticVariantCounts = {
   pollinosisPlantReleaseActivationNegateDestroy: 1,
   raigekiBreakDiscardDestroyOnlyNoNegation: 1,
   sevenToolsLpCostTrapNegateDestroy: 1,
+  sintoFireFormationOathNegateDestroy: 1,
   solemnJudgmentActivationNegateCostDestroy: 1,
   solemnStrikeSummonAndMonsterNegate: 1,
   solemnWarningSpecialSummonNegate: 1,
@@ -69,6 +70,7 @@ type NegationSemanticVariant =
   | "pollinosisPlantReleaseActivationNegateDestroy"
   | "raigekiBreakDiscardDestroyOnlyNoNegation"
   | "sevenToolsLpCostTrapNegateDestroy"
+  | "sintoFireFormationOathNegateDestroy"
   | "solemnJudgmentActivationNegateCostDestroy"
   | "solemnStrikeSummonAndMonsterNegate"
   | "solemnWarningSpecialSummonNegate"
@@ -205,6 +207,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-pollinosis-release-activation-negate.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
+    "lua-real-script-sinto-oath-chain-negate.test.ts",
     "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
     "lua-real-script-solemn-strike-special-summon-negate.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
@@ -275,6 +278,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-seven-tools-trap-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-sinto-oath-chain-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -477,6 +484,21 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-sinto-oath-chain-negate.test.ts",
+      kind: "sintoFireFormationOathNegateDestroy",
+      required: [
+        'const sintoCode = "55538156"',
+        "restores its Fire Fist and Fire Formation gate, OATH activation negation, source destruction, and suppressed Spell operation",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "Duel.IsExistingMatchingCard(s.filter1,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.IsExistingMatchingCard(s.filter2,tp,LOCATION_SZONE,0,1,nil)",
+        "Duel.NegateActivation(ev)",
+        'eventName: "chainNegated"',
+        "action.uid === secondSinto!.uid)).toBe(false)",
+        'host.messages).not.toContain("sinto first spell resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
       kind: "solemnJudgmentActivationNegateCostDestroy",
       required: [
@@ -599,6 +621,7 @@ function countNegationSemanticVariants(
       pollinosisPlantReleaseActivationNegateDestroy: 0,
       raigekiBreakDiscardDestroyOnlyNoNegation: 0,
       sevenToolsLpCostTrapNegateDestroy: 0,
+      sintoFireFormationOathNegateDestroy: 0,
       solemnJudgmentActivationNegateCostDestroy: 0,
       solemnStrikeSummonAndMonsterNegate: 0,
       solemnWarningSpecialSummonNegate: 0,
