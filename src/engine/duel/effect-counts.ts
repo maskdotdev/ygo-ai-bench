@@ -1,5 +1,7 @@
 import type { DuelEffectDefinition, DuelState } from "#duel/types.js";
 
+const effectFlagNoTurnReset = 0x400000;
+
 export function canUseEffectCount(state: DuelState, effect: DuelEffectDefinition): boolean {
   const limit = effectCountLimit(effect);
   if (limit <= 0) return true;
@@ -28,5 +30,6 @@ function effectCountKey(state: DuelState, effect: DuelEffectDefinition): string 
     const scope = (effect.countLimitCode & 0x2) !== 0 ? "duel" : `turn-${state.turn}`;
     return `${scope}:${effect.controller}:code-${effect.countLimitCode}`;
   }
-  return `turn-${state.turn}:${effect.controller}:${effect.sourceUid}:${effect.id}`;
+  const scope = ((effect.property ?? 0) & effectFlagNoTurnReset) !== 0 ? "no-turn-reset" : `turn-${state.turn}`;
+  return `${scope}:${effect.controller}:${effect.sourceUid}:${effect.id}`;
 }
