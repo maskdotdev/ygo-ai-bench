@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 21;
-const chainResponseNegationFixtureCount = 18;
+const negationFixtureCount = 22;
+const chainResponseNegationFixtureCount = 19;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 25;
+const negationInventoryFixtureCount = 26;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 13,
+  chainNegateToGrave: 14,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -43,6 +43,7 @@ const negationSemanticVariantCounts = {
   solemnJudgmentActivationNegateCostDestroy: 1,
   solemnStrikeSummonAndMonsterNegate: 1,
   solemnWarningSpecialSummonNegate: 1,
+  showdownOpponentGraveSameCodeNegateDestroy: 1,
   sprightRedLinkReleaseMonsterNegateDestroy: 1,
   twinTwistersMultiDestroyOnlyNoNegation: 1,
   tutanMaskTargetedZombieNegateDestroy: 1,
@@ -81,6 +82,7 @@ type NegationSemanticVariant =
   | "solemnJudgmentActivationNegateCostDestroy"
   | "solemnStrikeSummonAndMonsterNegate"
   | "solemnWarningSpecialSummonNegate"
+  | "showdownOpponentGraveSameCodeNegateDestroy"
   | "sprightRedLinkReleaseMonsterNegateDestroy"
   | "twinTwistersMultiDestroyOnlyNoNegation"
   | "tutanMaskTargetedZombieNegateDestroy"
@@ -222,6 +224,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
     "lua-real-script-solemn-strike-special-summon-negate.test.ts",
     "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
+    "lua-real-script-showdown-secret-sense-scroll-negate.test.ts",
     "lua-real-script-spright-red-release-link2-negate.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-tutan-mask-targeted-zombie-negate.test.ts",
@@ -323,6 +326,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     {
       file: "lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
       kind: "summonNegateContinuation",
+    },
+    {
+      file: "lua-real-script-showdown-secret-sense-scroll-negate.test.ts",
+      kind: "chainNegateToGrave",
     },
     {
       file: "lua-real-script-spright-red-release-link2-negate.test.ts",
@@ -597,6 +604,19 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-showdown-secret-sense-scroll-negate.test.ts",
+      kind: "showdownOpponentGraveSameCodeNegateDestroy",
+      required: [
+        'const showdownCode = "92080692"',
+        "restores its opponent-Graveyard same-code gate, activation negation, source destruction, and suppressed monster operation",
+        "rp~=tp and (re:IsMonsterEffect() or re:IsHasType(EFFECT_TYPE_ACTIVATE))",
+        "Duel.IsExistingMatchingCard(Card.IsCode,tp,0,LOCATION_GRAVE,1,nil,re:GetHandler():GetCode())",
+        "Duel.NegateActivation(ev)",
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("showdown monster resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-spright-red-release-link2-negate.test.ts",
       kind: "sprightRedLinkReleaseMonsterNegateDestroy",
       required: [
@@ -713,6 +733,7 @@ function countNegationSemanticVariants(
       solemnJudgmentActivationNegateCostDestroy: 0,
       solemnStrikeSummonAndMonsterNegate: 0,
       solemnWarningSpecialSummonNegate: 0,
+      showdownOpponentGraveSameCodeNegateDestroy: 0,
       sprightRedLinkReleaseMonsterNegateDestroy: 0,
       twinTwistersMultiDestroyOnlyNoNegation: 0,
       tutanMaskTargetedZombieNegateDestroy: 0,
