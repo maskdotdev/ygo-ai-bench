@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 22;
+const statFixtureCount = 23;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
   damageStepBattleTargetAttributeAttackBoost: 2,
   diceGroupAttackDefenseUpdate: 1,
+  diceScaleUpdate: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 2,
   fieldMatchingFaceupRaceCountStat: 1,
@@ -35,6 +36,7 @@ const statSemanticVariantCounts = {
   jurassicWorldTargetBoolFunctionRaceStat: 1,
   luminousSoldierDamageStepTargetAttributeStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
+  mildTurkeyDiceScaleUpdate: 1,
   mukaMukaHandCountAttackDefense: 1,
   neoFlamvellSabreGraveCountThresholdStat: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
@@ -50,7 +52,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
@@ -62,6 +64,7 @@ type StatSemanticVariant =
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "luminousSoldierDamageStepTargetAttributeStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
+  | "mildTurkeyDiceScaleUpdate"
   | "mukaMukaHandCountAttackDefense"
   | "neoFlamvellSabreGraveCountThresholdStat"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
@@ -399,6 +402,20 @@ function statFixtureFiles(): Array<{
         "battleDamage).toEqual({ 0: 0, 1: Math.max(0, 1500 + update - 1700) })",
       ],
     },
+    {
+      file: "test/lua-real-script-mild-turkey-dice-scale.test.ts",
+      kind: "diceScaleUpdate",
+      required: [
+        'const mildTurkeyCode = "47558785"',
+        "restores a Pendulum-zone dice roll into temporary left and right scale reductions",
+        "Duel.SetOperationInfo(0,CATEGORY_DICE,nil,0,tp,1)",
+        "local dc=Duel.TossDice(tp,1)",
+        "e1:SetCode(EFFECT_UPDATE_LSCALE)",
+        "e2:SetCode(EFFECT_UPDATE_RSCALE)",
+        "currentLeftScale(restoredActivation.session.state.cards.find((card) => card.uid === mildTurkey.uid), restoredActivation.session.state)).toBe(7 - scaleReduction)",
+        "currentRightScale(restoredScale.session.state.cards.find((card) => card.uid === mildTurkey.uid), restoredScale.session.state)).toBe(7 - scaleReduction)",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatKind;
@@ -417,6 +434,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleTargetAttackBoost: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
       diceGroupAttackDefenseUpdate: 0,
+      diceScaleUpdate: 0,
       fieldAttributeAttackUpdate: 0,
       fieldGroupCountStat: 0,
       fieldMatchingFaceupRaceCountStat: 0,
@@ -663,6 +681,17 @@ function statSemanticVariants(): Array<{
         'eventName: "diceTossed"',
       ],
     },
+    {
+      file: "test/lua-real-script-mild-turkey-dice-scale.test.ts",
+      kind: "mildTurkeyDiceScaleUpdate",
+      required: [
+        'const mildTurkeyCode = "47558785"',
+        "restores a Pendulum-zone dice roll into temporary left and right scale reductions",
+        "EFFECT_UPDATE_LSCALE",
+        "EFFECT_UPDATE_RSCALE",
+        'eventName: "diceTossed"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatSemanticVariant;
@@ -687,6 +716,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       luminousSoldierDamageStepTargetAttributeStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
+      mildTurkeyDiceScaleUpdate: 0,
       mukaMukaHandCountAttackDefense: 0,
       neoFlamvellSabreGraveCountThresholdStat: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
