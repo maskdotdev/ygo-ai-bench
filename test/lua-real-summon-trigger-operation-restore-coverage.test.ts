@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 13;
+const summonTriggerOperationFixtureCount = 14;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 5,
   summonSearchSelfSummon: 1,
+  summonToGraveGraveyardRevive: 1,
   summonStepReviveDisable: 1,
   summonToGraveDeckSummon: 1,
   summonToDeck: 1,
@@ -20,6 +21,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   craneCraneStepReviveDisableOnSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
   gemArmadilloNormalSummonSearch: 1,
+  gemKnightObsidianHandToGraveyardRevive: 1,
   gishkiNataliaGraveToDeckTopOnSummon: 1,
   hanShiKyudoColumnReturnOnSummon: 1,
   ichikiSayoriHimeEffectSummonSearch: 1,
@@ -36,6 +38,7 @@ type SummonTriggerOperationKind =
   | "summonMassDestroy"
   | "summonSearch"
   | "summonSearchSelfSummon"
+  | "summonToGraveGraveyardRevive"
   | "summonStepReviveDisable"
   | "summonToGraveDeckSummon"
   | "summonToDeck"
@@ -45,6 +48,7 @@ type SummonTriggerOperationSemanticVariant =
   | "craneCraneStepReviveDisableOnSummon"
   | "darkDustSpiritMassDestroyOnSummon"
   | "gemArmadilloNormalSummonSearch"
+  | "gemKnightObsidianHandToGraveyardRevive"
   | "gishkiNataliaGraveToDeckTopOnSummon"
   | "hanShiKyudoColumnReturnOnSummon"
   | "ichikiSayoriHimeEffectSummonSearch"
@@ -141,6 +145,27 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "category: 0x200",
         "operationInfos",
         "setButterspy",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gem-knight-obsidian-to-grave-revive.test.ts",
+      kind: "summonToGraveGraveyardRevive",
+      required: [
+        "restores hand-to-Graveyard trigger targeting a Normal Monster in the Graveyard",
+        'const obsidianCode = "19163116"',
+        "return e:GetHandler():GetPreviousLocation()==LOCATION_HAND",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "expectCleanRestore(restoredTrigger)",
+        "expectCleanRestore(restoredChain)",
+        "expectRestoredLegalActions(restoredTrigger, 0)",
+        "expectRestoredLegalActions(restoredChain, 1)",
+        'eventName: "sentToGraveyard"',
+        'eventName === "specialSummoned"',
+        "operationInfos",
+        "category: 0x200",
+        "targetUids: [normalTarget.uid]",
+        "host.messages).not.toContain",
       ],
     },
     {
@@ -390,6 +415,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gem-knight-obsidian-to-grave-revive.test.ts",
+      kind: "gemKnightObsidianHandToGraveyardRevive",
+      requiredSnippets: [
+        'const obsidianCode = "19163116"',
+        "restores hand-to-Graveyard trigger targeting a Normal Monster in the Graveyard",
+        'eventName: "sentToGraveyard"',
+        'eventName === "specialSummoned"',
+        "targetUids: [normalTarget.uid]",
+      ],
+    },
+    {
       file: "test/lua-real-script-gishki-natalia-spirit-to-deck.test.ts",
       kind: "gishkiNataliaGraveToDeckTopOnSummon",
       requiredSnippets: [
@@ -497,6 +533,7 @@ function countSummonTriggerOperationKinds(
       summonMassDestroy: 0,
       summonSearch: 0,
       summonSearchSelfSummon: 0,
+      summonToGraveGraveyardRevive: 0,
       summonStepReviveDisable: 0,
       summonToGraveDeckSummon: 0,
       summonToDeck: 0,
@@ -518,6 +555,7 @@ function countSummonTriggerOperationSemanticVariants(
       craneCraneStepReviveDisableOnSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
       gemArmadilloNormalSummonSearch: 0,
+      gemKnightObsidianHandToGraveyardRevive: 0,
       gishkiNataliaGraveToDeckTopOnSummon: 0,
       hanShiKyudoColumnReturnOnSummon: 0,
       ichikiSayoriHimeEffectSummonSearch: 0,
