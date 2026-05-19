@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 17;
+const DRAW_RECOVER_FIXTURE_COUNT = 18;
 const drawRecoverKindCounts = {
   costBanishDraw: 3,
   costDiscardDraw: 1,
+  costGraveDraw: 1,
   drawRecoverOrDamage: 2,
   drawTrigger: 6,
   handToDeckDraw: 1,
@@ -25,6 +26,7 @@ const drawRecoverSemanticVariantCounts = {
   geminiSparkReleaseDestroyDraw: 1,
   morayGreedHandToDeckDraw: 1,
   morayAvariceFieldBanishDraw: 1,
+  kujiKiriLevel9GraveDraw: 1,
   maskedSorcererBattleDamageDraw: 1,
   naturiaRagweedOpponentDrawTrigger: 1,
   potDesiresFaceDownDeckCostDraw: 1,
@@ -36,7 +38,7 @@ const drawRecoverSemanticVariantCounts = {
   xyzGiftOverlayDetachDraw: 1,
 } satisfies Record<DrawRecoverSemanticVariant, number>;
 
-type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDamage" | "drawTrigger" | "handToDeckDraw" | "negateThenDraw" | "overlayDetachDraw" | "recoverTrigger" | "releaseDestroyDraw";
+type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "costGraveDraw" | "drawRecoverOrDamage" | "drawTrigger" | "handToDeckDraw" | "negateThenDraw" | "overlayDetachDraw" | "recoverTrigger" | "releaseDestroyDraw";
 
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
@@ -45,6 +47,7 @@ type DrawRecoverSemanticVariant =
   | "blizzedBattleDestroyedDraw"
   | "darkseaFloatDestroyedToGraveDraw"
   | "geminiSparkReleaseDestroyDraw"
+  | "kujiKiriLevel9GraveDraw"
   | "morayGreedHandToDeckDraw"
   | "morayAvariceFieldBanishDraw"
   | "maskedSorcererBattleDamageDraw"
@@ -313,6 +316,22 @@ function drawRecoverFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-kuji-kiri-curse-level9-grave-draw.test.ts",
+      kind: "costGraveDraw",
+      required: [
+        'eventName: "sentToGraveyard"',
+        'eventName: "cardsDrawn"',
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND|LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "Duel.SetTargetParam(2)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "category: 0x10000",
+        "targetParam: 2",
+        'location: "graveyard"',
+        'location: "hand", controller: 0',
+      ],
+    },
+    {
       file: "test/lua-real-script-upstart-goblin-draw-recover.test.ts",
       kind: "drawRecoverOrDamage",
       required: [
@@ -352,6 +371,7 @@ function countDrawRecoverKinds(fixtures: Array<{ kind: DrawRecoverKind }>): Reco
     {
       costBanishDraw: 0,
       costDiscardDraw: 0,
+      costGraveDraw: 0,
       drawRecoverOrDamage: 0,
       drawTrigger: 0,
       handToDeckDraw: 0,
@@ -428,6 +448,19 @@ function drawRecoverSemanticVariants(): Array<{
         "Duel.ConfirmCards(1-p,sg)",
         "Duel.BreakEffect()",
         "eventName: \"cardsDrawn\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-kuji-kiri-curse-level9-grave-draw.test.ts",
+      kind: "kujiKiriLevel9GraveDraw",
+      required: [
+        'const kujiCode = "78543464"',
+        "restores its Level 9 send-to-Grave cost into CHAININFO-targeted draw two",
+        "c:IsLevel(9) and c:IsAbleToGraveAsCost()",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "eventName: \"sentToGraveyard\"",
+        "eventName: \"cardsDrawn\"",
+        "kuji-kiri curse responder resolved",
       ],
     },
     {
@@ -596,6 +629,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       darkBribeNegateDestroyDraw: 0,
       darkseaFloatDestroyedToGraveDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
+      kujiKiriLevel9GraveDraw: 0,
       morayGreedHandToDeckDraw: 0,
       morayAvariceFieldBanishDraw: 0,
       maskedSorcererBattleDamageDraw: 0,
