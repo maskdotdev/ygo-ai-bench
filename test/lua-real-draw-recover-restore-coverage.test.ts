@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 20;
+const DRAW_RECOVER_FIXTURE_COUNT = 21;
 const drawRecoverKindCounts = {
   costBanishDraw: 3,
   costDiscardDraw: 1,
@@ -14,7 +14,7 @@ const drawRecoverKindCounts = {
   handToDeckDraw: 1,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
-  recoverTrigger: 1,
+  recoverTrigger: 2,
   releaseDestroyDraw: 1,
 } satisfies Record<DrawRecoverKind, number>;
 const drawRecoverSemanticVariantCounts = {
@@ -24,6 +24,7 @@ const drawRecoverSemanticVariantCounts = {
   blizzedBattleDestroyedDraw: 1,
   darkseaFloatDestroyedToGraveDraw: 1,
   darkseaRescueSynchroMaterialDraw: 1,
+  damageMageEventDamageSummonRecover: 1,
   geminiSparkReleaseDestroyDraw: 1,
   morayGreedHandToDeckDraw: 1,
   morayAvariceFieldBanishDraw: 1,
@@ -49,6 +50,7 @@ type DrawRecoverSemanticVariant =
   | "blizzedBattleDestroyedDraw"
   | "darkseaFloatDestroyedToGraveDraw"
   | "darkseaRescueSynchroMaterialDraw"
+  | "damageMageEventDamageSummonRecover"
   | "geminiSparkReleaseDestroyDraw"
   | "kujiKiriLevel9GraveDraw"
   | "morayGreedHandToDeckDraw"
@@ -127,6 +129,19 @@ function drawRecoverFixtureFiles(): Array<{
         "category: 0x100000",
         "players[1].lifePoints).toBe(7000)",
         'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-damage-mage-event-damage-summon-recover.test.ts",
+      kind: "recoverTrigger",
+      required: [
+        "CATEGORY_SPECIAL_SUMMON+CATEGORY_RECOVER",
+        "e1:SetCode(EVENT_DAMAGE)",
+        "Duel.SetOperationInfo(0,CATEGORY_RECOVER,nil,0,tp,ev)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "recoveredLifePoints"',
+        "lifePoints).toBe(8000)",
       ],
     },
     {
@@ -436,6 +451,19 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-damage-mage-event-damage-summon-recover.test.ts",
+      kind: "damageMageEventDamageSummonRecover",
+      required: [
+        'const damageMageCode = "50613779"',
+        "restores effect-damage hand trigger into self Special Summon and event-value recovery",
+        "return ep==tp and (r&REASON_EFFECT)~=0",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.Recover(tp,ev,REASON_EFFECT)",
+        'eventName: "specialSummoned"',
+        'eventName: "recoveredLifePoints"',
+      ],
+    },
+    {
       file: "test/lua-real-script-dark-bribe-negate-draw.test.ts",
       kind: "darkBribeNegateDestroyDraw",
       required: [
@@ -686,6 +714,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       badReactionDrawThenDamage: 0,
       blizzedBattleDestroyedDraw: 0,
       cardSafeReturnGraveSpecialDraw: 0,
+      damageMageEventDamageSummonRecover: 0,
       darkBribeNegateDestroyDraw: 0,
       darkseaFloatDestroyedToGraveDraw: 0,
       darkseaRescueSynchroMaterialDraw: 0,
