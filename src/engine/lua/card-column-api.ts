@@ -16,6 +16,8 @@ export function installCardColumnApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsColumn"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetColumnGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetColumnGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetColumnGroupCount(state, session));
+  lua.lua_setfield(L, -2, to_luastring("GetColumnGroupCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetColumnZone(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetColumnZone"));
 }
@@ -38,6 +40,20 @@ function pushGetColumnGroup(L: unknown, session: DuelSession): number {
       ? session.state.cards.filter((candidate) => isFieldCard(candidate) && candidate.uid !== card.uid && candidate.sequence >= card.sequence - left && candidate.sequence <= card.sequence + right).map((candidate) => candidate.uid)
       : [];
   pushGroupTable(L, uids);
+  return 1;
+}
+
+function pushGetColumnGroupCount(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const left = Math.max(0, lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0);
+  const right = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0);
+  const count =
+    card && isFieldCard(card)
+      ? session.state.cards.filter(
+          (candidate) => isFieldCard(candidate) && candidate.uid !== card.uid && candidate.sequence >= card.sequence - left && candidate.sequence <= card.sequence + right,
+        ).length
+      : 0;
+  lua.lua_pushinteger(L, count);
   return 1;
 }
 

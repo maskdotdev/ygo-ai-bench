@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 16;
+const chainResponseFixtureCount = 17;
 const chainResponseKindCounts = {
   destroyOnlyChainedResponse: 4,
   flipSummonTrapResponse: 3,
   genericChainResponse: 1,
+  ignitionBanishCostColumnDestroyResponse: 1,
   ignitionReleaseCostDestroyResponse: 1,
   spellActivationDestroyDamageResponse: 1,
   summonEffectNegateResponse: 1,
@@ -23,6 +24,7 @@ const chainResponseSemanticVariantCounts = {
   ghostBelleWantedChainNegationAndRecycle: 1,
   goldenFlyingFishReleaseCostTargetDestroy: 1,
   houseAdhesiveTapeFlipSummonDestroy: 1,
+  mekkKnightYellowColumnProcedureDestroy: 1,
   mysticalSpaceTyphoonFreeChainDestroy: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
   raigekiBreakDiscardCostDestroy: 1,
@@ -39,6 +41,7 @@ type ChainResponseKind =
   | "destroyOnlyChainedResponse"
   | "flipSummonTrapResponse"
   | "genericChainResponse"
+  | "ignitionBanishCostColumnDestroyResponse"
   | "ignitionReleaseCostDestroyResponse"
   | "spellActivationDestroyDamageResponse"
   | "summonEffectNegateResponse"
@@ -52,6 +55,7 @@ type ChainResponseSemanticVariant =
   | "ghostBelleWantedChainNegationAndRecycle"
   | "goldenFlyingFishReleaseCostTargetDestroy"
   | "houseAdhesiveTapeFlipSummonDestroy"
+  | "mekkKnightYellowColumnProcedureDestroy"
   | "mysticalSpaceTyphoonFreeChainDestroy"
   | "overwhelmTributeGateTrapNegateDestroy"
   | "raigekiBreakDiscardCostDestroy"
@@ -170,6 +174,20 @@ function chainResponseFixtureFiles(): Array<{
         'eventName: "released"',
         'eventName: "destroyed"',
         'host.messages).not.toContain("golden flying fish responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-mekk-knight-yellow-column-procedure-destroy.test.ts",
+      kind: "ignitionBanishCostColumnDestroyResponse",
+      required: [
+        "return c:GetColumnGroupCount()>0",
+        "zone=(zone|tc:GetColumnZone(LOCATION_MZONE,0,0,tp))",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil,cg)",
+        'eventName: "banished"',
+        'eventName: "destroyed"',
+        'host.messages).not.toContain("mekk-knight yellow responder resolved")',
       ],
     },
     {
@@ -323,6 +341,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       destroyOnlyChainedResponse: 0,
       flipSummonTrapResponse: 0,
       genericChainResponse: 0,
+      ignitionBanishCostColumnDestroyResponse: 0,
       ignitionReleaseCostDestroyResponse: 0,
       spellActivationDestroyDamageResponse: 0,
       summonEffectNegateResponse: 0,
@@ -391,6 +410,18 @@ function chainResponseSemanticVariants(): Array<{
         "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,aux.ReleaseCheckTarget,e:GetHandler(),dg)",
         "Duel.Release(g,REASON_COST)",
         "golden flying fish responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mekk-knight-yellow-column-procedure-destroy.test.ts",
+      kind: "mekkKnightYellowColumnProcedureDestroy",
+      required: [
+        'const yellowStarCode = "29415459"',
+        "restores its column-gated hand Special Summon procedure and grave banish-cost Spell/Trap destruction",
+        "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+        "return c:GetColumnGroupCount()>0",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "mekk-knight yellow responder resolved",
       ],
     },
     {
@@ -528,6 +559,7 @@ function countChainResponseSemanticVariants(
       ghostBelleWantedChainNegationAndRecycle: 0,
       goldenFlyingFishReleaseCostTargetDestroy: 0,
       houseAdhesiveTapeFlipSummonDestroy: 0,
+      mekkKnightYellowColumnProcedureDestroy: 0,
       mysticalSpaceTyphoonFreeChainDestroy: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
       raigekiBreakDiscardCostDestroy: 0,

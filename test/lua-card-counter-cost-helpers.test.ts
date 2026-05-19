@@ -158,6 +158,7 @@ describe("Lua card counter and cost helpers", () => {
       local column_group = c:GetColumnGroup()
       local adjacent_column_group = c:GetColumnGroup(0,1)
       Debug.Message("column group " .. column_group:GetCount() .. "/" .. tostring(column_group:IsContains(column_spell)) .. "/" .. tostring(column_group:IsContains(c)) .. "/" .. adjacent_column_group:GetCount() .. "/" .. tostring(adjacent_column_group:IsContains(column_spell)) .. "/" .. tostring(adjacent_column_group:IsContains(Duel.GetFieldCard(0, LOCATION_SZONE, 1))))
+      Debug.Message("column group count " .. c:GetColumnGroupCount() .. "/" .. c:GetColumnGroupCount(0,1))
       Debug.Message("column zones " .. c:GetColumnZone(LOCATION_MZONE) .. "/" .. c:GetColumnZone(LOCATION_SZONE) .. "/" .. c:GetColumnZone(LOCATION_MZONE,0,1,0) .. "/" .. c:GetColumnZone(LOCATION_MZONE,0,0,1))
       Debug.Message("used summon legality " .. tostring(Duel.IsPlayerCanSummon(0, c)) .. "/" .. tostring(Duel.IsPlayerCanMSet(0, c)) .. "/" .. tostring(Duel.IsPlayerCanSpecialSummon(0, 0, POS_FACEUP_ATTACK, 0, c)))
       Duel.SendtoGrave(c, REASON_EFFECT)
@@ -195,6 +196,7 @@ describe("Lua card counter and cost helpers", () => {
     expect(host.messages).toContain("maximum previous checks false/false/false");
     expect(host.messages).toContain("column checks true/false");
     expect(host.messages).toContain("column group 1/true/false/3/true/true");
+    expect(host.messages).toContain("column group count 1/3");
     expect(host.messages).toContain("column zones 65537/16777472/196611/65537");
     expect(host.messages).toContain("used summon legality false/false/false");
     expect(host.messages).toContain("previous state 4/0/0/1");
