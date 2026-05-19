@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 17;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 16;
+const FREE_CHAIN_FIXTURE_COUNT = 18;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 17;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 17;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 18;
 const freeChainKindCounts = {
   banishRemoval: 1,
+  costToGraveDestroy: 1,
   graveyardRevive: 1,
   multiTargetDestroy: 5,
   positionChange: 2,
@@ -25,6 +26,7 @@ const freeChainSemanticVariantCounts = {
   bookMoonPositionSet: 1,
   compulsoryToHand: 1,
   cosmicCycloneBanish: 1,
+  costToGraveDestroy: 1,
   destructionRingBothDamage: 1,
   infiniteImpermanenceTargetParam: 1,
   monsterRebornRevive: 1,
@@ -41,6 +43,7 @@ const freeChainSemanticVariantCounts = {
 
 type FreeChainKind =
   | "banishRemoval"
+  | "costToGraveDestroy"
   | "graveyardRevive"
   | "multiTargetDestroy"
   | "positionChange"
@@ -55,6 +58,7 @@ type FreeChainSemanticVariant =
   | "bookMoonPositionSet"
   | "compulsoryToHand"
   | "cosmicCycloneBanish"
+  | "costToGraveDestroy"
   | "destructionRingBothDamage"
   | "infiniteImpermanenceTargetParam"
   | "monsterRebornRevive"
@@ -190,6 +194,7 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-armor-blast-multi-target-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-book-of-moon-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-destruction-ring-destroy-both-damage.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-crystal-raigeki-cost-target-destroy.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-infinite-impermanence-target-param.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-monster-reborn-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"))
@@ -220,6 +225,10 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
     {
       file: "lua-real-script-cosmic-cyclone-free-chain.test.ts",
       kind: "banishRemoval",
+    },
+    {
+      file: "lua-real-script-crystal-raigeki-cost-target-destroy.test.ts",
+      kind: "costToGraveDestroy",
     },
     {
       file: "lua-real-script-destruction-ring-destroy-both-damage.test.ts",
@@ -322,6 +331,18 @@ function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: Free
         "restores Cosmic Cyclone's LP cost, backrow target, and banish operation",
         "const cosmicCode = \"8267140\"",
         "{ category: 0x4, targetUids: [targetTrap!.uid], count: 1, player: 0, parameter: 0 }",
+      ],
+    },
+    {
+      file: "lua-real-script-crystal-raigeki-cost-target-destroy.test.ts",
+      kind: "costToGraveDestroy",
+      required: [
+        "restores its selected Crystal Beast S/T cost and opponent target destruction",
+        "const crystalRaigekiCode = \"96331676\"",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_SZONE,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "{ category: 0x1, targetUids: [opponentTarget.uid], count: 1, player: 0, parameter: 0 }",
+        "eventName: \"sentToGraveyard\"",
       ],
     },
     {
@@ -460,6 +481,7 @@ function countFreeChainKinds(fixtures: Array<{ kind: FreeChainKind }>): Record<F
     },
     {
       banishRemoval: 0,
+      costToGraveDestroy: 0,
       graveyardRevive: 0,
       multiTargetDestroy: 0,
       positionChange: 0,
@@ -484,6 +506,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       bookMoonPositionSet: 0,
       compulsoryToHand: 0,
       cosmicCycloneBanish: 0,
+      costToGraveDestroy: 0,
       destructionRingBothDamage: 0,
       infiniteImpermanenceTargetParam: 0,
       monsterRebornRevive: 0,
