@@ -56,6 +56,11 @@ export function continueAttackResponseWindow(state: DuelState, handlers: BattleC
     return;
   }
   if (isBattleDamageStep(state)) {
+    const target = state.pendingBattle.targetUid === undefined ? undefined : findCard(state, state.pendingBattle.targetUid);
+    if (currentBattleWindowKind(state) === "startDamageStep" && state.pendingBattle.targetUid !== undefined && (!target || target.location !== "monsterZone")) {
+      resolvePendingBattle(state, handlers);
+      return;
+    }
     if (state.damagePasses.length > 0) return;
     openDamageResponseWindow(state, state.turnPlayer, currentDamageWindowKind(state));
     return;

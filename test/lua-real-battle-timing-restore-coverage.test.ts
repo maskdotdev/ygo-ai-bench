@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 37;
-const battleTimingEventCodeFixtureCount = 37;
+const battleTimingFixtureCount = 38;
+const battleTimingEventCodeFixtureCount = 38;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 17,
   beforeDamageCalculation: 7,
   duringDamageCalculation: 4,
   endDamageStep: 6,
-  startDamageStep: 3,
+  startDamageStep: 4,
 };
 const battleTimingSemanticVariantCounts = {
   allyOfJusticeNullfierAfterDamageDisable: 1,
@@ -25,6 +25,7 @@ const battleTimingSemanticVariantCounts = {
   desKangarooEndDamageDestroy: 1,
   destructionPunchEndDamageTrapDestroy: 1,
   divineKnightIshzarkAfterDamageBanish: 1,
+  ehrenBattleConfirmToDeck: 1,
   elementDoomAfterDamageAttributeDisable: 1,
   fabledAshenveilPreDamageBoost: 1,
   geminiSoldierAfterDamageDeckSummon: 1,
@@ -124,6 +125,7 @@ type BattleTimingSemanticVariant =
   | "desKangarooEndDamageDestroy"
   | "destructionPunchEndDamageTrapDestroy"
   | "divineKnightIshzarkAfterDamageBanish"
+  | "ehrenBattleConfirmToDeck"
   | "elementDoomAfterDamageAttributeDisable"
   | "fabledAshenveilPreDamageBoost"
   | "geminiSoldierAfterDamageDeckSummon"
@@ -225,6 +227,11 @@ function battleTimingSemanticVariants(): Array<{
       file: "test/lua-real-script-divine-knight-ishzark-battled-remove.test.ts",
       kind: "divineKnightIshzarkAfterDamageBanish",
       required: ["restores Divine Knight Ishzark after damage calculation and banishes the battle-destroyed target", "triggerBucket: \"turnMandatory\"", "eventName: \"banished\""],
+    },
+    {
+      file: "test/lua-real-script-ehren-battle-confirm-to-deck.test.ts",
+      kind: "ehrenBattleConfirmToDeck",
+      required: ["restores battle-confirm target shuffling and ends the pending battle when the target leaves", "e1:SetCode(EVENT_BATTLE_CONFIRM)", "Duel.SendtoDeck(t,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)", "eventName: \"battleConfirmed\"", "eventName: \"sentToDeck\""],
     },
     {
       file: "test/lua-real-script-element-doom-chain-attack.test.ts",
@@ -449,6 +456,7 @@ function countBattleTimingSemanticVariants(
       desKangarooEndDamageDestroy: 0,
       destructionPunchEndDamageTrapDestroy: 0,
       divineKnightIshzarkAfterDamageBanish: 0,
+      ehrenBattleConfirmToDeck: 0,
       elementDoomAfterDamageAttributeDisable: 0,
       fabledAshenveilPreDamageBoost: 0,
       geminiSoldierAfterDamageDeckSummon: 0,
@@ -616,6 +624,11 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'location: "banished"',
         'eventName === "battleDestroyed"',
       ],
+    },
+    {
+      file: "test/lua-real-script-ehren-battle-confirm-to-deck.test.ts",
+      kind: "startDamageStep",
+      required: ['battleWindow?.kind).toBe("startDamageStep")', 'eventName: "battleConfirmed"', "eventCode: 1133", 'eventName: "sentToDeck"', "eventCode: 1013", "pendingBattle).toBeUndefined()"],
     },
     {
       file: "test/lua-real-script-element-doom-chain-attack.test.ts",
