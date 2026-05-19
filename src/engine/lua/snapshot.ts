@@ -23,6 +23,7 @@ import { luaChainLimitRegistryKeys, luaDenyChainLimitRegistry, restoreKnownLuaCh
 import { isKnownSunlitSentinelDelayedStandbyEffect, sunlitSentinelDelayedStandbyOperation } from "#lua/snapshot-sunlit-sentinel.js";
 import { isKnownDoubleSnareValidityEffect, isKnownTrapMonsterDisableEffect, isStaticPlayerPhaseLock } from "#lua/snapshot-static-effects.js";
 import { isKnownCannotActivateNonSpiritMonsterEffect, isKnownCannotActivateSpecialSummonedMonsterEffect, isKnownCannotBeMaterialEffect, isKnownCannotSelectBattleTargetNotHandlerEffect, isKnownGeminiEndPhaseReturnEffect, isKnownGeminiStatusEffect, isKnownGrantedSpiritEndPhaseReturnEffect, isKnownRemainFieldEffect, isKnownSetcodeOrCodeTypeBattleProtectionEffect, isKnownSpiritAddTypeEffect, isKnownTemporaryTunerAddTypeEffect } from "#lua/snapshot-restorable-effect-predicates.js";
+import { isKnownXyzMaterialAttackGainTriggerEffect, isKnownXyzMaterialEffectAddType, xyzMaterialAttackGainOperation } from "#lua/snapshot-xyz-material-gain.js";
 import { luaRegistryCardCodes } from "#lua/snapshot-registry-keys.js";
 import { restoredSpecialSummonConditionValueCallbacks } from "#lua/snapshot-special-summon-condition.js";
 import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision } from "#lua/host-types.js";
@@ -68,17 +69,10 @@ const luaDaiDanceCode = "50696588";
 const luaEndPhaseReviveDestroyCodes = new Set(["32061744", "37745919", "46874015"]);
 const luaLeaveFieldLinkedDestroyCodes = new Set(["29013526", "29139104", "56524813"]);
 const luaSetMegalith = 0x138;
-const luaCategorySpecialSummon = 0x200;
-const luaLocationDeck = 0x1;
-const luaTypeMonster = 0x1;
-const luaTypeRitual = 0x80;
-const luaTypeSpirit = 0x200;
-const luaTypeTuner = 0x1000;
-const luaResetEvent = 0x1000;
-const luaResetChain = 0x80000000;
-const luaResetTurnSet = 0x20000;
-const luaResetPhase = 0x40000000;
-const luaResetOpponentTurn = 0x20000000;
+const luaCategorySpecialSummon = 0x200; const luaLocationDeck = 0x1;
+const luaTypeMonster = 0x1; const luaTypeRitual = 0x80; const luaTypeSpirit = 0x200; const luaTypeTuner = 0x1000;
+const luaResetEvent = 0x1000; const luaResetChain = 0x80000000; const luaResetTurnSet = 0x20000;
+const luaResetPhase = 0x40000000; const luaResetOpponentTurn = 0x20000000;
 const luaPhaseBattle = 0x80; const luaPhaseEnd = 0x200;
 const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle; const luaPhaseEndEventCode = luaResetEvent | luaPhaseEnd;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
@@ -255,14 +249,14 @@ function findRestoredLuaStateSnapshotEffect(
   snapshotEffects: SerializedDuelEffect[],
   restoredRegistryKeys: Set<string>,
 ): SerializedDuelEffect | undefined {
-  if (!isKnownLuaUnionStateEffect(session, effect) && !isKnownLuaGeminiStateEffect(effect)) return undefined;
+  if (!isKnownLuaUnionStateEffect(session, effect) && !isKnownLuaGeminiStateEffect(effect) && !isKnownLuaMaterialSourceOnlyEventEffect(effect)) return undefined;
   return snapshotEffects.find((snapshotEffect) => {
     if (!snapshotEffect.registryKey || !registryKeys.has(snapshotEffect.registryKey) || restoredRegistryKeys.has(snapshotEffect.registryKey)) return false;
     return (
       snapshotEffect.sourceUid === effect.sourceUid &&
       snapshotEffect.event === effect.event &&
       snapshotEffect.code === effect.code &&
-      (isKnownLuaUnionStateEffect(session, snapshotEffect) || isKnownLuaGeminiStateEffect(snapshotEffect))
+      (isKnownLuaUnionStateEffect(session, snapshotEffect) || isKnownLuaGeminiStateEffect(snapshotEffect) || isKnownLuaMaterialSourceOnlyEventEffect(snapshotEffect))
     );
   });
 }
@@ -280,6 +274,18 @@ function isKnownLuaGeminiStateEffect(effect: DuelEffectDefinition | SerializedDu
     effect.sourceUid !== undefined &&
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone"
+  );
+}
+
+function isKnownLuaMaterialSourceOnlyEventEffect(effect: DuelEffectDefinition | SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 1108 &&
+    effect.sourceUid !== undefined &&
+    effect.triggerEvent === "usedAsMaterial" &&
+    effect.triggerCode === 1108 &&
+    effect.range.length === duelLocations.length &&
+    duelLocations.every((location) => effect.range.includes(location))
   );
 }
 
@@ -524,6 +530,7 @@ function luaRestoreSummonHostState(): LuaDuelSummonApiHostState {
 function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): boolean {
   return (
     isClientHintEffect(effect) ||
+    isKnownXyzMaterialAttackGainTriggerEffect(effect) ||
     isKnownSunlitSentinelDelayedStandbyEffect(effect) ||
     isKnownSelfEndPhaseDestroyEffect(effect) ||
     (effect.event === "continuous" &&
@@ -534,6 +541,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects) ||
         isKnownSpiritAddTypeEffect(effect) ||
         isKnownTemporaryTunerAddTypeEffect(effect) ||
+        isKnownXyzMaterialEffectAddType(effect) ||
         isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects) ||
         isStaticNotSetcodeSummonRestriction(effect) ||
         isKnownSetcodeTypeExtraSummonRestriction(effect) ||
@@ -852,6 +860,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
   if (isKnownDaiDanceAdjustEffect(effect)) return daiDanceAdjustOperation(effect);
+  if (isKnownXyzMaterialAttackGainTriggerEffect(effect)) return xyzMaterialAttackGainOperation(effect);
   if (effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor) {
     const returnPlayer = effect.value === 0 || effect.value === 1 ? effect.value : undefined;
     return luaTemporaryControlReturnOperation(returnPlayer);

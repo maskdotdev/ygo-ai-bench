@@ -10,12 +10,12 @@ import { cardTypeFlags, currentAttack, currentAttribute, currentLevel, currentLi
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { cardCombinations, materialCodesMatch, selectMaterialUidsForCodes, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
-const typeGemini = 0x800;
-const summonTypeGemini = 0x12000000;
+const typeGemini = 0x800; const summonTypeGemini = 0x12000000;
 
-export type DuelEventCollector = (eventName: DuelEventName, eventCard?: DuelCardInstance) => void;
+export type DuelEventCollector = (eventName: DuelEventName, eventCard?: DuelCardInstance, payload?: DuelEventPayload) => void;
 export interface DuelMaterialMoveResult {
   card: DuelCardInstance;
   collectedSentToGraveyard?: boolean;
@@ -287,24 +287,20 @@ export function xyzSummonDuelCard(
 ): DuelCardInstance {
   const { card, materials } = requireXyzSummonMaterials(state, player, uid, materialUids, canUseMaterial);
   card.overlayUids = [];
+  const overlays: DuelCardInstance[] = [];
   for (const material of materials) {
     collectEvent("preUsedAsMaterial", material);
     const overlay = moveMaterial(material.uid, player, duelReason.material | duelReason.xyz, card.uid);
-    card.overlayUids.push(overlay.uid);
+    card.overlayUids.push(overlay.uid); overlays.push(overlay);
     pushDuelLog(state, "xyzMaterial", player, material.name, `Attached to ${card.name}`);
-    collectEvent("usedAsMaterial", overlay);
   }
 
   collectEvent("specialSummoning", card);
   const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.xyz, card);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.xyz);
-  card.sequence = sequence;
-  card.position = "faceUpAttack";
-  card.faceUp = true;
-  card.summonType = "xyz";
-  card.summonPlayer = player;
-  card.summonPhase = state.phase;
-  card.summonMaterialUids = [...materialUids];
+  card.sequence = sequence; card.position = "faceUpAttack"; card.faceUp = true; card.summonType = "xyz";
+  card.summonPlayer = player; card.summonPhase = state.phase; card.summonMaterialUids = [...materialUids];
+  for (const overlay of overlays) collectEvent("usedAsMaterial", overlay, { eventReason: duelReason.xyz, eventReasonPlayer: player, eventReasonCardUid: card.uid });
   markProcedureComplete(card);
   recordSpecialSummonActivity(state, player, card);
   pushDuelLog(state, "xyzSummon", player, card.name, `Xyz Summoned with ${materialUids.length} material(s)`);
@@ -401,7 +397,11 @@ function defaultMaterialMover(state: DuelState): DuelMaterialMover {
 }
 
 function defaultOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover {
-  return (uid, controller, reason) => moveDuelCard(state, uid, "overlay", controller, reason);
+  return (uid, controller, reason, targetUid) => {
+    const material = moveDuelCard(state, uid, "overlay", controller, reason);
+    if (targetUid !== undefined) material.reasonCardUid = targetUid;
+    return material;
+  };
 }
 
 function collectSentToGraveyard(result: DuelMaterialMoveResult, collectEvent: DuelEventCollector): void {

@@ -237,7 +237,7 @@ const responseHandlers: DuelResponseHandlers = {
     const card = findCard(state, uid);
     if (card && isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Normal Summoned`);
     if (card) paySummonOrSetCosts(state, player, card, [91]);
-    normalSummon(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), () => isNoTributeSummonAllowed(state, player));
+    normalSummon(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), () => isNoTributeSummonAllowed(state, player));
   },
   tributeSummon(session, player, uid, tributeUids, effectId) {
     if (effectId !== undefined) {
@@ -262,13 +262,13 @@ const responseHandlers: DuelResponseHandlers = {
     const card = findCard(state, uid);
     if (card && isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
     if (card) paySummonOrSetCosts(state, player, card, [94]);
-    setMonster(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+    setMonster(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload));
   },
   setSpellTrap(state, player, uid) {
     const card = findCard(state, uid);
     if (card && isSpellTrapSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
     if (card) paySummonOrSetCosts(state, player, card, [95]);
-    setSpellTrap(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+    setSpellTrap(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload));
   },
   activateEffect(session, player, uid, effectId) {
     const source = findCard(session.state, uid);
@@ -538,7 +538,7 @@ export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: s
   if (card && isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Tribute Summoned`);
   if (card) paySummonOrSetCosts(state, player, card, [91]);
   const summonTypeCode = card ? luaLimitNormalSummonProcedureValue(state, player, card.uid) : undefined;
-  tributeSummonDuelCardWithEvents(state, player, uid, tributeUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+  tributeSummonDuelCardWithEvents(state, player, uid, tributeUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload),
     createMaterialMover(state), createReleasePredicate(state, duelReason.release | duelReason.summon), undefined, summonTypeCode);
 }
 
@@ -549,7 +549,7 @@ export function tributeSetDuelCard(state: DuelState, player: PlayerId, uid: stri
   tributeSetDuelCardWithEvents(state, player, uid, tributeUids,
     createMaterialMover(state),
     createReleasePredicate(state, duelReason.release | duelReason.summon),
-    (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard),
+    (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload),
   );
 }
 
@@ -557,32 +557,32 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   const card = findCard(state, uid);
   if (card && isFlipSummonPrevented(state, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Flip Summoned`);
   if (card) paySummonOrSetCosts(state, player, card, [93]);
-  return flipSummonDuelCardWithEvents(state, player, uid, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard));
+  return flipSummonDuelCardWithEvents(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload));
 }
 
 export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeFusion, "Fusion Summoned");
-  return fusionSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "fusion"));
+  return fusionSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "fusion"));
 }
 
 export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeSynchro, "Synchro Summoned");
-  return synchroSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "synchro"));
+  return synchroSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "synchro"));
 }
 
 export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeXyz, "Xyz Summoned");
-  return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createOverlayMaterialMover(state), createMaterialUsePredicate(state, "xyz"));
+  return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createOverlayMaterialMover(state), createMaterialUsePredicate(state, "xyz"));
 }
 
 export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeLink, "Link Summoned");
-  return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "link"));
+  return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "link"));
 }
 
 export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], position?: CardPosition): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeRitual, "Ritual Summoned");
-  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard) => collectTriggerEffects(state, eventName, eventCard), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"), position);
+  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"), position);
 }
 
 export function pendulumSummonDuelCards(state: DuelState, player: PlayerId, summonUids: string[]): DuelCardInstance[] {
@@ -618,7 +618,8 @@ function createOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover 
   return (uid, controller, reason, targetUid) => {
     if (isMaterialUsePrevented(state, uid, "xyz", createContinuousEffectContext(state), targetUid)) throw new Error(`Card ${uid} cannot be used as Xyz material`);
     requireDuelMoveAllowed(state, uid, "overlay", reason);
-    return moveDuelCard(state, uid, "overlay", controller, reason);
+    const material = moveDuelCard(state, uid, "overlay", controller, reason);
+    if (targetUid !== undefined) material.reasonCardUid = targetUid; return material;
   };
 }
 
