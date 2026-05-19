@@ -458,7 +458,10 @@ function cardMatchesFilter(L: unknown, uid: string, filterRef: number | undefine
   pushCardTable(L, uid);
   for (let index = 0; index < args.count; index += 1) lua.lua_pushvalue(L, args.start + index);
   const status = lua.lua_pcall(L, 1 + args.count, 1, 0);
-  if (status !== lua.LUA_OK) return false;
+  if (status !== lua.LUA_OK) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, 1);
   return Boolean(result);

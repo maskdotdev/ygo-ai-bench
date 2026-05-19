@@ -34,15 +34,15 @@ export function canMoveCardToDeckOrExtraAsCost(state: DuelState, card: DuelCardI
   return canMoveDuelCardToLocation(state, uid, destination, duelReason.cost);
 }
 
-export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, zoneMask?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition, options: { allowNoOpenMonsterZone?: boolean } = {}): boolean {
+export function canSpecialSummonFromLua(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, zoneMask?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition, options: { allowNoOpenMonsterZone?: boolean; relatedEffectId?: number } = {}): boolean {
   const hasOpenZone = hasAvailableMonsterZone(session, player, zoneMask);
   if (!hasOpenZone && !options.allowNoOpenMonsterZone) return false;
-  if (canSpecialSummonDuelCard(session.state, card.uid, player, summonType, undefined, allowUnconditionalSpecialSummonCondition, summonPosition)) return true;
-  if (!hasOpenZone && options.allowNoOpenMonsterZone) return canSpecialSummonIgnoringCurrentZone(session, card, player, summonType, allowUnconditionalSpecialSummonCondition, summonPosition);
+  if (canSpecialSummonDuelCard(session.state, card.uid, player, summonType, options.relatedEffectId, allowUnconditionalSpecialSummonCondition, summonPosition)) return true;
+  if (!hasOpenZone && options.allowNoOpenMonsterZone) return canSpecialSummonIgnoringCurrentZone(session, card, player, summonType, options.relatedEffectId, allowUnconditionalSpecialSummonCondition, summonPosition);
   return (
     card.location === "extraDeck" &&
     hasZoneSpace(session.state, player, "monsterZone") &&
-    canPlayerSpecialSummon(session.state, player, card, summonType, undefined, summonPosition) &&
+    canPlayerSpecialSummon(session.state, player, card, summonType, options.relatedEffectId, summonPosition) &&
     canMoveDuelCardToLocation(session.state, card.uid, "monsterZone", duelReason.summon | duelReason.specialSummon)
   );
 }
@@ -61,10 +61,10 @@ function hasAvailableMonsterZone(session: DuelSession, player: PlayerId, zoneMas
   return firstOpenFieldZoneSequence(session.state, player, "monsterZone", [], zoneMask) !== undefined;
 }
 
-function canSpecialSummonIgnoringCurrentZone(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, allowUnconditionalSpecialSummonCondition: boolean, summonPosition: CardPosition | undefined): boolean {
+function canSpecialSummonIgnoringCurrentZone(session: DuelSession, card: DuelCardInstance, player: PlayerId, summonType: number, relatedEffectId: number | undefined, allowUnconditionalSpecialSummonCondition: boolean, summonPosition: CardPosition | undefined): boolean {
   if (!isMonsterLike(card, session.state)) return false;
   if (card.location === "extraDeck") return false;
-  if (!canPlayerSpecialSummon(session.state, player, card, summonType, undefined, summonPosition)) return false;
+  if (!canPlayerSpecialSummon(session.state, player, card, summonType, relatedEffectId, summonPosition)) return false;
   return allowUnconditionalSpecialSummonCondition || canMoveDuelCardToLocation(session.state, card.uid, "monsterZone", duelReason.summon | duelReason.specialSummon);
 }
 

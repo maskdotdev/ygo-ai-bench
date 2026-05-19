@@ -1,13 +1,14 @@
-export const releaseCostSpecialSummonFixtureCount = 5;
+export const releaseCostSpecialSummonFixtureCount = 6;
 
 export const releaseCostSpecialSummonKindCounts = {
   releaseGroupCostHandDeckSummon: 1,
   releaseGroupCostHandProcedure: 1,
+  releaseGroupCostHandSelfSummonSearch: 1,
   releaseGroupCostHandSummonLeaveDestroy: 1,
   selfReleaseCostDeckSummon: 2,
 } satisfies Record<ReleaseCostSpecialSummonKind, number>;
 
-export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
+export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
 
 export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -29,6 +30,28 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
       "category: 0x200",
       "parameter: 0x3",
       "hasProcedureCompleteStatus",
+    ],
+  }, {
+    file: "test/lua-real-script-drytron-alpha-tribute-summon-search.test.ts",
+    kind: "releaseGroupCostHandSelfSummonSearch",
+    required: [
+      "Drytron.TributeCost",
+      "Drytron.TributeCost=Cost.AND(Cost.Replaceable(tribute_base_cost,extracon),tribute_extra_cost)",
+      "Duel.Release(sg,REASON_COST)",
+      "e1:SetTarget(function(e,c) return c:IsSummonableCard() end)",
+      "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+      "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+      "Duel.BreakEffect()",
+      "Duel.SendtoHand(sg,nil,REASON_EFFECT)",
+      "Duel.ConfirmCards(1-tp,sg)",
+      "duelReason.cost | duelReason.release",
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      'eventName: "sentToHand"',
+      "special-summon-limit:summonable-card",
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "operationInfos: [{ category: 0x200, targetUids: [alpha.uid], count: 1, player: 0, parameter: 0x2 }]",
+      "possibleOperationInfos: [{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }]",
     ],
   }, {
     file: "test/lua-real-script-storming-wynn-release-summon-leave-destroy.test.ts",
@@ -104,5 +127,5 @@ export function countReleaseCostSpecialSummonKinds(
   return files.reduce<Record<ReleaseCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
+  }, { releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
 }

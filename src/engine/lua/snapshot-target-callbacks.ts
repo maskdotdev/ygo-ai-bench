@@ -15,6 +15,7 @@ const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 const luaEffectGeminiStatus = 75;
 const luaSummonTypeGemini = 0x12000000;
 const luaLocationMonsterZone = 0x4;
+const luaTypeSpecialSummon = 0x2000000;
 
 export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
   const battleTargetType = effect.luaTargetDescriptor?.startsWith("target:source-battle-target-type:") ? Number(effect.luaTargetDescriptor.slice("target:source-battle-target-type:".length)) : undefined; if (battleTargetType !== undefined && Number.isSafeInteger(battleTargetType) && battleTargetType > 0) return { targetCardPredicate: (ctx, card) => { const source = ctx.duel.cards.find((candidate) => candidate.uid === effect.sourceUid); const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle; const battleTargetUid = source?.uid === battle?.attackerUid ? battle?.targetUid : source?.uid === battle?.targetUid ? battle?.attackerUid : undefined; return card.uid === battleTargetUid && (cardTypeFlags(card, ctx.duel) & battleTargetType) !== 0; } };
@@ -25,6 +26,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (effect.luaTargetDescriptor === "target:gemini-status") return { targetCardPredicate: (ctx, card) => hasRestoredGeminiStatus(ctx.duel, card) };
   const notRaceDeckOrExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-deck-or-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-deck-or-extra:".length)) : undefined;
   if (notRaceDeckOrExtra !== undefined && Number.isSafeInteger(notRaceDeckOrExtra) && notRaceDeckOrExtra > 0) return { targetCardPredicate: (ctx, card) => (card.location === "deck" || card.location === "extraDeck") && (currentRace(card, ctx.duel) & notRaceDeckOrExtra) === 0 };
+  if (effect.luaTargetDescriptor === "special-summon-limit:summonable-card") return { targetCardPredicate: (ctx, card) => card.kind === "monster" && (cardTypeFlags(card, ctx.duel) & luaTypeSpecialSummon) === 0 };
   if (effect.luaTargetDescriptor === "special-summon-limit:deck-or-extra") return { targetCardPredicate: (_ctx, card) => card.location === "deck" || card.location === "extraDeck" };
   if (effect.luaTargetDescriptor === "special-summon-limit:extra") return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" };
   const notTypeExtra = effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra" ? 0x40 : effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-type-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-type-extra:".length)) : undefined; if (notTypeExtra !== undefined && Number.isSafeInteger(notTypeExtra) && notTypeExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (cardTypeFlags(card, ctx.duel) & notTypeExtra) === 0 };

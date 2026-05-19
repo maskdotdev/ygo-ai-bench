@@ -32,6 +32,7 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const statusValue = status?.[1] ? luaNumberExpressionValue(L, index, status[1]) : undefined;
   if (statusValue !== undefined) return `target:status:${statusValue}`;
   if (new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsGemini(?:Status|State)\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet)) return "target:gemini-status";
+  if (new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsSummonableCard\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet)) return "special-summon-limit:summonable-card";
   const notRaceDeckOrExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
   const notRaceDeckOrExtraLocation = notRaceDeckOrExtra?.[1] ? luaNumberExpressionValue(L, index, notRaceDeckOrExtra[1]) : undefined;
   const notRaceDeckOrExtraRace = notRaceDeckOrExtra?.[2] ? luaNumberExpressionValue(L, index, notRaceDeckOrExtra[2]) : undefined;

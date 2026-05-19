@@ -5,7 +5,7 @@ import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { duelReason } from "#duel/reasons.js";
 import { normalSummonActions, tributeSummonActions } from "#duel/summon.js";
 import { luaSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
-import { positionFromMask, readTableStringField } from "#lua/api-utils.js";
+import { positionFromMask, readTableNumberField, readTableStringField } from "#lua/api-utils.js";
 import { canSpecialSummonFromLua } from "#lua/card-eligibility-api.js";
 import { availableMonsterZoneCount } from "#lua/duel-api/location.js";
 import { isNoTributePlayerAffected } from "#lua/no-tribute-api.js";
@@ -38,6 +38,7 @@ function pushCanBeSpecialSummoned<EffectRecord extends LuaCardApiEffectRecord>(L
   const positionMask = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : 0x1;
   const position = positionFromMask(positionMask);
   const zoneMask = lua.lua_isnumber(L, 9) ? lua.lua_tointeger(L, 9) : undefined;
+  const relatedEffectId = readTableNumberField(L, 2, "__effect_id");
   lua.lua_pushboolean(
     L,
     Boolean(
@@ -46,6 +47,7 @@ function pushCanBeSpecialSummoned<EffectRecord extends LuaCardApiEffectRecord>(L
         player !== undefined &&
         canSpecialSummonFromLua(session, card, player, summonType, zoneMask, ignoreSummonCondition, position, {
           allowNoOpenMonsterZone: activeCostCanFreeMonsterZone(session, hostState, player),
+          ...(relatedEffectId === undefined ? {} : { relatedEffectId }),
         }),
     ),
   );
