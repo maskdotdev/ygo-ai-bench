@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 14;
+const chainResponseFixtureCount = 15;
 const chainResponseKindCounts = {
   destroyOnlyChainedResponse: 4,
   flipSummonTrapResponse: 3,
   genericChainResponse: 1,
+  spellActivationDestroyDamageResponse: 1,
   summonEffectNegateResponse: 1,
   summonSuccessTrapResponse: 3,
   trapNegateToDeckResponse: 1,
@@ -24,6 +25,7 @@ const chainResponseSemanticVariantCounts = {
   overwhelmTributeGateTrapNegateDestroy: 1,
   raigekiBreakDiscardCostDestroy: 1,
   solemnWarningSpecialSummonEffectNegate: 1,
+  spellReactorChainDestroyDamage: 1,
   synchBlastWaveSynchroGateTargetDestroy: 1,
   torrentialTributeSummonSuccessDestroyAll: 1,
   trapHoleFlipSummonAtkGateDestroy: 1,
@@ -35,6 +37,7 @@ type ChainResponseKind =
   | "destroyOnlyChainedResponse"
   | "flipSummonTrapResponse"
   | "genericChainResponse"
+  | "spellActivationDestroyDamageResponse"
   | "summonEffectNegateResponse"
   | "summonSuccessTrapResponse"
   | "trapNegateToDeckResponse"
@@ -49,6 +52,7 @@ type ChainResponseSemanticVariant =
   | "overwhelmTributeGateTrapNegateDestroy"
   | "raigekiBreakDiscardCostDestroy"
   | "solemnWarningSpecialSummonEffectNegate"
+  | "spellReactorChainDestroyDamage"
   | "synchBlastWaveSynchroGateTargetDestroy"
   | "torrentialTributeSummonSuccessDestroyAll"
   | "trapHoleFlipSummonAtkGateDestroy"
@@ -228,6 +232,19 @@ function chainResponseFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-spell-reactor-chain-destroy-damage.test.ts",
+      kind: "spellActivationDestroyDamageResponse",
+      required: [
+        'action.type === "activateEffect" && action.uid === spellReactor.uid',
+        'windowKind: "chainResponse"',
+        "restoredResponse.session.state.chain).toHaveLength(0)",
+        'eventName: "destroyed"',
+        'eventName: "damageDealt"',
+        'location: "graveyard"',
+        'effectId: "lua-2-1027"',
+      ],
+    },
+    {
       file: "test/lua-real-script-torrential-tribute-summon-success.test.ts",
       kind: "summonSuccessTrapResponse",
       required: [
@@ -290,6 +307,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       destroyOnlyChainedResponse: 0,
       flipSummonTrapResponse: 0,
       genericChainResponse: 0,
+      spellActivationDestroyDamageResponse: 0,
       summonEffectNegateResponse: 0,
       summonSuccessTrapResponse: 0,
       trapNegateToDeckResponse: 0,
@@ -397,6 +415,18 @@ function chainResponseSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-spell-reactor-chain-destroy-damage.test.ts",
+      kind: "spellReactorChainDestroyDamage",
+      required: [
+        'const spellReactorCode = "15175429"',
+        "restores its spell-activation chain response that destroys the source and deals damage",
+        "EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DAMAGE_CAL",
+        "re:IsHasType(EFFECT_TYPE_ACTIVATE) and re:IsSpellEffect()",
+        "players[0].lifePoints).toBe(7200)",
+        "players[1].lifePoints).toBe(7800)",
+      ],
+    },
+    {
       file: "test/lua-real-script-synch-blast-wave-target-destroy.test.ts",
       kind: "synchBlastWaveSynchroGateTargetDestroy",
       required: [
@@ -472,6 +502,7 @@ function countChainResponseSemanticVariants(
       overwhelmTributeGateTrapNegateDestroy: 0,
       raigekiBreakDiscardCostDestroy: 0,
       solemnWarningSpecialSummonEffectNegate: 0,
+      spellReactorChainDestroyDamage: 0,
       synchBlastWaveSynchroGateTargetDestroy: 0,
       torrentialTributeSummonSuccessDestroyAll: 0,
       trapHoleFlipSummonAtkGateDestroy: 0,
