@@ -4,19 +4,19 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 9;
-const equipRelationFixtureCount = 13;
+const equipFixtureCount = 10;
+const equipRelationFixtureCount = 14;
 const equipProbeFixtureCount = 9;
-const equipOperationInfoFixtureCount = 10;
-const equipCleanupFixtureCount = 7;
-const equipInventoryFixtureCount = 16;
+const equipOperationInfoFixtureCount = 11;
+const equipCleanupFixtureCount = 8;
+const equipInventoryFixtureCount = 17;
 const equipKindCounts = {
   equipControl: 1,
   equipCost: 1,
   equipDamageLock: 1,
   equipGeminiStatus: 2,
   equipPierce: 2,
-  equipProcedure: 3,
+  equipProcedure: 4,
   equipReturn: 3,
   equipReviveDestroy: 1,
   equipSelfDestroy: 1,
@@ -24,6 +24,7 @@ const equipKindCounts = {
 } satisfies Record<EquipKind, number>;
 const equipSemanticVariantCounts = {
   axeProcedureStat: 1,
+  ancientGearTankDestroyDamage: 1,
   battleArchfiendShieldSetcode: 1,
   bigBangShotPierceBanish: 1,
   blackPendantSentDamage: 1,
@@ -71,6 +72,7 @@ type EquipKind =
   | "equipStatLock";
 type EquipSemanticVariant =
   | "axeProcedureStat"
+  | "ancientGearTankDestroyDamage"
   | "battleArchfiendShieldSetcode"
   | "bigBangShotPierceBanish"
   | "blackPendantSentDamage"
@@ -257,6 +259,7 @@ function realScriptEquipInventoryFiles(): string[] {
 
 function realScriptEquipFixtureFiles(): string[] {
   return [
+    "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
@@ -273,6 +276,7 @@ function realScriptEquipFixtureFiles(): string[] {
 
 function realScriptEquipRelationFixtureFiles(): string[] {
   return [
+    "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
@@ -309,6 +313,7 @@ function realScriptEquipProbeFixtureFiles(): string[] {
 
 function realScriptEquipOperationInfoFixtureFiles(): string[] {
   return [
+    "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
@@ -326,6 +331,7 @@ function realScriptEquipOperationInfoFixtureFiles(): string[] {
 
 function realScriptEquipCleanupFixtureFiles(): string[] {
   return [
+    "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
@@ -349,6 +355,10 @@ function realScriptEquipContinuationFixtureFiles(): string[] {
 
 function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKind }> {
   return ([
+    {
+      file: "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
+      kind: "equipProcedure",
+    },
     {
       file: "lua-real-script-equip-procedure-actions-part2.test.ts",
       kind: "equipProcedure",
@@ -420,6 +430,15 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
 
 function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSemanticVariant; required: string[] }> {
   return ([
+    {
+      file: "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
+      kind: "ancientGearTankDestroyDamage",
+      required: [
+        "restores Ancient Gear Tank's setcode equip filter, stat boost, and destroyed Equip damage trigger",
+        "const tankCode = \"37457534\"",
+        "Ancient Gear Tank Chain Responder",
+      ],
+    },
     {
       file: "lua-real-script-equip-procedure-actions.test.ts",
       kind: "axeProcedureStat",
@@ -751,6 +770,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
     },
     {
       axeProcedureStat: 0,
+      ancientGearTankDestroyDamage: 0,
       battleArchfiendShieldSetcode: 0,
       bigBangShotPierceBanish: 0,
       blackPendantSentDamage: 0,

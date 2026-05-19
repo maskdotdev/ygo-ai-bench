@@ -4,16 +4,17 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 10;
+const directDamageFixtureCount = 11;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   continuousCostTargetParamDamage: 1,
-  eventToGraveChainInfoDamage: 1,
+  eventToGraveChainInfoDamage: 2,
   fieldCountTargetPlayerDamage: 2,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
 const directDamageSemanticVariantCounts = {
+  ancientGearTankDestroyedEquipDamage: 1,
   backfireEventToGraveChainInfoDamage: 1,
   finalFlameTargetParamDamage: 1,
   hinotamaTargetParamDamage: 1,
@@ -34,6 +35,7 @@ type DirectDamageKind =
   | "lpConditionTargetParamDamage"
   | "targetParamDamage";
 type DirectDamageSemanticVariant =
+  | "ancientGearTankDestroyedEquipDamage"
   | "backfireEventToGraveChainInfoDamage"
   | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
@@ -108,6 +110,19 @@ describe("Lua real direct damage restore coverage", () => {
 
 function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKind; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
+      kind: "eventToGraveChainInfoDamage",
+      required: [
+        'const tankCode = "37457534"',
+        "restores Ancient Gear Tank's setcode equip filter, stat boost, and destroyed Equip damage trigger",
+        "return e:GetHandler():IsReason(REASON_DESTROY)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "targetParam: 600",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7400)",
+      ],
+    },
     {
       file: "test/lua-real-script-backfire-to-grave-chaininfo-damage.test.ts",
       kind: "eventToGraveChainInfoDamage",
@@ -234,6 +249,16 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
 
 function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> {
   const variants: Array<{ file: string; kind: DirectDamageSemanticVariant; required: string[] }> = [
+    {
+      file: "test/lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
+      kind: "ancientGearTankDestroyedEquipDamage",
+      required: [
+        "Ancient Gear Tank Chain Responder",
+        "eventValue: 600",
+        "eventReasonCardUid: tank.uid",
+        "ancient gear tank responder resolved",
+      ],
+    },
     {
       file: "test/lua-real-script-backfire-to-grave-chaininfo-damage.test.ts",
       kind: "backfireEventToGraveChainInfoDamage",
@@ -371,6 +396,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       return counts;
     },
     {
+      ancientGearTankDestroyedEquipDamage: 0,
       backfireEventToGraveChainInfoDamage: 0,
       finalFlameTargetParamDamage: 0,
       hinotamaTargetParamDamage: 0,
