@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 124;
-const chainedResponseFixtureCount = 123;
-const responseOperationInfoFixtureCount = 115;
+const responseFixtureCount = 125;
+const chainedResponseFixtureCount = 124;
+const responseOperationInfoFixtureCount = 116;
 const responseWithoutOperationInfoFixtureFiles = [
   "test/lua-real-script-angineer-overlay-position.test.ts",
   "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
@@ -18,7 +18,7 @@ const responseWithoutOperationInfoFixtureFiles = [
   "test/lua-real-script-waboku-temporary-battle-protection.test.ts",
 ];
 const responseFixtureKindCounts = {
-  chainedResponseWithOperationInfo: 115,
+  chainedResponseWithOperationInfo: 116,
   chainedResponseWithoutOperationInfo: 8,
   lingeringSameCodeNegation: 1,
 } satisfies Record<ResponseFixtureKind, number>;
@@ -28,7 +28,7 @@ const responseSemanticVariantCounts = {
   fabledAshenveilDamageStepBoostEmptyOperationInfo: 1,
   heboSpiritGrantReturnEmptyOperationInfo: 1,
   negateAttackBattleWindowEmptyOperationInfo: 1,
-  operationInfoAnnouncedResponse: 115,
+  operationInfoAnnouncedResponse: 116,
   scrapIronScarecrowBattleWindowEmptyOperationInfo: 1,
   shinobirdCrowDamageStepStatEmptyOperationInfo: 1,
   threateningRoarAttackLockEmptyOperationInfo: 1,
@@ -207,6 +207,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-dogmatikalamity-extra-ritual-lock.test.ts",
     "lua-real-script-draining-shield-battle-window.test.ts",
+    "lua-real-script-driving-snow-to-grave-target-destroy.test.ts",
     "lua-real-script-droll-lock-bird-draw-search-lock.test.ts",
     "lua-real-script-earth-chant-ritual-equal.test.ts",
     "lua-real-script-equip-procedure-actions-part2.test.ts",
