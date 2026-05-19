@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const POSITION_FIXTURE_COUNT = 6;
+const POSITION_FIXTURE_COUNT = 7;
 const positionKindCounts = {
   banishCostGroupChange: 1,
   battlePhaseSelfDefenseLock: 1,
+  freeChainGroupTurnSet: 1,
   overlayTargetChange: 1,
   summonTriggerAttackPosition: 1,
   summonTriggerSet: 1,
@@ -17,16 +18,25 @@ const positionSemanticVariantCounts = {
   angineerDetachOverlayProtectedPositionChange: 1,
   gagagaEscapeBanishCostGroupPositionChange: 1,
   goblinAttackForceBattlePhasePositionLock: 1,
+  legendaryWindUpKeyGroupTurnSet: 1,
   otohimeSummonTriggerAttackPosition: 1,
   protectiveSoulAilinUnionPositionIgnition: 1,
   tsukuyomiSpiritSummonFaceDownSet: 1,
 } satisfies Record<PositionSemanticVariant, number>;
 
-type PositionKind = "banishCostGroupChange" | "battlePhaseSelfDefenseLock" | "overlayTargetChange" | "summonTriggerAttackPosition" | "summonTriggerSet" | "unionEquipTargetDefense";
+type PositionKind =
+  | "banishCostGroupChange"
+  | "battlePhaseSelfDefenseLock"
+  | "freeChainGroupTurnSet"
+  | "overlayTargetChange"
+  | "summonTriggerAttackPosition"
+  | "summonTriggerSet"
+  | "unionEquipTargetDefense";
 type PositionSemanticVariant =
   | "angineerDetachOverlayProtectedPositionChange"
   | "gagagaEscapeBanishCostGroupPositionChange"
   | "goblinAttackForceBattlePhasePositionLock"
+  | "legendaryWindUpKeyGroupTurnSet"
   | "otohimeSummonTriggerAttackPosition"
   | "protectiveSoulAilinUnionPositionIgnition"
   | "tsukuyomiSpiritSummonFaceDownSet";
@@ -131,6 +141,22 @@ function positionFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-legendary-wind-up-key-group-set.test.ts",
+      kind: "freeChainGroupTurnSet",
+      required: [
+        'const keyCode = "69320362"',
+        "restores free-chain Wind-Up group turn-set operation info and grouped position changes",
+        "e1:SetCategory(CATEGORY_POSITION+CATEGORY_SET)",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_POSITION,g,#g,tp,POS_FACEDOWN_DEFENSE)",
+        "Duel.ChangePosition(g,POS_FACEDOWN_DEFENSE)",
+        "operationInfos: [{ category: 0x1000",
+        "parameter: 0x8",
+        'eventName: "positionChanged"',
+        'position: "faceDownDefense", faceUp: false',
+      ],
+    },
+    {
       file: "test/lua-real-script-otohime-position-overload.test.ts",
       kind: "summonTriggerAttackPosition",
       required: [
@@ -175,6 +201,7 @@ function countPositionKinds(fixtures: Array<{ kind: PositionKind }>): Record<Pos
     {
       banishCostGroupChange: 0,
       battlePhaseSelfDefenseLock: 0,
+      freeChainGroupTurnSet: 0,
       overlayTargetChange: 0,
       summonTriggerAttackPosition: 0,
       summonTriggerSet: 0,
@@ -214,6 +241,17 @@ function positionSemanticVariants(): Array<{
         'const goblinCode = "78658564"',
         "restores its Battle Phase self-defense change and copied cannot-change-position lock",
         "goblin force lock false/0",
+      ],
+    },
+    {
+      file: "test/lua-real-script-legendary-wind-up-key-group-set.test.ts",
+      kind: "legendaryWindUpKeyGroupTurnSet",
+      required: [
+        'const keyCode = "69320362"',
+        "restores free-chain Wind-Up group turn-set operation info and grouped position changes",
+        "return c:IsFaceup() and c:IsSetCard(SET_WIND_UP) and c:IsCanTurnSet()",
+        'eventName: "positionChanged"',
+        'position: "faceDownDefense", faceUp: false',
       ],
     },
     {
@@ -262,6 +300,7 @@ function countPositionSemanticVariants(
       angineerDetachOverlayProtectedPositionChange: 0,
       gagagaEscapeBanishCostGroupPositionChange: 0,
       goblinAttackForceBattlePhasePositionLock: 0,
+      legendaryWindUpKeyGroupTurnSet: 0,
       otohimeSummonTriggerAttackPosition: 0,
       protectiveSoulAilinUnionPositionIgnition: 0,
       tsukuyomiSpiritSummonFaceDownSet: 0,
