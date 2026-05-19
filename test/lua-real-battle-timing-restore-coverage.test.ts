@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 38;
-const battleTimingEventCodeFixtureCount = 38;
+const battleTimingFixtureCount = 39;
+const battleTimingEventCodeFixtureCount = 39;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 17,
-  beforeDamageCalculation: 7,
+  beforeDamageCalculation: 8,
   duringDamageCalculation: 4,
   endDamageStep: 6,
   startDamageStep: 4,
@@ -36,6 +36,7 @@ const battleTimingSemanticVariantCounts = {
   injectionFairyLilyBeforeDamageLpBoost: 1,
   insectPrincessBattledFlagAtk: 1,
   kuribohBeforeDamagePrevent: 1,
+  kuribonBeforeDamageRecoverReturn: 1,
   madolcheWaltzAfterDamageFieldBurn: 1,
   mirageKnightDuringDamageAtkBanish: 1,
   nightmareMagicianEndDamageControl: 1,
@@ -136,6 +137,7 @@ type BattleTimingSemanticVariant =
   | "injectionFairyLilyBeforeDamageLpBoost"
   | "insectPrincessBattledFlagAtk"
   | "kuribohBeforeDamagePrevent"
+  | "kuribonBeforeDamageRecoverReturn"
   | "madolcheWaltzAfterDamageFieldBurn"
   | "mirageKnightDuringDamageAtkBanish"
   | "nightmareMagicianEndDamageControl"
@@ -312,6 +314,18 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores its before-damage hand Quick Effect and prevents battle damage after self-discard cost", "triggerEvent: \"beforeDamageCalculation\"", "battleDamage).toEqual({ 0: 0, 1: 0 })"],
     },
     {
+      file: "test/lua-real-script-kuribon-pre-damage-recover-return.test.ts",
+      kind: "kuribonBeforeDamageRecoverReturn",
+      required: [
+        "restores its attacked-target pre-damage recovery, battle-damage prevention, and self return to hand",
+        "Duel.GetAttackTarget()==e:GetHandler() and Duel.GetBattleDamage(tp)>0",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"beforeDamageCalculation\"",
+        "eventName: \"recoveredLifePoints\"",
+        "eventName: \"sentToHand\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-madolche-waltz-battled-field-damage.test.ts",
       kind: "madolcheWaltzAfterDamageFieldBurn",
       required: [
@@ -467,6 +481,7 @@ function countBattleTimingSemanticVariants(
       injectionFairyLilyBeforeDamageLpBoost: 0,
       insectPrincessBattledFlagAtk: 0,
       kuribohBeforeDamagePrevent: 0,
+      kuribonBeforeDamageRecoverReturn: 0,
       madolcheWaltzAfterDamageFieldBurn: 0,
       mirageKnightDuringDamageAtkBanish: 0,
       nightmareMagicianEndDamageControl: 0,
@@ -767,6 +782,20 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
         'eventName: "battleDamageDealt", eventPlayer: 0',
         "pendingBattle).toBeUndefined()",
+      ],
+    },
+    {
+      file: "test/lua-real-script-kuribon-pre-damage-recover-return.test.ts",
+      kind: "beforeDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("beforeDamageCalculation")',
+        'eventName: "beforeDamageCalculation"',
+        "eventCode: 1134",
+        "Duel.SetTargetPlayer(1-tp)",
+        "Duel.SetTargetParam(val)",
+        'eventName: "recoveredLifePoints"',
+        'eventName: "sentToHand"',
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
