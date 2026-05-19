@@ -4,18 +4,20 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const flipOperationFixtureCount = 2;
+const flipOperationFixtureCount = 3;
 const flipOperationKindCounts = {
+  flipGroupDestroy: 1,
   flipSpellTrapDestroy: 1,
   flipTargetToHand: 1,
 } satisfies Record<FlipOperationKind, number>;
 const flipOperationSemanticVariantCounts = {
+  fourStarredLadybugOpponentLevel4GroupDestroy: 1,
   gravekeeperGuardOpponentMonsterReturn: 1,
   wormApocalypseSpellTrapDestroy: 1,
 } satisfies Record<FlipOperationSemanticVariant, number>;
 
-type FlipOperationKind = "flipSpellTrapDestroy" | "flipTargetToHand";
-type FlipOperationSemanticVariant = "gravekeeperGuardOpponentMonsterReturn" | "wormApocalypseSpellTrapDestroy";
+type FlipOperationKind = "flipGroupDestroy" | "flipSpellTrapDestroy" | "flipTargetToHand";
+type FlipOperationSemanticVariant = "fourStarredLadybugOpponentLevel4GroupDestroy" | "gravekeeperGuardOpponentMonsterReturn" | "wormApocalypseSpellTrapDestroy";
 
 describe("Lua real Flip operation restore coverage", () => {
   it("requires Flip operation fixtures to assert clean Lua registry restore, targets, and operation metadata", () => {
@@ -66,6 +68,22 @@ describe("Lua real Flip operation restore coverage", () => {
 function flipOperationFixtureFiles(): Array<{ file: string; kind: FlipOperationKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-four-starred-ladybug-flip-group-destroy.test.ts",
+      kind: "flipGroupDestroy",
+      required: [
+        "restores its non-targeted Flip group destruction of opponent face-up Level 4 monsters",
+        'const ladybugCode = "83994646"',
+        "Duel.GetMatchingGroup(s.filter,tp,0,LOCATION_MZONE,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "expect(script).not.toContain(\"Duel.SelectTarget\")",
+        'eventName: "flipSummoned"',
+        'eventName: "destroyed"',
+        "operationInfos: [{ category: 0x1",
+        "eventUids: destroyedUids",
+      ],
+    },
+    {
       file: "test/lua-real-script-worm-apocalypse-flip-spelltrap-destroy.test.ts",
       kind: "flipSpellTrapDestroy",
       required: [
@@ -101,6 +119,18 @@ function flipOperationFixtureFiles(): Array<{ file: string; kind: FlipOperationK
 function flipOperationSemanticVariants(): Array<{ file: string; kind: FlipOperationSemanticVariant; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-four-starred-ladybug-flip-group-destroy.test.ts",
+      kind: "fourStarredLadybugOpponentLevel4GroupDestroy",
+      required: [
+        "return c:IsFaceup() and c:GetLevel()==4",
+        "expect(script).not.toContain(\"EFFECT_FLAG_CARD_TARGET\")",
+        'triggerBucket: "turnMandatory"',
+        "eventReasonCardUid: ladybug.uid",
+        "eventReasonEffectId: 1",
+        'host.messages).not.toContain("ladybug responder resolved")',
+      ],
+    },
+    {
       file: "test/lua-real-script-worm-apocalypse-flip-spelltrap-destroy.test.ts",
       kind: "wormApocalypseSpellTrapDestroy",
       required: [
@@ -129,7 +159,7 @@ function countFlipOperationKinds(fixtures: Array<{ kind: FlipOperationKind }>): 
   return fixtures.reduce<Record<FlipOperationKind, number>>((counts, fixture) => {
     counts[fixture.kind] += 1;
     return counts;
-  }, { flipSpellTrapDestroy: 0, flipTargetToHand: 0 });
+  }, { flipGroupDestroy: 0, flipSpellTrapDestroy: 0, flipTargetToHand: 0 });
 }
 
 function countFlipOperationSemanticVariants(
@@ -138,5 +168,5 @@ function countFlipOperationSemanticVariants(
   return fixtures.reduce<Record<FlipOperationSemanticVariant, number>>((counts, fixture) => {
     counts[fixture.kind] += 1;
     return counts;
-  }, { gravekeeperGuardOpponentMonsterReturn: 0, wormApocalypseSpellTrapDestroy: 0 });
+  }, { fourStarredLadybugOpponentLevel4GroupDestroy: 0, gravekeeperGuardOpponentMonsterReturn: 0, wormApocalypseSpellTrapDestroy: 0 });
 }
