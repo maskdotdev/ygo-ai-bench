@@ -15,6 +15,7 @@ import { luaValueDescriptorStatValue } from "#lua/effect-value-descriptor-callba
 import { locationMaskFromLocation, locationMaskFromLocations } from "#lua/effect-location-mask.js";
 import { installEffectCompatibilityApi } from "#lua/effect-compatibility-api.js";
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
+import { applyPendingLuaSetLpDefeat } from "#lua/duel-api/lp.js";
 import { applyLuaContinuousSetControlEffects } from "#lua/duel-api/move-control.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
@@ -1026,13 +1027,9 @@ function registeredDuelEffectsForLuaEffect(hostState: LuaHostState, luaEffect: L
 function sameUids(left: string[] | undefined, right: string[]): boolean { return left?.length === right.length && left.every((uid, index) => uid === right[index]); }
 
 function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectContext | undefined, luaEffectId: number | undefined, kind: LuaEffectCallbackKind, callback: () => T): T {
-  const previousTargets = hostState.activeTargetUids;
-  const previousLuaEffectId = hostState.activeLuaEffectId;
-  const previousContext = hostState.activeContext;
-  const previousTriggerStart = hostState.activeOperationTriggerStart;
-  const previousOperationMoved = hostState.activeOperationMoved;
-  const previousOperatedUids = [...hostState.operatedUids];
-  const previousSummonNegatedUids = [...hostState.summonNegatedUids];
+  const previousTargets = hostState.activeTargetUids, previousLuaEffectId = hostState.activeLuaEffectId, previousContext = hostState.activeContext;
+  const previousTriggerStart = hostState.activeOperationTriggerStart, previousOperationMoved = hostState.activeOperationMoved;
+  const previousOperatedUids = [...hostState.operatedUids], previousSummonNegatedUids = [...hostState.summonNegatedUids];
   const operationTriggerStart = ctx ? luaOperationTriggerStart(hostState, ctx, kind) : previousTriggerStart;
   hostState.activeTargetUids = ctx?.targetUids;
   hostState.activeLuaEffectId = luaEffectId;
@@ -1043,6 +1040,7 @@ function withLuaCallbackContext<T>(hostState: LuaHostState, ctx: DuelEffectConte
   try {
     return callback();
   } finally {
+    applyPendingLuaSetLpDefeat(hostState);
     hostState.activeTargetUids = previousTargets;
     hostState.activeLuaEffectId = previousLuaEffectId;
     hostState.activeContext = previousContext;

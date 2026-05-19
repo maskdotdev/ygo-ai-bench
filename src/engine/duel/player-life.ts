@@ -24,9 +24,13 @@ export function recoverDuelPlayer(state: DuelState, player: PlayerId, amount: nu
 
 export function setDuelPlayerLifePoints(state: DuelState, player: PlayerId, lifePoints: number): void {
   if (state.status === "ended") return;
+  setDuelPlayerLifePointsUnchecked(state, player, lifePoints);
+  applyLifePointDefeats(state);
+}
+
+export function setDuelPlayerLifePointsUnchecked(state: DuelState, player: PlayerId, lifePoints: number): void {
   state.players[player].lifePoints = Math.max(0, Math.floor(lifePoints));
   pushDuelLog(state, "setLifePoints", player, undefined, String(state.players[player].lifePoints));
-  applyLifePointDefeat(state, player);
 }
 
 function applyLifePointDefeat(state: DuelState, player: PlayerId): void {
@@ -34,6 +38,17 @@ function applyLifePointDefeat(state: DuelState, player: PlayerId): void {
   if (isLifePointLossDefeatPrevented(state, player, createLifePointCheckContext(state))) return;
   state.status = "ended";
   state.winner = state.players[otherPlayer(player)].lifePoints <= 0 ? "draw" : otherPlayer(player);
+  clearEndedDuelPendingState(state);
+  pushDuelLog(state, "win", state.winner === "draw" ? undefined : state.winner, undefined, "lp");
+}
+
+export function applyLifePointDefeats(state: DuelState): void {
+  if (state.status === "ended") return;
+  const player0Lost = state.players[0].lifePoints <= 0 && !isLifePointLossDefeatPrevented(state, 0, createLifePointCheckContext(state));
+  const player1Lost = state.players[1].lifePoints <= 0 && !isLifePointLossDefeatPrevented(state, 1, createLifePointCheckContext(state));
+  if (!player0Lost && !player1Lost) return;
+  state.status = "ended";
+  state.winner = player0Lost && player1Lost ? "draw" : player0Lost ? 1 : 0;
   clearEndedDuelPendingState(state);
   pushDuelLog(state, "win", state.winner === "draw" ? undefined : state.winner, undefined, "lp");
 }

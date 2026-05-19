@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { moveDuelCard, pushDuelLog } from "#duel/card-state.js";
 import { isEffectDefeatPrevented, matchingPlayerEffects, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { collectDuelTriggerEffects, damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/core.js";
+import { applyLifePointDefeats, setDuelPlayerLifePointsUnchecked } from "#duel/player-life.js";
 import { clearEndedDuelPendingState } from "#duel/end-state.js";
 import { duelReason } from "#duel/reasons.js";
 import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
@@ -21,7 +22,12 @@ export function installDuelLpApi(L: unknown, session: DuelSession, hostState: Lu
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = normalizePlayer(lua.lua_isnumber(state, 1) ? lua.lua_tointeger(state, 1) : session.state.turnPlayer);
     const value = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    setDuelPlayerLifePoints(session.state, player, value);
+    if (hostState.activeContext) {
+      setDuelPlayerLifePointsUnchecked(session.state, player, value);
+      hostState.pendingSetLpDefeat = true;
+    } else {
+      setDuelPlayerLifePoints(session.state, player, value);
+    }
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("SetLP"));
@@ -93,6 +99,12 @@ export function installDuelLpApi(L: unknown, session: DuelSession, hostState: Lu
   lua.lua_setfield(L, -2, to_luastring("Win"));
   lua.lua_pushcfunction(L, () => 0);
   lua.lua_setfield(L, -2, to_luastring("RDComplete"));
+}
+
+export function applyPendingLuaSetLpDefeat(hostState: LuaOperationTimingBoundaryHostState & { session: DuelSession }): void {
+  if (!hostState.pendingSetLpDefeat) return;
+  hostState.pendingSetLpDefeat = false;
+  applyLifePointDefeats(hostState.session.state);
 }
 
 function normalizePlayer(value: number): PlayerId {

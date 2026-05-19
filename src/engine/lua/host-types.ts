@@ -160,6 +160,7 @@ export interface LuaHostState {
   activeContext: DuelEffectContext | undefined;
   activeOperationTriggerStart: number | undefined;
   activeOperationMoved: boolean;
+  pendingSetLpDefeat: boolean;
   operationInfos: LuaDuelOperationInfo[];
   possibleOperationInfos: LuaDuelOperationInfo[];
   operatedUids: string[];
