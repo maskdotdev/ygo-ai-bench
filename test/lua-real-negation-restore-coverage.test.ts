@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 18;
-const chainResponseNegationFixtureCount = 15;
+const negationFixtureCount = 19;
+const chainResponseNegationFixtureCount = 16;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 22;
+const negationInventoryFixtureCount = 23;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 10,
+  chainNegateToGrave: 11,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -22,6 +22,7 @@ const destroyOnlyResponseKindCounts = {
   chainMultiDestroyOnly: 1,
 } satisfies Record<DestroyOnlyResponseKind, number>;
 const negationSemanticVariantCounts = {
+  adamancipatorResonanceDamageCalculationNegateDestroy: 1,
   armorBreakEquipActiveTypeNegateDestroy: 1,
   ashBlossomHandTrapDeckSearchNegate: 1,
   darkBribeNegateDestroyOpponentDraw: 1,
@@ -57,6 +58,7 @@ type NegationKind =
 
 type DestroyOnlyResponseKind = "chainDestroyOnly" | "chainMultiDestroyOnly";
 type NegationSemanticVariant =
+  | "adamancipatorResonanceDamageCalculationNegateDestroy"
   | "armorBreakEquipActiveTypeNegateDestroy"
   | "ashBlossomHandTrapDeckSearchNegate"
   | "darkBribeNegateDestroyOpponentDraw"
@@ -195,6 +197,7 @@ function combinedNegationFixtureFiles(): string[] {
 
 function realScriptNegationInventoryFiles(): string[] {
   return [
+    "lua-real-script-adamancipator-resonance-damage-cal-negate.test.ts",
     "lua-real-script-ash-blossom-chain-negate.test.ts",
     "lua-real-script-armor-break-equip-active-type-negate.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
@@ -239,6 +242,10 @@ function realScriptDestroyOnlyResponseFixtureFiles(): string[] {
 
 function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind }> {
   return ([
+    {
+      file: "lua-real-script-adamancipator-resonance-damage-cal-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
     {
       file: "lua-real-script-ash-blossom-chain-negate.test.ts",
       kind: "handTrapChainNegate",
@@ -345,6 +352,20 @@ function negationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-adamancipator-resonance-damage-cal-negate.test.ts",
+      kind: "adamancipatorResonanceDamageCalculationNegateDestroy",
+      required: [
+        'const resonanceCode = "45730592"',
+        "restores its Damage Calculation Adamancipator Synchro gate, monster activation negation, source destruction, and suppressed operation",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DAMAGE_CAL)",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+        "return c:IsFaceup() and c:IsSetCard(SET_ADAMANCIPATOR) and c:IsType(TYPE_SYNCHRO)",
+        "and re:IsMonsterEffect() and Duel.IsChainNegatable(ev)",
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("adamancipator monster resolved")',
+      ],
+    },
     {
       file: "lua-real-script-armor-break-equip-active-type-negate.test.ts",
       kind: "armorBreakEquipActiveTypeNegateDestroy",
@@ -628,6 +649,7 @@ function countNegationSemanticVariants(
       return counts;
     },
     {
+      adamancipatorResonanceDamageCalculationNegateDestroy: 0,
       armorBreakEquipActiveTypeNegateDestroy: 0,
       ashBlossomHandTrapDeckSearchNegate: 0,
       darkBribeNegateDestroyOpponentDraw: 0,
