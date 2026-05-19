@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 19;
+const statFixtureCount = 20;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
   damageStepBattleTargetAttributeAttackBoost: 2,
+  diceGroupAttackDefenseUpdate: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 2,
   fieldMatchingFaceupRaceCountStat: 1,
@@ -41,10 +42,11 @@ const statSemanticVariantCounts = {
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
   steamroidDamageStepBattleSwingStat: 1,
+  gracefulDiceDamageStepGroupStat: 1,
   trianglePowerBaseStatEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
@@ -52,6 +54,7 @@ type StatSemanticVariant =
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
+  | "gracefulDiceDamageStepGroupStat"
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "luminousSoldierDamageStepTargetAttributeStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
@@ -345,6 +348,21 @@ function statFixtureFiles(): Array<{
         "battleDamage).toEqual({ 0: 0, 1: 1500 })",
       ],
     },
+    {
+      file: "test/lua-real-script-graceful-dice-damage-step-stat.test.ts",
+      kind: "diceGroupAttackDefenseUpdate",
+      required: [
+        'const gracefulDiceCode = "74137509"',
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.IsDamageCalculated()",
+        "local val=Duel.TossDice(tp,1)*100",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(restoredActivation.session.state.cards.find((card) => card.uid === attacker.uid), restoredActivation.session.state)).toBe(1500 + update)",
+        "currentDefense(restoredActivation.session.state.cards.find((card) => card.uid === ally.uid), restoredActivation.session.state)).toBe(1600 + update)",
+        "battleDamage).toEqual({ 0: 0, 1: Math.max(0, 1500 + update - 1700) })",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatKind;
@@ -362,6 +380,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleAttackerTargetSwing: 0,
       battleTargetAttackBoost: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
+      diceGroupAttackDefenseUpdate: 0,
       fieldAttributeAttackUpdate: 0,
       fieldGroupCountStat: 0,
       fieldMatchingFaceupRaceCountStat: 0,
@@ -573,6 +592,17 @@ function statSemanticVariants(): Array<{
         'eventName: "phaseEnd"',
       ],
     },
+    {
+      file: "test/lua-real-script-graceful-dice-damage-step-stat.test.ts",
+      kind: "gracefulDiceDamageStepGroupStat",
+      required: [
+        'const gracefulDiceCode = "74137509"',
+        "restores a Damage Step dice roll into group ATK/DEF updates and battle damage",
+        "local val=Duel.TossDice(tp,1)*100",
+        'battleWindow).toMatchObject({ kind: "startDamageStep", step: "damage", responsePlayer: 0 })',
+        'eventName: "diceTossed"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatSemanticVariant;
@@ -593,6 +623,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
+      gracefulDiceDamageStepGroupStat: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       luminousSoldierDamageStepTargetAttributeStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
