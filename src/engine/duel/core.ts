@@ -860,6 +860,8 @@ function pushChainLink(
   effectLabels?: number[],
   effectLabelObjectUid?: string,
   effectLabelObjectUids?: string[],
+  activationLocation?: DuelLocation,
+  activationSequence?: number,
 ): void {
   const source = findCard(state, sourceUid);
   const chainLinkId = `chain-${state.log.length + 1}`;
@@ -869,7 +871,8 @@ function pushChainLink(
     player,
     sourceUid,
     effectId,
-    ...(source === undefined ? {} : { activationLocation: source.location, activationSequence: source.sequence }),
+    ...(activationLocation === undefined ? (source === undefined ? {} : { activationLocation: source.location }) : { activationLocation }),
+    ...(activationSequence === undefined ? (source === undefined ? {} : { activationSequence: source.sequence }) : { activationSequence }),
     ...(eventName === undefined ? {} : { eventName }),
     ...(eventCode === undefined ? {} : { eventCode }),
     ...(eventPlayer === undefined ? {} : { eventPlayer }),

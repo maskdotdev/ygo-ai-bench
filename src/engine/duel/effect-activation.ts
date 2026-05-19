@@ -89,6 +89,8 @@ export interface DuelActivationHandlers {
     effectLabels?: number[],
     effectLabelObjectUid?: string,
     effectLabelObjectUids?: string[],
+    activationLocation?: DuelLocation,
+    activationSequence?: number,
   ): void;
   hasChainResponses(state: DuelState, player: PlayerId): boolean;
   resolveChain(state: DuelState): void;
@@ -164,6 +166,8 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
       ctx.effectLabels,
       ctx.effectLabelObjectUid,
       ctx.effectLabelObjectUids,
+      ctx.activationLocation,
+      ctx.activationSequence,
     );
     placeActivatedSpellTrapCard(session.state, player, source, effect);
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
@@ -345,6 +349,8 @@ export function activateDuelPendingTrigger(session: DuelSession, player: PlayerI
       ctx.effectLabels,
       ctx.effectLabelObjectUid,
       ctx.effectLabelObjectUids,
+      ctx.activationLocation,
+      ctx.activationSequence,
     );
     placeActivatedSpellTrapCard(session.state, trigger.player, source, effect);
     pushDuelLog(session.state, "trigger", trigger.player, source.name, effect.id);

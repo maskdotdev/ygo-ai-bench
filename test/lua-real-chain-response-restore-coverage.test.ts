@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 18;
+const chainResponseFixtureCount = 19;
 const chainResponseKindCounts = {
   destroyOnlyChainedResponse: 4,
   flipSummonTrapResponse: 3,
@@ -12,6 +12,7 @@ const chainResponseKindCounts = {
   ignitionBanishCostColumnDestroyResponse: 1,
   ignitionHandToGraveCostLabelDestroyResponse: 1,
   ignitionReleaseCostDestroyResponse: 1,
+  ignitionSelfTributeDestroyResponse: 1,
   spellActivationDestroyDamageResponse: 1,
   summonEffectNegateResponse: 1,
   summonSuccessTrapResponse: 3,
@@ -24,6 +25,7 @@ const chainResponseSemanticVariantCounts = {
   crimsonNinjaFlipConfirmTrapDestroy: 1,
   ghostBelleWantedChainNegationAndRecycle: 1,
   goldenFlyingFishReleaseCostTargetDestroy: 1,
+  deepSweeperSelfTributeDestroy: 1,
   houseAdhesiveTapeFlipSummonDestroy: 1,
   mekkKnightYellowColumnProcedureDestroy: 1,
   mysticalSpaceTyphoonFreeChainDestroy: 1,
@@ -46,6 +48,7 @@ type ChainResponseKind =
   | "ignitionBanishCostColumnDestroyResponse"
   | "ignitionHandToGraveCostLabelDestroyResponse"
   | "ignitionReleaseCostDestroyResponse"
+  | "ignitionSelfTributeDestroyResponse"
   | "spellActivationDestroyDamageResponse"
   | "summonEffectNegateResponse"
   | "summonSuccessTrapResponse"
@@ -57,6 +60,7 @@ type ChainResponseSemanticVariant =
   | "crimsonNinjaFlipConfirmTrapDestroy"
   | "ghostBelleWantedChainNegationAndRecycle"
   | "goldenFlyingFishReleaseCostTargetDestroy"
+  | "deepSweeperSelfTributeDestroy"
   | "houseAdhesiveTapeFlipSummonDestroy"
   | "mekkKnightYellowColumnProcedureDestroy"
   | "mysticalSpaceTyphoonFreeChainDestroy"
@@ -178,6 +182,18 @@ function chainResponseFixtureFiles(): Array<{
         'eventName: "released"',
         'eventName: "destroyed"',
         'host.messages).not.toContain("golden flying fish responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-deep-sweeper-self-tribute-destroy.test.ts",
+      kind: "ignitionSelfTributeDestroyResponse",
+      required: [
+        "e1:SetCost(Cost.SelfTribute)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        'activationLocation: "monsterZone"',
+        'eventName: "released"',
+        'eventName: "destroyed"',
+        'host.messages).not.toContain("deep sweeper responder resolved")',
       ],
     },
     {
@@ -363,6 +379,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       ignitionBanishCostColumnDestroyResponse: 0,
       ignitionHandToGraveCostLabelDestroyResponse: 0,
       ignitionReleaseCostDestroyResponse: 0,
+      ignitionSelfTributeDestroyResponse: 0,
       spellActivationDestroyDamageResponse: 0,
       summonEffectNegateResponse: 0,
       summonSuccessTrapResponse: 0,
@@ -430,6 +447,17 @@ function chainResponseSemanticVariants(): Array<{
         "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,aux.ReleaseCheckTarget,e:GetHandler(),dg)",
         "Duel.Release(g,REASON_COST)",
         "golden flying fish responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-deep-sweeper-self-tribute-destroy.test.ts",
+      kind: "deepSweeperSelfTributeDestroy",
+      required: [
+        'const deepSweeperCode = "8649148"',
+        "restores Cost.SelfTribute release cost into targeted Spell/Trap destruction after the source leaves field",
+        "e1:SetCost(Cost.SelfTribute)",
+        "activationLocation: \"monsterZone\"",
+        "deep sweeper responder resolved",
       ],
     },
     {
@@ -587,6 +615,7 @@ function countChainResponseSemanticVariants(
       adhesionTrapHoleFlipSummonAtkEffect: 0,
       bottomlessTrapHoleSummonSuccessBanish: 0,
       crimsonNinjaFlipConfirmTrapDestroy: 0,
+      deepSweeperSelfTributeDestroy: 0,
       ghostBelleWantedChainNegationAndRecycle: 0,
       goldenFlyingFishReleaseCostTargetDestroy: 0,
       houseAdhesiveTapeFlipSummonDestroy: 0,
