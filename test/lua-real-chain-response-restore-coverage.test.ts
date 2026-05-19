@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 17;
+const chainResponseFixtureCount = 18;
 const chainResponseKindCounts = {
   destroyOnlyChainedResponse: 4,
   flipSummonTrapResponse: 3,
   genericChainResponse: 1,
   ignitionBanishCostColumnDestroyResponse: 1,
+  ignitionHandToGraveCostLabelDestroyResponse: 1,
   ignitionReleaseCostDestroyResponse: 1,
   spellActivationDestroyDamageResponse: 1,
   summonEffectNegateResponse: 1,
@@ -26,6 +27,7 @@ const chainResponseSemanticVariantCounts = {
   houseAdhesiveTapeFlipSummonDestroy: 1,
   mekkKnightYellowColumnProcedureDestroy: 1,
   mysticalSpaceTyphoonFreeChainDestroy: 1,
+  shreddderHandMachineLevelDestroy: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
   raigekiBreakDiscardCostDestroy: 1,
   solemnWarningSpecialSummonEffectNegate: 1,
@@ -42,6 +44,7 @@ type ChainResponseKind =
   | "flipSummonTrapResponse"
   | "genericChainResponse"
   | "ignitionBanishCostColumnDestroyResponse"
+  | "ignitionHandToGraveCostLabelDestroyResponse"
   | "ignitionReleaseCostDestroyResponse"
   | "spellActivationDestroyDamageResponse"
   | "summonEffectNegateResponse"
@@ -57,6 +60,7 @@ type ChainResponseSemanticVariant =
   | "houseAdhesiveTapeFlipSummonDestroy"
   | "mekkKnightYellowColumnProcedureDestroy"
   | "mysticalSpaceTyphoonFreeChainDestroy"
+  | "shreddderHandMachineLevelDestroy"
   | "overwhelmTributeGateTrapNegateDestroy"
   | "raigekiBreakDiscardCostDestroy"
   | "solemnWarningSpecialSummonEffectNegate"
@@ -188,6 +192,21 @@ function chainResponseFixtureFiles(): Array<{
         'eventName: "banished"',
         'eventName: "destroyed"',
         'host.messages).not.toContain("mekk-knight yellow responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-shreddder-hand-machine-level-destroy.test.ts",
+      kind: "ignitionHandToGraveCostLabelDestroyResponse",
+      required: [
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_HAND,0,1,1,nil,tp)",
+        "local lv=g:GetFirst():GetLevel()",
+        "e:SetLabel(lv)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "Duel.SelectTarget(tp,s.dfilter,tp,0,LOCATION_MZONE,1,1,nil,e:GetLabel())",
+        "effectLabel: 5",
+        'eventName: "sentToGraveyard"',
+        'eventName: "destroyed"',
+        'host.messages).not.toContain("shreddder responder resolved")',
       ],
     },
     {
@@ -342,6 +361,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       flipSummonTrapResponse: 0,
       genericChainResponse: 0,
       ignitionBanishCostColumnDestroyResponse: 0,
+      ignitionHandToGraveCostLabelDestroyResponse: 0,
       ignitionReleaseCostDestroyResponse: 0,
       spellActivationDestroyDamageResponse: 0,
       summonEffectNegateResponse: 0,
@@ -422,6 +442,17 @@ function chainResponseSemanticVariants(): Array<{
         "return c:GetColumnGroupCount()>0",
         "Duel.Remove(g,POS_FACEUP,REASON_COST)",
         "mekk-knight yellow responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shreddder-hand-machine-level-destroy.test.ts",
+      kind: "shreddderHandMachineLevelDestroy",
+      required: [
+        'const shreddderCode = "3603242"',
+        "restores its hand Machine to-Grave cost label into opponent face-up monster destruction",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_HAND,0,1,1,nil,tp)",
+        "tc:IsLevelBelow(e:GetLabel())",
+        "shreddder responder resolved",
       ],
     },
     {
@@ -561,6 +592,7 @@ function countChainResponseSemanticVariants(
       houseAdhesiveTapeFlipSummonDestroy: 0,
       mekkKnightYellowColumnProcedureDestroy: 0,
       mysticalSpaceTyphoonFreeChainDestroy: 0,
+      shreddderHandMachineLevelDestroy: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
       raigekiBreakDiscardCostDestroy: 0,
       solemnWarningSpecialSummonEffectNegate: 0,
