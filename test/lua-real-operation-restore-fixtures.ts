@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 77;
+export const operationFixtureCount = 78;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -44,6 +44,7 @@ export const operationKindCounts = {
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
+  targetBanish: 1,
   targetBanishDiscardCost: 1,
   targetDestroy: 1,
   targetDestroyDiscardCost: 2,
@@ -100,6 +101,7 @@ export type OperationKind =
   | "selfEquipFromHand"
   | "spellDraw"
   | "trapDraw"
+  | "targetBanish"
   | "targetBanishDiscardCost"
   | "targetDestroy"
   | "targetDestroyDiscardCost"
@@ -615,6 +617,21 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-soul-release-target-banish.test.ts",
+      kind: "targetBanish",
+      required: [
+        "restores multiple targeted Graveyard monsters, then banishes only related targets",
+        "Duel.SelectTarget(tp,s.rmfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,LOCATION_MZONE|LOCATION_GRAVE,1,5,nil)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "g:Filter(Card.IsRelateToEffect,nil,e)",
+        "Duel.Remove(sg,POS_FACEUP,REASON_EFFECT)",
+        "category: 0x4",
+        'eventName: "banished"',
+        'location: "banished"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-monster-reincarnation-discard-to-hand.test.ts",
       kind: "targetToHandDiscardCost",
       required: [
@@ -995,6 +1012,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selfEquipFromHand: 0,
       spellDraw: 0,
       trapDraw: 0,
+      targetBanish: 0,
       targetBanishDiscardCost: 0,
       targetDestroy: 0,
       targetDestroyDiscardCost: 0,
