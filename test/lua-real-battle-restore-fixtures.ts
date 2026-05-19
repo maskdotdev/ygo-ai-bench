@@ -1,7 +1,7 @@
 import fs from "node:fs"; import path from "node:path";
 export const root = process.cwd(); export const testRoot = path.join(root, "test"); export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 209; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 6;
-export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 11; export const battleTriggerSemanticFixtureCount = 34;
+export const realScriptBattleFixtureCount = 210; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 6;
+export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 11; export const battleTriggerSemanticFixtureCount = 35;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -40,7 +40,7 @@ export const battleTriggerSemanticKindCounts = {
   battleStartDestroy: 1,
   battleConfirmDestroy: 2,
   battleConfirmToDeck: 1,
-  battleDamageTriggeredDelayedEffect: 5,
+  battleDamageTriggeredDelayedEffect: 6,
   battleDestroyedChainAttack: 2,
   battleDestroyingDecktopConfirm: 1,
   battleDestroyingFlagAtk: 1,
@@ -66,6 +66,7 @@ export const battleTriggerSemanticKindCounts = {
 export const battleSemanticVariantCounts = {
   alienHunterBattleDestroyedChainAttack: 1,
   alienOfJusticeNullfierBattledDisable: 1,
+  airbellumBattleDamageHandDiscard: 1,
   amazonessSwordsWomanReflectDamage: 1,
   ancientGearGolemPiercingDamage: 1,
   aojOmniWeaponBattledLabelDrawSummon: 1,
@@ -164,7 +165,7 @@ export type BattleDamageSemanticKind =
   | "temporaryDamageCalcBoost";
 
 export type BattleTriggerSemanticKind = "battleStartDestroy" | "battleConfirmDestroy" | "battleConfirmToDeck" | "battleDamageTriggeredDelayedEffect" | "battleDestroyedChainAttack" | "battleDestroyingDecktopConfirm" | "battleDestroyingFlagAtk" | "battleDestroyedDestroy" | "battleDestroyedGroupDestroy" | "battleDestroyingDamage" | "battleDestroyingSelectEffect" | "battleSearch" | "battleTargetGroupDestroy" | "battledLabelDrawSummon" | "battledBounce" | "battledChainAttackTarget" | "battledDeckSend" | "battledDestroy" | "battledDamage" | "battledFieldDamage" | "battledDelayedDestroy" | "battledDisable" | "endDamageControl" | "endDamageDestroy" | "mutualBattleDestroyedSegoc";
-export type BattleSemanticVariant = "alienHunterBattleDestroyedChainAttack" | "alienOfJusticeNullfierBattledDisable" | "amazonessSwordsWomanReflectDamage" | "ancientGearGolemPiercingDamage" | "aojOmniWeaponBattledLabelDrawSummon" | "aojThousandArmsLightOnlyAttackAll" | "battleDamagePreventionMachineLordUr" | "blizzardWarriorBattleDestroyingDecktopConfirm" | "blsSoldierChaosBattleDestroyingSelectEffect" | "darkRulerHaDesBattledGraveDisable" | "decoyroidBattleTargetSelectionLock" | "dimensionalPrisonAttackBanish" | "drainingShieldLpRecoverNegate" | "dracoonLampChangeBattleStat" | "drillroidBattleConfirmDestroy" | "ehrenBattleConfirmToDeck" | "elementDoomAttributeChainAttack" | "fabledAshenveilDamageStepBoost" | "fushiNoToriBattleDamageRecover" | "gemKnightSardonyxBattleSearch" | "getsuFuhmaEndDamageDestroy" | "ghostBirdExtraMonsterAttack" | "giantRatMutualBattleDestroyedSegoc" | "grasschopperGeminiAttackAll" | "gravekeepersVassalBattleDamageToEffect" | "greatLongNoseBattleDamageBattleSkip" | "hayateBattledDeckSend" | "hinoKaguTsuchiBattleDamagePredrawDiscard" | "honestDamageStepBoost" | "injectionFairyLilyPreDamageLpBoost" | "insectPrincessBattleDestroyingFlagAtk" | "ka2DesScissorsBattleDestroyingLevelDamage" | "keyMouseBattleDestroyedSearch" | "magicCylinderDamageReflect" | "madolcheWaltzBattledFieldDamage" | "magicalArmShieldBattleRetargetDamage" | "miniaturizePersistentDamageStepStat" | "mirageKnightBattleTargetAtk" | "mojaBattleDestroyedGraveToHand" | "naturiaSpiderfangAttackAnnouncementLock" | "negateAttackBattlePhaseSkipNegate" | "nightmareMagicianEndDamageControl" | "nitroWarriorBattledChainAttackTarget" | "numberC96AlsoBattleDamage" | "oddEyesDragonBattleDestroyingDamage" | "predaplantSarraceniantBattledDestroy" | "powerWallPreDamageDeckMillShield" | "radiantSpiritBattleDestroyedGroupDestroy" | "reflectBounderBattleConfirmDestroy" | "ringOfMagnetismOnlyAttackEquipped" | "sakuretsuArmorAttackDestroy" | "sasukeSamuraiBattleStartDestroy" | "scrapIronScarecrowSetAgainNegate" | "shadowSpellGoatDamageCalculationStat" | "smokeMosquitoPreDamageHalfDamageSummon" | "spearDragonPierceEndPosition" | "susaSoldierHalfDamage" | "topologicBomberBattledDamage" | "wallOfIllusionBattledBounce" | "wallOfThornsBattleTargetGroupDestroy" | "yamataDragonBattleDamageDraw" | "yataGarasuBattleDamageDrawSkip" | "zoneEaterDelayedBattleDestroy" | "yomiShipBattleDestroyedDestroy";
+export type BattleSemanticVariant = "alienHunterBattleDestroyedChainAttack" | "alienOfJusticeNullfierBattledDisable" | "airbellumBattleDamageHandDiscard" | "amazonessSwordsWomanReflectDamage" | "ancientGearGolemPiercingDamage" | "aojOmniWeaponBattledLabelDrawSummon" | "aojThousandArmsLightOnlyAttackAll" | "battleDamagePreventionMachineLordUr" | "blizzardWarriorBattleDestroyingDecktopConfirm" | "blsSoldierChaosBattleDestroyingSelectEffect" | "darkRulerHaDesBattledGraveDisable" | "decoyroidBattleTargetSelectionLock" | "dimensionalPrisonAttackBanish" | "drainingShieldLpRecoverNegate" | "dracoonLampChangeBattleStat" | "drillroidBattleConfirmDestroy" | "ehrenBattleConfirmToDeck" | "elementDoomAttributeChainAttack" | "fabledAshenveilDamageStepBoost" | "fushiNoToriBattleDamageRecover" | "gemKnightSardonyxBattleSearch" | "getsuFuhmaEndDamageDestroy" | "ghostBirdExtraMonsterAttack" | "giantRatMutualBattleDestroyedSegoc" | "grasschopperGeminiAttackAll" | "gravekeepersVassalBattleDamageToEffect" | "greatLongNoseBattleDamageBattleSkip" | "hayateBattledDeckSend" | "hinoKaguTsuchiBattleDamagePredrawDiscard" | "honestDamageStepBoost" | "injectionFairyLilyPreDamageLpBoost" | "insectPrincessBattleDestroyingFlagAtk" | "ka2DesScissorsBattleDestroyingLevelDamage" | "keyMouseBattleDestroyedSearch" | "magicCylinderDamageReflect" | "madolcheWaltzBattledFieldDamage" | "magicalArmShieldBattleRetargetDamage" | "miniaturizePersistentDamageStepStat" | "mirageKnightBattleTargetAtk" | "mojaBattleDestroyedGraveToHand" | "naturiaSpiderfangAttackAnnouncementLock" | "negateAttackBattlePhaseSkipNegate" | "nightmareMagicianEndDamageControl" | "nitroWarriorBattledChainAttackTarget" | "numberC96AlsoBattleDamage" | "oddEyesDragonBattleDestroyingDamage" | "predaplantSarraceniantBattledDestroy" | "powerWallPreDamageDeckMillShield" | "radiantSpiritBattleDestroyedGroupDestroy" | "reflectBounderBattleConfirmDestroy" | "ringOfMagnetismOnlyAttackEquipped" | "sakuretsuArmorAttackDestroy" | "sasukeSamuraiBattleStartDestroy" | "scrapIronScarecrowSetAgainNegate" | "shadowSpellGoatDamageCalculationStat" | "smokeMosquitoPreDamageHalfDamageSummon" | "spearDragonPierceEndPosition" | "susaSoldierHalfDamage" | "topologicBomberBattledDamage" | "wallOfIllusionBattledBounce" | "wallOfThornsBattleTargetGroupDestroy" | "yamataDragonBattleDamageDraw" | "yataGarasuBattleDamageDrawSkip" | "zoneEaterDelayedBattleDestroy" | "yomiShipBattleDestroyedDestroy";
 
 type RequiredFixture<K extends string> = { file: string; kind: K; required: string[] };
 type KindFixture<K extends string> = { file: string; kind: K };
@@ -542,6 +543,7 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
       ],
     },
     { file: "lua-real-script-ehren-battle-confirm-to-deck.test.ts", kind: "battleConfirmToDeck", required: ["restores battle-confirm target shuffling and ends the pending battle when the target leaves", "e1:SetCode(EVENT_BATTLE_CONFIRM)", "Duel.SendtoDeck(t,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)", 'eventName: "sentToDeck"', "pendingBattle).toBeUndefined()"] },
+    { file: "lua-real-script-airbellum-direct-damage-hand-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its direct battle-damage trigger into random opponent hand discard", 'eventName: "battleDamageDealt"', "Duel.SetOperationInfo(0,CATEGORY_HANDES,0,0,1-tp,1)", 'eventName: "discarded"'] },
     { file: "lua-real-script-fushi-no-tori-battle-recover.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into CHAININFO target-param LP recovery", 'eventName: "battleDamageDealt"', 'eventName: "recoveredLifePoints"', "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)"] },
     { file: "lua-real-script-great-long-nose-skip-battle.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into an opponent Battle Phase skip", 'eventName: "battleDamageDealt"', "EFFECT_SKIP_BP", "phase: \"battle\", remaining: 1"] },
     { file: "lua-real-script-hino-kagu-tsuchi-predraw-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into the opponent's next Draw Phase hand discard", 'eventName: "battleDamageDealt"', 'eventName: "preDraw"', 'eventName: "discarded"'] },
@@ -683,6 +685,11 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
       file: "lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
       kind: "alienOfJusticeNullfierBattledDisable",
       required: ["restores its EVENT_BATTLED label-object trigger and disables the LIGHT battle target", "eventCode: 1138", "code: 8"],
+    },
+    {
+      file: "lua-real-script-airbellum-direct-damage-hand-discard.test.ts",
+      kind: "airbellumBattleDamageHandDiscard",
+      required: ["restores its direct battle-damage trigger into random opponent hand discard", "CATEGORY_HANDES", "Duel.GetFieldGroup(ep,LOCATION_HAND,0,nil)", "RandomSelect", 'eventName: "discarded"'],
     },
     {
       file: "lua-real-script-aoj-omni-weapon-battled-label-draw-summon.test.ts",
