@@ -1,12 +1,14 @@
-export const ignitionCostSpecialSummonFixtureCount = 2;
+export const ignitionCostSpecialSummonFixtureCount = 3;
 
 export const ignitionCostSpecialSummonKindCounts = {
   dragonRulerDiscardDeckSummonCannotAttack: 1,
+  graveCostSelfSummonSearchRedirect: 1,
   handCostSelfSummon: 1,
 } satisfies Record<IgnitionCostSpecialSummonKind, number>;
 
 export type IgnitionCostSpecialSummonKind =
   | "dragonRulerDiscardDeckSummonCannotAttack"
+  | "graveCostSelfSummonSearchRedirect"
   | "handCostSelfSummon";
 
 export function realScriptIgnitionCostSpecialSummonFixtureSnippets(): Array<{
@@ -32,6 +34,29 @@ export function realScriptIgnitionCostSpecialSummonFixtureSnippets(): Array<{
         'eventName: "specialSummoned"',
         "eventReason: duelReason.summon | duelReason.specialSummon",
         'summonType: "special"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-vampire-familiar-grave-summon-search-redirect.test.ts",
+      kind: "graveCostSelfSummonSearchRedirect",
+      required: [
+        "e1:SetCost(Cost.PayLP(500))",
+        "Duel.IsExistingMatchingCard(s.costfilter,tp,LOCATION_ONFIELD|LOCATION_HAND,0,1,nil,tp)",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_ONFIELD|LOCATION_HAND,0,1,1,nil,tp)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,e:GetHandler(),1,0,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "EFFECT_LEAVE_FIELD_REDIRECT",
+        "e1:SetValue(LOCATION_REMOVED)",
+        "eventReason: duelReason.cost",
+        'eventName: "sentToGraveyard"',
+        "category: 0x200",
+        "targetUids: [familiar.uid]",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "sentToHand"',
+        "duelReason.effect | duelReason.redirect",
       ],
     },
     {
@@ -61,5 +86,5 @@ export function countIgnitionCostSpecialSummonKinds(
   return files.reduce<Record<IgnitionCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, handCostSelfSummon: 0 });
+  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0 });
 }
