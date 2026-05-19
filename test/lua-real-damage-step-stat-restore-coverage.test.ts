@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 6;
+const damageStepStatFixtureCount = 7;
 const damageStepStatKindCounts = {
-  activatedDamageStepBoost: 3,
+  activatedDamageStepBoost: 4,
   labelObjectCostBoost: 1,
   mandatoryPreDamageBoost: 1,
   persistentDamageStepDebuff: 1,
@@ -14,6 +14,7 @@ const damageStepStatKindCounts = {
 const damageStepStatSemanticVariantCounts = {
   cipherSoldierMandatoryPreDamageBoost: 1,
   fabledAshenveilDamageStepHandCostBoost: 1,
+  gamilDefenderBranchSelfToGraveBoost: 1,
   injectionFairyLilyPreDamageLpBoost: 1,
   miniaturizePersistentDamageStepDebuff: 1,
   rushRecklesslyTargetedDamageStepBoost: 1,
@@ -28,6 +29,7 @@ type DamageStepStatKind =
 type DamageStepStatSemanticVariant =
   | "cipherSoldierMandatoryPreDamageBoost"
   | "fabledAshenveilDamageStepHandCostBoost"
+  | "gamilDefenderBranchSelfToGraveBoost"
   | "injectionFairyLilyPreDamageLpBoost"
   | "miniaturizePersistentDamageStepDebuff"
   | "rushRecklesslyTargetedDamageStepBoost"
@@ -107,6 +109,20 @@ function damageStepStatFixtureFiles(): Array<{
         "expectCleanRestore(restoredBattle)",
         "currentAttack(boostedAshenveil",
         "battleDamage[1]).toBe",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gamil-damage-step-self-cost-boost.test.ts",
+      kind: "activatedDamageStepBoost",
+      required: [
+        "expectCleanRestore(restoredChain)",
+        "expectCleanRestore(restoredBoost)",
+        "Cost.SelfToGrave",
+        "Duel.GetAttackTarget()",
+        "Duel.IsTurnPlayer(1-tp)",
+        "currentAttack(restoredChain.session.state.cards.find",
+        "battleDamage).toEqual({ 0: 0, 1: 100 })",
         "host.messages).not.toContain",
       ],
     },
@@ -240,6 +256,19 @@ function damageStepStatSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gamil-damage-step-self-cost-boost.test.ts",
+      kind: "gamilDefenderBranchSelfToGraveBoost",
+      required: [
+        'const gamilCode = "25727454"',
+        "restores the defender-branch Damage Step hand cost and temporary ATK boost",
+        "e1:SetCost(Cost.SelfToGrave)",
+        "if Duel.IsTurnPlayer(1-tp) then a=Duel.GetAttackTarget() end",
+        "eventName: \"sentToGraveyard\"",
+        "currentAttack(restoredChain.session.state.cards.find",
+        "battleDamage).toEqual({ 0: 0, 1: 100 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-shinobird-crow-damage-step-stat.test.ts",
       kind: "shinobirdCrowLabelObjectCostBoost",
       required: [
@@ -306,6 +335,7 @@ function countDamageStepStatSemanticVariants(
     {
       cipherSoldierMandatoryPreDamageBoost: 0,
       fabledAshenveilDamageStepHandCostBoost: 0,
+      gamilDefenderBranchSelfToGraveBoost: 0,
       injectionFairyLilyPreDamageLpBoost: 0,
       miniaturizePersistentDamageStepDebuff: 0,
       rushRecklesslyTargetedDamageStepBoost: 0,

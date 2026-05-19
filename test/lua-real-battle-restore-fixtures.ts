@@ -1,10 +1,7 @@
 import fs from "node:fs"; import path from "node:path";
 export const root = process.cwd(); export const testRoot = path.join(root, "test"); export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 188; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 6;
-export const battleContinuousSemanticFixtureCount = 1;
-export const damageStepRestoreFixtureCount = 4;
-export const battleDamageSemanticFixtureCount = 11;
-export const battleTriggerSemanticFixtureCount = 31;
+export const realScriptBattleFixtureCount = 189; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 6;
+export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 11; export const battleTriggerSemanticFixtureCount = 31;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -24,7 +21,7 @@ export const battleContinuousSemanticKindCounts = {
   battledGraveDisable: 1,
 } satisfies Record<BattleContinuousSemanticKind, number>;
 export const damageStepRestoreKindCounts = {
-  activatedDamageStepBoost: 1,
+  activatedDamageStepBoost: 2,
   honestDamageStepBoost: 1,
   persistentDamageCalculationStat: 1,
   persistentDamageStepStat: 1,
@@ -319,13 +316,13 @@ export function realScriptBattleContinuousSemanticFixtureFiles(): Array<Required
 export function realScriptDamageStepRestoreFixtureFiles(): string[] {
   return realScriptDamageStepRestoreFixtures().map(({ file }) => file);
 }
-
 export function realScriptDamageStepRestoreFixtures(): Array<KindFixture<DamageStepRestoreKind>> {
   return ([
     {
       file: "lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
       kind: "activatedDamageStepBoost",
     },
+    { file: "lua-real-script-gamil-damage-step-self-cost-boost.test.ts", kind: "activatedDamageStepBoost" },
     {
       file: "lua-real-script-honest-damage-step.test.ts",
       kind: "honestDamageStepBoost",
