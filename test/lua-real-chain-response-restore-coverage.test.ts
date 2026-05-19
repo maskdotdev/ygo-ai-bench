@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 15;
+const chainResponseFixtureCount = 16;
 const chainResponseKindCounts = {
   destroyOnlyChainedResponse: 4,
   flipSummonTrapResponse: 3,
   genericChainResponse: 1,
+  ignitionReleaseCostDestroyResponse: 1,
   spellActivationDestroyDamageResponse: 1,
   summonEffectNegateResponse: 1,
   summonSuccessTrapResponse: 3,
@@ -20,6 +21,7 @@ const chainResponseSemanticVariantCounts = {
   bottomlessTrapHoleSummonSuccessBanish: 1,
   crimsonNinjaFlipConfirmTrapDestroy: 1,
   ghostBelleWantedChainNegationAndRecycle: 1,
+  goldenFlyingFishReleaseCostTargetDestroy: 1,
   houseAdhesiveTapeFlipSummonDestroy: 1,
   mysticalSpaceTyphoonFreeChainDestroy: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
@@ -37,6 +39,7 @@ type ChainResponseKind =
   | "destroyOnlyChainedResponse"
   | "flipSummonTrapResponse"
   | "genericChainResponse"
+  | "ignitionReleaseCostDestroyResponse"
   | "spellActivationDestroyDamageResponse"
   | "summonEffectNegateResponse"
   | "summonSuccessTrapResponse"
@@ -47,6 +50,7 @@ type ChainResponseSemanticVariant =
   | "bottomlessTrapHoleSummonSuccessBanish"
   | "crimsonNinjaFlipConfirmTrapDestroy"
   | "ghostBelleWantedChainNegationAndRecycle"
+  | "goldenFlyingFishReleaseCostTargetDestroy"
   | "houseAdhesiveTapeFlipSummonDestroy"
   | "mysticalSpaceTyphoonFreeChainDestroy"
   | "overwhelmTributeGateTrapNegateDestroy"
@@ -154,6 +158,18 @@ function chainResponseFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'location: "graveyard"',
         'host.messages).not.toContain("crimson ninja responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-golden-flying-fish-release-destroy.test.ts",
+      kind: "ignitionReleaseCostDestroyResponse",
+      required: [
+        "Duel.CheckReleaseGroupCost(tp,s.cfilter,1,false,aux.ReleaseCheckTarget,e:GetHandler(),dg)",
+        "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,aux.ReleaseCheckTarget,e:GetHandler(),dg)",
+        "Duel.Release(g,REASON_COST)",
+        'eventName: "released"',
+        'eventName: "destroyed"',
+        'host.messages).not.toContain("golden flying fish responder resolved")',
       ],
     },
     {
@@ -307,6 +323,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       destroyOnlyChainedResponse: 0,
       flipSummonTrapResponse: 0,
       genericChainResponse: 0,
+      ignitionReleaseCostDestroyResponse: 0,
       spellActivationDestroyDamageResponse: 0,
       summonEffectNegateResponse: 0,
       summonSuccessTrapResponse: 0,
@@ -362,6 +379,18 @@ function chainResponseSemanticVariants(): Array<{
         "Duel.ConfirmCards(tp,tc)",
         "confirmed 0:",
         "eventName: \"destroyed\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-golden-flying-fish-release-destroy.test.ts",
+      kind: "goldenFlyingFishReleaseCostTargetDestroy",
+      required: [
+        'const goldenFlyingFishCode = "76203291"',
+        "restores aux.ReleaseCheckTarget release cost into targeted on-field destruction",
+        "Duel.CheckReleaseGroupCost(tp,s.cfilter,1,false,aux.ReleaseCheckTarget,e:GetHandler(),dg)",
+        "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,aux.ReleaseCheckTarget,e:GetHandler(),dg)",
+        "Duel.Release(g,REASON_COST)",
+        "golden flying fish responder resolved",
       ],
     },
     {
@@ -497,6 +526,7 @@ function countChainResponseSemanticVariants(
       bottomlessTrapHoleSummonSuccessBanish: 0,
       crimsonNinjaFlipConfirmTrapDestroy: 0,
       ghostBelleWantedChainNegationAndRecycle: 0,
+      goldenFlyingFishReleaseCostTargetDestroy: 0,
       houseAdhesiveTapeFlipSummonDestroy: 0,
       mysticalSpaceTyphoonFreeChainDestroy: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
