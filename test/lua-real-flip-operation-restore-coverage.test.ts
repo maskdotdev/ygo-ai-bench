@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const flipOperationFixtureCount = 1;
+const flipOperationFixtureCount = 2;
 const flipOperationKindCounts = {
+  flipSpellTrapDestroy: 1,
   flipTargetToHand: 1,
 } satisfies Record<FlipOperationKind, number>;
 const flipOperationSemanticVariantCounts = {
   gravekeeperGuardOpponentMonsterReturn: 1,
+  wormApocalypseSpellTrapDestroy: 1,
 } satisfies Record<FlipOperationSemanticVariant, number>;
 
-type FlipOperationKind = "flipTargetToHand";
-type FlipOperationSemanticVariant = "gravekeeperGuardOpponentMonsterReturn";
+type FlipOperationKind = "flipSpellTrapDestroy" | "flipTargetToHand";
+type FlipOperationSemanticVariant = "gravekeeperGuardOpponentMonsterReturn" | "wormApocalypseSpellTrapDestroy";
 
 describe("Lua real Flip operation restore coverage", () => {
   it("requires Flip operation fixtures to assert clean Lua registry restore, targets, and operation metadata", () => {
@@ -64,6 +66,21 @@ describe("Lua real Flip operation restore coverage", () => {
 function flipOperationFixtureFiles(): Array<{ file: string; kind: FlipOperationKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-worm-apocalypse-flip-spelltrap-destroy.test.ts",
+      kind: "flipSpellTrapDestroy",
+      required: [
+        "restores Worm Apocalypse's Flip Spell/Trap target, chain response window, and destruction",
+        'const wormApocalypseCode = "88650530"',
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        'eventName: "flipSummoned"',
+        'eventName: "destroyed"',
+        "operationInfos: [{ category: 0x1",
+        "targetUids: [target.uid]",
+      ],
+    },
+    {
       file: "test/lua-real-script-gravekeeper-guard-flip-to-hand.test.ts",
       kind: "flipTargetToHand",
       required: [
@@ -84,6 +101,17 @@ function flipOperationFixtureFiles(): Array<{ file: string; kind: FlipOperationK
 function flipOperationSemanticVariants(): Array<{ file: string; kind: FlipOperationSemanticVariant; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-worm-apocalypse-flip-spelltrap-destroy.test.ts",
+      kind: "wormApocalypseSpellTrapDestroy",
+      required: [
+        "if chkc then return chkc:IsOnField() and s.filter(chkc) end",
+        'triggerBucket: "turnMandatory"',
+        "eventReasonCardUid: wormApocalypse.uid",
+        "eventReasonEffectId: 1",
+        'host.messages).not.toContain("worm apocalypse magician responder resolved")',
+      ],
+    },
+    {
       file: "test/lua-real-script-gravekeeper-guard-flip-to-hand.test.ts",
       kind: "gravekeeperGuardOpponentMonsterReturn",
       required: [
@@ -101,7 +129,7 @@ function countFlipOperationKinds(fixtures: Array<{ kind: FlipOperationKind }>): 
   return fixtures.reduce<Record<FlipOperationKind, number>>((counts, fixture) => {
     counts[fixture.kind] += 1;
     return counts;
-  }, { flipTargetToHand: 0 });
+  }, { flipSpellTrapDestroy: 0, flipTargetToHand: 0 });
 }
 
 function countFlipOperationSemanticVariants(
@@ -110,5 +138,5 @@ function countFlipOperationSemanticVariants(
   return fixtures.reduce<Record<FlipOperationSemanticVariant, number>>((counts, fixture) => {
     counts[fixture.kind] += 1;
     return counts;
-  }, { gravekeeperGuardOpponentMonsterReturn: 0 });
+  }, { gravekeeperGuardOpponentMonsterReturn: 0, wormApocalypseSpellTrapDestroy: 0 });
 }
