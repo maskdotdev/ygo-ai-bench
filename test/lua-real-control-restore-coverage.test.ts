@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 11;
+const controlFixtureCount = 12;
 const controlKindCounts = {
   cannotChangeControl: 1,
   discardCostTemporaryControl: 1,
@@ -13,11 +13,13 @@ const controlKindCounts = {
   flipSetControl: 1,
   releaseCostControl: 1,
   restrictedTemporaryControl: 2,
+  summonTriggerTemporaryControl: 1,
   swapControlLock: 1,
   targetedSwapControl: 1,
   temporaryControl: 1,
 } satisfies Record<ControlKind, number>;
 const controlSemanticVariantCounts = {
+  allyEnemyCatcherSummonControlReturn: 1,
   brainControlLpCostReturn: 1,
   changeHeartTemporaryReturn: 1,
   creatureSwapControlLock: 1,
@@ -39,11 +41,13 @@ type ControlKind =
   | "flipSetControl"
   | "releaseCostControl"
   | "restrictedTemporaryControl"
+  | "summonTriggerTemporaryControl"
   | "swapControlLock"
   | "targetedSwapControl"
   | "temporaryControl";
 
 type ControlSemanticVariant =
+  | "allyEnemyCatcherSummonControlReturn"
   | "brainControlLpCostReturn"
   | "changeHeartTemporaryReturn"
   | "creatureSwapControlLock"
@@ -107,6 +111,18 @@ function realScriptControlFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-ally-enemy-catcher-summon-control-return.test.ts",
+      kind: "summonTriggerTemporaryControl",
+      required: [
+        'const enemyCatcherCode = "45033006"',
+        "restores summon-triggered face-down Defense control and the End Phase return",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'luaValueDescriptor: "temporary-control-return"',
+        "position: \"faceDownDefense\"",
+        "faceUp: false",
+      ],
+    },
     {
       file: "lua-real-script-change-of-heart-control-return.test.ts",
       kind: "temporaryControl",
@@ -239,6 +255,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       flipSetControl: 0,
       releaseCostControl: 0,
       restrictedTemporaryControl: 0,
+      summonTriggerTemporaryControl: 0,
       swapControlLock: 0,
       targetedSwapControl: 0,
       temporaryControl: 0,
@@ -261,6 +278,17 @@ function realScriptControlSemanticVariants(): Array<{
         "lifePointCostPaid",
         "players[0].lifePoints).toBe(7200)",
         "extraTarget!.uid)).toMatchObject({ controller: 1, location: \"monsterZone\" })",
+      ],
+    },
+    {
+      file: "lua-real-script-ally-enemy-catcher-summon-control-return.test.ts",
+      kind: "allyEnemyCatcherSummonControlReturn",
+      required: [
+        "return c:IsFacedown() and c:IsDefensePos() and c:IsControlerCanBeChanged()",
+        'action.type === "activateTrigger" && action.uid === enemyCatcher.uid',
+        "eventName: \"controlChanged\"",
+        'registryKey: `lua:${targetCode}:temporary-control-return:${target.uid}`',
+        "not.toContain(`lua:${targetCode}:temporary-control-return:${target.uid}`)",
       ],
     },
     {
@@ -389,6 +417,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       return counts;
     },
     {
+      allyEnemyCatcherSummonControlReturn: 0,
       brainControlLpCostReturn: 0,
       changeHeartTemporaryReturn: 0,
       creatureSwapControlLock: 0,

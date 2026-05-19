@@ -33,7 +33,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
     card.faceUp = isPendulumCard(card);
     card.position = "faceDown";
   }
-  if (to === "graveyard" || to === "banished" || to === "monsterZone" || to === "spellTrapZone") card.faceUp = true;
+  if (to === "graveyard" || to === "banished" || ((to === "monsterZone" || to === "spellTrapZone") && card.previousLocation !== to)) card.faceUp = true;
   if (shouldClearCountersAfterMove(card.previousLocation, card.location)) removeAllDuelCardCounters(card);
   resequence(state, card.controller, to);
   if ((to === "monsterZone" || to === "spellTrapZone") && isFieldZoneDisabled(state, card.controller, to, card.sequence)) {

@@ -47,6 +47,7 @@ const duelNoHandLimitFlag = 0x1000000;
 const defaultHandLimit = 6;
 
 export function continuousEffectSourceIsActive(effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  if (effect.luaValueDescriptor === "temporary-control-return") return true;
   if (source.location !== "monsterZone" && source.location !== "spellTrapZone") return true;
   return source.faceUp || ((effect.property ?? 0) & effectFlagSetAvailable) !== 0;
 }
