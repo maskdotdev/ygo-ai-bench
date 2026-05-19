@@ -63,6 +63,22 @@ export function isKnownTemporaryCannotAttackEffect(effect: SerializedDuelEffect)
   );
 }
 
+export function isKnownTemporaryCannotAttackAnnounceSelfEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 86 &&
+    effect.sourceUid !== undefined &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardPhaseEnd) &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    effect.targetRange === undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
 export function isKnownPlayerDamageZeroEffect(effect: SerializedDuelEffect): boolean {
   return (
     (isPlainPhaseEndStaticValueEffect(effect, 82, 0) || isPlainPhaseEndStaticValueEffect(effect, 335, 0)) &&

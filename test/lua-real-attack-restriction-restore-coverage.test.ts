@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackRestrictionFixtureCount = 6;
+const attackRestrictionFixtureCount = 7;
 const attackRestrictionKindCounts = {
   counterGate: 1,
   levelGate: 1,
   maintenanceCostGate: 1,
   remainFieldTurnCounter: 1,
+  selfCostLock: 1,
   targetCountGate: 1,
   temporaryPlayerLock: 1,
 } satisfies Record<AttackRestrictionKind, number>;
@@ -20,6 +21,7 @@ const attackRestrictionSemanticVariantCounts = {
   messengerPeaceMaintenanceAtkThresholdGate: 1,
   swordsRevealingLightRemainFieldTurnLock: 1,
   threateningRoarTemporaryPlayerAttackLock: 1,
+  venomSnakeCostCannotAttackAnnounce: 1,
 } satisfies Record<AttackRestrictionSemanticVariant, number>;
 
 type AttackRestrictionKind =
@@ -27,6 +29,7 @@ type AttackRestrictionKind =
   | "levelGate"
   | "maintenanceCostGate"
   | "remainFieldTurnCounter"
+  | "selfCostLock"
   | "targetCountGate"
   | "temporaryPlayerLock";
 type AttackRestrictionSemanticVariant =
@@ -35,7 +38,8 @@ type AttackRestrictionSemanticVariant =
   | "heliosphereTargetCountAttackAnnounceGate"
   | "messengerPeaceMaintenanceAtkThresholdGate"
   | "swordsRevealingLightRemainFieldTurnLock"
-  | "threateningRoarTemporaryPlayerAttackLock";
+  | "threateningRoarTemporaryPlayerAttackLock"
+  | "venomSnakeCostCannotAttackAnnounce";
 
 describe("Lua real attack-restriction restore coverage", () => {
   it("requires representative field, player, and remain-field attack locks to assert clean Lua restore", () => {
@@ -143,6 +147,16 @@ function realScriptAttackRestrictionFixtureFiles(): Array<{
         "threatening roar attack false",
       ],
     },
+    {
+      file: "test/lua-real-script-venom-snake-counter-custom-destroy.test.ts",
+      kind: "selfCostLock",
+      required: [
+        "EFFECT_CANNOT_ATTACK_ANNOUNCE",
+        "effectCannotAttackAnnounce",
+        "venom snake CanAttack false",
+        'eventName: "customEvent"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: AttackRestrictionKind;
@@ -163,6 +177,7 @@ function countAttackRestrictionKinds(
       levelGate: 0,
       maintenanceCostGate: 0,
       remainFieldTurnCounter: 0,
+      selfCostLock: 0,
       targetCountGate: 0,
       temporaryPlayerLock: 0,
     },
@@ -241,6 +256,16 @@ function realScriptAttackRestrictionSemanticVariants(): Array<{
         "threatening roar attack false",
       ],
     },
+    {
+      file: "test/lua-real-script-venom-snake-counter-custom-destroy.test.ts",
+      kind: "venomSnakeCostCannotAttackAnnounce",
+      required: [
+        'const venomSnakeCode = "73899015"',
+        "restores Venom Counter placement, cannot-attack cost, Venom Swamp ATK loss, and custom-event destruction",
+        "EFFECT_CANNOT_ATTACK_ANNOUNCE",
+        "venom snake CanAttack false",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: AttackRestrictionSemanticVariant;
@@ -263,6 +288,7 @@ function countAttackRestrictionSemanticVariants(
       messengerPeaceMaintenanceAtkThresholdGate: 0,
       swordsRevealingLightRemainFieldTurnLock: 0,
       threateningRoarTemporaryPlayerAttackLock: 0,
+      venomSnakeCostCannotAttackAnnounce: 0,
     },
   );
 }
