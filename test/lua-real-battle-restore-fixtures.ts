@@ -386,6 +386,7 @@ export function realScriptBattleDamageSemanticFixtureFiles(): Array<RequiredFixt
         "expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 700 })",
         'expect.objectContaining({ action: "effectDamage", player: 1, detail: "700" })',
         "eventReason: 64",
+        "eventReasonEffectId: 1",
       ],
     },
     {
@@ -731,7 +732,7 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
     {
       file: "lua-real-script-gravekeepers-vassal-battle-damage-to-effect.test.ts",
       kind: "gravekeepersVassalBattleDamageToEffect",
-      required: ["restores Gravekeeper's Vassal and treats its battle damage as effect damage", "action: \"effectDamage\"", "eventReason: 64"],
+      required: ["restores Gravekeeper's Vassal and treats its battle damage as effect damage", "action: \"effectDamage\"", "eventReason: 64", "eventReasonEffectId: 1"],
     },
     { file: "lua-real-script-great-long-nose-skip-battle.test.ts", kind: "greatLongNoseBattleDamageBattleSkip", required: ["restores its battle-damage trigger into an opponent Battle Phase skip", "EFFECT_SKIP_BP", "phase: \"battle\", remaining: 1"] },
     {

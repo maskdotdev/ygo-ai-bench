@@ -19,6 +19,7 @@ import {
   additionalBattleDamagePlayers,
   attackAllMonsterCount,
   battleDamageReason,
+  battleDamageReasonEffectId,
   canDirectAttackThroughTargets,
   extraAttackCount,
   extraMonsterAttackCount,
@@ -52,6 +53,7 @@ export interface CoreBattleHandlers {
   additionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId[];
   battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   battleDamageReason(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number;
+  battleDamageReasonEffectId?(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number | undefined;
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[], options?: BattleDamageChangeOptions): number;
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: Pick<DuelEventPayload, "eventPlayer" | "eventValue" | "eventReason" | "eventReasonCardUid" | "eventReasonEffectId">): void;
   createContinuousContext(state: DuelState): ContinuousEffectContextFactory;
@@ -325,6 +327,10 @@ export function getCoreAdditionalBattleDamagePlayers(state: DuelState, player: P
 
 export function getCoreBattleDamageReason(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] | undefined, handlers: CoreBattleHandlers): number {
   return battleDamageReason(state, player, battleCards ?? [], handlers.createContinuousContext(state));
+}
+
+export function getCoreBattleDamageReasonEffectId(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[] | undefined, handlers: CoreBattleHandlers): number | undefined {
+  return battleDamageReasonEffectId(state, player, battleCards ?? [], handlers.createContinuousContext(state));
 }
 
 function continuousStatUpdateValue(state: DuelState, card: DuelCardInstance, code: number, createContext: ContinuousEffectContextFactory): number {

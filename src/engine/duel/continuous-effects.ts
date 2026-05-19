@@ -440,6 +440,17 @@ export function additionalBattleDamagePlayers(state: DuelState, player: PlayerId
 }
 
 export function battleDamageReason(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[], createContext: ContinuousEffectContextFactory): number {
+  return battleDamageToEffectMatch(state, player, battleCards, createContext) ? duelReason.effect : duelReason.battle;
+}
+
+export function battleDamageReasonEffectId(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[], createContext: ContinuousEffectContextFactory): number | undefined {
+  const match = battleDamageToEffectMatch(state, player, battleCards, createContext);
+  if (!match) return undefined;
+  const effectId = Number(match.effect.id.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(effectId) ? effectId : undefined;
+}
+
+function battleDamageToEffectMatch(state: DuelState, player: PlayerId, battleCards: DuelCardInstance[], createContext: ContinuousEffectContextFactory): ContinuousEffectMatch | undefined {
   for (const card of battleCards) {
     for (const effect of state.effects) {
       if (effect.event !== "continuous" || effect.code !== 205 || effect.sourceUid !== card.uid) continue;
@@ -447,10 +458,10 @@ export function battleDamageReason(state: DuelState, player: PlayerId, battleCar
       if (!source || !effect.range.includes(source.location)) continue;
       if (player === source.controller) continue;
       const ctx = createContext(effect, source, card);
-      if (!effect.canActivate || effect.canActivate(ctx)) return duelReason.effect;
+      if (!effect.canActivate || effect.canActivate(ctx)) return { effect, source, card };
     }
   }
-  return duelReason.battle;
+  return undefined;
 }
 
 export function hasDefenseAttack(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {

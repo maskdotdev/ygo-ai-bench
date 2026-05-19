@@ -10,6 +10,7 @@ interface PreparedBattleDamage {
   damagePlayer: PlayerId;
   damageSource: DuelCardInstance | undefined;
   reason: number;
+  reasonEffectId?: number;
   reasonPlayer: PlayerId;
 }
 
@@ -26,6 +27,7 @@ export interface BattleContinuationHandlers {
   additionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId[];
   battleDamagePlayer(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId;
   battleDamageReason(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number;
+  battleDamageReasonEffectId?(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): number | undefined;
   canAttackTarget?(state: DuelState, attacker: DuelCardInstance, target: DuelCardInstance): boolean;
   collectEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance | DuelCardInstance[], payload?: BattleEventPayload): void;
   changeBattleDamage(state: DuelState, player: PlayerId, amount: number, battleCards?: DuelCardInstance[], options?: BattleDamageChangeOptions): number;
@@ -154,11 +156,13 @@ function setWaitingForBattleDestroyedQuickResponse(state: DuelState, handlers: B
 function describeBattleDamage(state: DuelState, handlers: BattleContinuationHandlers, damagePlayer: PlayerId, battleCards: DuelCardInstance[] | undefined): PreparedBattleDamage {
   const reason = handlers.battleDamageReason(state, damagePlayer, battleCards);
   const reasonPlayer = battleDamageReasonPlayer(state, damagePlayer, battleCards);
+  const reasonEffectId = handlers.battleDamageReasonEffectId?.(state, damagePlayer, battleCards);
   return {
     amount: state.battleDamage[damagePlayer] ?? 0,
     damagePlayer,
     damageSource: battleDamageSourceCard(reasonPlayer, battleCards),
     reason,
+    ...(reasonEffectId === undefined ? {} : { reasonEffectId }),
     reasonPlayer,
   };
 }
@@ -170,6 +174,7 @@ function battleDamageEventPayload(damage: PreparedBattleDamage, amount: number):
     eventReason: damage.reason,
     eventReasonPlayer: damage.reasonPlayer,
     ...(damage.damageSource === undefined ? {} : { eventReasonCardUid: damage.damageSource.uid }),
+    ...(damage.reasonEffectId === undefined ? {} : { eventReasonEffectId: damage.reasonEffectId }),
   };
 }
 
