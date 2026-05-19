@@ -567,7 +567,7 @@ function luaEffectEvent(card: DuelCardInstance, luaEffect: LuaEffectRecord): Due
   if (triggerEvent === "customEvent" && (typeFlags & (0x100 | 0x400)) !== 0 && ((luaEffect.property ?? 0) & 0x10000) !== 0) return "trigger";
   if (code === 1002 && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "quick";
   if (isSummonAttemptTriggerEvent(triggerEvent) && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "trigger";
-  if (triggerEvent === "sentToGraveyard" && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "trigger";
+  if ((triggerEvent === "battleTargeted" || triggerEvent === "sentToGraveyard") && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "trigger";
   if (triggerEvent !== undefined && (typeFlags & 0x10) !== 0 && isFastSpellTrapActivation(card)) return "quick";
   if (code === 1027) return "quick";
   if (
