@@ -12,6 +12,9 @@ const luaSetcodeTargetDescriptorPrefix = "target:setcode:";
 const luaFaceupSetcodeTargetDescriptorPrefix = "target:faceup-setcode:";
 const luaTypeTargetDescriptorPrefix = "target:type:";
 const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
+const luaEffectGeminiStatus = 75;
+const luaSummonTypeGemini = 0x12000000;
+const luaLocationMonsterZone = 0x4;
 
 export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
   const battleTargetType = effect.luaTargetDescriptor?.startsWith("target:source-battle-target-type:") ? Number(effect.luaTargetDescriptor.slice("target:source-battle-target-type:".length)) : undefined; if (battleTargetType !== undefined && Number.isSafeInteger(battleTargetType) && battleTargetType > 0) return { targetCardPredicate: (ctx, card) => { const source = ctx.duel.cards.find((candidate) => candidate.uid === effect.sourceUid); const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle; const battleTargetUid = source?.uid === battle?.attackerUid ? battle?.targetUid : source?.uid === battle?.targetUid ? battle?.attackerUid : undefined; return card.uid === battleTargetUid && (cardTypeFlags(card, ctx.duel) & battleTargetType) !== 0; } };
@@ -19,6 +22,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const statusSummonLocation = statusSummonLocationDescriptor(effect.luaTargetDescriptor); if (statusSummonLocation) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & statusSummonLocation.status) !== 0 && Boolean(card.summonType && locationMatchesCardMask(card, statusSummonLocation.location, card.previousLocation, card.previousSequence)) };
   const notStatus = notStatusDescriptor(effect.luaTargetDescriptor); if (notStatus !== undefined) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & notStatus) === 0 };
   const status = statusDescriptor(effect.luaTargetDescriptor); if (status !== undefined) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & status) !== 0 };
+  if (effect.luaTargetDescriptor === "target:gemini-status") return { targetCardPredicate: (ctx, card) => hasRestoredGeminiStatus(ctx.duel, card) };
   const notRaceDeckOrExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-deck-or-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-deck-or-extra:".length)) : undefined;
   if (notRaceDeckOrExtra !== undefined && Number.isSafeInteger(notRaceDeckOrExtra) && notRaceDeckOrExtra > 0) return { targetCardPredicate: (ctx, card) => (card.location === "deck" || card.location === "extraDeck") && (currentRace(card, ctx.duel) & notRaceDeckOrExtra) === 0 };
   if (effect.luaTargetDescriptor === "special-summon-limit:deck-or-extra") return { targetCardPredicate: (_ctx, card) => card.location === "deck" || card.location === "extraDeck" };
@@ -130,6 +134,21 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
 
 function targetCardStatusMask(card: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[1]): number {
   return (card.customStatusMask ?? 0) | (card.summonType === "normal" || card.summonType === "tribute" ? 0x800 : 0) | (card.summonType === "flip" ? 0x20000000 : 0) | (card.summonType && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip" ? 0x40000000 : 0);
+}
+
+function hasRestoredGeminiStatus(
+  duel: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[0]["duel"],
+  card: Parameters<NonNullable<DuelEffectDefinition["targetCardPredicate"]>>[1],
+): boolean {
+  return (
+    card.location === "monsterZone" &&
+    ((card.faceUp && isSummonTypeMatch(card.summonTypeCode, luaSummonTypeGemini) && locationMatchesCardMask(card, luaLocationMonsterZone, card.previousLocation, card.previousSequence))
+      || duel.effects.some((candidate) => candidate.code === luaEffectGeminiStatus && candidate.sourceUid === card.uid))
+  );
+}
+
+function isSummonTypeMatch(actual: number | undefined, requested: number): boolean {
+  return actual !== undefined && actual !== 0 && requested !== 0 && (actual === requested || (actual & requested) === requested);
 }
 
 function statusSummonLocationDescriptor(descriptor: string | undefined): { status: number; location: number } | undefined {

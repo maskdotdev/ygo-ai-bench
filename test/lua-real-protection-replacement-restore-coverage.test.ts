@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 17;
+const protectionReplacementFixtureCount = 18;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
   continuousBattleIndestructible: 1,
   countLimitedBattleIndestructible: 3,
   effectTargetProtection: 2,
+  fieldEffectIndestructible: 1,
   environmentImmunity: 1,
   equipBattleProtectionSelfDestroy: 1,
   equipDestroySubstitute: 1,
@@ -25,6 +26,7 @@ const protectionReplacementSemanticVariantCounts = {
   darkFusionOpponentTargetProtection: 1,
   dForcePlasmaFieldTargetProtection: 1,
   deepseaWarriorUmiSpellImmunity: 1,
+  energyBraveryGeminiFieldIndestructible: 1,
   forbiddenLanceActivatedImmunityStatLoss: 1,
   geminiSoldierBattleCountDeckSummon: 1,
   gyroidBattleCountProtection: 1,
@@ -103,6 +105,7 @@ type ProtectionReplacementKind =
   | "continuousBattleIndestructible"
   | "countLimitedBattleIndestructible"
   | "effectTargetProtection"
+  | "fieldEffectIndestructible"
   | "environmentImmunity"
   | "equipBattleProtectionSelfDestroy"
   | "equipDestroySubstitute"
@@ -116,6 +119,7 @@ type ProtectionReplacementSemanticVariant =
   | "darkFusionOpponentTargetProtection"
   | "dForcePlasmaFieldTargetProtection"
   | "deepseaWarriorUmiSpellImmunity"
+  | "energyBraveryGeminiFieldIndestructible"
   | "forbiddenLanceActivatedImmunityStatLoss"
   | "geminiSoldierBattleCountDeckSummon"
   | "gyroidBattleCountProtection"
@@ -256,6 +260,19 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
       ],
     },
     {
+      file: "lua-real-script-energy-bravery-gemini-indestructible.test.ts",
+      kind: "fieldEffectIndestructible",
+      required: [
+        "restores its field effect-destruction protection only for Gemini-status monsters",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "return c:IsGeminiStatus()",
+        'luaTargetDescriptor: "target:gemini-status"',
+        "energy bravery gemini status true/false",
+        "const protectedDestroy = destroyDuelCard(restored.session.state, gemini.uid, 1, duelReason.effect | duelReason.destroy, 1)",
+        "const vulnerableDestroy = destroyDuelCard(restored.session.state, decoy.uid, 1, duelReason.effect | duelReason.destroy, 1)",
+      ],
+    },
+    {
       file: "lua-real-script-forbidden-lance-stat-immunity.test.ts",
       kind: "activatedImmunity",
       required: [
@@ -375,6 +392,15 @@ function protectionReplacementSemanticVariants(): Array<{
         "restores Umi-gated Spell immunity and blocks a restored Spell destruction effect",
         "deepsea spell immune true",
         "deepsea destroy result 0",
+      ],
+    },
+    {
+      file: "test/lua-real-script-energy-bravery-gemini-indestructible.test.ts",
+      kind: "energyBraveryGeminiFieldIndestructible",
+      requiredSnippets: [
+        'const energyBraveryCode = "72631243"',
+        "restores its field effect-destruction protection only for Gemini-status monsters",
+        'luaTargetDescriptor: "target:gemini-status"',
       ],
     },
     {
@@ -504,6 +530,7 @@ function countProtectionReplacementKinds(
       continuousBattleIndestructible: 0,
       countLimitedBattleIndestructible: 0,
       effectTargetProtection: 0,
+      fieldEffectIndestructible: 0,
       environmentImmunity: 0,
       equipBattleProtectionSelfDestroy: 0,
       equipDestroySubstitute: 0,
@@ -526,6 +553,7 @@ function countProtectionReplacementSemanticVariants(
       darkFusionOpponentTargetProtection: 0,
       dForcePlasmaFieldTargetProtection: 0,
       deepseaWarriorUmiSpellImmunity: 0,
+      energyBraveryGeminiFieldIndestructible: 0,
       forbiddenLanceActivatedImmunityStatLoss: 0,
       geminiSoldierBattleCountDeckSummon: 0,
       gyroidBattleCountProtection: 0,
