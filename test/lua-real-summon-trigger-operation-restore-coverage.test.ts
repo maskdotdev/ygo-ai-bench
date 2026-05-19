@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 14;
+const summonTriggerOperationFixtureCount = 15;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 5,
   summonSearchSelfSummon: 1,
+  summonSuccessHandSpecialSummon: 1,
   summonToGraveGraveyardRevive: 1,
   summonStepReviveDisable: 1,
   summonToGraveDeckSummon: 1,
@@ -27,6 +28,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   ichikiSayoriHimeEffectSummonSearch: 1,
   izanamiDiscardGraveSpiritReturnOnSummon: 1,
   moonlitPapillonToGraveDeckSummon: 1,
+  rGenexOverseerClonedSummonHandSpecialSummon: 1,
   senjuClonedSummonRitualMonsterSearch: 1,
   shinobaronessShadePeacockSearchSelfSummon: 1,
   shinobirdCraneDrawOnSpiritSummon: 1,
@@ -38,6 +40,7 @@ type SummonTriggerOperationKind =
   | "summonMassDestroy"
   | "summonSearch"
   | "summonSearchSelfSummon"
+  | "summonSuccessHandSpecialSummon"
   | "summonToGraveGraveyardRevive"
   | "summonStepReviveDisable"
   | "summonToGraveDeckSummon"
@@ -54,6 +57,7 @@ type SummonTriggerOperationSemanticVariant =
   | "ichikiSayoriHimeEffectSummonSearch"
   | "izanamiDiscardGraveSpiritReturnOnSummon"
   | "moonlitPapillonToGraveDeckSummon"
+  | "rGenexOverseerClonedSummonHandSpecialSummon"
   | "senjuClonedSummonRitualMonsterSearch"
   | "shinobaronessShadePeacockSearchSelfSummon"
   | "shinobirdCraneDrawOnSpiritSummon"
@@ -165,6 +169,23 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "operationInfos",
         "category: 0x200",
         "targetUids: [normalTarget.uid]",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-r-genex-overseer-summon-hand-special.test.ts",
+      kind: "summonSuccessHandSpecialSummon",
+      required: [
+        "restores cloned summon triggers into a selected low-level Genex hand Special Summon",
+        'const overseerCode = "32744558"',
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: kind === "normal" ? "normalSummoned" : "specialSummoned"',
+        'eventName === "specialSummoned"',
+        "operationInfos: [{ category: 0x200",
+        "parameter: 0x2",
         "host.messages).not.toContain",
       ],
     },
@@ -475,6 +496,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-r-genex-overseer-summon-hand-special.test.ts",
+      kind: "rGenexOverseerClonedSummonHandSpecialSummon",
+      requiredSnippets: [
+        'const overseerCode = "32744558"',
+        "restores cloned summon triggers into a selected low-level Genex hand Special Summon",
+        "return c:IsSetCard(SET_GENEX) and c:GetLevel()<=3",
+        'eventName: kind === "normal" ? "normalSummoned" : "specialSummoned"',
+        'eventName === "specialSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-senju-summon-ritual-monster-search.test.ts",
       kind: "senjuClonedSummonRitualMonsterSearch",
       requiredSnippets: [
@@ -533,6 +565,7 @@ function countSummonTriggerOperationKinds(
       summonMassDestroy: 0,
       summonSearch: 0,
       summonSearchSelfSummon: 0,
+      summonSuccessHandSpecialSummon: 0,
       summonToGraveGraveyardRevive: 0,
       summonStepReviveDisable: 0,
       summonToGraveDeckSummon: 0,
@@ -561,6 +594,7 @@ function countSummonTriggerOperationSemanticVariants(
       ichikiSayoriHimeEffectSummonSearch: 0,
       izanamiDiscardGraveSpiritReturnOnSummon: 0,
       moonlitPapillonToGraveDeckSummon: 0,
+      rGenexOverseerClonedSummonHandSpecialSummon: 0,
       senjuClonedSummonRitualMonsterSearch: 0,
       shinobaronessShadePeacockSearchSelfSummon: 0,
       shinobirdCraneDrawOnSpiritSummon: 0,
