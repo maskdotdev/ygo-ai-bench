@@ -696,6 +696,183 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
       },
     ]);
   });
+
+  it("restores Freezing Beast old-union battle-damage set-card destroy trigger", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const freezingBeastCode = "85359414";
+    const targetCode = "59364406";
+    const setCardCode = "601027";
+    const script = workspace.readScript(`official/c${freezingBeastCode}.lua`);
+    expect(script).toContain("aux.AddUnionProcedure(c,aux.FilterBoolFunction(Card.IsCode,59364406),true)");
+    expect(script).toContain("e3:SetCode(EVENT_BATTLE_DAMAGE)");
+    expect(script).toContain("e3:SetCondition(s.descon)");
+
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === freezingBeastCode),
+      { code: targetCode, name: "Freezing Beast Union Damage Target", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1800, defense: 1200 },
+      { code: setCardCode, name: "Freezing Beast Set Trap", kind: "trap" as const },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 312, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [freezingBeastCode, targetCode] }, 1: { main: [setCardCode] } });
+    startDuel(session);
+
+    const freezingBeast = session.state.cards.find((card) => card.code === freezingBeastCode);
+    const target = session.state.cards.find((card) => card.code === targetCode);
+    const setCard = session.state.cards.find((card) => card.code === setCardCode);
+    expect(freezingBeast).toBeDefined();
+    expect(target).toBeDefined();
+    expect(setCard).toBeDefined();
+    moveDuelCard(session.state, freezingBeast!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, setCard!.uid, "spellTrapZone", 1).position = "faceDown";
+    setCard!.faceUp = false;
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(freezingBeastCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredEquipWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredEquipWindow);
+    const equipAction = findEffectAction(restoredEquipWindow.session, getLuaRestoreLegalActions(restoredEquipWindow, 0), freezingBeast!.uid, 1068);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+    resolveRestoredChain(restoredEquipWindow);
+
+    expect(restoredEquipWindow.session.state.cards.find((card) => card.uid === freezingBeast!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: target!.uid,
+      faceUp: true,
+    });
+
+    const restoredUnionState = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), workspace, reader);
+    expect(restoredUnionState.restoreComplete, restoredUnionState.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredUnionState.missingRegistryKeys).toEqual([]);
+    expect(restoredUnionState.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredUnionState);
+    expect(
+      restoredUnionState.session.state.effects.filter(
+        (effect) => effect.sourceUid === freezingBeast!.uid && (effect.code === 347 || effect.code === 348),
+      ).map((effect) => effect.code),
+    ).toEqual([347, 348]);
+
+    restoredUnionState.session.state.phase = "battle";
+    restoredUnionState.session.state.waitingFor = 0;
+    const restoredBattleWindow = restoreDuelWithLuaScripts(serializeDuel(restoredUnionState.session), workspace, reader);
+    expect(restoredBattleWindow.restoreComplete, restoredBattleWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredBattleWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredBattleWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredBattleWindow);
+    const directAttack = getLuaRestoreLegalActions(restoredBattleWindow, 0).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === target!.uid && action.directAttack,
+    );
+    expect(directAttack, JSON.stringify(getLuaRestoreLegalActions(restoredBattleWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredBattleWindow, directAttack!);
+    passRestoredBattleResponsesUntilTrigger(restoredBattleWindow);
+
+    expect(restoredBattleWindow.session.state.pendingTriggers).toMatchInlineSnapshot(`
+      [
+        {
+          "effectId": "lua-5-1143",
+          "eventCardUid": "p0-deck-59364406-1",
+          "eventCode": 1143,
+          "eventCurrentState": {
+            "controller": 0,
+            "faceUp": true,
+            "location": "monsterZone",
+            "position": "faceUpAttack",
+            "sequence": 1,
+          },
+          "eventName": "battleDamageDealt",
+          "eventPlayer": 1,
+          "eventPreviousState": {
+            "controller": 0,
+            "faceUp": false,
+            "location": "deck",
+            "position": "faceDown",
+            "sequence": 0,
+          },
+          "eventReason": 32,
+          "eventReasonCardUid": "p0-deck-59364406-1",
+          "eventReasonPlayer": 0,
+          "eventTriggerTiming": "when",
+          "eventValue": 1800,
+          "id": "trigger-8-1",
+          "player": 0,
+          "sourceUid": "p0-deck-85359414-0",
+          "triggerBucket": "turnMandatory",
+        },
+      ]
+    `);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredBattleWindow.session), workspace, reader);
+    expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredTriggerWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredTriggerWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredTriggerWindow);
+    const trigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === freezingBeast!.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, trigger!);
+
+    expect(restoredTriggerWindow.session.state.cards.find((card) => card.uid === setCard!.uid)).toMatchObject({
+      location: "graveyard",
+      controller: 1,
+    });
+    expect(restoredTriggerWindow.session.state.eventHistory.filter((event) => ["battleDamageDealt", "destroyed"].includes(event.eventName))).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: target!.uid,
+        eventPlayer: 1,
+        eventValue: 1800,
+        eventReason: duelReason.battle,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: target!.uid,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+      {
+        eventName: "destroyed",
+        eventCode: 1029,
+        eventCardUid: setCard!.uid,
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: freezingBeast!.uid,
+        eventReasonEffectId: 5,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "spellTrapZone",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+      },
+    ]);
+  });
 });
 
 function chainResponderScript(message: string): string {

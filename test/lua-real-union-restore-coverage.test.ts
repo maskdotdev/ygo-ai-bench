@@ -17,12 +17,19 @@ const unionProcedureVariantCounts = {
   ailinOldUnionPositionIgnition: 1,
   driverDeckReplace: 1,
   driverEquipSummonBack: 1,
+  freezingBeastBattleDamageDestroy: 1,
   pilotBanishedEquipSelfSummon: 1,
   trigonBattleSummon: 1,
 } satisfies Record<UnionProcedureVariant, number>;
 
 type UnionKind = "equippedUnionLock" | "unionPositionIgnition" | "unionEquipProcedure";
-type UnionProcedureVariant = "ailinOldUnionPositionIgnition" | "driverDeckReplace" | "driverEquipSummonBack" | "pilotBanishedEquipSelfSummon" | "trigonBattleSummon";
+type UnionProcedureVariant =
+  | "ailinOldUnionPositionIgnition"
+  | "driverDeckReplace"
+  | "driverEquipSummonBack"
+  | "freezingBeastBattleDamageDestroy"
+  | "pilotBanishedEquipSelfSummon"
+  | "trigonBattleSummon";
 
 describe("Lua real Union restore coverage", () => {
   it("requires representative Union fixtures to assert clean Lua registry restore", () => {
@@ -201,6 +208,19 @@ function unionProcedureVariants(): Array<{ file: string; kind: UnionProcedureVar
     },
     {
       file: "lua-real-script-union-procedure-actions.test.ts",
+      kind: "freezingBeastBattleDamageDestroy",
+      required: [
+        "Freezing Beast old-union battle-damage set-card destroy trigger",
+        "aux.AddUnionProcedure(c,aux.FilterBoolFunction(Card.IsCode,59364406),true)",
+        "e3:SetCode(EVENT_BATTLE_DAMAGE)",
+        "eventName: \"battleDamageDealt\"",
+        "eventName: \"destroyed\"",
+        "eventReasonCardUid: freezingBeast!.uid",
+        "eventReasonEffectId: 5",
+      ],
+    },
+    {
+      file: "lua-real-script-union-procedure-actions.test.ts",
       kind: "pilotBanishedEquipSelfSummon",
       required: [
         "Union Pilot cost-to-hand, banished Union equip, and self Special Summon",
@@ -271,6 +291,7 @@ function countUnionProcedureVariants(fixtures: Array<{ kind: UnionProcedureVaria
       ailinOldUnionPositionIgnition: 0,
       driverDeckReplace: 0,
       driverEquipSummonBack: 0,
+      freezingBeastBattleDamageDestroy: 0,
       pilotBanishedEquipSelfSummon: 0,
       trigonBattleSummon: 0,
     },
