@@ -4,19 +4,22 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const TO_DECK_FIXTURE_COUNT = 2;
+const TO_DECK_FIXTURE_COUNT = 3;
 const toDeckKindCounts = {
+  graveExtraToExtraDeckTop: 1,
   flipGraveTargetShuffleToDeck: 1,
   toGraveSelfShuffleToDeck: 1,
 } satisfies Record<ToDeckKind, number>;
 const toDeckSemanticVariantCounts = {
+  adamancipatorLeoniteGraveExtraDeckTop: 1,
   desFeralImpFlipGraveTargetShuffleToDeck: 1,
   outstandingDogMarronToGraveSelfShuffleToDeck: 1,
 } satisfies Record<ToDeckSemanticVariant, number>;
 
-type ToDeckKind = "flipGraveTargetShuffleToDeck" | "toGraveSelfShuffleToDeck";
+type ToDeckKind = "graveExtraToExtraDeckTop" | "flipGraveTargetShuffleToDeck" | "toGraveSelfShuffleToDeck";
 
 type ToDeckSemanticVariant =
+  | "adamancipatorLeoniteGraveExtraDeckTop"
   | "desFeralImpFlipGraveTargetShuffleToDeck"
   | "outstandingDogMarronToGraveSelfShuffleToDeck";
 
@@ -72,6 +75,24 @@ function toDeckFixtureFiles(): Array<{
 }> {
   return [
     {
+      file: "test/lua-real-script-adamancipator-leonite-grave-extra-decktop.test.ts",
+      kind: "graveExtraToExtraDeckTop",
+      required: [
+        'const leoniteCode = "47897376"',
+        "restores targeted FIRE Synchro leave-Grave to Extra Deck, self Deck-top return, and deck-top confirmation",
+        "Duel.SetOperationInfo(0,CATEGORY_LEAVE_GRAVE,tc,1,tp,0)",
+        "Duel.SendtoDeck(tc,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        "Duel.SendtoDeck(c,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        "Duel.ConfirmDecktop(tp,1)",
+        "operationInfos",
+        "category: 0x10",
+        "category: 0x4000000",
+        'eventName: "sentToDeck"',
+        'eventName: "confirmed"',
+        "location: \"extraDeck\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-des-feral-imp-flip-grave-to-deck.test.ts",
       kind: "flipGraveTargetShuffleToDeck",
       required: [
@@ -118,6 +139,7 @@ function countToDeckKinds(fixtures: Array<{ kind: ToDeckKind }>): Record<ToDeckK
       return counts;
     },
     {
+      graveExtraToExtraDeckTop: 0,
       flipGraveTargetShuffleToDeck: 0,
       toGraveSelfShuffleToDeck: 0,
     },
@@ -130,6 +152,19 @@ function toDeckSemanticVariants(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-adamancipator-leonite-grave-extra-decktop.test.ts",
+      kind: "adamancipatorLeoniteGraveExtraDeckTop",
+      required: [
+        'const leoniteCode = "47897376"',
+        "restores targeted FIRE Synchro leave-Grave to Extra Deck, self Deck-top return, and deck-top confirmation",
+        "Duel.GetFirstTarget()",
+        "Duel.SendtoDeck(tc,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        "Duel.ConfirmDecktop(tp,1)",
+        'eventName: "confirmed"',
+        "confirmed decktop 0",
+      ],
+    },
     {
       file: "test/lua-real-script-des-feral-imp-flip-grave-to-deck.test.ts",
       kind: "desFeralImpFlipGraveTargetShuffleToDeck",
@@ -167,6 +202,7 @@ function countToDeckSemanticVariants(fixtures: Array<{ kind: ToDeckSemanticVaria
       return counts;
     },
     {
+      adamancipatorLeoniteGraveExtraDeckTop: 0,
       desFeralImpFlipGraveTargetShuffleToDeck: 0,
       outstandingDogMarronToGraveSelfShuffleToDeck: 0,
     },
