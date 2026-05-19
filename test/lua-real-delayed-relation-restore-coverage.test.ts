@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const delayedRelationFixtureCount = 6;
+const delayedRelationFixtureCount = 7;
 const delayedRelationKindCounts = {
   banishedReviveDestroyRelation: 1,
+  battleMarkerEndPhaseDestroy: 1,
   delayedBanishRelation: 1,
   delayedReturnRelation: 1,
   delayedSelfDestroy: 1,
@@ -20,10 +21,12 @@ const delayedRelationSemanticVariantCounts = {
   releaseFromStoneBanishedReviveDestroyRelation: 1,
   sunlitSentinelPreviousPositionStandbyCheck: 1,
   yellowAlertBattlePhaseReturnRelation: 1,
+  zoneEaterBattleMarkerEndPhaseDestroy: 1,
 } satisfies Record<DelayedRelationSemanticVariant, number>;
 
 type DelayedRelationKind =
   | "banishedReviveDestroyRelation"
+  | "battleMarkerEndPhaseDestroy"
   | "delayedBanishRelation"
   | "delayedReturnRelation"
   | "delayedSelfDestroy"
@@ -35,7 +38,8 @@ type DelayedRelationSemanticVariant =
   | "kinkaByoReviveLeavesBanishRelation"
   | "releaseFromStoneBanishedReviveDestroyRelation"
   | "sunlitSentinelPreviousPositionStandbyCheck"
-  | "yellowAlertBattlePhaseReturnRelation";
+  | "yellowAlertBattlePhaseReturnRelation"
+  | "zoneEaterBattleMarkerEndPhaseDestroy";
 
 describe("Lua real delayed relation restore coverage", () => {
   it("requires delayed relation fixtures to assert clean Lua registry restore and restored delayed outcomes", () => {
@@ -98,6 +102,18 @@ function delayedRelationFixtureFiles(): Array<{
         'triggerEvent: "phaseEnd"',
         'location: "graveyard"',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-zone-eater-delayed-battle-destroy.test.ts",
+      kind: "battleMarkerEndPhaseDestroy",
+      required: [
+        "restores battled target markers and destroys the marked monster on the fifth End Phase",
+        "bc:RegisterEffect(e1)",
+        "e3:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        'triggerEvent === "phaseEnd"',
+        'location: "graveyard"',
       ],
     },
     {
@@ -182,6 +198,7 @@ function countDelayedRelationKinds(
     },
     {
       banishedReviveDestroyRelation: 0,
+      battleMarkerEndPhaseDestroy: 0,
       delayedBanishRelation: 0,
       delayedReturnRelation: 0,
       delayedSelfDestroy: 0,
@@ -216,6 +233,17 @@ function delayedRelationSemanticVariants(): Array<{
         "return c:IsSetCard(SET_MORPHTRONIC) and c:IsLevelBelow(4) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
         "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
         "advanceRestoredToPhase(restoredEndPhase, 0, [\"battle\", \"main2\", \"end\"])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-zone-eater-delayed-battle-destroy.test.ts",
+      kind: "zoneEaterBattleMarkerEndPhaseDestroy",
+      required: [
+        'const zoneEaterCode = "86100785"',
+        "restores battled target markers and destroys the marked monster on the fifth End Phase",
+        "Duel.HintSelection(sg)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "reasonCardUid: zoneEater.uid",
       ],
     },
     {
@@ -280,6 +308,7 @@ function countDelayedRelationSemanticVariants(
       releaseFromStoneBanishedReviveDestroyRelation: 0,
       sunlitSentinelPreviousPositionStandbyCheck: 0,
       yellowAlertBattlePhaseReturnRelation: 0,
+      zoneEaterBattleMarkerEndPhaseDestroy: 0,
     },
   );
 }

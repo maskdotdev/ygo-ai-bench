@@ -3,7 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { addDuelChainLimit, applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { addDuelChainLimit, applyResponse, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
@@ -68,6 +68,7 @@ const luaMegalithUnformedCode = "69003792";
 const luaDaiDanceCode = "50696588";
 const luaEndPhaseReviveDestroyCodes = new Set(["32061744", "37745919", "46874015"]);
 const luaLeaveFieldLinkedDestroyCodes = new Set(["29013526", "29139104", "56524813"]);
+const luaDelayedBattleDestroyCodes = new Set(["85255550", "86100785"]);
 const luaSetMegalith = 0x138;
 const luaCategorySpecialSummon = 0x200; const luaLocationDeck = 0x1;
 const luaTypeMonster = 0x1; const luaTypeRitual = 0x80; const luaTypeSpirit = 0x200; const luaTypeTuner = 0x1000;
@@ -407,7 +408,7 @@ function restoreKnownLuaEffects(
 }
 
 function refreshKnownRestoredLuaEffect(session: DuelSession, effect: SerializedDuelEffect): void {
-  if (!effect.registryKey || !isKnownSelfEndPhaseDestroyEffect(effect)) return;
+  if (!effect.registryKey || (!isKnownSelfEndPhaseDestroyEffect(effect) && !isKnownDelayedBattleDestroyPhaseEffect(effect))) return;
   const restored = session.state.effects.find((candidate) => candidate.registryKey === effect.registryKey);
   if (!restored) return;
   Object.assign(restored, {
@@ -579,6 +580,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
         isKnownLevelNormalEndPhaseDestroyEffect(effect) ||
+        isKnownDelayedBattleDestroyMarkerEffect(effect) ||
+        isKnownDelayedBattleDestroyPhaseEffect(effect) ||
         isKnownEndPhaseReviveDestroyEffect(effect) ||
         isKnownLeaveFieldLinkedDestroyEffect(effect) ||
         isKnownDarkMagicExpandedChainingLimitEffect(effect) ||
@@ -601,6 +604,34 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
 function isKnownChangeBattleStatToDefenseEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 198 && effect.luaValueDescriptor === "stat:current-defense" && effect.luaTargetDescriptor === "target:source-or-battle-target" && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange?.[0] === 4 && effect.targetRange?.[1] === 4 && effect.reset !== undefined; }
 
 function isKnownStatValueEffect(effect: SerializedDuelEffect): boolean { return effect.code !== undefined && [100, 103, 104, 107, 130, 131, 132, 314].includes(effect.code) && (effect.value !== undefined || luaValueDescriptorStatValue(effect.luaValueDescriptor, effect.id) !== undefined); }
+function isKnownDelayedBattleDestroyMarkerEffect(effect: SerializedDuelEffect): boolean {
+  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+  return (
+    registryCode !== undefined &&
+    luaDelayedBattleDestroyCodes.has(registryCode) &&
+    effect.event === "continuous" &&
+    effect.code === Number(registryCode) &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.label !== undefined &&
+    effect.reset?.flags === luaResetEventStandard
+  );
+}
+
+function isKnownDelayedBattleDestroyPhaseEffect(effect: SerializedDuelEffect): boolean {
+  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+  return (
+    registryCode !== undefined &&
+    luaDelayedBattleDestroyCodes.has(registryCode) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.countLimit === 1
+  );
+}
+
 function isKnownEndPhaseReviveDestroyEffect(effect: SerializedDuelEffect): boolean {
   const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
   return (
@@ -854,6 +885,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return levelNormalEndPhaseDestroyOperation(effect);
+  if (isKnownDelayedBattleDestroyPhaseEffect(effect)) return delayedBattleDestroyPhaseOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
   if (isKnownLeaveFieldLinkedDestroyEffect(effect)) return luaLinkedLeaveFieldDestroyOperation(effect);
@@ -866,6 +898,36 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function delayedBattleDestroyPhaseOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+  const markerCode = registryCode === undefined ? undefined : Number(registryCode);
+  return (ctx) => {
+    if (markerCode === undefined) return;
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    const markers = ctx.duel.effects.filter((candidate) => (
+      candidate.event === "continuous" &&
+      candidate.code === markerCode &&
+      candidate.sourceUid !== undefined &&
+      candidate.label !== undefined
+    ));
+    for (const marker of markers) {
+      const target = ctx.duel.cards.find((card) => card.uid === marker.sourceUid);
+      if (!target || target.location !== "monsterZone") continue;
+      const count = (marker.label ?? 0) + 1;
+      marker.label = count;
+      if (source) source.turnCounter = count;
+      if (count !== 5) continue;
+      try {
+        destroyDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect | duelReason.destroy, marker.ownerPlayer ?? effect.controller, "graveyard", {
+          eventReasonCardUid: effect.sourceUid,
+        });
+      } catch {
+        // EDOPro-style delayed battle markers ignore targets that can no longer be destroyed.
+      }
+    }
+  };
 }
 
 function maharaghiPredrawOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
@@ -964,6 +1026,18 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (isKnownBookOfEclipsePhaseEndEffect(effect)) return { canActivate: bookOfEclipsePhaseEndCanActivate(effect) };
   if (isKnownMaharaghiPredrawEffect(effect)) return { canActivate: (ctx) => ctx.duel.turnPlayer === effect.controller && topDeckCards(ctx.duel, effect.controller).length > 0 };
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return { canActivate: levelNormalEndPhaseDestroyCanActivate(effect) };
+  if (isKnownDelayedBattleDestroyPhaseEffect(effect)) {
+    const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+    const markerCode = registryCode === undefined ? undefined : Number(registryCode);
+    return {
+      canActivate: (ctx) => markerCode !== undefined && ctx.duel.effects.some((candidate) => (
+        candidate.event === "continuous" &&
+        candidate.code === markerCode &&
+        candidate.sourceUid !== undefined &&
+        ctx.duel.cards.some((card) => card.uid === candidate.sourceUid && card.location === "monsterZone")
+      )),
+    };
+  }
   const skipBattleCondition = temporarySelfTurnSkipBattlePhaseCanActivate(effect); if (skipBattleCondition) return { canActivate: skipBattleCondition };
   const skipMain1Condition = temporaryOpponentTurnSkipMain1CanActivate(effect); if (skipMain1Condition) return { canActivate: skipMain1Condition };
   const assaultZoneConditionCallbacks = assaultZoneReleaseFlagConditionCallbacks(effect);

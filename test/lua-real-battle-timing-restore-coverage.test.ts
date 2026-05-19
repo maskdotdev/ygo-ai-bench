@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 41;
-const battleTimingEventCodeFixtureCount = 41;
+const battleTimingFixtureCount = 42;
+const battleTimingEventCodeFixtureCount = 42;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
-  afterDamageCalculation: 17,
+  afterDamageCalculation: 18,
   beforeDamageCalculation: 8,
   duringDamageCalculation: 5,
   endDamageStep: 6,
@@ -56,6 +56,7 @@ const battleTimingSemanticVariantCounts = {
   topologicBomberAfterDamageBurn: 1,
   turboRocketAfterDamageGetAttackTargetBurn: 1,
   wallOfIllusionAfterDamageBounce: 1,
+  zoneEaterAfterDamageDelayedDestroy: 1,
 } satisfies Record<BattleTimingSemanticVariant, number>;
 
 describe("Lua real battle timing restore coverage", () => {
@@ -158,7 +159,8 @@ type BattleTimingSemanticVariant =
   | "steamroidDuringDamageBattleSwingStat"
   | "topologicBomberAfterDamageBurn"
   | "turboRocketAfterDamageGetAttackTargetBurn"
-  | "wallOfIllusionAfterDamageBounce";
+  | "wallOfIllusionAfterDamageBounce"
+  | "zoneEaterAfterDamageDelayedDestroy";
 
 function battleTimingSemanticVariants(): Array<{
   file: string;
@@ -380,6 +382,11 @@ function battleTimingSemanticVariants(): Array<{
       required: ["restores battle-confirm damage into a later battled self-destruction trigger", "eventName: \"battleConfirmed\"", "eventName: \"afterDamageCalculation\""],
     },
     {
+      file: "test/lua-real-script-zone-eater-delayed-battle-destroy.test.ts",
+      kind: "zoneEaterAfterDamageDelayedDestroy",
+      required: ["restores battled target markers and destroys the marked monster on the fifth End Phase", "eventName: \"afterDamageCalculation\"", "eventCode: 1138", "eventName: \"destroyed\""],
+    },
+    {
       file: "test/lua-real-script-drillroid-battle-confirm-destroy.test.ts",
       kind: "drillroidBattleConfirmDestroy",
       required: ["restores battle-confirm defense-target destruction and ends the pending battle", "Duel.GetAttackTarget()", "Duel.Destroy(t,REASON_EFFECT)", "eventName: \"battleConfirmed\"", "eventName: \"destroyed\""],
@@ -511,6 +518,7 @@ function countBattleTimingSemanticVariants(
       predaplantSarraceniantAfterDamageDestroy: 0,
       powerWallBeforeDamageDeckMillShield: 0,
       reflectBounderStartAndAfterDamageDestroy: 0,
+      zoneEaterAfterDamageDelayedDestroy: 0,
       sasukeSamuraiStartDamageDestroy: 0,
       sangaBeforeDamageFinalAttack: 0,
       shadowSpellDuringDamagePersistentStat: 0,
@@ -970,6 +978,17 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventCode: 1138",
         'eventName: "destroyed"',
         "reasonEffectId: 2",
+      ],
+    },
+    {
+      file: "test/lua-real-script-zone-eater-delayed-battle-destroy.test.ts",
+      kind: "afterDamageCalculation",
+      required: [
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        "bc:RegisterEffect(e1)",
+        "e3:SetCode(EVENT_PHASE+PHASE_END)",
+        'eventName: "destroyed"',
       ],
     },
     {
