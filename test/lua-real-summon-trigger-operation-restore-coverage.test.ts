@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 18;
+const summonTriggerOperationFixtureCount = 19;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 6,
+  summonSearchDiscard: 1,
   summonSearchSelfSummon: 1,
   summonSelfDestroy: 1,
   summonSuccessHandSpecialSummon: 1,
@@ -22,6 +23,7 @@ const summonTriggerOperationKindCounts = {
 const summonTriggerOperationSemanticVariantCounts = {
   aratamaSpiritSearchOnSummon: 1,
   ashokaPillarSearchPositionDamage: 1,
+  backupIgnisterSearchDiscardOnSummon: 1,
   craneCraneStepReviveDisableOnSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
   gemArmadilloNormalSummonSearch: 1,
@@ -44,6 +46,7 @@ type SummonTriggerOperationKind =
   | "summonDraw"
   | "summonMassDestroy"
   | "summonSearch"
+  | "summonSearchDiscard"
   | "summonSearchSelfSummon"
   | "summonSelfDestroy"
   | "summonSuccessHandSpecialSummon"
@@ -56,6 +59,7 @@ type SummonTriggerOperationKind =
 type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
   | "ashokaPillarSearchPositionDamage"
+  | "backupIgnisterSearchDiscardOnSummon"
   | "craneCraneStepReviveDisableOnSummon"
   | "darkDustSpiritMassDestroyOnSummon"
   | "gemArmadilloNormalSummonSearch"
@@ -144,6 +148,25 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "category: 0x8",
         "category: 0x1000",
         "category: 0x80000",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-backup-ignister-summon-search-discard.test.ts",
+      kind: "summonSearchDiscard",
+      required: [
+        "restores summon-success DARK Cyberse search, confirmation, hand shuffle, BreakEffect, and discard",
+        'const backupCode = "30118811"',
+        "return c:IsRace(RACE_CYBERSE) and c:IsSummonLocation(LOCATION_EXTRA) and c:IsFaceup()",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.ConfirmCards(1-tp,sc)",
+        "Duel.ShuffleHand(tp)",
+        "Duel.BreakEffect()",
+        "Duel.DiscardHand(tp,nil,1,1,REASON_EFFECT|REASON_DISCARD,nil)",
+        "category: 0x8",
+        "category: 0x80",
+        'eventName: "sentToHand"',
+        'eventName: "sentToGraveyard"',
         "host.messages).not.toContain",
       ],
     },
@@ -485,6 +508,18 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-backup-ignister-summon-search-discard.test.ts",
+      kind: "backupIgnisterSearchDiscardOnSummon",
+      requiredSnippets: [
+        'const backupCode = "30118811"',
+        "restores Extra Deck Cyberse-gated hand Special Summon",
+        "restores summon-success DARK Cyberse search, confirmation, hand shuffle, BreakEffect, and discard",
+        "Duel.BreakEffect()",
+        'eventName: "sentToHand"',
+        'eventName: "sentToGraveyard"',
+      ],
+    },
+    {
       file: "test/lua-real-script-crane-crane-step-summon-disable.test.ts",
       kind: "craneCraneStepReviveDisableOnSummon",
       requiredSnippets: [
@@ -669,6 +704,7 @@ function countSummonTriggerOperationKinds(
       summonDraw: 0,
       summonMassDestroy: 0,
       summonSearch: 0,
+      summonSearchDiscard: 0,
       summonSearchSelfSummon: 0,
       summonSelfDestroy: 0,
       summonSuccessHandSpecialSummon: 0,
@@ -693,6 +729,7 @@ function countSummonTriggerOperationSemanticVariants(
     {
       aratamaSpiritSearchOnSummon: 0,
       ashokaPillarSearchPositionDamage: 0,
+      backupIgnisterSearchDiscardOnSummon: 0,
       craneCraneStepReviveDisableOnSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
       gemArmadilloNormalSummonSearch: 0,
