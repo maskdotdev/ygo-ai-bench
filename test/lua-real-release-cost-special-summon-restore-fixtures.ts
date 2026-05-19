@@ -1,12 +1,13 @@
-export const releaseCostSpecialSummonFixtureCount = 3;
+export const releaseCostSpecialSummonFixtureCount = 4;
 
 export const releaseCostSpecialSummonKindCounts = {
   releaseGroupCostHandDeckSummon: 1,
+  releaseGroupCostHandProcedure: 1,
   releaseGroupCostHandSummonLeaveDestroy: 1,
   selfReleaseCostDeckSummon: 1,
 } satisfies Record<ReleaseCostSpecialSummonKind, number>;
 
-export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
+export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
 
 export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -51,6 +52,19 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
       "parameter: 0x2",
     ],
   }, {
+    file: "test/lua-real-script-toon-summoned-skull-release-attack-cost.test.ts",
+    kind: "releaseGroupCostHandProcedure",
+    required: [
+      "Duel.CheckReleaseGroup(c:GetControler(),aux.TRUE,1,false,1,true,c,c:GetControler(),nil,false,nil)",
+      "Duel.SelectReleaseGroup(tp,aux.TRUE,1,1,false,true,true,c,nil,nil,false,nil)",
+      "Duel.Release(g,REASON_COST)",
+      'type === "specialSummonProcedure"',
+      'summonType: "special"',
+      "duelReason.release | duelReason.cost",
+      'eventName: "released"',
+      "eventReasonEffectId: 2",
+    ],
+  }, {
     file: "test/lua-real-script-lonefire-blossom-release-cost-deck-summon.test.ts",
     kind: "selfReleaseCostDeckSummon",
     required: [
@@ -75,5 +89,5 @@ export function countReleaseCostSpecialSummonKinds(
   return files.reduce<Record<ReleaseCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
+  }, { releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
 }

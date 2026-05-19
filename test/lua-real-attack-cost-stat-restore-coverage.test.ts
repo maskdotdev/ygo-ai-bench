@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackCostAndStatFixtureCount = 9;
-const legalActionFixtureCount = 5;
+const attackCostAndStatFixtureCount = 10;
+const legalActionFixtureCount = 6;
 const attackCostAndStatKindCounts = {
   attackCostLp: 1,
   attackCostRelease: 1,
@@ -16,6 +16,7 @@ const attackCostAndStatKindCounts = {
   dynamicLinkedGroupStat: 1,
   fieldSetAttack: 1,
   targetAttackPredicate: 1,
+  toonReleaseProcedureLpAttackCost: 1,
 } satisfies Record<AttackCostAndStatKind, number>;
 const attackCostAndStatSemanticVariantCounts = {
   bazooBanishCountAtkBoost: 1,
@@ -27,6 +28,7 @@ const attackCostAndStatSemanticVariantCounts = {
   rbLastStandCurrentAtkExtraMachineLock: 1,
   rbStageLandingBaseAtkExtraMachineLock: 1,
   valcanBoosterLizardOriginalMachineAtkPredicate: 1,
+  toonSummonedSkullReleaseProcedureLpAttackCost: 1,
 } satisfies Record<AttackCostAndStatSemanticVariant, number>;
 
 type AttackCostAndStatKind =
@@ -38,7 +40,8 @@ type AttackCostAndStatKind =
   | "ignitionBanishCostAtkBoost"
   | "dynamicLinkedGroupStat"
   | "fieldSetAttack"
-  | "targetAttackPredicate";
+  | "targetAttackPredicate"
+  | "toonReleaseProcedureLpAttackCost";
 type AttackCostAndStatSemanticVariant =
   | "bazooBanishCountAtkBoost"
   | "burdenMightyLevelBasedFieldAtkUpdate"
@@ -48,7 +51,8 @@ type AttackCostAndStatSemanticVariant =
   | "pantherWarriorReleaseAttackCost"
   | "rbLastStandCurrentAtkExtraMachineLock"
   | "rbStageLandingBaseAtkExtraMachineLock"
-  | "valcanBoosterLizardOriginalMachineAtkPredicate";
+  | "valcanBoosterLizardOriginalMachineAtkPredicate"
+  | "toonSummonedSkullReleaseProcedureLpAttackCost";
 
 describe("Lua real attack cost and attack-stat restore coverage", () => {
   it("requires attack-cost and ATK-threshold restore fixtures to assert clean Lua registry restore", () => {
@@ -163,6 +167,20 @@ function attackCostAndStatFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-toon-summoned-skull-release-attack-cost.test.ts",
+      kind: "toonReleaseProcedureLpAttackCost",
+      required: [
+        "restores its Toon World-gated release Special Summon procedure and same-turn attack lock",
+        "Duel.CheckReleaseGroup(c:GetControler(),aux.TRUE,1,false,1,true,c,c:GetControler(),nil,false,nil)",
+        "Duel.SelectReleaseGroup(tp,aux.TRUE,1,1,false,true,true,c,nil,nil,false,nil)",
+        "Duel.Release(g,REASON_COST)",
+        "Duel.CheckLPCost(tp,500)",
+        "Duel.AttackCostPaid()",
+        "players[0].lifePoints).toBe(7500)",
+        "players[1].lifePoints).toBe(5500)",
+      ],
+    },
+    {
       file: "lua-real-script-dark-elf-attack-cost.test.ts",
       kind: "attackCostLp",
       required: [
@@ -216,6 +234,7 @@ function legalActionFixtureFiles(): string[] {
     "lua-real-script-bazoo-banish-count-atk.test.ts",
     "lua-real-script-dark-elf-attack-cost.test.ts",
     "lua-real-script-panther-warrior-attack-cost.test.ts",
+    "lua-real-script-toon-summoned-skull-release-attack-cost.test.ts",
     "lua-real-script-rb-last-stand-extra-machine-current-attack-lock.test.ts",
     "lua-real-script-rb-stage-landing-extra-machine-low-attack-lock.test.ts",
   ]
@@ -290,6 +309,16 @@ function attackCostAndStatSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-toon-summoned-skull-release-attack-cost.test.ts",
+      kind: "toonSummonedSkullReleaseProcedureLpAttackCost",
+      required: [
+        'const toonCode = "91842653"',
+        "restores its opposing-Toon battle target restriction and LP attack cost",
+        "restores its direct attack path and pays the same LP attack cost when no opposing Toon exists",
+        'eventName: "lifePointCostPaid"',
+      ],
+    },
+    {
       file: "lua-real-script-rb-last-stand-extra-machine-current-attack-lock.test.ts",
       kind: "rbLastStandCurrentAtkExtraMachineLock",
       required: [
@@ -345,6 +374,7 @@ function countAttackCostAndStatSemanticVariants(
       pantherWarriorReleaseAttackCost: 0,
       rbLastStandCurrentAtkExtraMachineLock: 0,
       rbStageLandingBaseAtkExtraMachineLock: 0,
+      toonSummonedSkullReleaseProcedureLpAttackCost: 0,
       valcanBoosterLizardOriginalMachineAtkPredicate: 0,
     },
   );
@@ -368,6 +398,7 @@ function countAttackCostAndStatKinds(
       dynamicLinkedGroupStat: 0,
       fieldSetAttack: 0,
       targetAttackPredicate: 0,
+      toonReleaseProcedureLpAttackCost: 0,
     },
   );
 }
