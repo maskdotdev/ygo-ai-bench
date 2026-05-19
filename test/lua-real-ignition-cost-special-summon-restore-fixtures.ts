@@ -1,15 +1,17 @@
-export const ignitionCostSpecialSummonFixtureCount = 3;
+export const ignitionCostSpecialSummonFixtureCount = 4;
 
 export const ignitionCostSpecialSummonKindCounts = {
   dragonRulerDiscardDeckSummonCannotAttack: 1,
   graveCostSelfSummonSearchRedirect: 1,
   handCostSelfSummon: 1,
+  overlayDetachSelfSummonSearch: 1,
 } satisfies Record<IgnitionCostSpecialSummonKind, number>;
 
 export type IgnitionCostSpecialSummonKind =
   | "dragonRulerDiscardDeckSummonCannotAttack"
   | "graveCostSelfSummonSearchRedirect"
-  | "handCostSelfSummon";
+  | "handCostSelfSummon"
+  | "overlayDetachSelfSummonSearch";
 
 export function realScriptIgnitionCostSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -60,6 +62,26 @@ export function realScriptIgnitionCostSpecialSummonFixtureSnippets(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-goblin-biker-dugg-overlay-summon-search.test.ts",
+      kind: "overlayDetachSelfSummonSearch",
+      required: [
+        "Duel.CheckRemoveOverlayCard(tp,1,1,1,REASON_EFFECT)",
+        "Duel.RemoveOverlayCard(tp,1,1,1,1,REASON_EFFECT)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        'eventName: "detachedMaterial"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'summonType: "special"',
+        'eventName: "sentToHand"',
+      ],
+    },
+    {
       file: "test/lua-real-script-malicevorous-fork-cost-self-summon.test.ts",
       kind: "handCostSelfSummon",
       required: [
@@ -86,5 +108,5 @@ export function countIgnitionCostSpecialSummonKinds(
   return files.reduce<Record<IgnitionCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0 });
+  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, overlayDetachSelfSummonSearch: 0 });
 }
