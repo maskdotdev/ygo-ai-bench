@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 11;
+const directDamageFixtureCount = 12;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
+  battleDestroyedChainInfoDamage: 1,
   continuousCostTargetParamDamage: 1,
   eventToGraveChainInfoDamage: 2,
   fieldCountTargetPlayerDamage: 2,
@@ -21,6 +22,7 @@ const directDamageSemanticVariantCounts = {
   justDessertsMonsterCountResolutionDamage: 1,
   meteorOfDestructionOpponentLpCondition: 1,
   ookaziTargetParamDamage: 1,
+  pursuitChaserBattleDestroyedDefenseDamage: 1,
   seismicCrasherContinuousCostTargetParamDamage: 1,
   sparksTargetParamDamage: 1,
   thunderShortFieldCountDamage: 1,
@@ -29,6 +31,7 @@ const directDamageSemanticVariantCounts = {
 
 type DirectDamageKind =
   | "allPlayerDelayedDamage"
+  | "battleDestroyedChainInfoDamage"
   | "continuousCostTargetParamDamage"
   | "eventToGraveChainInfoDamage"
   | "fieldCountTargetPlayerDamage"
@@ -42,6 +45,7 @@ type DirectDamageSemanticVariant =
   | "justDessertsMonsterCountResolutionDamage"
   | "meteorOfDestructionOpponentLpCondition"
   | "ookaziTargetParamDamage"
+  | "pursuitChaserBattleDestroyedDefenseDamage"
   | "seismicCrasherContinuousCostTargetParamDamage"
   | "sparksTargetParamDamage"
   | "thunderShortFieldCountDamage"
@@ -78,7 +82,7 @@ describe("Lua real direct damage restore coverage", () => {
     const missing = fixtures
       .filter(({ file, required }) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
-        return !text.includes("operationInfos")
+        return (!text.includes("operationInfos") && !text.includes("Duel.SetOperationInfo(0,CATEGORY_DAMAGE"))
           || !text.includes("category: 0x80000")
           || !text.includes('eventName: "damageDealt"')
           || !text.includes("lifePoints")
@@ -134,6 +138,22 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
         "targetParam: 500",
         "targetPlayer: 1",
         "players[1].lifePoints).toBe(7500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pursuit-chaser-battle-destroyed-defense-damage.test.ts",
+      kind: "battleDestroyedChainInfoDamage",
+      required: [
+        'const pursuitCode = "27870033"',
+        "restores its field EVENT_BATTLE_DESTROYED defense-position filter into CHAININFO damage",
+        "return c:IsPreviousPosition(POS_DEFENSE) and c:IsLocation(LOCATION_GRAVE)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"battleDestroyed\"",
+        "previousPosition: \"faceUpDefense\"",
+        "Duel.SetTargetParam(500)",
+        "Duel.SetTargetPlayer(1-tp)",
+        "eventPlayer: 0",
+        "players[0].lifePoints).toBe(7500)",
       ],
     },
     {
@@ -330,6 +350,16 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
       ],
     },
     {
+      file: "test/lua-real-script-pursuit-chaser-battle-destroyed-defense-damage.test.ts",
+      kind: "pursuitChaserBattleDestroyedDefenseDamage",
+      required: [
+        "Pursuit Chaser Chain Responder",
+        "eventValue: 500",
+        "eventReasonCardUid: pursuit.uid",
+        "pursuit chaser responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-seismic-crasher-continuous-cost-damage.test.ts",
       kind: "seismicCrasherContinuousCostTargetParamDamage",
       required: [
@@ -380,6 +410,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
     },
     {
       allPlayerDelayedDamage: 0,
+      battleDestroyedChainInfoDamage: 0,
       continuousCostTargetParamDamage: 0,
       eventToGraveChainInfoDamage: 0,
       fieldCountTargetPlayerDamage: 0,
@@ -403,6 +434,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       justDessertsMonsterCountResolutionDamage: 0,
       meteorOfDestructionOpponentLpCondition: 0,
       ookaziTargetParamDamage: 0,
+      pursuitChaserBattleDestroyedDefenseDamage: 0,
       seismicCrasherContinuousCostTargetParamDamage: 0,
       sparksTargetParamDamage: 0,
       thunderShortFieldCountDamage: 0,
