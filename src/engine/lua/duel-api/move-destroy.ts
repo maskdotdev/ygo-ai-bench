@@ -5,6 +5,7 @@ import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { didMove, movementSnapshot } from "#lua/duel-api/move-card-state.js";
 import { readCardOrGroupUids, readMoveReason, readOptionalPlayer, readSingleDestination } from "#lua/duel-api/move-readers.js";
+import { uniqueUids } from "#lua/group-uid-utils.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEventName, DuelLocation, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -41,7 +42,7 @@ function destroyCardOrGroup(session: DuelSession, L: unknown, hostState: LuaDest
   const moved: string[] = [];
   helpers.beginMoveStep(session, hostState);
   const triggerStart = session.state.pendingTriggers.length;
-  for (const uid of readCardOrGroupUids(L, 1)) {
+  for (const uid of uniqueUids(readCardOrGroupUids(L, 1))) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card || luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     if (completeNegatedSummonDestroy(session, card, hostState, helpers, reason ?? duelReason.destroy, reasonPlayer)) {

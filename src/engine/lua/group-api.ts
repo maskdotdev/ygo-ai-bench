@@ -466,9 +466,10 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
 }
 
 export function pushGroupTable(L: unknown, uids: string[]): void {
+  const groupUids = uniqueUids(uids);
   lua.lua_newtable(L);
   lua.lua_newtable(L);
-  for (const [index, uid] of uids.entries()) {
+  for (const [index, uid] of groupUids.entries()) {
     lua.lua_pushliteral(L, uid);
     lua.lua_rawseti(L, -2, index + 1);
   }

@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 14;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 13;
+const FREE_CHAIN_FIXTURE_COUNT = 15;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 14;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 14;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 15;
 const freeChainKindCounts = {
   banishRemoval: 1,
   graveyardRevive: 1,
-  multiTargetDestroy: 2,
+  multiTargetDestroy: 3,
   positionChange: 2,
   selectUnselectTargets: 1,
   singleDestroy: 3,
@@ -32,6 +32,7 @@ const freeChainSemanticVariantCounts = {
   phoenixWingDiscardToDeck: 1,
   raigekiBreakDiscardDestroy: 1,
   recurringNightmareChainInfoToHand: 1,
+  spellShatteringArrowDestroyedCountDamage: 1,
   twinTwistersDiscardDestroy: 1,
   windstormGroupPositionSwitch: 1,
 } satisfies Record<FreeChainSemanticVariant, number>;
@@ -59,6 +60,7 @@ type FreeChainSemanticVariant =
   | "phoenixWingDiscardToDeck"
   | "raigekiBreakDiscardDestroy"
   | "recurringNightmareChainInfoToHand"
+  | "spellShatteringArrowDestroyedCountDamage"
   | "twinTwistersDiscardDestroy"
   | "windstormGroupPositionSwitch";
 
@@ -187,6 +189,7 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-monster-reborn-free-chain.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-recurring-nightmare-grave-to-hand.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-spell-shattering-arrow-group-destroy-damage.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-windstorm-etaqua-group-position.test.ts"));
 }
 
@@ -239,6 +242,10 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
     {
       file: "lua-real-script-recurring-nightmare-grave-to-hand.test.ts",
       kind: "toHand",
+    },
+    {
+      file: "lua-real-script-spell-shattering-arrow-group-destroy-damage.test.ts",
+      kind: "multiTargetDestroy",
     },
     {
       file: "lua-real-script-twin-twisters-discard-cost.test.ts",
@@ -370,6 +377,19 @@ function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: Free
       ],
     },
     {
+      file: "lua-real-script-spell-shattering-arrow-group-destroy-damage.test.ts",
+      kind: "spellShatteringArrowDestroyedCountDamage",
+      required: [
+        "restores its opponent face-up Spell group destruction and destroyed-count damage",
+        "const spellShatteringArrowCode = \"93260132\"",
+        "Duel.GetMatchingGroup(s.filter,tp,0,LOCATION_ONFIELD,nil)",
+        "Duel.Damage(1-tp,ct*500,REASON_EFFECT)",
+        "{ category: 0x80000, targetUids: [], count: 0, player: 1, parameter: 1000 }",
+        "players[1].lifePoints).toBe(7000)",
+        "eventName: \"damageDealt\"",
+      ],
+    },
+    {
       file: "lua-real-script-twin-twisters-discard-cost.test.ts",
       kind: "twinTwistersDiscardDestroy",
       required: [
@@ -432,6 +452,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       phoenixWingDiscardToDeck: 0,
       raigekiBreakDiscardDestroy: 0,
       recurringNightmareChainInfoToHand: 0,
+      spellShatteringArrowDestroyedCountDamage: 0,
       twinTwistersDiscardDestroy: 0,
       windstormGroupPositionSwitch: 0,
     },
