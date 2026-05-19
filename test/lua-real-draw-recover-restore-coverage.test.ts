@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 12;
+const DRAW_RECOVER_FIXTURE_COUNT = 13;
 const drawRecoverKindCounts = {
   costBanishDraw: 2,
   costDiscardDraw: 1,
   drawRecoverOrDamage: 2,
   drawTrigger: 3,
+  handToDeckDraw: 1,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
   recoverTrigger: 1,
@@ -20,6 +21,7 @@ const drawRecoverSemanticVariantCounts = {
   darkBribeNegateDestroyDraw: 1,
   darkseaFloatDestroyedToGraveDraw: 1,
   geminiSparkReleaseDestroyDraw: 1,
+  morayGreedHandToDeckDraw: 1,
   naturiaRagweedOpponentDrawTrigger: 1,
   potDesiresFaceDownDeckCostDraw: 1,
   potExtravaganceRandomExtraCostDrawLock: 1,
@@ -30,13 +32,14 @@ const drawRecoverSemanticVariantCounts = {
   xyzGiftOverlayDetachDraw: 1,
 } satisfies Record<DrawRecoverSemanticVariant, number>;
 
-type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDamage" | "drawTrigger" | "negateThenDraw" | "overlayDetachDraw" | "recoverTrigger" | "releaseDestroyDraw";
+type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDamage" | "drawTrigger" | "handToDeckDraw" | "negateThenDraw" | "overlayDetachDraw" | "recoverTrigger" | "releaseDestroyDraw";
 
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
   | "darkBribeNegateDestroyDraw"
   | "darkseaFloatDestroyedToGraveDraw"
   | "geminiSparkReleaseDestroyDraw"
+  | "morayGreedHandToDeckDraw"
   | "naturiaRagweedOpponentDrawTrigger"
   | "potDesiresFaceDownDeckCostDraw"
   | "potExtravaganceRandomExtraCostDrawLock"
@@ -149,6 +152,20 @@ function drawRecoverFixtureFiles(): Array<{
         'location: "graveyard"',
         'location: "hand", controller: 0',
         "gemini spark responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-moray-greed-hand-to-deck-draw.test.ts",
+      kind: "handToDeckDraw",
+      required: [
+        'eventName: "cardsDrawn"',
+        'eventName: "sentToDeck"',
+        'eventName: "confirmed"',
+        "category: 0x10",
+        "category: 0x10000",
+        "Duel.ConfirmCards(1-p,sg)",
+        "Duel.SendtoDeck(sg,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "Duel.Draw(p,3,REASON_EFFECT)",
       ],
     },
     {
@@ -270,6 +287,7 @@ function countDrawRecoverKinds(fixtures: Array<{ kind: DrawRecoverKind }>): Reco
       costDiscardDraw: 0,
       drawRecoverOrDamage: 0,
       drawTrigger: 0,
+      handToDeckDraw: 0,
       negateThenDraw: 0,
       overlayDetachDraw: 0,
       recoverTrigger: 0,
@@ -331,6 +349,18 @@ function drawRecoverSemanticVariants(): Array<{
         "eventName: \"destroyed\"",
         "eventName: \"cardsDrawn\"",
         "gemini spark responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-moray-greed-hand-to-deck-draw.test.ts",
+      kind: "morayGreedHandToDeckDraw",
+      required: [
+        'const morayCode = "22123627"',
+        "restores confirmed WATER hand returns into shuffled Deck placement and a three-card draw",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,nil,2,tp,LOCATION_HAND)",
+        "Duel.ConfirmCards(1-p,sg)",
+        "Duel.BreakEffect()",
+        "eventName: \"cardsDrawn\"",
       ],
     },
     {
@@ -447,6 +477,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       darkBribeNegateDestroyDraw: 0,
       darkseaFloatDestroyedToGraveDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
+      morayGreedHandToDeckDraw: 0,
       naturiaRagweedOpponentDrawTrigger: 0,
       potDesiresFaceDownDeckCostDraw: 0,
       potExtravaganceRandomExtraCostDrawLock: 0,
