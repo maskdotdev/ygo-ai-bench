@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 15;
+const DRAW_RECOVER_FIXTURE_COUNT = 16;
 const drawRecoverKindCounts = {
   costBanishDraw: 2,
   costDiscardDraw: 1,
   drawRecoverOrDamage: 2,
-  drawTrigger: 5,
+  drawTrigger: 6,
   handToDeckDraw: 1,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
@@ -18,6 +18,7 @@ const drawRecoverKindCounts = {
 } satisfies Record<DrawRecoverKind, number>;
 const drawRecoverSemanticVariantCounts = {
   badReactionDrawThenDamage: 1,
+  cardSafeReturnGraveSpecialDraw: 1,
   darkBribeNegateDestroyDraw: 1,
   blizzedBattleDestroyedDraw: 1,
   darkseaFloatDestroyedToGraveDraw: 1,
@@ -38,6 +39,7 @@ type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDama
 
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
+  | "cardSafeReturnGraveSpecialDraw"
   | "darkBribeNegateDestroyDraw"
   | "blizzedBattleDestroyedDraw"
   | "darkseaFloatDestroyedToGraveDraw"
@@ -197,6 +199,22 @@ function drawRecoverFixtureFiles(): Array<{
         "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
         "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
         "opponentMandatory",
+      ],
+    },
+    {
+      file: "test/lua-real-script-card-safe-return-grave-special-draw.test.ts",
+      kind: "drawTrigger",
+      required: [
+        'eventName: "specialSummoned"',
+        'eventName: "cardsDrawn"',
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(1)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "targetPlayer: 0",
+        "targetParam: 1",
+        "operationInfos",
+        "card of safe return responder resolved",
       ],
     },
     {
@@ -419,6 +437,19 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-card-safe-return-grave-special-draw.test.ts",
+      kind: "cardSafeReturnGraveSpecialDraw",
+      required: [
+        'const safeReturnCode = "57953380"',
+        "restores its field Special Summon trigger into CHAININFO-targeted controller draw",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "c:IsPreviousLocation(LOCATION_GRAVE) and c:IsPreviousControler(tp)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"specialSummoned\"",
+        "eventName: \"cardsDrawn\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
       kind: "naturiaRagweedOpponentDrawTrigger",
       required: [
@@ -530,6 +561,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
     {
       badReactionDrawThenDamage: 0,
       blizzedBattleDestroyedDraw: 0,
+      cardSafeReturnGraveSpecialDraw: 0,
       darkBribeNegateDestroyDraw: 0,
       darkseaFloatDestroyedToGraveDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
