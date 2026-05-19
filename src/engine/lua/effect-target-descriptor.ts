@@ -306,6 +306,11 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (originalSetcodeValue !== undefined && Number.isSafeInteger(originalSetcodeValue) && originalSetcodeValue > 0) return `target:original-setcode:${originalSetcodeValue}`;
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(L, index, snippet, card);
   if (setcodeOrCodeType !== undefined) return setcodeOrCodeType;
+  const currentSetcode = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(?:\\{\\s*)?(${numericOrIdentifierListPattern})(?:\\s*\\})?\\s*\\)(?!\\s+(?:and|or)\\b)`));
+  const currentSetcodes = currentSetcode?.[1] ? luaNumberListValue(L, index, currentSetcode[1]) : undefined;
+  if (currentSetcodes !== undefined && currentSetcodes.length > 1 && currentSetcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0)) return `target:setcode-any:${currentSetcodes.join(",")}`;
+  const currentSetcodeValue = currentSetcodes?.[0];
+  if (currentSetcodeValue !== undefined && Number.isSafeInteger(currentSetcodeValue) && currentSetcodeValue > 0) return `target:setcode:${currentSetcodeValue}`;
   const notCodeStatus = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
   const notCodeStatusCode = notCodeStatus?.[1] ? luaNumberExpressionValue(L, index, notCodeStatus[1]) : undefined;
   const notCodeStatusStatus = notCodeStatus?.[2] ? luaNumberExpressionValue(L, index, notCodeStatus[2]) : undefined;

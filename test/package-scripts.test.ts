@@ -5,8 +5,8 @@ describe("package scripts", () => {
   it("runs the Lua parity scanner in the default check gate", () => {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
 
-    expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing --min-used-apis 898 --min-implemented-apis 1223 --min-upstream-constants 1777 --min-local-constants 1818");
-    expect(pkg.scripts?.["scan:lua-local-parity"]).toBe("node tools/scan-lua-api-usage.mjs --scripts local-card-scripts --fail-on-missing --min-used-apis 0 --min-implemented-apis 1223");
+    expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing --min-used-apis 898 --min-implemented-apis 1224 --min-upstream-constants 1777 --min-local-constants 1818");
+    expect(pkg.scripts?.["scan:lua-local-parity"]).toBe("node tools/scan-lua-api-usage.mjs --scripts local-card-scripts --fail-on-missing --min-used-apis 0 --min-implemented-apis 1224");
     expect(pkg.scripts?.["scan:lua-chain-limits"]).toContain("tools/scan-lua-chain-limit-patterns.mjs");
     expect(pkg.scripts?.["scan:lua-prompts"]).toContain("tools/scan-lua-prompt-patterns.mjs");
     expect(pkg.scripts?.["scan:lua-clean-restore"]).toContain("tools/scan-lua-clean-restore.mjs");

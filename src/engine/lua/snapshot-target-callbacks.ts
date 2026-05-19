@@ -8,6 +8,8 @@ import { specialSummonTypeIsAnyTargetDescriptor, specialSummonTypeIsTargetDescri
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
+const luaSetcodeTargetDescriptorPrefix = "target:setcode:";
+const luaFaceupSetcodeTargetDescriptorPrefix = "target:faceup-setcode:";
 const luaTypeTargetDescriptorPrefix = "target:type:";
 const luaFaceupTypeTargetDescriptorPrefix = "target:faceup-type:";
 
@@ -62,6 +64,10 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (originalSetcode !== undefined && Number.isSafeInteger(originalSetcode) && originalSetcode > 0) return { targetCardPredicate: (_ctx, card) => cardSetcodes(card).some((setcode) => isSetcodeMatch(originalSetcode, setcode)) };
   const originalSetcodeAny = originalSetcodeAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (originalSetcodeAny !== undefined) return { targetCardPredicate: (_ctx, card) => originalSetcodeAny.some((blocked) => cardSetcodes(card).some((setcode) => isSetcodeMatch(blocked, setcode))) };
+  const setcode = setcodeTargetDescriptor(effect.luaTargetDescriptor);
+  if (setcode !== undefined) return { targetCardPredicate: (ctx, card) => currentCardMatchesSetcode(card, ctx.duel, setcode) && (!effect.luaTargetDescriptor?.startsWith(luaFaceupSetcodeTargetDescriptorPrefix) || card.faceUp) };
+  const setcodeAny = setcodeAnyTargetDescriptor(effect.luaTargetDescriptor);
+  if (setcodeAny !== undefined) return { targetCardPredicate: (ctx, card) => setcodeAny.some((candidate) => currentCardMatchesSetcode(card, ctx.duel, candidate)) };
   if (effect.luaTargetDescriptor === "target:same-code-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
   const pendulumSummonNotSetcode = pendulumSummonNotSetcodeDescriptor(effect.luaTargetDescriptor);
   if (pendulumSummonNotSetcode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && !pendulumSummonNotSetcode.some((setcode) => currentCardMatchesSetcode(card, ctx.duel, setcode)) };
@@ -425,4 +431,17 @@ export function typeTargetDescriptor(descriptor: string | undefined): number | u
   if (!descriptor?.startsWith(prefix)) return undefined;
   const type = Number(descriptor.slice(prefix.length));
   return Number.isSafeInteger(type) && type > 0 ? type : undefined;
+}
+
+export function setcodeTargetDescriptor(descriptor: string | undefined): number | undefined {
+  const prefix = descriptor?.startsWith(luaFaceupSetcodeTargetDescriptorPrefix) ? luaFaceupSetcodeTargetDescriptorPrefix : luaSetcodeTargetDescriptorPrefix;
+  if (!descriptor?.startsWith(prefix)) return undefined;
+  const setcode = Number(descriptor.slice(prefix.length));
+  return Number.isSafeInteger(setcode) && setcode > 0 ? setcode : undefined;
+}
+
+function setcodeAnyTargetDescriptor(descriptor: string | undefined): number[] | undefined {
+  if (!descriptor?.startsWith("target:setcode-any:")) return undefined;
+  const setcodes = descriptor.slice("target:setcode-any:".length).split(",").map(Number);
+  return setcodes.length > 0 && setcodes.every((setcode) => Number.isSafeInteger(setcode) && setcode > 0) ? setcodes : undefined;
 }

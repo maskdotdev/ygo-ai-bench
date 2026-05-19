@@ -4,15 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonActivityFixtureCount = 4;
+const summonActivityFixtureCount = 5;
 const summonActivityKindCounts = {
-  archetypeExtraNormalSummon: 1,
+  archetypeExtraNormalSummon: 2,
   genericExtraNormalSummon: 1,
   specialSummonOath: 1,
   spiritExtraNormalSummon: 1,
 } satisfies Record<SummonActivityKind, number>;
 const summonActivitySemanticVariantCounts = {
   constellarLeonisExtraConstellarNormalSummon: 1,
+  constellarPolluxSummonSuccessFlaggedExtraConstellarNormalSummon: 1,
   doubleSummonSecondNormalSummonGrant: 1,
   nikitamaAdditionalSpiritNormalSummon: 1,
   thunderSeaHorseTemporarySpecialSummonOath: 1,
@@ -25,6 +26,7 @@ type SummonActivityKind =
   | "spiritExtraNormalSummon";
 type SummonActivitySemanticVariant =
   | "constellarLeonisExtraConstellarNormalSummon"
+  | "constellarPolluxSummonSuccessFlaggedExtraConstellarNormalSummon"
   | "doubleSummonSecondNormalSummonGrant"
   | "nikitamaAdditionalSpiritNormalSummon"
   | "thunderSeaHorseTemporarySpecialSummonOath";
@@ -104,6 +106,18 @@ function summonActivityFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-constellar-pollux-extra-summon-flag.test.ts",
+      kind: "archetypeExtraNormalSummon",
+      required: [
+        "summon-success Constellar-only extra Normal Summon",
+        "if Duel.GetFlagEffect(tp,id)~=0 then return end",
+        "e1:SetTarget(aux.TargetBoolFunction(Card.IsSetCard,SET_CONSTELLAR))",
+        "Duel.RegisterFlagEffect(tp,id,RESET_PHASE|PHASE_END,0,1)",
+        "pollux extra flag 1",
+        "activityCounts[0].normalSummon).toBe(2)",
+      ],
+    },
+    {
       file: "test/lua-real-script-double-summon-count-limit.test.ts",
       kind: "genericExtraNormalSummon",
       required: [
@@ -177,6 +191,16 @@ function summonActivitySemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-constellar-pollux-extra-summon-flag.test.ts",
+      kind: "constellarPolluxSummonSuccessFlaggedExtraConstellarNormalSummon",
+      required: [
+        'const polluxCode = "78364470"',
+        "restores its summon-success Constellar-only extra Normal Summon and once-per-turn flag",
+        "action.uid === offArchetype.uid)).toBeUndefined()",
+        "pollux extra flag 1",
+      ],
+    },
+    {
       file: "test/lua-real-script-double-summon-count-limit.test.ts",
       kind: "doubleSummonSecondNormalSummonGrant",
       required: [
@@ -220,6 +244,7 @@ function countSummonActivitySemanticVariants(
     },
     {
       constellarLeonisExtraConstellarNormalSummon: 0,
+      constellarPolluxSummonSuccessFlaggedExtraConstellarNormalSummon: 0,
       doubleSummonSecondNormalSummonGrant: 0,
       nikitamaAdditionalSpiritNormalSummon: 0,
       thunderSeaHorseTemporarySpecialSummonOath: 0,

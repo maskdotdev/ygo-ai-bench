@@ -29,7 +29,7 @@ import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type
 import { specialSummonTypeIsCostDescriptor, specialSummonTypeNotCostDescriptor } from "#lua/effect-cost-descriptor.js";
 import { luaValueDescriptorStatValue } from "#lua/effect-value-descriptor-callbacks.js";
 import { locationMatchesCardMask, positionMaskFromPosition } from "#lua/api-utils.js"; import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
-import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
+import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, setcodeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
 import type { ApplyDuelResponseResult, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 const luaEffectEquipLimit = 76;
@@ -790,7 +790,7 @@ function isKnownSetcodeTypeExtraSummonRestriction(effect: SerializedDuelEffect):
   );
 }
 
-function isKnownExtraSummonCountEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 29 && effect.targetRange !== undefined && (effect.luaTargetDescriptor === undefined || typeTargetDescriptor(effect.luaTargetDescriptor) !== undefined); }
+function isKnownExtraSummonCountEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 29 && effect.targetRange !== undefined && (effect.luaTargetDescriptor === undefined || typeTargetDescriptor(effect.luaTargetDescriptor) !== undefined || setcodeTargetDescriptor(effect.luaTargetDescriptor) !== undefined); }
 
 function isKnownSetSummonCountLimitEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 28 && effect.value !== undefined && effect.targetRange !== undefined && effect.reset !== undefined; }
 
