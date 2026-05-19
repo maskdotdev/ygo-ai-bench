@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 18;
+const protectionReplacementFixtureCount = 19;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
@@ -17,7 +17,7 @@ const protectionReplacementKindCounts = {
   equipDestroySubstitute: 1,
   handGrantedIndestructible: 1,
   linkedTargetProtection: 1,
-  persistentDestroyReplace: 2,
+  persistentDestroyReplace: 3,
   positionConditionProtection: 1,
   temporaryBattleProtection: 1,
 } satisfies Record<ProtectionReplacementKind, number>;
@@ -39,6 +39,7 @@ const protectionReplacementSemanticVariantCounts = {
   riderStormWindsEquipDestroySubstitute: 1,
   runickSlumberCountLimitedProtection: 1,
   safeZoneLinkedTargetProtection: 1,
+  sixSamuraiKamonDestroyReplace: 1,
   wabokuTemporaryBattleProtection: 1,
 } satisfies Record<ProtectionReplacementSemanticVariant, number>;
 
@@ -132,10 +133,24 @@ type ProtectionReplacementSemanticVariant =
   | "riderStormWindsEquipDestroySubstitute"
   | "runickSlumberCountLimitedProtection"
   | "safeZoneLinkedTargetProtection"
+  | "sixSamuraiKamonDestroyReplace"
   | "wabokuTemporaryBattleProtection";
 
 function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; kind: ProtectionReplacementKind; required: string[] }> {
   return ([
+    {
+      file: "lua-real-script-kamon-destroy-replace-attack-lock.test.ts",
+      kind: "persistentDestroyReplace",
+      required: [
+        "restores targeted Spell/Trap destruction, attack-announcement oath cost, and Six Samurai destroy replacement",
+        "e2:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,c,96)",
+        "Duel.SelectMatchingCard(tp,s.repfilter,tp,LOCATION_MZONE,0,1,1,c,e)",
+        "Duel.Destroy(tc,REASON_EFFECT|REASON_REPLACE)",
+        'api: "SelectEffectYesNo"',
+        'action: "destroyReplace"',
+      ],
+    },
     {
       file: "lua-real-script-return-dragon-lords-revive-replace.test.ts",
       kind: "persistentDestroyReplace",
@@ -440,6 +455,17 @@ function protectionReplacementSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-kamon-destroy-replace-attack-lock.test.ts",
+      kind: "sixSamuraiKamonDestroyReplace",
+      requiredSnippets: [
+        'const kamonCode = "90397998"',
+        "restores targeted Spell/Trap destruction, attack-announcement oath cost, and Six Samurai destroy replacement",
+        "Duel.SelectMatchingCard(tp,s.repfilter,tp,LOCATION_MZONE,0,1,1,c,e)",
+        "reason: duelReason.effect | duelReason.destroy | duelReason.replace",
+        'action: "destroyReplace"',
+      ],
+    },
+    {
       file: "test/lua-real-script-nightmare-magician-battle-control.test.ts",
       kind: "nightmareMagicianBattleTargetControlProtection",
       requiredSnippets: [
@@ -566,6 +592,7 @@ function countProtectionReplacementSemanticVariants(
       riderStormWindsEquipDestroySubstitute: 0,
       runickSlumberCountLimitedProtection: 0,
       safeZoneLinkedTargetProtection: 0,
+      sixSamuraiKamonDestroyReplace: 0,
       wabokuTemporaryBattleProtection: 0,
     },
   );

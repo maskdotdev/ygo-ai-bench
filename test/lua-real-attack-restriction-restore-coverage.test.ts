@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackRestrictionFixtureCount = 7;
+const attackRestrictionFixtureCount = 8;
 const attackRestrictionKindCounts = {
   counterGate: 1,
   levelGate: 1,
   maintenanceCostGate: 1,
   remainFieldTurnCounter: 1,
-  selfCostLock: 1,
+  selfCostLock: 2,
   targetCountGate: 1,
   temporaryPlayerLock: 1,
 } satisfies Record<AttackRestrictionKind, number>;
@@ -19,6 +19,7 @@ const attackRestrictionSemanticVariantCounts = {
   gravityBindPersistentLevelAttackGate: 1,
   heliosphereTargetCountAttackAnnounceGate: 1,
   messengerPeaceMaintenanceAtkThresholdGate: 1,
+  sixSamuraiKamonCostCannotAttackAnnounce: 1,
   swordsRevealingLightRemainFieldTurnLock: 1,
   threateningRoarTemporaryPlayerAttackLock: 1,
   venomSnakeCostCannotAttackAnnounce: 1,
@@ -37,6 +38,7 @@ type AttackRestrictionSemanticVariant =
   | "gravityBindPersistentLevelAttackGate"
   | "heliosphereTargetCountAttackAnnounceGate"
   | "messengerPeaceMaintenanceAtkThresholdGate"
+  | "sixSamuraiKamonCostCannotAttackAnnounce"
   | "swordsRevealingLightRemainFieldTurnLock"
   | "threateningRoarTemporaryPlayerAttackLock"
   | "venomSnakeCostCannotAttackAnnounce";
@@ -148,6 +150,16 @@ function realScriptAttackRestrictionFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-kamon-destroy-replace-attack-lock.test.ts",
+      kind: "selfCostLock",
+      required: [
+        "EFFECT_CANNOT_ATTACK_ANNOUNCE",
+        "code === 86",
+        "declareAttack",
+        "attackerUid === kamon.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-venom-snake-counter-custom-destroy.test.ts",
       kind: "selfCostLock",
       required: [
@@ -224,6 +236,16 @@ function realScriptAttackRestrictionSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-kamon-destroy-replace-attack-lock.test.ts",
+      kind: "sixSamuraiKamonCostCannotAttackAnnounce",
+      required: [
+        'const kamonCode = "90397998"',
+        "restores targeted Spell/Trap destruction, attack-announcement oath cost, and Six Samurai destroy replacement",
+        "EFFECT_CANNOT_ATTACK_ANNOUNCE",
+        "attackerUid === kamon.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-messenger-peace-maintenance-attack-lock.test.ts",
       kind: "messengerPeaceMaintenanceAtkThresholdGate",
       required: [
@@ -286,6 +308,7 @@ function countAttackRestrictionSemanticVariants(
       gravityBindPersistentLevelAttackGate: 0,
       heliosphereTargetCountAttackAnnounceGate: 0,
       messengerPeaceMaintenanceAtkThresholdGate: 0,
+      sixSamuraiKamonCostCannotAttackAnnounce: 0,
       swordsRevealingLightRemainFieldTurnLock: 0,
       threateningRoarTemporaryPlayerAttackLock: 0,
       venomSnakeCostCannotAttackAnnounce: 0,
