@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 16;
+const statFixtureCount = 17;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
   damageStepBattleTargetAttributeAttackBoost: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 2,
+  fieldMatchingFaceupRaceCountStat: 1,
   fieldAttributeAttackUpdate: 2,
   fieldRaceAttackDefenseUpdate: 1,
   fieldSetcodeAttackUpdate: 1,
@@ -31,6 +32,7 @@ const statSemanticVariantCounts = {
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mukaMukaHandCountAttackDefense: 1,
   neoFlamvellSabreGraveCountThresholdStat: 1,
+  perfectMachineKingMatchingFaceupRaceCountStat: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   rushRecklesslyTargetedDamageStepAttackUpdate: 1,
   sangaPreDamageFinalAttackZero: 1,
@@ -39,7 +41,7 @@ const statSemanticVariantCounts = {
   steamroidDamageStepBattleSwingStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
   | "bladeflyFieldAttributeAttackUpdate"
@@ -51,6 +53,7 @@ type StatSemanticVariant =
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mukaMukaHandCountAttackDefense"
   | "neoFlamvellSabreGraveCountThresholdStat"
+  | "perfectMachineKingMatchingFaceupRaceCountStat"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
@@ -234,6 +237,17 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-perfect-machine-king-race-count-stat.test.ts",
+      kind: "fieldMatchingFaceupRaceCountStat",
+      required: [
+        "Duel.GetMatchingGroupCount(aux.FaceupFilter(Card.IsRace,RACE_MACHINE),c:GetControler(),LOCATION_MZONE,LOCATION_MZONE,e:GetHandler())*500",
+        "stat:matching-faceup-race-count:controller:4:4:exclude-handler:32:x500",
+        "currentAttack(perfectKing, session.state)).toBe((perfectKing.data.attack ?? 0) + 1000)",
+        "currentAttack(perfectKing, session.state)).toBe((perfectKing.data.attack ?? 0) + 1500)",
+        "battleDamage).toEqual({ 0: 0, 1: 700 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-shrink-set-base-attack.test.ts",
       kind: "setBaseAttack",
       required: [
@@ -318,6 +332,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       damageStepBattleTargetAttributeAttackBoost: 0,
       fieldAttributeAttackUpdate: 0,
       fieldGroupCountStat: 0,
+      fieldMatchingFaceupRaceCountStat: 0,
       fieldLevelOrRankAttackDefenseUpdate: 0,
       fieldRaceAttackDefenseUpdate: 0,
       fieldSetcodeAttackUpdate: 0,
@@ -434,6 +449,16 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-perfect-machine-king-race-count-stat.test.ts",
+      kind: "perfectMachineKingMatchingFaceupRaceCountStat",
+      required: [
+        'const perfectKingCode = "18891691"',
+        "restores face-up Machine GetMatchingGroupCount ATK callback with handler exclusion into battle damage",
+        "stat:matching-faceup-race-count:controller:4:4:exclude-handler:32:x500",
+        "players[1].lifePoints).toBe(7300)",
+      ],
+    },
+    {
       file: "test/lua-real-script-mystic-plasma-zone-attribute-stat.test.ts",
       kind: "mysticPlasmaZoneTargetBoolFunctionAttributeStat",
       required: [
@@ -518,6 +543,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mukaMukaHandCountAttackDefense: 0,
       neoFlamvellSabreGraveCountThresholdStat: 0,
+      perfectMachineKingMatchingFaceupRaceCountStat: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,

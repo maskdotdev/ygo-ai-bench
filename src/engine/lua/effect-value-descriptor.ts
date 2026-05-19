@@ -60,6 +60,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (fieldGroupCountStat) return fieldGroupCountStat;
   const fieldGroupCountThresholdStat = fieldGroupCountThresholdStatDescriptor(L, index, snippet, params);
   if (fieldGroupCountThresholdStat) return fieldGroupCountThresholdStat;
+  const matchingFaceupRaceCountStat = matchingFaceupRaceCountStatDescriptor(L, index, snippet, params);
+  if (matchingFaceupRaceCountStat) return matchingFaceupRaceCountStat;
   const battleAttackerTargetSwingStat = battleAttackerTargetSwingStatDescriptor(snippet, params);
   if (battleAttackerTargetSwingStat) return battleAttackerTargetSwingStat;
   const damageCalculationAttackBoost = damageCalculationAttackerLowerAttackBoostDescriptor(snippet, params);
@@ -157,6 +159,26 @@ function fieldGroupCountThresholdStatDescriptor(L: unknown, index: number, snipp
   const elseValue = Number(match[8]);
   if ([selfMask, opponentMask, lte, lteValue, gte, gteValue, elseValue].some((value) => value === undefined || !Number.isSafeInteger(value))) return undefined;
   return `stat:controller-field-group-count-threshold:${selfMask}:${opponentMask}:lte${lte}:${lteValue}:gte${gte}:${gteValue}:else${elseValue}`;
+}
+
+function matchingFaceupRaceCountStatDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
+  const effectParam = params?.[0];
+  const cardParam = params?.[1];
+  if (!effectParam || !cardParam) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const card = escapeRegExp(cardParam);
+  const match = new RegExp(
+    String.raw`\breturn\s+Duel\s*\.\s*GetMatchingGroupCount\s*\(\s*aux\s*\.\s*FaceupFilter\s*\(\s*Card\s*\.\s*IsRace\s*,\s*(${numericMaskExpressionPattern})\s*\)\s*,\s*(${card}\s*:\s*GetControler\s*\(\s*\)|[01])\s*,\s*(${numericMaskExpressionPattern})\s*,\s*(${numericMaskExpressionPattern})\s*,\s*(nil|${effect}\s*:\s*GetHandler\s*\(\s*\))\s*\)\s*\*\s*\(?\s*(-?\d+)\s*\)?`,
+  ).exec(snippet);
+  if (!match?.[1] || !match[2] || !match[3] || !match[4] || !match[5] || !match[6]) return undefined;
+  const race = luaNumberMaskExpressionValue(L, index, match[1]);
+  const playerScope = /GetControler/.test(match[2]) ? "controller" : `player${match[2]}`;
+  const selfMask = luaNumberMaskExpressionValue(L, index, match[3]);
+  const opponentMask = luaNumberMaskExpressionValue(L, index, match[4]);
+  const exclude = match[5] === "nil" ? "include-handler" : "exclude-handler";
+  const multiplier = Number(match[6]);
+  if ([race, selfMask, opponentMask, multiplier].some((value) => value === undefined || !Number.isSafeInteger(value))) return undefined;
+  return `stat:matching-faceup-race-count:${playerScope}:${selfMask}:${opponentMask}:${exclude}:${race}:x${multiplier}`;
 }
 
 function levelOrRankStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {

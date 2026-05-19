@@ -1,5 +1,5 @@
 import { currentBattleStep } from "#duel/battle-window-state.js";
-import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentDefense, currentLevel, currentRank } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentDefense, currentLevel, currentRace, currentRank } from "#duel/card-stats.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { locationsFromMask } from "#lua/api-utils.js";
 
@@ -45,6 +45,30 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
           (candidate.controller === opponent && opponentLocations.includes(candidate.location))
         ).length;
         return count <= lte! ? lteValue! : count >= gte! ? gteValue! : elseValue!;
+      };
+    }
+  }
+  const matchingFaceupRaceCount = luaValueDescriptor?.match(/^stat:matching-faceup-race-count:(controller|player[01]):(\d+):(\d+):(include-handler|exclude-handler):(\d+):x(-?\d+)$/);
+  if (matchingFaceupRaceCount?.[1] && matchingFaceupRaceCount[2] && matchingFaceupRaceCount[3] && matchingFaceupRaceCount[4] && matchingFaceupRaceCount[5] && matchingFaceupRaceCount[6]) {
+    const playerScope = matchingFaceupRaceCount[1];
+    const selfMask = Number(matchingFaceupRaceCount[2]);
+    const opponentMask = Number(matchingFaceupRaceCount[3]);
+    const excludeHandler = matchingFaceupRaceCount[4] === "exclude-handler";
+    const race = Number(matchingFaceupRaceCount[5]);
+    const multiplier = Number(matchingFaceupRaceCount[6]);
+    if ([selfMask, opponentMask, race, multiplier].every(Number.isSafeInteger)) {
+      const selfLocations = locationsFromMask(selfMask);
+      const opponentLocations = locationsFromMask(opponentMask);
+      return (ctx, card) => {
+        const player = playerScope === "controller" ? card.controller : Number(playerScope.slice("player".length));
+        const opponent = player === 0 ? 1 : 0;
+        return ctx.duel.cards.filter((candidate) => {
+          if (!candidate.faceUp) return false;
+          if (excludeHandler && candidate.uid === ctx.source.uid) return false;
+          if ((currentRace(candidate, ctx.duel) & race) === 0) return false;
+          return (candidate.controller === player && selfLocations.includes(candidate.location)) ||
+            (candidate.controller === opponent && opponentLocations.includes(candidate.location));
+        }).length * multiplier;
       };
     }
   }
