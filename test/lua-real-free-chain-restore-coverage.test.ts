@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 15;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 14;
+const FREE_CHAIN_FIXTURE_COUNT = 16;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 15;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 15;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 16;
 const freeChainKindCounts = {
   banishRemoval: 1,
   graveyardRevive: 1,
-  multiTargetDestroy: 3,
+  multiTargetDestroy: 4,
   positionChange: 2,
   selectUnselectTargets: 1,
   singleDestroy: 3,
@@ -34,6 +34,7 @@ const freeChainSemanticVariantCounts = {
   recurringNightmareChainInfoToHand: 1,
   spellShatteringArrowDestroyedCountDamage: 1,
   twinTwistersDiscardDestroy: 1,
+  twoProngedChainInfoDestroy: 1,
   windstormGroupPositionSwitch: 1,
 } satisfies Record<FreeChainSemanticVariant, number>;
 
@@ -62,6 +63,7 @@ type FreeChainSemanticVariant =
   | "recurringNightmareChainInfoToHand"
   | "spellShatteringArrowDestroyedCountDamage"
   | "twinTwistersDiscardDestroy"
+  | "twoProngedChainInfoDestroy"
   | "windstormGroupPositionSwitch";
 
 describe("Lua real free-chain restore coverage", () => {
@@ -190,6 +192,7 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-recurring-nightmare-grave-to-hand.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-spell-shattering-arrow-group-destroy-damage.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-two-pronged-attack-chaininfo-destroy.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-windstorm-etaqua-group-position.test.ts"));
 }
 
@@ -249,6 +252,10 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
     },
     {
       file: "lua-real-script-twin-twisters-discard-cost.test.ts",
+      kind: "multiTargetDestroy",
+    },
+    {
+      file: "lua-real-script-two-pronged-attack-chaininfo-destroy.test.ts",
       kind: "multiTargetDestroy",
     },
     {
@@ -399,6 +406,19 @@ function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: Free
       ],
     },
     {
+      file: "lua-real-script-two-pronged-attack-chaininfo-destroy.test.ts",
+      kind: "twoProngedChainInfoDestroy",
+      required: [
+        "restores its three targeted monsters from CHAININFO_TARGET_CARDS and destroys only related targets",
+        "const twoProngedCode = \"83887306\"",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "g:Filter(Card.IsRelateToEffect,nil,e)",
+        "if #tg==3 then",
+        "{ category: 0x1, targetUids, count: 3, player: 0, parameter: 0 }",
+        "eventUids: targetUids",
+      ],
+    },
+    {
       file: "lua-real-script-windstorm-etaqua-group-position.test.ts",
       kind: "windstormGroupPositionSwitch",
       required: [
@@ -454,6 +474,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       recurringNightmareChainInfoToHand: 0,
       spellShatteringArrowDestroyedCountDamage: 0,
       twinTwistersDiscardDestroy: 0,
+      twoProngedChainInfoDestroy: 0,
       windstormGroupPositionSwitch: 0,
     },
   );
