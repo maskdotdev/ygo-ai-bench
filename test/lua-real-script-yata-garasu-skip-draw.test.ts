@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasYataScript)("Lua real script Yata-Gar
             "sequence": 0,
           },
           "eventReason": 32,
+          "eventReasonCardUid": "p0-deck-3078576-0",
           "eventReasonPlayer": 0,
           "eventTriggerTiming": "when",
           "eventValue": 200,

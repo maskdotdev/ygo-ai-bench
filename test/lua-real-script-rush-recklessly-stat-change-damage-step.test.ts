@@ -138,6 +138,7 @@ describe.skipIf(!hasUpstreamScripts || !hasRushScript)("Lua real script Rush Rec
         eventCardUid: attacker.uid,
         eventPlayer: 1,
         eventReason: 32,
+        eventReasonCardUid: attacker.uid,
         eventReasonPlayer: 0,
         eventValue: 200,
         eventPreviousState: {

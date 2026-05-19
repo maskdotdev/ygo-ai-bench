@@ -114,6 +114,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ba
         eventPlayer: 1,
         eventValue: 500,
         eventReason: duelReason.battle,
+        eventReasonCardUid: attacker!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,

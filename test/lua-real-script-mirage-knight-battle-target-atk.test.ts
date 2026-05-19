@@ -91,6 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
         eventPlayer: 1,
         eventValue: 2800,
         eventReason: duelReason.battle,
+        eventReasonCardUid: mirage!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,

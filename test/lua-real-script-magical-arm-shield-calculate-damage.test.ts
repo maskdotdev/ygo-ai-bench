@@ -143,6 +143,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
           faceUp: true,
         },
         eventReason: duelReason.battle,
+        eventReasonCardUid: attacker!.uid,
         eventReasonPlayer: 1,
       },
       {

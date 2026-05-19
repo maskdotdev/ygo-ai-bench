@@ -107,6 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
         eventPlayer: 1,
         eventValue: 700,
         eventReason: duelReason.effect,
+        eventReasonCardUid: vassal!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,

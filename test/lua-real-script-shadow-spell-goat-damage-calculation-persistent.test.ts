@@ -185,6 +185,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGoatShadowSpellScript)("Lua real scri
             "sequence": 1,
           },
           "eventReason": 32,
+          "eventReasonCardUid": "p1-deck-613922-0",
           "eventReasonPlayer": 1,
           "eventValue": 500,
         },

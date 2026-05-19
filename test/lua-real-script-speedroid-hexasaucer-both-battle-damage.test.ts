@@ -145,6 +145,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
         eventPlayer: 0,
         eventValue: 950,
         eventReason: duelReason.battle,
+        eventReasonCardUid: hexasaucer!.uid,
         eventReasonPlayer: 1,
         eventPreviousState: {
           controller: 1,
@@ -168,6 +169,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sp
         eventPlayer: 1,
         eventValue: 950,
         eventReason: duelReason.battle,
+        eventReasonCardUid: attacker!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,

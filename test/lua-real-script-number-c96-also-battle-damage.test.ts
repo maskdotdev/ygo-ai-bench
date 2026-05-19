@@ -104,6 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
         eventPlayer: 0,
         eventValue: 800,
         eventReason: duelReason.battle,
+        eventReasonCardUid: target!.uid,
         eventReasonPlayer: 1,
         eventPreviousState: {
           controller: 1,
@@ -127,6 +128,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
         eventPlayer: 1,
         eventValue: 800,
         eventReason: duelReason.battle,
+        eventReasonCardUid: darkStorm!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,

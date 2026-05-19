@@ -115,6 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFushiScript)("Lua real script Fushi N
             "sequence": 0,
           },
           "eventReason": 32,
+          "eventReasonCardUid": "p0-deck-38538445-0",
           "eventReasonPlayer": 0,
           "eventTriggerTiming": "when",
           "eventValue": 700,
@@ -160,6 +161,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFushiScript)("Lua real script Fushi N
           "sequence": 0,
         },
         "eventReason": 32,
+        "eventReasonCardUid": "p0-deck-38538445-0",
         "eventReasonPlayer": 0,
         "eventTriggerTiming": "when",
         "eventValue": 700,
@@ -202,6 +204,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFushiScript)("Lua real script Fushi N
         eventPlayer: 1,
         eventValue: 700,
         eventReason: duelReason.battle,
+        eventReasonCardUid: fushi!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,

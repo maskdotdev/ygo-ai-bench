@@ -18,6 +18,8 @@ export interface BattleEventPayload {
   eventValue?: number;
   eventReason?: number;
   eventReasonPlayer?: PlayerId;
+  eventReasonCardUid?: string;
+  eventReasonEffectId?: number;
 }
 
 export interface BattleContinuationHandlers {
@@ -47,11 +49,11 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
   };
   const applyBattleDamage = (damage: PreparedBattleDamage): number => {
     if (damage.amount > 0) {
-      handlers.collectEvent(state, "beforeBattleDamage", damage.damageSource, { eventPlayer: damage.damagePlayer, eventValue: damage.amount, eventReason: damage.reason, eventReasonPlayer: damage.reasonPlayer });
+      handlers.collectEvent(state, "beforeBattleDamage", damage.damageSource, battleDamageEventPayload(damage, damage.amount));
     }
     const applied = applyBattleDamageOnly(damage);
     if (!duelHasEnded(state) && applied > 0) {
-      handlers.collectEvent(state, "battleDamageDealt", damage.damageSource, { eventPlayer: damage.damagePlayer, eventValue: applied, eventReason: damage.reason, eventReasonPlayer: damage.reasonPlayer });
+      handlers.collectEvent(state, "battleDamageDealt", damage.damageSource, battleDamageEventPayload(damage, applied));
     }
     return applied;
   };
@@ -60,10 +62,10 @@ export function resolvePendingBattle(state: DuelState, handlers: BattleContinuat
   };
   const collectBattleDamageEvents = (damage: PreparedBattleDamage, dealtAmount: number): void => {
     if (damage.amount > 0) {
-      handlers.collectEvent(state, "beforeBattleDamage", damage.damageSource, { eventPlayer: damage.damagePlayer, eventValue: damage.amount, eventReason: damage.reason, eventReasonPlayer: damage.reasonPlayer });
+      handlers.collectEvent(state, "beforeBattleDamage", damage.damageSource, battleDamageEventPayload(damage, damage.amount));
     }
     if (dealtAmount > 0) {
-      handlers.collectEvent(state, "battleDamageDealt", damage.damageSource, { eventPlayer: damage.damagePlayer, eventValue: dealtAmount, eventReason: damage.reason, eventReasonPlayer: damage.reasonPlayer });
+      handlers.collectEvent(state, "battleDamageDealt", damage.damageSource, battleDamageEventPayload(damage, dealtAmount));
     }
   };
   const changeAdditionalBattleDamage = (damagePlayer: PlayerId, amount: number, battleCards: DuelCardInstance[] | undefined): void => {
@@ -158,6 +160,16 @@ function describeBattleDamage(state: DuelState, handlers: BattleContinuationHand
     damageSource: battleDamageSourceCard(reasonPlayer, battleCards),
     reason,
     reasonPlayer,
+  };
+}
+
+function battleDamageEventPayload(damage: PreparedBattleDamage, amount: number): BattleEventPayload {
+  return {
+    eventPlayer: damage.damagePlayer,
+    eventValue: amount,
+    eventReason: damage.reason,
+    eventReasonPlayer: damage.reasonPlayer,
+    ...(damage.damageSource === undefined ? {} : { eventReasonCardUid: damage.damageSource.uid }),
   };
 }
 

@@ -885,6 +885,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
             sequence: 2,
           },
           eventReason: duelReason.battle,
+          eventReasonCardUid: fairy!.uid,
           eventReasonPlayer: 0,
           eventTriggerTiming: "when",
           eventValue: 1000,

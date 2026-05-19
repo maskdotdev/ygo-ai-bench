@@ -103,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHinoScript)("Lua real script Hino-Kag
             "sequence": 0,
           },
           "eventReason": 32,
+          "eventReasonCardUid": "p0-deck-75745607-0",
           "eventReasonPlayer": 0,
           "eventTriggerTiming": "when",
           "eventValue": 1800,

@@ -170,6 +170,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasSmokeMosquito
         eventPlayer: 0,
         eventValue: 750,
         eventReason: duelReason.battle,
+        eventReasonCardUid: attacker.uid,
         eventReasonPlayer: 1,
       },
     ]);

@@ -153,6 +153,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMiniaturizeScript)("Lua real script M
             "sequence": 1,
           },
           "eventReason": 32,
+          "eventReasonCardUid": "p1-deck-613912-0",
           "eventReasonPlayer": 1,
           "eventValue": 100,
         },

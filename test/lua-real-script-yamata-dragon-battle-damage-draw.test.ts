@@ -113,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasYamataScript)("Lua real script Yamata
             "sequence": 0,
           },
           "eventReason": 32,
+          "eventReasonCardUid": "p0-deck-76862289-0",
           "eventReasonPlayer": 0,
           "eventTriggerTiming": "when",
           "eventValue": 1600,

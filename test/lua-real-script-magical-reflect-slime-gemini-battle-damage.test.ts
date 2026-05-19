@@ -140,6 +140,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         eventPlayer: 1,
         eventValue: 1300,
         eventReason: duelReason.battle,
+        eventReasonCardUid: slime!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,

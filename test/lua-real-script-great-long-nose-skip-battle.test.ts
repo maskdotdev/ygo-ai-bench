@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGreatLongNoseScript)("Lua real script
         eventPlayer: 1,
         eventValue: 900,
         eventReason: duelReason.battle,
+        eventReasonCardUid: nose!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,
@@ -114,6 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGreatLongNoseScript)("Lua real script
             "sequence": 0,
           },
           "eventReason": 32,
+          "eventReasonCardUid": "p0-deck-2356994-0",
           "eventReasonPlayer": 0,
           "eventTriggerTiming": "when",
           "eventValue": 900,
