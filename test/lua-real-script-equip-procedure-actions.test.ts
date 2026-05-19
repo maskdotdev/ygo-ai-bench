@@ -225,6 +225,90 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
       expectLuaEquipStatProbe(restoredEquipState, dragonCode, dragonTreasureCode, "equip stat probe 1435851/1500/1200");
     });
 
+    it("restores Burning Spear attribute-filtered equip target and mixed attack/defense stats", () => {
+      const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+      const burningSpearCode = "18937875";
+      const fireTargetCode = "601053";
+      const waterDecoyCode = "601054";
+      const responderCode = "601055";
+      const cards = [
+        ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === burningSpearCode),
+        { code: fireTargetCode, name: "Burning Spear FIRE Target", kind: "monster" as const, typeFlags: 0x1, attribute: 0x4, level: 4, attack: 1000, defense: 1000 },
+        { code: waterDecoyCode, name: "Burning Spear WATER Decoy", kind: "monster" as const, typeFlags: 0x1, attribute: 0x2, level: 4, attack: 1200, defense: 1200 },
+        { code: responderCode, name: "Burning Spear Chain Responder", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1000, defense: 1000 },
+      ];
+      const reader = createCardReader(cards);
+      const session = createDuel({ seed: 311, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+      loadDecks(session, { 0: { main: [burningSpearCode, waterDecoyCode, fireTargetCode] }, 1: { main: [responderCode] } });
+      startDuel(session);
+
+      const burningSpear = session.state.cards.find((card) => card.code === burningSpearCode);
+      const fireTarget = session.state.cards.find((card) => card.code === fireTargetCode);
+      const waterDecoy = session.state.cards.find((card) => card.code === waterDecoyCode);
+      const responder = session.state.cards.find((card) => card.code === responderCode);
+      expect(burningSpear).toBeDefined();
+      expect(fireTarget).toBeDefined();
+      expect(waterDecoy).toBeDefined();
+      expect(responder).toBeDefined();
+      moveDuelCard(session.state, burningSpear!.uid, "hand", 0);
+      moveDuelCard(session.state, waterDecoy!.uid, "monsterZone", 0).position = "faceUpAttack";
+      moveDuelCard(session.state, fireTarget!.uid, "monsterZone", 0).position = "faceUpAttack";
+      moveDuelCard(session.state, responder!.uid, "hand", 1);
+      session.state.phase = "main1";
+      session.state.waitingFor = 0;
+
+      const source = {
+        readScript(name: string) {
+          if (name === `c${responderCode}.lua`) return chainResponderScript();
+          return workspace.readScript(name);
+        },
+      };
+      const host = createLuaScriptHost(session, workspace);
+      expect(host.loadCardScript(Number(burningSpearCode), source).ok).toBe(true);
+      expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
+      expect(host.registerInitialEffects()).toBe(2);
+
+      const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+      expectCleanRestore(restoredEquipWindow);
+      expectRestoredLegalActions(restoredEquipWindow, restoredEquipWindow.session.state.waitingFor ?? restoredEquipWindow.session.state.turnPlayer);
+      const equipAction = getLuaRestoreLegalActions(restoredEquipWindow, 0).find((action) => action.type === "activateEffect" && action.uid === burningSpear!.uid);
+      expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+      applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+
+      expect(restoredEquipWindow.session.state.chain).toHaveLength(1);
+      expect(restoredEquipWindow.session.state.chain[0]?.targetUids).toEqual([fireTarget!.uid]);
+      expect(restoredEquipWindow.session.state.chain[0]?.targetUids).not.toContain(waterDecoy!.uid);
+
+      const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), source, reader);
+      expectCleanRestore(restoredChain);
+      expectRestoredLegalActions(restoredChain, restoredChain.session.state.waitingFor ?? restoredChain.session.state.turnPlayer);
+      expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+      resolveRestoredChain(restoredChain);
+
+      expect(restoredChain.host.messages).not.toContain("equip responder resolved");
+      expect(restoredChain.session.state.cards.find((card) => card.uid === burningSpear!.uid)).toMatchObject({
+        location: "spellTrapZone",
+        equippedToUid: fireTarget!.uid,
+        faceUp: true,
+      });
+      const restoredWaterDecoy = restoredChain.session.state.cards.find((card) => card.uid === waterDecoy!.uid);
+      expect(restoredWaterDecoy).toMatchObject({ location: "monsterZone" });
+      expect(restoredWaterDecoy?.equippedToUid).toBeUndefined();
+
+      const restoredEquipState = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
+      expectCleanRestore(restoredEquipState);
+      expectRestoredLegalActions(restoredEquipState, restoredEquipState.session.state.waitingFor ?? restoredEquipState.session.state.turnPlayer);
+      const restoredAttackBoost = restoredEquipState.session.state.effects.find((effect) => effect.sourceUid === burningSpear!.uid && effect.code === 100);
+      const restoredDefenseLoss = restoredEquipState.session.state.effects.find((effect) => effect.sourceUid === burningSpear!.uid && effect.code === 104);
+      expect(restoredAttackBoost?.event).toBe("continuous");
+      expect(restoredAttackBoost?.range).toEqual(["spellTrapZone"]);
+      expect(restoredAttackBoost?.value).toBe(400);
+      expect(restoredDefenseLoss?.event).toBe("continuous");
+      expect(restoredDefenseLoss?.range).toEqual(["spellTrapZone"]);
+      expect(restoredDefenseLoss?.value).toBe(-200);
+      expectLuaEquipStatProbe(restoredEquipState, fireTargetCode, burningSpearCode, "equip stat probe 18937875/1400/800");
+    });
+
     it("restores Black Pendant equip stat and sent-from-field damage trigger", () => {
       const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
       const pendantCode = "65169794";
