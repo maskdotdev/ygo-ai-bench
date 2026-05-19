@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 9;
+const directDamageFixtureCount = 10;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   continuousCostTargetParamDamage: 1,
   eventToGraveChainInfoDamage: 1,
-  fieldCountTargetPlayerDamage: 1,
+  fieldCountTargetPlayerDamage: 2,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
@@ -17,6 +17,7 @@ const directDamageSemanticVariantCounts = {
   backfireEventToGraveChainInfoDamage: 1,
   finalFlameTargetParamDamage: 1,
   hinotamaTargetParamDamage: 1,
+  justDessertsMonsterCountResolutionDamage: 1,
   meteorOfDestructionOpponentLpCondition: 1,
   ookaziTargetParamDamage: 1,
   seismicCrasherContinuousCostTargetParamDamage: 1,
@@ -36,6 +37,7 @@ type DirectDamageSemanticVariant =
   | "backfireEventToGraveChainInfoDamage"
   | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
+  | "justDessertsMonsterCountResolutionDamage"
   | "meteorOfDestructionOpponentLpCondition"
   | "ookaziTargetParamDamage"
   | "seismicCrasherContinuousCostTargetParamDamage"
@@ -190,6 +192,19 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
       ],
     },
     {
+      file: "test/lua-real-script-just-desserts-monster-count-damage.test.ts",
+      kind: "fieldCountTargetPlayerDamage",
+      required: [
+        'const justDessertsCode = "24068492"',
+        "restores Just Desserts' target-player monster-count damage and recalculates at resolution",
+        "Duel.IsExistingMatchingCard(aux.TRUE,tp,0,LOCATION_MZONE,1,nil)",
+        "Duel.GetFieldGroupCount(1-tp,LOCATION_MZONE,0)*500",
+        "targetParam: 1000",
+        "targetPlayer: 0",
+        "players[0].lifePoints).toBe(6500)",
+      ],
+    },
+    {
       file: "test/lua-real-script-seismic-crasher-continuous-cost-damage.test.ts",
       kind: "continuousCostTargetParamDamage",
       required: [
@@ -257,6 +272,16 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
         "eventValue: 1000",
         "eventReasonCardUid: meteor!.uid",
         "meteor responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-just-desserts-monster-count-damage.test.ts",
+      kind: "justDessertsMonsterCountResolutionDamage",
+      required: [
+        "Just Desserts Chain Summoner",
+        "eventValue: 1500",
+        "eventReasonCardUid: justDesserts.uid",
+        "just desserts responder summoned",
       ],
     },
     {
@@ -349,6 +374,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       backfireEventToGraveChainInfoDamage: 0,
       finalFlameTargetParamDamage: 0,
       hinotamaTargetParamDamage: 0,
+      justDessertsMonsterCountResolutionDamage: 0,
       meteorOfDestructionOpponentLpCondition: 0,
       ookaziTargetParamDamage: 0,
       seismicCrasherContinuousCostTargetParamDamage: 0,
