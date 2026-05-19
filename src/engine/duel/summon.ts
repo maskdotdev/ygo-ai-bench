@@ -256,7 +256,7 @@ export function synchroSummonDuelCard(
     const result = moveMaterial(material.uid, player, duelReason.material | duelReason.synchro);
     pushDuelLog(state, "synchroMaterial", player, material.name, `Used for ${card.name}`);
     collectSentToGraveyard(result, collectEvent);
-    collectEvent("usedAsMaterial", result.card);
+    collectEvent("usedAsMaterial", result.card, { eventReason: duelReason.synchro, eventReasonPlayer: player, eventReasonCardUid: card.uid });
   }
 
   collectEvent("specialSummoning", card);

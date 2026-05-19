@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const xyzMaterialGainFixtureCount = 1;
+const xyzMaterialGainFixtureCount = 2;
 const xyzMaterialGainKindCounts = {
+  synchroMaterialTargetAtkReduction: 1,
   xyzMaterialGrantsAttackAndType: 1,
 } satisfies Record<XyzMaterialGainKind, number>;
 
-type XyzMaterialGainKind = "xyzMaterialGrantsAttackAndType";
+type XyzMaterialGainKind = "synchroMaterialTargetAtkReduction" | "xyzMaterialGrantsAttackAndType";
 
 describe("Lua real Xyz material gain restore coverage", () => {
   it("requires Xyz material-gain fixtures to assert clean Lua registry restore and restored legal-action parity", () => {
@@ -53,6 +54,19 @@ describe("Lua real Xyz material gain restore coverage", () => {
 function xyzMaterialGainFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-quick-span-knight-synchro-material-atk.test.ts",
+      required: [
+        "Lua real script Quick-Span Knight Synchro material ATK target",
+        'const quickSpanCode = "11287364"',
+        "e1:SetCode(EVENT_BE_MATERIAL)",
+        "r==REASON_SYNCHRO",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "synchroSummonDuelCard(restoredOpen.session.state",
+        "currentAttack(restoredResolved.session.state.cards.find",
+      ],
+    },
+    {
       file: "test/lua-real-script-xyz-material-gained-attack-type.test.ts",
       required: [
         "Lua real script Xyz material gained attack and type",
@@ -68,6 +82,25 @@ function xyzMaterialGainFixtureFiles(): Array<{ file: string; required: string[]
 
 function xyzMaterialGainFixtures(): Array<{ file: string; kind: XyzMaterialGainKind; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-quick-span-knight-synchro-material-atk.test.ts",
+      kind: "synchroMaterialTargetAtkReduction",
+      required: [
+        "restores its Synchro material trigger, opponent target prompt, and ATK reduction",
+        "e1:SetCode(EVENT_BE_MATERIAL)",
+        "return e:GetHandler():IsLocation(LOCATION_GRAVE) and r==REASON_SYNCHRO",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
+        "e1:SetValue(-500)",
+        "eventBeMaterial = 1108",
+        "eventReason: duelReason.synchro",
+        "eventReasonCardUid: synchro.uid",
+        "currentAttack(restoredTrigger.session.state.cards.find",
+        "currentAttack(restoredResolved.session.state.cards.find",
+      ],
+    },
     {
       file: "test/lua-real-script-xyz-material-gained-attack-type.test.ts",
       kind: "xyzMaterialGrantsAttackAndType",
@@ -102,6 +135,7 @@ function countXyzMaterialGainKinds(fixtures: Array<{ kind: XyzMaterialGainKind }
       return counts;
     },
     {
+      synchroMaterialTargetAtkReduction: 0,
       xyzMaterialGrantsAttackAndType: 0,
     },
   );
