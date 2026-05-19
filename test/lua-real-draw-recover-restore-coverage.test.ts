@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 14;
+const DRAW_RECOVER_FIXTURE_COUNT = 15;
 const drawRecoverKindCounts = {
   costBanishDraw: 2,
   costDiscardDraw: 1,
   drawRecoverOrDamage: 2,
-  drawTrigger: 4,
+  drawTrigger: 5,
   handToDeckDraw: 1,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
@@ -19,6 +19,7 @@ const drawRecoverKindCounts = {
 const drawRecoverSemanticVariantCounts = {
   badReactionDrawThenDamage: 1,
   darkBribeNegateDestroyDraw: 1,
+  blizzedBattleDestroyedDraw: 1,
   darkseaFloatDestroyedToGraveDraw: 1,
   geminiSparkReleaseDestroyDraw: 1,
   morayGreedHandToDeckDraw: 1,
@@ -38,6 +39,7 @@ type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "drawRecoverOrDama
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
   | "darkBribeNegateDestroyDraw"
+  | "blizzedBattleDestroyedDraw"
   | "darkseaFloatDestroyedToGraveDraw"
   | "geminiSparkReleaseDestroyDraw"
   | "morayGreedHandToDeckDraw"
@@ -182,6 +184,19 @@ function drawRecoverFixtureFiles(): Array<{
         "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
         "operationInfos",
         "masked sorcerer responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-blizzed-battle-destroyed-draw.test.ts",
+      kind: "drawTrigger",
+      required: [
+        'eventName: "battleDestroyed"',
+        'eventName: "cardsDrawn"',
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(1)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "opponentMandatory",
       ],
     },
     {
@@ -392,6 +407,18 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-blizzed-battle-destroyed-draw.test.ts",
+      kind: "blizzedBattleDestroyedDraw",
+      required: [
+        'const blizzedCode = "60161788"',
+        "restores its battle-destroyed Graveyard condition into CHAININFO-targeted controller draw",
+        "e1:SetCode(EVENT_BATTLE_DESTROYED)",
+        "e:GetHandler():IsLocation(LOCATION_GRAVE) and e:GetHandler():IsReason(REASON_BATTLE)",
+        "eventName: \"battleDestroyed\"",
+        "eventName: \"cardsDrawn\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
       kind: "naturiaRagweedOpponentDrawTrigger",
       required: [
@@ -502,6 +529,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
     },
     {
       badReactionDrawThenDamage: 0,
+      blizzedBattleDestroyedDraw: 0,
       darkBribeNegateDestroyDraw: 0,
       darkseaFloatDestroyedToGraveDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
