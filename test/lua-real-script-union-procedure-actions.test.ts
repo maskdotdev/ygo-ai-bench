@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import {
   createDuel,
@@ -22,6 +23,83 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Union procedure actions", () => {
+  it("restores Z-Metal Tank union target filter and equip attack/defense boosts", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const zMetalTankCode = "64500000";
+    const xHeadCannonCode = "62651957";
+    const yDragonHeadCode = "65622692";
+    const decoyCode = "601030";
+    const cards = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => [zMetalTankCode, xHeadCannonCode, yDragonHeadCode].includes(card.code)),
+      { code: decoyCode, name: "Z-Metal Tank Decoy", kind: "monster" as const, typeFlags: 0x1, level: 4, attack: 1700, defense: 1100 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 298, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [zMetalTankCode, decoyCode, xHeadCannonCode, yDragonHeadCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const zMetalTank = session.state.cards.find((card) => card.code === zMetalTankCode);
+    const xHeadCannon = session.state.cards.find((card) => card.code === xHeadCannonCode);
+    const yDragonHead = session.state.cards.find((card) => card.code === yDragonHeadCode);
+    const decoy = session.state.cards.find((card) => card.code === decoyCode);
+    expect(zMetalTank).toBeDefined();
+    expect(xHeadCannon).toBeDefined();
+    expect(yDragonHead).toBeDefined();
+    expect(decoy).toBeDefined();
+    moveDuelCard(session.state, zMetalTank!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, decoy!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, xHeadCannon!.uid, "monsterZone", 0).position = "faceUpAttack";
+    moveDuelCard(session.state, yDragonHead!.uid, "monsterZone", 0).position = "faceUpAttack";
+    zMetalTank!.sequence = 0;
+    decoy!.sequence = 1;
+    xHeadCannon!.sequence = 2;
+    yDragonHead!.sequence = 3;
+    session.state.phase = "main1";
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(zMetalTankCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const restoredEquipWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expect(restoredEquipWindow.restoreComplete, restoredEquipWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredEquipWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredEquipWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredEquipWindow);
+    expect(getLuaRestoreLegalActions(restoredEquipWindow, 0)).toEqual(getDuelLegalActions(restoredEquipWindow.session, 0));
+    expect(getLuaRestoreLegalActionGroups(restoredEquipWindow, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredEquipWindow, 0));
+
+    const equipAction = findEffectAction(restoredEquipWindow.session, getLuaRestoreLegalActions(restoredEquipWindow, 0), zMetalTank!.uid, 1068);
+    expect(equipAction, JSON.stringify(getLuaRestoreLegalActions(restoredEquipWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredEquipWindow, equipAction!);
+    resolveRestoredChain(restoredEquipWindow);
+
+    expect(restoredEquipWindow.session.state.cards.find((card) => card.uid === zMetalTank!.uid)).toMatchObject({
+      location: "spellTrapZone",
+      equippedToUid: xHeadCannon!.uid,
+      faceUp: true,
+    });
+    expect(restoredEquipWindow.session.state.cards.find((card) => card.uid === decoy!.uid)).toMatchObject({ location: "monsterZone" });
+    expect(restoredEquipWindow.session.state.cards.find((card) => card.uid === yDragonHead!.uid)).toMatchObject({ location: "monsterZone" });
+
+    const restoredUnionState = restoreDuelWithLuaScripts(serializeDuel(restoredEquipWindow.session), workspace, reader);
+    expect(restoredUnionState.restoreComplete, restoredUnionState.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredUnionState.missingRegistryKeys).toEqual([]);
+    expect(restoredUnionState.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredUnionState);
+
+    const restoredXHeadCannon = restoredUnionState.session.state.cards.find((card) => card.uid === xHeadCannon!.uid);
+    const restoredDecoy = restoredUnionState.session.state.cards.find((card) => card.uid === decoy!.uid);
+    const restoredYDragonHead = restoredUnionState.session.state.cards.find((card) => card.uid === yDragonHead!.uid);
+    expect(currentAttack(restoredXHeadCannon, restoredUnionState.session.state)).toBe(2400);
+    expect(currentDefense(restoredXHeadCannon, restoredUnionState.session.state)).toBe(2100);
+    expect(currentAttack(restoredDecoy, restoredUnionState.session.state)).toBe(1700);
+    expect(currentDefense(restoredDecoy, restoredUnionState.session.state)).toBe(1100);
+    expect(currentAttack(restoredYDragonHead, restoredUnionState.session.state)).toBe(1500);
+    expect(currentDefense(restoredYDragonHead, restoredUnionState.session.state)).toBe(1600);
+    expectLuaUnionEquipStatProbe(restoredUnionState, xHeadCannonCode, zMetalTankCode, "union equip stat probe 64500000/2400/2100");
+  });
+
   it("restores Union Driver equip and summon-back procedure windows", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const unionDriverCode = "99249638";
@@ -690,6 +768,19 @@ function passRestoredBattleResponsesUntilTrigger(restored: ReturnType<typeof res
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restored, pass!);
   }
+}
+
+function expectLuaUnionEquipStatProbe(restored: ReturnType<typeof restoreDuelWithLuaScripts>, targetCode: string, equipCode: string, expected: string): void {
+  const probe = restored.host.loadScript(
+    `
+      local target=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${targetCode}),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      local equip=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,${equipCode}),0,LOCATION_SZONE,0,1,1,nil):GetFirst()
+      Debug.Message("union equip stat probe " .. equip:GetCode() .. "/" .. target:GetAttack() .. "/" .. target:GetDefense())
+    `,
+    "union-equip-stat-probe.lua",
+  );
+  expect(probe.ok, probe.error).toBe(true);
+  expect(restored.host.messages).toContain(expected);
 }
 
 function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
