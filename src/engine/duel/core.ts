@@ -94,6 +94,7 @@ import {
   isDrawPrevented,
   isCardDisabled,
   continuousEffectSourceIsActive,
+  currentHandLimit,
   isDeckDiscardPrevented,
   isDeckLossDefeatPrevented,
   isEffectActivationPrevented,
@@ -306,6 +307,7 @@ const responseHandlers: DuelResponseHandlers = {
   },
   endTurn(state, player) {
     endDuelTurn(state, player, {
+      applyHandLimit: (handLimitPlayer) => applyTurnPlayerHandLimit(state, handLimitPlayer),
       collectEvent: (eventName, eventCode) =>
         collectDuelTriggerEffects(state, eventName, undefined, {
           ...(eventCode === undefined ? {} : { eventCode }),
@@ -764,6 +766,15 @@ function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void
     effect.operation(ctx);
     markEffectUsed(state, effect);
   }
+}
+
+function applyTurnPlayerHandLimit(state: DuelState, player: PlayerId): void {
+  const limit = currentHandLimit(state, player, createContinuousEffectContext(state));
+  if (!Number.isFinite(limit)) return;
+  const hand = getCards(state, player, "hand").sort((a, b) => a.sequence - b.sequence);
+  const excess = hand.length - limit;
+  if (excess <= 0) return;
+  for (const card of hand.slice(-excess)) sendDuelCardToGraveyard(state, card.uid, player, duelReason.rule | duelReason.discard, player);
 }
 
 function getChainResponseActions(state: DuelState, player: PlayerId): DuelAction[] {

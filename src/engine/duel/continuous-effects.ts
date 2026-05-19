@@ -43,6 +43,8 @@ interface RedirectCandidate {
 export type MaterialUseKind = "fusion" | "synchro" | "xyz" | "link" | "ritual";
 
 const effectFlagSetAvailable = 0x100;
+const duelNoHandLimitFlag = 0x1000000;
+const defaultHandLimit = 6;
 
 export function continuousEffectSourceIsActive(effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
   if (source.location !== "monsterZone" && source.location !== "spellTrapZone") return true;
@@ -211,6 +213,23 @@ export function isDrawPrevented(state: DuelState, player: PlayerId, createContex
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }
   return false;
+}
+
+export function currentHandLimit(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): number {
+  if ((state.duelTypeFlags & duelNoHandLimitFlag) !== 0) return Number.POSITIVE_INFINITY;
+  const limits: number[] = [];
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 270) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    if (isCardDisabled(state, source, createContext)) continue;
+    const ctx = createContext(effect, source);
+    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    const value = effect.statValue?.(ctx, source) ?? effect.value;
+    if (value !== undefined && Number.isFinite(value)) limits.push(Math.max(0, Math.trunc(value)));
+  }
+  return limits.length === 0 ? defaultHandLimit : Math.min(...limits);
 }
 
 export function isHandDiscardPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory): boolean {

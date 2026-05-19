@@ -12,6 +12,7 @@ import type { DuelEventName, DuelPhase, DuelState, PlayerId } from "#duel/types.
 
 export interface DuelTurnFlowHandlers {
   collectEvent(eventName: DuelEventName, eventCode?: number): void;
+  applyHandLimit?(player: PlayerId): void;
   canDraw?(player: PlayerId): boolean;
   canLoseByDeck?(player: PlayerId): boolean;
   canEnterPhase?(phase: DuelPhase): boolean;
@@ -77,6 +78,7 @@ export function changeDuelPhase(state: DuelState, player: PlayerId, phase: DuelP
 export function endDuelTurn(state: DuelState, player: PlayerId, handlers: DuelTurnFlowHandlers): void {
   if (state.turnPlayer !== player) throw new Error("Only the turn player can end the turn");
   handlers.executePhaseEffects?.("end");
+  handlers.applyHandLimit?.(player);
   pruneResetEffectsAfterPhase(state, "end");
   pruneDuelFlagEffectsAfterPhase(state, "end");
   state.players[player].extraPendulumSummons = 0;

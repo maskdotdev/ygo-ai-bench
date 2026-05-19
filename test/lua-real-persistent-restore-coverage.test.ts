@@ -24,6 +24,7 @@ const persistentSemanticVariantCounts = {
   dimensionSphinxBattleStepDamageActivation: 1,
   dragonsBindBothPlayerSpecialSummonRestriction: 1,
   fiendishChainPersistentDisableCleanup: 1,
+  finiteCardsHandLimitDiscard: 1,
   gravityBindLevelAttackRestriction: 1,
   levelLimitAreaBLevelPositionSetting: 1,
   maskOfTheAccursedEquipLockStandbyDamage: 1,
@@ -58,6 +59,7 @@ type PersistentSemanticVariant =
   | "dimensionSphinxBattleStepDamageActivation"
   | "dragonsBindBothPlayerSpecialSummonRestriction"
   | "fiendishChainPersistentDisableCleanup"
+  | "finiteCardsHandLimitDiscard"
   | "gravityBindLevelAttackRestriction"
   | "levelLimitAreaBLevelPositionSetting"
   | "maskOfTheAccursedEquipLockStandbyDamage"
@@ -409,6 +411,19 @@ function persistentSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-finite-cards-hand-limit.test.ts",
+      kind: "finiteCardsHandLimitDiscard",
+      required: [
+        'const finiteCardsCode = "48310593"',
+        "restores EFFECT_HAND_LIMIT and discards excess hand cards at End Phase",
+        "code: 270",
+        "value: 3",
+        'action.type === "endTurn"',
+        "toHaveLength(3)",
+        "toHaveLength(2)",
+      ],
+    },
+    {
       file: "lua-real-script-gravity-bind-persistent-attack-lock.test.ts",
       kind: "gravityBindLevelAttackRestriction",
       required: [
@@ -623,6 +638,7 @@ function countPersistentSemanticVariants(
       dimensionSphinxBattleStepDamageActivation: 0,
       dragonsBindBothPlayerSpecialSummonRestriction: 0,
       fiendishChainPersistentDisableCleanup: 0,
+      finiteCardsHandLimitDiscard: 0,
       gravityBindLevelAttackRestriction: 0,
       levelLimitAreaBLevelPositionSetting: 0,
       maskOfTheAccursedEquipLockStandbyDamage: 0,
