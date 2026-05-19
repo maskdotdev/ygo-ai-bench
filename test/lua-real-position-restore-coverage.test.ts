@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const POSITION_FIXTURE_COUNT = 4;
+const POSITION_FIXTURE_COUNT = 5;
 const positionKindCounts = {
   banishCostGroupChange: 1,
+  battlePhaseSelfDefenseLock: 1,
   overlayTargetChange: 1,
   summonTriggerAttackPosition: 1,
   summonTriggerSet: 1,
@@ -14,14 +15,16 @@ const positionKindCounts = {
 const positionSemanticVariantCounts = {
   angineerDetachOverlayProtectedPositionChange: 1,
   gagagaEscapeBanishCostGroupPositionChange: 1,
+  goblinAttackForceBattlePhasePositionLock: 1,
   otohimeSummonTriggerAttackPosition: 1,
   tsukuyomiSpiritSummonFaceDownSet: 1,
 } satisfies Record<PositionSemanticVariant, number>;
 
-type PositionKind = "banishCostGroupChange" | "overlayTargetChange" | "summonTriggerAttackPosition" | "summonTriggerSet";
+type PositionKind = "banishCostGroupChange" | "battlePhaseSelfDefenseLock" | "overlayTargetChange" | "summonTriggerAttackPosition" | "summonTriggerSet";
 type PositionSemanticVariant =
   | "angineerDetachOverlayProtectedPositionChange"
   | "gagagaEscapeBanishCostGroupPositionChange"
+  | "goblinAttackForceBattlePhasePositionLock"
   | "otohimeSummonTriggerAttackPosition"
   | "tsukuyomiSpiritSummonFaceDownSet";
 
@@ -112,6 +115,19 @@ function positionFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-goblin-force-position-lock.test.ts",
+      kind: "battlePhaseSelfDefenseLock",
+      required: [
+        "Duel.ChangePosition(c,POS_FACEUP_DEFENSE)",
+        "EFFECT_CANNOT_CHANGE_POSITION",
+        "EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_COPY_INHERIT",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END,3)",
+        'eventName: "phaseBattle"',
+        'eventName: "positionChanged"',
+        "goblin force lock false/0",
+      ],
+    },
+    {
       file: "test/lua-real-script-otohime-position-overload.test.ts",
       kind: "summonTriggerAttackPosition",
       required: [
@@ -144,6 +160,7 @@ function countPositionKinds(fixtures: Array<{ kind: PositionKind }>): Record<Pos
     },
     {
       banishCostGroupChange: 0,
+      battlePhaseSelfDefenseLock: 0,
       overlayTargetChange: 0,
       summonTriggerAttackPosition: 0,
       summonTriggerSet: 0,
@@ -173,6 +190,15 @@ function positionSemanticVariants(): Array<{
         'const escapeCode = "9591819"',
         "restores Gagaga Escape and keeps IsCanChangePosition-locked Gagaga monsters unchanged",
         'eventName: "banished"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-goblin-force-position-lock.test.ts",
+      kind: "goblinAttackForceBattlePhasePositionLock",
+      required: [
+        'const goblinCode = "78658564"',
+        "restores its Battle Phase self-defense change and copied cannot-change-position lock",
+        "goblin force lock false/0",
       ],
     },
     {
@@ -211,6 +237,7 @@ function countPositionSemanticVariants(
     {
       angineerDetachOverlayProtectedPositionChange: 0,
       gagagaEscapeBanishCostGroupPositionChange: 0,
+      goblinAttackForceBattlePhasePositionLock: 0,
       otohimeSummonTriggerAttackPosition: 0,
       tsukuyomiSpiritSummonFaceDownSet: 0,
     },
