@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 7;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 6;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 8;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 7;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 1,
   graveBanishCostStatProcedure: 1,
   handOwnFaceupAttributeOpenZoneProcedure: 1,
+  handReleaseEquipTurnCounterProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
   handSendCostProcedure: 1,
@@ -20,6 +21,7 @@ const summonProcedureSemanticVariantCounts = {
   caligoClawCrowDarkMonsterOpenZoneProcedure: 1,
   familiarPossessedDeckTwoMaterialShufflePierceProcedure: 1,
   gigaraysGandoraTwoMonsterSendCostProcedure: 1,
+  greatMothCocoonEquipTurnCounterReleaseProcedure: 1,
   magnetDollBothFieldsGimmickOnlyHandProcedure: 1,
   megarockDragonGraveBanishStatProcedure: 1,
   pankratopsOpponentControlsMoreHandProcedure: 1,
@@ -30,6 +32,7 @@ type SummonProcedureKind =
   | "deckTwoMaterialShufflePierceProcedure"
   | "graveBanishCostStatProcedure"
   | "handOwnFaceupAttributeOpenZoneProcedure"
+  | "handReleaseEquipTurnCounterProcedure"
   | "handBothFieldsGimmickOnlyProcedure"
   | "handOpponentCountProcedure"
   | "handSendCostProcedure";
@@ -38,6 +41,7 @@ type SummonProcedureSemanticVariant =
   | "caligoClawCrowDarkMonsterOpenZoneProcedure"
   | "familiarPossessedDeckTwoMaterialShufflePierceProcedure"
   | "gigaraysGandoraTwoMonsterSendCostProcedure"
+  | "greatMothCocoonEquipTurnCounterReleaseProcedure"
   | "magnetDollBothFieldsGimmickOnlyHandProcedure"
   | "megarockDragonGraveBanishStatProcedure"
   | "pankratopsOpponentControlsMoreHandProcedure";
@@ -105,6 +109,26 @@ const summonProcedureFixtures = [
       "return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_DARK)",
       "expectRestoredActionSurfaces(restored, 0)",
       "applyLuaRestoreResponse(restored, procedure as DuelAction)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-great-moth-release-equip-special-summon-procedure.test.ts",
+    kind: "handReleaseEquipTurnCounterProcedure",
+    required: [
+      "Cocoon of Evolution release gated by an equipped Petit Moth turn counter",
+      'const greatMothCode = "14141448"',
+      'const petitMothCode = "40240595"',
+      'const cocoonCode = "58192742"',
+      "c:GetTurnCounter()>=4",
+      "c:GetEquipGroup():IsExists(s.eqfilter,1,nil)",
+      "Duel.CheckReleaseGroup(c:GetControler(),s.rfilter,1,false,1,true,c,c:GetControler(),nil,false,nil)",
+      "Duel.SelectReleaseGroup(tp,s.rfilter,1,1,false,true,true,c,nil,nil,false,nil)",
+      "Duel.Release(g,REASON_COST)",
+      "expectRestoredActionSurfaces(restored, 0)",
+      "applyLuaRestoreResponse(restored, procedure as DuelAction)",
+      'eventName: "released"',
       'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
     ],
@@ -226,6 +250,7 @@ function countSummonProcedureKinds(
       graveBanishCostStatProcedure: 0,
       deckTwoMaterialShufflePierceProcedure: 0,
       handOwnFaceupAttributeOpenZoneProcedure: 0,
+      handReleaseEquipTurnCounterProcedure: 0,
       handBothFieldsGimmickOnlyProcedure: 0,
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
@@ -279,6 +304,17 @@ function summonProcedureSemanticVariants(): Array<{
         'const gandoraCode = "58330108"',
         "restores its two-monster send-to-Graveyard hand Special Summon procedure cost",
         'eventName: "sentToGraveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-great-moth-release-equip-special-summon-procedure.test.ts",
+      kind: "greatMothCocoonEquipTurnCounterReleaseProcedure",
+      required: [
+        'const greatMothCode = "14141448"',
+        "Cocoon of Evolution release gated by an equipped Petit Moth turn counter",
+        "c:GetTurnCounter()>=4",
+        "c:GetEquipGroup():IsExists(s.eqfilter,1,nil)",
+        'eventName: "released"',
       ],
     },
     {
@@ -356,6 +392,15 @@ function eventRichSummonProcedureFixtures(): Array<{
               "eventReasonEffectId: 3",
             ]
           : []),
+        ...(kind === "handReleaseEquipTurnCounterProcedure"
+          ? [
+              'eventName: "released"',
+              "eventCode: 1017",
+              "eventReasonCardUid: greatMoth!.uid",
+              "eventReasonEffectId: 2",
+              "previousEquippedToUid: cocoon!.uid",
+            ]
+          : []),
       ],
     }));
 }
@@ -373,6 +418,7 @@ function countSummonProcedureSemanticVariants(
       caligoClawCrowDarkMonsterOpenZoneProcedure: 0,
       familiarPossessedDeckTwoMaterialShufflePierceProcedure: 0,
       gigaraysGandoraTwoMonsterSendCostProcedure: 0,
+      greatMothCocoonEquipTurnCounterReleaseProcedure: 0,
       magnetDollBothFieldsGimmickOnlyHandProcedure: 0,
       megarockDragonGraveBanishStatProcedure: 0,
       pankratopsOpponentControlsMoreHandProcedure: 0,

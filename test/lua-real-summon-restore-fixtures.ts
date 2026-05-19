@@ -14,8 +14,8 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 239;
-export const summonProcedureFixtureCount = 27;
+export const realScriptSummonFixtureCount = 240;
+export const summonProcedureFixtureCount = 28;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
 export const pendulumHelperFixtureCount = 16;
@@ -31,13 +31,13 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 18,
   pendulum: 20,
   ritual: 22,
-  summon: 101,
+  summon: 102,
   synchro: 16,
   xyz: 15,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
-  genericSpecialSummonProcedure: 15,
+  genericSpecialSummonProcedure: 16,
   pendulumProcedure: 3,
   ritualProcedure: 3,
   tributeProcedure: 2,
@@ -419,6 +419,7 @@ export function realScriptSummonProcedureFixtureFiles(): string[] {
       "lua-real-script-geira-guile-special-summon-procedure.test.ts",
       "lua-real-script-gimmick-puppet-magnet-doll-special-summon-procedure.test.ts",
       "lua-real-script-gigarays-gandora-special-summon-procedure.test.ts",
+      "lua-real-script-great-moth-release-equip-special-summon-procedure.test.ts",
       "lua-real-script-guardian-eatos-special-summon-procedure.test.ts",
       "lua-real-script-leo-wizard-opponent-summon-procedure.test.ts",
       "lua-real-script-malefic-stardust-special-summon-procedure.test.ts",
