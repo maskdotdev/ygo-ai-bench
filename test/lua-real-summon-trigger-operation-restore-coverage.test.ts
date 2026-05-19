@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 16;
+const summonTriggerOperationFixtureCount = 17;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
@@ -15,6 +15,7 @@ const summonTriggerOperationKindCounts = {
   summonStepReviveDisable: 1,
   summonToGraveDeckSummon: 1,
   summonToDeck: 1,
+  summonTargetDestroy: 1,
   summonToHandBounce: 2,
 } satisfies Record<SummonTriggerOperationKind, number>;
 const summonTriggerOperationSemanticVariantCounts = {
@@ -34,6 +35,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   shinobaronessShadePeacockSearchSelfSummon: 1,
   shinobirdCraneDrawOnSpiritSummon: 1,
   yakshaBackrowReturnOnSummon: 1,
+  swarmScarabsFlipSummonTargetDestroy: 1,
 } satisfies Record<SummonTriggerOperationSemanticVariant, number>;
 
 type SummonTriggerOperationKind =
@@ -46,6 +48,7 @@ type SummonTriggerOperationKind =
   | "summonStepReviveDisable"
   | "summonToGraveDeckSummon"
   | "summonToDeck"
+  | "summonTargetDestroy"
   | "summonToHandBounce";
 type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
@@ -63,6 +66,7 @@ type SummonTriggerOperationSemanticVariant =
   | "senjuClonedSummonRitualMonsterSearch"
   | "shinobaronessShadePeacockSearchSelfSummon"
   | "shinobirdCraneDrawOnSpiritSummon"
+  | "swarmScarabsFlipSummonTargetDestroy"
   | "yakshaBackrowReturnOnSummon";
 
 describe("Lua real summon-trigger operation restore coverage", () => {
@@ -355,6 +359,26 @@ function summonTriggerOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-swarm-scarabs-turn-set-flip-destroy.test.ts",
+      kind: "summonTargetDestroy",
+      required: [
+        "restores its ignition turn-set flag and flip-summon mandatory targeted destruction",
+        'const swarmCode = "15383415"',
+        "e1:SetCategory(CATEGORY_POSITION+CATEGORY_SET)",
+        "c:RegisterFlagEffect(id,RESET_EVENT|(RESETS_STANDARD_PHASE_END&~RESET_TURN_SET),0,1)",
+        "Duel.ChangePosition(c,POS_FACEDOWN_DEFENSE)",
+        "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,aux.TRUE,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        'eventName: "flipSummoned"',
+        'eventName: "destroyed"',
+        'eventName === "positionChanged"',
+        "operationInfos",
+        "category: 0x1",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-yaksha-spirit-backrow-return.test.ts",
       kind: "summonToHandBounce",
       required: [
@@ -572,6 +596,20 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-swarm-scarabs-turn-set-flip-destroy.test.ts",
+      kind: "swarmScarabsFlipSummonTargetDestroy",
+      requiredSnippets: [
+        'const swarmCode = "15383415"',
+        "restores its ignition turn-set flag and flip-summon mandatory targeted destruction",
+        "c:GetFlagEffect(id)==0",
+        "Duel.SetOperationInfo(0,CATEGORY_POSITION,c,1,tp,POS_FACEDOWN_DEFENSE)",
+        'eventName === "positionChanged"',
+        'eventName: "flipSummoned"',
+        'eventName: "destroyed"',
+        "eventReasonEffectId: 2",
+      ],
+    },
+    {
       file: "test/lua-real-script-yaksha-spirit-backrow-return.test.ts",
       kind: "yakshaBackrowReturnOnSummon",
       requiredSnippets: [
@@ -605,6 +643,7 @@ function countSummonTriggerOperationKinds(
       summonStepReviveDisable: 0,
       summonToGraveDeckSummon: 0,
       summonToDeck: 0,
+      summonTargetDestroy: 0,
       summonToHandBounce: 0,
     },
   );
@@ -634,6 +673,7 @@ function countSummonTriggerOperationSemanticVariants(
       senjuClonedSummonRitualMonsterSearch: 0,
       shinobaronessShadePeacockSearchSelfSummon: 0,
       shinobirdCraneDrawOnSpiritSummon: 0,
+      swarmScarabsFlipSummonTargetDestroy: 0,
       yakshaBackrowReturnOnSummon: 0,
     },
   );
