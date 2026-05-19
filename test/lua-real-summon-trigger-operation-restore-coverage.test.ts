@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 17;
+const summonTriggerOperationFixtureCount = 18;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 6,
   summonSearchSelfSummon: 1,
+  summonSelfDestroy: 1,
   summonSuccessHandSpecialSummon: 1,
   summonToGraveGraveyardRevive: 1,
   summonStepReviveDisable: 1,
@@ -30,6 +31,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   ichikiSayoriHimeEffectSummonSearch: 1,
   izanamiDiscardGraveSpiritReturnOnSummon: 1,
   moonlitPapillonToGraveDeckSummon: 1,
+  nuviaSummonSelfDestroyFieldCountStat: 1,
   rGenexOverseerClonedSummonHandSpecialSummon: 1,
   senjuClonedSummonRitualMonsterSearch: 1,
   shinobaronessShadePeacockSearchSelfSummon: 1,
@@ -43,6 +45,7 @@ type SummonTriggerOperationKind =
   | "summonMassDestroy"
   | "summonSearch"
   | "summonSearchSelfSummon"
+  | "summonSelfDestroy"
   | "summonSuccessHandSpecialSummon"
   | "summonToGraveGraveyardRevive"
   | "summonStepReviveDisable"
@@ -62,6 +65,7 @@ type SummonTriggerOperationSemanticVariant =
   | "ichikiSayoriHimeEffectSummonSearch"
   | "izanamiDiscardGraveSpiritReturnOnSummon"
   | "moonlitPapillonToGraveDeckSummon"
+  | "nuviaSummonSelfDestroyFieldCountStat"
   | "rGenexOverseerClonedSummonHandSpecialSummon"
   | "senjuClonedSummonRitualMonsterSearch"
   | "shinobaronessShadePeacockSearchSelfSummon"
@@ -230,6 +234,22 @@ function summonTriggerOperationFixtureFiles(): Array<{
         'eventName: "cardsDrawn"',
         "category: 65536",
         "targetParam: 1",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nuvia-summon-self-destroy-stat.test.ts",
+      kind: "summonSelfDestroy",
+      required: [
+        "restores summon-success self destruction and opponent monster-count ATK loss",
+        'const nuviaCode = "12953226"',
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,e:GetHandler(),1,0,0)",
+        "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
+        "Duel.GetFieldGroupCount(tp,0,LOCATION_MZONE)*-200",
+        'eventName: "normalSummoned"',
+        'eventName: "destroyed"',
+        "operationInfos: [{ category: 0x1",
+        "currentAttack(restoredNuviaAfterSummon, restoredSummonWindow.session.state)).toBe((nuvia.data.attack ?? 0) - 400)",
         "host.messages).not.toContain",
       ],
     },
@@ -555,6 +575,18 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-nuvia-summon-self-destroy-stat.test.ts",
+      kind: "nuviaSummonSelfDestroyFieldCountStat",
+      requiredSnippets: [
+        'const nuviaCode = "12953226"',
+        "restores summon-success self destruction and opponent monster-count ATK loss",
+        "Duel.GetFieldGroupCount(tp,0,LOCATION_MZONE)*-200",
+        'triggerBucket: "turnMandatory"',
+        "eventReasonCardUid: nuvia.uid",
+        "eventReasonEffectId: 1",
+      ],
+    },
+    {
       file: "test/lua-real-script-r-genex-overseer-summon-hand-special.test.ts",
       kind: "rGenexOverseerClonedSummonHandSpecialSummon",
       requiredSnippets: [
@@ -638,6 +670,7 @@ function countSummonTriggerOperationKinds(
       summonMassDestroy: 0,
       summonSearch: 0,
       summonSearchSelfSummon: 0,
+      summonSelfDestroy: 0,
       summonSuccessHandSpecialSummon: 0,
       summonToGraveGraveyardRevive: 0,
       summonStepReviveDisable: 0,
@@ -669,6 +702,7 @@ function countSummonTriggerOperationSemanticVariants(
       ichikiSayoriHimeEffectSummonSearch: 0,
       izanamiDiscardGraveSpiritReturnOnSummon: 0,
       moonlitPapillonToGraveDeckSummon: 0,
+      nuviaSummonSelfDestroyFieldCountStat: 0,
       rGenexOverseerClonedSummonHandSpecialSummon: 0,
       senjuClonedSummonRitualMonsterSearch: 0,
       shinobaronessShadePeacockSearchSelfSummon: 0,
