@@ -4,20 +4,30 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDestroyedSummonFixtureCount = 3;
+const battleDestroyedSummonFixtureCount = 4;
 const battleDestroyedSummonKindCounts = {
   battleDestroyedTrapActivationDeckSummon: 1,
   optionalDeckDefenseSpecialSummon: 1,
+  optionalDeckRaceDefenseSpecialSummon: 1,
   optionalDeckSpecialSummon: 1,
 } satisfies Record<BattleDestroyedSummonKind, number>;
 const battleDestroyedSummonSemanticVariantCounts = {
   heroSignalBattleDestroyedTrapDeckSummon: 1,
   phantomMagicianHeroDefenseDeckSummon: 1,
   tricularBattleDestroyedDeckSummon: 1,
+  unmaskedDragonWyrmDefenseDeckSummon: 1,
 } satisfies Record<BattleDestroyedSummonSemanticVariant, number>;
 
-type BattleDestroyedSummonKind = "battleDestroyedTrapActivationDeckSummon" | "optionalDeckDefenseSpecialSummon" | "optionalDeckSpecialSummon";
-type BattleDestroyedSummonSemanticVariant = "heroSignalBattleDestroyedTrapDeckSummon" | "phantomMagicianHeroDefenseDeckSummon" | "tricularBattleDestroyedDeckSummon";
+type BattleDestroyedSummonKind =
+  | "battleDestroyedTrapActivationDeckSummon"
+  | "optionalDeckDefenseSpecialSummon"
+  | "optionalDeckRaceDefenseSpecialSummon"
+  | "optionalDeckSpecialSummon";
+type BattleDestroyedSummonSemanticVariant =
+  | "heroSignalBattleDestroyedTrapDeckSummon"
+  | "phantomMagicianHeroDefenseDeckSummon"
+  | "tricularBattleDestroyedDeckSummon"
+  | "unmaskedDragonWyrmDefenseDeckSummon";
 
 describe("Lua real battle-destroyed summon restore coverage", () => {
   it("requires battle-destroyed summon fixtures to assert clean restore and exact Special Summon outcomes", () => {
@@ -130,6 +140,21 @@ function battleDestroyedSummonFixtureFiles(): Array<{
         "eventReasonEffectId: 1",
       ],
     },
+    {
+      file: "test/lua-real-script-unmasked-dragon-battle-destroyed-wyrm-summon.test.ts",
+      kind: "optionalDeckRaceDefenseSpecialSummon",
+      required: [
+        'const unmaskedDragonCode = "24218047"',
+        'const wyrmTargetCode = "24218048"',
+        "restores Unmasked Dragon's battle-destroyed Wyrm DEF filter and face-up Special Summon",
+        'eventName: "battleDestroyed"',
+        'triggerBucket: "opponentOptional"',
+        'eventName: "specialSummoned"',
+        'location: "deck", controller: 0',
+        "RACE_WYRM",
+        "IsDefenseBelow(1500)",
+      ],
+    },
   ];
 }
 
@@ -175,6 +200,17 @@ function battleDestroyedSummonSemanticVariants(): Array<{
         "eventReasonCardUid: tricular!.uid",
       ],
     },
+    {
+      file: "test/lua-real-script-unmasked-dragon-battle-destroyed-wyrm-summon.test.ts",
+      kind: "unmaskedDragonWyrmDefenseDeckSummon",
+      required: [
+        'triggerEvent: "battleDestroyed"',
+        "triggerSourceOnly: true",
+        'type === "activateTrigger"',
+        "c:IsDefenseBelow(1500) and c:IsRace(RACE_WYRM)",
+        "eventReasonCardUid: unmaskedDragon.uid",
+      ],
+    },
   ];
 }
 
@@ -184,7 +220,12 @@ function countBattleDestroyedSummonKinds(fixtures: Array<{ kind: BattleDestroyed
       counts[fixture.kind] += 1;
       return counts;
     },
-    { battleDestroyedTrapActivationDeckSummon: 0, optionalDeckDefenseSpecialSummon: 0, optionalDeckSpecialSummon: 0 },
+    {
+      battleDestroyedTrapActivationDeckSummon: 0,
+      optionalDeckDefenseSpecialSummon: 0,
+      optionalDeckRaceDefenseSpecialSummon: 0,
+      optionalDeckSpecialSummon: 0,
+    },
   );
 }
 
@@ -196,6 +237,11 @@ function countBattleDestroyedSummonSemanticVariants(
       counts[fixture.kind] += 1;
       return counts;
     },
-    { heroSignalBattleDestroyedTrapDeckSummon: 0, phantomMagicianHeroDefenseDeckSummon: 0, tricularBattleDestroyedDeckSummon: 0 },
+    {
+      heroSignalBattleDestroyedTrapDeckSummon: 0,
+      phantomMagicianHeroDefenseDeckSummon: 0,
+      tricularBattleDestroyedDeckSummon: 0,
+      unmaskedDragonWyrmDefenseDeckSummon: 0,
+    },
   );
 }
