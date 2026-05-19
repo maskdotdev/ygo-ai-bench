@@ -763,6 +763,7 @@ function pushLuaEffectCallbackArgs(L: unknown, hostState: LuaHostState, luaEffec
     firstFiniteNumber(
       chainLink?.relatedEffectId,
       ctx?.chainLink?.relatedEffectId,
+      ctx?.eventReasonEffectId,
       ctx?.relatedEffectId,
       relatedEffectIdFromChainLink(chainLink),
       relatedEffectIdFromEventHistory(hostState, ctx),

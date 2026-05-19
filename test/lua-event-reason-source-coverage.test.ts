@@ -19,6 +19,7 @@ const reasonSourceFixtureFiles = [
   "test/lua-level-up-event.test.ts",
   "test/lua-move-event.test.ts",
   "test/lua-raise-event-payload.test.ts",
+  "test/lua-real-script-dark-room-nightmare-event-damage.test.ts",
   "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
   "test/lua-release-grouped-event.test.ts",
   "test/lua-remove-grouped-event.test.ts",
@@ -33,7 +34,7 @@ const reasonSourceKindCounts = {
   battleAndTarget: 2,
   chainCustom: 3,
   groupedMovement: 12,
-  stateChange: 3,
+  stateChange: 4,
   summon: 2,
 } satisfies Record<ReasonSourceKind, number>;
 
@@ -293,6 +294,7 @@ function classifyReasonSourceKind(file: string): ReasonSourceKind {
   if (
     basename === "lua-counter-event.test.ts" ||
     basename === "lua-level-up-event.test.ts" ||
+    basename === "lua-real-script-dark-room-nightmare-event-damage.test.ts" ||
     basename === "lua-real-script-naturia-ragweed-event-draw-trigger.test.ts"
   ) {
     return "stateChange";
