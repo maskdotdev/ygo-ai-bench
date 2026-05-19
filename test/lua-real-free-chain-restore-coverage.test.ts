@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 18;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 17;
+const FREE_CHAIN_FIXTURE_COUNT = 19;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 18;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 18;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 19;
 const freeChainKindCounts = {
   banishRemoval: 1,
   costToGraveDestroy: 1,
   graveyardRevive: 1,
-  multiTargetDestroy: 5,
+  multiTargetDestroy: 6,
   positionChange: 2,
   selectUnselectTargets: 1,
   singleDestroy: 3,
@@ -37,6 +37,7 @@ const freeChainSemanticVariantCounts = {
   recurringNightmareChainInfoToHand: 1,
   spellShatteringArrowDestroyedCountDamage: 1,
   twinTwistersDiscardDestroy: 1,
+  tokenSundaeBreakEffectSelectDestroy: 1,
   twoProngedChainInfoDestroy: 1,
   windstormGroupPositionSwitch: 1,
 } satisfies Record<FreeChainSemanticVariant, number>;
@@ -69,6 +70,7 @@ type FreeChainSemanticVariant =
   | "recurringNightmareChainInfoToHand"
   | "spellShatteringArrowDestroyedCountDamage"
   | "twinTwistersDiscardDestroy"
+  | "tokenSundaeBreakEffectSelectDestroy"
   | "twoProngedChainInfoDestroy"
   | "windstormGroupPositionSwitch";
 
@@ -200,6 +202,7 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-recurring-nightmare-grave-to-hand.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-spell-shattering-arrow-group-destroy-damage.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-token-sundae-break-effect-select-destroy.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-two-pronged-attack-chaininfo-destroy.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-windstorm-etaqua-group-position.test.ts"));
 }
@@ -264,6 +267,10 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
     },
     {
       file: "lua-real-script-spell-shattering-arrow-group-destroy-damage.test.ts",
+      kind: "multiTargetDestroy",
+    },
+    {
+      file: "lua-real-script-token-sundae-break-effect-select-destroy.test.ts",
       kind: "multiTargetDestroy",
     },
     {
@@ -437,6 +444,19 @@ function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: Free
       ],
     },
     {
+      file: "lua-real-script-token-sundae-break-effect-select-destroy.test.ts",
+      kind: "tokenSundaeBreakEffectSelectDestroy",
+      required: [
+        "restores token group destruction, BreakEffect, and second-wave selected destruction",
+        "const tokenSundaeCode = \"52971673\"",
+        "Duel.GetMatchingGroup(s.cfilter,tp,LOCATION_MZONE,0,nil)",
+        "Duel.BreakEffect()",
+        "local sg=dg:Select(tp,1,dt,nil)",
+        "{ category: 0x1, targetUids: tokenUids, count: 2, player: 0, parameter: 0 }",
+        "eventUids: [ownSecondWave.uid, opponentSecondWave.uid]",
+      ],
+    },
+    {
       file: "lua-real-script-twin-twisters-discard-cost.test.ts",
       kind: "twinTwistersDiscardDestroy",
       required: [
@@ -517,6 +537,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       recurringNightmareChainInfoToHand: 0,
       spellShatteringArrowDestroyedCountDamage: 0,
       twinTwistersDiscardDestroy: 0,
+      tokenSundaeBreakEffectSelectDestroy: 0,
       twoProngedChainInfoDestroy: 0,
       windstormGroupPositionSwitch: 0,
     },
