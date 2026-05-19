@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DIRECT_ATTACK_FIXTURE_COUNT = 6;
+const DIRECT_ATTACK_FIXTURE_COUNT = 7;
 const directAttackKindCounts = {
   cannotDirectAttack: 1,
   directAttackConversion: 1,
+  directAttackDamageStatTrigger: 1,
   directAttackOnly: 1,
   directAttackPermission: 1,
   directAttackTrigger: 1,
@@ -15,6 +16,7 @@ const directAttackKindCounts = {
 } satisfies Record<DirectAttackKind, number>;
 const directAttackSemanticVariantCounts = {
   dragonicHalberdCannotDirectLock: 1,
+  drillBarnacleDirectDamageAtkGain: 1,
   hayateDirectAttackBattledSendTrigger: 1,
   inabaWhiteRabbitDirectOnlyDamage: 1,
   jinzoSevenDirectAttackOption: 1,
@@ -25,12 +27,14 @@ const directAttackSemanticVariantCounts = {
 type DirectAttackKind =
   | "cannotDirectAttack"
   | "directAttackConversion"
+  | "directAttackDamageStatTrigger"
   | "directAttackOnly"
   | "directAttackPermission"
   | "directAttackTrigger"
   | "directTargetLock";
 type DirectAttackSemanticVariant =
   | "dragonicHalberdCannotDirectLock"
+  | "drillBarnacleDirectDamageAtkGain"
   | "hayateDirectAttackBattledSendTrigger"
   | "inabaWhiteRabbitDirectOnlyDamage"
   | "jinzoSevenDirectAttackOption"
@@ -101,6 +105,16 @@ function realScriptDirectAttackFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-drill-barnacle-direct-damage-atk.test.ts",
+      kind: "directAttackDamageStatTrigger",
+      required: [
+        "e1:SetCode(EFFECT_DIRECT_ATTACK)",
+        "return ep~=tp and Duel.GetAttackTarget()==nil",
+        "eventName: \"battleDamageDealt\"",
+        "currentAttack(restoredBoost.session.state.cards.find",
+      ],
+    },
+    {
       file: "test/lua-real-script-hayate-battled-send.test.ts",
       kind: "directAttackTrigger",
       required: [
@@ -154,6 +168,7 @@ function countDirectAttackKinds(fixtures: Array<{ kind: DirectAttackKind }>): Re
     {
       cannotDirectAttack: 0,
       directAttackConversion: 0,
+      directAttackDamageStatTrigger: 0,
       directAttackOnly: 0,
       directAttackPermission: 0,
       directAttackTrigger: 0,
@@ -176,6 +191,17 @@ function directAttackSemanticVariants(): Array<{
         "restores its direct-attack lock while ordinary attackers stay legal",
         "hasDirectAttack(actions, halberd.uid)).toBe(false)",
         "hasDirectAttack(actions, ordinary.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-drill-barnacle-direct-damage-atk.test.ts",
+      kind: "drillBarnacleDirectDamageAtkGain",
+      required: [
+        'const drillBarnacleCode = "24137081"',
+        "restores its direct attack permission and mandatory battle-damage ATK gain",
+        "e2:SetCode(EVENT_BATTLE_DAMAGE)",
+        "eventName: \"battleDamageDealt\"",
+        "currentAttack(restoredBoost.session.state.cards.find",
       ],
     },
     {
@@ -245,6 +271,7 @@ function countDirectAttackSemanticVariants(
     },
     {
       dragonicHalberdCannotDirectLock: 0,
+      drillBarnacleDirectDamageAtkGain: 0,
       hayateDirectAttackBattledSendTrigger: 0,
       inabaWhiteRabbitDirectOnlyDamage: 0,
       jinzoSevenDirectAttackOption: 0,
