@@ -58,6 +58,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (levelOrRankStat) return levelOrRankStat;
   const fieldGroupCountStat = fieldGroupCountStatDescriptor(L, index, snippet, params);
   if (fieldGroupCountStat) return fieldGroupCountStat;
+  const fieldGroupCountThresholdStat = fieldGroupCountThresholdStatDescriptor(L, index, snippet, params);
+  if (fieldGroupCountThresholdStat) return fieldGroupCountThresholdStat;
   const battleAttackerTargetSwingStat = battleAttackerTargetSwingStatDescriptor(snippet, params);
   if (battleAttackerTargetSwingStat) return battleAttackerTargetSwingStat;
   const damageCalculationAttackBoost = damageCalculationAttackerLowerAttackBoostDescriptor(snippet, params);
@@ -136,6 +138,25 @@ function fieldGroupCountStatDescriptor(L: unknown, index: number, snippet: strin
   const multiplier = Number(match[3]);
   if (selfMask === undefined || opponentMask === undefined || !Number.isSafeInteger(multiplier)) return undefined;
   return `stat:controller-field-group-count:${selfMask}:${opponentMask}:x${multiplier}`;
+}
+
+function fieldGroupCountThresholdStatDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
+  const effectParam = params?.[0];
+  if (!effectParam) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const match = new RegExp(
+    String.raw`\blocal\s+(\w+)\s*=\s*Duel\s*\.\s*GetFieldGroupCount\s*\(\s*${effect}\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetControler\s*\(\s*\)\s*,\s*(${numericMaskExpressionPattern})\s*,\s*(${numericMaskExpressionPattern})\s*\)\s+if\s+\1\s*<=\s*(-?\d+)\s+then\s+return\s+(-?\d+)\s+elseif\s+\1\s*>=\s*(-?\d+)\s+then\s+return\s+(-?\d+)\s+else\s+return\s+(-?\d+)\s+end\b`,
+  ).exec(snippet);
+  if (!match?.[2] || !match[3] || !match[4] || !match[5] || !match[6] || !match[7] || !match[8]) return undefined;
+  const selfMask = luaNumberMaskExpressionValue(L, index, match[2]);
+  const opponentMask = luaNumberMaskExpressionValue(L, index, match[3]);
+  const lte = Number(match[4]);
+  const lteValue = Number(match[5]);
+  const gte = Number(match[6]);
+  const gteValue = Number(match[7]);
+  const elseValue = Number(match[8]);
+  if ([selfMask, opponentMask, lte, lteValue, gte, gteValue, elseValue].some((value) => value === undefined || !Number.isSafeInteger(value))) return undefined;
+  return `stat:controller-field-group-count-threshold:${selfMask}:${opponentMask}:lte${lte}:${lteValue}:gte${gte}:${gteValue}:else${elseValue}`;
 }
 
 function levelOrRankStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {

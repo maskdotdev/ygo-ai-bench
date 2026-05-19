@@ -32,6 +32,22 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
       };
     }
   }
+  const fieldGroupCountThreshold = luaValueDescriptor?.match(/^stat:controller-field-group-count-threshold:(\d+):(\d+):lte(-?\d+):(-?\d+):gte(-?\d+):(-?\d+):else(-?\d+)$/);
+  if (fieldGroupCountThreshold?.[1] && fieldGroupCountThreshold[2] && fieldGroupCountThreshold[3] && fieldGroupCountThreshold[4] && fieldGroupCountThreshold[5] && fieldGroupCountThreshold[6] && fieldGroupCountThreshold[7]) {
+    const [selfMask, opponentMask, lte, lteValue, gte, gteValue, elseValue] = fieldGroupCountThreshold.slice(1, 8).map(Number);
+    if ([selfMask, opponentMask, lte, lteValue, gte, gteValue, elseValue].every(Number.isSafeInteger)) {
+      const selfLocations = locationsFromMask(selfMask!);
+      const opponentLocations = locationsFromMask(opponentMask!);
+      return (ctx, card) => {
+        const opponent = card.controller === 0 ? 1 : 0;
+        const count = ctx.duel.cards.filter((candidate) =>
+          (candidate.controller === card.controller && selfLocations.includes(candidate.location)) ||
+          (candidate.controller === opponent && opponentLocations.includes(candidate.location))
+        ).length;
+        return count <= lte! ? lteValue! : count >= gte! ? gteValue! : elseValue!;
+      };
+    }
+  }
   const battleAttackerTargetSwing = luaValueDescriptor?.match(/^stat:battle-attacker-target-swing:(-?\d+):(-?\d+)$/);
   if (battleAttackerTargetSwing?.[1] && battleAttackerTargetSwing[2]) {
     const attackingValue = Number(battleAttackerTargetSwing[1]);

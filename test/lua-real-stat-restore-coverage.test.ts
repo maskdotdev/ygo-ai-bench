@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 15;
+const statFixtureCount = 16;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
   damageStepBattleTargetAttributeAttackBoost: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
-  fieldGroupCountStat: 1,
+  fieldGroupCountStat: 2,
   fieldAttributeAttackUpdate: 2,
   fieldRaceAttackDefenseUpdate: 1,
   fieldSetcodeAttackUpdate: 1,
@@ -30,6 +30,7 @@ const statSemanticVariantCounts = {
   luminousSoldierDamageStepTargetAttributeStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mukaMukaHandCountAttackDefense: 1,
+  neoFlamvellSabreGraveCountThresholdStat: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   rushRecklesslyTargetedDamageStepAttackUpdate: 1,
   sangaPreDamageFinalAttackZero: 1,
@@ -49,6 +50,7 @@ type StatSemanticVariant =
   | "luminousSoldierDamageStepTargetAttributeStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mukaMukaHandCountAttackDefense"
+  | "neoFlamvellSabreGraveCountThresholdStat"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
@@ -217,6 +219,18 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredMuka, restored.session.state)).toBe((muka!.data.attack ?? 0) + 900)",
         "currentDefense(restoredMuka, restored.session.state)).toBe((muka!.data.defense ?? 0) + 600)",
         "battleDamage[1]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-neo-flamvell-sabre-grave-count-stat.test.ts",
+      kind: "fieldGroupCountStat",
+      required: [
+        "local gct=Duel.GetFieldGroupCount(e:GetHandler():GetControler(),0,LOCATION_GRAVE)",
+        "if gct<=4 then return 600",
+        "elseif gct>=8 then return -300",
+        "stat:controller-field-group-count-threshold:0:16:lte4:600:gte8:-300:else0",
+        "currentAttack(restoredLowSabre, restoredLow.session.state)).toBe((low.sabre.data.attack ?? 0) + 600)",
+        "battleDamage).toEqual({ 0: 0, 1: 200 })",
       ],
     },
     {
@@ -410,6 +424,16 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-neo-flamvell-sabre-grave-count-stat.test.ts",
+      kind: "neoFlamvellSabreGraveCountThresholdStat",
+      required: [
+        'const sabreCode = "91554542"',
+        "restores thresholded GetFieldGroupCount opponent Graveyard ATK callback into battle damage",
+        "stat:controller-field-group-count-threshold:0:16:lte4:600:gte8:-300:else0",
+        "currentAttack(restoredHigh.session.state.cards.find((card) => card.uid === high.sabre.uid)!, restoredHigh.session.state)).toBe((high.sabre.data.attack ?? 0) - 300)",
+      ],
+    },
+    {
       file: "test/lua-real-script-mystic-plasma-zone-attribute-stat.test.ts",
       kind: "mysticPlasmaZoneTargetBoolFunctionAttributeStat",
       required: [
@@ -493,6 +517,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       luminousSoldierDamageStepTargetAttributeStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mukaMukaHandCountAttackDefense: 0,
+      neoFlamvellSabreGraveCountThresholdStat: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
