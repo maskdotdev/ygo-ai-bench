@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 12;
+const negationFixtureCount = 13;
 const chainResponseNegationFixtureCount = 11;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 16;
+const negationInventoryFixtureCount = 17;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 5,
+  chainNegateToGrave: 6,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -30,6 +30,7 @@ const negationSemanticVariantCounts = {
   magicJammerDiscardSpellNegateDestroy: 1,
   mysticalSpaceTyphoonDestroyOnlyNoNegation: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
+  pollinosisPlantReleaseActivationNegateDestroy: 1,
   raigekiBreakDiscardDestroyOnlyNoNegation: 1,
   sevenToolsLpCostTrapNegateDestroy: 1,
   solemnJudgmentActivationNegateCostDestroy: 1,
@@ -58,6 +59,7 @@ type NegationSemanticVariant =
   | "magicJammerDiscardSpellNegateDestroy"
   | "mysticalSpaceTyphoonDestroyOnlyNoNegation"
   | "overwhelmTributeGateTrapNegateDestroy"
+  | "pollinosisPlantReleaseActivationNegateDestroy"
   | "raigekiBreakDiscardDestroyOnlyNoNegation"
   | "sevenToolsLpCostTrapNegateDestroy"
   | "solemnJudgmentActivationNegateCostDestroy"
@@ -190,6 +192,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-overwhelm-tribute-chain-negate.test.ts",
+    "lua-real-script-pollinosis-release-activation-negate.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
     "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
@@ -208,7 +211,8 @@ function realScriptNegationFixtureFiles(): string[] {
 
 function realScriptChainResponseNegationFixtureFiles(): string[] {
   return realScriptNegationFixtureFiles()
-    .filter((file) => !file.endsWith("lua-real-script-ash-blossom-chain-negate.test.ts"));
+    .filter((file) => !file.endsWith("lua-real-script-ash-blossom-chain-negate.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-pollinosis-release-activation-negate.test.ts"));
 }
 
 function realScriptDestroyOnlyResponseFixtureFiles(): string[] {
@@ -243,6 +247,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-overwhelm-tribute-chain-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-pollinosis-release-activation-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -383,6 +391,20 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-pollinosis-release-activation-negate.test.ts",
+      kind: "pollinosisPlantReleaseActivationNegateDestroy",
+      required: [
+        'const pollinosisCode = "91078716"',
+        "restores its Plant release cost, activation negation, source destruction, and suppressed Spell operation",
+        "Duel.CheckReleaseGroupCost(tp,s.filter,1,false,nil,nil)",
+        "Duel.SelectReleaseGroupCost(tp,s.filter,1,1,false,nil,nil)",
+        "Duel.NegateActivation(ev)",
+        'eventName: "released"',
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("pollinosis spell resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-raigeki-break-discard-cost.test.ts",
       kind: "raigekiBreakDiscardDestroyOnlyNoNegation",
       required: [
@@ -504,6 +526,7 @@ function countNegationSemanticVariants(
       magicJammerDiscardSpellNegateDestroy: 0,
       mysticalSpaceTyphoonDestroyOnlyNoNegation: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
+      pollinosisPlantReleaseActivationNegateDestroy: 0,
       raigekiBreakDiscardDestroyOnlyNoNegation: 0,
       sevenToolsLpCostTrapNegateDestroy: 0,
       solemnJudgmentActivationNegateCostDestroy: 0,
