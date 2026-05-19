@@ -540,6 +540,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownLifePointReasonPredicateEffect(effect) ||
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
+        isKnownChangeBattleStatToDefenseEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
         isKnownCalledByTheGraveChainSolvingNegateEffect(effect) ||
         isKnownGishkiEmiliaTrapNegateEffect(effect) ||
@@ -575,6 +576,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         ((effect.code === 100 || effect.code === 103 || effect.code === 104 || effect.code === 107 || effect.code === 130 || effect.code === 131 || effect.code === 132 || effect.code === 314) && effect.value !== undefined)))
   );
 }
+
+function isKnownChangeBattleStatToDefenseEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 198 && effect.luaValueDescriptor === "stat:current-defense" && effect.luaTargetDescriptor === "target:source-or-battle-target" && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange?.[0] === 4 && effect.targetRange?.[1] === 4 && effect.reset !== undefined; }
 
 function isKnownEndPhaseReviveDestroyEffect(effect: SerializedDuelEffect): boolean {
   const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];

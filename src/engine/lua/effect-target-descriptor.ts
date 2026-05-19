@@ -20,6 +20,7 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (battleTargetTypeValue !== undefined) return `target:source-battle-target-type:${battleTargetTypeValue}`;
   if (new RegExp(`\\breturn\\s+${card}\\s*==\\s*e\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet) || new RegExp(`\\breturn\\s+e\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*==\\s*${card}\\s*(?:end\\b|$)`).test(snippet)) return "target:source-battle-target";
   if (new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*e\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s+return\\s+${card}\\s*==\\s*\\1\\s+or\\s+${card}\\s*==\\s*\\1\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet)) return "target:source-or-battle-target";
+  if (new RegExp(`\\breturn\\s+${card}\\s*==\\s*c\\s+or\\s+${card}\\s*==\\s*bc\\s*(?:end\\b|$)`).test(snippet)) return "target:source-or-battle-target";
   const statusSummonLocation = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsStatus\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsSummonLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
   const statusSummonLocationStatus = statusSummonLocation?.[1] ? luaNumberExpressionValue(L, index, statusSummonLocation[1]) : undefined;
   const statusSummonLocationLocation = statusSummonLocation?.[2] ? luaNumberExpressionValue(L, index, statusSummonLocation[2]) : undefined;

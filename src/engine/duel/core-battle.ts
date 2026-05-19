@@ -48,6 +48,7 @@ import type { CardPosition, DuelAction, DuelCardInstance, DuelEffectContext, Due
 
 export type PositionChangeSource = "effect" | "manual";
 const effectAttackCost = 96;
+const effectChangeBattleStat = 198;
 
 export interface CoreBattleHandlers {
   additionalBattleDamagePlayers(state: DuelState, player: PlayerId, battleCards?: DuelCardInstance[]): PlayerId[];
@@ -310,7 +311,8 @@ export function getCoreBattleAttackValue(state: DuelState, card: DuelCardInstanc
   const baseAttack = continuousSetBaseStatValue(state, card, 103, card.data.attack ?? 0, createContext);
   const updatedAttack = baseAttack + (card.attackModifier ?? 0) + continuousStatUpdateValue(state, card, 100, createContext);
   const setAttack = continuousSetStatValue(state, card, 101, createContext) ?? updatedAttack;
-  return Math.max(0, continuousSetStatValue(state, card, 102, createContext) ?? setAttack);
+  const finalAttack = continuousSetStatValue(state, card, 102, createContext) ?? setAttack;
+  return Math.max(0, continuousBattleStatValue(state, card, createContext) ?? finalAttack);
 }
 
 export function getCoreBattleDefenseValue(state: DuelState, card: DuelCardInstance, handlers: CoreBattleHandlers): number {
@@ -347,6 +349,12 @@ function continuousSetStatValue(state: DuelState, card: DuelCardInstance, code: 
     .filter(({ effect }) => effect.value !== undefined || effect.statValue !== undefined)
     .at(-1);
   return match ? continuousStatEffectValue(match.effect, card, match.ctx) : undefined;
+}
+
+function continuousBattleStatValue(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): number | undefined {
+  const battle = state.currentAttack ?? state.pendingBattle;
+  if (!battle || (battle.attackerUid !== card.uid && battle.targetUid !== card.uid)) return undefined;
+  return continuousSetStatValue(state, card, effectChangeBattleStat, createContext);
 }
 
 function matchingContinuousStatEffects(

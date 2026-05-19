@@ -50,6 +50,9 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     return "stat:all-grave-monster-count-x100";
   }
   const params = luaFunctionParams(snippet);
+  if (params?.[1] && new RegExp(String.raw`\breturn\s+${escapeRegExp(params[1])}\s*:\s*GetDefense\s*\(\s*\)\s*(?:end\b|$)`).test(snippet)) {
+    return "stat:current-defense";
+  }
   const fieldGroupCountStat = fieldGroupCountStatDescriptor(L, index, snippet, params);
   if (fieldGroupCountStat) return fieldGroupCountStat;
   const battleAttackerTargetSwingStat = battleAttackerTargetSwingStatDescriptor(snippet, params);

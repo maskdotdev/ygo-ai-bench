@@ -1,6 +1,8 @@
 import { continuousEffectAppliesToCard } from "#duel/continuous-effects.js";
 import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelState } from "#duel/types.js";
 
+const effectChangeBattleStat = 198;
+
 export function cardTypeFlags(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (!card) return 0;
   if (card.assumedProperties?.[2] !== undefined) return card.assumedProperties[2];
@@ -31,7 +33,8 @@ export function cardLink(card: DuelCardInstance | undefined): number {
 export function currentAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[7] !== undefined) return card.assumedProperties[7];
   const updatedAttack = currentBaseAttack(card, state) + (card?.attackModifier ?? 0) + statUpdateEffectValue(card, state, 100);
-  return setStatEffectValue(card, state, 102) ?? setStatEffectValue(card, state, 101) ?? updatedAttack;
+  const finalAttack = setStatEffectValue(card, state, 102) ?? setStatEffectValue(card, state, 101) ?? updatedAttack;
+  return battleStatEffectValue(card, state) ?? finalAttack;
 }
 
 export function currentAttackWithoutEffect(card: DuelCardInstance | undefined, state: DuelState | undefined, excludedEffectId: string): number {
@@ -137,6 +140,13 @@ function setStatEffectValue(card: DuelCardInstance | undefined, state: DuelState
     .filter(({ effect }) => effect.value !== undefined || effect.statValue !== undefined)
     .at(-1);
   return card && match ? statEffectValue(card, state, match.effect, match.ctx) : undefined;
+}
+
+function battleStatEffectValue(card: DuelCardInstance | undefined, state: DuelState | undefined): number | undefined {
+  if (!card || !state) return undefined;
+  const battle = state.currentAttack ?? state.pendingBattle;
+  if (!battle || (battle.attackerUid !== card.uid && battle.targetUid !== card.uid)) return undefined;
+  return setStatEffectValue(card, state, effectChangeBattleStat);
 }
 
 function matchingStatEffects(card: DuelCardInstance | undefined, state: DuelState | undefined, code: number, excludedEffectId?: string): Array<{ effect: DuelEffectDefinition; ctx: DuelEffectContext }> {

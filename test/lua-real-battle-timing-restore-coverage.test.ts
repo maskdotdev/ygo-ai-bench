@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 39;
-const battleTimingEventCodeFixtureCount = 39;
+const battleTimingFixtureCount = 40;
+const battleTimingEventCodeFixtureCount = 40;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 17,
   beforeDamageCalculation: 8,
-  duringDamageCalculation: 4,
+  duringDamageCalculation: 5,
   endDamageStep: 6,
   startDamageStep: 4,
 };
@@ -23,6 +23,7 @@ const battleTimingSemanticVariantCounts = {
   ddWarriorWallMandatoryBattledSegoc: 1,
   darkRulerHaDesAfterDamageContinuousDisable: 1,
   desKangarooEndDamageDestroy: 1,
+  dracoonLampChangeBattleStat: 1,
   destructionPunchEndDamageTrapDestroy: 1,
   divineKnightIshzarkAfterDamageBanish: 1,
   ehrenBattleConfirmToDeck: 1,
@@ -124,6 +125,7 @@ type BattleTimingSemanticVariant =
   | "ddWarriorWallMandatoryBattledSegoc"
   | "darkRulerHaDesAfterDamageContinuousDisable"
   | "desKangarooEndDamageDestroy"
+  | "dracoonLampChangeBattleStat"
   | "destructionPunchEndDamageTrapDestroy"
   | "divineKnightIshzarkAfterDamageBanish"
   | "ehrenBattleConfirmToDeck"
@@ -219,6 +221,18 @@ function battleTimingSemanticVariants(): Array<{
       file: "test/lua-real-script-des-kangaroo-damage-step-end.test.ts",
       kind: "desKangarooEndDamageDestroy",
       required: ["restores Des Kangaroo's end Damage Step trigger and destroys the lower-ATK attacker", "eventName: \"damageStepEnded\"", "eventName: \"destroyed\""],
+    },
+    {
+      file: "test/lua-real-script-dracoon-lamp-change-battle-stat.test.ts",
+      kind: "dracoonLampChangeBattleStat",
+      required: [
+        "restores its pre-damage EFFECT_CHANGE_BATTLE_STAT callback into damage calculation",
+        "e1:SetCode(EFFECT_CHANGE_BATTLE_STAT)",
+        "stat:current-defense",
+        "target:source-or-battle-target",
+        "eventName: \"damageCalculating\"",
+        "battleDamage).toEqual({ 0: 0, 1: 1600 })",
+      ],
     },
     {
       file: "test/lua-real-script-destruction-punch-damage-step-end.test.ts",
@@ -470,6 +484,7 @@ function countBattleTimingSemanticVariants(
       desKangarooEndDamageDestroy: 0,
       destructionPunchEndDamageTrapDestroy: 0,
       divineKnightIshzarkAfterDamageBanish: 0,
+      dracoonLampChangeBattleStat: 0,
       ehrenBattleConfirmToDeck: 0,
       elementDoomAfterDamageAttributeDisable: 0,
       fabledAshenveilPreDamageBoost: 0,
@@ -873,6 +888,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "shadow spell persistent true/true/1/1500",
         "battleDamage[0]).toBe(500)",
         'location: "spellTrapZone"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-dracoon-lamp-change-battle-stat.test.ts",
+      kind: "duringDamageCalculation",
+      required: [
+        'battleWindow?.kind).toBe("duringDamageCalculation")',
+        'eventName: "damageCalculating"',
+        "eventCode: 1135",
+        "EFFECT_CHANGE_BATTLE_STAT",
+        "currentAttack(restoredDamageCalculation.session.state.cards.find((card) => card.uid === dracoon!.uid), restoredDamageCalculation.session.state)).toBe(2000)",
+        "currentAttack(restoredDamageCalculation.session.state.cards.find((card) => card.uid === attacker!.uid), restoredDamageCalculation.session.state)).toBe(400)",
       ],
     },
     {
