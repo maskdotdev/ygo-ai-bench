@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const phaseDamageFixtureCount = 1;
+const phaseDamageFixtureCount = 2;
 const phaseDamageKindCounts = {
   standbyBanishedMonsterDamage: 1,
+  synchroSummonDamage: 1,
 } satisfies Record<PhaseDamageKind, number>;
 const phaseDamageSemanticVariantCounts = {
   graverobbersRetributionStandbyBanishedMonsterDamage: 1,
+  synchRealmSynchroSummonDamage: 1,
 } satisfies Record<PhaseDamageSemanticVariant, number>;
 
-type PhaseDamageKind = "standbyBanishedMonsterDamage";
-type PhaseDamageSemanticVariant = "graverobbersRetributionStandbyBanishedMonsterDamage";
+type PhaseDamageKind = "standbyBanishedMonsterDamage" | "synchroSummonDamage";
+type PhaseDamageSemanticVariant = "graverobbersRetributionStandbyBanishedMonsterDamage" | "synchRealmSynchroSummonDamage";
 
 describe("Lua real phase damage restore coverage", () => {
   it("requires phase damage fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -48,10 +50,10 @@ describe("Lua real phase damage restore coverage", () => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("operationInfos")
           || !text.includes("category: 0x80000")
-          || !text.includes('eventName: "phaseStandby"')
+          || !/(eventName: "phaseStandby"|eventName: "specialSummoned")/.test(text)
           || !text.includes('eventName: "damageDealt"')
           || !text.includes("lifePoints")
-          || !text.includes('"banished", 1')
+          || !/("banished", 1|"synchroSummon")/.test(text)
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -107,6 +109,23 @@ function phaseDamageFixtureFiles(): Array<{ file: string; kind: PhaseDamageKind;
         "players[1].lifePoints).toBe(7800)",
       ],
     },
+    {
+      file: "test/lua-real-script-synch-realm-synchro-summon-damage.test.ts",
+      kind: "synchroSummonDamage",
+      required: [
+        'const synchRealmCode = "61032879"',
+        "restores its field trigger from a controlled Synchro Summon and resolves CHAININFO target-param damage",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "eventName: \"specialSummoned\"",
+        "summonType: \"synchro\"",
+        "triggerBucket: \"turnMandatory\"",
+        "eventCode: 1102",
+        "targetParam: 500",
+        "targetPlayer: 1",
+        "eventValue: 500",
+        "players[1].lifePoints).toBe(7500)",
+      ],
+    },
   ];
 }
 
@@ -123,6 +142,18 @@ function phaseDamageSemanticVariants(): Array<{ file: string; kind: PhaseDamageS
         "Duel.Damage(p,d,REASON_EFFECT)",
       ],
     },
+    {
+      file: "test/lua-real-script-synch-realm-synchro-summon-damage.test.ts",
+      kind: "synchRealmSynchroSummonDamage",
+      required: [
+        'const synchRealmCode = "61032879"',
+        "return eg:GetFirst():IsSynchroSummoned() and eg:GetFirst():IsControler(tp)",
+        "Duel.SetTargetPlayer(1-tp)",
+        "Duel.SetTargetParam(500)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,0,0,1-tp,500)",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+      ],
+    },
   ];
 }
 
@@ -134,6 +165,7 @@ function countPhaseDamageKinds(fixtures: Array<{ kind: PhaseDamageKind }>): Reco
     },
     {
       standbyBanishedMonsterDamage: 0,
+      synchroSummonDamage: 0,
     },
   );
 }
@@ -148,6 +180,7 @@ function countPhaseDamageSemanticVariants(
     },
     {
       graverobbersRetributionStandbyBanishedMonsterDamage: 0,
+      synchRealmSynchroSummonDamage: 0,
     },
   );
 }
