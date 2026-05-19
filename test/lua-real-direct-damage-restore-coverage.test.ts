@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 13;
+const directDamageFixtureCount = 14;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   battleDestroyedChainInfoDamage: 1,
   continuousCostTargetParamDamage: 1,
-  eventToGraveChainInfoDamage: 2,
+  eventToGraveChainInfoDamage: 3,
   fieldCountTargetPlayerDamage: 3,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
@@ -17,6 +17,7 @@ const directDamageKindCounts = {
 const directDamageSemanticVariantCounts = {
   ancientGearTankDestroyedEquipDamage: 1,
   backfireEventToGraveChainInfoDamage: 1,
+  elephantStatueOpponentEffectBurn: 1,
   finalFlameTargetParamDamage: 1,
   hinotamaTargetParamDamage: 1,
   justDessertsMonsterCountResolutionDamage: 1,
@@ -41,6 +42,7 @@ type DirectDamageKind =
 type DirectDamageSemanticVariant =
   | "ancientGearTankDestroyedEquipDamage"
   | "backfireEventToGraveChainInfoDamage"
+  | "elephantStatueOpponentEffectBurn"
   | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
   | "justDessertsMonsterCountResolutionDamage"
@@ -140,6 +142,21 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
         "targetParam: 500",
         "targetPlayer: 1",
         "players[1].lifePoints).toBe(7500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-elephant-statue-opponent-effect-burn.test.ts",
+      kind: "eventToGraveChainInfoDamage",
+      required: [
+        'const elephantCode = "12160911"',
+        "restores its hand-to-Graveyard opponent-effect trigger and resolves target-player target-param damage from CHAININFO",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)",
+        "e:GetHandler():IsPreviousLocation(LOCATION_HAND) and rp~=tp and (r&REASON_EFFECT)==REASON_EFFECT",
+        "triggerBucket: \"opponentMandatory\"",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "targetParam: 2000",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(6000)",
       ],
     },
     {
@@ -306,6 +323,17 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
       ],
     },
     {
+      file: "test/lua-real-script-elephant-statue-opponent-effect-burn.test.ts",
+      kind: "elephantStatueOpponentEffectBurn",
+      required: [
+        "Elephant Statue Chain Responder",
+        "eventValue: 2000",
+        "eventReasonPlayer: 1",
+        "eventReasonCardUid: elephant.uid",
+        "elephant responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-final-flame-direct-damage.test.ts",
       kind: "finalFlameTargetParamDamage",
       required: [
@@ -456,6 +484,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
     {
       ancientGearTankDestroyedEquipDamage: 0,
       backfireEventToGraveChainInfoDamage: 0,
+      elephantStatueOpponentEffectBurn: 0,
       finalFlameTargetParamDamage: 0,
       hinotamaTargetParamDamage: 0,
       justDessertsMonsterCountResolutionDamage: 0,
