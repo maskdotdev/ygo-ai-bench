@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 19;
+const summonTriggerOperationFixtureCount = 20;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
@@ -12,6 +12,7 @@ const summonTriggerOperationKindCounts = {
   summonSearchDiscard: 1,
   summonSearchSelfSummon: 1,
   summonSelfDestroy: 1,
+  summonSetFlipToHand: 1,
   summonSuccessHandSpecialSummon: 1,
   summonToGraveGraveyardRevive: 1,
   summonStepReviveDisable: 1,
@@ -29,6 +30,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   gemArmadilloNormalSummonSearch: 1,
   gemKnightObsidianHandToGraveyardRevive: 1,
   gishkiNataliaGraveToDeckTopOnSummon: 1,
+  golemSentryTurnSetFlipReturn: 1,
   hanShiKyudoColumnReturnOnSummon: 1,
   ichikiSayoriHimeEffectSummonSearch: 1,
   izanamiDiscardGraveSpiritReturnOnSummon: 1,
@@ -49,6 +51,7 @@ type SummonTriggerOperationKind =
   | "summonSearchDiscard"
   | "summonSearchSelfSummon"
   | "summonSelfDestroy"
+  | "summonSetFlipToHand"
   | "summonSuccessHandSpecialSummon"
   | "summonToGraveGraveyardRevive"
   | "summonStepReviveDisable"
@@ -65,6 +68,7 @@ type SummonTriggerOperationSemanticVariant =
   | "gemArmadilloNormalSummonSearch"
   | "gemKnightObsidianHandToGraveyardRevive"
   | "gishkiNataliaGraveToDeckTopOnSummon"
+  | "golemSentryTurnSetFlipReturn"
   | "hanShiKyudoColumnReturnOnSummon"
   | "ichikiSayoriHimeEffectSummonSearch"
   | "izanamiDiscardGraveSpiritReturnOnSummon"
@@ -422,6 +426,26 @@ function summonTriggerOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-golem-sentry-turn-set-flip-to-hand.test.ts",
+      kind: "summonSetFlipToHand",
+      required: [
+        "restores ignition turn-set flag and flip-summon mandatory target return",
+        'const golemCode = "52323207"',
+        "e1:SetCategory(CATEGORY_POSITION+CATEGORY_SET)",
+        "c:RegisterFlagEffect(id,RESET_EVENT|(RESETS_STANDARD_PHASE_END&~RESET_TURN_SET),0,1)",
+        "Duel.ChangePosition(c,POS_FACEDOWN_DEFENSE)",
+        "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,Card.IsAbleToHand,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        'eventName: "flipSummoned"',
+        'eventName: "sentToHand"',
+        'eventName === "positionChanged"',
+        "operationInfos",
+        "category: 0x8",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-yaksha-spirit-backrow-return.test.ts",
       kind: "summonToHandBounce",
       required: [
@@ -677,6 +701,21 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-golem-sentry-turn-set-flip-to-hand.test.ts",
+      kind: "golemSentryTurnSetFlipReturn",
+      requiredSnippets: [
+        'const golemCode = "52323207"',
+        "restores ignition turn-set flag and flip-summon mandatory target return",
+        "c:GetFlagEffect(id)==0",
+        "Duel.SetOperationInfo(0,CATEGORY_POSITION,c,1,tp,POS_FACEDOWN_DEFENSE)",
+        "Duel.SelectTarget(tp,Card.IsAbleToHand,tp,0,LOCATION_MZONE,1,1,nil)",
+        'eventName === "positionChanged"',
+        'eventName: "flipSummoned"',
+        'eventName: "sentToHand"',
+        "eventReasonEffectId: 2",
+      ],
+    },
+    {
       file: "test/lua-real-script-yaksha-spirit-backrow-return.test.ts",
       kind: "yakshaBackrowReturnOnSummon",
       requiredSnippets: [
@@ -707,6 +746,7 @@ function countSummonTriggerOperationKinds(
       summonSearchDiscard: 0,
       summonSearchSelfSummon: 0,
       summonSelfDestroy: 0,
+      summonSetFlipToHand: 0,
       summonSuccessHandSpecialSummon: 0,
       summonToGraveGraveyardRevive: 0,
       summonStepReviveDisable: 0,
@@ -735,6 +775,7 @@ function countSummonTriggerOperationSemanticVariants(
       gemArmadilloNormalSummonSearch: 0,
       gemKnightObsidianHandToGraveyardRevive: 0,
       gishkiNataliaGraveToDeckTopOnSummon: 0,
+      golemSentryTurnSetFlipReturn: 0,
       hanShiKyudoColumnReturnOnSummon: 0,
       ichikiSayoriHimeEffectSummonSearch: 0,
       izanamiDiscardGraveSpiritReturnOnSummon: 0,
