@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 7;
+const damageStepStatFixtureCount = 8;
 const damageStepStatKindCounts = {
-  activatedDamageStepBoost: 4,
+  activatedDamageStepBoost: 5,
   labelObjectCostBoost: 1,
   mandatoryPreDamageBoost: 1,
   persistentDamageStepDebuff: 1,
@@ -17,6 +17,7 @@ const damageStepStatSemanticVariantCounts = {
   gamilDefenderBranchSelfToGraveBoost: 1,
   injectionFairyLilyPreDamageLpBoost: 1,
   miniaturizePersistentDamageStepDebuff: 1,
+  reliableGuardianTargetedDamageStepDefenseUpdate: 1,
   rushRecklesslyTargetedDamageStepBoost: 1,
   shinobirdCrowLabelObjectCostBoost: 1,
 } satisfies Record<DamageStepStatSemanticVariant, number>;
@@ -32,6 +33,7 @@ type DamageStepStatSemanticVariant =
   | "gamilDefenderBranchSelfToGraveBoost"
   | "injectionFairyLilyPreDamageLpBoost"
   | "miniaturizePersistentDamageStepDebuff"
+  | "reliableGuardianTargetedDamageStepDefenseUpdate"
   | "rushRecklesslyTargetedDamageStepBoost"
   | "shinobirdCrowLabelObjectCostBoost";
 
@@ -150,6 +152,19 @@ function damageStepStatFixtureFiles(): Array<{
         "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
         "currentAttack(restoredAttacker",
         "battleDamage).toEqual({ 0: 0, 1: 200 })",
+        "eventHistory.filter((event) => event.eventName === \"battleDamageDealt\")",
+      ],
+    },
+    {
+      file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
+      kind: "activatedDamageStepBoost",
+      required: [
+        "expectCleanRestore(restoredActivation)",
+        "expectCleanRestore(restoredBoost)",
+        "aux.StatChangeDamageStepCondition",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "currentDefense(restoredDefender",
+        "battleDamage).toEqual({ 0: 0, 1: 100 })",
         "eventHistory.filter((event) => event.eventName === \"battleDamageDealt\")",
       ],
     },
@@ -306,6 +321,19 @@ function damageStepStatSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
+      kind: "reliableGuardianTargetedDamageStepDefenseUpdate",
+      required: [
+        'const reliableGuardianCode = "16430187"',
+        "restores targeted Damage Step DEF update activation and preserves the boosted defense through battle",
+        "e1:SetCategory(CATEGORY_DEFCHANGE)",
+        "property: 0x4010",
+        "e1:SetValue(700)",
+        "currentDefense(restoredDefender",
+        "battleDamage).toEqual({ 0: 0, 1: 100 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
       kind: "cipherSoldierMandatoryPreDamageBoost",
       required: [
@@ -338,6 +366,7 @@ function countDamageStepStatSemanticVariants(
       gamilDefenderBranchSelfToGraveBoost: 0,
       injectionFairyLilyPreDamageLpBoost: 0,
       miniaturizePersistentDamageStepDebuff: 0,
+      reliableGuardianTargetedDamageStepDefenseUpdate: 0,
       rushRecklesslyTargetedDamageStepBoost: 0,
       shinobirdCrowLabelObjectCostBoost: 0,
     },

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 21;
+const statFixtureCount = 22;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -22,6 +22,7 @@ const statKindCounts = {
   selfFinalAttackEndDestroy: 1,
   staticAttackAndExtraAttack: 1,
   targetedDamageStepAttackUpdate: 1,
+  targetedDamageStepDefenseUpdate: 1,
   targetedPreDamageFinalAttack: 1,
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
@@ -38,6 +39,7 @@ const statSemanticVariantCounts = {
   neoFlamvellSabreGraveCountThresholdStat: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
+  reliableGuardianTargetedDamageStepDefenseUpdate: 1,
   rushRecklesslyTargetedDamageStepAttackUpdate: 1,
   sangaPreDamageFinalAttackZero: 1,
   shrinkTargetBaseAtkHalving: 1,
@@ -48,7 +50,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
@@ -65,6 +67,7 @@ type StatSemanticVariant =
   | "perfectMachineKingMatchingFaceupRaceCountStat"
   | "plagueWolfFinalAttackEndDestroy"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
+  | "reliableGuardianTargetedDamageStepDefenseUpdate"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
   | "shrinkTargetBaseAtkHalving"
@@ -299,6 +302,22 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
+      kind: "targetedDamageStepDefenseUpdate",
+      required: [
+        "e1:SetCategory(CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "tc:IsRelateToEffect(e) and tc:IsFaceup()",
+        "e1:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e1:SetValue(700)",
+        "currentDefense(restoredDefender, restoredBoost.session.state)).toBe(1700)",
+        "battleDamage).toEqual({ 0: 0, 1: 100 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
       kind: "targetedPreDamageFinalAttack",
       required: [
@@ -410,6 +429,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       selfFinalAttackEndDestroy: 0,
       staticAttackAndExtraAttack: 0,
       targetedDamageStepAttackUpdate: 0,
+      targetedDamageStepDefenseUpdate: 0,
       targetedPreDamageFinalAttack: 0,
     },
   );
@@ -571,6 +591,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
+      kind: "reliableGuardianTargetedDamageStepDefenseUpdate",
+      required: [
+        'const reliableGuardianCode = "16430187"',
+        "restores targeted Damage Step DEF update activation and preserves the boosted defense through battle",
+        "e1:SetCategory(CATEGORY_DEFCHANGE)",
+        "currentDefense(restoredDefender, restoredBoost.session.state)).toBe(1700)",
+        "players[1].lifePoints).toBe(7900)",
+      ],
+    },
+    {
       file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
       kind: "sangaPreDamageFinalAttackZero",
       required: [
@@ -661,6 +692,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
       plagueWolfFinalAttackEndDestroy: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
+      reliableGuardianTargetedDamageStepDefenseUpdate: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
       shrinkTargetBaseAtkHalving: 0,
