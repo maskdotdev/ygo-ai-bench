@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 19;
+const DRAW_RECOVER_FIXTURE_COUNT = 20;
 const drawRecoverKindCounts = {
   costBanishDraw: 3,
   costDiscardDraw: 1,
   costGraveDraw: 1,
   drawRecoverOrDamage: 2,
-  drawTrigger: 7,
+  drawTrigger: 8,
   handToDeckDraw: 1,
   negateThenDraw: 1,
   overlayDetachDraw: 1,
@@ -32,6 +32,7 @@ const drawRecoverSemanticVariantCounts = {
   naturiaRagweedOpponentDrawTrigger: 1,
   potDesiresFaceDownDeckCostDraw: 1,
   potExtravaganceRandomExtraCostDrawLock: 1,
+  sacredCraneSelfSpecialDraw: 1,
   shinobirdCraneSpiritSummonDraw: 1,
   skullMarkLadybugToGraveRecover: 1,
   tradeInLevel8DiscardDraw: 1,
@@ -56,6 +57,7 @@ type DrawRecoverSemanticVariant =
   | "naturiaRagweedOpponentDrawTrigger"
   | "potDesiresFaceDownDeckCostDraw"
   | "potExtravaganceRandomExtraCostDrawLock"
+  | "sacredCraneSelfSpecialDraw"
   | "shinobirdCraneSpiritSummonDraw"
   | "skullMarkLadybugToGraveRecover"
   | "tradeInLevel8DiscardDraw"
@@ -253,6 +255,21 @@ function drawRecoverFixtureFiles(): Array<{
         "targetParam: 1",
         "operationInfos",
         "card of safe return responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sacred-crane-special-summon-draw.test.ts",
+      kind: "drawTrigger",
+      required: [
+        'eventName: "specialSummoned"',
+        'eventName: "cardsDrawn"',
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(1)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "operationInfos",
+        "sacred crane responder resolved",
       ],
     },
     {
@@ -580,6 +597,19 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-sacred-crane-special-summon-draw.test.ts",
+      kind: "sacredCraneSelfSpecialDraw",
+      required: [
+        'const sacredCraneCode = "30914564"',
+        "restores its self Special Summon trigger into CHAININFO-targeted controller draw",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "eventName: \"specialSummoned\"",
+        "eventName: \"cardsDrawn\"",
+        "sacred crane responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-shinobird-crane-spirit-summon-draw.test.ts",
       kind: "shinobirdCraneSpiritSummonDraw",
       required: [
@@ -667,6 +697,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       naturiaRagweedOpponentDrawTrigger: 0,
       potDesiresFaceDownDeckCostDraw: 0,
       potExtravaganceRandomExtraCostDrawLock: 0,
+      sacredCraneSelfSpecialDraw: 0,
       shinobirdCraneSpiritSummonDraw: 0,
       skullMarkLadybugToGraveRecover: 0,
       tradeInLevel8DiscardDraw: 0,
