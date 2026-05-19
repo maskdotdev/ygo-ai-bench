@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const PERSISTENT_FIXTURE_COUNT = 17;
+const PERSISTENT_FIXTURE_COUNT = 18;
 const TARGETED_PERSISTENT_FIXTURE_COUNT = 13;
 const REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT = 2;
 const SPIRITS_INVITATION_PERSISTENT_FIXTURE_COUNT = 1;
@@ -15,7 +15,7 @@ const persistentKindCounts = {
   persistentDamage: 3,
   protection: 1,
   ritualOverlay: 1,
-  specialSummonLock: 1,
+  specialSummonLock: 2,
   statModifier: 3,
   targetedDisableOrLock: 3,
 } satisfies Record<PersistentKind, number>;
@@ -32,6 +32,7 @@ const persistentSemanticVariantCounts = {
   moonDanceRitualEndPhaseOverlayMove: 1,
   nightmareWheelStandbyDamageRelation: 1,
   phantomKnightsFogBladeDisableAttackTargetLock: 1,
+  powerFilterBothPlayerAttackSpecialSummonRestriction: 1,
   prematureBurialEquipReviveDestroyRelation: 1,
   rareMetalmorphTargetBoostSpellNegateWatcher: 1,
   safeZoneProtectionTargetabilityCleanup: 1,
@@ -64,6 +65,7 @@ type PersistentSemanticVariant =
   | "moonDanceRitualEndPhaseOverlayMove"
   | "nightmareWheelStandbyDamageRelation"
   | "phantomKnightsFogBladeDisableAttackTargetLock"
+  | "powerFilterBothPlayerAttackSpecialSummonRestriction"
   | "prematureBurialEquipReviveDestroyRelation"
   | "rareMetalmorphTargetBoostSpellNegateWatcher"
   | "safeZoneProtectionTargetabilityCleanup"
@@ -206,6 +208,7 @@ function realScriptTargetedPersistentFixtureFiles(): string[] {
       !file.includes("gravity-bind")
       && !file.includes("level-limit")
       && !file.includes("messenger-peace")
+      && !file.includes("power-filter")
       && !file.includes("swords-revealing-light")
     );
 }
@@ -319,6 +322,10 @@ function realScriptPersistentFixtures(): Array<{ file: string; kind: PersistentK
     {
       file: "lua-real-script-phantom-knights-fog-blade-persistent-battle-target.test.ts",
       kind: "targetedDisableOrLock",
+    },
+    {
+      file: "lua-real-script-power-filter-special-summon-lock.test.ts",
+      kind: "specialSummonLock",
     },
     {
       file: "lua-real-script-rare-metalmorph-persistent-chain-solving-negate.test.ts",
@@ -467,6 +474,16 @@ function persistentSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-power-filter-special-summon-lock.test.ts",
+      kind: "powerFilterBothPlayerAttackSpecialSummonRestriction",
+      required: [
+        'const powerFilterCode = "19844995"',
+        "restores official Continuous Spell both-player 1000-or-less ATK Special Summon restriction",
+        "target:attack-below:1000",
+        "power filter can special false/false/true/false/false/true",
+      ],
+    },
+    {
       file: "lua-real-script-premature-burial-revive-destroy.test.ts",
       kind: "prematureBurialEquipReviveDestroyRelation",
       required: [
@@ -596,6 +613,7 @@ function countPersistentSemanticVariants(
       moonDanceRitualEndPhaseOverlayMove: 0,
       nightmareWheelStandbyDamageRelation: 0,
       phantomKnightsFogBladeDisableAttackTargetLock: 0,
+      powerFilterBothPlayerAttackSpecialSummonRestriction: 0,
       prematureBurialEquipReviveDestroyRelation: 0,
       rareMetalmorphTargetBoostSpellNegateWatcher: 0,
       safeZoneProtectionTargetabilityCleanup: 0,
