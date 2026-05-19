@@ -13,6 +13,11 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const customActivityChainAtLeast = snippet.match(/\breturn\s+Duel\s*\.\s*GetCustomActivityCount\s*\(\s*[^,]+,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s*,\s*ACTIVITY_CHAIN\s*\)\s*>=\s*(\d+)/);
   if (customActivityChainAtLeast?.[1]) return `condition:custom-activity-chain-count-at-least:${customActivityChainAtLeast[1]}`;
   if (/\breturn\s+Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s*~=\s*PHASE_DRAW\b/.test(snippet)) return "condition:not-draw-phase";
+  const damageSourceRelateBattleTargetAttribute = /\bDuel\s*\.\s*GetCurrentPhase\s*\(\s*\)/.test(snippet) && /\bPHASE_DAMAGE\b/.test(snippet) && /\bPHASE_DAMAGE_CAL\b/.test(snippet) && /\bIsRelateToBattle\s*\(\s*\)/.test(snippet) && /\bGetBattleTarget\s*\(\s*\)/.test(snippet)
+    ? snippet.match(new RegExp(`\\bIsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`))
+    : undefined;
+  const damageSourceRelateBattleTargetAttributeValue = damageSourceRelateBattleTargetAttribute?.[1] ? luaNumberExpressionValue(L, index, damageSourceRelateBattleTargetAttribute[1]) : undefined;
+  if (damageSourceRelateBattleTargetAttributeValue !== undefined) return `condition:damage-source-relate-battle-target-faceup-attribute:${damageSourceRelateBattleTargetAttributeValue}`;
   if (/\blocal\s+\w+\s*=\s*Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s+\breturn\s+(?:\w+\s*==\s*PHASE_DAMAGE\s+or\s+\w+\s*==\s*PHASE_DAMAGE_CAL|\w+\s*==\s*PHASE_DAMAGE_CAL\s+or\s+\w+\s*==\s*PHASE_DAMAGE)\s*(?:end\b|$)/.test(snippet)) return "condition:damage-or-damage-calculation";
   const equippedTargetSetcode = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const localEquippedTargetSetcode = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s+return\\s+\\1\\s+and\\s+\\1\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));

@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 14;
+const statFixtureCount = 15;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
+  damageStepBattleTargetAttributeAttackBoost: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 1,
   fieldAttributeAttackUpdate: 2,
@@ -26,6 +27,7 @@ const statSemanticVariantCounts = {
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
   jurassicWorldTargetBoolFunctionRaceStat: 1,
+  luminousSoldierDamageStepTargetAttributeStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mukaMukaHandCountAttackDefense: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
@@ -36,7 +38,7 @@ const statSemanticVariantCounts = {
   steamroidDamageStepBattleSwingStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
   | "bladeflyFieldAttributeAttackUpdate"
@@ -44,6 +46,7 @@ type StatSemanticVariant =
   | "fortuneLadyPastCallbackSetAtkDef"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
   | "jurassicWorldTargetBoolFunctionRaceStat"
+  | "luminousSoldierDamageStepTargetAttributeStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mukaMukaHandCountAttackDefense"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
@@ -159,6 +162,18 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredDinosaurAttacker, restored.session.state)).toBe(1300)",
         "currentDefense(restoredDinosaurDefender, restored.session.state)).toBe(1900)",
         "battleDamage[1]).toBe(100)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-luminous-soldier-phase-attribute-stat.test.ts",
+      kind: "damageStepBattleTargetAttributeAttackBoost",
+      required: [
+        "local ph=Duel.GetCurrentPhase()",
+        "e:GetHandler():IsRelateToBattle()",
+        "bc:IsFaceup() and bc:IsAttribute(ATTRIBUTE_DARK)",
+        "condition:damage-source-relate-battle-target-faceup-attribute:32",
+        "currentAttack(restoredBoostedSoldier, restoredBoosted.session.state)).toBe((boosted.luminousSoldier.data.attack ?? 0) + 500)",
+        "battleDamage).toEqual({ 0: 0, 1: expectedBoostedDamage })",
       ],
     },
     {
@@ -286,6 +301,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
     {
       battleAttackerTargetSwing: 0,
       battleTargetAttackBoost: 0,
+      damageStepBattleTargetAttributeAttackBoost: 0,
       fieldAttributeAttackUpdate: 0,
       fieldGroupCountStat: 0,
       fieldLevelOrRankAttackDefenseUpdate: 0,
@@ -362,6 +378,16 @@ function statSemanticVariants(): Array<{
         "restores aux.TargetBoolFunction Card.IsRace ATK and DEF field updates into battle damage",
         "target:race:65536",
         "e2:SetTarget(aux.TargetBoolFunction(Card.IsRace,RACE_DINOSAUR))",
+      ],
+    },
+    {
+      file: "test/lua-real-script-luminous-soldier-phase-attribute-stat.test.ts",
+      kind: "luminousSoldierDamageStepTargetAttributeStat",
+      required: [
+        'const luminousSoldierCode = "57482479"',
+        "restores Damage Step DARK battle-target ATK update into battle damage",
+        "condition:damage-source-relate-battle-target-faceup-attribute:32",
+        "players[1].lifePoints).toBe(8000 - expectedBoostedDamage)",
       ],
     },
     {
@@ -464,6 +490,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       fortuneLadyPastCallbackSetAtkDef: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
+      luminousSoldierDamageStepTargetAttributeStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mukaMukaHandCountAttackDefense: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
