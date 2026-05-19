@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 17;
+const statFixtureCount = 18;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
-  damageStepBattleTargetAttributeAttackBoost: 1,
+  damageStepBattleTargetAttributeAttackBoost: 2,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 2,
   fieldMatchingFaceupRaceCountStat: 1,
@@ -23,6 +23,7 @@ const statKindCounts = {
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
   alLumirajLevelOrRankFieldStat: 1,
+  aojGaradholgDuelBattleTargetAttributeStat: 1,
   bladeflyFieldAttributeAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
@@ -44,6 +45,7 @@ const statSemanticVariantCounts = {
 type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "alLumirajLevelOrRankFieldStat"
+  | "aojGaradholgDuelBattleTargetAttributeStat"
   | "bladeflyFieldAttributeAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
@@ -110,6 +112,18 @@ function statFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-aoj-garadholg-battle-light-stat.test.ts",
+      kind: "damageStepBattleTargetAttributeAttackBoost",
+      required: [
+        "local a=Duel.GetAttacker()",
+        "local d=Duel.GetAttackTarget()",
+        "d:IsFaceup() and d:IsAttribute(ATTRIBUTE_LIGHT)",
+        "condition:damage-source-relate-battle-target-faceup-attribute:16",
+        "currentAttack(restoredAttacking.session.state.cards.find((card) => card.uid === attacking.garadholg.uid), restoredAttacking.session.state)).toBe((attacking.garadholg.data.attack ?? 0) + 200)",
+        "battleDamage).toEqual({ 0: 0, 1: 300 })",
+      ],
+    },
     {
       file: "test/lua-real-script-al-lumiraj-level-rank-field-stat.test.ts",
       kind: "fieldLevelOrRankAttackDefenseUpdate",
@@ -352,6 +366,16 @@ function statSemanticVariants(): Array<{
 }> {
   return ([
     {
+      file: "test/lua-real-script-aoj-garadholg-battle-light-stat.test.ts",
+      kind: "aojGaradholgDuelBattleTargetAttributeStat",
+      required: [
+        'const garadholgCode = "25771826"',
+        "restores its damage-step ATK boost when battling a LIGHT monster as attacker or defender",
+        "condition:damage-source-relate-battle-target-faceup-attribute:16",
+        "players[1].lifePoints).toBe(7700)",
+      ],
+    },
+    {
       file: "test/lua-real-script-al-lumiraj-level-rank-field-stat.test.ts",
       kind: "alLumirajLevelOrRankFieldStat",
       required: [
@@ -534,6 +558,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
     },
     {
       alLumirajLevelOrRankFieldStat: 0,
+      aojGaradholgDuelBattleTargetAttributeStat: 0,
       bladeflyFieldAttributeAttackUpdate: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,

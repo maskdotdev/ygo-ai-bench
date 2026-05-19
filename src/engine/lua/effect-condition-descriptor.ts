@@ -20,6 +20,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
     : undefined;
   const damageSourceRelateBattleTargetAttributeValue = damageSourceRelateBattleTargetAttribute?.[1] ? luaNumberExpressionValue(L, index, damageSourceRelateBattleTargetAttribute[1]) : undefined;
   if (damageSourceRelateBattleTargetAttributeValue !== undefined) return `condition:damage-source-relate-battle-target-faceup-attribute:${damageSourceRelateBattleTargetAttributeValue}`;
+  const damageSourceDuelBattleTargetAttributeValue = damageSourceDuelBattleTargetAttributeDescriptor(L, index, snippet);
+  if (damageSourceDuelBattleTargetAttributeValue !== undefined) return `condition:damage-source-relate-battle-target-faceup-attribute:${damageSourceDuelBattleTargetAttributeValue}`;
   if (/\blocal\s+\w+\s*=\s*Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s+\breturn\s+(?:\w+\s*==\s*PHASE_DAMAGE\s+or\s+\w+\s*==\s*PHASE_DAMAGE_CAL|\w+\s*==\s*PHASE_DAMAGE_CAL\s+or\s+\w+\s*==\s*PHASE_DAMAGE)\s*(?:end\b|$)/.test(snippet)) return "condition:damage-or-damage-calculation";
   const equippedTargetSetcode = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const localEquippedTargetSetcode = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetEquipTarget\\s*\\(\\s*\\)\\s+return\\s+\\1\\s+and\\s+\\1\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
@@ -378,6 +380,14 @@ function ownFaceupNormalSummonProcedureDescriptor(L: unknown, functionIndex: num
   const sourceLevelAbove = new RegExp(`\\b${card}\\s*:\\s*GetLevel\\s*\\(\\s*\\)\\s*>\\s*(\\d+)`).exec(snippet)?.[1] ?? "0";
   const ownFaceupFilter = ownFaceupNormalSummonFilterDescriptor(L, functionIndex, filterSnippet);
   return ownFaceupFilter === undefined ? undefined : `condition:normal-summon-proc-own-faceup:${ownFaceupFilter.kind}:${ownFaceupFilter.value}:source-level-above:${sourceLevelAbove}`;
+}
+
+function damageSourceDuelBattleTargetAttributeDescriptor(L: unknown, functionIndex: number, snippet: string): number | undefined {
+  if (!/\bDuel\s*\.\s*GetCurrentPhase\s*\(\s*\)/.test(snippet) || !/\bPHASE_DAMAGE\b/.test(snippet) || !/\bPHASE_DAMAGE_CAL\b/.test(snippet)) return undefined;
+  if (!/\bDuel\s*\.\s*GetAttacker\s*\(\s*\)/.test(snippet) || !/\bDuel\s*\.\s*GetAttackTarget\s*\(\s*\)/.test(snippet)) return undefined;
+  if (!/\bIsFaceup\s*\(\s*\)/.test(snippet)) return undefined;
+  const attribute = snippet.match(new RegExp(`\\bIsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`))?.[1];
+  return attribute === undefined ? undefined : luaNumberExpressionValue(L, functionIndex, attribute);
 }
 
 function ownFaceupNormalSummonFilterDescriptor(L: unknown, functionIndex: number, snippet: string): { kind: "attribute" | "code" | "level"; value: number } | undefined {
