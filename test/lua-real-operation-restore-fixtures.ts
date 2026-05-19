@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 78;
+export const operationFixtureCount = 79;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -30,6 +30,7 @@ export const operationKindCounts = {
   handDiscardDraw: 1,
   handToDeckDraw: 1,
   fiveGraveToDeckShuffleDraw: 2,
+  ignitionSelfGraveDeckSummon: 1,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
   monsterIgnitionSpellTrapDestroy: 1,
@@ -87,6 +88,7 @@ export type OperationKind =
   | "handDiscardDraw"
   | "handToDeckDraw"
   | "fiveGraveToDeckShuffleDraw"
+  | "ignitionSelfGraveDeckSummon"
   | "lpCostHandDiscard"
   | "lpCostRandomHandDiscard"
   | "monsterIgnitionSpellTrapDestroy"
@@ -605,6 +607,22 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-armed-dragon-thunder-lv7-ignition-summon.test.ts",
+      kind: "ignitionSelfGraveDeckSummon",
+      required: [
+        "restores LoadCardScript-backed ignition cost, self to-Graveyard, and Deck Special Summon",
+        'Duel.LoadCardScript("c73879377.lua")',
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "Duel.SendtoGrave(c,REASON_EFFECT)>0",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        "category: 0x20",
+        "category: 0x200",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-nobleman-crossout-banish-destroy.test.ts",
       kind: "targetDestroyRemove",
       required: [
@@ -998,6 +1016,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handDiscardDraw: 0,
       handToDeckDraw: 0,
       fiveGraveToDeckShuffleDraw: 0,
+      ignitionSelfGraveDeckSummon: 0,
       lpCostHandDiscard: 0,
       lpCostRandomHandDiscard: 0,
       monsterIgnitionSpellTrapDestroy: 0,
