@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 117;
+export const operationFixtureCount = 118;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -49,7 +49,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 3,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 35,
+  searchOrExcavate: 36,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -937,6 +937,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-lady-debug-summon-special-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetProperty(EFFECT_FLAG_DELAY)", "e2:SetCode(EVENT_SPSUMMON_SUCCESS)", "return c:IsLevelBelow(3) and c:IsRace(RACE_CYBERSE) and c:IsAbleToHand()", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-majespecter-raccoon-summon-search-protection.test.ts", kind: "searchOrExcavate", required: ["e2:SetCode(EVENT_SUMMON_SUCCESS)", "e3:SetCode(EVENT_SPSUMMON_SUCCESS)", "return c:IsSetCard(SET_MAJESPECTER) and c:IsMonster() and c:IsAbleToHand()", 'luaValueDescriptor: "cannot-be-effect-target:opponent"', 'luaValueDescriptor: "indestructible:opponent"', "targetUids).toEqual([vulnerable.uid])", 'eventName: "sentToHandConfirmed"'] },
     { file: "test/lua-real-script-bonfire-oath-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "return c:IsLevelBelow(4) and c:IsRace(RACE_PYRO) and c:IsAbleToHand()", "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-scrapyard-tuner-search.test.ts", kind: "searchOrExcavate", required: ["restores free-chain Scrap Tuner Deck search and confirmation filtering", "return c:IsSetCard(SET_SCRAP) and c:IsType(TYPE_TUNER) and c:IsAbleToHand()", "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)", "Duel.ConfirmCards(1-tp,g)", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-preparation-rites-optional-grave-search.test.ts", kind: "searchOrExcavate", required: ["Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_GRAVE)", "Duel.GetMatchingGroup(aux.NecroValleyFilter(s.filter2),tp,LOCATION_GRAVE,0,nil)", "Duel.SelectYesNo(tp,aux.Stringid(id,0))", "Duel.BreakEffect()", 'eventName: "sentToHandConfirmed"', 'api: "SelectYesNo"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-true-name-announce-decktop-tohand.test.ts", kind: "searchOrExcavate", required: ["Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,1)", "aux.ToHandOrElse(sc,tp,", 'api: "AnnounceCard"', 'api: "SelectYesNo"', 'api: "SelectOption"', 'eventName: "confirmed"', 'eventName: "sentToHand"', 'eventName: "sentToHandConfirmed"', "shuffleCheckDisabled).toBe(true)"] },
     { file: "test/lua-real-script-archfiends-oath-lp-decktop.test.ts", kind: "searchOrExcavate", required: ["e2:SetCost(Cost.PayLP(500))", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,1)", "operationInfos).toEqual([", 'eventName: "lifePointCostPaid"', 'eventName: "confirmed"', 'eventName: "sentToHand"', "players[0].lifePoints).toBe(7500)", "shuffleCheckDisabled).toBe(true)"] },
