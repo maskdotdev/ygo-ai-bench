@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 178;
+export const operationFixtureCount = 179;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -94,6 +94,7 @@ export const operationKindCounts = {
   ritualDeckMaterials: 1,
   searchOrExcavate: 37,
   selfEquipFromHand: 1,
+  selfBanishTargetStat: 1,
   setAttackFinalSpecialDamage: 1,
   selectEffectStat: 1,
   selectEffectStatDestroyedToGrave: 1,
@@ -217,6 +218,7 @@ export type OperationKind =
   | "ritualDeckMaterials"
   | "searchOrExcavate"
   | "selfEquipFromHand"
+  | "selfBanishTargetStat"
   | "setAttackFinalSpecialDamage"
   | "selectEffectStat"
   | "selectEffectStatDestroyedToGrave"
@@ -1711,6 +1713,27 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-dynatag-self-banish-target-stat.test.ts",
+      kind: "selfBanishTargetStat",
+      required: [
+        "restores graveyard self-banish cost into targeted Destiny HERO ATK boost",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "Duel.RDComplete()",
+        "e2:SetCategory(CATEGORY_ATKCHANGE)",
+        "e2:SetRange(LOCATION_GRAVE)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "return c:IsFaceup() and c:IsSetCard(SET_DESTINY_HERO)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END|RESET_OPPO_TURN)",
+        "e1:SetValue(1000)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid), restoredOpen.session.state)).toBe(2800)",
+        'eventName: "banished"',
+        'eventName: "becameTarget"',
+        "operationInfos",
+      ],
+    },
+    {
       file: "test/lua-real-script-heavy-storm-group-destroy.test.ts",
       kind: "groupDestroy",
       required: [
@@ -2561,6 +2584,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
+      selfBanishTargetStat: 0,
       setAttackFinalSpecialDamage: 0,
       selectEffectStat: 0,
       selectEffectStatDestroyedToGrave: 0,
