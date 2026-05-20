@@ -43,6 +43,7 @@ const luaEffectRemainField = 17;
 const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
 const luaEffectClockLizard = 51476410;
+const luaEffectPierce = 203;
 const luaEffectIndestructibleEffect = 41;
 const luaEffectIndestructibleBattle = 42;
 const luaEffectForceMonsterZone = 265;
@@ -64,6 +65,7 @@ const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
 const luaGreatLongNoseCode = "2356994";
 const luaXxSaberDarksoulCode = "31383545";
+const luaFamiliarPossessedDharcCode = "21390858";
 const luaDarkMagicExpandedCode = "111280";
 const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
@@ -605,6 +607,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownChangeBattleStatToDefenseEffect(effect) ||
+        isKnownDharcProcedurePierceEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
         isKnownCalledByTheGraveChainSolvingNegateEffect(effect) ||
         isKnownGishkiEmiliaTrapNegateEffect(effect) ||
@@ -645,6 +648,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
 }
 
 function isKnownChangeBattleStatToDefenseEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 198 && effect.luaValueDescriptor === "stat:current-defense" && effect.luaTargetDescriptor === "target:source-or-battle-target" && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange?.[0] === 4 && effect.targetRange?.[1] === 4 && effect.reset !== undefined; }
+function isKnownDharcProcedurePierceEffect(effect: SerializedDuelEffect): boolean { return Boolean(effect.registryKey?.startsWith(`lua:${luaFamiliarPossessedDharcCode}:`)) && effect.event === "continuous" && effect.code === luaEffectPierce && effect.sourceUid !== undefined && hasDefaultLuaFieldRange(effect) && effect.reset?.flags === 0xff1000; }
 function isKnownTemporaryMustAttackEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && (effect.code === 191 || (effect.code === 344 && effect.label !== undefined)) && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.reset !== undefined; }
 
 function isKnownStatValueEffect(effect: SerializedDuelEffect): boolean { return effect.code !== undefined && [100, 103, 104, 107, 130, 131, 132, 134, 135, 136, 137, 314].includes(effect.code) && (effect.value !== undefined || luaValueDescriptorStatValue(effect.luaValueDescriptor, effect.id) !== undefined); }

@@ -21,7 +21,7 @@ export function luaSpecialSummonTypeCode(summonTypeCode: number): number {
 
 export function summonProcedureTypeCodeFromValue(value: number | undefined): number | undefined {
   if (value === undefined || !Number.isSafeInteger(value)) return undefined;
-  return (value & luaSummonTypeSpecial) === luaSummonTypeSpecial ? value : undefined;
+  return luaSpecialSummonTypeCode(value);
 }
 
 export function isFaceDownExtraDeckSummonTypeCode(summonTypeCode: number | undefined): boolean {

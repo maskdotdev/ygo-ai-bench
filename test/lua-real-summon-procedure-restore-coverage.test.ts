@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 11;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 10;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 12;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 11;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
-  deckTwoMaterialShufflePierceProcedure: 1,
+  deckTwoMaterialShufflePierceProcedure: 2,
   graveBanishCostStatProcedure: 1,
   handOwnFaceupAttributeOpenZoneProcedure: 1,
   handAttributeBanishCostSearchProcedure: 1,
@@ -23,6 +23,7 @@ const summonProcedureSemanticVariantCounts = {
   broadTypedExtraDeckSpiritGeminiProcedures: 1,
   caligoClawCrowDarkMonsterOpenZoneProcedure: 1,
   collapserpentLightBanishCostSearchProcedure: 1,
+  familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure: 1,
   familiarPossessedDeckTwoMaterialShufflePierceProcedure: 1,
   gigaraysGandoraTwoMonsterSendCostProcedure: 1,
   greatMothCocoonEquipTurnCounterReleaseProcedure: 1,
@@ -49,6 +50,7 @@ type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
   | "caligoClawCrowDarkMonsterOpenZoneProcedure"
   | "collapserpentLightBanishCostSearchProcedure"
+  | "familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure"
   | "familiarPossessedDeckTwoMaterialShufflePierceProcedure"
   | "gigaraysGandoraTwoMonsterSendCostProcedure"
   | "greatMothCocoonEquipTurnCounterReleaseProcedure"
@@ -179,6 +181,25 @@ const summonProcedureFixtures = [
       'eventName: "released"',
       'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-familiar-possessed-dharc-special-summon-procedure-search.test.ts",
+    kind: "deckTwoMaterialShufflePierceProcedure",
+    required: [
+      "Deck summon procedure materials, pierce grant, and summon-success LIGHT Spellcaster search",
+      'const dharcCode = "21390858"',
+      'action.type === "specialSummonProcedure"',
+      "aux.SelectUnselectGroup(g1,e,tp,2,2,s.rescon,1,tp,HINTMSG_TOGRAVE)",
+      "Duel.SendtoGrave(g,REASON_COST)",
+      "Duel.ShuffleDeck(tp)",
+      "getLuaRestoreLegalActions(restoredProcedure, 0)).toEqual(getLegalActions(restoredProcedure.session, 0))",
+      "applyRestoredActionAndAssert(restoredProcedure, procedure!)",
+      'eventName: "sentToGraveyard"',
+      'eventName: "specialSummoned"',
+      'eventName: "sentToHandConfirmed"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "effect.code === 203",
     ],
   },
   {
@@ -371,6 +392,18 @@ function summonProcedureSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-familiar-possessed-dharc-special-summon-procedure-search.test.ts",
+      kind: "familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure",
+      required: [
+        'const dharcCode = "21390858"',
+        "restores its Deck summon procedure materials, pierce grant, and summon-success LIGHT Spellcaster search",
+        "aux.SelectUnselectGroup(g1,e,tp,2,2,s.rescon,1,tp,HINTMSG_TOGRAVE)",
+        "Duel.ShuffleDeck(tp)",
+        'eventName: "sentToHandConfirmed"',
+        "effect.code === 203",
+      ],
+    },
+    {
       file: "test/lua-real-script-familiar-possessed-hiita-deck-special-summon-procedure.test.ts",
       kind: "familiarPossessedDeckTwoMaterialShufflePierceProcedure",
       required: [
@@ -525,6 +558,7 @@ function countSummonProcedureSemanticVariants(
       broadTypedExtraDeckSpiritGeminiProcedures: 0,
       caligoClawCrowDarkMonsterOpenZoneProcedure: 0,
       collapserpentLightBanishCostSearchProcedure: 0,
+      familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure: 0,
       familiarPossessedDeckTwoMaterialShufflePierceProcedure: 0,
       gigaraysGandoraTwoMonsterSendCostProcedure: 0,
       greatMothCocoonEquipTurnCounterReleaseProcedure: 0,

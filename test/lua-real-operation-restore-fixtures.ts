@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 86;
+export const operationFixtureCount = 87;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -41,7 +41,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 2,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 17,
+  searchOrExcavate: 18,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -733,6 +733,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-xx-saber-darksoul-end-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)", "e1:SetCode(EVENT_PHASE+PHASE_END)", "return c:IsSetCard(SET_X_SABER) and c:IsMonster() and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "phaseEnd"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-radiant-typhoon-eldam-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCode(EFFECT_SPSUMMON_PROC)", "e2b:SetCode(EVENT_SPSUMMON_SUCCESS)", "not Duel.IsExistingMatchingCard(Card.IsSpellTrap,tp,0,LOCATION_ONFIELD,1,nil)", "return ((c:IsSetCard(SET_RADIANT_TYPHOON) and c:IsMonster()) or c:IsCode(CARD_MYSTICAL_SPACE_TYPHOON)) and c:IsAbleToHand() and not c:IsCode(id)", "operationInfos: [{ category: 0x8", 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-collapserpent-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e2:SetCode(EFFECT_SPSUMMON_PROC)", "aux.SelectUnselectGroup(rg,e,tp,1,1,nil,1,tp,HINTMSG_REMOVE,nil,nil,true)", "Duel.Remove(g,POS_FACEUP,REASON_COST)", "return c:IsCode(99234526) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "sentToGraveyard"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-familiar-possessed-dharc-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCode(EFFECT_SPSUMMON_PROC)", "aux.SelectUnselectGroup(g1,e,tp,2,2,s.rescon,1,tp,HINTMSG_TOGRAVE)", "Duel.SendtoGrave(g,REASON_COST)", "return (lv==3 or lv==4) and c:IsAttribute(ATTRIBUTE_LIGHT) and c:IsRace(RACE_SPELLCASTER) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-megalith-ophiel-ritual-summon-search.test.ts", kind: "searchOrExcavate", required: ["e:GetHandler():IsRitualSummoned()", "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)", "return c:IsSetCard(SET_MEGALITH) and c:IsMonster() and not c:IsCode(id) and c:IsAbleToHand()", "summonType: \"ritual\"", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-impcantation-candoll-hand-deck-summon-search.test.ts", kind: "searchOrExcavate", required: ["Duel.ShuffleHand(tp)", "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,2,tp,LOCATION_HAND|LOCATION_DECK)", "return c:IsRitualMonster() and c:IsAbleToHand()", "special-summon-limit:extra", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-yellow-gadget-summon-special-search.test.ts", kind: "searchOrExcavate", required: ["local e2=e1:Clone()", "e2:SetCode(EVENT_SPSUMMON_SUCCESS)", "Duel.GetFirstMatchingCard(s.filter,tp,LOCATION_DECK,0,nil)", "operationInfos: [{ category: 8", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
