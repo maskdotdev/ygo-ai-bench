@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 184;
+export const operationFixtureCount = 185;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -121,6 +121,7 @@ export const operationKindCounts = {
   targetDestroyDisableField: 1,
   targetDestroyReleaseCost: 1,
   targetDestroyRemove: 1,
+  targetDestroyRemoveRedirect: 1,
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
   targetToHandDiscardCost: 1,
@@ -250,6 +251,7 @@ export type OperationKind =
   | "targetDestroyDisableField"
   | "targetDestroyReleaseCost"
   | "targetDestroyRemove"
+  | "targetDestroyRemoveRedirect"
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
   | "targetToHandDiscardCost"
@@ -1934,6 +1936,26 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-decisive-armor-destroy-banish.test.ts",
+      kind: "targetDestroyRemoveRedirect",
+      required: [
+        "restores facedown target destruction redirected to banished",
+        "e3:SetCategory(CATEGORY_DESTROY+CATEGORY_REMOVE)",
+        "e3:SetType(EFFECT_TYPE_IGNITION)",
+        "e3:SetRange(LOCATION_MZONE)",
+        "return c:IsFacedown() and c:IsAbleToRemove()",
+        "Duel.SelectTarget(tp,s.desfilter,tp,0,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_REMOVE,g,1,0,0)",
+        "Duel.Destroy(tc,REASON_EFFECT,LOCATION_REMOVED)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "banished"',
+        'location: "banished"',
+        "operationInfos",
+      ],
+    },
+    {
       file: "test/lua-real-script-soul-release-target-banish.test.ts",
       kind: "targetBanish",
       required: [
@@ -2736,6 +2758,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDestroyDisableField: 0,
       targetDestroyReleaseCost: 0,
       targetDestroyRemove: 0,
+      targetDestroyRemoveRedirect: 0,
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
       targetToHandDiscardCost: 0,
