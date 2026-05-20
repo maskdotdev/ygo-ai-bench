@@ -1,9 +1,10 @@
-export const freeChainSpecialSummonFixtureCount = 10;
+export const freeChainSpecialSummonFixtureCount = 11;
 
 export const freeChainSpecialSummonKindCounts = {
   continuousSpellIgnitionHandSummon: 1,
   handNormalMonsterSummon: 1,
   nonTargetGraveSetcodeDefenseSummon: 1,
+  rankUpMagicXyzOverlaySummon: 1,
   trapMonsterAnnounceTraitSummonStep: 1,
   targetBanishedRockSummonStep: 1,
   targetGraveDragonSummonReplace: 1,
@@ -17,6 +18,7 @@ export type FreeChainSpecialSummonKind =
   | "continuousSpellIgnitionHandSummon"
   | "handNormalMonsterSummon"
   | "nonTargetGraveSetcodeDefenseSummon"
+  | "rankUpMagicXyzOverlaySummon"
   | "trapMonsterAnnounceTraitSummonStep"
   | "targetBanishedRockSummonStep"
   | "targetGraveDragonSummonReplace"
@@ -82,6 +84,27 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
         'eventName: "specialSummoned"',
         "eventReason: duelReason.summon | duelReason.specialSummon",
         'summonType: "special"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-limited-barians-force-rank-up-overlay.test.ts",
+      kind: "rankUpMagicXyzOverlaySummon",
+      required: [
+        "aux.GetMustBeMaterialGroup(tp,Group.FromCards(c),tp,nil,nil,REASON_XYZ)",
+        "Duel.GetLocationCountFromEx(tp,tp,mc,c)>0",
+        "Duel.SelectTarget(tp,s.filter1,tp,LOCATION_MZONE,0,1,1,nil,e,tp)",
+        "Duel.SelectMatchingCard(tp,s.filter2,tp,LOCATION_EXTRA,0,1,1,nil,e,tp,tc,tc:GetRank()+1,pg)",
+        "sc:SetMaterial(tc)",
+        "Duel.Overlay(sc,tc)",
+        "Duel.SpecialSummon(sc,SUMMON_TYPE_XYZ,tp,tp,false,false,POS_FACEUP)",
+        "sc:CompleteProcedure()",
+        "operationInfos: [{ category: 0x200",
+        "parameter: 0x40",
+        'summonType: "xyz"',
+        "overlayUids: [rank4.uid, priorMaterial.uid]",
+        "summonMaterialUids: [rank4.uid]",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
       ],
     },
     {
@@ -217,5 +240,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
 }

@@ -57,9 +57,17 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
       for (const attachedUid of attachedUids) {
         if (target.overlayUids.includes(attachedUid)) continue;
         const attached = session.state.cards.find((candidate) => candidate.uid === attachedUid);
-        if (!attached || !canMoveDuelCardToLocation(session.state, attachedUid, "overlay", duelReason.effect) || luaMoveBlockedByImmunity(L, session, hostState, attached, duelReason.effect)) continue;
+        if (!attached || luaMoveBlockedByImmunity(L, session, hostState, attached, duelReason.effect)) continue;
         removeOverlayReference(session.state, attachedUid);
-        moveDuelCard(session.state, attachedUid, "overlay", target.controller, duelReason.effect, reasonPlayer);
+        if (attached.location === "overlay") {
+          attached.controller = target.controller;
+          attached.reason = duelReason.effect;
+          attached.reasonPlayer = reasonPlayer;
+        } else if (canMoveDuelCardToLocation(session.state, attachedUid, "overlay", duelReason.effect)) {
+          moveDuelCard(session.state, attachedUid, "overlay", target.controller, duelReason.effect, reasonPlayer);
+        } else {
+          continue;
+        }
         applyReasonPayload(attached, payload);
         target.overlayUids.push(attachedUid);
         moved.push(attachedUid);
