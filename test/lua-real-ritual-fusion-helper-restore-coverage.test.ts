@@ -1,6 +1,6 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 40, ritual: 18 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 41, ritual: 18 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
@@ -19,6 +19,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionFcheck: 1,
   fusionGraveBanishMaterial: 1,
   fusionHandMaterial: 1,
+  fusionCreateSummonEffSetcodeFilter: 1,
   fusionHexSealedExtraRelease: 1,
   fusionMaterialCheck: 1,
   fusionOpponentExtrafil: 1,
@@ -61,6 +62,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
   luaPredicateFusionSubstitute: 1,
   meteonisRequirementFunc: 1,
   polymerizationHandMaterials: 1,
+  fullmetalfoesCreateSummonEffSetcodeFilter: 1,
   primiteFcheck: 1,
   primiteFcheckSuppression: 1,
   secretsDarkMagicMatcheck: 1,
@@ -70,7 +72,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(58);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(59);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -146,6 +148,7 @@ type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummon
   | "fusionFcheck"
   | "fusionGraveBanishMaterial"
   | "fusionHandMaterial"
+  | "fusionCreateSummonEffSetcodeFilter"
   | "fusionHexSealedExtraRelease"
   | "fusionMaterialCheck"
   | "fusionOpponentExtrafil"
@@ -187,6 +190,7 @@ type RitualFusionHelperSemanticVariant =
   | "luaPredicateFusionSubstitute"
   | "meteonisRequirementFunc"
   | "polymerizationHandMaterials"
+  | "fullmetalfoesCreateSummonEffSetcodeFilter"
   | "primiteFcheck"
   | "primiteFcheckSuppression"
   | "secretsDarkMagicMatcheck"
@@ -274,6 +278,16 @@ function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: Ritua
         "Ritual.AddProcGreaterCode(c,3,nil,99414168)",
         "summonMaterialUids: [materialA.uid, materialB.uid]",
         "eventReasonCardUid: blessing.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fullmetalfoes-fusion-setcode-filter.test.ts",
+      kind: "fullmetalfoesCreateSummonEffSetcodeFilter",
+      required: [
+        "restores Fusion.CreateSummonEff with a Metalfoes Fusion-target filter",
+        'const fullmetalfoesFusionCode = "39564736"',
+        "Fusion.CreateSummonEff(c,aux.FilterBoolFunction(Card.IsSetCard,SET_METALFOES))",
+        "summonMaterialUids: [materialA.uid, materialB.uid]",
       ],
     },
     {
@@ -871,6 +885,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "restores graveyard Fusion materials and banishes them through Fusion.BanishMaterial",
       ],
     },
+    { file: "test/lua-real-script-fullmetalfoes-fusion-setcode-filter.test.ts", kind: "fusionCreateSummonEffSetcodeFilter", families: ["fusion"], required: ["Fusion.CreateSummonEff(c,aux.FilterBoolFunction(Card.IsSetCard,SET_METALFOES))", "expect(restored.session.state.cards.find((card) => card.uid === nonMetalfoesFusion.uid)).toMatchObject({", 'summonType: "fusion"', "summonMaterialUids: [materialA.uid, materialB.uid]", "reason: duelReason.effect | duelReason.material | duelReason.fusion", 'eventName: "specialSummoned"', 'expect(restored.host.messages).not.toContain("fullmetalfoes responder resolved")'] },
     { file: "test/lua-real-script-black-skull-dragon-addprocmix-fusion.test.ts", kind: "fusionAddProcMixMaterialMetadata", families: ["fusion"], required: ["Fusion.AddProcMix material metadata", "expect(blackSkull!.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])", "expect(restored.session.state.cards.find((card) => card.uid === blackSkull!.uid)?.data.fusionMaterials).toEqual([summonedSkullCode, redEyesCode])", "operationInfos).toEqual([", "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }", 'summonType: "fusion"', "summonMaterialUids: [summonedSkull!.uid, redEyes!.uid]", "reason: duelReason.effect | duelReason.material | duelReason.fusion", 'eventName === "usedAsMaterial"', 'eventName === "specialSummoned"', 'expect(restored.host.messages).not.toContain("black skull dragon responder resolved")'] },
     { file: "test/lua-real-script-gate-guardian-combined-table-unpack-fusion.test.ts", kind: "fusionAddProcMixTableUnpackMaterialMetadata", families: ["fusion"], required: ["Fusion.AddProcMix table-unpack metadata", "expect(gateGuardian!.data.fusionMaterials).toEqual([sangaCode, kazejinCode, suijinCode])", "expect(directFusionActions[0]!.materialUids).toEqual([sanga!.uid, kazejin!.uid, suijin!.uid])", "expect(restored.session.state.cards.find((card) => card.uid === gateGuardian!.uid)?.data.fusionMaterials).toEqual([sangaCode, kazejinCode, suijinCode])", "summonMaterialUids: [sanga!.uid, kazejin!.uid, suijin!.uid]"] },
     { file: "test/lua-real-script-moa-regina-addprocmix-named-filter-fusion.test.ts", kind: "fusionAddProcMixNamedPredicateMetadata", families: ["fusion"], required: ["Fusion.AddProcMix named filter metadata", "fusionRequiredMaterialPredicates).toEqual([{ race: raceIllusion }, { levelMin: 6, race: raceFiend }])", "expect(directFusionActions[0]!.materialUids).toEqual([illusionMaterial!.uid, highFiend!.uid])", "directFusionActions.some((action) => action.materialUids.includes(lowFiendDecoy!.uid))", "summonMaterialUids: [illusionMaterial!.uid, highFiend!.uid]"] },
