@@ -10,6 +10,7 @@ import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, Pla
 export type DuelEffectChooser = (state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId) => boolean;
 
 const luaEffectTypeActivate = 0x10;
+const luaEffectTypeXMaterial = 0x1000;
 const luaEffectTrapActInHand = 15;
 const luaEffectQpActInNtpHand = 311;
 const typeQuickPlay = 0x10000;
@@ -22,7 +23,8 @@ export function quickEffectActions(state: DuelState, player: PlayerId, canChoose
   const actions: DuelAction[] = [];
   for (const effect of state.effects) {
     if (effect.controller !== player || effect.event !== "quick") continue;
-    const source = findCard(state, effect.sourceUid);
+    const registeredSource = findCard(state, effect.sourceUid);
+    const source = registeredSource ? activationSourceForEffect(state, effect, registeredSource, player) : undefined;
     if (!source || !activationEffectInUsableRange(state, effect, source, player)) continue;
     if (!quickEffectTimingAllows(state, effect, source)) continue;
     if (shouldRequireMatchingFirstChainEvent(state, effect) && quickEffectEventContext(state, effect) === undefined) continue;
@@ -36,8 +38,38 @@ export function quickEffectActions(state: DuelState, player: PlayerId, canChoose
 
 export function activationEffectInUsableRange(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
   if (effect.range.includes(source.location)) return true;
+  if (isXMaterialEffect(effect)) {
+    const holder = xMaterialEffectHolder(state, effect, source, player);
+    if (holder && effect.range.includes(holder.location)) return true;
+  }
   if (((effect.luaTypeFlags ?? 0) & luaEffectTypeActivate) === 0 || source.location !== "hand") return false;
   return hasHandActivationGrant(state, effect, source, player);
+}
+
+export function activationSourceForEffect(
+  state: DuelState,
+  effect: DuelEffectDefinition,
+  registeredSource: DuelCardInstance,
+  player: PlayerId,
+): DuelCardInstance | undefined {
+  if (!isXMaterialEffect(effect)) return registeredSource;
+  return xMaterialEffectHolder(state, effect, registeredSource, player) ?? registeredSource;
+}
+
+export function findActivationEffectForSource(
+  state: DuelState,
+  player: PlayerId,
+  uid: string,
+  effectId: string,
+): { effect: DuelEffectDefinition; source: DuelCardInstance } | undefined {
+  for (const effect of state.effects) {
+    if (effect.id !== effectId || effect.controller !== player) continue;
+    const registeredSource = findCard(state, effect.sourceUid);
+    if (!registeredSource) continue;
+    const source = activationSourceForEffect(state, effect, registeredSource, player);
+    if (source?.uid === uid) return { effect, source };
+  }
+  return undefined;
 }
 
 export function hasQuickEffectResponses(state: DuelState, player: PlayerId, canChooseEffect: DuelEffectChooser): boolean {
@@ -128,4 +160,23 @@ function hasHandActivationGrant(state: DuelState, effect: DuelEffectDefinition, 
 function handActivationGrantMatchesCard(effect: DuelEffectDefinition, card: DuelCardInstance, opponentTurn: boolean): boolean {
   if (effect.code === luaEffectTrapActInHand) return card.kind === "trap";
   return effect.code === luaEffectQpActInNtpHand && opponentTurn && card.kind === "spell" && ((card.data.typeFlags ?? 0) & typeQuickPlay) !== 0;
+}
+
+function isXMaterialEffect(effect: DuelEffectDefinition): boolean {
+  return ((effect.luaTypeFlags ?? 0) & luaEffectTypeXMaterial) !== 0;
+}
+
+function xMaterialEffectHolder(
+  state: DuelState,
+  effect: DuelEffectDefinition,
+  material: DuelCardInstance,
+  player: PlayerId,
+): DuelCardInstance | undefined {
+  if (material.location !== "overlay") return undefined;
+  return state.cards.find((card) =>
+    card.controller === player &&
+    card.location === "monsterZone" &&
+    card.overlayUids.includes(material.uid) &&
+    effect.range.includes(card.location)
+  );
 }

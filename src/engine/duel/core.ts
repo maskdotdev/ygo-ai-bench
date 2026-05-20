@@ -145,7 +145,7 @@ import { otherPlayer } from "#duel/player-id.js";
 import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
 import { applyYieldedLuaPromptToDuelState, isYieldedLuaPromptCoroutineResult } from "#lua/prompt-state.js";
-import { activationEffectInUsableRange, hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
+import { activationEffectInUsableRange, activationSourceForEffect, findActivationEffectForSource, hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
 import { applyContinuousSelfDestroyEffects } from "#duel/self-destroy-effects.js";
@@ -271,8 +271,9 @@ const responseHandlers: DuelResponseHandlers = {
     setSpellTrap(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload));
   },
   activateEffect(session, player, uid, effectId) {
-    const source = findCard(session.state, uid);
-    const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid);
+    const activation = findActivationEffectForSource(session.state, player, uid, effectId);
+    const source = activation?.source ?? findCard(session.state, uid);
+    const effect = activation?.effect;
     if (source && isEffectActivationPrevented(session.state, player, source, createContinuousEffectContext(session.state), effect)) throw new Error(`${source.name} cannot activate effects`);
     if (source) applyActivationCosts(session.state, player, createContinuousEffectContext(session.state), source, effect);
     activateDuelEffect(session, player, uid, effectId, activationHandlers);
@@ -409,7 +410,8 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     for (const effect of state.effects) {
       if (effect.controller !== player) continue;
       if (effect.event !== "ignition" && effect.event !== "quick") continue;
-      const source = findCard(state, effect.sourceUid);
+      const registeredSource = findCard(state, effect.sourceUid);
+      const source = registeredSource ? activationSourceForEffect(state, effect, registeredSource, player) : undefined;
       if (!source || !activationEffectInUsableRange(state, effect, source, player)) continue;
       if (!canUseEffectCount(state, effect)) continue;
       if (!canChooseEffect(state, effect, source, player)) continue;
@@ -952,8 +954,9 @@ function resolveChain(state: DuelState): void {
     while (state.chain.length) {
       const link = state.chain.pop();
       if (!link) continue;
-      const effect = state.effects.find((candidate) => candidate.id === link.effectId && candidate.sourceUid === link.sourceUid);
-      const source = findCard(state, link.sourceUid);
+      const activation = findActivationEffectForSource(state, link.player, link.sourceUid, link.effectId);
+      const effect = activation?.effect;
+      const source = activation?.source ?? findCard(state, link.sourceUid);
       if (link.negated) {
         sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
         collectNegatedChainLinkEvents(state, link);

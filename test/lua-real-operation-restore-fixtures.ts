@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 137;
+export const operationFixtureCount = 138;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -37,6 +37,7 @@ export const operationKindCounts = {
   detachStatBurn: 1,
   destroyedSummonStatBurn: 1,
   directRecover: 1,
+  xmaterialQuickDestroyDirect: 1,
   drawThenDiscard: 1,
   flipDeckSpecialSummon: 1,
   flipTargetDestroy: 1,
@@ -122,6 +123,7 @@ export type OperationKind =
   | "detachStatBurn"
   | "destroyedSummonStatBurn"
   | "directRecover"
+  | "xmaterialQuickDestroyDirect"
   | "drawThenDiscard"
   | "flipDeckSpecialSummon"
   | "flipTargetDestroy"
@@ -174,6 +176,21 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-doomdurg-xmaterial-direct-destroy.test.ts",
+      kind: "xmaterialQuickDestroyDirect",
+      required: [
+        "restores Xyz-material quick effect activation into destroy, ATK gain, and direct attack grant",
+        "e7:SetType(EFFECT_TYPE_XMATERIAL+EFFECT_TYPE_QUICK_O)",
+        "local c=e:GetHandler() return c:IsAttribute(ATTRIBUTE_WIND) and c:IsRace(RACE_MACHINE)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,dg,1,tp,0)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_ATKCHANGE,nil,1,tp,atk)",
+        "e2:SetCode(EFFECT_DIRECT_ATTACK)",
+        "reasonCardUid: xyzHolder.uid",
+        "currentAttack(restoredXyzHolder, restoredOpen.session.state)).toBe(2200)",
+        "action.directAttack === true",
+      ],
+    },
     {
       file: "test/lua-real-script-cassimolar-summon-delayed-stat.test.ts",
       kind: "summonDelayedStatDestroy",
@@ -1631,6 +1648,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       detachStatBurn: 0,
       destroyedSummonStatBurn: 0,
       directRecover: 0,
+      xmaterialQuickDestroyDirect: 0,
       drawThenDiscard: 0,
       flipDeckSpecialSummon: 0,
       flipTargetDestroy: 0,

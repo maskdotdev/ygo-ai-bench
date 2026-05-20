@@ -7,7 +7,7 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { placeActivatedSpellTrapCard } from "#duel/spell-trap-activation.js";
 import { quickEffectEventContext } from "#duel/effect-event-context.js";
-import { activationEffectInUsableRange } from "#duel/quick-effect-actions.js";
+import { activationEffectInUsableRange, findActivationEffectForSource } from "#duel/quick-effect-actions.js";
 import { createEffectContext } from "#duel/effect-context.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
@@ -101,9 +101,10 @@ export interface DuelActivationHandlers {
 }
 
 export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers): void {
-  const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid);
-  if (!effect) throw new Error(`Effect ${effectId} is not registered`);
-  const source = requireControlledCard(session.state, player, uid);
+  const activation = findActivationEffectForSource(session.state, player, uid, effectId);
+  if (!activation) throw new Error(`Effect ${effectId} is not registered`);
+  const { effect, source } = activation;
+  requireControlledCard(session.state, player, source.uid);
   if (!activationEffectInUsableRange(session.state, effect, source, player)) throw new Error(`${source.name} effect is not in range`);
   const targetUids: string[] = [];
   const quickEvent = quickEffectEventContext(session.state, effect);
