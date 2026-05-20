@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 14;
+const controlFixtureCount = 15;
 const controlKindCounts = {
   cannotChangeControl: 1,
   discardCostTemporaryControl: 1,
   equipControl: 1,
   flipGetControl: 2,
   flipSetControl: 1,
+  ownedControlAttackDrain: 1,
   releaseCostControl: 1,
   restrictedTemporaryControl: 2,
   selectedPermanentControl: 1,
@@ -28,6 +29,7 @@ const controlSemanticVariantCounts = {
   electromagneticBagwormOpponentTurnControl: 1,
   electricVirusDiscardControl: 1,
   enemyControllerReleaseControl: 1,
+  ashenedEternityOwnedControlAttackDrain: 1,
   matazaCannotChangeControl: 1,
   mindControlRestrictions: 1,
   rafflesiaFlipGetControl: 1,
@@ -42,6 +44,7 @@ type ControlKind =
   | "equipControl"
   | "flipGetControl"
   | "flipSetControl"
+  | "ownedControlAttackDrain"
   | "releaseCostControl"
   | "restrictedTemporaryControl"
   | "selectedPermanentControl"
@@ -59,6 +62,7 @@ type ControlSemanticVariant =
   | "electromagneticBagwormOpponentTurnControl"
   | "electricVirusDiscardControl"
   | "enemyControllerReleaseControl"
+  | "ashenedEternityOwnedControlAttackDrain"
   | "matazaCannotChangeControl"
   | "mindControlRestrictions"
   | "rafflesiaFlipGetControl"
@@ -117,6 +121,21 @@ function realScriptControlFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-ashened-eternity-owned-control-atk-drain.test.ts",
+      kind: "ownedControlAttackDrain",
+      required: [
+        'const ashenedCode = "66848311"',
+        "restores owned-opponent monster control and optional opponent ATK drain after the control change",
+        "Duel.SelectTarget(tp,s.ctrlfilter,tp,0,LOCATION_MZONE,1,1,nil,tp)",
+        "Duel.GetControl(tc,tp)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "api: \"SelectYesNo\"",
+        "previousController: 1",
+        "eventName: \"controlChanged\"",
+      ],
+    },
     {
       file: "lua-real-script-ally-enemy-catcher-summon-control-return.test.ts",
       kind: "summonTriggerTemporaryControl",
@@ -284,6 +303,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       equipControl: 0,
       flipGetControl: 0,
       flipSetControl: 0,
+      ownedControlAttackDrain: 0,
       releaseCostControl: 0,
       restrictedTemporaryControl: 0,
       selectedPermanentControl: 0,
@@ -301,6 +321,17 @@ function realScriptControlSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-ashened-eternity-owned-control-atk-drain.test.ts",
+      kind: "ashenedEternityOwnedControlAttackDrain",
+      required: [
+        'const ashenedCode = "66848311"',
+        "Duel.GetControl(tc,tp)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "expect(currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === opponentFaceup.uid)!, restoredOpen.session.state)).toBe(400)",
+        "value: -1800",
+      ],
+    },
     {
       file: "lua-real-script-brain-control-cost-return.test.ts",
       kind: "brainControlLpCostReturn",
@@ -480,6 +511,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       electromagneticBagwormOpponentTurnControl: 0,
       electricVirusDiscardControl: 0,
       enemyControllerReleaseControl: 0,
+      ashenedEternityOwnedControlAttackDrain: 0,
       matazaCannotChangeControl: 0,
       mindControlRestrictions: 0,
       rafflesiaFlipGetControl: 0,
