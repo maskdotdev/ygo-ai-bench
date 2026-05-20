@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonActivityFixtureCount = 5;
+const summonActivityFixtureCount = 6;
 const summonActivityKindCounts = {
   archetypeExtraNormalSummon: 2,
   genericExtraNormalSummon: 1,
+  ignitionEffectNormalSummon: 1,
   specialSummonOath: 1,
   spiritExtraNormalSummon: 1,
 } satisfies Record<SummonActivityKind, number>;
@@ -15,6 +16,7 @@ const summonActivitySemanticVariantCounts = {
   constellarLeonisExtraConstellarNormalSummon: 1,
   constellarPolluxSummonSuccessFlaggedExtraConstellarNormalSummon: 1,
   doubleSummonSecondNormalSummonGrant: 1,
+  mahunderIgnitionNormalSummonFromHand: 1,
   nikitamaAdditionalSpiritNormalSummon: 1,
   thunderSeaHorseTemporarySpecialSummonOath: 1,
 } satisfies Record<SummonActivitySemanticVariant, number>;
@@ -22,12 +24,14 @@ const summonActivitySemanticVariantCounts = {
 type SummonActivityKind =
   | "archetypeExtraNormalSummon"
   | "genericExtraNormalSummon"
+  | "ignitionEffectNormalSummon"
   | "specialSummonOath"
   | "spiritExtraNormalSummon";
 type SummonActivitySemanticVariant =
   | "constellarLeonisExtraConstellarNormalSummon"
   | "constellarPolluxSummonSuccessFlaggedExtraConstellarNormalSummon"
   | "doubleSummonSecondNormalSummonGrant"
+  | "mahunderIgnitionNormalSummonFromHand"
   | "nikitamaAdditionalSpiritNormalSummon"
   | "thunderSeaHorseTemporarySpecialSummonOath";
 
@@ -129,6 +133,21 @@ function summonActivityFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mahunder-ignition-normal-summon.test.ts",
+      kind: "ignitionEffectNormalSummon",
+      required: [
+        "restores CATEGORY_SUMMON ignition selection and Duel.Summon from hand",
+        "e1:SetCategory(CATEGORY_SUMMON)",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "Duel.SetOperationInfo(0,CATEGORY_SUMMON,nil,1,0,0)",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.Summon(tp,tc,true,nil)",
+        "operationInfos: [{ category: 0x100",
+        'eventName: "normalSummoned"',
+        "activityCounts[0].normalSummon).toBe(1)",
+      ],
+    },
+    {
       file: "test/lua-real-script-nikitama-extra-spirit-summon.test.ts",
       kind: "spiritExtraNormalSummon",
       required: [
@@ -169,6 +188,7 @@ function countSummonActivityKinds(
     {
       archetypeExtraNormalSummon: 0,
       genericExtraNormalSummon: 0,
+      ignitionEffectNormalSummon: 0,
       specialSummonOath: 0,
       spiritExtraNormalSummon: 0,
     },
@@ -210,6 +230,20 @@ function summonActivitySemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mahunder-ignition-normal-summon.test.ts",
+      kind: "mahunderIgnitionNormalSummonFromHand",
+      required: [
+        'const mahunderCode = "21524779"',
+        "return c:IsRace(RACE_THUNDER) and c:IsAttribute(ATTRIBUTE_LIGHT) and c:GetLevel()==4",
+        "and c:GetCode()~=id and c:IsSummonable(true,nil)",
+        "Duel.Summon(tp,tc,true,nil)",
+        "sameCodeDecoy.uid)).toMatchObject({ location: \"hand\"",
+        "darkThunder.uid)).toMatchObject({ location: \"hand\"",
+        "highLevel.uid)).toMatchObject({ location: \"hand\"",
+        "mahunder responder resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-nikitama-extra-spirit-summon.test.ts",
       kind: "nikitamaAdditionalSpiritNormalSummon",
       required: [
@@ -246,6 +280,7 @@ function countSummonActivitySemanticVariants(
       constellarLeonisExtraConstellarNormalSummon: 0,
       constellarPolluxSummonSuccessFlaggedExtraConstellarNormalSummon: 0,
       doubleSummonSecondNormalSummonGrant: 0,
+      mahunderIgnitionNormalSummonFromHand: 0,
       nikitamaAdditionalSpiritNormalSummon: 0,
       thunderSeaHorseTemporarySpecialSummonOath: 0,
     },
