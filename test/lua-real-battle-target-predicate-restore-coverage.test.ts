@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTargetPredicateFixtureCount = 7;
+const battleTargetPredicateFixtureCount = 8;
 const battleTargetPredicateKindCounts = {
+  archetypeSelectionAndTargetProtection: 1,
   auxImval1Lock: 1,
   auxImval2Protection: 1,
   endDamageTargetLock: 1,
@@ -15,6 +16,7 @@ const battleTargetPredicateKindCounts = {
   warriorSelectionLock: 1,
 } satisfies Record<BattleTargetPredicateKind, number>;
 const battleTargetPredicateSemanticVariantCounts = {
+  altergeistFifinellagTargetProtection: 1,
   battleTargetSyntheticDescriptorPredicates: 1,
   commandKnightAuxImval1TargetLock: 1,
   decoyroidNonMatchingTargetSelectionLock: 1,
@@ -25,6 +27,7 @@ const battleTargetPredicateSemanticVariantCounts = {
 } satisfies Record<BattleTargetPredicateSemanticVariant, number>;
 
 type BattleTargetPredicateKind =
+  | "archetypeSelectionAndTargetProtection"
   | "auxImval1Lock"
   | "auxImval2Protection"
   | "endDamageTargetLock"
@@ -33,6 +36,7 @@ type BattleTargetPredicateKind =
   | "syntheticPredicateDescriptors"
   | "warriorSelectionLock";
 type BattleTargetPredicateSemanticVariant =
+  | "altergeistFifinellagTargetProtection"
   | "battleTargetSyntheticDescriptorPredicates"
   | "commandKnightAuxImval1TargetLock"
   | "decoyroidNonMatchingTargetSelectionLock"
@@ -89,6 +93,17 @@ function battleTargetPredicateFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-altergeist-fifinellag-target-protection.test.ts",
+      kind: "archetypeSelectionAndTargetProtection",
+      required: [
+        "restores Altergeist battle-target and opponent effect-target protection",
+        "EFFECT_CANNOT_SELECT_BATTLE_TARGET",
+        "EFFECT_CANNOT_BE_EFFECT_TARGET",
+        "hasAttack(battleActions, attacker.uid, protectedAltergeist.uid)).toBe(false)",
+        "hasAttack(battleActions, attacker.uid, openTarget.uid)).toBe(true)",
+      ],
+    },
     {
       file: "test/lua-real-script-battle-target-predicates.test.ts",
       kind: "syntheticPredicateDescriptors",
@@ -182,6 +197,7 @@ function countBattleTargetPredicateKinds(
     },
     {
       auxImval1Lock: 0,
+      archetypeSelectionAndTargetProtection: 0,
       auxImval2Protection: 0,
       endDamageTargetLock: 0,
       nonMatchingSelectionLock: 0,
@@ -198,6 +214,17 @@ function battleTargetPredicateSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-altergeist-fifinellag-target-protection.test.ts",
+      kind: "altergeistFifinellagTargetProtection",
+      required: [
+        'const fifinellagCode = "12977245"',
+        "restores Altergeist battle-target and opponent effect-target protection",
+        "hasAttack(battleActions, attacker.uid, protectedAltergeist.uid)).toBe(false)",
+        "hasAttack(battleActions, attacker.uid, openTarget.uid)).toBe(true)",
+        "fifinellag effect targets false/true",
+      ],
+    },
     {
       file: "test/lua-real-script-battle-target-predicates.test.ts",
       kind: "battleTargetSyntheticDescriptorPredicates",
@@ -285,6 +312,7 @@ function countBattleTargetPredicateSemanticVariants(
     },
     {
       battleTargetSyntheticDescriptorPredicates: 0,
+      altergeistFifinellagTargetProtection: 0,
       commandKnightAuxImval1TargetLock: 0,
       decoyroidNonMatchingTargetSelectionLock: 0,
       hunterOwlWindAllyTargetStatLock: 0,

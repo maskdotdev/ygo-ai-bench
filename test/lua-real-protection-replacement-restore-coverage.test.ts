@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 20;
+const protectionReplacementFixtureCount = 21;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
   continuousBattleIndestructible: 1,
   countLimitedBattleIndestructible: 3,
-  effectTargetProtection: 2,
+  effectTargetProtection: 3,
   fieldEffectIndestructible: 1,
   environmentImmunity: 1,
   equipBattleProtectionSelfDestroy: 1,
@@ -22,6 +22,7 @@ const protectionReplacementKindCounts = {
   temporaryBattleProtection: 1,
 } satisfies Record<ProtectionReplacementKind, number>;
 const protectionReplacementSemanticVariantCounts = {
+  altergeistFifinellagBattleAndTargetProtection: 1,
   checksumDragonAttackPositionProtection: 1,
   darkFusionOpponentTargetProtection: 1,
   dForcePlasmaFieldTargetProtection: 1,
@@ -117,6 +118,7 @@ type ProtectionReplacementKind =
   | "positionConditionProtection"
   | "temporaryBattleProtection";
 type ProtectionReplacementSemanticVariant =
+  | "altergeistFifinellagBattleAndTargetProtection"
   | "checksumDragonAttackPositionProtection"
   | "darkFusionOpponentTargetProtection"
   | "dForcePlasmaFieldTargetProtection"
@@ -140,6 +142,18 @@ type ProtectionReplacementSemanticVariant =
 
 function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; kind: ProtectionReplacementKind; required: string[] }> {
   return ([
+    {
+      file: "lua-real-script-altergeist-fifinellag-target-protection.test.ts",
+      kind: "effectTargetProtection",
+      required: [
+        "restores Altergeist battle-target and opponent effect-target protection",
+        "e2:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e2:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)",
+        "e2:SetValue(aux.tgoval)",
+        "fifinellag effect targets false/true",
+        "fifinellag targeter destroyed 1",
+      ],
+    },
     {
       file: "lua-real-script-kamon-destroy-replace-attack-lock.test.ts",
       kind: "persistentDestroyReplace",
@@ -379,6 +393,16 @@ function protectionReplacementSemanticVariants(): Array<{
 }> {
   return ([
     {
+      file: "test/lua-real-script-altergeist-fifinellag-target-protection.test.ts",
+      kind: "altergeistFifinellagBattleAndTargetProtection",
+      requiredSnippets: [
+        'const fifinellagCode = "12977245"',
+        "restores Altergeist battle-target and opponent effect-target protection",
+        "EFFECT_FLAG_IGNORE_IMMUNE",
+        "fifinellag effect targets false/true",
+      ],
+    },
+    {
       file: "test/lua-real-script-battle-protection.test.ts",
       kind: "pilgrimContinuousBattleIndestructible",
       requiredSnippets: [
@@ -603,6 +627,7 @@ function countProtectionReplacementSemanticVariants(
     (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
     {
       checksumDragonAttackPositionProtection: 0,
+      altergeistFifinellagBattleAndTargetProtection: 0,
       darkFusionOpponentTargetProtection: 0,
       dForcePlasmaFieldTargetProtection: 0,
       deepseaWarriorUmiSpellImmunity: 0,
