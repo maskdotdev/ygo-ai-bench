@@ -1,7 +1,7 @@
 import fs from "node:fs"; import path from "node:path";
 export const root = process.cwd(); export const testRoot = path.join(root, "test"); export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 267; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 7;
-export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 14; export const battleTriggerSemanticFixtureCount = 45;
+export const realScriptBattleFixtureCount = 277; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 7;
+export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 14; export const battleTriggerSemanticFixtureCount = 46;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -42,7 +42,7 @@ export const battleTriggerSemanticKindCounts = {
   battleStartDestroy: 3,
   battleConfirmDestroy: 2,
   battleConfirmToDeck: 1,
-  battleDamageTriggeredDelayedEffect: 7,
+  battleDamageTriggeredDelayedEffect: 8,
   battleDestroyedChainAttack: 2,
   battleDestroyingDecktopConfirm: 2,
   battleDestroyingFlagAtk: 1,
@@ -622,6 +622,7 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
     { file: "lua-real-script-airbellum-direct-damage-hand-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its direct battle-damage trigger into random opponent hand discard", 'eventName: "battleDamageDealt"', "Duel.SetOperationInfo(0,CATEGORY_HANDES,0,0,1-tp,1)", 'eventName: "discarded"'] },
     { file: "lua-real-script-great-phantom-thief-announce-hand-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores battle-damage AnnounceCard into opponent hand confirmation and named discard", 'eventName: "battleDamageDealt"', "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", 'api: "AnnounceCard"', 'eventName: "confirmed"', 'eventName: "discarded"'] },
     { file: "lua-real-script-fushi-no-tori-battle-recover.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into CHAININFO target-param LP recovery", 'eventName: "battleDamageDealt"', 'eventName: "recoveredLifePoints"', "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)"] },
+    { file: "lua-real-script-battlewasp-hama-global-battle-damage-stat.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores GlobalCheck battle-damage gating into non-destroyed stat loss and Battle Phase burn", "aux.GlobalCheck(s,function()", "Card.IsStatus,STATUS_BATTLE_DESTROYED", 'eventName: "battleDamageDealt"', 'eventName: "damageDealt"', "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER)"] },
     { file: "lua-real-script-great-long-nose-skip-battle.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into an opponent Battle Phase skip", 'eventName: "battleDamageDealt"', "EFFECT_SKIP_BP", "phase: \"battle\", remaining: 1"] },
     { file: "lua-real-script-hino-kagu-tsuchi-predraw-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into the opponent's next Draw Phase hand discard", 'eventName: "battleDamageDealt"', 'eventName: "preDraw"', 'eventName: "discarded"'] },
     { file: "lua-real-script-yamata-dragon-battle-damage-draw.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger and draws until 5 from CHAININFO_TARGET_PLAYER", 'eventName: "battleDamageDealt"', '"eventName": "cardsDrawn"', "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER)"] },
