@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 182;
+export const operationFixtureCount = 183;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -74,6 +74,7 @@ export const operationKindCounts = {
   groupLevelFinal: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
+  handSelfDiscardDestroyStat: 1,
   fiveGraveToDeckShuffleDraw: 2,
   fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
@@ -201,6 +202,7 @@ export type OperationKind =
   | "groupLevelFinal"
   | "handDiscardDraw"
   | "handToDeckDraw"
+  | "handSelfDiscardDestroyStat"
   | "fiveGraveToDeckShuffleDraw"
   | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
@@ -571,6 +573,31 @@ export function operationFixtureFiles(): Array<{
         "e2:SetValue(1500)",
         "currentAttack(boosted, restoredChain.session.state)).toBe(2000)",
         "currentDefense(boosted, restoredChain.session.state)).toBe(2500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-abyssnerei-self-discard-destroy-stat.test.ts",
+      kind: "handSelfDiscardDestroyStat",
+      required: [
+        "restores hand self-discard cost into WATER destruction and base-stat boost",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE+CATEGORY_DESTROY)",
+        "e1:SetType(EFFECT_TYPE_QUICK_O)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetRange(LOCATION_HAND)",
+        "e1:SetCost(Cost.SelfDiscard)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil,e,tp)",
+        "Duel.SelectMatchingCard(tp,s.desfilter,tp,LOCATION_MZONE|LOCATION_HAND,0,1,1,tc)",
+        "if dc and Duel.Destroy(dc,REASON_EFFECT)~=0 then",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(dc:GetBaseAttack())",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetValue(dc:GetBaseDefense())",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid), restoredOpen.session.state)).toBe(2600)",
+        "currentDefense(restoredOpen.session.state.cards.find((card) => card.uid === target.uid), restoredOpen.session.state)).toBe(2200)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "sentToGraveyard"',
+        "operationInfos",
       ],
     },
     {
@@ -2636,6 +2663,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       graveToDeckBottomDraw: 0,
       handDiscardDraw: 0,
       handToDeckDraw: 0,
+      handSelfDiscardDestroyStat: 0,
       fiveGraveToDeckShuffleDraw: 0,
       fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
