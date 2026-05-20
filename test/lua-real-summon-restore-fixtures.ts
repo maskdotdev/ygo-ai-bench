@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 262;
+export const realScriptSummonFixtureCount = 263;
 export const summonProcedureFixtureCount = 29;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -23,7 +23,7 @@ export const unionProcedureFixtureCount = 4;
 export const materialLockFixtureCount = 4;
 export const flipSummonSuccessTrapFixtureCount = 4;
 export const linkedZoneSpecialSummonFixtureCount = 5;
-export const selfTributeZoneSpecialSummonFixtureCount = 2;
+export const selfTributeZoneSpecialSummonFixtureCount = 3;
 export const tributeMaterialFixtureCount = 1;
 export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
@@ -31,7 +31,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 19,
   pendulum: 20,
   ritual: 24,
-  summon: 117,
+  summon: 118,
   synchro: 19,
   xyz: 16,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -91,6 +91,7 @@ export const linkedZoneSpecialSummonKindCounts = {
   toBeLinkedZoneRevive: 1,
 } satisfies Record<LinkedZoneSpecialSummonKind, number>;
 export const selfTributeZoneSpecialSummonKindCounts = {
+  opponentTurnQuickSelfTributeDeckSummon: 1,
   selfTributeFreesMonsterZone: 1,
   selfTributeHandSummonFreesMonsterZone: 1,
 } satisfies Record<SelfTributeZoneSpecialSummonKind, number>;
@@ -136,6 +137,7 @@ export type LinkedZoneSpecialSummonKind =
   | "releaseCostDeckSummon"
   | "toBeLinkedZoneRevive";
 export type SelfTributeZoneSpecialSummonKind =
+  | "opponentTurnQuickSelfTributeDeckSummon"
   | "selfTributeFreesMonsterZone"
   | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
@@ -366,6 +368,22 @@ export function countLinkedZoneSpecialSummonKinds(files: Array<{ kind: LinkedZon
 export function realScriptSelfTributeZoneSpecialSummonFixtureSnippets(): Array<{ file: string; kind: SelfTributeZoneSpecialSummonKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-beta-electromagnet-search-quick-tribute-summon.test.ts",
+      kind: "opponentTurnQuickSelfTributeDeckSummon",
+      required: [
+        "e3:SetType(EFFECT_TYPE_QUICK_O)",
+        "return Duel.IsTurnPlayer(1-tp)",
+        "e3:SetCost(Cost.SelfTribute)",
+        "if e:GetHandler():GetSequence()<5 then ft=ft+1 end",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        "duelReason.cost | duelReason.release",
+        'eventName: "released"',
+        'eventName: "specialSummoned"',
+        "effectId: \"lua-3-1002\"",
+        "parameter: 0x1",
+      ],
+    },
+    {
       file: "test/lua-real-script-chrysalis-larva-self-tribute-neospace-summon.test.ts",
       kind: "selfTributeFreesMonsterZone",
       required: [
@@ -404,7 +422,7 @@ export function countSelfTributeZoneSpecialSummonKinds(
   return files.reduce<Record<SelfTributeZoneSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { selfTributeFreesMonsterZone: 0, selfTributeHandSummonFreesMonsterZone: 0 });
+  }, { opponentTurnQuickSelfTributeDeckSummon: 0, selfTributeFreesMonsterZone: 0, selfTributeHandSummonFreesMonsterZone: 0 });
 }
 
 export function realScriptSummonProcedureFixtureFiles(): string[] {
