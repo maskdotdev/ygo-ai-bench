@@ -1,11 +1,12 @@
 import path from "node:path";
 
-export const operationFixtureCount = 149;
+export const operationFixtureCount = 150;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
   announceHandBanish: 1,
   announceHandDiscard: 1,
+  announceLpStatResetSSet: 1,
   announceTargetBanishProtection: 1,
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
@@ -102,6 +103,7 @@ export type OperationKind =
   | "announceDeckBanishDisable"
   | "announceHandBanish"
   | "announceHandDiscard"
+  | "announceLpStatResetSSet"
   | "announceTargetBanishProtection"
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
@@ -196,6 +198,23 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-pig-iron-announce-lp-sset.test.ts",
+      kind: "announceLpStatResetSSet",
+      required: [
+        "restores dynamic AnnounceNumber LP payment, stat reset, and graveyard self-set",
+        "Duel.AnnounceNumber(tp,table.unpack(t))",
+        "Duel.PayLPCost(tp,value)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e1:SetCode(EFFECT_CHANGE_LEVEL_FINAL)",
+        "Duel.SetOperationInfo(0,CATEGORY_LEAVE_GRAVE,c,1,0,0)",
+        "Duel.SSet(tp,c)",
+        'api: "AnnounceNumber"',
+        'eventName: "spellTrapSet"',
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-head-judging-coin-negate-control.test.ts",
       kind: "coinNegateControl",
@@ -1834,6 +1853,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceDeckBanishDisable: 0,
       announceHandBanish: 0,
       announceHandDiscard: 0,
+      announceLpStatResetSSet: 0,
       announceTargetBanishProtection: 0,
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,
