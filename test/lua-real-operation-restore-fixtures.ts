@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 204;
+export const operationFixtureCount = 205;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -114,6 +114,7 @@ export const operationKindCounts = {
   selectEffectStatDestroy: 1,
   specialSearchMaterialDamage: 1,
   specialSummonBaseStat: 1,
+  stepSummonLevelFinalStat: 1,
   summonDelayedStatDestroy: 1,
   summonRaceStatTargetDestroy: 1,
   synchroMaterialCheckStatBurn: 1,
@@ -259,6 +260,7 @@ export type OperationKind =
   | "selectEffectStatDestroy"
   | "specialSearchMaterialDamage"
   | "specialSummonBaseStat"
+  | "stepSummonLevelFinalStat"
   | "summonDelayedStatDestroy"
   | "summonRaceStatTargetDestroy"
   | "synchroMaterialCheckStatBurn"
@@ -402,6 +404,32 @@ export function operationFixtureFiles(): Array<{
         "e2:SetCode(EFFECT_SET_BASE_DEFENSE)",
         "e2:SetValue(c:GetBaseDefense()*2)",
         'eventName: "specialSummoned"',
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-galaxy-brave-step-level-stat.test.ts",
+      kind: "stepSummonLevelFinalStat",
+      required: [
+        "restores reveal-cost hand SpecialSummonStep level change and summon trigger final stats",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_LVCHANGE)",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,nil):GetFirst()",
+        "Duel.ConfirmCards(1-tp,rc)",
+        "Duel.ShuffleHand(tp)",
+        "e:SetLabel(rc:GetLevel())",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,0)",
+        "Duel.SpecialSummonStep(c,0,tp,tp,false,false,POS_FACEUP)",
+        "EFFECT_CHANGE_LEVEL",
+        "Duel.SpecialSummonComplete()",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,s.atkdeffilter,tp,LOCATION_GRAVE,0,1,1,nil,atk,def)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        'eventName: "specialSummoned"',
+        'eventName: "becameTarget"',
+        "currentLevel",
+        "currentAttack",
+        "currentDefense",
         "operationInfos",
       ],
     },
@@ -3164,6 +3192,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStatDestroy: 0,
       specialSearchMaterialDamage: 0,
       specialSummonBaseStat: 0,
+      stepSummonLevelFinalStat: 0,
       summonDelayedStatDestroy: 0,
       summonRaceStatTargetDestroy: 0,
       synchroMaterialCheckStatBurn: 0,
