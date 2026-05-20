@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const releaseAndTributeFixtureCount = 10;
+const releaseAndTributeFixtureCount = 11;
 const legalActionFixtureCount = 8;
 const releaseAndTributeKindCounts = {
   archetypeCannotRelease: 1,
   attributeTributeLimit: 1,
-  doubleTributeTargetPredicate: 1,
+  doubleTributeTargetPredicate: 2,
   extraDeckReleaseCost: 1,
   globalCannotRelease: 1,
   linkReleaseCost: 1,
@@ -26,6 +26,7 @@ const releaseAndTributeSemanticVariantCounts = {
   kaiserSeaHorseLightDoubleTribute: 1,
   maskOfRestrictGlobalCannotRelease: 1,
   pollinosisPlantReleaseCost: 1,
+  roseWitchPlantDoubleTribute: 1,
   sprightRedLinkReleaseCost: 1,
   troposphereRaceTributeLimit: 1,
   yellowDustonUnreleasableTributeLock: 1,
@@ -50,6 +51,7 @@ type ReleaseAndTributeSemanticVariant =
   | "kaiserSeaHorseLightDoubleTribute"
   | "maskOfRestrictGlobalCannotRelease"
   | "pollinosisPlantReleaseCost"
+  | "roseWitchPlantDoubleTribute"
   | "sprightRedLinkReleaseCost"
   | "troposphereRaceTributeLimit"
   | "yellowDustonUnreleasableTributeLock";
@@ -172,6 +174,18 @@ function releaseAndTributeFixtureFiles(): Array<{
         "value predicates for the tribute summon target",
         "action.type === \"tributeSummon\"",
         "darkTributeTarget",
+        "duelReason.release | duelReason.summon",
+        'eventName: "released"',
+      ],
+    },
+    {
+      file: "lua-real-script-rose-witch-double-tribute-summon.test.ts",
+      kind: "doubleTributeTargetPredicate",
+      required: [
+        "EFFECT_DOUBLE_TRIBUTE",
+        "race predicates for the tribute summon target",
+        "return c:IsRace(RACE_PLANT)",
+        "warriorTributeTarget",
         "duelReason.release | duelReason.summon",
         'eventName: "released"',
       ],
@@ -308,6 +322,17 @@ function releaseAndTributeSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-rose-witch-double-tribute-summon.test.ts",
+      kind: "roseWitchPlantDoubleTribute",
+      required: [
+        'const roseWitchCode = "23087070"',
+        "restores EFFECT_DOUBLE_TRIBUTE race predicates for the tribute summon target",
+        "plantTributeTarget",
+        "warriorTributeTarget",
+        "summonMaterialUids: [roseWitch!.uid]",
+      ],
+    },
+    {
       file: "lua-real-script-mask-of-restrict-cannot-release.test.ts",
       kind: "maskOfRestrictGlobalCannotRelease",
       required: [
@@ -404,6 +429,7 @@ function countReleaseAndTributeSemanticVariants(
       kaiserSeaHorseLightDoubleTribute: 0,
       maskOfRestrictGlobalCannotRelease: 0,
       pollinosisPlantReleaseCost: 0,
+      roseWitchPlantDoubleTribute: 0,
       sprightRedLinkReleaseCost: 0,
       troposphereRaceTributeLimit: 0,
       yellowDustonUnreleasableTributeLock: 0,

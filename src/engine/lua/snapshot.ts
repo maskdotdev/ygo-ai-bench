@@ -1129,6 +1129,8 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
     return { valueCardPredicate: (_ctx, card) => card.uid !== effect.sourceUid };
   }
   if (effect.luaValueDescriptor === "value-card:not-facedown") return { valueCardPredicate: (_ctx, card) => card.faceUp || !String(card.position).toLowerCase().includes("facedown") };
+  if (effect.luaValueDescriptor?.startsWith("value-card:race:")) return { valueCardPredicate: (ctx, card) => (currentRace(card, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) !== 0 };
+  if (effect.luaValueDescriptor?.startsWith("value-card:attribute:")) return { valueCardPredicate: (ctx, card) => (currentAttribute(card, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) !== 0 };
   if (effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor) {
     return { valuePredicate: (ctx) => relatedEffectIsSpecialSummonedMonsterOnField(ctx) };
   }

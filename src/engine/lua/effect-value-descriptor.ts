@@ -533,7 +533,13 @@ function materialTargetPredicateDescriptor(L: unknown, index: number, snippet: s
   if (race !== undefined) return `cannot-material:target-not-race:${race}`;
   const notAttribute = snippet.match(new RegExp(`\\breturn\\s+not\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
   const attribute = notAttribute?.[1] ? luaNumberTokenValue(L, index, notAttribute[1]) : undefined;
-  return attribute !== undefined ? `cannot-material:target-not-attribute:${attribute}` : undefined;
+  if (attribute !== undefined) return `cannot-material:target-not-attribute:${attribute}`;
+  const matchingRace = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const matchingRaceValue = matchingRace?.[1] ? luaNumberTokenValue(L, index, matchingRace[1]) : undefined;
+  if (matchingRaceValue !== undefined) return `value-card:race:${matchingRaceValue}`;
+  const matchingAttribute = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`));
+  const matchingAttributeValue = matchingAttribute?.[1] ? luaNumberTokenValue(L, index, matchingAttribute[1]) : undefined;
+  return matchingAttributeValue !== undefined ? `value-card:attribute:${matchingAttributeValue}` : undefined;
 }
 
 function cannotMaterialSummonTypesDescriptor(L: unknown, index: number, snippet: string): string | undefined {
