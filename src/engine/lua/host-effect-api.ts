@@ -537,6 +537,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
         if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
         if (ctx.chainLink?.effectLabels !== undefined) luaEffect.labels = [...ctx.chainLink.effectLabels];
         callLuaEffectOperation(L, hostState, luaEffect, event === "summonProcedure" && ctx.source !== undefined ? ctx.source : card, operationRef, ctx, readLuaError);
+        if (ctx.chainLink?.targetParam !== undefined) syncChainTargetParamLabels(hostState, ctx.chainLink.targetParam);
         syncLuaEffectLabelObjectFromRef(L, hostState, luaEffect);
         if (applyLuaContinuousSetControlEffects(hostState.session, ctx.player, luaEffectReasonPayload(hostState, duelReason.effect, ctx.player))) hostState.activeOperationMoved = true;
         ctx.log("Lua effect operation resolved");
@@ -1026,6 +1027,19 @@ function syncLabelObjectTargetValues(hostState: LuaHostState, labelObjectId: num
     luaEffect.label = value;
     for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) effect.label = value;
   }
+}
+
+function syncChainTargetParamLabels(hostState: LuaHostState, value: number): void {
+  for (const luaEffect of hostState.effects.values()) {
+    if (!usesChainTargetParamLabel(luaEffect)) continue;
+    luaEffect.label = value;
+    for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) effect.label = value;
+  }
+}
+
+function usesChainTargetParamLabel(luaEffect: LuaEffectRecord): boolean {
+  return luaEffect.targetDescriptor?.startsWith("special-summon-limit:same-code-label-") === true ||
+    luaEffect.valueDescriptor?.startsWith("cannot-activate:same-code-monster-effect-location:") === true;
 }
 
 function syncDuelEffectLabelObjectUid(effect: DuelEffectDefinition, luaEffect: LuaEffectRecord): void { if (luaEffect.labelObjectUid === undefined) delete effect.labelObjectUid; else effect.labelObjectUid = luaEffect.labelObjectUid; if (luaEffect.labelObjectUids === undefined) delete effect.labelObjectUids; else effect.labelObjectUids = [...luaEffect.labelObjectUids]; }

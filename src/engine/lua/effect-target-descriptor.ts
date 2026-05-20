@@ -334,6 +334,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const effectParam = luaFunctionParams(snippet)?.[0];
   if (effectParam && new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`).test(snippet)) return "target:same-code-label";
   if (effectParam && new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsOriginalCodeRule\\s*\\(\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetLabelObject\\s*\\(\\s*\\)\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`).test(snippet)) return "target:same-code-label-object-label";
+  const sameCodeNotLocation = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsOriginalCodeRule\\s*\\(\\s*${numericOrIdentifierPattern}\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
+  const sameCodeNotLocationValue = sameCodeNotLocation?.[1] ? luaNumberExpressionValue(L, index, sameCodeNotLocation[1]) : undefined;
+  if (sameCodeNotLocationValue !== undefined) return `special-summon-limit:same-code-label-not-location:${sameCodeNotLocationValue}`;
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
   const summonPlayerParam = luaFunctionParams(snippet)?.[2];
   const summonPositionParam = luaFunctionParams(snippet)?.[4];

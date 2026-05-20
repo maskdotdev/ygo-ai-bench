@@ -93,7 +93,7 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (typedCardActivationPredicate) return typedCardActivationPredicate;
   const cardActivationPredicate = cardActivationPredicateDescriptor(snippet, params);
   if (cardActivationPredicate) return cardActivationPredicate;
-  const sameCodeActivationPredicate = sameCodeActivationPredicateDescriptor(snippet, params);
+  const sameCodeActivationPredicate = sameCodeActivationPredicateDescriptor(L, index, snippet, params);
   if (sameCodeActivationPredicate) return sameCodeActivationPredicate;
   const setcodeMonsterActivationPredicate = setcodeMonsterActivationPredicateDescriptor(L, index, snippet, params);
   if (setcodeMonsterActivationPredicate) return setcodeMonsterActivationPredicate;
@@ -673,14 +673,19 @@ function typedCardActivationPredicateDescriptor(snippet: string, params: string[
   return undefined;
 }
 
-function sameCodeActivationPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+function sameCodeActivationPredicateDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
   const effectParam = params?.[0];
   const relatedEffectParam = params?.[1];
   if (!effectParam || !relatedEffectParam) return undefined;
   const effect = escapeRegExp(effectParam);
   const relatedEffect = escapeRegExp(relatedEffectParam);
   const sameCode = `${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*(?:IsCode|IsOriginalCodeRule)\\s*\\(\\s*${effect}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`;
+  const capturedSameCode = `${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsOriginalCodeRule\\s*\\(\\s*${numericOrIdentifierPattern}\\s*\\)`;
   const monsterEffect = `${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
+  const activateLocation = `${relatedEffect}\\s*:\\s*GetActivateLocation\\s*\\(\\s*\\)\\s*==\\s*(${numericExpressionPattern})`;
+  const capturedLocationMatch = snippet.match(new RegExp(`\\breturn\\s+(?=.*${capturedSameCode})(?=.*${monsterEffect})(?=.*${activateLocation}).*(?:end\\b|$)`));
+  const capturedLocationValue = capturedLocationMatch?.[1] ? luaNumberExpressionValue(L, index, capturedLocationMatch[1]) : undefined;
+  if (capturedLocationValue !== undefined) return `cannot-activate:same-code-monster-effect-location:${capturedLocationValue}`;
   if (new RegExp(`\\breturn\\s+(?:${monsterEffect}\\s+and\\s+${sameCode}|${sameCode}\\s+and\\s+${monsterEffect})\\s*(?:end\\b|$)`).test(snippet)) return "cannot-activate:same-code-monster-effect";
   const predicate = new RegExp(`\\breturn\\s+(?:${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${effectTypeActivatePattern}\\s*\\)\\s+and\\s+)?${sameCode}\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:same-code" : undefined;

@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const activationLockFixtureCount = 9;
-const activationLockAllowListFixtureCount = 8;
-const activationLockVariantFixtureCount = 16;
-const activationLockInventoryFixtureCount = 20;
+const activationLockFixtureCount = 10;
+const activationLockAllowListFixtureCount = 9;
+const activationLockVariantFixtureCount = 17;
+const activationLockInventoryFixtureCount = 21;
 const activationLockVariantKindCounts = {
   attributeMonsterActivationLock: 6,
-  cardActivationLock: 3,
+  cardActivationLock: 4,
   locationMonsterActivationLock: 1,
   nonSpiritMonsterActivationLock: 1,
   opponentEffectActivationLock: 2,
@@ -21,6 +21,7 @@ const activationLockVariantKindCounts = {
 const activationLockSemanticVariantCounts = {
   amanoIwatoNonSpiritMonsterLock: 1,
   ancientGearBeastAttackCardActivationLock: 1,
+  blackGoatLaughsGraveSameCodeFieldMonsterLock: 1,
   aussaEarthChannelerAttributeLock: 1,
   coldWaveSpellTrapPredicateLock: 1,
   eriaWaterChannelerAttributeLock: 1,
@@ -53,6 +54,7 @@ type ActivationLockVariantKind =
 type ActivationLockSemanticVariant =
   | "amanoIwatoNonSpiritMonsterLock"
   | "ancientGearBeastAttackCardActivationLock"
+  | "blackGoatLaughsGraveSameCodeFieldMonsterLock"
   | "aussaEarthChannelerAttributeLock"
   | "coldWaveSpellTrapPredicateLock"
   | "eriaWaterChannelerAttributeLock"
@@ -176,6 +178,7 @@ function realScriptActivationLockInventoryFiles(): string[] {
     "lua-real-script-amano-iwato-activation-lock.test.ts",
     "lua-real-script-ancient-gear-beast-card-activation-lock.test.ts",
     "lua-real-script-aussa-channeler-attribute-activation-lock.test.ts",
+    "lua-real-script-black-goat-laughs-announce-locks.test.ts",
     "lua-real-script-cold-wave-spelltrap-activation-lock.test.ts",
     "lua-real-script-eria-channeler-attribute-activation-lock.test.ts",
     "lua-real-script-hiita-channeler-attribute-activation-lock.test.ts",
@@ -202,6 +205,7 @@ function realScriptActivationLockFixtureFiles(): string[] {
   return [
     "lua-real-script-amano-iwato-activation-lock.test.ts",
     "lua-real-script-ancient-gear-beast-card-activation-lock.test.ts",
+    "lua-real-script-black-goat-laughs-announce-locks.test.ts",
     "lua-real-script-cold-wave-spelltrap-activation-lock.test.ts",
     "lua-real-script-mind-drain-hand-monster-activation-lock.test.ts",
     "lua-real-script-sangan-same-code-activation-lock.test.ts",
@@ -341,6 +345,21 @@ function realScriptActivationLockVariantFixtures(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-black-goat-laughs-announce-locks.test.ts",
+      kind: "cardActivationLock",
+      requiredSnippets: [
+        'const blackGoatCode = "49299410"',
+        "e2:SetCost(Cost.SelfBanish)",
+        "e1:SetCode(EFFECT_CANNOT_ACTIVATE)",
+        'luaValueDescriptor: "cannot-activate:same-code-monster-effect-location:4"',
+        "targetRange: [1, 1]",
+        "action.uid === p0Declared.uid)).toBe(false)",
+        "action.uid === p1Declared.uid)).toBe(false)",
+        "action.uid === p0Allowed.uid)).toBe(true)",
+        "action.uid === p1Allowed.uid)).toBe(true)",
+      ],
+    },
+    {
       file: "test/lua-real-script-sales-ban-announce-activation-lock.test.ts",
       kind: "cardActivationLock",
       requiredSnippets: [
@@ -430,6 +449,22 @@ function realScriptActivationLockSemanticVariants(): Array<{
         'luaValueDescriptor: "cannot-activate:card-activation"',
         "targetRange: [0, 1]",
         "action.uid === opponentSpell.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-black-goat-laughs-announce-locks.test.ts",
+      kind: "blackGoatLaughsGraveSameCodeFieldMonsterLock",
+      requiredSnippets: [
+        'const blackGoatCode = "49299410"',
+        "restores its grave self-banish announced on-field monster-effect activation lock",
+        "Duel.AnnounceCard(tp,TYPE_MONSTER,OPCODE_ISTYPE)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "e1:SetCode(EFFECT_CANNOT_ACTIVATE)",
+        "_re:GetHandler():IsOriginalCodeRule(code) and _re:IsMonsterEffect() and _re:GetActivateLocation()==LOCATION_MZONE",
+        'luaValueDescriptor: "cannot-activate:same-code-monster-effect-location:4"',
+        "targetRange: [1, 1]",
+        "action.uid === p0Declared.uid)).toBe(false)",
+        "action.uid === p1Declared.uid)).toBe(false)",
       ],
     },
     {
@@ -655,6 +690,7 @@ function countActivationLockSemanticVariants(
       amanoIwatoNonSpiritMonsterLock: 0,
       ancientGearBeastAttackCardActivationLock: 0,
       aussaEarthChannelerAttributeLock: 0,
+      blackGoatLaughsGraveSameCodeFieldMonsterLock: 0,
       coldWaveSpellTrapPredicateLock: 0,
       eriaWaterChannelerAttributeLock: 0,
       hiitaFireChannelerAttributeLock: 0,
