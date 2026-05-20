@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 209;
+export const operationFixtureCount = 210;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -65,6 +65,7 @@ export const operationKindCounts = {
   xmaterialQuickDestroyDirect: 1,
   drawThenDiscard: 1,
   flipDeckSpecialSummon: 1,
+  fieldRecoverStatTrigger: 1,
   flipTargetDestroy: 1,
   fusionDeckMaterials: 1,
   graveReviveEquipPositionStat: 1,
@@ -215,6 +216,7 @@ export type OperationKind =
   | "xmaterialQuickDestroyDirect"
   | "drawThenDiscard"
   | "flipDeckSpecialSummon"
+  | "fieldRecoverStatTrigger"
   | "flipTargetDestroy"
   | "fusionDeckMaterials"
   | "graveReviveEquipPositionStat"
@@ -304,6 +306,30 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-aroma-garden-recover-stat-trigger.test.ts",
+      kind: "fieldRecoverStatTrigger",
+      required: [
+        "restores field ignition recovery stat boost and destroyed Aroma mandatory recovery trigger",
+        "e2:SetCategory(CATEGORY_RECOVER+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e2:SetType(EFFECT_TYPE_IGNITION)",
+        "e2:SetProperty(EFFECT_FLAG_PLAYER_TARGET)",
+        "e2:SetRange(LOCATION_FZONE)",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(500)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "Duel.Recover(p,d,REASON_EFFECT)",
+        "Duel.RegisterEffect(e1,tp)",
+        "e3:SetCode(EVENT_TO_GRAVE)",
+        "c:IsPreviousLocation(LOCATION_MZONE)",
+        "c:IsReason(REASON_DESTROY) and c:IsReason(REASON_BATTLE|REASON_EFFECT)",
+        "Duel.SetTargetParam(1000)",
+        "operationInfos",
+        'eventName: "recoveredLifePoints"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-karakuri-saizan-battle-position-stat.test.ts",
       kind: "battleTargetPositionDamageStat",
@@ -3239,6 +3265,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       xmaterialQuickDestroyDirect: 0,
       drawThenDiscard: 0,
       flipDeckSpecialSummon: 0,
+      fieldRecoverStatTrigger: 0,
       flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
       fusionDeckMaterials: 0,
