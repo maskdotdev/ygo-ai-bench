@@ -1,10 +1,11 @@
-export const freeChainSpecialSummonFixtureCount = 12;
+export const freeChainSpecialSummonFixtureCount = 13;
 
 export const freeChainSpecialSummonKindCounts = {
   continuousSpellIgnitionHandSummon: 1,
   handNormalMonsterSummon: 1,
   lpCostTargetGraveSetcodeSummon: 1,
   nonTargetGraveSetcodeDefenseSummon: 1,
+  opponentTargetLevelHandSummon: 1,
   rankUpMagicXyzOverlaySummon: 1,
   trapMonsterAnnounceTraitSummonStep: 1,
   targetBanishedRockSummonStep: 1,
@@ -20,6 +21,7 @@ export type FreeChainSpecialSummonKind =
   | "handNormalMonsterSummon"
   | "lpCostTargetGraveSetcodeSummon"
   | "nonTargetGraveSetcodeDefenseSummon"
+  | "opponentTargetLevelHandSummon"
   | "rankUpMagicXyzOverlaySummon"
   | "trapMonsterAnnounceTraitSummonStep"
   | "targetBanishedRockSummonStep"
@@ -35,6 +37,25 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-rival-appears-target-level-hand-summon.test.ts",
+      kind: "opponentTargetLevelHandSummon",
+      required: [
+        "Duel.IsExistingTarget(s.filter,tp,0,LOCATION_MZONE,1,nil,e,tp)",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND)",
+        "local tc=Duel.GetFirstTarget()",
+        "Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_HAND,0,1,1,nil,e,tp,tc:GetLevel())",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        "targetUids: [opponent.uid]",
+        "wrongLevel",
+        "operationInfos: [{ category: 0x200",
+        "parameter: 0x2",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'summonType: "special"',
+      ],
+    },
     {
       file: "test/lua-real-script-battery-charger-lp-target-revive.test.ts",
       kind: "lpCostTargetGraveSetcodeSummon",
@@ -263,5 +284,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, lpCostTargetGraveSetcodeSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, lpCostTargetGraveSetcodeSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, opponentTargetLevelHandSummon: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
 }
