@@ -19,15 +19,7 @@ export function installCardStateApi(L: unknown, session: DuelSession): void {
   pushNumberGetter(L, "GetFieldID", session, (card) => cardFieldId(card));
   pushNumberGetter(L, "GetRealFieldID", session, (card) => cardFieldId(card));
   pushNumberGetter(L, "GetCardID", session, (card) => cardFieldId(card));
-  lua.lua_pushcfunction(L, (state: unknown) => {
-    const card = readCard(state, session);
-    if (card) {
-      const hintType = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-      const hintValue = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 0;
-      card.assumedProperties = { ...card.assumedProperties, [hintType]: hintValue };
-    }
-    return 0;
-  });
+  lua.lua_pushcfunction(L, () => 0);
   lua.lua_setfield(L, -2, to_luastring("SetHint"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);

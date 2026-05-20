@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const forbiddenCardFixtureCount = 1;
+const forbiddenCardFixtureCount = 2;
 const forbiddenCardKindCounts = {
   announcedSameCodeForbidden: 1,
+  announcedSameOriginalCodeStaticForbidden: 1,
 } satisfies Record<ForbiddenCardKind, number>;
 
-type ForbiddenCardKind = "announcedSameCodeForbidden";
+type ForbiddenCardKind = "announcedSameCodeForbidden" | "announcedSameOriginalCodeStaticForbidden";
 
 describe("Lua real forbidden-card restore coverage", () => {
   it("keeps forbidden-card restore fixture inventory explicit", () => {
@@ -40,6 +41,28 @@ function realScriptForbiddenCardFixtures(): Array<{
   requiredSnippets: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-prohibition-announce-forbidden-card.test.ts",
+      kind: "announcedSameOriginalCodeStaticForbidden",
+      requiredSnippets: [
+        'const prohibitionCode = "43711255"',
+        "restores its S/T-zone same-original-code forbidden-card lock",
+        "Duel.AnnounceCard(tp)",
+        "e2:SetCode(EFFECT_FORBIDDEN)",
+        "e2:SetLabelObject(e1)",
+        "c:IsOriginalCodeRule(e:GetLabelObject():GetLabel())",
+        'luaTargetDescriptor: "target:same-code-label-object-label"',
+        "targetRange: [0x7f, 0x7f]",
+        "action.type === \"normalSummon\" && action.uid === p0Declared.uid)).toBe(false)",
+        "action.type === \"setMonster\" && action.uid === p0Declared.uid)).toBe(false)",
+        "action.type === \"activateEffect\" && action.uid === p0Declared.uid)).toBe(false)",
+        "action.type === \"normalSummon\" && action.uid === p1Declared.uid)).toBe(false)",
+        "action.type === \"setMonster\" && action.uid === p1Declared.uid)).toBe(false)",
+        "action.type === \"activateEffect\" && action.uid === p1Declared.uid)).toBe(false)",
+        "actionHasUid(action, p0Allowed.uid))).toBe(true)",
+        "actionHasUid(action, p1Allowed.uid))).toBe(true)",
+      ],
+    },
     {
       file: "test/lua-real-script-psi-blocker-announce-forbidden-card.test.ts",
       kind: "announcedSameCodeForbidden",
@@ -72,6 +95,7 @@ function countForbiddenCardKinds(fixtures: Array<{ kind: ForbiddenCardKind }>): 
     },
     {
       announcedSameCodeForbidden: 0,
+      announcedSameOriginalCodeStaticForbidden: 0,
     },
   );
 }

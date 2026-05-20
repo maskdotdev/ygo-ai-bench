@@ -1007,6 +1007,7 @@ function syncActiveLabels(hostState: LuaHostState, label: number, labels: number
     if (labels.length > 1) ctx.chainLink.effectLabels = [...labels]; else delete ctx.chainLink.effectLabels;
   }
   syncDisableFieldLabelObjectValues(hostState, hostState.activeLuaEffectId, label);
+  syncLabelObjectTargetValues(hostState, hostState.activeLuaEffectId, label);
 }
 
 function syncDisableFieldLabelObjectValues(hostState: LuaHostState, labelObjectId: number | undefined, value: number): void {
@@ -1015,6 +1016,15 @@ function syncDisableFieldLabelObjectValues(hostState: LuaHostState, labelObjectI
     if (luaEffect.code !== luaEffectDisableField || luaEffect.labelObjectId !== labelObjectId) continue;
     luaEffect.value = value;
     for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) effect.value = value;
+  }
+}
+
+function syncLabelObjectTargetValues(hostState: LuaHostState, labelObjectId: number | undefined, value: number): void {
+  if (labelObjectId === undefined) return;
+  for (const luaEffect of hostState.effects.values()) {
+    if (luaEffect.labelObjectId !== labelObjectId || luaEffect.targetDescriptor !== "target:same-code-label-object-label") continue;
+    luaEffect.label = value;
+    for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) effect.label = value;
   }
 }
 

@@ -333,6 +333,7 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (codeValue !== undefined) return `target:code:${codeValue}`;
   const effectParam = luaFunctionParams(snippet)?.[0];
   if (effectParam && new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsCode\\s*\\(\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`).test(snippet)) return "target:same-code-label";
+  if (effectParam && new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsOriginalCodeRule\\s*\\(\\s*${escapeRegExp(effectParam)}\\s*:\\s*GetLabelObject\\s*\\(\\s*\\)\\s*:\\s*GetLabel\\s*\\(\\s*\\)\\s*\\)`).test(snippet)) return "target:same-code-label-object-label";
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
   const summonPlayerParam = luaFunctionParams(snippet)?.[2];
   const summonPositionParam = luaFunctionParams(snippet)?.[4];

@@ -76,7 +76,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (setcode !== undefined) return { targetCardPredicate: (ctx, card) => currentCardMatchesSetcode(card, ctx.duel, setcode) && (!effect.luaTargetDescriptor?.startsWith(luaFaceupSetcodeTargetDescriptorPrefix) || card.faceUp) };
   const setcodeAny = setcodeAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (setcodeAny !== undefined) return { targetCardPredicate: (ctx, card) => setcodeAny.some((candidate) => currentCardMatchesSetcode(card, ctx.duel, candidate)) };
-  if (effect.luaTargetDescriptor === "target:same-code-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
+  if (effect.luaTargetDescriptor === "target:same-code-label" || effect.luaTargetDescriptor === "target:same-code-label-object-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
   const pendulumSummonNotSetcode = pendulumSummonNotSetcodeDescriptor(effect.luaTargetDescriptor);
   if (pendulumSummonNotSetcode !== undefined) return { targetCardPredicate: (ctx, card) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x4a000000 && !pendulumSummonNotSetcode.some((setcode) => currentCardMatchesSetcode(card, ctx.duel, setcode)) };
   const pendulumSummonNotAttribute = pendulumSummonNotAttributeDescriptor(effect.luaTargetDescriptor);
