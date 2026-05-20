@@ -123,11 +123,34 @@ function triggerEventCandidate(
   eventCard: DuelCardInstance | undefined,
   options: DuelTriggerCollectOptions,
 ): TriggerEventCandidate {
+  if (eventName === "detachedMaterial" && eventCard) return detachedMaterialTriggerCandidate(state, eventCard, options);
   if (!isBattleDestroyingTrigger(effect, eventName) || !eventCard) return { eventCard, options };
   const destroyingUid = battleDestroyingSourceUid(state, eventCard);
   const destroyingCard = destroyingUid === undefined ? undefined : findCard(state, destroyingUid);
   if (!destroyingCard) return { eventCard, options };
   return { eventCard: destroyingCard, options: battleDestroyingTriggerOptions(options, eventCard) };
+}
+
+function detachedMaterialTriggerCandidate(
+  state: DuelState,
+  detachedMaterial: DuelCardInstance,
+  options: DuelTriggerCollectOptions,
+): TriggerEventCandidate {
+  const reasonPayload = eventCardReasonPayload(detachedMaterial);
+  const holderUid = options.eventReasonCardUid ?? reasonPayload.eventReasonCardUid;
+  const holder = holderUid === undefined ? undefined : findCard(state, holderUid);
+  return {
+    eventCard: holder ?? detachedMaterial,
+    options: {
+      ...options,
+      ...(options.eventPlayer === undefined ? { eventPlayer: detachedMaterial.controller } : {}),
+      ...(options.eventReason === undefined && reasonPayload.eventReason !== undefined ? { eventReason: reasonPayload.eventReason } : {}),
+      ...(options.eventReasonPlayer === undefined && reasonPayload.eventReasonPlayer !== undefined ? { eventReasonPlayer: reasonPayload.eventReasonPlayer } : {}),
+      ...(options.eventReasonCardUid === undefined && reasonPayload.eventReasonCardUid !== undefined ? { eventReasonCardUid: reasonPayload.eventReasonCardUid } : {}),
+      ...(options.eventReasonEffectId === undefined && reasonPayload.eventReasonEffectId !== undefined ? { eventReasonEffectId: reasonPayload.eventReasonEffectId } : {}),
+      ...eventCardStatePayload(detachedMaterial),
+    },
+  };
 }
 
 function shouldDeferCustomEventChoice(state: DuelState, eventName: DuelEventName): boolean {

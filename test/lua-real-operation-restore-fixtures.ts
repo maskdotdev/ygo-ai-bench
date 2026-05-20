@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 164;
+export const operationFixtureCount = 165;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -45,6 +45,7 @@ export const operationKindCounts = {
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
   detachDirectDamage: 1,
+  detachReplaceDisableBurn: 1,
   detachStatBurn: 1,
   destroyedSummonStatBurn: 1,
   directRecover: 1,
@@ -155,6 +156,7 @@ export type OperationKind =
   | "discardCostGraveToDeckTop"
   | "directDamage"
   | "detachDirectDamage"
+  | "detachReplaceDisableBurn"
   | "detachStatBurn"
   | "destroyedSummonStatBurn"
   | "directRecover"
@@ -619,6 +621,30 @@ export function operationFixtureFiles(): Array<{
         'eventName: "detachedMaterial"',
         'eventName: "damageDealt"',
         "lifePoints).toBe(7200)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-archfiend-seraph-detach-disable-burn.test.ts",
+      kind: "detachReplaceDisableBurn",
+      required: [
+        "restores destroy replacement, detach-material burn, and target ATK-zero disable",
+        "Duel.EnableGlobalFlag(GLOBALFLAG_DETACH_EVENT)",
+        "e1:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,c,96)",
+        "c:RemoveOverlayCard(tp,2,2,REASON_EFFECT)",
+        "e2:SetCode(EVENT_DETACH_MATERIAL)",
+        "return e:GetHandler():GetOverlayCount()==0",
+        "e3:SetCost(Cost.DetachFromSelf(1))",
+        "return e:GetHandler():GetOverlayGroup():IsExists(Card.IsCode,1,nil,49678559)",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_DISABLE)",
+        "e3:SetCode(EFFECT_DISABLE_EFFECT)",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+        "api: \"SelectEffectYesNo\"",
+        "eventName: \"detachedMaterial\"",
+        "eventName: \"damageDealt\"",
+        "lifePoints).toBe(6500)",
       ],
     },
     {
@@ -2213,6 +2239,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
       detachDirectDamage: 0,
+      detachReplaceDisableBurn: 0,
       detachStatBurn: 0,
       destroyedSummonStatBurn: 0,
       directRecover: 0,
