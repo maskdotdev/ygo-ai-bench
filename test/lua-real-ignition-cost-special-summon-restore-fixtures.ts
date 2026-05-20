@@ -1,10 +1,11 @@
-export const ignitionCostSpecialSummonFixtureCount = 9;
+export const ignitionCostSpecialSummonFixtureCount = 10;
 
 export const ignitionCostSpecialSummonKindCounts = {
   dragonRulerDiscardDeckSummonCannotAttack: 1,
   filteredDiscardCostSelfSummonSearch: 1,
   graveCostSelfSummonSearchRedirect: 1,
   handCostSelfSummon: 1,
+  handMonsterCostTargetRevive: 1,
   machineBanishCostTargetRevive: 1,
   trapCostDeckSummonDefense: 1,
   revealCostSelfSummonSearch: 1,
@@ -17,6 +18,7 @@ export type IgnitionCostSpecialSummonKind =
   | "filteredDiscardCostSelfSummonSearch"
   | "graveCostSelfSummonSearchRedirect"
   | "handCostSelfSummon"
+  | "handMonsterCostTargetRevive"
   | "machineBanishCostTargetRevive"
   | "trapCostDeckSummonDefense"
   | "revealCostSelfSummonSearch"
@@ -105,6 +107,27 @@ export function realScriptIgnitionCostSpecialSummonFixtureSnippets(): Array<{
         'eventName: "specialSummoned"',
         "lightDecoy",
         "eventUids: [machineCost.uid, wyvern.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-zombie-master-hand-cost-target-summon.test.ts",
+      kind: "handMonsterCostTargetRevive",
+      required: [
+        "restores hand monster cost into either-Graveyard Level 4 Zombie targeted Special Summon",
+        "return c:IsMonster() and c:IsAbleToGraveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "return c:IsLevelBelow(4) and c:IsRace(RACE_ZOMBIE) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,LOCATION_GRAVE,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+        "local tc=Duel.GetFirstTarget()",
+        "c:IsFaceup() and c:IsRelateToEffect(e) and tc:IsRelateToEffect(e) and tc:IsRace(RACE_ZOMBIE)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "opponentRevive",
+        "levelFiveDecoy",
+        "warriorDecoy",
       ],
     },
     {
@@ -210,5 +233,5 @@ export function countIgnitionCostSpecialSummonKinds(
   return files.reduce<Record<IgnitionCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, filteredDiscardCostSelfSummonSearch: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, machineBanishCostTargetRevive: 0, overlayDetachSelfSummonSearch: 0, releaseBanishLabelBossSummonSearch: 0, revealCostSelfSummonSearch: 0, trapCostDeckSummonDefense: 0 });
+  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, filteredDiscardCostSelfSummonSearch: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, handMonsterCostTargetRevive: 0, machineBanishCostTargetRevive: 0, overlayDetachSelfSummonSearch: 0, releaseBanishLabelBossSummonSearch: 0, revealCostSelfSummonSearch: 0, trapCostDeckSummonDefense: 0 });
 }
