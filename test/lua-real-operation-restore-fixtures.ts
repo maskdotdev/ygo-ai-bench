@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 187;
+export const operationFixtureCount = 188;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -105,6 +105,7 @@ export const operationKindCounts = {
   selectEffectStatDestroy: 1,
   specialSearchMaterialDamage: 1,
   summonDelayedStatDestroy: 1,
+  summonRaceStatTargetDestroy: 1,
   summonFieldMillStat: 1,
   targetRelationStatDestroyedBothDamage: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
@@ -237,6 +238,7 @@ export type OperationKind =
   | "selectEffectStatDestroy"
   | "specialSearchMaterialDamage"
   | "summonDelayedStatDestroy"
+  | "summonRaceStatTargetDestroy"
   | "summonFieldMillStat"
   | "targetRelationStatDestroyedBothDamage"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
@@ -268,6 +270,34 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-leraje-summon-race-stat-target-destroy.test.ts",
+      kind: "summonRaceStatTargetDestroy",
+      required: [
+        "restores summon race-count ATK gain into cannot-attack target DEF zero destruction",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "Duel.GetMatchingGroup(Card.IsMonster,tp,LOCATION_GRAVE,0,nil):GetClassCount(Card.GetRace)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(100*ct)",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_DEFCHANGE)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,s.desfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,c)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_CLIENT_HINT)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e1:SetValue(-c:GetAttack())",
+        "if def~=0 and tc:IsDefense(0) then",
+        "Duel.BreakEffect()",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        'eventName: "normalSummoned"',
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-dark-end-evaporation-select-stat-destroy.test.ts",
       kind: "selectEffectStatDestroy",
@@ -2791,6 +2821,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStatDestroy: 0,
       specialSearchMaterialDamage: 0,
       summonDelayedStatDestroy: 0,
+      summonRaceStatTargetDestroy: 0,
       summonFieldMillStat: 0,
       targetRelationStatDestroyedBothDamage: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
