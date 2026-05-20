@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 159;
+export const operationFixtureCount = 160;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -40,6 +40,7 @@ export const operationKindCounts = {
   discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
+  detachDirectDamage: 1,
   detachStatBurn: 1,
   destroyedSummonStatBurn: 1,
   directRecover: 1,
@@ -145,6 +146,7 @@ export type OperationKind =
   | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
   | "directDamage"
+  | "detachDirectDamage"
   | "detachStatBurn"
   | "destroyedSummonStatBurn"
   | "directRecover"
@@ -515,6 +517,25 @@ export function operationFixtureFiles(): Array<{
         "eventName: \"detachedMaterial\"",
         "currentAttack(restoredTell, restoredOpen.session.state)).toBe(1300)",
         "currentDefense(restoredTell, restoredOpen.session.state)).toBe(1000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gagaga-cowboy-defense-detach-burn.test.ts",
+      kind: "detachDirectDamage",
+      required: [
+        "restores defense-position detached ignition into 800 effect damage",
+        "Xyz.AddProcedure(c,nil,4,2)",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DAMAGE)",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "e1:SetCost(Cost.DetachFromSelf(1,1,nil))",
+        "if e:GetHandler():IsDefensePos() then",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,800)",
+        "if c:IsDefensePos() then",
+        "Duel.Damage(1-tp,800,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "detachedMaterial"',
+        'eventName: "damageDealt"',
+        "lifePoints).toBe(7200)",
       ],
     },
     {
@@ -2083,6 +2104,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
+      detachDirectDamage: 0,
       detachStatBurn: 0,
       destroyedSummonStatBurn: 0,
       directRecover: 0,
