@@ -4,18 +4,23 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const toGraveSearchFixtureCount = 2;
+const toGraveSearchFixtureCount = 3;
 const toGraveSearchKindCounts = {
   destroyedFromFieldMandatorySearch: 1,
   previousOnFieldOptionalSearch: 1,
+  previousOnFieldOptionalWhenSearch: 1,
 } satisfies Record<ToGraveSearchKind, number>;
 const toGraveSearchSemanticVariantCounts = {
   reptilianneGardnaDestroyedFromFieldSearch: 1,
   blueDragonSummonerPreviousOnFieldNormalRaceSearch: 1,
+  botanicalGirlPreviousOnFieldPlantDefenseSearch: 1,
 } satisfies Record<ToGraveSearchSemanticVariant, number>;
 
-type ToGraveSearchKind = "destroyedFromFieldMandatorySearch" | "previousOnFieldOptionalSearch";
-type ToGraveSearchSemanticVariant = "reptilianneGardnaDestroyedFromFieldSearch" | "blueDragonSummonerPreviousOnFieldNormalRaceSearch";
+type ToGraveSearchKind = "destroyedFromFieldMandatorySearch" | "previousOnFieldOptionalSearch" | "previousOnFieldOptionalWhenSearch";
+type ToGraveSearchSemanticVariant =
+  | "reptilianneGardnaDestroyedFromFieldSearch"
+  | "blueDragonSummonerPreviousOnFieldNormalRaceSearch"
+  | "botanicalGirlPreviousOnFieldPlantDefenseSearch";
 
 describe("Lua real to-Grave search restore coverage", () => {
   it("requires to-Grave search fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -122,6 +127,21 @@ function toGraveSearchFixtureFiles(): Array<{ file: string; kind: ToGraveSearchK
         "eventReason: duelReason.effect | duelReason.destroy",
       ],
     },
+    {
+      file: "test/lua-real-script-botanical-girl-to-grave-plant-search.test.ts",
+      kind: "previousOnFieldOptionalWhenSearch",
+      required: [
+        'const botanicalGirlCode = "84824601"',
+        "restores non-delayed previous-on-field EVENT_TO_GRAVE plant search",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "return e:GetHandler():IsPreviousLocation(LOCATION_ONFIELD)",
+        "return c:IsDefenseBelow(1000) and c:IsRace(RACE_PLANT) and c:IsAbleToHand()",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)",
+        'triggerBucket: "turnOptional"',
+        'eventTriggerTiming: "when"',
+        "eventReason: duelReason.effect | duelReason.destroy",
+      ],
+    },
   ];
 }
 
@@ -149,6 +169,18 @@ function toGraveSearchSemanticVariants(): Array<{ file: string; kind: ToGraveSea
         'host.messages).not.toContain("blue dragon responder resolved")',
       ],
     },
+    {
+      file: "test/lua-real-script-botanical-girl-to-grave-plant-search.test.ts",
+      kind: "botanicalGirlPreviousOnFieldPlantDefenseSearch",
+      required: [
+        "racePlant",
+        "highDefensePlantDecoy",
+        "lowDefenseDragonDecoy",
+        "defense: 1001",
+        "{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 1 }",
+        'host.messages).not.toContain("botanical responder resolved")',
+      ],
+    },
   ];
 }
 
@@ -161,6 +193,7 @@ function countToGraveSearchKinds(fixtures: Array<{ kind: ToGraveSearchKind }>): 
     {
       destroyedFromFieldMandatorySearch: 0,
       previousOnFieldOptionalSearch: 0,
+      previousOnFieldOptionalWhenSearch: 0,
     },
   );
 }
@@ -176,6 +209,7 @@ function countToGraveSearchSemanticVariants(
     {
       reptilianneGardnaDestroyedFromFieldSearch: 0,
       blueDragonSummonerPreviousOnFieldNormalRaceSearch: 0,
+      botanicalGirlPreviousOnFieldPlantDefenseSearch: 0,
     },
   );
 }
