@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const toGraveSearchFixtureCount = 1;
+const toGraveSearchFixtureCount = 2;
 const toGraveSearchKindCounts = {
   destroyedFromFieldMandatorySearch: 1,
+  previousOnFieldOptionalSearch: 1,
 } satisfies Record<ToGraveSearchKind, number>;
 const toGraveSearchSemanticVariantCounts = {
   reptilianneGardnaDestroyedFromFieldSearch: 1,
+  blueDragonSummonerPreviousOnFieldNormalRaceSearch: 1,
 } satisfies Record<ToGraveSearchSemanticVariant, number>;
 
-type ToGraveSearchKind = "destroyedFromFieldMandatorySearch";
-type ToGraveSearchSemanticVariant = "reptilianneGardnaDestroyedFromFieldSearch";
+type ToGraveSearchKind = "destroyedFromFieldMandatorySearch" | "previousOnFieldOptionalSearch";
+type ToGraveSearchSemanticVariant = "reptilianneGardnaDestroyedFromFieldSearch" | "blueDragonSummonerPreviousOnFieldNormalRaceSearch";
 
 describe("Lua real to-Grave search restore coverage", () => {
   it("requires to-Grave search fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -51,7 +53,7 @@ describe("Lua real to-Grave search restore coverage", () => {
           || !text.includes('eventName: "sentToGraveyard"')
           || !text.includes('eventName: "sentToHand"')
           || !text.includes('eventName: "sentToHandConfirmed"')
-          || !text.includes('triggerBucket: "turnMandatory"')
+          || !text.includes("triggerBucket:")
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -102,6 +104,21 @@ function toGraveSearchFixtureFiles(): Array<{ file: string; kind: ToGraveSearchK
         "c:IsReason(REASON_DESTROY) and c:IsPreviousLocation(LOCATION_ONFIELD) and c:IsPreviousControler(tp)",
         "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)",
         "Duel.ConfirmCards(1-tp,g)",
+        'triggerBucket: "turnMandatory"',
+        "eventReason: duelReason.effect | duelReason.destroy",
+      ],
+    },
+    {
+      file: "test/lua-real-script-blue-dragon-summoner-to-grave-normal-search.test.ts",
+      kind: "previousOnFieldOptionalSearch",
+      required: [
+        'const blueDragonSummonerCode = "55969226"',
+        "restores delayed previous-on-field EVENT_TO_GRAVE search",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DELAY)",
+        "return e:GetHandler():IsPreviousLocation(LOCATION_ONFIELD)",
+        "return c:IsType(TYPE_NORMAL) and c:IsRace(RACE_DRAGON|RACE_WARRIOR|RACE_SPELLCASTER) and c:IsAbleToHand()",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)",
+        'triggerBucket: "turnOptional"',
         "eventReason: duelReason.effect | duelReason.destroy",
       ],
     },
@@ -120,6 +137,18 @@ function toGraveSearchSemanticVariants(): Array<{ file: string; kind: ToGraveSea
         'host.messages).not.toContain("reptilianne responder resolved")',
       ],
     },
+    {
+      file: "test/lua-real-script-blue-dragon-summoner-to-grave-normal-search.test.ts",
+      kind: "blueDragonSummonerPreviousOnFieldNormalRaceSearch",
+      required: [
+        "typeMonster | typeNormal",
+        "raceDragon",
+        "effectDragonDecoy",
+        "normalFiendDecoy",
+        "{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 1 }",
+        'host.messages).not.toContain("blue dragon responder resolved")',
+      ],
+    },
   ];
 }
 
@@ -131,6 +160,7 @@ function countToGraveSearchKinds(fixtures: Array<{ kind: ToGraveSearchKind }>): 
     },
     {
       destroyedFromFieldMandatorySearch: 0,
+      previousOnFieldOptionalSearch: 0,
     },
   );
 }
@@ -145,6 +175,7 @@ function countToGraveSearchSemanticVariants(
     },
     {
       reptilianneGardnaDestroyedFromFieldSearch: 0,
+      blueDragonSummonerPreviousOnFieldNormalRaceSearch: 0,
     },
   );
 }
