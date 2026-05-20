@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 202;
+export const operationFixtureCount = 203;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -51,6 +51,7 @@ export const operationKindCounts = {
   deckTopSort: 2,
   deckMoveToField: 1,
   groupBanishCountStat: 1,
+  handBanishDrawStat: 1,
   discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
@@ -194,6 +195,7 @@ export type OperationKind =
   | "deckTopSort"
   | "deckMoveToField"
   | "groupBanishCountStat"
+  | "handBanishDrawStat"
   | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
   | "directDamage"
@@ -976,6 +978,32 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dragon.uid), restoredOpen.session.state)).toBe(2700)",
         'eventName: "banished"',
         "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-asymmetaphys-banish-draw-stat.test.ts",
+      kind: "handBanishDrawStat",
+      required: [
+        "restores hand Metaphys banish draw into own-turn non-Metaphys ATK/DEF reductions",
+        "e2:SetCategory(CATEGORY_REMOVE+CATEGORY_DRAW)",
+        "e2:SetProperty(EFFECT_FLAG_PLAYER_TARGET)",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(1)",
+        "Duel.SetOperationInfo(0,CATEGORY_REMOVE,nil,1,tp,LOCATION_HAND)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.SelectMatchingCard(tp,s.drfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_EFFECT)",
+        "Duel.Draw(p,d,REASON_EFFECT)",
+        "e3:SetCode(EVENT_REMOVE)",
+        "return s.effcon(e,tp,eg,ep,ev,re,r,rp) and Duel.IsTurnPlayer(tp)",
+        "Duel.GetMatchingGroup(s.atkfilter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_UPDATE_DEFENSE",
+        "operationInfos",
+        'eventName: "banished"',
+        'eventName: "cardsDrawn"',
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -3068,6 +3096,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       groupDestroy: 0,
       groupDestroyDamageStatLp: 0,
       groupToGraveFinalAttack: 0,
+      handBanishDrawStat: 0,
       handStatBoost: 0,
       pzoneAttackAnnounceStat: 0,
       twoTargetPositionCopyStat: 0,
