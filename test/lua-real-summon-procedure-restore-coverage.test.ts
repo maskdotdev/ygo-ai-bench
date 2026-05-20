@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 12;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 11;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 13;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 12;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 2,
@@ -15,7 +15,7 @@ const summonProcedureKindCounts = {
   handReleaseEquipTurnCounterProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
-  handOwnFaceupLevelOrLinkOpenZoneProcedure: 1,
+  handOwnFaceupLevelOrLinkOpenZoneProcedure: 2,
   handOpponentSpellTrapOrMstProcedure: 1,
   handSendCostProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
@@ -31,6 +31,7 @@ const summonProcedureSemanticVariantCounts = {
   megarockDragonGraveBanishStatProcedure: 1,
   pankratopsOpponentControlsMoreHandProcedure: 1,
   radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 1,
+  sprightBlueLevelOrRankOpenZoneProcedureSearch: 1,
   sprightRedLevelOrLinkOpenZoneProcedure: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
 
@@ -58,6 +59,7 @@ type SummonProcedureSemanticVariant =
   | "megarockDragonGraveBanishStatProcedure"
   | "pankratopsOpponentControlsMoreHandProcedure"
   | "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch"
+  | "sprightBlueLevelOrRankOpenZoneProcedureSearch"
   | "sprightRedLevelOrLinkOpenZoneProcedure";
 
 const summonProcedureFixtures = [
@@ -249,6 +251,23 @@ const summonProcedureFixtures = [
       "return ((c:IsSetCard(SET_RADIANT_TYPHOON) and c:IsMonster()) or c:IsCode(CARD_MYSTICAL_SPACE_TYPHOON)) and c:IsAbleToHand() and not c:IsCode(id)",
       "expectRestoredLegalActions(restoredProcedure, 0)",
       "applyRestoredActionAndAssert(restoredProcedure, procedure!)",
+      'eventName: "specialSummoned"',
+      'eventName: "sentToHandConfirmed"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-spright-blue-special-summon-procedure-search.test.ts",
+    kind: "handOwnFaceupLevelOrLinkOpenZoneProcedure",
+    required: [
+      "Level/Rank 2 hand Special Summon procedure, oath count, and delayed Deck search",
+      'const sprightBlueCode = "76145933"',
+      "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+      "return c:IsFaceup() and (c:IsLevel(2) or c:IsRank(2))",
+      "withEnabler: false",
+      "withEnabler: true",
+      'action.type === "specialSummonProcedure"',
+      "getLuaRestoreLegalActions(restoredChain, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === secondBlue.uid)).toBe(false)",
       'eventName: "specialSummoned"',
       'eventName: "sentToHandConfirmed"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
@@ -476,6 +495,18 @@ function summonProcedureSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-spright-blue-special-summon-procedure-search.test.ts",
+      kind: "sprightBlueLevelOrRankOpenZoneProcedureSearch",
+      required: [
+        'const sprightBlueCode = "76145933"',
+        "restores its Level/Rank 2 hand Special Summon procedure, oath count, and delayed Deck search",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return c:IsFaceup() and (c:IsLevel(2) or c:IsRank(2))",
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHandConfirmed"',
+      ],
+    },
+    {
       file: "test/lua-real-script-spright-red-release-link2-negate.test.ts",
       kind: "sprightRedLevelOrLinkOpenZoneProcedure",
       required: [
@@ -566,6 +597,7 @@ function countSummonProcedureSemanticVariants(
       megarockDragonGraveBanishStatProcedure: 0,
       pankratopsOpponentControlsMoreHandProcedure: 0,
       radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 0,
+      sprightBlueLevelOrRankOpenZoneProcedureSearch: 0,
       sprightRedLevelOrLinkOpenZoneProcedure: 0,
     },
   );
