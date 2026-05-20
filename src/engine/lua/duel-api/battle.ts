@@ -42,13 +42,12 @@ export function installDuelBattleApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("GetAttackedGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = readOptionalPlayer(state, 1) ?? session.state.turnPlayer;
-    const monsterUid = battleMonsterUid(session, player);
-    if (!monsterUid) {
-      lua.lua_pushnil(state);
-      return 1;
-    }
-    pushCardTable(state, monsterUid);
-    return 1;
+    const [playerMonsterUid, opponentMonsterUid] = battleMonsterUids(session, player);
+    if (playerMonsterUid) pushCardTable(state, playerMonsterUid);
+    else lua.lua_pushnil(state);
+    if (opponentMonsterUid) pushCardTable(state, opponentMonsterUid);
+    else lua.lua_pushnil(state);
+    return 2;
   });
   lua.lua_setfield(L, -2, to_luastring("GetBattleMonster"));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -275,14 +274,16 @@ function forceAttack(session: DuelSession, attackerUid: string | undefined, targ
   return true;
 }
 
-function battleMonsterUid(session: DuelSession, player: PlayerId): string | undefined {
+function battleMonsterUids(session: DuelSession, player: PlayerId): [string | undefined, string | undefined] {
   const attack = session.state.currentAttack ?? session.state.pendingBattle;
-  if (!attack) return undefined;
+  if (!attack) return [undefined, undefined];
   const attacker = session.state.cards.find((card) => card.uid === attack.attackerUid);
-  if (attacker?.controller === player && attacker.location === "monsterZone") return attacker.uid;
   const target = attack.targetUid === undefined ? undefined : session.state.cards.find((card) => card.uid === attack.targetUid);
-  if (target?.controller === player && target.location === "monsterZone") return target.uid;
-  return undefined;
+  const attackerUid = attacker?.location === "monsterZone" ? attacker.uid : undefined;
+  const targetUid = target?.location === "monsterZone" ? target.uid : undefined;
+  if (attacker?.controller === player) return [attackerUid, targetUid];
+  if (target?.controller === player) return [targetUid, attackerUid];
+  return [undefined, undefined];
 }
 
 function readBattleCard(L: unknown, session: DuelSession, index: number): DuelCardInstance | undefined {

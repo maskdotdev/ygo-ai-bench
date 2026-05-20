@@ -39,6 +39,8 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
   lua.lua_setfield(L, -2, to_luastring("GetBattleTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushAttackableTarget(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetAttackableTarget"));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsCanBeBattleTarget(state, session));
+  lua.lua_setfield(L, -2, to_luastring("IsCanBeBattleTarget"));
   lua.lua_pushcfunction(L, (state: unknown) => pushBattledGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetBattledGroup"));
   pushNumberGetter(L, "GetBattledGroupCount", session, (card) => battledOpponentUids(session, card).length);
@@ -102,6 +104,21 @@ function pushAttackableTarget(L: unknown, session: DuelSession): number {
   pushGroupTable(L, result.targets.map((target) => target.uid));
   lua.lua_pushboolean(L, result.directAttack);
   return 2;
+}
+
+function pushIsCanBeBattleTarget(L: unknown, session: DuelSession): number {
+  const card = readCard(L, session);
+  const attackerUid = readCardUid(L, 2);
+  const attacker = attackerUid ? session.state.cards.find((candidate) => candidate.uid === attackerUid) : undefined;
+  lua.lua_pushboolean(L, Boolean(
+    card &&
+    attacker &&
+    card.uid !== attacker.uid &&
+    card.location === "monsterZone" &&
+    attacker.location === "monsterZone" &&
+    card.controller !== attacker.controller,
+  ));
+  return 1;
 }
 
 function pushBattledGroup(L: unknown, session: DuelSession): number {

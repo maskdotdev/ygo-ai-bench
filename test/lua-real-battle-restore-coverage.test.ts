@@ -38,9 +38,9 @@ import {
 } from "./lua-real-battle-restore-fixtures.js";
 
 const root = process.cwd();
-const scriptedCalculateDamageFixtureCount = 4;
+const scriptedCalculateDamageFixtureCount = 5;
 const scriptedCalculateDamageKindCounts = {
-  attackNegationRecalculation: 2,
+  attackNegationRecalculation: 3,
   battleTargetRecalculation: 2,
 } satisfies Record<ScriptedCalculateDamageKind, number>;
 
@@ -307,6 +307,7 @@ function realScriptCalculateDamageFixtures(): ScriptedCalculateDamageFixture[] {
   return ([
     { file: "test/lua-real-script-dispatchparazzi-calculate-damage.test.ts", kind: "battleTargetRecalculation", required: ["Duel.CalculateDamage(at,c)", "pendingBattle).toBeUndefined()", 'eventName: "battleDamageDealt"', "players[1].lifePoints).toBe(7200)"] },
     { file: "test/lua-real-script-gagaga-samurai-calculate-damage.test.ts", kind: "battleTargetRecalculation", required: ["Duel.CalculateDamage(at,c)", "pendingBattle).toBeUndefined()", "position: \"faceUpDefense\"", "players[1].lifePoints).toBe(8000)"] },
+    { file: "test/lua-real-script-last-counter-negate-calculate-damage.test.ts", kind: "attackNegationRecalculation", required: ["Duel.NegateAttack()", "Duel.CalculateDamage(bc,sc)", "pendingBattle).toBeUndefined()", 'eventName: "battleDamageDealt"', "players[1].lifePoints).toBe(6800)"] },
     { file: "test/lua-real-script-magical-arm-shield-calculate-damage.test.ts", kind: "attackNegationRecalculation", required: ['battleWindow?.kind).toBe("attackNegationResponse")', 'eventName: "controlChanged"', "battleDamage).toEqual({ 0: 1500, 1: 0 })", 'eventName: "battleDamageDealt"'] },
     { file: "test/lua-real-script-super-junior-confrontation-calculate-damage.test.ts", kind: "attackNegationRecalculation", required: ['battleWindow?.kind).toBe("attackNegationResponse")', "skippedPhases).toEqual([{ player: 1, phase: \"battle\", remaining: 1 }])", "battleDamage).toEqual({ 0: 0, 1: 0 })", 'eventName: "attackDisabled"'] },
   ] satisfies ScriptedCalculateDamageFixture[]).sort((a, b) => a.file.localeCompare(b.file));
