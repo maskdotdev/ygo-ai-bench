@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 103;
+export const operationFixtureCount = 104;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -41,7 +41,7 @@ export const operationKindCounts = {
   overlayAttach: 1,
   positionSet: 1,
   pzoneDestroySearch: 1,
-  releaseDamage: 2,
+  releaseDamage: 3,
   ritualDeckMaterials: 1,
   searchOrExcavate: 29,
   selfEquipFromHand: 1,
@@ -364,6 +364,21 @@ export function operationFixtureFiles(): Array<{
         'eventName: "released"',
         'eventName: "damageDealt"',
         "eventReasonCardUid: cannonSoldier.uid",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cannon-soldier-mk2-two-release-damage.test.ts",
+      kind: "releaseDamage",
+      required: [
+        "Duel.SelectReleaseGroupCost(tp,nil,2,2,false,nil,nil)",
+        "releasedIndividualCostUids",
+        "eventUids",
+        "category: 0x80000",
+        "targetParam: 1500",
+        'eventName: "released"',
+        'eventName: "damageDealt"',
+        "eventReasonCardUid: mk2.uid",
         "host.messages).not.toContain",
       ],
     },

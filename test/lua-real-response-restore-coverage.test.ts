@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const responseFixtureCount = 125;
-const chainedResponseFixtureCount = 124;
-const responseOperationInfoFixtureCount = 116;
+const responseFixtureCount = 126;
+const chainedResponseFixtureCount = 125;
+const responseOperationInfoFixtureCount = 117;
 const responseWithoutOperationInfoFixtureFiles = [
   "test/lua-real-script-angineer-overlay-position.test.ts",
   "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
@@ -18,7 +18,7 @@ const responseWithoutOperationInfoFixtureFiles = [
   "test/lua-real-script-waboku-temporary-battle-protection.test.ts",
 ];
 const responseFixtureKindCounts = {
-  chainedResponseWithOperationInfo: 116,
+  chainedResponseWithOperationInfo: 117,
   chainedResponseWithoutOperationInfo: 8,
   lingeringSameCodeNegation: 1,
 } satisfies Record<ResponseFixtureKind, number>;
@@ -28,7 +28,7 @@ const responseSemanticVariantCounts = {
   fabledAshenveilDamageStepBoostEmptyOperationInfo: 1,
   heboSpiritGrantReturnEmptyOperationInfo: 1,
   negateAttackBattleWindowEmptyOperationInfo: 1,
-  operationInfoAnnouncedResponse: 116,
+  operationInfoAnnouncedResponse: 117,
   scrapIronScarecrowBattleWindowEmptyOperationInfo: 1,
   shinobirdCrowDamageStepStatEmptyOperationInfo: 1,
   threateningRoarAttackLockEmptyOperationInfo: 1,
@@ -193,6 +193,7 @@ function realScriptResponseFixtureFiles(): string[] {
     "lua-real-script-chemicritter-hydron-hawk-discard-revive.test.ts",
     "lua-real-script-chemicritter-oxy-ox-gemini-level-change.test.ts",
     "lua-real-script-called-by-the-grave.test.ts",
+    "lua-real-script-cannon-soldier-mk2-two-release-damage.test.ts",
     "lua-real-script-cannon-soldier-release-self-damage.test.ts",
     "lua-real-script-castle-gate-release-cost-damage.test.ts",
     "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",

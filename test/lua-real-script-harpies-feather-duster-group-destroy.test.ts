@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Harpie's Feather Duster gr
     const activation = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === duster.uid);
     expect(activation, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, activation!);
+    expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]?.operationInfos).toEqual([
       { category: 0x1, targetUids: [opponentSpell.uid, opponentTrap.uid], count: 2, player: 0, parameter: 0 },
     ]);
