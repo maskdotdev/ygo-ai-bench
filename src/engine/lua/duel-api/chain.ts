@@ -25,12 +25,12 @@ export interface LuaDuelChainApiHostState {
 
 export function installDuelChainApi(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, session.state.status === "resolving" && hostState.activeContext?.chainLink ? Math.max(session.state.chain.length, 1) : session.state.chain.length);
+    lua.lua_pushinteger(state, currentLuaChainCount(session, hostState));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetCurrentChain"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    lua.lua_pushinteger(state, session.state.status === "resolving" && hostState.activeContext?.chainLink ? Math.max(session.state.chain.length, 1) : session.state.chain.length);
+    lua.lua_pushinteger(state, currentLuaChainCount(session, hostState));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetChainCount"));
@@ -993,6 +993,12 @@ function currentChainLinks(session: DuelSession, hostState: LuaDuelChainApiHostS
   const activeLink = hostState.activeContext?.chainLink;
   if (!activeLink || session.state.chain.some((link) => link.id === activeLink.id)) return session.state.chain;
   return [...session.state.chain, activeLink];
+}
+
+function currentLuaChainCount(session: DuelSession, hostState: LuaDuelChainApiHostState): number {
+  const activeLink = hostState.activeContext?.chainLink;
+  if (session.state.status === "resolving" && activeLink) return activeLink.chainIndex ?? Math.max(session.state.chain.length, 1);
+  return session.state.chain.length;
 }
 
 function chainLinkByLuaArg(L: unknown, session: DuelSession, hostState?: LuaDuelChainApiHostState): DuelState["chain"][number] | undefined {

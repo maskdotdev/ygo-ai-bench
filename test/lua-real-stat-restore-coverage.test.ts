@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 28;
+const statFixtureCount = 29;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
   damageStepBattleTargetAttributeAttackBoost: 2,
+  diceChainAttackUpdate: 1,
   diceGroupAttackDefenseUpdate: 1,
   diceScaleUpdate: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
@@ -35,6 +36,7 @@ const statSemanticVariantCounts = {
   bladeflyFieldAttributeAttackUpdate: 1,
   bootUpSoldierGadgetConditionAttackUpdate: 1,
   borreloadChainLimitAttackDefenseDrop: 1,
+  royalRhinoChainDiceAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
@@ -59,7 +61,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -82,6 +84,7 @@ type StatSemanticVariant =
   | "plagueWolfFinalAttackEndDestroy"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "reliableGuardianTargetedDamageStepDefenseUpdate"
+  | "royalRhinoChainDiceAttackUpdate"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
   | "shrinkTargetBaseAtkHalving"
@@ -474,6 +477,20 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-royal-rhino-chain-dice-atk.test.ts",
+      kind: "diceChainAttackUpdate",
+      required: [
+        'const rhinoCode = "74289646"',
+        "restores its EVENT_CHAINING CL2 dice response into temporary ATK gain before the starter chain resolves",
+        "Duel.SetOperationInfo(0,CATEGORY_DICE,nil,1,tp,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,tp,500)",
+        "local chain_link=Duel.GetCurrentChain()",
+        "e1:SetValue(res*500)",
+        'eventName: "diceTossed"',
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === rhino.uid), restoredChain.session.state)).toBe((rhino.data.attack ?? 0) + attackGain)",
+      ],
+    },
+    {
       file: "test/lua-real-script-mild-turkey-dice-scale.test.ts",
       kind: "diceScaleUpdate",
       required: [
@@ -504,6 +521,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleAttackerTargetSwing: 0,
       battleTargetAttackBoost: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
+      diceChainAttackUpdate: 0,
       diceGroupAttackDefenseUpdate: 0,
       diceScaleUpdate: 0,
       fieldAttributeAttackUpdate: 0,
@@ -807,6 +825,18 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-royal-rhino-chain-dice-atk.test.ts",
+      kind: "royalRhinoChainDiceAttackUpdate",
+      required: [
+        'const rhinoCode = "74289646"',
+        "restores its EVENT_CHAINING CL2 dice response into temporary ATK gain before the starter chain resolves",
+        "if chain_link==2 then",
+        "Duel.TossDice(tp,1)",
+        'effectId: "lua-3-1027"',
+        "eventReasonEffectId: 3",
+      ],
+    },
+    {
       file: "test/lua-real-script-mild-turkey-dice-scale.test.ts",
       kind: "mildTurkeyDiceScaleUpdate",
       required: [
@@ -852,6 +882,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       plagueWolfFinalAttackEndDestroy: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       reliableGuardianTargetedDamageStepDefenseUpdate: 0,
+      royalRhinoChainDiceAttackUpdate: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
       shrinkTargetBaseAtkHalving: 0,

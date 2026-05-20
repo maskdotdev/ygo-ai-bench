@@ -108,7 +108,7 @@ describe("Lua chain helpers", () => {
     expect(host.messages).toContain("chain material 1/200");
     expect(host.messages).toContain("chain operation info true/200/1/0/0");
     expect(host.messages).toContain("chain target fallback 1/200");
-    expect(host.messages).toContain("chain target checks true/false");
+    expect(host.messages).toContain("chain target checks true/true");
     expect(host.messages).toContain("chain unique true");
     expect(host.messages).toContain("quick current operation info true/400/1");
     expect(host.messages).toContain("source current operation info true/200/1");
