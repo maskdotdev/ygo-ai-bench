@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const TO_DECK_FIXTURE_COUNT = 6;
+const TO_DECK_FIXTURE_COUNT = 7;
 const toDeckKindCounts = {
+  battleDamageGraveContinuousSpellToDeckTop: 1,
   freeChainReleaseTargetShuffleToDeck: 1,
   graveExtraToExtraDeckTop: 1,
   flipGraveTargetShuffleToDeck: 1,
@@ -18,11 +19,13 @@ const toDeckSemanticVariantCounts = {
   crimsonSentrySelfTributeBattleGraveToDeckBottom: 1,
   desFeralImpFlipGraveTargetShuffleToDeck: 1,
   majespecterStormReleaseTargetShuffleToDeck: 1,
+  nubianGuardBattleDamageGraveSpellDeckTop: 1,
   outstandingDogMarronToGraveSelfShuffleToDeck: 1,
   volcanicRechargeFreeChainGraveShuffleToDeck: 1,
 } satisfies Record<ToDeckSemanticVariant, number>;
 
 type ToDeckKind =
+  | "battleDamageGraveContinuousSpellToDeckTop"
   | "freeChainReleaseTargetShuffleToDeck"
   | "graveExtraToExtraDeckTop"
   | "flipGraveTargetShuffleToDeck"
@@ -35,6 +38,7 @@ type ToDeckSemanticVariant =
   | "crimsonSentrySelfTributeBattleGraveToDeckBottom"
   | "desFeralImpFlipGraveTargetShuffleToDeck"
   | "majespecterStormReleaseTargetShuffleToDeck"
+  | "nubianGuardBattleDamageGraveSpellDeckTop"
   | "outstandingDogMarronToGraveSelfShuffleToDeck"
   | "volcanicRechargeFreeChainGraveShuffleToDeck";
 
@@ -89,6 +93,24 @@ function toDeckFixtureFiles(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-nubian-guard-battle-damage-grave-spell-decktop.test.ts",
+      kind: "battleDamageGraveContinuousSpellToDeckTop",
+      required: [
+        'const nubianGuardCode = "51616747"',
+        "restores battle-damage targeting of an own Graveyard Continuous Spell sent to Deck top",
+        "e1:SetCategory(CATEGORY_TODECK)",
+        "e1:SetCode(EVENT_BATTLE_DAMAGE)",
+        "return ep~=tp",
+        "return c:IsContinuousSpell() and c:IsAbleToDeck()",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoDeck(tc,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "battleDamageDealt"',
+        'eventName: "sentToDeck"',
+        "sequence: 0",
+      ],
+    },
     {
       file: "test/lua-real-script-adamancipator-leonite-grave-extra-decktop.test.ts",
       kind: "graveExtraToExtraDeckTop",
@@ -207,6 +229,7 @@ function countToDeckKinds(fixtures: Array<{ kind: ToDeckKind }>): Record<ToDeckK
       return counts;
     },
     {
+      battleDamageGraveContinuousSpellToDeckTop: 0,
       freeChainReleaseTargetShuffleToDeck: 0,
       graveExtraToExtraDeckTop: 0,
       flipGraveTargetShuffleToDeck: 0,
@@ -223,6 +246,21 @@ function toDeckSemanticVariants(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-nubian-guard-battle-damage-grave-spell-decktop.test.ts",
+      kind: "nubianGuardBattleDamageGraveSpellDeckTop",
+      required: [
+        'const nubianGuardCode = "51616747"',
+        "restores battle-damage targeting of an own Graveyard Continuous Spell sent to Deck top",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoDeck(tc,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        'eventName: "battleDamageDealt"',
+        'eventName: "sentToDeck"',
+        'location: "deck"',
+        'location: "graveyard"',
+        "nubianGuard.uid",
+      ],
+    },
     {
       file: "test/lua-real-script-adamancipator-leonite-grave-extra-decktop.test.ts",
       kind: "adamancipatorLeoniteGraveExtraDeckTop",
@@ -317,6 +355,7 @@ function countToDeckSemanticVariants(fixtures: Array<{ kind: ToDeckSemanticVaria
       crimsonSentrySelfTributeBattleGraveToDeckBottom: 0,
       desFeralImpFlipGraveTargetShuffleToDeck: 0,
       majespecterStormReleaseTargetShuffleToDeck: 0,
+      nubianGuardBattleDamageGraveSpellDeckTop: 0,
       outstandingDogMarronToGraveSelfShuffleToDeck: 0,
       volcanicRechargeFreeChainGraveShuffleToDeck: 0,
     },
