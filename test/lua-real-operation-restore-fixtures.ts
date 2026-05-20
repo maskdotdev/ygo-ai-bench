@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 145;
+export const operationFixtureCount = 146;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -72,6 +72,7 @@ export const operationKindCounts = {
   ritualDeckMaterials: 1,
   searchOrExcavate: 36,
   selfEquipFromHand: 1,
+  selectEffectStat: 1,
   summonDelayedStatDestroy: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -165,6 +166,7 @@ export type OperationKind =
   | "ritualDeckMaterials"
   | "searchOrExcavate"
   | "selfEquipFromHand"
+  | "selectEffectStat"
   | "summonDelayedStatDestroy"
   | "spellDraw"
   | "trapDraw"
@@ -1262,6 +1264,22 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ween-opponent-select-effect-stat.test.ts",
+      kind: "selectEffectStat",
+      required: [
+        "restores opponent-chosen SelectEffect branch into Zombie-count ATK gain",
+        "Duel.GetMatchingGroupCount(Card.IsRace,tp,LOCATION_GRAVE,0,nil,RACE_ZOMBIE)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,tp,ct*800)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DAMAGE,nil,0,tp,ct*500)",
+        "local op=Duel.SelectEffect(1-tp,",
+        "c:UpdateAttack(ct*800)",
+        "Duel.Damage(1-tp,ct*500,REASON_EFFECT)",
+        'api: "SelectEffect"',
+        "currentAttack(restoredWeen, restoredResolved.session.state)).toBe((ween.data.attack ?? 0) + 1600)",
+        "lifePoints).toBe(8000)",
+      ],
+    },
+    {
       file: "test/lua-real-script-chain-burst-trap-chain-solved-damage.test.ts",
       kind: "chainSolvedTrapDamage",
       required: [
@@ -1823,6 +1841,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
+      selectEffectStat: 0,
       summonDelayedStatDestroy: 0,
       spellDraw: 0,
       trapDraw: 0,
