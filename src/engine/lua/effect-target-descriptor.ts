@@ -11,6 +11,7 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (fixed !== undefined) return fixed;
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
+  if (/\breturn\s+e\s*:\s*GetLabelObject\s*\(\s*\)\s*~=\s*se\b/.test(snippet)) return "special-summon-limit:not-label-object-effect";
   const params = luaFunctionParams(snippet);
   const cardParam = params?.[1] ?? (params?.length === 1 ? params[0] : undefined);
   if (!cardParam) return undefined;

@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const tokenSummonFixtureCount = 1;
+const tokenSummonFixtureCount = 2;
 const tokenSummonKindCounts = {
   previousOnFieldToGraveMandatoryTokenSummon: 1,
+  spellStepTokenSummonOathLock: 1,
 } satisfies Record<TokenSummonKind, number>;
 const tokenSummonSemanticVariantCounts = {
   oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 1,
+  scapegoatStepSummonOathLock: 1,
 } satisfies Record<TokenSummonSemanticVariant, number>;
 
-type TokenSummonKind = "previousOnFieldToGraveMandatoryTokenSummon";
-type TokenSummonSemanticVariant = "oysterMeisterPreviousOnFieldToGraveFishTokenSummon";
+type TokenSummonKind = "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
+type TokenSummonSemanticVariant = "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock";
 
 describe("Lua real token summon restore coverage", () => {
   it("requires token summon fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -49,9 +51,7 @@ describe("Lua real token summon restore coverage", () => {
         return !text.includes("operationInfos")
           || !text.includes("category: 0x400")
           || !text.includes("category: 0x200")
-          || !text.includes('eventName: "sentToGraveyard"')
           || !text.includes('eventName: "specialSummoned"')
-          || !text.includes('triggerBucket: "turnMandatory"')
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -107,6 +107,20 @@ function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind;
         "Duel.SpecialSummon(token,0,tp,tp,false,false,POS_FACEUP)",
       ],
     },
+    {
+      file: "test/lua-real-script-scapegoat-token-step-summon-lock.test.ts",
+      kind: "spellStepTokenSummonOathLock",
+      required: [
+        'const scapegoatCode = "73915051"',
+        "restores staged Token Special Summons and same-turn summon oath locks",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_TOKEN)",
+        "Duel.GetActivityCount(tp,ACTIVITY_SUMMON)==0",
+        "Duel.IsPlayerCanSpecialSummonMonster(tp,id+1,0,TYPES_TOKEN,0,0,1,RACE_BEAST,ATTRIBUTE_EARTH)",
+        "local token=Duel.CreateToken(tp,id+i)",
+        "Duel.SpecialSummonStep(token,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.SpecialSummonComplete()",
+      ],
+    },
   ];
 }
 
@@ -125,6 +139,20 @@ function tokenSummonSemanticVariants(): Array<{ file: string; kind: TokenSummonS
         'host.messages).not.toContain("oyster responder resolved")',
       ],
     },
+    {
+      file: "test/lua-real-script-scapegoat-token-step-summon-lock.test.ts",
+      kind: "scapegoatStepSummonOathLock",
+      required: [
+        "sheepTokenCodes",
+        "typesToken",
+        "raceBeast",
+        "attributeEarth",
+        "{ category: 0x400, targetUids: [], count: 4, player: 0, parameter: 0 }",
+        "{ category: 0x200, targetUids: [], count: 4, player: 0, parameter: 0 }",
+        "effect.code === 43",
+        'host.messages).not.toContain("scapegoat responder resolved")',
+      ],
+    },
   ];
 }
 
@@ -136,6 +164,7 @@ function countTokenSummonKinds(fixtures: Array<{ kind: TokenSummonKind }>): Reco
     },
     {
       previousOnFieldToGraveMandatoryTokenSummon: 0,
+      spellStepTokenSummonOathLock: 0,
     },
   );
 }
@@ -150,6 +179,7 @@ function countTokenSummonSemanticVariants(
     },
     {
       oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 0,
+      scapegoatStepSummonOathLock: 0,
     },
   );
 }

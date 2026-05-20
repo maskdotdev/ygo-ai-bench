@@ -42,6 +42,7 @@ interface PendulumScaleInfo {
 
 export interface LuaDuelPlayerApiHostState extends LuaOperationTimingBoundaryHostState, LuaMoveImmunityHostState<LuaEffectRecord> {
   operatedUids?: string[];
+  activeLuaEffectId?: number | undefined;
 }
 
 export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): void {
@@ -70,7 +71,7 @@ export function installDuelPlayerApi(L: unknown, session: DuelSession, hostState
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummonCount"));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanPendulumSummon(state, session));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanPendulumSummon"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummonMonster(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushCanSpecialSummonMonster(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerCanSpecialSummonMonster"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsPlayerAffectedByEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsPlayerAffectedByEffect"));
@@ -161,7 +162,7 @@ function pushCanPendulumSummon(L: unknown, session: DuelSession): number {
   return 1;
 }
 
-function pushCanSpecialSummonMonster(L: unknown, session: DuelSession): number {
+function pushCanSpecialSummonMonster(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): number {
   const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
   const playerOrSummonType = lua.lua_isnumber(L, 11) ? lua.lua_tointeger(L, 11) : undefined;
   const targetPlayer = normalizePlayer(playerOrSummonType === 0 || playerOrSummonType === 1 ? playerOrSummonType : player);
@@ -169,8 +170,15 @@ function pushCanSpecialSummonMonster(L: unknown, session: DuelSession): number {
   const summonType = luaSpecialSummonTypeCode(lua.lua_isnumber(L, 12) ? lua.lua_tointeger(L, 12) : playerOrSummonType !== undefined && playerOrSummonType !== 0 && playerOrSummonType !== 1 ? playerOrSummonType : 0);
   const card = syntheticSpecialSummonCard(L, targetPlayer);
   const position = positionFromMask(positionMask);
-  lua.lua_pushboolean(L, Boolean(position) && availableMonsterZoneCount(session, targetPlayer, []) > 0 && canPlayerSpecialSummon(session.state, targetPlayer, card, summonType, undefined, position));
+  lua.lua_pushboolean(L, Boolean(position) && availableMonsterZoneCount(session, targetPlayer, []) > 0 && canPlayerSpecialSummon(session.state, targetPlayer, card, summonType, activeRelatedEffectId(hostState), position));
   return 1;
+}
+
+function activeRelatedEffectId(hostState: LuaDuelPlayerApiHostState): number | undefined {
+  if (hostState.activeContext?.relatedEffectId !== undefined) return hostState.activeContext.relatedEffectId;
+  if (hostState.activeLuaEffectId !== undefined) return hostState.activeLuaEffectId;
+  const effectId = Number(hostState.activeContext?.chainLink?.effectId.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(effectId) ? effectId : undefined;
 }
 
 function pushIsPlayerAffectedByEffect(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): number {

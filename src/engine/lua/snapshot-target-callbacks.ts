@@ -112,6 +112,13 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (summonTypeIs !== undefined) return { targetCardPredicate: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === summonTypeIs };
   const summonTypeNot = specialSummonTypeNotTargetDescriptor(effect.luaTargetDescriptor);
   if (summonTypeNot !== undefined) return { targetCardPredicate: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot };
+  if (effect.luaTargetDescriptor === "special-summon-limit:not-label-object-effect") return { targetCardPredicate: (ctx) => {
+    const relatedEffectId = ctx.relatedEffectId === undefined ? undefined : `lua-${ctx.relatedEffectId}`;
+    const relatedEffect = relatedEffectId === undefined ? undefined : ctx.duel.effects.find((candidate) => candidate.id === relatedEffectId || candidate.id.startsWith(`${relatedEffectId}-`));
+    return relatedEffect?.sourceUid !== effect.sourceUid;
+  } };
+  const notRelatedEffect = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-related-effect:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-related-effect:".length)) : undefined;
+  if (notRelatedEffect !== undefined && Number.isSafeInteger(notRelatedEffect)) return { targetCardPredicate: (ctx) => ctx.relatedEffectId !== notRelatedEffect };
   if (effect.luaTargetDescriptor === "target:special-summon-position-facedown") return { targetCardPredicate: (ctx) => ctx.summonPosition === "faceDownDefense" };
   const xyzSummonNotRelatedSetcode = xyzSummonNotRelatedSetcodeDescriptor(effect.luaTargetDescriptor); if (xyzSummonNotRelatedSetcode !== undefined) return { targetCardPredicate: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x49000000 && !relatedEffectHandlerMatchesSetcode(ctx, xyzSummonNotRelatedSetcode) };
   const levelAbove = effect.luaTargetDescriptor?.startsWith("target:level-above:") ? Number(effect.luaTargetDescriptor.slice("target:level-above:".length)) : undefined; if (levelAbove !== undefined && Number.isSafeInteger(levelAbove) && levelAbove > 0) return { targetCardPredicate: (ctx, card) => currentLevel(card, ctx.duel) >= levelAbove };

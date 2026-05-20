@@ -186,6 +186,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     if (lua.lua_isnoneornil(state, 2)) { delete effect.labelObjectRef; syncActiveLabelObject(hostState, effect); syncRegisteredDuelEffectLabelObject(hostState, effect); return 0; }
     const labelObjectId = readTableNumberField(state, 2, "__effect_id");
     if (labelObjectId !== undefined) effect.labelObjectId = labelObjectId;
+    if (labelObjectId !== undefined && effect.targetDescriptor === "special-summon-limit:not-label-object-effect") effect.targetDescriptor = `special-summon-limit:not-related-effect:${labelObjectId}`;
     const labelObjectUid = readCardUid(state, 2);
     if (labelObjectUid !== undefined) effect.labelObjectUid = labelObjectUid;
     const labelObjectUids = labelObjectUid === undefined ? readGroupUids(state, 2) : [];
