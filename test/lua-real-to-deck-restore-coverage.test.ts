@@ -4,24 +4,27 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const TO_DECK_FIXTURE_COUNT = 3;
+const TO_DECK_FIXTURE_COUNT = 4;
 const toDeckKindCounts = {
   graveExtraToExtraDeckTop: 1,
   flipGraveTargetShuffleToDeck: 1,
   toGraveSelfShuffleToDeck: 1,
+  freeChainMultiGraveShuffleToDeck: 1,
 } satisfies Record<ToDeckKind, number>;
 const toDeckSemanticVariantCounts = {
   adamancipatorLeoniteGraveExtraDeckTop: 1,
   desFeralImpFlipGraveTargetShuffleToDeck: 1,
   outstandingDogMarronToGraveSelfShuffleToDeck: 1,
+  volcanicRechargeFreeChainGraveShuffleToDeck: 1,
 } satisfies Record<ToDeckSemanticVariant, number>;
 
-type ToDeckKind = "graveExtraToExtraDeckTop" | "flipGraveTargetShuffleToDeck" | "toGraveSelfShuffleToDeck";
+type ToDeckKind = "graveExtraToExtraDeckTop" | "flipGraveTargetShuffleToDeck" | "toGraveSelfShuffleToDeck" | "freeChainMultiGraveShuffleToDeck";
 
 type ToDeckSemanticVariant =
   | "adamancipatorLeoniteGraveExtraDeckTop"
   | "desFeralImpFlipGraveTargetShuffleToDeck"
-  | "outstandingDogMarronToGraveSelfShuffleToDeck";
+  | "outstandingDogMarronToGraveSelfShuffleToDeck"
+  | "volcanicRechargeFreeChainGraveShuffleToDeck";
 
 describe("Lua real to-Deck restore coverage", () => {
   it("requires representative to-Deck operations to assert clean Lua restore and restored movement events", () => {
@@ -129,6 +132,24 @@ function toDeckFixtureFiles(): Array<{
         "eventReasonEffectId: 1",
       ],
     },
+    {
+      file: "test/lua-real-script-volcanic-recharge-grave-shuffle.test.ts",
+      kind: "freeChainMultiGraveShuffleToDeck",
+      required: [
+        'const rechargeCode = "33725271"',
+        "restores free-chain Graveyard Volcanic monster targets and shuffles only valid cards into the Deck",
+        "e1:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e1:SetCode(EVENT_FREE_CHAIN)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,3,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,g,#g,0,0)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "Duel.SendtoDeck(sg,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "chain.flatMap((link) => link.operationInfos ?? [])",
+        'eventName: "sentToDeck"',
+        "eventCode: 1013",
+        "eventUids: [volcanicOne.uid, volcanicTwo.uid]",
+      ],
+    },
   ];
 }
 
@@ -142,6 +163,7 @@ function countToDeckKinds(fixtures: Array<{ kind: ToDeckKind }>): Record<ToDeckK
       graveExtraToExtraDeckTop: 0,
       flipGraveTargetShuffleToDeck: 0,
       toGraveSelfShuffleToDeck: 0,
+      freeChainMultiGraveShuffleToDeck: 0,
     },
   );
 }
@@ -192,6 +214,19 @@ function toDeckSemanticVariants(): Array<{
         "outstanding dog marron responder resolved",
       ],
     },
+    {
+      file: "test/lua-real-script-volcanic-recharge-grave-shuffle.test.ts",
+      kind: "volcanicRechargeFreeChainGraveShuffleToDeck",
+      required: [
+        'const rechargeCode = "33725271"',
+        "restores free-chain Graveyard Volcanic monster targets and shuffles only valid cards into the Deck",
+        "return c:IsSetCard(SET_VOLCANIC) and c:IsMonster() and c:IsAbleToDeck()",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,3,nil)",
+        "eventUids: [volcanicOne.uid, volcanicTwo.uid]",
+        'location: "deck"',
+        'location: "graveyard"',
+      ],
+    },
   ];
 }
 
@@ -205,6 +240,7 @@ function countToDeckSemanticVariants(fixtures: Array<{ kind: ToDeckSemanticVaria
       adamancipatorLeoniteGraveExtraDeckTop: 0,
       desFeralImpFlipGraveTargetShuffleToDeck: 0,
       outstandingDogMarronToGraveSelfShuffleToDeck: 0,
+      volcanicRechargeFreeChainGraveShuffleToDeck: 0,
     },
   );
 }
