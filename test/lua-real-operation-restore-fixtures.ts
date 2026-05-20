@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 205;
+export const operationFixtureCount = 206;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -128,6 +128,7 @@ export const operationKindCounts = {
   trapStepSummonOperatedCounter: 1,
   targetCardsCounterDisable: 1,
   targetDisableStat: 1,
+  targetSendStatDelayedSet: 1,
   targetBanish: 1,
   targetBanishDiscardCost: 1,
   targetDestroy: 2,
@@ -268,6 +269,7 @@ export type OperationKind =
   | "targetRelationStatDestroyedBothDamage"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "targetDisableFinalImmunity"
+  | "targetSendStatDelayedSet"
   | "spellDraw"
   | "trapDraw"
   | "trapReclamationReturn"
@@ -3056,6 +3058,30 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-purushaddoll-aeon-end-flip-stat.test.ts",
+      kind: "targetSendStatDelayedSet",
+      required: [
+        "restores Shaddoll hand send into target ATK/DEF gain and delayed End Phase face-down position change",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE+CATEGORY_TOGRAVE+CATEGORY_POSITION+CATEGORY_SET)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_HAND)",
+        "Duel.SelectMatchingCard(tp,s.tgfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_EFFECT)",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_UPDATE_DEFENSE",
+        "tc:RegisterFlagEffect(id,RESET_EVENT|RESETS_STANDARD,0,1,fid)",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.RegisterEffect(e3,tp)",
+        "Duel.ChangePosition(e:GetLabelObject(),POS_FACEDOWN_DEFENSE)",
+        "operationInfos",
+        'eventName: "sentToGraveyard"',
+        'eventName: "becameTarget"',
+        'eventName: "positionChanged"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -3206,6 +3232,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       trapStepSummonOperatedCounter: 0,
       targetCardsCounterDisable: 0,
       targetDisableStat: 0,
+      targetSendStatDelayedSet: 0,
       targetBanish: 0,
       targetBanishDiscardCost: 0,
       targetDestroy: 0,

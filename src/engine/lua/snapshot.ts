@@ -11,7 +11,7 @@ import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRit
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
 import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKnownBookOfEclipsePhaseEndEffect } from "#lua/snapshot-book-of-eclipse.js";
-import { engraverOfTheMarkDelayedDestroyCanActivate, engraverOfTheMarkDelayedDestroyOperation, isKnownEngraverOfTheMarkDelayedDestroyEffect, isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
+import { engraverOfTheMarkDelayedDestroyCanActivate, engraverOfTheMarkDelayedDestroyOperation, isKnownEngraverOfTheMarkDelayedDestroyEffect, isKnownPurushaddollAeonDelayedFlipEffect, isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, purushaddollAeonDelayedFlipCanActivate, purushaddollAeonDelayedFlipOperation, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { luaHandlerDestroyOperation, luaLinkedLeaveFieldDestroyOperation } from "#lua/snapshot-destroy-operations.js";
 import { isKnownLevelNormalEndPhaseDestroyEffect, levelNormalEndPhaseDestroyCanActivate, levelNormalEndPhaseDestroyOperation } from "#lua/snapshot-level-normal-end-phase-destroy.js";
 import { isKnownSelfEndPhaseDestroyEffect, isKnownSelfEndPhaseSendEffect, selfEndPhaseDestroyOperation, selfEndPhaseSendOperation } from "#lua/snapshot-self-end-phase-destroy.js";
@@ -710,6 +710,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownUnleashYourPowerDelayedSetEffect(effect) ||
         isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) ||
         isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) ||
+        isKnownPurushaddollAeonDelayedFlipEffect(effect) ||
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
         isKnownZeroParadoxDelayedScaleDestroyEffect(effect) ||
@@ -1119,6 +1120,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownUnleashYourPowerDelayedSetEffect(effect)) return unleashYourPowerDelayedSetOperation(effect);
   if (isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect)) return tsumuhaKutsunagiDelayedShuffleOperation(effect);
   if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) return engraverOfTheMarkDelayedDestroyOperation(effect);
+  if (isKnownPurushaddollAeonDelayedFlipEffect(effect)) return purushaddollAeonDelayedFlipOperation(effect);
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (isKnownZeroParadoxDelayedScaleDestroyEffect(effect)) return zeroParadoxDelayedScaleDestroyOperation(effect);
@@ -1403,6 +1405,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (isKnownMaharaghiPredrawEffect(effect)) return { canActivate: (ctx) => ctx.duel.turnPlayer === effect.controller && topDeckCards(ctx.duel, effect.controller).length > 0 };
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return { canActivate: levelNormalEndPhaseDestroyCanActivate(effect) };
   if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) return { canActivate: engraverOfTheMarkDelayedDestroyCanActivate(effect) };
+  if (isKnownPurushaddollAeonDelayedFlipEffect(effect)) return { canActivate: purushaddollAeonDelayedFlipCanActivate(effect) };
   if (isKnownDelayedBattleDestroyPhaseEffect(effect)) {
     const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
     const markerCode = registryCode === undefined ? undefined : Number(registryCode);

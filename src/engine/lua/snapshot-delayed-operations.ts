@@ -12,6 +12,7 @@ const luaYellowAlertCode = "59277750";
 const luaUnleashYourPowerCode = "73567374";
 const luaTsumuhaKutsunagiCode = "78098950";
 const luaEngraverOfTheMarkCode = "50078320";
+const luaPurushaddollAeonCode = "78942513";
 
 export function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
   return (
@@ -89,6 +90,22 @@ export function isKnownEngraverOfTheMarkDelayedDestroyEffect(effect: SerializedD
   );
 }
 
+export function isKnownPurushaddollAeonDelayedFlipEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaPurushaddollAeonCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.triggerCode === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.label !== undefined &&
+    effect.labelObjectUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 export function tsumuhaKutsunagiDelayedShuffleOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
   return (ctx) => {
     const targetUids = ctx.duel.cards
@@ -106,6 +123,32 @@ export function tsumuhaKutsunagiDelayedShuffleOperation(effect: SerializedDuelEf
         // EDOPro-style delayed operations ignore cards that can no longer move.
       }
     }
+  };
+}
+
+export function purushaddollAeonDelayedFlipOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    const targetUid = effect.labelObjectUid;
+    const target = targetUid === undefined ? undefined : ctx.duel.cards.find((card) => card.uid === targetUid);
+    if (!target || !hasPurushaddollAeonFlag(ctx.duel, effect, target.uid)) return;
+    try {
+      changeDuelCardPosition(ctx.duel, target.controller, target.uid, "faceDownDefense", "effect", {
+        eventReason: duelReason.effect,
+        eventReasonCardUid: effect.sourceUid,
+        ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+      } as Parameters<typeof changeDuelCardPosition>[5]);
+    } catch {
+      // EDOPro-style delayed operations ignore targets that are no longer position-change legal.
+    }
+  };
+}
+
+export function purushaddollAeonDelayedFlipCanActivate(effect: SerializedDuelEffect): NonNullable<DuelEffectDefinition["canActivate"]> {
+  return (ctx) => {
+    const targetUid = effect.labelObjectUid;
+    const target = targetUid === undefined ? undefined : ctx.duel.cards.find((card) => card.uid === targetUid);
+    return Boolean(target && hasPurushaddollAeonFlag(ctx.duel, effect, target.uid));
   };
 }
 
@@ -166,6 +209,10 @@ function engraverOfTheMarkDelayedDestroyTargetUids(duel: Parameters<NonNullable<
     .map((flag) => flag.ownerId);
   const fallbackUid = effect.sourceUid === undefined || targetUids.length > 0 ? [] : [effect.sourceUid];
   return [...new Set([...targetUids, ...fallbackUid])].filter((uid) => duel.cards.some((card) => card.uid === uid && (card.location === "monsterZone" || card.location === "spellTrapZone")));
+}
+
+function hasPurushaddollAeonFlag(duel: Parameters<NonNullable<DuelEffectDefinition["operation"]>>[0]["duel"], effect: SerializedDuelEffect, ownerId: string): boolean {
+  return duel.flagEffects.some((flag) => flag.ownerType === "card" && flag.ownerId === ownerId && flag.code === Number(luaPurushaddollAeonCode) && flag.value === effect.label);
 }
 
 function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
