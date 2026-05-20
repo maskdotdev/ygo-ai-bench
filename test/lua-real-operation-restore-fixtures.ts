@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 185;
+export const operationFixtureCount = 186;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -126,6 +126,7 @@ export const operationKindCounts = {
   targetDestroySkipDraw: 1,
   targetToHandDiscardCost: 1,
   temporaryFinalAttackDamageStepBurn: 1,
+  toGraveOperatedDestroy: 1,
   trapDrawSkipDraw: 1,
   tossCoin: 1,
   tossCoinCustomEvent: 1,
@@ -256,6 +257,7 @@ export type OperationKind =
   | "targetDestroySkipDraw"
   | "targetToHandDiscardCost"
   | "temporaryFinalAttackDamageStepBurn"
+  | "toGraveOperatedDestroy"
   | "trapDrawSkipDraw"
   | "tossCoin" | "tossCoinCustomEvent" | "tossDiceHandDiscard";
 export function operationFixtureFiles(): Array<{
@@ -264,6 +266,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-vampire-kingdom-operated-destroy.test.ts",
+      kind: "toGraveOperatedDestroy",
+      required: [
+        "restores opponent Deck-to-Grave trigger into Vampire send and target destruction",
+        "e3:SetCategory(CATEGORY_DESTROY+CATEGORY_TOGRAVE+CATEGORY_HANDES+CATEGORY_DECKDES)",
+        "e3:SetCode(EVENT_TO_GRAVE)",
+        "return c:IsPreviousLocation(LOCATION_DECK) and c:IsPreviousControler(tp)",
+        "Duel.SelectTarget(tp,aux.TRUE,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_HAND|LOCATION_DECK)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.SelectMatchingCard(tp,s.tgfilter,tp,LOCATION_HAND|LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_EFFECT)",
+        "Duel.GetOperatedGroup():FilterCount(Card.IsLocation,nil,LOCATION_GRAVE)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        'eventName: "becameTarget"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-agave-dragon-link-summon-race-counts.test.ts",
       kind: "damageRecoverRaceCountStat",
@@ -2763,6 +2786,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDestroySkipDraw: 0,
       targetToHandDiscardCost: 0,
       temporaryFinalAttackDamageStepBurn: 0,
+      toGraveOperatedDestroy: 0,
       trapDrawSkipDraw: 0,
       tossCoin: 0,
       tossCoinCustomEvent: 0,
