@@ -63,6 +63,7 @@ const luaSourceControllerConditionDescriptor = "condition:source-controller"; co
 const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
 const luaGreatLongNoseCode = "2356994";
+const luaXxSaberDarksoulCode = "31383545";
 const luaDarkMagicExpandedCode = "111280";
 const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
@@ -317,6 +318,11 @@ function restoreKnownLuaStateEffects(
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownGeminiEndPhaseReturnEffect(effect, snapshotEffects))
       .map((effect) => effect.sourceUid),
   );
+  const darksoulEndSearchSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownXxSaberDarksoulEndSearchEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
   const results: LuaScriptLoadResult[] = [];
   for (const sourceUid of unionStateSourceUids) {
     const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
@@ -374,6 +380,37 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-gemini-status-${card.uid}.lua`));
+  }
+  for (const sourceUid of darksoulEndSearchSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card || card.location !== "graveyard") continue;
+    const script = `
+      local c=Duel.GetFirstMatchingCard(function(tc) return tc:IsFieldID(${cardFieldId(card)}) end,${card.controller},LOCATION_GRAVE,0,nil)
+      if c then
+        local e1=Effect.CreateEffect(c)
+        e1:SetDescription(aux.Stringid(${luaXxSaberDarksoulCode},0))
+        e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)
+        e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)
+        e1:SetCode(EVENT_PHASE+PHASE_END)
+        e1:SetCountLimit(1)
+        e1:SetRange(LOCATION_GRAVE)
+        e1:SetTarget(function(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.IsExistingMatchingCard(function(tc) return tc:IsSetCard(SET_X_SABER) and tc:IsMonster() and tc:IsAbleToHand() end,tp,LOCATION_DECK,0,1,nil) end
+          Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)
+        end)
+        e1:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
+          local g=Duel.SelectMatchingCard(tp,function(tc) return tc:IsSetCard(SET_X_SABER) and tc:IsMonster() and tc:IsAbleToHand() end,tp,LOCATION_DECK,0,1,1,nil)
+          if #g>0 then
+            Duel.SendtoHand(g,nil,REASON_EFFECT)
+            Duel.ConfirmCards(1-tp,g)
+          end
+        end)
+        e1:SetReset(RESETS_STANDARD_PHASE_END)
+        c:RegisterEffect(e1)
+      end
+    `;
+    results.push(host.loadScript(script, `restore-xx-saber-darksoul-end-search-${card.uid}.lua`));
   }
   return results;
 }
@@ -673,6 +710,23 @@ function isKnownEndPhaseReviveDestroyEffect(effect: SerializedDuelEffect): boole
     effect.controller !== undefined &&
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone" &&
+    effect.countLimit === 1 &&
+    (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaResetsStandardPhaseEndRuntime)
+  );
+}
+
+function isKnownXxSaberDarksoulEndSearchEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaXxSaberDarksoulCode}:`)) &&
+    effect.event === "trigger" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.triggerCode === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    ((effect.category ?? 0) & 0x8) !== 0 &&
+    effect.range.length === 1 &&
+    effect.range[0] === "graveyard" &&
     effect.countLimit === 1 &&
     (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaResetsStandardPhaseEndRuntime)
   );
