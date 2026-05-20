@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 199;
+export const operationFixtureCount = 200;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -79,6 +79,7 @@ export const operationKindCounts = {
   handToDeckDraw: 1,
   handSelfDiscardDestroyStat: 1,
   fiveGraveToDeckShuffleDraw: 2,
+  quickPlayGraveToDeckDrawStat: 1,
   fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
   lpDiscardCostStatToGraveBothDamage: 1,
@@ -219,6 +220,7 @@ export type OperationKind =
   | "handToDeckDraw"
   | "handSelfDiscardDestroyStat"
   | "fiveGraveToDeckShuffleDraw"
+  | "quickPlayGraveToDeckDrawStat"
   | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
   | "lpDiscardCostStatToGraveBothDamage"
@@ -2399,6 +2401,32 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-radiant-typhoon-mandate-grave-draw-stat.test.ts",
+      kind: "quickPlayGraveToDeckDrawStat",
+      required: [
+        "restores Radiant Typhoon Mandate's Quick-Play Graveyard targets, Deck shuffle, draw, and WIND stat field effects",
+        "e1:SetCategory(CATEGORY_TODECK+CATEGORY_DRAW+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "local g=Duel.GetMatchingGroup(s.tdfilter,tp,LOCATION_GRAVE,0,nil,e)",
+        "local tg=aux.SelectUnselectGroup(g,e,tp,3,3,s.rescon,1,tp,HINTMSG_TODECK)",
+        "Duel.SetTargetCard(tg)",
+        "Duel.GetTargetCards(e)",
+        "Duel.SendtoDeck(tg,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "Duel.ShuffleDeck(tp)",
+        "Duel.BreakEffect()",
+        "Duel.Draw(tp,1,REASON_EFFECT)",
+        "aux.RegisterClientHint",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_UPDATE_DEFENSE",
+        "possibleOperationInfos",
+        "operationInfos",
+        'eventName: "sentToDeck"',
+        'eventName: "cardsDrawn"',
+        "currentAttack",
+        "currentDefense",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-pot-of-desires-deck-cost.test.ts",
       kind: "costBanishDraw",
       required: [
@@ -2996,6 +3024,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handToDeckDraw: 0,
       handSelfDiscardDestroyStat: 0,
       fiveGraveToDeckShuffleDraw: 0,
+      quickPlayGraveToDeckDrawStat: 0,
       fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
       lpDiscardCostStatToGraveBothDamage: 0,
