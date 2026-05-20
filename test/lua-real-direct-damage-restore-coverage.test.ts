@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 14;
+const directDamageFixtureCount = 15;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   battleDestroyedChainInfoDamage: 1,
+  chainSolvedActiveTypeDamage: 1,
   continuousCostTargetParamDamage: 1,
   eventToGraveChainInfoDamage: 3,
   fieldCountTargetPlayerDamage: 3,
@@ -18,6 +19,7 @@ const directDamageSemanticVariantCounts = {
   ancientGearTankDestroyedEquipDamage: 1,
   backfireEventToGraveChainInfoDamage: 1,
   elephantStatueOpponentEffectBurn: 1,
+  duelAcademiaSpellChainSolvedDamage: 1,
   finalFlameTargetParamDamage: 1,
   hinotamaTargetParamDamage: 1,
   justDessertsMonsterCountResolutionDamage: 1,
@@ -34,6 +36,7 @@ const directDamageSemanticVariantCounts = {
 type DirectDamageKind =
   | "allPlayerDelayedDamage"
   | "battleDestroyedChainInfoDamage"
+  | "chainSolvedActiveTypeDamage"
   | "continuousCostTargetParamDamage"
   | "eventToGraveChainInfoDamage"
   | "fieldCountTargetPlayerDamage"
@@ -42,6 +45,7 @@ type DirectDamageKind =
 type DirectDamageSemanticVariant =
   | "ancientGearTankDestroyedEquipDamage"
   | "backfireEventToGraveChainInfoDamage"
+  | "duelAcademiaSpellChainSolvedDamage"
   | "elephantStatueOpponentEffectBurn"
   | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
@@ -87,10 +91,10 @@ describe("Lua real direct damage restore coverage", () => {
       .filter(({ file, required }) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return (!text.includes("operationInfos") && !text.includes("Duel.SetOperationInfo(0,CATEGORY_DAMAGE"))
-          || !text.includes("category: 0x80000")
+          || (!text.includes("category: 0x80000") && !text.includes("Duel.SetOperationInfo(0,CATEGORY_DAMAGE"))
           || !text.includes('eventName: "damageDealt"')
           || !text.includes("lifePoints")
-          || (!text.includes('location: "graveyard"') && !text.includes("EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP"))
+          || (!text.includes('location: "graveyard"') && !text.includes("EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP") && !text.includes("EVENT_CHAIN_SOLVED"))
           || required.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -173,6 +177,19 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
         "Duel.SetTargetPlayer(1-tp)",
         "eventPlayer: 0",
         "players[0].lifePoints).toBe(7500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-duel-academia-spell-chain-solved-damage.test.ts",
+      kind: "chainSolvedActiveTypeDamage",
+      required: [
+        'const academyCode = "5833312"',
+        "restores Duel Academy's race-gated spell activation EVENT_CHAIN_SOLVED damage trigger",
+        "s.typecheck(RACE_DINOSAUR|RACE_SEASERPENT|RACE_THUNDER)",
+        "re:IsHasType(EFFECT_TYPE_ACTIVATE) and re:IsSpellEffect() and rp==tp",
+        "eventName: \"chainSolved\"",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,1000)",
+        "players[1].lifePoints).toBe(7000)",
       ],
     },
     {
@@ -334,6 +351,17 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
       ],
     },
     {
+      file: "test/lua-real-script-duel-academia-spell-chain-solved-damage.test.ts",
+      kind: "duelAcademiaSpellChainSolvedDamage",
+      required: [
+        'const academyCode = "5833312"',
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,1000)",
+        "Duel.Damage(1-tp,1000,REASON_EFFECT)",
+        "relatedEffectId: 5",
+        "eventReasonEffectId: 3",
+      ],
+    },
+    {
       file: "test/lua-real-script-final-flame-direct-damage.test.ts",
       kind: "finalFlameTargetParamDamage",
       required: [
@@ -466,6 +494,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
     {
       allPlayerDelayedDamage: 0,
       battleDestroyedChainInfoDamage: 0,
+      chainSolvedActiveTypeDamage: 0,
       continuousCostTargetParamDamage: 0,
       eventToGraveChainInfoDamage: 0,
       fieldCountTargetPlayerDamage: 0,
@@ -484,6 +513,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
     {
       ancientGearTankDestroyedEquipDamage: 0,
       backfireEventToGraveChainInfoDamage: 0,
+      duelAcademiaSpellChainSolvedDamage: 0,
       elephantStatueOpponentEffectBurn: 0,
       finalFlameTargetParamDamage: 0,
       hinotamaTargetParamDamage: 0,
