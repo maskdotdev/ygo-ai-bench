@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 143;
+export const operationFixtureCount = 144;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -44,6 +44,7 @@ export const operationKindCounts = {
   flipDeckSpecialSummon: 1,
   flipTargetDestroy: 1,
   fusionDeckMaterials: 1,
+  flipDiscardBattleStat: 1,
   groupDestroy: 10,
   groupDestroyDamageStatLp: 1,
   groupToHand: 2,
@@ -135,6 +136,7 @@ export type OperationKind =
   | "flipDeckSpecialSummon"
   | "flipTargetDestroy"
   | "fusionDeckMaterials"
+  | "flipDiscardBattleStat"
   | "groupDestroy"
   | "groupDestroyDamageStatLp"
   | "groupToHand"
@@ -255,6 +257,25 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "eventName: \"sentToGraveyard\"",
         "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === blackfeather.uid), restoredTrigger.session.state)).toBe(3200)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-rigorous-reaver-flip-discard-battle-stat.test.ts",
+      kind: "flipDiscardBattleStat",
+      required: [
+        "restores both-player Flip discard and battle-destroyed ATK/DEF loss on the battling monster",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP)",
+        "Duel.SetOperationInfo(0,CATEGORY_HANDES,nil,0,PLAYER_ALL,1)",
+        "Duel.SelectMatchingCard(tp,aux.TRUE,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SelectMatchingCard(1-tp,aux.TRUE,1-tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoGrave(g1,REASON_DISCARD|REASON_EFFECT)",
+        "e2:SetCode(EVENT_BATTLE_DESTROYED)",
+        "local tc=Duel.GetAttacker()",
+        "if c==tc then tc=Duel.GetAttackTarget() end",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(restoredAttacker, restoredBattleTrigger.session.state)).toBe(1600)",
+        "currentDefense(restoredAttacker, restoredBattleTrigger.session.state)).toBe(1300)",
       ],
     },
     {
@@ -1752,6 +1773,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       xmaterialQuickDestroyDirect: 0,
       drawThenDiscard: 0,
       flipDeckSpecialSummon: 0,
+      flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
       fusionDeckMaterials: 0,
       groupDestroy: 0,

@@ -16,7 +16,7 @@ export interface LuaDuelBattleApiHostState {
 
 export function installDuelBattleApi(L: unknown, session: DuelSession, hostState: LuaDuelBattleApiHostState): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const attackerUid = currentBattle(session)?.attackerUid;
+    const attackerUid = currentBattle(session)?.attackerUid ?? activeBattlePair(session, hostState)?.attackerUid;
     if (!attackerUid) {
       lua.lua_pushnil(state);
       return 1;
@@ -26,7 +26,7 @@ export function installDuelBattleApi(L: unknown, session: DuelSession, hostState
   });
   lua.lua_setfield(L, -2, to_luastring("GetAttacker"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    const targetUid = currentBattle(session)?.targetUid;
+    const targetUid = currentBattle(session)?.targetUid ?? activeBattlePair(session, hostState)?.targetUid;
     if (!targetUid) {
       lua.lua_pushnil(state);
       return 1;
@@ -117,6 +117,12 @@ export function installDuelBattleApi(L: unknown, session: DuelSession, hostState
 
 function currentBattle(session: DuelSession): DuelSession["state"]["currentAttack"] {
   return session.state.currentAttack ?? session.state.pendingBattle;
+}
+
+function activeBattlePair(session: DuelSession, hostState: LuaDuelBattleApiHostState): { attackerUid: string; targetUid?: string } | undefined {
+  const eventName = hostState.activeContext?.eventName;
+  if (eventName !== "battleDestroyed" && eventName !== "battleEnded" && eventName !== "damageStepEnded") return undefined;
+  return session.state.battlePairs.at(-1);
 }
 
 function pushCalculateDamage(L: unknown, session: DuelSession): number {
