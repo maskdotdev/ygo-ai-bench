@@ -4,20 +4,22 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const tokenSummonFixtureCount = 3;
+const tokenSummonFixtureCount = 4;
 const tokenSummonKindCounts = {
   battleDestroyedStepTokenSummon: 1,
+  phaseEndTokenSelfDestroy: 1,
   previousOnFieldToGraveMandatoryTokenSummon: 1,
   spellStepTokenSummonOathLock: 1,
 } satisfies Record<TokenSummonKind, number>;
 const tokenSummonSemanticVariantCounts = {
+  fiendishEnginePhaseEndTokenSelfDestroy: 1,
   jurracStaurikoBattleDestroyedStepTokenSummon: 1,
   oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 1,
   scapegoatStepSummonOathLock: 1,
 } satisfies Record<TokenSummonSemanticVariant, number>;
 
-type TokenSummonKind = "battleDestroyedStepTokenSummon" | "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
-type TokenSummonSemanticVariant = "jurracStaurikoBattleDestroyedStepTokenSummon" | "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock";
+type TokenSummonKind = "battleDestroyedStepTokenSummon" | "phaseEndTokenSelfDestroy" | "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
+type TokenSummonSemanticVariant = "fiendishEnginePhaseEndTokenSelfDestroy" | "jurracStaurikoBattleDestroyedStepTokenSummon" | "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock";
 
 describe("Lua real token summon restore coverage", () => {
   it("requires token summon fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -111,6 +113,22 @@ function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind;
       ],
     },
     {
+      file: "test/lua-real-script-fiendish-engine-token-end-destroy.test.ts",
+      kind: "phaseEndTokenSelfDestroy",
+      required: [
+        'const engineCode = "82556058"',
+        "restores ATK boost flag into End Phase Engine Token summon and self-destroy",
+        "e1:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOKEN,nil,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,0)",
+        "local token=Duel.CreateToken(tp,TOKEN_ENGINE)",
+        "Duel.SpecialSummon(token,0,tp,tp,false,false,POS_FACEUP_ATTACK)",
+        "e:GetHandler():RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,EFFECT_FLAG_OATH,1)",
+        "e3:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.Destroy(c,REASON_EFFECT)",
+      ],
+    },
+    {
       file: "test/lua-real-script-oyster-meister-to-grave-token-summon.test.ts",
       kind: "previousOnFieldToGraveMandatoryTokenSummon",
       required: [
@@ -143,6 +161,21 @@ function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind;
 
 function tokenSummonSemanticVariants(): Array<{ file: string; kind: TokenSummonSemanticVariant; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-fiendish-engine-token-end-destroy.test.ts",
+      kind: "fiendishEnginePhaseEndTokenSelfDestroy",
+      required: [
+        "typesToken",
+        "raceMachine",
+        "attributeEarth",
+        "{ category: 0x400, targetUids: [], count: 1, player: 0, parameter: 0 }",
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0 }",
+        "property: 0x80000",
+        'eventName: "phaseEnd"',
+        'eventName: "specialSummoned"',
+        'eventName: "destroyed"',
+      ],
+    },
     {
       file: "test/lua-real-script-jurrac-stauriko-battle-destroyed-token-step.test.ts",
       kind: "jurracStaurikoBattleDestroyedStepTokenSummon",
@@ -196,6 +229,7 @@ function countTokenSummonKinds(fixtures: Array<{ kind: TokenSummonKind }>): Reco
     },
     {
       battleDestroyedStepTokenSummon: 0,
+      phaseEndTokenSelfDestroy: 0,
       previousOnFieldToGraveMandatoryTokenSummon: 0,
       spellStepTokenSummonOathLock: 0,
     },
@@ -211,6 +245,7 @@ function countTokenSummonSemanticVariants(
       return counts;
     },
     {
+      fiendishEnginePhaseEndTokenSelfDestroy: 0,
       jurracStaurikoBattleDestroyedStepTokenSummon: 0,
       oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 0,
       scapegoatStepSummonOathLock: 0,
