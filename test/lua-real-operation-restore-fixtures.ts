@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 136;
+export const operationFixtureCount = 137;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -65,6 +65,7 @@ export const operationKindCounts = {
   ritualDeckMaterials: 1,
   searchOrExcavate: 36,
   selfEquipFromHand: 1,
+  summonDelayedStatDestroy: 1,
   spellDraw: 1,
   trapDraw: 1,
   trapReclamationReturn: 1,
@@ -149,6 +150,7 @@ export type OperationKind =
   | "ritualDeckMaterials"
   | "searchOrExcavate"
   | "selfEquipFromHand"
+  | "summonDelayedStatDestroy"
   | "spellDraw"
   | "trapDraw"
   | "trapReclamationReturn"
@@ -172,6 +174,25 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-cassimolar-summon-delayed-stat.test.ts",
+      kind: "summonDelayedStatDestroy",
+      required: [
+        "restores summon targeting into ATK gain and next-turn delayed destroy registration",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY+CATEGORY_DAMAGE)",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "tc:RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,EFFECT_FLAG_CLIENT_HINT,2,0,aux.Stringid(id,2))",
+        "e2:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)",
+        "e2:SetLabel(Duel.GetTurnCount())",
+        "return e:GetLabelObject():GetFlagEffect(id)>0 and Duel.GetTurnCount()~=e:GetLabel()",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "Duel.Release(c,REASON_COST)",
+        "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "currentAttack(restoredTarget, restoredTrigger.session.state)).toBe(4000)",
+      ],
+    },
     {
       file: "test/lua-real-script-deep-eyes-destroyed-summon-stat-burn.test.ts",
       kind: "destroyedSummonStatBurn",
@@ -1638,6 +1659,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
+      summonDelayedStatDestroy: 0,
       spellDraw: 0,
       trapDraw: 0,
       trapReclamationReturn: 0,
