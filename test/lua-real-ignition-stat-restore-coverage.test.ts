@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const ignitionStatFixtureCount = 6;
+const ignitionStatFixtureCount = 7;
 const ignitionStatKindCounts = {
   counterCostAttackBoost: 1,
+  counterCostFinalAttackDirectLockEndSend: 1,
   groupUpdateLevel: 1,
   noTurnResetAttackLevelBoost: 1,
   selfToGraveTargetUpdateLevel: 1,
@@ -14,7 +15,14 @@ const ignitionStatKindCounts = {
   targetLevelCopy: 1,
 } satisfies Record<IgnitionStatKind, number>;
 
-type IgnitionStatKind = "counterCostAttackBoost" | "groupUpdateLevel" | "noTurnResetAttackLevelBoost" | "selfToGraveTargetUpdateLevel" | "summedLevelChange" | "targetLevelCopy";
+type IgnitionStatKind =
+  | "counterCostAttackBoost"
+  | "counterCostFinalAttackDirectLockEndSend"
+  | "groupUpdateLevel"
+  | "noTurnResetAttackLevelBoost"
+  | "selfToGraveTargetUpdateLevel"
+  | "summedLevelChange"
+  | "targetLevelCopy";
 type IgnitionStatFixture = { file: string; kind: IgnitionStatKind; required: string[] };
 
 describe("Lua real ignition stat restore coverage", () => {
@@ -60,6 +68,24 @@ function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
         "counters: { [spellCounter]: 1 }",
         "targetUids: [magician!.uid]",
         "currentAttack(restoredAttackChain.session.state.cards.find((card) => card.uid === magician!.uid), restoredAttackChain.session.state)).toBe",
+      ],
+    },
+    {
+      file: "test/lua-real-script-orbital-7-counter-final-atk-end-send.test.ts",
+      kind: "counterCostFinalAttackDirectLockEndSend",
+      required: [
+        "c:EnableCounterPermit(COUNTER_YOU_GOT_IT_BOSS)",
+        "e1:SetCode(EVENT_FLIP)",
+        "c:AddCounter(COUNTER_YOU_GOT_IT_BOSS,1)",
+        "e:GetHandler():RemoveCounter(tp,COUNTER_YOU_GOT_IT_BOSS,ct,REASON_COST)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "e3:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.SendtoGrave(e:GetHandler(),REASON_EFFECT)",
+        "counters: { [bossCounter]: 1 }",
+        "currentAttack(restoredOrbital, restoredAttackChain.session.state)).toBe(2000)",
+        "action.type === \"declareAttack\" && action.attackerUid === orbital.uid && action.targetUid === undefined)).toBe(false)",
+        "reasonEffectId: 8",
       ],
     },
     {
