@@ -20,6 +20,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dh
     const dharcCode = "19327348";
     const darkTargetCode = "19327349";
     const responderCode = "19327350";
+    const script = workspace.readScript(`official/c${dharcCode}.lua`);
+    expect(script).toContain("e1:SetCategory(CATEGORY_CONTROL)");
+    expect(script).toContain("e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP)");
+    expect(script).toContain("e1:SetProperty(EFFECT_FLAG_CARD_TARGET)");
+    expect(script).toContain("return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_DARK) and c:IsControlerCanBeChanged()");
+    expect(script).toContain("Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)");
+    expect(script).toContain("Duel.SetOperationInfo(0,CATEGORY_CONTROL,g,#g,0,0)");
+    expect(script).toContain("c:SetCardTarget(tc)");
+    expect(script).toContain("e1:SetCode(EFFECT_SET_CONTROL)");
+    expect(script).toContain("e1:SetCondition(s.ctcon)");
+    expect(script).toContain("return c:IsHasCardTarget(h)");
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === dharcCode),
       { code: darkTargetCode, name: "Dharc DARK Control Target", kind: "monster", typeFlags: 0x1, attribute: 0x20, level: 4, attack: 1600, defense: 1200 },

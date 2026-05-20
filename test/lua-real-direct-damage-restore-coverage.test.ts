@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 15;
+const directDamageFixtureCount = 16;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   battleDestroyedChainInfoDamage: 1,
@@ -14,10 +14,12 @@ const directDamageKindCounts = {
   fieldCountTargetPlayerDamage: 3,
   targetParamDamage: 4,
   lpConditionTargetParamDamage: 1,
+  releaseCostTargetParamDamage: 1,
 } satisfies Record<DirectDamageKind, number>;
 const directDamageSemanticVariantCounts = {
   ancientGearTankDestroyedEquipDamage: 1,
   backfireEventToGraveChainInfoDamage: 1,
+  cannonSoldierReleaseCostTargetParamDamage: 1,
   elephantStatueOpponentEffectBurn: 1,
   duelAcademiaSpellChainSolvedDamage: 1,
   finalFlameTargetParamDamage: 1,
@@ -41,10 +43,12 @@ type DirectDamageKind =
   | "eventToGraveChainInfoDamage"
   | "fieldCountTargetPlayerDamage"
   | "lpConditionTargetParamDamage"
+  | "releaseCostTargetParamDamage"
   | "targetParamDamage";
 type DirectDamageSemanticVariant =
   | "ancientGearTankDestroyedEquipDamage"
   | "backfireEventToGraveChainInfoDamage"
+  | "cannonSoldierReleaseCostTargetParamDamage"
   | "duelAcademiaSpellChainSolvedDamage"
   | "elephantStatueOpponentEffectBurn"
   | "finalFlameTargetParamDamage"
@@ -177,6 +181,21 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
         "Duel.SetTargetPlayer(1-tp)",
         "eventPlayer: 0",
         "players[0].lifePoints).toBe(7500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cannon-soldier-release-damage.test.ts",
+      kind: "releaseCostTargetParamDamage",
+      required: [
+        'const cannonSoldierCode = "11384280"',
+        "restores single-monster release cost and fixed player-target damage after the released source leaves field",
+        "Duel.CheckReleaseGroupCost(tp,nil,1,false,nil,nil)",
+        "Duel.SelectReleaseGroupCost(tp,nil,1,1,false,nil,nil)",
+        "Duel.Release(sg,REASON_COST)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "targetParam: 500",
+        "targetPlayer: 1",
+        "players[1].lifePoints).toBe(7500)",
       ],
     },
     {
@@ -433,6 +452,17 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
       ],
     },
     {
+      file: "test/lua-real-script-cannon-soldier-release-damage.test.ts",
+      kind: "cannonSoldierReleaseCostTargetParamDamage",
+      required: [
+        "Cannon Soldier Chain Responder",
+        "eventValue: 500",
+        "eventReasonCardUid: cannonSoldier.uid",
+        "cannon soldier responder resolved",
+        "releasedCostUids(restoredOpen.session)",
+      ],
+    },
+    {
       file: "test/lua-real-script-pursuit-chaser-battle-destroyed-defense-damage.test.ts",
       kind: "pursuitChaserBattleDestroyedDefenseDamage",
       required: [
@@ -500,6 +530,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
       fieldCountTargetPlayerDamage: 0,
       targetParamDamage: 0,
       lpConditionTargetParamDamage: 0,
+      releaseCostTargetParamDamage: 0,
     },
   );
 }
@@ -513,6 +544,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
     {
       ancientGearTankDestroyedEquipDamage: 0,
       backfireEventToGraveChainInfoDamage: 0,
+      cannonSoldierReleaseCostTargetParamDamage: 0,
       duelAcademiaSpellChainSolvedDamage: 0,
       elephantStatueOpponentEffectBurn: 0,
       finalFlameTargetParamDamage: 0,
