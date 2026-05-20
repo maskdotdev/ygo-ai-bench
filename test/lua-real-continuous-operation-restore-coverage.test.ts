@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 6;
+const continuousOperationFixtureCount = 7;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
   chainSolvingCustomSearch: 1,
-  continuousRedirect: 1,
+  continuousRedirect: 2,
   endPhaseControlReturn: 1,
   originalCodeSummonLock: 1,
   summonTriggerBackrowDestroy: 1,
@@ -17,6 +17,7 @@ const continuousOperationSemanticVariantCounts = {
   changeOfHeartEndPhaseControlReturn: 1,
   coreOfChaosFaceUpLeaveFieldRedirect: 1,
   darkMagicianOriginalCodeSummonLock: 1,
+  dimensionalFissureToGraveRedirect: 1,
   fenghuangSetBackrowDestroy: 1,
   magicalMusketeerCasparHandTrapSearch: 1,
   missusRadiantAttributeStatDestroyedToHand: 1,
@@ -34,6 +35,7 @@ type ContinuousOperationSemanticVariant =
   | "changeOfHeartEndPhaseControlReturn"
   | "coreOfChaosFaceUpLeaveFieldRedirect"
   | "darkMagicianOriginalCodeSummonLock"
+  | "dimensionalFissureToGraveRedirect"
   | "fenghuangSetBackrowDestroy"
   | "magicalMusketeerCasparHandTrapSearch"
   | "missusRadiantAttributeStatDestroyedToHand";
@@ -134,6 +136,19 @@ function continuousOperationFixtureFiles(): Array<{
         "condition:source-faceup",
         "code: 60",
         "property: 0x400",
+        "duelReason.effect | duelReason.redirect",
+        'location: "banished"',
+        'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-dimensional-fissure-to-grave-redirect.test.ts",
+      kind: "continuousRedirect",
+      required: [
+        "restores its non-Spell/Trap EFFECT_TO_GRAVE_REDIRECT target predicate",
+        'const fissureCode = "81674782"',
+        "code: 63",
+        "target:not-location-not-spelltrap:128",
         "duelReason.effect | duelReason.redirect",
         'location: "banished"',
         'location: "graveyard"',
@@ -246,6 +261,18 @@ function continuousOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-dimensional-fissure-to-grave-redirect.test.ts",
+      kind: "dimensionalFissureToGraveRedirect",
+      required: [
+        'const fissureCode = "81674782"',
+        "restores its non-Spell/Trap EFFECT_TO_GRAVE_REDIRECT target predicate",
+        "target:not-location-not-spelltrap:128",
+        "targetRange: [0xff, 0xff]",
+        "value: 0x20",
+        "duelReason.effect | duelReason.redirect",
+      ],
+    },
+    {
       file: "test/lua-real-script-dark-magician-destruction-original-code-lock.test.ts",
       kind: "darkMagicianOriginalCodeSummonLock",
       required: [
@@ -288,6 +315,7 @@ function countContinuousOperationSemanticVariants(
       changeOfHeartEndPhaseControlReturn: 0,
       coreOfChaosFaceUpLeaveFieldRedirect: 0,
       darkMagicianOriginalCodeSummonLock: 0,
+      dimensionalFissureToGraveRedirect: 0,
       fenghuangSetBackrowDestroy: 0,
       magicalMusketeerCasparHandTrapSearch: 0,
       missusRadiantAttributeStatDestroyedToHand: 0,

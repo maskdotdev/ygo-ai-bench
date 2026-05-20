@@ -24,6 +24,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notStatus = notStatusDescriptor(effect.luaTargetDescriptor); if (notStatus !== undefined) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & notStatus) === 0 };
   const status = statusDescriptor(effect.luaTargetDescriptor); if (status !== undefined) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & status) !== 0 };
   if (effect.luaTargetDescriptor === "target:gemini-status") return { targetCardPredicate: (ctx, card) => hasRestoredGeminiStatus(ctx.duel, card) };
+  const notLocationNotSpellTrap = notLocationNotSpellTrapDescriptor(effect.luaTargetDescriptor);
+  if (notLocationNotSpellTrap !== undefined) return { targetCardPredicate: (ctx, card) => !locationMatchesCardMask(card, notLocationNotSpellTrap, card.previousLocation, card.previousSequence) && (cardTypeFlags(card, ctx.duel) & 0x6) === 0 };
   const notRaceDeckOrExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-deck-or-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-deck-or-extra:".length)) : undefined;
   if (notRaceDeckOrExtra !== undefined && Number.isSafeInteger(notRaceDeckOrExtra) && notRaceDeckOrExtra > 0) return { targetCardPredicate: (ctx, card) => (card.location === "deck" || card.location === "extraDeck") && (currentRace(card, ctx.duel) & notRaceDeckOrExtra) === 0 };
   if (effect.luaTargetDescriptor === "special-summon-limit:summonable-card") return { targetCardPredicate: (ctx, card) => card.kind === "monster" && (cardTypeFlags(card, ctx.duel) & luaTypeSpecialSummon) === 0 };
@@ -176,6 +178,12 @@ function statusDescriptor(descriptor: string | undefined): number | undefined {
   if (!descriptor?.startsWith("target:status:")) return undefined;
   const status = Number(descriptor.slice("target:status:".length));
   return Number.isSafeInteger(status) && status > 0 ? status : undefined;
+}
+
+function notLocationNotSpellTrapDescriptor(descriptor: string | undefined): number | undefined {
+  if (!descriptor?.startsWith("target:not-location-not-spelltrap:")) return undefined;
+  const location = Number(descriptor.slice("target:not-location-not-spelltrap:".length));
+  return Number.isSafeInteger(location) && location > 0 ? location : undefined;
 }
 
 function notCodeStatusDescriptor(descriptor: string | undefined): { code: number; status: number } | undefined {

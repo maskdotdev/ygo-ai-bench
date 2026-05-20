@@ -37,6 +37,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const race = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*(?:end\\b|$)`));
   const raceValue = race?.[1] ? luaNumberExpressionValue(L, index, race[1]) : undefined;
   if (raceValue !== undefined) return `target:race:${raceValue}`;
+  const notLocationNotSpellTrap = snippet.match(new RegExp(`\\breturn\\s+(?:not\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSpellTrap\\s*\\(\\s*\\)|not\\s+${card}\\s*:\\s*IsSpellTrap\\s*\\(\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))`));
+  const notLocationNotSpellTrapToken = notLocationNotSpellTrap?.[1] ?? notLocationNotSpellTrap?.[2];
+  const notLocationNotSpellTrapValue = notLocationNotSpellTrapToken ? luaNumberExpressionValue(L, index, notLocationNotSpellTrapToken) : undefined;
+  if (notLocationNotSpellTrapValue !== undefined) return `target:not-location-not-spelltrap:${notLocationNotSpellTrapValue}`;
   const notRaceDeckOrExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
   const notRaceDeckOrExtraLocation = notRaceDeckOrExtra?.[1] ? luaNumberExpressionValue(L, index, notRaceDeckOrExtra[1]) : undefined;
   const notRaceDeckOrExtraRace = notRaceDeckOrExtra?.[2] ? luaNumberExpressionValue(L, index, notRaceDeckOrExtra[2]) : undefined;
