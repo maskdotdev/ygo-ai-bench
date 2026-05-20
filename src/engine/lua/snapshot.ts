@@ -68,6 +68,7 @@ const luaXxSaberDarksoulCode = "31383545";
 const luaFamiliarPossessedDharcCode = "21390858";
 const luaDarkMagicExpandedCode = "111280";
 const luaEbonArrowCode = "88341502";
+const luaMiniGutsCode = "99004752";
 const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
 const luaDaiDanceCode = "50696588";
@@ -598,6 +599,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownSelfEndPhaseDestroyEffect(effect) ||
     isKnownSelfEndPhaseSendEffect(effect) ||
     isKnownEbonArrowBattleDestroyingDamageEffect(effect) ||
+    isKnownMiniGutsBattleDestroyedDamageEffect(effect) ||
     (effect.event === "continuous" &&
       (effect.code === 2 ||
         effect.code === 8 ||
@@ -718,6 +720,15 @@ function isKnownEbonArrowBattleDestroyingDamageEffect(effect: SerializedDuelEffe
   return Boolean(effect.registryKey?.startsWith(`lua:${luaEbonArrowCode}:`)) &&
     effect.event === "trigger" &&
     effect.code === 1139 &&
+    effect.triggerEvent === "battleDestroyed" &&
+    effect.sourceUid !== undefined &&
+    effect.labelObjectUid !== undefined &&
+    effect.reset !== undefined;
+}
+function isKnownMiniGutsBattleDestroyedDamageEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaMiniGutsCode}:`)) &&
+    effect.event === "trigger" &&
+    effect.code === 1140 &&
     effect.triggerEvent === "battleDestroyed" &&
     effect.sourceUid !== undefined &&
     effect.labelObjectUid !== undefined &&
@@ -1053,6 +1064,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return levelNormalEndPhaseDestroyOperation(effect);
   if (isKnownDelayedBattleDestroyPhaseEffect(effect)) return delayedBattleDestroyPhaseOperation(effect);
   if (isKnownEbonArrowBattleDestroyingDamageEffect(effect)) return ebonArrowBattleDestroyingDamageOperation(effect);
+  if (isKnownMiniGutsBattleDestroyedDamageEffect(effect)) return miniGutsBattleDestroyedDamageOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
   if (isKnownSelfEndPhaseSendEffect(effect)) return selfEndPhaseSendOperation(effect);
@@ -1123,6 +1135,27 @@ function luaEquipLeaveFieldDestroyTargetOperation(effect: SerializedDuelEffect):
     } catch {
       // EDOPro-style equip cleanup ignores targets that are no longer destroyable.
     }
+  };
+}
+
+function miniGutsBattleDestroyedDamageOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    const target = effect.labelObjectUid ? ctx.duel.cards.find((card) => card.uid === effect.labelObjectUid) : undefined;
+    if (!target || target.location !== "graveyard" || ((target.reason ?? 0) & duelReason.battle) === 0 || target.owner === ctx.player) return;
+    const damagedPlayer: PlayerId = ctx.player === 0 ? 1 : 0;
+    const baseAttack = target.data.attack ?? 0;
+    const damage = Math.max(0, Math.floor(baseAttack < 0 ? 0 : baseAttack));
+    const applied = damageDuelPlayer(ctx.duel, damagedPlayer, damage, duelReason.effect);
+    if (applied <= 0 || ctx.duel.status === "ended") return;
+    collectDuelTriggerEffects(ctx.duel, "damageDealt", undefined, {
+      eventPlayer: damagedPlayer,
+      eventValue: applied,
+      eventReason: duelReason.effect,
+      eventReasonPlayer: ctx.player,
+      eventReasonCardUid: effect.sourceUid,
+      ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+    });
   };
 }
 

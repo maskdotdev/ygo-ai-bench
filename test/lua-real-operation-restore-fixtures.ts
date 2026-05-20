@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 162;
+export const operationFixtureCount = 163;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -21,6 +21,7 @@ export const operationKindCounts = {
   controlReturn: 1,
   controlSwap: 1,
   damageLinkedAtkDown: 1,
+  releaseTargetZeroBattleBurn: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 2,
   banishedToDeckSelfSummon: 1,
@@ -129,6 +130,7 @@ export type OperationKind =
   | "controlReturn"
   | "controlSwap"
   | "damageLinkedAtkDown"
+  | "releaseTargetZeroBattleBurn"
   | "banishedToGraveReturn"
   | "banishedToHand"
   | "banishedToDeckSelfSummon"
@@ -256,6 +258,30 @@ export function operationFixtureFiles(): Array<{
         'eventName: "damageDealt"',
         "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === opponentA.uid), restoredResolved.session.state)).toBe(1600)",
         "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === opponentB.uid), restoredResolved.session.state)).toBe(1400)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mini-guts-release-zero-battle-burn.test.ts",
+      kind: "releaseTargetZeroBattleBurn",
+      required: [
+        "restores release-cost targeting into temporary battle-destroyed base-ATK damage",
+        "Duel.CheckReleaseGroupCost(tp,nil,1,false,aux.ReleaseCheckTarget,nil,dg)",
+        "Duel.SelectReleaseGroupCost(tp,nil,1,1,false,aux.ReleaseCheckTarget,nil,dg)",
+        "Duel.Release(g,REASON_COST)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(0)",
+        "e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_F)",
+        "e2:SetCode(EVENT_BATTLE_DESTROYED)",
+        "Duel.RegisterEffect(e2,tp)",
+        "e2:SetLabelObject(tc)",
+        "Duel.SetTargetParam(atk)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+        'eventName: "damageDealt"',
+        "effectLabelObjectUid: target.uid",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === target.uid), restoredChain.session.state)).toBe(0)",
+        "players[1].lifePoints).toBe(5200)",
       ],
     },
     {
@@ -2130,6 +2156,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       controlReturn: 0,
       controlSwap: 0,
       damageLinkedAtkDown: 0,
+      releaseTargetZeroBattleBurn: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
       banishedToDeckSelfSummon: 0,
