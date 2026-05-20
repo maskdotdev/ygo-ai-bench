@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 132;
+export const operationFixtureCount = 133;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -11,6 +11,7 @@ export const operationKindCounts = {
   announceSearchSummonLock: 1,
   callCoinAtkChange: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
+  copyNegateDamage: 1,
   counterBoostBattleTargetLock: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
@@ -91,6 +92,7 @@ export type OperationKind =
   | "announceSearchSummonLock"
   | "callCoinAtkChange"
   | "costBanishDraw" | "costDiscardDraw"
+  | "copyNegateDamage"
   | "counterBoostBattleTargetLock"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
@@ -164,6 +166,22 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-starving-venemy-copy-negate-damage.test.ts",
+      kind: "copyNegateDamage",
+      required: [
+        "restores target copy, ATK/DEF loss, negation, and damage after CopyEffect succeeds",
+        "Duel.SelectTarget(tp,Card.IsNegatableMonster,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,g,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,500)",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "if c:CopyEffect(code,RESETS_STANDARD_PHASE_END,1)>0 then",
+        "tc:NegateEffects(c)",
+        "eventName: \"damageDealt\"",
+        "copyId !== undefined",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-combat-wheel-counter-boost-lock.test.ts",
       kind: "counterBoostBattleTargetLock",
@@ -1506,6 +1524,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceSearchSummonLock: 0,
       callCoinAtkChange: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
+      copyNegateDamage: 0,
       counterBoostBattleTargetLock: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
