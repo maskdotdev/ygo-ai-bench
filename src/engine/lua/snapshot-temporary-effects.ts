@@ -1,4 +1,5 @@
 import { duelLocations } from "#duel/location-kinds.js";
+import { negateDuelAttack } from "#duel/core.js";
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaEffectFlagPlayerTarget = 0x800;
@@ -77,6 +78,32 @@ export function isKnownTemporaryCannotAttackAnnounceSelfEffect(effect: Serialize
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone"
   );
+}
+
+export function isKnownTemporaryAttackAnnounceNegateEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 1130 &&
+    effect.sourceUid !== undefined &&
+    effect.countLimit === 1 &&
+    effect.targetRange === undefined &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardPhaseEnd) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function temporaryAttackAnnounceNegateOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    negateDuelAttack(ctx.duel, ctx.player, {
+      eventReasonCardUid: effect.sourceUid,
+      ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+    });
+  };
 }
 
 export function isKnownTemporaryDirectAttackEffect(effect: SerializedDuelEffect): boolean {

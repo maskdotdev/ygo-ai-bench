@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackNegationFixtureCount = 7;
+const attackNegationFixtureCount = 8;
 const attackNegationKindCounts = {
   counterTriggerNegate: 1,
+  delayedGraveNegate: 1,
   damageReflectNegate: 1,
   lpRecoverNegate: 1,
   monsterTriggerNegate: 1,
@@ -16,6 +17,7 @@ const attackNegationKindCounts = {
 const attackNegationSemanticVariantCounts = {
   drainingShieldRecoverNegate: 1,
   magicCylinderReflectNegate: 1,
+  necroGardnaDelayedNegate: 1,
   negateAttackPhaseSkip: 1,
   scrapIronSetAgainNegate: 1,
   superJuniorCalculateDamageSkip: 1,
@@ -25,6 +27,7 @@ const attackNegationSemanticVariantCounts = {
 
 type AttackNegationKind =
   | "counterTriggerNegate"
+  | "delayedGraveNegate"
   | "damageReflectNegate"
   | "lpRecoverNegate"
   | "monsterTriggerNegate"
@@ -34,6 +37,7 @@ type AttackNegationKind =
 type AttackNegationSemanticVariant =
   | "drainingShieldRecoverNegate"
   | "magicCylinderReflectNegate"
+  | "necroGardnaDelayedNegate"
   | "negateAttackPhaseSkip"
   | "scrapIronSetAgainNegate"
   | "superJuniorCalculateDamageSkip"
@@ -107,6 +111,21 @@ function realScriptAttackNegationFixtureFiles(): Array<{
   outcome: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-necro-gardna-delayed-attack-negate.test.ts",
+      kind: "delayedGraveNegate",
+      required: [
+        'action.type === "activateEffect" && action.uid === necroGardna!.uid',
+        'location: "banished"',
+        'eventName === "banished"',
+        "effect.sourceUid === necroGardna!.uid && effect.code === 1130",
+      ],
+      outcome: [
+        "attackCanceledUids).toEqual([attacker!.uid])",
+        'eventName === "attackDisabled"',
+        'location: "monsterZone", controller: 0',
+      ],
+    },
     {
       file: "lua-real-script-wind-up-knight-battle-target-negate.test.ts",
       kind: "monsterTriggerNegate",
@@ -223,6 +242,7 @@ function countAttackNegationKinds(
     },
     {
       counterTriggerNegate: 0,
+      delayedGraveNegate: 0,
       damageReflectNegate: 0,
       lpRecoverNegate: 0,
       monsterTriggerNegate: 0,
@@ -238,6 +258,18 @@ function realScriptAttackNegationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-necro-gardna-delayed-attack-negate.test.ts",
+      kind: "necroGardnaDelayedNegate",
+      required: [
+        'const necroGardnaCode = "4906301"',
+        "restores its graveyard self-banish cost and one-shot attack-announcement negate",
+        'location: "banished"',
+        'eventName === "banished"',
+        'eventName === "attackDisabled"',
+        "effect.sourceUid === necroGardna!.uid && effect.code === 1130",
+      ],
+    },
     {
       file: "lua-real-script-draining-shield-battle-window.test.ts",
       kind: "drainingShieldRecoverNegate",
@@ -336,6 +368,7 @@ function countAttackNegationSemanticVariants(
     {
       drainingShieldRecoverNegate: 0,
       magicCylinderReflectNegate: 0,
+      necroGardnaDelayedNegate: 0,
       negateAttackPhaseSkip: 0,
       scrapIronSetAgainNegate: 0,
       superJuniorCalculateDamageSkip: 0,
