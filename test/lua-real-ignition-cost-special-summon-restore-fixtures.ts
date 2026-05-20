@@ -1,10 +1,11 @@
-export const ignitionCostSpecialSummonFixtureCount = 7;
+export const ignitionCostSpecialSummonFixtureCount = 8;
 
 export const ignitionCostSpecialSummonKindCounts = {
   dragonRulerDiscardDeckSummonCannotAttack: 1,
   filteredDiscardCostSelfSummonSearch: 1,
   graveCostSelfSummonSearchRedirect: 1,
   handCostSelfSummon: 1,
+  trapCostDeckSummonDefense: 1,
   revealCostSelfSummonSearch: 1,
   releaseBanishLabelBossSummonSearch: 1,
   overlayDetachSelfSummonSearch: 1,
@@ -15,6 +16,7 @@ export type IgnitionCostSpecialSummonKind =
   | "filteredDiscardCostSelfSummonSearch"
   | "graveCostSelfSummonSearchRedirect"
   | "handCostSelfSummon"
+  | "trapCostDeckSummonDefense"
   | "revealCostSelfSummonSearch"
   | "releaseBanishLabelBossSummonSearch"
   | "overlayDetachSelfSummonSearch";
@@ -141,6 +143,27 @@ export function realScriptIgnitionCostSpecialSummonFixtureSnippets(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-upstart-golden-ninja-trap-cost-deck-summon.test.ts",
+      kind: "trapCostDeckSummonDefense",
+      required: [
+        "return c:IsTrap() and c:IsAbleToGraveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoGrave(cg,REASON_COST)",
+        "return c:IsLevelBelow(4) and c:IsSetCard(SET_NINJA)",
+        "c:IsCanBeSpecialSummoned(e,0,tp,false,false,POS_DEFENSE)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_DECK)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_DEFENSE)",
+        "Duel.ConfirmCards(1-tp,tc)",
+        "eventReason: duelReason.cost",
+        'eventName: "sentToGraveyard"',
+        "category: 0x200",
+        "parameter: 1",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'position: "faceUpDefense"',
+      ],
+    },
+    {
       file: "test/lua-real-script-malicevorous-fork-cost-self-summon.test.ts",
       kind: "handCostSelfSummon",
       required: [
@@ -167,5 +190,5 @@ export function countIgnitionCostSpecialSummonKinds(
   return files.reduce<Record<IgnitionCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, filteredDiscardCostSelfSummonSearch: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, overlayDetachSelfSummonSearch: 0, releaseBanishLabelBossSummonSearch: 0, revealCostSelfSummonSearch: 0 });
+  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, filteredDiscardCostSelfSummonSearch: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, overlayDetachSelfSummonSearch: 0, releaseBanishLabelBossSummonSearch: 0, revealCostSelfSummonSearch: 0, trapCostDeckSummonDefense: 0 });
 }
