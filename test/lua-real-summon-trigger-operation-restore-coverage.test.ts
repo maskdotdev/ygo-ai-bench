@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 23;
+const summonTriggerOperationFixtureCount = 24;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
@@ -13,6 +13,7 @@ const summonTriggerOperationKindCounts = {
   summonSearchSelfSummon: 1,
   summonSelfDestroy: 1,
   summonSetFlipToHand: 1,
+  summonSuccessDeckSpecialSummon: 1,
   summonSuccessFieldHandSelfSummon: 2,
   summonSuccessHandSpecialSummon: 1,
   summonToGraveGraveyardRevive: 1,
@@ -26,6 +27,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   aratamaSpiritSearchOnSummon: 1,
   ashokaPillarSearchPositionDamage: 1,
   backupIgnisterSearchDiscardOnSummon: 1,
+  crashbugZSummonSuccessDeckSpecialSummon: 1,
   craneCraneStepReviveDisableOnSummon: 1,
   cyberDinosaurOpponentHandSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
@@ -56,6 +58,7 @@ type SummonTriggerOperationKind =
   | "summonSearchSelfSummon"
   | "summonSelfDestroy"
   | "summonSetFlipToHand"
+  | "summonSuccessDeckSpecialSummon"
   | "summonSuccessFieldHandSelfSummon"
   | "summonSuccessHandSpecialSummon"
   | "summonToGraveGraveyardRevive"
@@ -68,6 +71,7 @@ type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
   | "ashokaPillarSearchPositionDamage"
   | "backupIgnisterSearchDiscardOnSummon"
+  | "crashbugZSummonSuccessDeckSpecialSummon"
   | "craneCraneStepReviveDisableOnSummon"
   | "cyberDinosaurOpponentHandSummon"
   | "darkDustSpiritMassDestroyOnSummon"
@@ -397,6 +401,21 @@ function summonTriggerOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-crashbug-z-summon-success-deck-summon.test.ts",
+      kind: "summonSuccessDeckSpecialSummon",
+      required: [
+        "restores summon-success face-up Crashbug X condition into Crashbug Y Deck Special Summon",
+        'const crashbugZCode = "50319138"',
+        "return Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_ONFIELD,0,1,nil)",
+        "Duel.GetFirstMatchingCard(s.spfilter,tp,LOCATION_DECK,0,nil,e,tp)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "normalSummoned"',
+        'eventName: "specialSummoned"',
+        "operationInfos: [{ category: 0x200",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-floowandereeze-robina-search-normal.test.ts",
       kind: "summonSearch",
       required: [
@@ -668,6 +687,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-crashbug-z-summon-success-deck-summon.test.ts",
+      kind: "crashbugZSummonSuccessDeckSpecialSummon",
+      requiredSnippets: [
+        'const crashbugZCode = "50319138"',
+        "return c:IsFaceup() and c:IsCode(87526784)",
+        "return c:IsCode(23915499) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        'triggerBucket: "turnOptional"',
+        "eventReasonCardUid: crashbugZ.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-gem-knight-obsidian-to-grave-revive.test.ts",
       kind: "gemKnightObsidianHandToGraveyardRevive",
       requiredSnippets: [
@@ -853,6 +883,7 @@ function countSummonTriggerOperationKinds(
       summonSearchSelfSummon: 0,
       summonSelfDestroy: 0,
       summonSetFlipToHand: 0,
+      summonSuccessDeckSpecialSummon: 0,
       summonSuccessFieldHandSelfSummon: 0,
       summonSuccessHandSpecialSummon: 0,
       summonToGraveGraveyardRevive: 0,
@@ -877,6 +908,7 @@ function countSummonTriggerOperationSemanticVariants(
       aratamaSpiritSearchOnSummon: 0,
       ashokaPillarSearchPositionDamage: 0,
       backupIgnisterSearchDiscardOnSummon: 0,
+      crashbugZSummonSuccessDeckSpecialSummon: 0,
       craneCraneStepReviveDisableOnSummon: 0,
       cyberDinosaurOpponentHandSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
