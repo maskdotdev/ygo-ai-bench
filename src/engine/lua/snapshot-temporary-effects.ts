@@ -148,6 +148,19 @@ export function isKnownTemporaryActivationLockEffect(effect: SerializedDuelEffec
   );
 }
 
+export function isKnownTemporaryForbiddenCardEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 292 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaOpponentTurnPhaseEndResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === "target:same-code-label" &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 export function isKnownTemporarySelfTurnSkipBattlePhaseEffect(effect: SerializedDuelEffect): boolean {
   return (
     effect.event === "continuous" &&

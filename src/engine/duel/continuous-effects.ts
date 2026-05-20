@@ -59,6 +59,7 @@ export function isEffectActivationPrevented(
   createContext: ContinuousEffectContextFactory,
   activatingEffect?: DuelEffectDefinition,
 ): boolean {
+  if (isCardForbidden(state, card, createContext)) return true;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 6) continue;
     const source = findCard(state, effect.sourceUid);
@@ -149,6 +150,7 @@ export function setControlPlayerForCard(
 }
 
 export function isSpecialSummonPrevented(state: DuelState, player: PlayerId, createContext: ContinuousEffectContextFactory, card?: DuelCardInstance, summonTypeCode?: number, relatedEffectId?: number, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition): boolean {
+  if (card && isCardForbidden(state, card, createContext)) return true;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 22) continue;
     const source = findCard(state, effect.sourceUid);
@@ -254,6 +256,7 @@ export function isEffectDefeatPrevented(state: DuelState, player: PlayerId, crea
 }
 
 export function isFlipSummonPrevented(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  if (isCardForbidden(state, card, createContext)) return true;
   for (const effect of state.effects) {
     if (effect.event !== "continuous" || effect.code !== 21) continue;
     const source = findCard(state, effect.sourceUid);
@@ -267,15 +270,27 @@ export function isFlipSummonPrevented(state: DuelState, card: DuelCardInstance, 
 }
 
 export function isNormalSummonPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return isSummonOrSetPrevented(state, player, card, 20, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [91]);
+  return isCardForbidden(state, card, createContext) || isSummonOrSetPrevented(state, player, card, 20, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [91]);
 }
 
 export function isMonsterSetPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return isSummonOrSetPrevented(state, player, card, 23, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [94]);
+  return isCardForbidden(state, card, createContext) || isSummonOrSetPrevented(state, player, card, 23, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [94]);
 }
 
 export function isSpellTrapSetPrevented(state: DuelState, player: PlayerId, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
-  return isSummonOrSetPrevented(state, player, card, 24, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [95]);
+  return isCardForbidden(state, card, createContext) || isSummonOrSetPrevented(state, player, card, 24, createContext) || isSummonOrSetCostPrevented(state, player, createContext, card, [95]);
+}
+
+export function isCardForbidden(state: DuelState, card: DuelCardInstance, createContext: ContinuousEffectContextFactory): boolean {
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 292) continue;
+    const source = findCard(state, effect.sourceUid);
+    if (!source || !effect.range.includes(source.location)) continue;
+    const ctx = createContext(effect, source, card);
+    if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (!effect.canActivate || effect.canActivate(ctx)) return true;
+  }
+  return false;
 }
 
 export function isPhaseEntryPrevented(state: DuelState, player: PlayerId, phase: "main1" | "battle" | "main2" | "end", createContext: ContinuousEffectContextFactory): boolean {

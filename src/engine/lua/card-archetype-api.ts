@@ -1,6 +1,8 @@
 import fengari from "fengari";
+import { isCardForbidden } from "#duel/continuous-effects.js";
 import { readCardUid } from "#lua/api-utils.js";
 import { matchingLuaEffects } from "#lua/card-effect-query-api.js";
+import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 import type { DuelCardInstance, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
@@ -14,7 +16,7 @@ export function installCardArchetypeApi<EffectRecord extends LuaCardApiEffectRec
   pushBooleanGetter(L, "IsDrone", session, (card) => Boolean(card?.data.setcodes?.includes(0x581)));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRikkaReleasable(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsRikkaReleasable"));
-  pushBooleanGetter(L, "IsForbidden", session, () => false);
+  pushBooleanGetter(L, "IsForbidden", session, (card) => Boolean(card && isCardForbidden(session.state, card, createLuaMaterialCheckContext(session.state))));
 }
 
 function pushBooleanGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => boolean): void {
