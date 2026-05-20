@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 170;
+export const operationFixtureCount = 171;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -92,6 +92,7 @@ export const operationKindCounts = {
   selectEffectStatDestroyedToGrave: 1,
   specialSearchMaterialDamage: 1,
   summonDelayedStatDestroy: 1,
+  targetRelationStatDestroyedBothDamage: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -207,6 +208,7 @@ export type OperationKind =
   | "selectEffectStatDestroyedToGrave"
   | "specialSearchMaterialDamage"
   | "summonDelayedStatDestroy"
+  | "targetRelationStatDestroyedBothDamage"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "spellDraw"
   | "trapDraw"
@@ -537,6 +539,25 @@ export function operationFixtureFiles(): Array<{
         "Duel.Release(c,REASON_COST)",
         "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
         "currentAttack(restoredTarget, restoredTrigger.session.state)).toBe(4000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-capacitor-stalker-target-boost-destroy-damage.test.ts",
+      kind: "targetRelationStatDestroyedBothDamage",
+      required: [
+        "restores summon target relation ATK boost and effect-destroyed both-player damage",
+        'const capacitorCode = "29716911"',
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsRace,RACE_CYBERSE),tp,LOCATION_MZONE,0,1,1,c)",
+        "c:SetCardTarget(tc)",
+        "e1:SetTarget(function(e,_c) return c:IsHasCardTarget(_c) end)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EVENT_DESTROYED)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,PLAYER_ALL,800)",
+        "Duel.RDComplete()",
+        "targetRange: [4, 0]",
+        "currentAttack(restoredBoostChain.session.state.cards.find((card) => card.uid === cyberse.uid), restoredBoostChain.session.state)).toBe(1800)",
+        "currentAttack(restoredDestroyed.session.state.cards.find((card) => card.uid === cyberse.uid), restoredDestroyed.session.state)).toBe(1000)",
+        'eventName: "damageDealt"',
       ],
     },
     {
@@ -2385,6 +2406,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStatDestroyedToGrave: 0,
       specialSearchMaterialDamage: 0,
       summonDelayedStatDestroy: 0,
+      targetRelationStatDestroyedBothDamage: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
       spellDraw: 0,
       trapDraw: 0,
