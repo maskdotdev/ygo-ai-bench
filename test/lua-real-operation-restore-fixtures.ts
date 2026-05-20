@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 174;
+export const operationFixtureCount = 175;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -75,6 +75,7 @@ export const operationKindCounts = {
   lpDiscardCostStatToGraveBothDamage: 1,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
+  costBanishLevelStat: 1,
   linkClassCountDeckSummon: 1,
   monsterIgnitionSpellTrapDestroy: 1,
   mutualHandDiscardDraw: 1,
@@ -194,6 +195,7 @@ export type OperationKind =
   | "lpDiscardCostStatToGraveBothDamage"
   | "lpCostHandDiscard"
   | "lpCostRandomHandDiscard"
+  | "costBanishLevelStat"
   | "linkClassCountDeckSummon"
   | "monsterIgnitionSpellTrapDestroy"
   | "mutualHandDiscardDraw"
@@ -549,6 +551,28 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(restoredAttack.session.state.cards.find((card) => card.uid === attacker.uid), restoredAttack.session.state)).toBe(3000)",
         "operationInfos",
         "eventName: \"becameTarget\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-jain-twilightsworn-banish-level-stat.test.ts",
+      kind: "costBanishLevelStat",
+      required: [
+        "restores cost banish level label into targeted ATK/DEF reduction",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "return c:IsSetCard(SET_LIGHTSWORN) and c:IsLevelAbove(1) and c:IsAbleToRemoveAsCost()",
+        "e:SetLabel(g:GetFirst():GetLevel())",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "local lv=e:GetLabel()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-lv*300)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(reduced, restoredOpen.session.state)).toBe(1200)",
+        "currentDefense(reduced, restoredOpen.session.state)).toBe(600)",
+        'eventName: "banished"',
+        'eventName: "becameTarget"',
+        "operationInfos",
       ],
     },
     {
@@ -2454,6 +2478,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       lpDiscardCostStatToGraveBothDamage: 0,
       lpCostHandDiscard: 0,
       lpCostRandomHandDiscard: 0,
+      costBanishLevelStat: 0,
       linkClassCountDeckSummon: 0,
       monsterIgnitionSpellTrapDestroy: 0,
       mutualHandDiscardDraw: 0,
