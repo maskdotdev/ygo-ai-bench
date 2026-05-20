@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDestroyedSummonFixtureCount = 6;
+const battleDestroyedSummonFixtureCount = 7;
 const battleDestroyedSummonKindCounts = {
   battleDestroyedTrapActivationDeckSummon: 1,
   optionalBlueEyesCappedSameCodeDeckSpecialSummon: 1,
   optionalDeckDefenseSpecialSummon: 1,
+  optionalDeckLevelSetSpecialSummon: 1,
   optionalDeckRaceDefenseSpecialSummon: 1,
   optionalDeckSpecialSummon: 1,
   optionalOpponentAttackerDeckRaceAttackSummon: 1,
@@ -18,6 +19,7 @@ const battleDestroyedSummonSemanticVariantCounts = {
   hyenaBlueEyesCappedSameCodeDeckSummon: 1,
   phantomMagicianHeroDefenseDeckSummon: 1,
   redSparrowOpponentAttackerWarriorDeckSummon: 1,
+  testApeGladiatorLevelDeckSummon: 1,
   tricularBattleDestroyedDeckSummon: 1,
   unmaskedDragonWyrmDefenseDeckSummon: 1,
 } satisfies Record<BattleDestroyedSummonSemanticVariant, number>;
@@ -26,6 +28,7 @@ type BattleDestroyedSummonKind =
   | "battleDestroyedTrapActivationDeckSummon"
   | "optionalBlueEyesCappedSameCodeDeckSpecialSummon"
   | "optionalDeckDefenseSpecialSummon"
+  | "optionalDeckLevelSetSpecialSummon"
   | "optionalDeckRaceDefenseSpecialSummon"
   | "optionalDeckSpecialSummon"
   | "optionalOpponentAttackerDeckRaceAttackSummon";
@@ -34,6 +37,7 @@ type BattleDestroyedSummonSemanticVariant =
   | "hyenaBlueEyesCappedSameCodeDeckSummon"
   | "phantomMagicianHeroDefenseDeckSummon"
   | "redSparrowOpponentAttackerWarriorDeckSummon"
+  | "testApeGladiatorLevelDeckSummon"
   | "tricularBattleDestroyedDeckSummon"
   | "unmaskedDragonWyrmDefenseDeckSummon";
 
@@ -166,7 +170,7 @@ function battleDestroyedSummonFixtureFiles(): Array<{
       ],
     },
     {
-      file: "test/lua-real-script-tricular-battle-destroyed-summon.test.ts",
+      file: "test/lua-real-script-tricular-battle-destroyed-deck-summon.test.ts",
       kind: "optionalDeckSpecialSummon",
       required: [
         'const tricularCode = "20797524"',
@@ -192,6 +196,21 @@ function battleDestroyedSummonFixtureFiles(): Array<{
         'location: "deck", controller: 0',
         "RACE_WYRM",
         "IsDefenseBelow(1500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-test-ape-battle-destroyed-gladiator-summon.test.ts",
+      kind: "optionalDeckLevelSetSpecialSummon",
+      required: [
+        'const testApeCode = "3030892"',
+        'const gladiatorTargetCode = "30308920"',
+        "restores battle-destroyed Level-below Gladiator Deck filter into face-up Special Summon",
+        "c:IsLevelBelow(4) and c:IsSetCard(SET_GLADIATOR)",
+        'triggerBucket: "opponentOptional"',
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        'position: "faceUpAttack"',
+        'location: "deck", controller: 0',
       ],
     },
   ];
@@ -254,14 +273,14 @@ function battleDestroyedSummonSemanticVariants(): Array<{
       ],
     },
     {
-      file: "test/lua-real-script-tricular-battle-destroyed-summon.test.ts",
+      file: "test/lua-real-script-tricular-battle-destroyed-deck-summon.test.ts",
       kind: "tricularBattleDestroyedDeckSummon",
       required: [
         'triggerEvent: "battleDestroyed"',
         "triggerSourceOnly: true",
         'type === "activateTrigger"',
         'eventName: "specialSummoned"',
-        "eventReasonCardUid: tricular!.uid",
+        "eventReasonCardUid: tricular.uid",
       ],
     },
     {
@@ -273,6 +292,18 @@ function battleDestroyedSummonSemanticVariants(): Array<{
         'type === "activateTrigger"',
         "c:IsDefenseBelow(1500) and c:IsRace(RACE_WYRM)",
         "eventReasonCardUid: unmaskedDragon.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-test-ape-battle-destroyed-gladiator-summon.test.ts",
+      kind: "testApeGladiatorLevelDeckSummon",
+      required: [
+        'e1:SetCode(EVENT_BATTLE_DESTROYED)',
+        'type === "activateTrigger"',
+        "c:IsLevelBelow(4) and c:IsSetCard(SET_GLADIATOR)",
+        "highLevelDecoy",
+        "offSetDecoy",
+        "eventReasonCardUid: testApe.uid",
       ],
     },
   ];
@@ -288,6 +319,7 @@ function countBattleDestroyedSummonKinds(fixtures: Array<{ kind: BattleDestroyed
       battleDestroyedTrapActivationDeckSummon: 0,
       optionalBlueEyesCappedSameCodeDeckSpecialSummon: 0,
       optionalDeckDefenseSpecialSummon: 0,
+      optionalDeckLevelSetSpecialSummon: 0,
       optionalDeckRaceDefenseSpecialSummon: 0,
       optionalDeckSpecialSummon: 0,
       optionalOpponentAttackerDeckRaceAttackSummon: 0,
@@ -308,6 +340,7 @@ function countBattleDestroyedSummonSemanticVariants(
       hyenaBlueEyesCappedSameCodeDeckSummon: 0,
       phantomMagicianHeroDefenseDeckSummon: 0,
       redSparrowOpponentAttackerWarriorDeckSummon: 0,
+      testApeGladiatorLevelDeckSummon: 0,
       tricularBattleDestroyedDeckSummon: 0,
       unmaskedDragonWyrmDefenseDeckSummon: 0,
     },
