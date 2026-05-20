@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 8;
+const continuousOperationFixtureCount = 9;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
+  chainSolvingDoubleSnareNegateDestroy: 1,
   chainSolvingEquipNegateSend: 1,
   chainSolvingCustomSearch: 1,
   continuousRedirect: 2,
@@ -21,12 +22,14 @@ const continuousOperationSemanticVariantCounts = {
   darkMagicianOriginalCodeSummonLock: 1,
   dimensionalFissureToGraveRedirect: 1,
   fenghuangSetBackrowDestroy: 1,
+  goraTurtleTargetedSpellNegateDestroy: 1,
   magicalMusketeerCasparHandTrapSearch: 1,
   missusRadiantAttributeStatDestroyedToHand: 1,
 } satisfies Record<ContinuousOperationSemanticVariant, number>;
 
 type ContinuousOperationKind =
   | "attributeStatDestroyedToHand"
+  | "chainSolvingDoubleSnareNegateDestroy"
   | "chainSolvingEquipNegateSend"
   | "chainSolvingCustomSearch"
   | "continuousRedirect"
@@ -41,6 +44,7 @@ type ContinuousOperationSemanticVariant =
   | "darkMagicianOriginalCodeSummonLock"
   | "dimensionalFissureToGraveRedirect"
   | "fenghuangSetBackrowDestroy"
+  | "goraTurtleTargetedSpellNegateDestroy"
   | "magicalMusketeerCasparHandTrapSearch"
   | "missusRadiantAttributeStatDestroyedToHand";
 
@@ -92,6 +96,22 @@ function continuousOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-gora-turtle-targeted-spell-negate.test.ts",
+      kind: "chainSolvingDoubleSnareNegateDestroy",
+      required: [
+        "restores Double Snare validity and chain-solving targeted Spell negation with handler destruction",
+        "aux.DoubleSnareValidity(c,LOCATION_MZONE)",
+        "EVENT_CHAIN_SOLVING",
+        "Duel.GetChainInfo(ev,CHAININFO_TARGET_CARDS)",
+        "Duel.NegateEffect(ev)",
+        "Duel.Destroy(re:GetHandler(),REASON_EFFECT)",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        'eventName: "destroyed"',
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-abyss-scale-mizuchi-chain-solving-negate.test.ts",
       kind: "chainSolvingEquipNegateSend",
@@ -217,6 +237,7 @@ function countContinuousOperationKinds(
     },
     {
       attributeStatDestroyedToHand: 0,
+      chainSolvingDoubleSnareNegateDestroy: 0,
       chainSolvingEquipNegateSend: 0,
       chainSolvingCustomSearch: 0,
       continuousRedirect: 0,
@@ -233,6 +254,18 @@ function continuousOperationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-gora-turtle-targeted-spell-negate.test.ts",
+      kind: "goraTurtleTargetedSpellNegateDestroy",
+      required: [
+        'const goraCode = "42868711"',
+        'const eventChainSolving = 1020',
+        "code: 3682106",
+        "relatedEffectId: 6",
+        "reason: duelReason.effect | duelReason.destroy",
+        "gora targeting spell resolved",
+      ],
+    },
     {
       file: "test/lua-real-script-abyss-scale-mizuchi-chain-solving-negate.test.ts",
       kind: "abyssScaleMizuchiSpellNegateSend",
@@ -351,6 +384,7 @@ function countContinuousOperationSemanticVariants(
       darkMagicianOriginalCodeSummonLock: 0,
       dimensionalFissureToGraveRedirect: 0,
       fenghuangSetBackrowDestroy: 0,
+      goraTurtleTargetedSpellNegateDestroy: 0,
       magicalMusketeerCasparHandTrapSearch: 0,
       missusRadiantAttributeStatDestroyedToHand: 0,
     },

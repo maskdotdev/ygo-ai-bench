@@ -1,5 +1,5 @@
 import { findCard } from "#duel/card-state.js";
-import { continuousEffectSourceIsActive } from "#duel/continuous-effects.js";
+import { continuousEffectAppliesToCard, continuousEffectSourceIsActive } from "#duel/continuous-effects.js";
 import { canUseEffectCount, markEffectUsed } from "#duel/effect-counts.js";
 import { createEffectContext } from "#duel/effect-context.js";
 import { duelReason } from "#duel/reasons.js";
@@ -20,29 +20,35 @@ export function applyContinuousSelfDestroyEffects(state: DuelState, destroyCard:
   let guard = 0;
   while (guard++ < 20) {
     const match = state.effects
-      .map((effect) => ({ effect, source: findCard(state, effect.sourceUid) }))
-      .find(({ effect, source }) => {
-        if (effect.event !== "continuous" || effect.code !== 141 || !source || skipped.has(source.uid)) return false;
+      .flatMap((effect) => {
+        const source = findCard(state, effect.sourceUid);
+        if (!source) return [];
+        return state.cards.map((card) => ({ effect, source, card }));
+      })
+      .find(({ effect, source, card }) => {
+        if (effect.event !== "continuous" || effect.code !== 141) return false;
         if (!effect.range.includes(source.location) || !continuousEffectSourceIsActive(effect, source)) return false;
         if (!canUseEffectCount(state, effect)) return false;
-        const ctx = createEffectContext(state, source, effect.controller, "adjust");
+        if (skipped.has(card.uid)) return false;
+        const ctx = createEffectContext(state, source, effect.controller, "adjust", card);
+        if (!continuousEffectAppliesToCard(effect, source, card, ctx)) return false;
         return !effect.canActivate || effect.canActivate(ctx);
       });
-    if (!match?.source) return;
-    const beforeLocation = match.source.location;
-    const beforeController = match.source.controller;
+    if (!match) return;
+    const beforeLocation = match.card.location;
+    const beforeController = match.card.controller;
     const effectId = luaEffectNumericId(match.effect);
     const destroyed = destroyCard(
       state,
-      match.source.uid,
-      match.source.controller,
+      match.card.uid,
+      match.card.controller,
       duelReason.effect | duelReason.destroy,
       match.effect.controller,
       "graveyard",
       { eventReasonCardUid: match.source.uid, ...(effectId === undefined ? {} : { eventReasonEffectId: effectId }) },
     );
     markEffectUsed(state, match.effect);
-    if (destroyed.location === beforeLocation && destroyed.controller === beforeController) skipped.add(match.source.uid);
+    if (destroyed.location === beforeLocation && destroyed.controller === beforeController) skipped.add(match.card.uid);
   }
 }
 
