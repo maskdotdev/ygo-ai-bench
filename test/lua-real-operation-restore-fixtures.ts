@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 135;
+export const operationFixtureCount = 136;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -35,6 +35,7 @@ export const operationKindCounts = {
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
   detachStatBurn: 1,
+  destroyedSummonStatBurn: 1,
   directRecover: 1,
   drawThenDiscard: 1,
   flipDeckSpecialSummon: 1,
@@ -118,6 +119,7 @@ export type OperationKind =
   | "discardCostGraveToDeckTop"
   | "directDamage"
   | "detachStatBurn"
+  | "destroyedSummonStatBurn"
   | "directRecover"
   | "drawThenDiscard"
   | "flipDeckSpecialSummon"
@@ -170,6 +172,24 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-deep-eyes-destroyed-summon-stat-burn.test.ts",
+      kind: "destroyedSummonStatBurn",
+      required: [
+        "restores destroyed Blue-Eyes trigger into hand Special Summon, grave class-count damage, and final ATK copy",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_DAMAGE)",
+        "e1:SetCode(EVENT_DESTROYED)",
+        "c:IsPreviousSetCard(SET_BLUE_EYES)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,e:GetHandler(),1,0,0)",
+        "local dam=g:GetClassCount(Card.GetCode)*600",
+        "Duel.Damage(1-tp,dam,REASON_EFFECT)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,Card.IsRace,tp,LOCATION_GRAVE,0,1,1,nil,RACE_DRAGON)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "eventName: \"damageDealt\"",
+        "currentAttack(restoredDeepEyes, restoredSummonTrigger.session.state)).toBe(3000)",
+      ],
+    },
     {
       file: "test/lua-real-script-link-party-class-count-summon.test.ts",
       kind: "linkClassCountDeckSummon",
@@ -1588,6 +1608,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
       detachStatBurn: 0,
+      destroyedSummonStatBurn: 0,
       directRecover: 0,
       drawThenDiscard: 0,
       flipDeckSpecialSummon: 0,
