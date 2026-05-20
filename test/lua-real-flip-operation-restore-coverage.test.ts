@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const flipOperationFixtureCount = 3;
+const flipOperationFixtureCount = 4;
 const flipOperationKindCounts = {
   flipGroupDestroy: 1,
   flipSpellTrapDestroy: 1,
-  flipTargetToHand: 1,
+  flipTargetToHand: 2,
 } satisfies Record<FlipOperationKind, number>;
 const flipOperationSemanticVariantCounts = {
   fourStarredLadybugOpponentLevel4GroupDestroy: 1,
@@ -111,6 +111,21 @@ function flipOperationFixtureFiles(): Array<{ file: string; kind: FlipOperationK
         'eventName: "sentToHand"',
         "operationInfos: [{ category: 0x8",
         "targetUids: [target.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-penguin-soldier-flip-to-hand.test.ts",
+      kind: "flipTargetToHand",
+      required: [
+        "restores delayed Flip multi-target bounce through CHAININFO_TARGET_CARDS",
+        'const penguinCode = "93920745"',
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DELAY",
+        "Duel.SelectTarget(tp,Card.IsAbleToHand,tp,LOCATION_MZONE,LOCATION_MZONE,1,2,nil)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "tg:Filter(Card.IsRelateToEffect,nil,e)",
+        "operationInfos: [{ category: 0x8",
+        'eventName: "sentToHand"',
+        "eventUids: [penguin.uid, ownTarget.uid]",
       ],
     },
   ];
