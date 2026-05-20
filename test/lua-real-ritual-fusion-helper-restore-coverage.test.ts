@@ -46,6 +46,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
   blueEyesUltimateAddProcCodeRep: 1,
   blackSkullDragonAddProcMix: 1,
   cyberEndDragonAddProcMixN: 1,
+  contractDarkMasterGreaterCode: 1,
   doubleSubstituteSuppression: 1,
   dynaForcedHandler: 1,
   dynaForcedHandlerSuppression: 1,
@@ -119,8 +120,8 @@ describe("Lua real Ritual and Fusion helper restore coverage", () => {
   });
 
   it("requires event-rich Ritual/Fusion helper fixtures to pin restored summon and material event identity", () => {
-    const files = ["test/lua-real-script-machine-angel-absolute-grave-ritual.test.ts", "test/lua-real-script-chaos-form-grave-ritual.test.ts", "test/lua-real-script-branded-fusion-deck-material.test.ts", "test/lua-real-script-fallen-of-albaz-opponent-fusion.test.ts", "test/lua-real-script-miracle-fusion-extra-material.test.ts", "test/lua-real-script-primite-fusion-extra-check.test.ts", "test/lua-real-script-gladiator-beast-andabata-contact-fusion.test.ts", "test/lua-real-script-dark-fusion-stage2-protection.test.ts"].sort();
-    expect(files).toHaveLength(8);
+    const files = ["test/lua-real-script-machine-angel-absolute-grave-ritual.test.ts", "test/lua-real-script-chaos-form-grave-ritual.test.ts", "test/lua-real-script-contract-dark-master-ritual-spell.test.ts", "test/lua-real-script-branded-fusion-deck-material.test.ts", "test/lua-real-script-fallen-of-albaz-opponent-fusion.test.ts", "test/lua-real-script-miracle-fusion-extra-material.test.ts", "test/lua-real-script-primite-fusion-extra-check.test.ts", "test/lua-real-script-gladiator-beast-andabata-contact-fusion.test.ts", "test/lua-real-script-dark-fusion-stage2-protection.test.ts"].sort();
+    expect(files).toHaveLength(9);
     const weak = files.filter((file) => {
       const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
       return !text.includes("eventCode") || !text.includes("eventCardUid") || !text.includes("eventReasonCardUid") || !text.includes("eventReasonEffectId") || !/eventCode:\s*1102|"eventCode":\s*1102/.test(text) || !/eventCode:\s*1011|eventCode:\s*1013|eventCode:\s*1014|"eventCode":\s*1011|"eventCode":\s*1013|"eventCode":\s*1014/.test(text);
@@ -169,6 +170,7 @@ type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummon
 type RitualFusionHelperSemanticVariant =
   | "blueEyesUltimateAddProcCodeRep"
   | "blackSkullDragonAddProcMix"
+  | "contractDarkMasterGreaterCode"
   | "cyberEndDragonAddProcMixN"
   | "doubleSubstituteSuppression"
   | "dynaForcedHandler"
@@ -248,6 +250,17 @@ function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: Ritua
         "const cyberEndCode = \"1546123\"",
         "expect(cyberEnd!.data.fusionMaterials).toEqual([cyberDragonCode, cyberDragonCode, cyberDragonCode])",
         "summonMaterialUids: cyberDragons.map((card) => card.uid)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-contract-dark-master-ritual-spell.test.ts",
+      kind: "contractDarkMasterGreaterCode",
+      required: [
+        "restores AddProcGreaterCode into a selected-material Ritual Summon",
+        "const contractCode = \"96420087\"",
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }])",
+        "summonMaterialUids: [materialA!.uid, materialB!.uid]",
+        "eventReasonCardUid: contract!.uid",
       ],
     },
     {
