@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackRestrictionFixtureCount = 10;
+const attackRestrictionFixtureCount = 11;
 const attackRestrictionKindCounts = {
   counterGate: 1,
+  faceupSetGate: 1,
   levelGate: 1,
   maleficOtherMonsterLock: 2,
   maintenanceCostGate: 1,
@@ -17,6 +18,7 @@ const attackRestrictionKindCounts = {
 } satisfies Record<AttackRestrictionKind, number>;
 const attackRestrictionSemanticVariantCounts = {
   alienPsychicCounterAttackAnnounceGate: 1,
+  cryomancerIceBarrierFaceupSetAttackLock: 1,
   gravityBindPersistentLevelAttackGate: 1,
   heliosphereTargetCountAttackAnnounceGate: 1,
   maleficCyberEndOtherMonsterLockSelfDestroy: 1,
@@ -30,6 +32,7 @@ const attackRestrictionSemanticVariantCounts = {
 
 type AttackRestrictionKind =
   | "counterGate"
+  | "faceupSetGate"
   | "levelGate"
   | "maleficOtherMonsterLock"
   | "maintenanceCostGate"
@@ -39,6 +42,7 @@ type AttackRestrictionKind =
   | "temporaryPlayerLock";
 type AttackRestrictionSemanticVariant =
   | "alienPsychicCounterAttackAnnounceGate"
+  | "cryomancerIceBarrierFaceupSetAttackLock"
   | "gravityBindPersistentLevelAttackGate"
   | "heliosphereTargetCountAttackAnnounceGate"
   | "maleficCyberEndOtherMonsterLockSelfDestroy"
@@ -99,6 +103,16 @@ function realScriptAttackRestrictionFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-cryomancer-ice-barrier-attack-lock.test.ts",
+      kind: "faceupSetGate",
+      required: [
+        "restores aux.FaceupFilter setcode condition for its Level attack-announcement lock",
+        "EFFECT_CANNOT_ATTACK_ANNOUNCE",
+        "aux.FaceupFilter(Card.IsSetCard,SET_ICE_BARRIER)",
+        "cryomancer face-up ally CanAttack false/true",
+      ],
+    },
     {
       file: "test/lua-real-script-malefic-red-eyes-deck-attack-self-destroy.test.ts",
       kind: "maleficOtherMonsterLock",
@@ -214,6 +228,7 @@ function countAttackRestrictionKinds(
     },
     {
       counterGate: 0,
+      faceupSetGate: 0,
       levelGate: 0,
       maleficOtherMonsterLock: 0,
       maintenanceCostGate: 0,
@@ -231,6 +246,17 @@ function realScriptAttackRestrictionSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-cryomancer-ice-barrier-attack-lock.test.ts",
+      kind: "cryomancerIceBarrierFaceupSetAttackLock",
+      required: [
+        'const cryomancerCode = "23950192"',
+        "restores aux.FaceupFilter setcode condition for its Level attack-announcement lock",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_ICE_BARRIER)",
+        "cryomancer face-down ally CanAttack true/true",
+        "cryomancer face-up ally CanAttack false/true",
+      ],
+    },
     {
       file: "test/lua-real-script-alien-psychic-counter-attack-lock.test.ts",
       kind: "alienPsychicCounterAttackAnnounceGate",
@@ -356,6 +382,7 @@ function countAttackRestrictionSemanticVariants(
     },
     {
       alienPsychicCounterAttackAnnounceGate: 0,
+      cryomancerIceBarrierFaceupSetAttackLock: 0,
       gravityBindPersistentLevelAttackGate: 0,
       heliosphereTargetCountAttackAnnounceGate: 0,
       maleficCyberEndOtherMonsterLockSelfDestroy: 0,
