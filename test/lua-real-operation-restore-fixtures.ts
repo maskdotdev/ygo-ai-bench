@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 201;
+export const operationFixtureCount = 202;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -65,6 +65,7 @@ export const operationKindCounts = {
   flipDeckSpecialSummon: 1,
   flipTargetDestroy: 1,
   fusionDeckMaterials: 1,
+  graveReviveEquipPositionStat: 1,
   flipDiscardBattleStat: 1,
   groupDestroy: 11,
   groupDestroyDamageStatLp: 1,
@@ -207,6 +208,7 @@ export type OperationKind =
   | "flipDeckSpecialSummon"
   | "flipTargetDestroy"
   | "fusionDeckMaterials"
+  | "graveReviveEquipPositionStat"
   | "flipDiscardBattleStat"
   | "groupDestroy"
   | "groupDestroyDamageStatLp"
@@ -772,6 +774,30 @@ export function operationFixtureFiles(): Array<{
         "currentDefense(restoredDarkblaze, restoredStatTrigger.session.state)).toBe(2000)",
         'eventName: "damageDealt"',
         "players[1]!.lifePoints).toBe(5600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-karakuri-gama-oil-equip-position-stat.test.ts",
+      kind: "graveReviveEquipPositionStat",
+      required: [
+        "restores Karakuri Gama Oil's Graveyard revival equip limit and position-change ATK/DEF boost",
+        "e1:SetCategory(CATEGORY_EQUIP+CATEGORY_SPECIAL_SUMMON)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_EQUIP,e:GetHandler(),1,0,0)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.Equip(tp,c,tc)",
+        "e1:SetCode(EFFECT_EQUIP_LIMIT)",
+        "e2:SetCode(EVENT_CHANGE_POS)",
+        "eg:IsExists(s.cfilter,1,nil,tp)",
+        "ec:UpdateAttack(500,nil,c)",
+        "ec:UpdateDefense(500,nil,c)",
+        'eventName: "specialSummoned"',
+        'eventName: "positionChanged"',
+        "currentAttack",
+        "currentDefense",
+        "operationInfos",
+        "host.messages).not.toContain",
       ],
     },
     {
@@ -3038,6 +3064,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
       fusionDeckMaterials: 0,
+      graveReviveEquipPositionStat: 0,
       groupDestroy: 0,
       groupDestroyDamageStatLp: 0,
       groupToGraveFinalAttack: 0,
