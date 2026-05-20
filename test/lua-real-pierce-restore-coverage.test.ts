@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const PIERCING_FIXTURE_COUNT = 4;
+const PIERCING_FIXTURE_COUNT = 5;
 const piercingKindCounts = {
   equipPierce: 1,
   fieldPierce: 1,
-  raceTargetedFieldPierce: 1,
+  raceTargetedFieldPierce: 2,
   singleMonsterPierce: 1,
 } satisfies Record<PiercingKind, number>;
 const piercingSemanticVariantCounts = {
@@ -16,6 +16,7 @@ const piercingSemanticVariantCounts = {
   enragedBattleOxRaceTargetedPierce: 1,
   fairyMeteorCrushEquipPierce: 1,
   lancerDragonuteSingleMonsterPierce: 1,
+  lionAlligatorFaceupReptilePierce: 1,
 } satisfies Record<PiercingSemanticVariant, number>;
 
 type PiercingKind = "equipPierce" | "fieldPierce" | "raceTargetedFieldPierce" | "singleMonsterPierce";
@@ -24,7 +25,8 @@ type PiercingSemanticVariant =
   | "ancientGearGolemFieldPierce"
   | "enragedBattleOxRaceTargetedPierce"
   | "fairyMeteorCrushEquipPierce"
-  | "lancerDragonuteSingleMonsterPierce";
+  | "lancerDragonuteSingleMonsterPierce"
+  | "lionAlligatorFaceupReptilePierce";
 
 describe("Lua real piercing damage restore coverage", () => {
   it("requires piercing damage fixtures to assert clean Lua registry restore and restored damage semantics", () => {
@@ -125,6 +127,18 @@ function piercingFixtureFiles(): Array<{
         "eventReason: duelReason.battle",
       ],
     },
+    {
+      file: "test/lua-real-script-lion-alligator-faceup-reptile-pierce.test.ts",
+      kind: "raceTargetedFieldPierce",
+      required: [
+        "restores condition-gated Reptile piercing for matching Reptile attackers",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsRace,RACE_REPTILE)",
+        "return c:IsRace(RACE_REPTILE)",
+        "battleDamage[1]).toBe(600)",
+        "players[1].lifePoints).toBe(7400)",
+        "battleDamage[1]).toBe(0)",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: PiercingKind;
@@ -201,6 +215,17 @@ function piercingSemanticVariants(): Array<{
         "eventReason: duelReason.battle",
       ],
     },
+    {
+      file: "test/lua-real-script-lion-alligator-faceup-reptile-pierce.test.ts",
+      kind: "lionAlligatorFaceupReptilePierce",
+      required: [
+        'const lionAlligatorCode = "4611269"',
+        "restores condition-gated Reptile piercing for matching Reptile attackers",
+        "aux.FaceupFilter(Card.IsRace,RACE_REPTILE)",
+        "battleDamage[1]).toBe(600)",
+        "battleDamage[1]).toBe(0)",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: PiercingSemanticVariant;
@@ -219,6 +244,7 @@ function countPiercingSemanticVariants(fixtures: Array<{ kind: PiercingSemanticV
       enragedBattleOxRaceTargetedPierce: 0,
       fairyMeteorCrushEquipPierce: 0,
       lancerDragonuteSingleMonsterPierce: 0,
+      lionAlligatorFaceupReptilePierce: 0,
     },
   );
 }
