@@ -354,6 +354,22 @@ export function isKnownTemporaryMonsterExtraAttackEffect(effect: SerializedDuelE
   );
 }
 
+export function isKnownTemporaryMonsterAttackAllEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 193 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaResetsStandardPhaseEnd &&
+    effect.value === 1 &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    effect.targetRange === undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
 function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEffect): boolean {
   return (
     effect.event === "continuous" &&

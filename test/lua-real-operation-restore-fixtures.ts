@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 125;
+export const operationFixtureCount = 126;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -50,6 +50,7 @@ export const operationKindCounts = {
   overlayAttach: 1,
   positionSet: 1,
   pzoneDestroySearch: 1,
+  raidraptorBattleDestroyDamage: 1,
   releaseDamage: 3,
   ritualDeckMaterials: 1,
   searchOrExcavate: 36,
@@ -123,6 +124,7 @@ export type OperationKind =
   | "overlayAttach"
   | "positionSet"
   | "pzoneDestroySearch"
+  | "raidraptorBattleDestroyDamage"
   | "releaseDamage"
   | "ritualDeckMaterials"
   | "searchOrExcavate"
@@ -1310,6 +1312,24 @@ export function operationFixtureFiles(): Array<{
     },
     { file: "test/lua-real-script-xy-dragon-cannon-discard-spelltrap-destroy.test.ts", kind: "targetDestroyDiscardCost", required: ["Fusion.AddContactProc(c,s.contactfil,s.contactop,s.splimit)", "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)", "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_ONFIELD,1,1,nil)", "category: 0x1", "targetUids: [opponentFaceupSpell.uid]", 'eventName: "discarded"', 'eventName: "destroyed"', 'location: "graveyard"', "host.messages).not.toContain"] },
     {
+      file: "test/lua-real-script-raidraptor-revolution-falcon-battle-destroy.test.ts",
+      kind: "raidraptorBattleDestroyDamage",
+      required: [
+        "restores detach attack-all, battle-start final ATK/DEF, and target destroy half-ATK damage",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,g:GetFirst():GetAttack()/2)",
+        "e1:SetCode(EFFECT_ATTACK_ALL)",
+        "e2:SetCode(EVENT_BATTLE_START)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "Duel.Damage(1-tp,dam,REASON_EFFECT)",
+        "effectId === \"lua-4\"",
+        "eventName === \"damageDealt\"",
+        "operationInfos",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -1382,6 +1402,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       overlayAttach: 0,
       positionSet: 0,
       pzoneDestroySearch: 0,
+      raidraptorBattleDestroyDamage: 0,
       releaseDamage: 0,
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
