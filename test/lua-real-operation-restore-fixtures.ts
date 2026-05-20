@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 138;
+export const operationFixtureCount = 139;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -43,6 +43,7 @@ export const operationKindCounts = {
   flipTargetDestroy: 1,
   fusionDeckMaterials: 1,
   groupDestroy: 10,
+  groupDestroyDamageStatLp: 1,
   groupToHand: 2,
   graveTargetToHand: 2,
   graveToDeckBottomDraw: 1,
@@ -129,6 +130,7 @@ export type OperationKind =
   | "flipTargetDestroy"
   | "fusionDeckMaterials"
   | "groupDestroy"
+  | "groupDestroyDamageStatLp"
   | "groupToHand"
   | "graveTargetToHand"
   | "graveToDeckBottomDraw"
@@ -176,6 +178,24 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-gandora-x-summon-destroy-stat-lp.test.ts",
+      kind: "groupDestroyDamageStatLp",
+      required: [
+        "restores hand-summoned group destruction into max text-ATK damage, final ATK, and End Phase LP halving",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_DAMAGE+CATEGORY_ATKCHANGE)",
+        "return e:GetHandler():IsSummonLocation(LOCATION_HAND)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,tp,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,atk)",
+        "local _,atk=og:GetMaxGroup(Card.GetTextAttack)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "Duel.SetLP(tp,math.ceil(Duel.GetLP(tp)/2))",
+        "operationInfos: [",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === gandora.uid), restoredChain.session.state)).toBe(2600)",
+        "players[0].lifePoints).toBe(4000)",
+        'eventName: "damageDealt"',
+      ],
+    },
     {
       file: "test/lua-real-script-doomdurg-xmaterial-direct-destroy.test.ts",
       kind: "xmaterialQuickDestroyDirect",
@@ -1654,6 +1674,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       flipTargetDestroy: 0,
       fusionDeckMaterials: 0,
       groupDestroy: 0,
+      groupDestroyDamageStatLp: 0,
       groupLevelFinal: 0,
       groupToHand: 0,
       graveTargetToHand: 0,
