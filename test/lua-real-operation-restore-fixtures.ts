@@ -1,11 +1,12 @@
 import path from "node:path";
 
-export const operationFixtureCount = 126;
+export const operationFixtureCount = 127;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
   announceHandBanish: 1,
   announceHandDiscard: 1,
+  announceTargetBanishProtection: 1,
   callCoinAtkChange: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -80,6 +81,7 @@ export type OperationKind =
   | "announceDeckBanishDisable"
   | "announceHandBanish"
   | "announceHandDiscard"
+  | "announceTargetBanishProtection"
   | "callCoinAtkChange"
   | "costBanishDraw" | "costDiscardDraw"
   | "crossPlayerGraveToDeckTrap"
@@ -164,6 +166,29 @@ export function operationFixtureFiles(): Array<{
         'api: "AnnounceCard"',
         "code: 114",
         "currentCardMatchesCode(",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-goddess-urd-verdict-announce-target-banish.test.ts",
+      kind: "announceTargetBanishProtection",
+      required: [
+        "restores announce-card target param, facedown confirmation, matching target banish, and Valkyrie protection",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "e1:SetValue(aux.indoval)",
+        "e2:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e2:SetValue(aux.tgoval)",
+        "Duel.AnnounceCard(tp)",
+        "Duel.SelectTarget(tp,aux.AND(Card.IsFacedown,Card.IsAbleToRemove),tp,0,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetTargetParam(ac)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_REMOVE,g+Duel.GetFieldGroup(tp,LOCATION_ONFIELD,0),1,tp,0)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PARAM)",
+        "Duel.ConfirmCards(tp,tc)",
+        "Duel.Remove(tc,POS_FACEUP,REASON_EFFECT)",
+        'api: "AnnounceCard"',
+        'eventName: "confirmed"',
+        'eventName: "banished"',
+        "operationInfos",
         "host.messages).not.toContain",
       ],
     },
@@ -1358,6 +1383,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceDeckBanishDisable: 0,
       announceHandBanish: 0,
       announceHandDiscard: 0,
+      announceTargetBanishProtection: 0,
       callCoinAtkChange: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
