@@ -74,6 +74,29 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ka
       reasonPlayer: 0,
     });
     expect(restored.session.state.cards.find((card) => card.uid === darkTributeTarget!.uid)).toMatchObject({ location: "hand" });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "released" && event.eventCardUid === kaiser!.uid)).toEqual([
+      {
+        eventName: "released",
+        eventCode: 1017,
+        eventCardUid: kaiser!.uid,
+        eventReason: duelReason.release | duelReason.summon,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "normalSummoned")).toEqual([
       {
         eventName: "normalSummoned",
