@@ -1,13 +1,15 @@
-export const summonSuccessTargetSpecialSummonFixtureCount = 2;
+export const summonSuccessTargetSpecialSummonFixtureCount = 3;
 
 export const summonSuccessTargetSpecialSummonKindCounts = {
   graveyardTargetDefenseRevive: 1,
   deckOrGraveNecroValleySummon: 1,
+  specialSummonSuccessTrapTargetRevive: 1,
 } satisfies Record<SummonSuccessTargetSpecialSummonKind, number>;
 
 export type SummonSuccessTargetSpecialSummonKind =
   | "deckOrGraveNecroValleySummon"
-  | "graveyardTargetDefenseRevive";
+  | "graveyardTargetDefenseRevive"
+  | "specialSummonSuccessTrapTargetRevive";
 
 export function realScriptSummonSuccessTargetSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -15,6 +17,24 @@ export function realScriptSummonSuccessTargetSpecialSummonFixtureSnippets(): Arr
   required: string[];
 }> {
   return [{
+    file: "test/lua-real-script-call-reaper-special-summon-success-target-revive.test.ts",
+    kind: "specialSummonSuccessTrapTargetRevive",
+    required: [
+      "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+      "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+      "Duel.IsExistingTarget(s.filter,tp,LOCATION_GRAVE,0,1,nil,e,tp)",
+      "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+      "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+      "Duel.GetFirstTarget()",
+      "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+      'eventName: "specialSummoned"',
+      'activationLocation: "spellTrapZone"',
+      "targetUids: [listedTarget.uid]",
+      "operationInfos: [{ category: 0x200",
+      'summonType: "special"',
+      "reasonCardUid: callReaper.uid",
+    ],
+  }, {
     file: "test/lua-real-script-gishki-beast-summon-target-revive.test.ts",
     kind: "graveyardTargetDefenseRevive",
     required: [
@@ -62,5 +82,5 @@ export function countSummonSuccessTargetSpecialSummonKinds(
   return files.reduce<Record<SummonSuccessTargetSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { deckOrGraveNecroValleySummon: 0, graveyardTargetDefenseRevive: 0 });
+  }, { deckOrGraveNecroValleySummon: 0, graveyardTargetDefenseRevive: 0, specialSummonSuccessTrapTargetRevive: 0 });
 }
