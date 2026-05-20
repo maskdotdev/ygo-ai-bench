@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 96;
+export const operationFixtureCount = 97;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -41,7 +41,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 2,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 27,
+  searchOrExcavate: 28,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -745,6 +745,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-megalith-ophiel-ritual-summon-search.test.ts", kind: "searchOrExcavate", required: ["e:GetHandler():IsRitualSummoned()", "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)", "return c:IsSetCard(SET_MEGALITH) and c:IsMonster() and not c:IsCode(id) and c:IsAbleToHand()", "summonType: \"ritual\"", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-impcantation-candoll-hand-deck-summon-search.test.ts", kind: "searchOrExcavate", required: ["Duel.ShuffleHand(tp)", "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,2,tp,LOCATION_HAND|LOCATION_DECK)", "return c:IsRitualMonster() and c:IsAbleToHand()", "special-summon-limit:extra", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-impcantation-bookstone-deck-summon-ritual-spell.test.ts", kind: "searchOrExcavate", required: ["restores Deck-summoned Bookstone trigger targeting a Ritual Spell in Graveyard", "return e:GetHandler():IsPreviousLocation(LOCATION_DECK)", "return c:IsRitualSpell() and c:IsAbleToHand()", "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)", "Duel.SendtoHand(tc,nil,REASON_EFFECT)", "special-summon-limit:extra", 'eventName: "sentToHand"', "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-millennium-shield-place-summon-search.test.ts", kind: "searchOrExcavate", required: ["restores hand placement as Continuous Spell, LP-cost summon, optional Cross search", "Duel.MoveToField(c,tp,tp,LOCATION_SZONE,POS_FACEUP,true)", "e1:SetCode(EFFECT_CHANGE_TYPE)", "e1:SetValue(TYPE_SPELL|TYPE_CONTINUOUS)", "Duel.PayLPCost(tp,2000)", "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)", "Duel.SelectYesNo(tp,aux.Stringid(id,4))", "Duel.BreakEffect()", "Duel.SendtoHand(g,tp,REASON_EFFECT)", 'eventName: "lifePointCostPaid"', 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-yellow-gadget-summon-special-search.test.ts", kind: "searchOrExcavate", required: ["local e2=e1:Clone()", "e2:SetCode(EVENT_SPSUMMON_SUCCESS)", "Duel.GetFirstMatchingCard(s.filter,tp,LOCATION_DECK,0,nil)", "operationInfos: [{ category: 8", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     {
       file: "test/lua-real-script-pot-of-duality-excavate.test.ts",
