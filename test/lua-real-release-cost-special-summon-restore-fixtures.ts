@@ -1,9 +1,10 @@
-export const releaseCostSpecialSummonFixtureCount = 12;
+export const releaseCostSpecialSummonFixtureCount = 13;
 
 export const releaseCostSpecialSummonKindCounts = {
   releaseActivationGroupCostHandSummon: 1,
   releaseGroupCostCodeCompositionHandDeckGraveSummon: 1,
   releaseGroupCostCompleteProcedureGraveSummon: 1,
+  releaseCounterGatedHandProcedure: 1,
   releaseGroupCostHandDeckSummon: 1,
   releaseGroupCostHandProcedure: 1,
   releaseGroupCostTargetedGraveSummon: 2,
@@ -12,7 +13,7 @@ export const releaseCostSpecialSummonKindCounts = {
   selfReleaseCostDeckSummon: 3,
 } satisfies Record<ReleaseCostSpecialSummonKind, number>;
 
-export type ReleaseCostSpecialSummonKind = "releaseActivationGroupCostHandSummon" | "releaseGroupCostCodeCompositionHandDeckGraveSummon" | "releaseGroupCostCompleteProcedureGraveSummon" | "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostTargetedGraveSummon" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
+export type ReleaseCostSpecialSummonKind = "releaseActivationGroupCostHandSummon" | "releaseGroupCostCodeCompositionHandDeckGraveSummon" | "releaseGroupCostCompleteProcedureGraveSummon" | "releaseCounterGatedHandProcedure" | "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostTargetedGraveSummon" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
 
 export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -20,6 +21,22 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   required: string[];
 }> {
   return [{
+    file: "test/lua-real-script-zushin-counter-release-battle-stat.test.ts",
+    kind: "releaseCounterGatedHandProcedure",
+    required: [
+      'const zushinCode = "67547370"',
+      "Duel.CheckReleaseGroup(c:GetControler(),s.spfilter,1,false,1,true,c,c:GetControler(),nil,false,nil)",
+      "Duel.SelectReleaseGroup(tp,s.spfilter,1,1,false,true,true,c,nil,nil,false,nil)",
+      "Duel.Release(g,REASON_COST)",
+      "tc:AddCounter(0x1039,1)",
+      'type === "specialSummonProcedure"',
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+      "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+      "currentDefense(restoredDamage.session.state.cards.find",
+    ],
+  }, {
     file: "test/lua-real-script-knights-title-release-complete-summon.test.ts",
     kind: "releaseGroupCostCompleteProcedureGraveSummon",
     required: [
@@ -241,5 +258,5 @@ export function countReleaseCostSpecialSummonKinds(
   return files.reduce<Record<ReleaseCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { releaseActivationGroupCostHandSummon: 0, releaseGroupCostCodeCompositionHandDeckGraveSummon: 0, releaseGroupCostCompleteProcedureGraveSummon: 0, releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostTargetedGraveSummon: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
+  }, { releaseActivationGroupCostHandSummon: 0, releaseGroupCostCodeCompositionHandDeckGraveSummon: 0, releaseGroupCostCompleteProcedureGraveSummon: 0, releaseCounterGatedHandProcedure: 0, releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostTargetedGraveSummon: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
 }
