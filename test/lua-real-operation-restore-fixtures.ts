@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 183;
+export const operationFixtureCount = 184;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -37,6 +37,7 @@ export const operationKindCounts = {
   chainNegateDiscardDestroy: 1,
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
+  chainNegateCostBanishDestroy: 1,
   chainLinkedZoneDisable: 1,
   chainDetachControlLock: 1,
   chainSolvedAnnounceNegate: 1,
@@ -165,6 +166,7 @@ export type OperationKind =
   | "chainNegateDiscardDestroy"
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
+  | "chainNegateCostBanishDestroy"
   | "chainLinkedZoneDisable"
   | "chainDetachControlLock"
   | "chainSolvedAnnounceNegate"
@@ -1312,6 +1314,30 @@ export function operationFixtureFiles(): Array<{
         "cardsDrawn",
         "recoveredLifePoints",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-vendread-chimera-chain-negate-cost.test.ts",
+      kind: "chainNegateCostBanishDestroy",
+      required: [
+        "restores destroy-operation chain negation with Zombie GY banish cost",
+        "e1:SetCategory(CATEGORY_NEGATE+CATEGORY_DESTROY)",
+        "e1:SetCode(EVENT_CHAINING)",
+        "Duel.IsChainNegatable(ev)",
+        "Duel.GetOperationInfo(ev,CATEGORY_DESTROY)",
+        "return ex and tg~=nil and tc+tg:FilterCount(Card.IsOnField,nil)-#tg>0",
+        "return c:IsRace(RACE_ZOMBIE) and c:IsAbleToRemoveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SetOperationInfo(0,CATEGORY_NEGATE,eg,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,eg,1,0,0)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        'eventName: "banished"',
+        'eventName: "destroyed"',
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        "operationInfos",
       ],
     },
     {
@@ -2622,6 +2648,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainNegateDiscardDestroy: 0,
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
+      chainNegateCostBanishDestroy: 0,
       chainLinkedZoneDisable: 0,
       chainDetachControlLock: 0,
       chainSolvedAnnounceNegate: 0,
