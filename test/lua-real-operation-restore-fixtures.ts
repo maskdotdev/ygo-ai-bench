@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 166;
+export const operationFixtureCount = 167;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -108,6 +108,7 @@ export const operationKindCounts = {
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
   targetToHandDiscardCost: 1,
+  temporaryFinalAttackDamageStepBurn: 1,
   trapDrawSkipDraw: 1,
   tossCoin: 1,
   tossCoinCustomEvent: 1,
@@ -220,6 +221,7 @@ export type OperationKind =
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
   | "targetToHandDiscardCost"
+  | "temporaryFinalAttackDamageStepBurn"
   | "trapDrawSkipDraw"
   | "tossCoin" | "tossCoinCustomEvent" | "tossDiceHandDiscard";
 export function operationFixtureFiles(): Array<{
@@ -1929,6 +1931,29 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-tai-strike-pre-damage-step-end-burn.test.ts",
+      kind: "temporaryFinalAttackDamageStepBurn",
+      required: [
+        "restores pre-damage final ATK matching and Damage Step end battle-destroyed burn",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(bc:GetAttack())",
+        "e2:SetCode(EVENT_DAMAGE_STEP_END)",
+        "Duel.RegisterEffect(e2,tp)",
+        "if c:GetReason()&0x21==0x21 then",
+        "Duel.Damage(c:GetPreviousControler(),c:GetBaseAttack(),REASON_EFFECT)",
+        "s.damage(Duel.GetAttacker())",
+        "s.damage(Duel.GetAttackTarget())",
+        "operationInfos",
+        "currentAttack(restoredPreDamage.session.state.cards.find",
+        'eventName: "battleDestroyed"',
+        'eventName: "damageDealt"',
+        "lifePoints).toBe(7000)",
+        "lifePoints).toBe(5500)",
+      ],
+    },
+    {
       file: "test/lua-real-script-ryzeal-cross-grave-to-deck-bottom-draw.test.ts",
       kind: "graveToDeckBottomDraw",
       required: [
@@ -2334,6 +2359,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
       targetToHandDiscardCost: 0,
+      temporaryFinalAttackDamageStepBurn: 0,
       trapDrawSkipDraw: 0,
       tossCoin: 0,
       tossCoinCustomEvent: 0,

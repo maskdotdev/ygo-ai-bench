@@ -600,6 +600,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownSelfEndPhaseSendEffect(effect) ||
     isKnownEbonArrowBattleDestroyingDamageEffect(effect) ||
     isKnownMiniGutsBattleDestroyedDamageEffect(effect) ||
+    isKnownTaiStrikeDamageStepEndEffect(effect) ||
     (effect.event === "continuous" &&
       (effect.code === 2 ||
         effect.code === 8 ||
@@ -732,6 +733,13 @@ function isKnownMiniGutsBattleDestroyedDamageEffect(effect: SerializedDuelEffect
     effect.triggerEvent === "battleDestroyed" &&
     effect.sourceUid !== undefined &&
     effect.labelObjectUid !== undefined &&
+    effect.reset !== undefined;
+}
+function isKnownTaiStrikeDamageStepEndEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:86449372:")) &&
+    effect.event === "continuous" &&
+    effect.code === 1141 &&
+    effect.sourceUid !== undefined &&
     effect.reset !== undefined;
 }
 function isKnownTemporaryMustAttackEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && (effect.code === 191 || (effect.code === 344 && effect.label !== undefined)) && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.reset !== undefined; }
@@ -1065,6 +1073,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownDelayedBattleDestroyPhaseEffect(effect)) return delayedBattleDestroyPhaseOperation(effect);
   if (isKnownEbonArrowBattleDestroyingDamageEffect(effect)) return ebonArrowBattleDestroyingDamageOperation(effect);
   if (isKnownMiniGutsBattleDestroyedDamageEffect(effect)) return miniGutsBattleDestroyedDamageOperation(effect);
+  if (isKnownTaiStrikeDamageStepEndEffect(effect)) return taiStrikeDamageStepEndOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
   if (isKnownSelfEndPhaseSendEffect(effect)) return selfEndPhaseSendOperation(effect);
@@ -1081,6 +1090,38 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function taiStrikeDamageStepEndOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    const battle = ctx.duel.pendingBattle ?? ctx.duel.currentAttack;
+    const deferredDestroyedUids = ctx.duel.pendingBattle?.deferredBattleDestroyed?.map((record) => record.uid) ?? [];
+    const uids = [...new Set([
+      ...[battle?.attackerUid, battle?.targetUid].filter((uid): uid is string => uid !== undefined),
+      ...deferredDestroyedUids,
+    ])];
+    for (const uid of uids) {
+      const card = ctx.duel.cards.find((candidate) => candidate.uid === uid);
+      const deferred = ctx.duel.pendingBattle?.deferredBattleDestroyed?.find((record) => record.uid === uid);
+      if (!card || (!deferred && card.location !== "graveyard" && card.location !== "banished")) continue;
+      const battleDestroyed = ((card.reason ?? 0) & (duelReason.battle | duelReason.destroy)) === (duelReason.battle | duelReason.destroy);
+      if (!battleDestroyed && !deferred) continue;
+      const damagedPlayer = (card.previousController ?? card.controller) as PlayerId;
+      const baseAttack = card.data.attack ?? 0;
+      const damage = Math.max(0, Math.floor(baseAttack < 0 ? 0 : baseAttack));
+      const applied = damageDuelPlayer(ctx.duel, damagedPlayer, damage, duelReason.effect);
+      if (applied <= 0 || ctx.duel.status === "ended") continue;
+      collectDuelTriggerEffects(ctx.duel, "damageDealt", undefined, {
+        eventPlayer: damagedPlayer,
+        eventValue: applied,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: effect.controller,
+        eventReasonCardUid: effect.sourceUid,
+        ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+      });
+    }
+  };
 }
 
 function ebonArrowBattleDestroyingDamageOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
