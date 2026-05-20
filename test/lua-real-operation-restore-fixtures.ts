@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 191;
+export const operationFixtureCount = 192;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -102,6 +102,7 @@ export const operationKindCounts = {
   setAttackFinalSpecialDamage: 1,
   setFinalStatDisableFlag: 1,
   setFinalStatDestroyCost: 1,
+  setFinalStatDisable: 1,
   selectEffectStat: 1,
   selectEffectStatDestroyedToGrave: 1,
   selectEffectStatDestroy: 1,
@@ -238,6 +239,7 @@ export type OperationKind =
   | "setAttackFinalSpecialDamage"
   | "setFinalStatDisableFlag"
   | "setFinalStatDestroyCost"
+  | "setFinalStatDisable"
   | "selectEffectStat"
   | "selectEffectStatDestroyedToGrave"
   | "selectEffectStatDestroy"
@@ -276,6 +278,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-cross-domination-final-disable.test.ts",
+      kind: "setFinalStatDisable",
+      required: [
+        "restores Magical Musket target final ATK/DEF zero and related-chain negation",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE+CATEGORY_DISABLE)",
+        "e1:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_MAGICAL_MUSKET),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "e0:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e0:SetValue(0)",
+        "e1:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e2:SetCode(EFFECT_DISABLE)",
+        "e3:SetCode(EFFECT_DISABLE_EFFECT)",
+        'eventName: "becameTarget"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-true-draco-apocalypse-flag-final-stat.test.ts",
       kind: "setFinalStatDestroyCost",
@@ -2891,6 +2914,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       setAttackFinalSpecialDamage: 0,
       setFinalStatDisableFlag: 0,
       setFinalStatDestroyCost: 0,
+      setFinalStatDisable: 0,
       selectEffectStat: 0,
       selectEffectStatDestroyedToGrave: 0,
       selectEffectStatDestroy: 0,
