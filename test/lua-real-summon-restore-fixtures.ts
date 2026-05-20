@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 326;
+export const realScriptSummonFixtureCount = 334;
 export const summonProcedureFixtureCount = 39;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -28,10 +28,10 @@ export const tributeMaterialFixtureCount = 1;
 export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
   fusion: 51,
-  link: 19,
+  link: 21,
   pendulum: 21,
   ritual: 27,
-  summon: 169,
+  summon: 175,
   synchro: 23,
   xyz: 16,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -115,7 +115,7 @@ export const summonSemanticVariantCounts = {
   tributeMaterialValuePredicates: tributeMaterialFixtureCount,
   unsummonableSummonSetLocks: unsummonableSummonSetLockFixtureCount,
   forceMonsterZoneSummonLocks: 4,
-  mandatoryBanishedPhaseReturnSummons: 1,
+  mandatoryBanishedPhaseReturnSummons: 2,
   standbySelfToGraveEvolutionSummons: 1,
   weatherPainterReturnRegistration: 1,
   geminiReviveLeaveFieldTargetDestruction: 1,
@@ -976,6 +976,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     { file: "test/lua-real-script-rare-metal-dragon-unsummonable.test.ts", kind: "unsummonableSummonSetLocks" as const },
     ...realScriptForceMonsterZoneSummonLockFixtureSnippets().map(({ file }) => ({ file, kind: "forceMonsterZoneSummonLocks" as const })),
     { file: "test/lua-real-script-dd-scout-plane-banished-end-return.test.ts", kind: "mandatoryBanishedPhaseReturnSummons" as const },
+    { file: "test/lua-real-script-shuttleroid-battle-target-flag-return-damage.test.ts", kind: "mandatoryBanishedPhaseReturnSummons" as const },
     { file: "test/lua-real-script-ultimate-insect-lv3-standby-evolve-summon.test.ts", kind: "standbySelfToGraveEvolutionSummons" as const },
     { file: "test/lua-real-script-weather-thunder-place-banish-return-summon.test.ts", kind: "weatherPainterReturnRegistration" as const },
     { file: "test/lua-real-script-il-blud-gemini-zombie-revive-leave-destroy.test.ts", kind: "geminiReviveLeaveFieldTargetDestruction" as const },
