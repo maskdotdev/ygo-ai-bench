@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 21;
+const chainResponseFixtureCount = 22;
 const chainResponseKindCounts = {
+  chainPlayerRetargetResponse: 1,
   chainSearchResponse: 1,
   chainTargetRetargetResponse: 1,
   destroyOnlyChainedResponse: 4,
@@ -32,6 +33,7 @@ const chainResponseSemanticVariantCounts = {
   deepSweeperSelfTributeDestroy: 1,
   houseAdhesiveTapeFlipSummonDestroy: 1,
   mekkKnightYellowColumnProcedureDestroy: 1,
+  mysticalRefpanelSpellPlayerRetarget: 1,
   mysticalSpaceTyphoonFreeChainDestroy: 1,
   shreddderHandMachineLevelDestroy: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
@@ -46,6 +48,7 @@ const chainResponseSemanticVariantCounts = {
 } satisfies Record<ChainResponseSemanticVariant, number>;
 
 type ChainResponseKind =
+  | "chainPlayerRetargetResponse"
   | "chainSearchResponse"
   | "chainTargetRetargetResponse"
   | "destroyOnlyChainedResponse"
@@ -71,6 +74,7 @@ type ChainResponseSemanticVariant =
   | "deepSweeperSelfTributeDestroy"
   | "houseAdhesiveTapeFlipSummonDestroy"
   | "mekkKnightYellowColumnProcedureDestroy"
+  | "mysticalRefpanelSpellPlayerRetarget"
   | "mysticalSpaceTyphoonFreeChainDestroy"
   | "shreddderHandMachineLevelDestroy"
   | "overwhelmTributeGateTrapNegateDestroy"
@@ -132,6 +136,22 @@ function chainResponseFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-mystical-refpanel-change-target-player.test.ts",
+      kind: "chainPlayerRetargetResponse",
+      required: [
+        "restores player-target Spell response into ChangeTargetPlayer before the original damage resolves",
+        "Duel.ChangeTargetPlayer(ev,1-p)",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(700)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        'windowKind).toBe("chainResponse")',
+        "targetPlayer: 1",
+        'eventName: "damageDealt"',
+        "eventPlayer: 0",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-fairys-hand-mirror-chain-retarget.test.ts",
       kind: "chainTargetRetargetResponse",
@@ -412,6 +432,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       return counts;
     },
     {
+      chainPlayerRetargetResponse: 0,
       chainSearchResponse: 0,
       chainTargetRetargetResponse: 0,
       destroyOnlyChainedResponse: 0,
@@ -562,6 +583,17 @@ function chainResponseSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mystical-refpanel-change-target-player.test.ts",
+      kind: "mysticalRefpanelSpellPlayerRetarget",
+      required: [
+        'const refpanelCode = "35563539"',
+        "Mystical Refpanel ChangeTargetPlayer",
+        "Duel.ChangeTargetPlayer(ev,1-p)",
+        "targetPlayer: 1",
+        "eventPlayer: 0",
+      ],
+    },
+    {
       file: "test/lua-real-script-mystical-space-typhoon-free-chain.test.ts",
       kind: "mysticalSpaceTyphoonFreeChainDestroy",
       required: [
@@ -690,6 +722,7 @@ function countChainResponseSemanticVariants(
       ignisHeatTributeSummonedChainSearch: 0,
       houseAdhesiveTapeFlipSummonDestroy: 0,
       mekkKnightYellowColumnProcedureDestroy: 0,
+      mysticalRefpanelSpellPlayerRetarget: 0,
       mysticalSpaceTyphoonFreeChainDestroy: 0,
       shreddderHandMachineLevelDestroy: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
