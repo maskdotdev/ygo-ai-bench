@@ -101,8 +101,8 @@ export function groupDestroyOperationVariants(): Array<{ file: string; kind: Gro
       file: "test/lua-real-script-heavy-storm-group-destroy.test.ts",
       kind: "heavyStormAllBackrow",
       required: [
-        "restores Heavy Storm's non-targeting all-field Spell/Trap group destroy",
-        "sortedUids([ownBackrow!.uid, opponentTrap!.uid, opponentSpell!.uid])",
+        "restores prompt-free both-field Spell/Trap group destruction while excluding its own activation card",
+        "destroyedUids = [ownSpell.uid, ownTrap.uid, opponentSpell.uid, opponentTrap.uid]",
         'eventName: "destroyed"',
       ],
     },

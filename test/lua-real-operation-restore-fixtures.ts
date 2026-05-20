@@ -630,7 +630,7 @@ export function operationFixtureFiles(): Array<{
       kind: "groupDestroy",
       required: [
         "category: 0x1",
-        "sortedUids([ownBackrow!.uid, opponentTrap!.uid, opponentSpell!.uid])",
+        "destroyedUids = [ownSpell.uid, ownTrap.uid, opponentSpell.uid, opponentTrap.uid]",
         'eventName: "destroyed"',
         'location: "graveyard"',
         "host.messages).not.toContain",
