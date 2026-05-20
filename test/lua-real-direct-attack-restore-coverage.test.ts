@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DIRECT_ATTACK_FIXTURE_COUNT = 9;
+const DIRECT_ATTACK_FIXTURE_COUNT = 10;
 const directAttackKindCounts = {
   cannotDirectAttack: 1,
-  conditionalDirectAttack: 1,
+  conditionalDirectAttack: 2,
   directAttackConversion: 1,
   directAttackDamageStatTrigger: 1,
   directAttackGroupGrant: 1,
@@ -18,6 +18,7 @@ const directAttackKindCounts = {
 } satisfies Record<DirectAttackKind, number>;
 const directAttackSemanticVariantCounts = {
   blackTyrannoConditionalDirectAttack: 1,
+  cyberTutuAttackThresholdDirectAttack: 1,
   dragonicHalberdCannotDirectLock: 1,
   drillBarnacleDirectDamageAtkGain: 1,
   hayateDirectAttackBattledSendTrigger: 1,
@@ -40,6 +41,7 @@ type DirectAttackKind =
   | "directTargetLock";
 type DirectAttackSemanticVariant =
   | "blackTyrannoConditionalDirectAttack"
+  | "cyberTutuAttackThresholdDirectAttack"
   | "dragonicHalberdCannotDirectLock"
   | "deltaAttackerGroupDirectGrant"
   | "drillBarnacleDirectDamageAtkGain"
@@ -103,6 +105,17 @@ function realScriptDirectAttackFixtureFiles(): Array<{
         "hasDirectAttack(openActions, openTyranno.uid)).toBe(true)",
         "hasDirectAttack(attackBlockedActions, blockedTyranno.uid)).toBe(false)",
         "hasDirectAttack(spellBlockedActions, spellBlockedTyranno.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cyber-tutu-attack-threshold-direct.test.ts",
+      kind: "conditionalDirectAttack",
+      required: [
+        "return c:IsFacedown() or c:GetAttack()<=atk",
+        "return not Duel.IsExistingMatchingCard(s.filter,e:GetHandlerPlayer(),0,LOCATION_MZONE,1,nil,e:GetHandler():GetAttack())",
+        "hasDirectAttack(openActions, openTutu.uid)).toBe(true)",
+        "hasDirectAttack(weakActions, weakTutu.uid)).toBe(false)",
+        "hasDirectAttack(faceDownActions, faceDownTutu.uid)).toBe(false)",
       ],
     },
     {
@@ -227,6 +240,16 @@ function directAttackSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-cyber-tutu-attack-threshold-direct.test.ts",
+      kind: "cyberTutuAttackThresholdDirectAttack",
+      required: [
+        'const cyberTutuCode = "49375719"',
+        "restores attack-threshold and face-down gated direct attack permission",
+        "return c:IsFacedown() or c:GetAttack()<=atk",
+        "return not Duel.IsExistingMatchingCard(s.filter,e:GetHandlerPlayer(),0,LOCATION_MZONE,1,nil,e:GetHandler():GetAttack())",
+      ],
+    },
+    {
       file: "test/lua-real-script-delta-attacker-group-direct-attack.test.ts",
       kind: "deltaAttackerGroupDirectGrant",
       required: [
@@ -324,6 +347,7 @@ function countDirectAttackSemanticVariants(
     },
     {
       blackTyrannoConditionalDirectAttack: 0,
+      cyberTutuAttackThresholdDirectAttack: 0,
       deltaAttackerGroupDirectGrant: 0,
       dragonicHalberdCannotDirectLock: 0,
       drillBarnacleDirectDamageAtkGain: 0,
