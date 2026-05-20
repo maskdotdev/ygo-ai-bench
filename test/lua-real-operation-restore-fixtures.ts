@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 106;
+export const operationFixtureCount = 107;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -49,6 +49,7 @@ export const operationKindCounts = {
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
+  trapReclamationReturn: 1,
   targetBanish: 1,
   targetBanishDiscardCost: 1,
   targetDestroy: 1,
@@ -111,6 +112,7 @@ export type OperationKind =
   | "selfEquipFromHand"
   | "spellDraw"
   | "trapDraw"
+  | "trapReclamationReturn"
   | "targetBanish"
   | "targetBanishDiscardCost"
   | "targetDestroy"
@@ -129,6 +131,20 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-trap-reclamation-return-activated-trap.test.ts",
+      kind: "trapReclamationReturn",
+      required: [
+        "return rp==tp and re:IsHasType(EFFECT_TYPE_ACTIVATE) and re:IsTrapEffect()",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD,nil)",
+        "e1:SetCode(EVENT_TO_GRAVE)",
+        "Duel.SendtoHand(e:GetHandler(),tp,REASON_EFFECT)",
+        "operationInfos",
+        "eventName === \"discarded\"",
+        "eventName === \"sentToHand\" && event.eventCardUid === starterTrap.uid",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-fruits-kozaky-studies-decktop-sort.test.ts",
       kind: "deckTopSort",
@@ -1176,6 +1192,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selfEquipFromHand: 0,
       spellDraw: 0,
       trapDraw: 0,
+      trapReclamationReturn: 0,
       targetBanish: 0,
       targetBanishDiscardCost: 0,
       targetDestroy: 0,
