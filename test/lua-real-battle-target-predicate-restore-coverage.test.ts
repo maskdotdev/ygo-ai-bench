@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTargetPredicateFixtureCount = 6;
+const battleTargetPredicateFixtureCount = 7;
 const battleTargetPredicateKindCounts = {
   auxImval1Lock: 1,
   auxImval2Protection: 1,
@@ -12,12 +12,14 @@ const battleTargetPredicateKindCounts = {
   nonMatchingSelectionLock: 1,
   statProtectedAllyLock: 1,
   syntheticPredicateDescriptors: 1,
+  warriorSelectionLock: 1,
 } satisfies Record<BattleTargetPredicateKind, number>;
 const battleTargetPredicateSemanticVariantCounts = {
   battleTargetSyntheticDescriptorPredicates: 1,
   commandKnightAuxImval1TargetLock: 1,
   decoyroidNonMatchingTargetSelectionLock: 1,
   hunterOwlWindAllyTargetStatLock: 1,
+  maraudingCaptainWarriorSelectionLock: 1,
   machinaAndBoneTowerAuxImval2Protection: 1,
   solarFlarePyroEndDamageTargetLock: 1,
 } satisfies Record<BattleTargetPredicateSemanticVariant, number>;
@@ -28,12 +30,14 @@ type BattleTargetPredicateKind =
   | "endDamageTargetLock"
   | "nonMatchingSelectionLock"
   | "statProtectedAllyLock"
-  | "syntheticPredicateDescriptors";
+  | "syntheticPredicateDescriptors"
+  | "warriorSelectionLock";
 type BattleTargetPredicateSemanticVariant =
   | "battleTargetSyntheticDescriptorPredicates"
   | "commandKnightAuxImval1TargetLock"
   | "decoyroidNonMatchingTargetSelectionLock"
   | "hunterOwlWindAllyTargetStatLock"
+  | "maraudingCaptainWarriorSelectionLock"
   | "machinaAndBoneTowerAuxImval2Protection"
   | "solarFlarePyroEndDamageTargetLock";
 
@@ -141,6 +145,17 @@ function battleTargetPredicateFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-marauding-captain-summon-warrior-target-lock.test.ts",
+      kind: "warriorSelectionLock",
+      required: [
+        "restores summon-success hand summon and Warrior battle-target selection lock",
+        "EFFECT_CANNOT_SELECT_BATTLE_TARGET",
+        "hasAttack(battleActions, attacker.uid, captain.uid)).toBe(true)",
+        "hasAttack(battleActions, attacker.uid, summoned.uid)).toBe(false)",
+        "hasAttack(battleActions, attacker.uid, protectedWarrior.uid)).toBe(false)",
+      ],
+    },
+    {
       file: "test/lua-real-script-solar-flare-end-damage-target-lock.test.ts",
       kind: "endDamageTargetLock",
       required: [
@@ -172,6 +187,7 @@ function countBattleTargetPredicateKinds(
       nonMatchingSelectionLock: 0,
       statProtectedAllyLock: 0,
       syntheticPredicateDescriptors: 0,
+      warriorSelectionLock: 0,
     },
   );
 }
@@ -233,6 +249,16 @@ function battleTargetPredicateSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-marauding-captain-summon-warrior-target-lock.test.ts",
+      kind: "maraudingCaptainWarriorSelectionLock",
+      required: [
+        'const captainCode = "2460565"',
+        "restores summon-success hand summon and Warrior battle-target selection lock",
+        "return c~=e:GetHandler() and c:IsFaceup() and c:IsRace(RACE_WARRIOR)",
+        "hasAttack(battleActions, attacker.uid, captain.uid)).toBe(true)",
+      ],
+    },
+    {
       file: "test/lua-real-script-solar-flare-end-damage-target-lock.test.ts",
       kind: "solarFlarePyroEndDamageTargetLock",
       required: [
@@ -262,6 +288,7 @@ function countBattleTargetPredicateSemanticVariants(
       commandKnightAuxImval1TargetLock: 0,
       decoyroidNonMatchingTargetSelectionLock: 0,
       hunterOwlWindAllyTargetStatLock: 0,
+      maraudingCaptainWarriorSelectionLock: 0,
       machinaAndBoneTowerAuxImval2Protection: 0,
       solarFlarePyroEndDamageTargetLock: 0,
     },
