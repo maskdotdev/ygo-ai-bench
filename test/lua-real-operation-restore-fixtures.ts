@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 198;
+export const operationFixtureCount = 199;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -65,7 +65,7 @@ export const operationKindCounts = {
   flipTargetDestroy: 1,
   fusionDeckMaterials: 1,
   flipDiscardBattleStat: 1,
-  groupDestroy: 10,
+  groupDestroy: 11,
   groupDestroyDamageStatLp: 1,
   groupToGraveFinalAttack: 1,
   handStatBoost: 1,
@@ -1824,6 +1824,19 @@ export function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'location: "graveyard"',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-geo-grasha-battle-zero-field-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "restores battle-start ATK/DEF zero and destroyed-opponent-monster field wipe",
+        "Duel.GetFieldGroup(tp,0,LOCATION_ONFIELD)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "currentAttack",
+        "currentDefense",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
       ],
     },
     {

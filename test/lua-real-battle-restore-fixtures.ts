@@ -1,7 +1,7 @@
 import fs from "node:fs"; import path from "node:path";
 export const root = process.cwd(); export const testRoot = path.join(root, "test"); export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 277; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 7;
-export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 14; export const battleTriggerSemanticFixtureCount = 46;
+export const realScriptBattleFixtureCount = 278; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 7;
+export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 14; export const battleTriggerSemanticFixtureCount = 47;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -39,7 +39,7 @@ export const battleDamageSemanticKindCounts = {
   temporaryDamageCalcBoost: 1,
 } satisfies Record<BattleDamageSemanticKind, number>;
 export const battleTriggerSemanticKindCounts = {
-  battleStartDestroy: 3,
+  battleStartDestroy: 4,
   battleConfirmDestroy: 2,
   battleConfirmToDeck: 1,
   battleDamageTriggeredDelayedEffect: 8,
@@ -654,6 +654,23 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
         "Duel.SetOperationInfo(0,CATEGORY_DESTROY,e:GetLabelObject(),1,0,0)",
         "effectLabelObjectUid",
         'eventName: "destroyed"',
+      ],
+    },
+    {
+      file: "lua-real-script-geo-grasha-battle-zero-field-destroy.test.ts",
+      kind: "battleStartDestroy",
+      required: [
+        "restores battle-start ATK/DEF zero and destroyed-opponent-monster field wipe",
+        "e2:SetCode(EVENT_BATTLE_START)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e3:SetCode(EVENT_DESTROYED)",
+        "Duel.GetFieldGroup(tp,0,LOCATION_ONFIELD)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        'eventName: "battleStarted"',
+        'eventName: "destroyed"',
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
