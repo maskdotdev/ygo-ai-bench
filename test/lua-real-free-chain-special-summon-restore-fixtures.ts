@@ -1,4 +1,4 @@
-export const freeChainSpecialSummonFixtureCount = 14;
+export const freeChainSpecialSummonFixtureCount = 15;
 
 export const freeChainSpecialSummonKindCounts = {
   continuousSpellIgnitionHandSummon: 1,
@@ -6,6 +6,7 @@ export const freeChainSpecialSummonKindCounts = {
   handNormalMonsterSummon: 1,
   lpCostTargetGraveSetcodeSummon: 1,
   nonTargetGraveSetcodeDefenseSummon: 1,
+  opponentTurnTargetGraveStepSynchro: 1,
   opponentTargetLevelHandSummon: 1,
   rankUpMagicXyzOverlaySummon: 1,
   trapMonsterAnnounceTraitSummonStep: 1,
@@ -23,6 +24,7 @@ export type FreeChainSpecialSummonKind =
   | "handNormalMonsterSummon"
   | "lpCostTargetGraveSetcodeSummon"
   | "nonTargetGraveSetcodeDefenseSummon"
+  | "opponentTurnTargetGraveStepSynchro"
   | "opponentTargetLevelHandSummon"
   | "rankUpMagicXyzOverlaySummon"
   | "trapMonsterAnnounceTraitSummonStep"
@@ -198,6 +200,23 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-crystron-citree-quick-step-synchro.test.ts",
+      kind: "opponentTurnTargetGraveStepSynchro",
+      required: [
+        "Duel.IsTurnPlayer(1-tp) and (Duel.IsMainPhase() or Duel.IsBattlePhase())",
+        "Duel.IsPlayerCanSpecialSummonCount(tp,2)",
+        "Duel.SelectTarget(tp,s.scfilter1,tp,LOCATION_GRAVE,0,1,1,nil,e,tp,e:GetHandler())",
+        "Duel.SpecialSummonStep(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.SpecialSummonComplete()",
+        "Duel.SynchroSummon(tp,sg:GetFirst(),nil,mg)",
+        "EFFECT_LEAVE_FIELD_REDIRECT",
+        "LOCATION_REMOVED",
+        "summonMaterialUids: [citree.uid, target.uid]",
+        'summonType: "synchro"',
+        'eventName: "usedAsMaterial"',
+      ],
+    },
+    {
       file: "test/lua-real-script-release-from-stone-banished-revive-destroy.test.ts",
       kind: "targetBanishedRockSummonStep",
       required: [
@@ -307,5 +326,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { continuousSpellIgnitionHandSummon: 0, faceupSzoneSetcodeDeckSummon: 0, handNormalMonsterSummon: 0, lpCostTargetGraveSetcodeSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, opponentTargetLevelHandSummon: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, faceupSzoneSetcodeDeckSummon: 0, handNormalMonsterSummon: 0, lpCostTargetGraveSetcodeSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, opponentTargetLevelHandSummon: 0, opponentTurnTargetGraveStepSynchro: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
 }

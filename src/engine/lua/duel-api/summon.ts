@@ -406,7 +406,7 @@ function synchroSummonSelectedMaterials(
     collectLuaSummonEvent(session, "preUsedAsMaterial", material);
     sendDuelCardToGraveyard(session.state, uid, summonPlayer, materialReason, reasonPlayer, materialPayload);
     pushDuelLog(session.state, "synchroMaterial", summonPlayer, material.name, `Used for ${target.name}`);
-    collectLuaSummonEvent(session, "usedAsMaterial", material);
+    collectDuelTriggerEffects(session.state, "usedAsMaterial", material, { eventReason: duelReason.synchro, eventReasonPlayer: summonPlayer, eventReasonCardUid: target.uid });
   }
   const summonPayload = luaEffectReasonPayload(hostState, duelReason.summon | duelReason.specialSummon | duelReason.synchro, reasonPlayer);
   collectDuelTriggerEffects(session.state, "specialSummoning", target, summonPayload);

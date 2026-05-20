@@ -15,7 +15,12 @@ export function canLuaSynchroSummonCard(session: DuelSession, card: DuelCardInst
 export function findLuaSynchroMaterialUidSet(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): string[] | undefined {
   if (card.location !== "extraDeck" || !isMonsterLike(session, card)) return undefined;
   const supplied = new Set(suppliedUids);
-  const materialPool = session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeSynchroMaterial(session, candidate, card));
+  const materialPool = uniqueCards([
+    ...session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeSynchroMaterial(session, candidate, card)),
+    ...suppliedUids
+      .map((uid) => session.state.cards.find((candidate) => candidate.uid === uid))
+      .filter((candidate): candidate is DuelCardInstance => Boolean(candidate && candidate.controller === card.controller && canBeSynchroMaterial(session, candidate, card))),
+  ]);
   if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return undefined;
   const explicitMaterials = card.data.synchroMaterials;
   for (let count = Math.max(2, supplied.size); count <= materialPool.length; count += 1) {
@@ -25,6 +30,17 @@ export function findLuaSynchroMaterialUidSet(session: DuelSession, card: DuelCar
     }
   }
   return undefined;
+}
+
+function uniqueCards(cards: DuelCardInstance[]): DuelCardInstance[] {
+  const seen = new Set<string>();
+  const unique: DuelCardInstance[] = [];
+  for (const card of cards) {
+    if (seen.has(card.uid)) continue;
+    seen.add(card.uid);
+    unique.push(card);
+  }
+  return unique;
 }
 
 function hasSummonZoneAfterMaterials(session: DuelSession, player: PlayerId, materials: DuelCardInstance[], card: DuelCardInstance): boolean {
