@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const ignitionStatFixtureCount = 5;
+const ignitionStatFixtureCount = 6;
 const ignitionStatKindCounts = {
+  counterCostAttackBoost: 1,
   groupUpdateLevel: 1,
   noTurnResetAttackLevelBoost: 1,
   selfToGraveTargetUpdateLevel: 1,
@@ -13,7 +14,7 @@ const ignitionStatKindCounts = {
   targetLevelCopy: 1,
 } satisfies Record<IgnitionStatKind, number>;
 
-type IgnitionStatKind = "groupUpdateLevel" | "noTurnResetAttackLevelBoost" | "selfToGraveTargetUpdateLevel" | "summedLevelChange" | "targetLevelCopy";
+type IgnitionStatKind = "counterCostAttackBoost" | "groupUpdateLevel" | "noTurnResetAttackLevelBoost" | "selfToGraveTargetUpdateLevel" | "summedLevelChange" | "targetLevelCopy";
 type IgnitionStatFixture = { file: string; kind: IgnitionStatKind; required: string[] };
 
 describe("Lua real ignition stat restore coverage", () => {
@@ -44,6 +45,23 @@ describe("Lua real ignition stat restore coverage", () => {
 
 function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
   return [
+    {
+      file: "test/lua-real-script-frequency-magician-counter-atk.test.ts",
+      kind: "counterCostAttackBoost",
+      required: [
+        "c:EnableCounterPermit(COUNTER_SPELL)",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e:GetHandler():AddCounter(COUNTER_SPELL,1)",
+        "e:GetHandler():RemoveCounter(tp,COUNTER_SPELL,1,REASON_COST)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "triggerBucket: \"turnMandatory\"",
+        "counters: { [spellCounter]: 1 }",
+        "targetUids: [magician!.uid]",
+        "currentAttack(restoredAttackChain.session.state.cards.find((card) => card.uid === magician!.uid), restoredAttackChain.session.state)).toBe",
+      ],
+    },
     {
       file: "test/lua-real-script-copy-plant-target-level-change.test.ts",
       kind: "targetLevelCopy",
