@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 203;
+export const operationFixtureCount = 204;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -120,6 +120,7 @@ export const operationKindCounts = {
   summonFieldMillStat: 1,
   targetRelationStatDestroyedBothDamage: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
+  targetDisableFinalImmunity: 1,
   spellDraw: 1,
   trapDraw: 1,
   trapReclamationReturn: 1,
@@ -264,6 +265,7 @@ export type OperationKind =
   | "summonFieldMillStat"
   | "targetRelationStatDestroyedBothDamage"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
+  | "targetDisableFinalImmunity"
   | "spellDraw"
   | "trapDraw"
   | "trapReclamationReturn"
@@ -637,6 +639,28 @@ export function operationFixtureFiles(): Array<{
         "currentDefense(restoredTarget, restored.session.state)).toBe(700)",
         "isCardDisabled",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-aqua-story-urashima-disable-immunity.test.ts",
+      kind: "targetDisableFinalImmunity",
+      required: [
+        "restores Aqua Story target disable, final 100 ATK/DEF, related-chain negation, and opponent-effect immunity",
+        "e1:SetCategory(CATEGORY_DISABLE+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "return aux.StatChangeDamageStepCondition() and Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_GRAVE,0,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,g,1,0,0)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "EFFECT_DISABLE_EFFECT",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "EFFECT_FLAG_SINGLE_RANGE+EFFECT_FLAG_CLIENT_HINT",
+        "EFFECT_IMMUNE_EFFECT",
+        'eventName: "becameTarget"',
+        "currentAttack",
+        "currentDefense",
+        "operationInfos",
       ],
     },
     {
@@ -3146,6 +3170,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       summonFieldMillStat: 0,
       targetRelationStatDestroyedBothDamage: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
+      targetDisableFinalImmunity: 0,
       spellDraw: 0,
       trapDraw: 0,
       trapReclamationReturn: 0,
