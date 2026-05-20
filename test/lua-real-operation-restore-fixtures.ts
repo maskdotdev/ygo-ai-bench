@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 120;
+export const operationFixtureCount = 121;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -67,6 +67,7 @@ export const operationKindCounts = {
   targetToHandDiscardCost: 1,
   trapDrawSkipDraw: 1,
   tossCoin: 1,
+  tossCoinCustomEvent: 1,
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
@@ -134,7 +135,7 @@ export type OperationKind =
   | "targetDestroySkipDraw"
   | "targetToHandDiscardCost"
   | "trapDrawSkipDraw"
-  | "tossCoin" | "tossDiceHandDiscard";
+  | "tossCoin" | "tossCoinCustomEvent" | "tossDiceHandDiscard";
 export function operationFixtureFiles(): Array<{
   file: string;
   kind: OperationKind;
@@ -1079,6 +1080,21 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-origami-goddess-toss-coin-custom-event.test.ts",
+      kind: "tossCoinCustomEvent",
+      required: [
+        'const origamiCode = "7930346"',
+        "while Duel.TossCoin(tp,1)==COIN_HEADS do",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.IsChainSolving()",
+        "Duel.RaiseSingleEvent(e:GetHandler(),EVENT_CUSTOM+id,re,r,rp,ep,heads_ct)",
+        "e4:SetCode(EVENT_CHAIN_SOLVED)",
+        'eventName: "coinTossed"',
+        "lastCoinResults).toEqual([0])",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-saion-toss-coin-restore.test.ts",
       kind: "tossCoin",
       required: [
@@ -1316,6 +1332,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetToHandDiscardCost: 0,
       trapDrawSkipDraw: 0,
       tossCoin: 0,
+      tossCoinCustomEvent: 0,
       tossDiceHandDiscard: 0,
     },
   );
