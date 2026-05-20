@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 195;
+export const operationFixtureCount = 196;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -98,7 +98,7 @@ export const operationKindCounts = {
   releaseDamage: 3,
   reviveStatBattleDamage: 1,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 37,
+  searchOrExcavate: 38,
   selfEquipFromHand: 1,
   selfBanishTargetStat: 1,
   setAttackFinalSpecialDamage: 1,
@@ -2411,6 +2411,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-archfiends-oath-lp-decktop.test.ts", kind: "searchOrExcavate", required: ["e2:SetCost(Cost.PayLP(500))", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,1)", "operationInfos).toEqual([", 'eventName: "lifePointCostPaid"', 'eventName: "confirmed"', 'eventName: "sentToHand"', "players[0].lifePoints).toBe(7500)", "shuffleCheckDisabled).toBe(true)"] },
     { file: "test/lua-real-script-alsei-announce-decktop-tohand.test.ts", kind: "searchOrExcavate", required: ["Xyz.AddProcedure(c,nil,8,2)", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,1)", "level: 8", "xyzMaterialCount: 2", "operationInfos).toEqual([", 'eventName: "confirmed"', 'eventName: "sentToHand"', "shuffleCheckDisabled).toBe(true)", "host.messages).not.toContain"] },
     { file: "test/lua-real-script-gishki-diviner-announce-decktop.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_IGNITION)", "e1:SetRange(LOCATION_MZONE)", "e1:SetCountLimit(1)", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.GetDecktopGroup(tp,1)", "Duel.DisableShuffleCheck()", "Duel.ShuffleHand(tp)", 'api: "AnnounceCard"', 'eventName: "confirmed"', 'eventName: "sentToHand"', "shuffleCheckDisabled).toBe(true)"] },
+    { file: "test/lua-real-script-maat-announce-decktop-stat.test.ts", kind: "searchOrExcavate", required: ["restores triple AnnounceCard into decktop reveal, hand hit, grave misses, and final stats", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,3)", "Duel.GetDecktopGroup(tp,3)", "Duel.DisableShuffleCheck()", "Duel.SendtoHand(hg,nil,REASON_EFFECT)", "Duel.SendtoGrave(g,REASON_EFFECT|REASON_EXCAVATE)", "EFFECT_SET_ATTACK_FINAL", "EFFECT_SET_DEFENSE_FINAL", 'api: "AnnounceCard"', 'eventName: "confirmed"', 'eventName: "sentToHand"', 'eventName: "sentToGraveyard"', "currentAttack", "currentDefense"] },
     { file: "test/lua-real-script-dark-designator-announce-opponent-deck-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCategory(CATEGORY_SEARCH)", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.SelectMatchingCard(1-tp,s.filter,1-tp,LOCATION_DECK,0,1,1,nil,code)", "Duel.SendtoHand(tc,nil,REASON_EFFECT)", "Duel.ConfirmCards(tp,tc)", 'api: "AnnounceCard"', 'eventName: "sentToHand"', 'eventName: "confirmed"', "duelReason.rule"] },
     { file: "test/lua-real-script-dora-dora-decktop-excavate-stat.test.ts", kind: "searchOrExcavate", required: ["restores Deck-top confirmation, excavate-to-Grave, shuffle check suppression, and UpdateAttack", 'const doraCode = "11590299"', "Duel.ConfirmDecktop(tp,1)", "Duel.GetDecktopGroup(tp,1):GetFirst()", "Duel.DisableShuffleCheck()", "Duel.SendtoGrave(tc,REASON_EFFECT|REASON_EXCAVATE)", "e:GetHandler():UpdateAttack(ct*1000)", "Duel.MoveToDeckBottom(tc)", "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dora.uid), restoredOpen.session.state)).toBe(1400)", 'eventName: "confirmed"', 'eventName: "sentToGraveyard"', "shuffleCheckDisabled).toBe(true)"] },
     { file: "test/lua-real-script-lullaby-obedience-announce-option-hand.test.ts", kind: "searchOrExcavate", required: ["e1:SetCost(Cost.PayLP(2000))", "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,1-tp,LOCATION_DECK)", "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,1-tp,LOCATION_DECK)", "g:FilterSelect(1-tp,Card.IsCode,1,1,nil,ac)", "Duel.SelectOption(1-tp,aux.Stringid(id,0),aux.Stringid(id,1))", "Duel.SendtoHand(sg,tp,REASON_EFFECT)", 'api: "SelectOption"', 'eventName: "lifePointCostPaid"', 'eventName: "sentToHand"', "duelReason.rule"] },
