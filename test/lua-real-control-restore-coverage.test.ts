@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 12;
+const controlFixtureCount = 13;
 const controlKindCounts = {
   cannotChangeControl: 1,
   discardCostTemporaryControl: 1,
@@ -13,6 +13,7 @@ const controlKindCounts = {
   flipSetControl: 1,
   releaseCostControl: 1,
   restrictedTemporaryControl: 2,
+  selectedPermanentControl: 1,
   summonTriggerTemporaryControl: 1,
   swapControlLock: 1,
   targetedSwapControl: 1,
@@ -30,6 +31,7 @@ const controlSemanticVariantCounts = {
   mindControlRestrictions: 1,
   rafflesiaFlipGetControl: 1,
   snatchStealEquipControl: 1,
+  suppressionPlutoAnnounceControl: 1,
   xyzReversalTargetedSwapControl: 1,
 } satisfies Record<ControlSemanticVariant, number>;
 
@@ -41,6 +43,7 @@ type ControlKind =
   | "flipSetControl"
   | "releaseCostControl"
   | "restrictedTemporaryControl"
+  | "selectedPermanentControl"
   | "summonTriggerTemporaryControl"
   | "swapControlLock"
   | "targetedSwapControl"
@@ -58,6 +61,7 @@ type ControlSemanticVariant =
   | "mindControlRestrictions"
   | "rafflesiaFlipGetControl"
   | "snatchStealEquipControl"
+  | "suppressionPlutoAnnounceControl"
   | "xyzReversalTargetedSwapControl";
 
 describe("Lua real control restore coverage", () => {
@@ -234,6 +238,19 @@ function realScriptControlFixtureFiles(): Array<{
         "snatch probe 1/nil/nil",
       ],
     },
+    {
+      file: "lua-real-script-suppression-pluto-announce-control.test.ts",
+      kind: "selectedPermanentControl",
+      required: [
+        'const plutoCode = "24413299"',
+        "restores announced opponent hand confirmation into the selected GetControl branch",
+        "Duel.SelectEffect(tp,{#g1>0,aux.Stringid(id,1)},{#g2>0,aux.Stringid(id,2)})",
+        "Duel.GetControl(tc,tp)",
+        'api: "AnnounceCard"',
+        'api: "SelectEffect"',
+        'eventName: "controlChanged"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: ControlKind;
@@ -255,6 +272,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       flipSetControl: 0,
       releaseCostControl: 0,
       restrictedTemporaryControl: 0,
+      selectedPermanentControl: 0,
       summonTriggerTemporaryControl: 0,
       swapControlLock: 0,
       targetedSwapControl: 0,
@@ -392,6 +410,17 @@ function realScriptControlSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-suppression-pluto-announce-control.test.ts",
+      kind: "suppressionPlutoAnnounceControl",
+      required: [
+        'const plutoCode = "24413299"',
+        "Duel.ConfirmCards(tp,g)",
+        "Duel.GetControl(tc,tp)",
+        "previousController: 1",
+        "eventName: \"controlChanged\"",
+      ],
+    },
+    {
       file: "lua-real-script-xyz-reversal-swap-control.test.ts",
       kind: "xyzReversalTargetedSwapControl",
       required: [
@@ -428,6 +457,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       mindControlRestrictions: 0,
       rafflesiaFlipGetControl: 0,
       snatchStealEquipControl: 0,
+      suppressionPlutoAnnounceControl: 0,
       xyzReversalTargetedSwapControl: 0,
     },
   );
