@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 179;
+export const operationFixtureCount = 180;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -29,6 +29,7 @@ export const operationKindCounts = {
   banishedToDeckSelfSummon: 1,
   banishedToSpecialSummon: 1,
   battleDestroyedDeckSummon: 1,
+  battleStatBurn: 1,
   damageDeckdesAtk: 1,
   operatedDeckdesStat: 1,
   damageRecoverRaceCountStat: 1,
@@ -153,6 +154,7 @@ export type OperationKind =
   | "banishedToDeckSelfSummon"
   | "banishedToSpecialSummon"
   | "battleDestroyedDeckSummon"
+  | "battleStatBurn"
   | "damageDeckdesAtk"
   | "operatedDeckdesStat"
   | "damageRecoverRaceCountStat"
@@ -448,6 +450,28 @@ export function operationFixtureFiles(): Array<{
         'eventName: "battleDestroyed"',
         'eventName: "specialSummoned"',
         'summonType: "special"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-halberd-pre-damage-stat-burn.test.ts",
+      kind: "battleStatBurn",
+      required: [
+        "restores pre-damage opposing ATK halving into battle-damage Battlewasp count burn",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "return c==Duel.GetAttacker() and d and d:IsFaceup() and not d:IsControler(tp) and d:GetAttack()>=c:GetAttack()",
+        "c:RegisterFlagEffect(id,RESET_CHAIN,0,1)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetReset(RESET_PHASE|PHASE_DAMAGE_CAL)",
+        "e1:SetValue(d:GetAttack()/2)",
+        "e2:SetCode(EVENT_BATTLE_DAMAGE)",
+        "Duel.GetMatchingGroupCount(s.damfilter,tp,LOCATION_MZONE,0,nil)*200",
+        "Duel.Damage(p,val,REASON_EFFECT)",
+        "currentAttack(restoredAttack.session.state.cards.find((card) => card.uid === defender.uid), restoredAttack.session.state)).toBe(1500)",
+        "battleDamage).toEqual({ 0: 0, 1: 1000 })",
+        'eventName: "battleDamageDealt"',
+        'eventName: "damageDealt"',
+        "players[1].lifePoints).toBe(6600)",
+        "operationInfos",
       ],
     },
     {
@@ -2518,6 +2542,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       banishedToDeckSelfSummon: 0,
       banishedToSpecialSummon: 0,
       battleDestroyedDeckSummon: 0,
+      battleStatBurn: 0,
       chainNegateDiscardDestroy: 0,
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
