@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 154;
+export const operationFixtureCount = 155;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -77,6 +77,7 @@ export const operationKindCounts = {
   searchOrExcavate: 36,
   selfEquipFromHand: 1,
   selectEffectStat: 1,
+  selectEffectStatDestroyedToGrave: 1,
   summonDelayedStatDestroy: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
   spellDraw: 1,
@@ -177,6 +178,7 @@ export type OperationKind =
   | "searchOrExcavate"
   | "selfEquipFromHand"
   | "selectEffectStat"
+  | "selectEffectStatDestroyedToGrave"
   | "summonDelayedStatDestroy"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "spellDraw"
@@ -1433,6 +1435,27 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hallo-opponent-select-effect-destroyed-tograve.test.ts",
+      kind: "selectEffectStatDestroyedToGrave",
+      required: [
+        "restores opponent-chosen summon branch and destroyed trigger SendtoGrave",
+        "Duel.GetMatchingGroupCount(Card.IsRace,tp,LOCATION_GRAVE,0,nil,RACE_FIEND)",
+        "Duel.SelectEffect(1-tp,",
+        "c:UpdateAttack(ct*800)",
+        "Duel.Damage(1-tp,ct*500,REASON_EFFECT)",
+        "e3:SetCategory(CATEGORY_TOGRAVE)",
+        "e3:SetCode(EVENT_DESTROYED)",
+        "Duel.SelectMatchingCard(tp,Card.IsAbleToGrave,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.HintSelection(g)",
+        "Duel.SendtoGrave(g,REASON_EFFECT)",
+        'api: "SelectEffect"',
+        "operationInfos",
+        'eventName: "destroyed"',
+        'eventName: "sentToGraveyard"',
+        "reasonCardUid: hallo.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-chain-burst-trap-chain-solved-damage.test.ts",
       kind: "chainSolvedTrapDamage",
       required: [
@@ -1999,6 +2022,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
       selectEffectStat: 0,
+      selectEffectStatDestroyedToGrave: 0,
       summonDelayedStatDestroy: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
       spellDraw: 0,
