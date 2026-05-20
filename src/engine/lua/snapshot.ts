@@ -22,7 +22,7 @@ import { calledByTheGraveChainSolvingNegateOperation, gishkiEmiliaTrapNegateOper
 import { luaChainLimitRegistryKeys, luaDenyChainLimitRegistry, restoreKnownLuaChainLimits } from "#lua/snapshot-chain-limits.js";
 import { isKnownSunlitSentinelDelayedStandbyEffect, sunlitSentinelDelayedStandbyOperation } from "#lua/snapshot-sunlit-sentinel.js";
 import { isKnownDoubleSnareValidityEffect, isKnownTrapMonsterDisableEffect, isStaticPlayerPhaseLock } from "#lua/snapshot-static-effects.js";
-import { isKnownCannotActivateNonSpiritMonsterEffect, isKnownCannotActivateSpecialSummonedMonsterEffect, isKnownCannotBeMaterialEffect, isKnownCannotSelectBattleTargetNotHandlerEffect, isKnownGeminiEndPhaseReturnEffect, isKnownGeminiStatusEffect, isKnownGrantedSpiritEndPhaseReturnEffect, isKnownRemainFieldEffect, isKnownSetcodeOrCodeTypeBattleProtectionEffect, isKnownSpiritAddTypeEffect, isKnownTemporaryTunerAddTypeEffect } from "#lua/snapshot-restorable-effect-predicates.js";
+import { isKnownCannotActivateLocationMonsterEffect, isKnownCannotActivateNonSpiritMonsterEffect, isKnownCannotActivateSpecialSummonedMonsterEffect, isKnownCannotBeMaterialEffect, isKnownCannotSelectBattleTargetNotHandlerEffect, isKnownGeminiEndPhaseReturnEffect, isKnownGeminiStatusEffect, isKnownGrantedSpiritEndPhaseReturnEffect, isKnownRemainFieldEffect, isKnownSetcodeOrCodeTypeBattleProtectionEffect, isKnownSpiritAddTypeEffect, isKnownTemporaryTunerAddTypeEffect } from "#lua/snapshot-restorable-effect-predicates.js";
 import { isKnownXyzMaterialAttackGainTriggerEffect, isKnownXyzMaterialEffectAddType, xyzMaterialAttackGainOperation } from "#lua/snapshot-xyz-material-gain.js";
 import { luaRegistryCardCodes } from "#lua/snapshot-registry-keys.js";
 import { restoredSpecialSummonConditionValueCallbacks } from "#lua/snapshot-special-summon-condition.js";
@@ -35,7 +35,7 @@ import { luaValueDescriptorStatValue } from "#lua/effect-value-descriptor-callba
 import { locationMatchesCardMask, positionMaskFromPosition } from "#lua/api-utils.js"; import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, setcodeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import type { ApplyDuelResponseResult, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
+import type { ApplyDuelResponseResult, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectContext, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 const luaEffectEquipLimit = 76;
 const luaEffectGeminiStatus = 75;
 const luaEffectAddType = 115;
@@ -639,6 +639,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownRemainFieldEffect(effect) ||
         isKnownCannotActivateSpecialSummonedMonsterEffect(effect) ||
         isKnownCannotActivateNonSpiritMonsterEffect(effect) ||
+        isKnownCannotActivateLocationMonsterEffect(effect) ||
         isKnownDoubleSnareValidityEffect(effect) ||
         isKnownSetcodeOrCodeTypeBattleProtectionEffect(effect) ||
         effect.luaValueDescriptor === luaTemporaryControlReturnDescriptor ||
@@ -1133,6 +1134,7 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === "cannot-activate:same-code-monster-effect") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && effect.label !== undefined && currentCardMatchesCode(handler, ctx.duel, String(effect.label))); } }; if (isKnownTemporarySameCodeActivationOathEffect(effect)) return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(source && handler && ((relatedEffect?.luaTypeFlags ?? 0) & 0x10) !== 0 && currentCardMatchesCode(handler, ctx.duel, source.code)); } };
   if (effect.luaValueDescriptor?.startsWith("cannot-activate:setcode-monster-effect:")) return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); const setcode = Number(effect.luaValueDescriptor?.split(":").pop()); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && currentCardMatchesSetcode(handler, ctx.duel, setcode)); } };
   if (effect.luaValueDescriptor === "cannot-activate:spell-trap-effect") return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & 0x6) !== 0); } };
+  if (effect.luaValueDescriptor?.startsWith("cannot-activate:location-monster-effect:")) return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); const mask = Number(effect.luaValueDescriptor?.split(":").pop()); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && (cardLocationMask(handler.location) & mask) !== 0); } };
   if (effect.luaValueDescriptor?.startsWith("cannot-activate:monster-attribute-except:")) return { valuePredicate: (ctx) => { const relatedEffect = relatedEffectFromContext(ctx); const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid); const attribute = Number(effect.luaValueDescriptor?.split(":").pop()); return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && ((handler.data.attribute ?? 0) & ~attribute) !== 0); } };
   if (effect.luaValueDescriptor?.startsWith("cannot-material:summon-types:")) {
     const summonTypes = effect.luaValueDescriptor.slice("cannot-material:summon-types:".length).split(",").map(Number);
@@ -1238,6 +1240,16 @@ function relatedEffectIsNonSpiritMonsterEffect(ctx: Parameters<NonNullable<DuelE
 function relatedEffectFromContext(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): DuelEffectDefinition | undefined {
   const relatedEffectId = ctx.relatedEffectId === undefined ? ctx.chainLink?.effectId : `lua-${ctx.relatedEffectId}`;
   return ctx.duel.effects.find((effect) => effect.id === relatedEffectId || (relatedEffectId !== undefined && effect.id.startsWith(`${relatedEffectId}-`)));
+}
+function cardLocationMask(location: DuelEffectContext["source"]["location"] | undefined): number {
+  if (location === "deck") return 0x01;
+  if (location === "hand") return 0x02;
+  if (location === "monsterZone") return 0x04;
+  if (location === "spellTrapZone") return 0x08;
+  if (location === "graveyard") return 0x10;
+  if (location === "banished") return 0x20;
+  if (location === "extraDeck") return 0x40;
+  return 0;
 }
 function otherPlayer(player: PlayerId): PlayerId {
   return player === 0 ? 1 : 0;

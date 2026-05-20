@@ -10,6 +10,9 @@ const effectTypeActivatePattern = "(?:EFFECT_TYPE_ACTIVATE|16|0x10)";
 const effectTypeActionsPattern = "(?:EFFECT_TYPE_ACTIONS|8|0x8)";
 const effectTypeContinuousPattern = "(?:EFFECT_TYPE_CONTINUOUS|2048|0x800)";
 const locationExtraPattern = "(?:LOCATION_EXTRA|64|0x40)";
+const locationHandPattern = "(?:LOCATION_HAND|2|0x2)";
+const locationGravePattern = "(?:LOCATION_GRAVE|16|0x10)";
+const locationRemovedPattern = "(?:LOCATION_REMOVED|32|0x20)";
 const locationMonsterZonePattern = "(?:LOCATION_MZONE|4|0x4)";
 const reasonBattlePattern = "(?:REASON_BATTLE|32|0x20)";
 const reasonEffectPattern = "(?:REASON_EFFECT|64|0x40)";
@@ -78,6 +81,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (specialSummonedMonsterActivationPredicate) return specialSummonedMonsterActivationPredicate;
   const nonSpiritMonsterActivationPredicate = nonSpiritMonsterActivationPredicateDescriptor(snippet, params);
   if (nonSpiritMonsterActivationPredicate) return nonSpiritMonsterActivationPredicate;
+  const locationMonsterActivationPredicate = locationMonsterActivationPredicateDescriptor(L, index, snippet, params);
+  if (locationMonsterActivationPredicate) return locationMonsterActivationPredicate;
   const spellTrapActivationPredicate = spellTrapActivationPredicateDescriptor(snippet, params);
   if (spellTrapActivationPredicate) return spellTrapActivationPredicate;
   const typedCardActivationPredicate = typedCardActivationPredicateDescriptor(snippet, params);
@@ -580,6 +585,23 @@ function spellTrapActivationPredicateDescriptor(snippet: string, params: string[
   const relatedEffect = escapeRegExp(relatedEffectParam);
   const predicate = new RegExp(`\\breturn\\s+${relatedEffect}\\s*:\\s*IsSpellTrapEffect\\s*\\(\\s*\\)\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:spell-trap-effect" : undefined;
+}
+
+function locationMonsterActivationPredicateDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {
+  const relatedEffectParam = params?.[1];
+  if (!relatedEffectParam) return undefined;
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const localLocation = new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*${relatedEffect}\\s*:\\s*GetActivateLocation\\s*\\(\\s*\\)`).exec(snippet)?.[1];
+  const locationExpression = localLocation ? escapeRegExp(localLocation) : `${relatedEffect}\\s*:\\s*GetActivateLocation\\s*\\(\\s*\\)`;
+  const monsterEffect = `${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
+  const hand = new RegExp(`\\breturn\\s+(?:${locationExpression}\\s*==\\s*${locationHandPattern}\\s+and\\s+${monsterEffect}|${monsterEffect}\\s+and\\s+${locationExpression}\\s*==\\s*${locationHandPattern})\\s*(?:end\\b|$)`);
+  if (hand.test(snippet)) return "cannot-activate:location-monster-effect:2";
+  const graveOrRemoved = new RegExp(`\\breturn\\s+\\(\\s*${locationExpression}\\s*==\\s*${locationGravePattern}\\s+or\\s+${locationExpression}\\s*==\\s*${locationRemovedPattern}\\s*\\)\\s+and\\s+${monsterEffect}\\s*(?:end\\b|$)`);
+  if (graveOrRemoved.test(snippet)) return "cannot-activate:location-monster-effect:48";
+  const directLocationMatch = new RegExp(`\\breturn\\s+(?:${locationExpression}\\s*==\\s*(${numericOrIdentifierPattern})\\s+and\\s+${monsterEffect}|${monsterEffect}\\s+and\\s+${locationExpression}\\s*==\\s*(${numericOrIdentifierPattern}))\\s*(?:end\\b|$)`).exec(snippet);
+  const singleLocation = directLocationMatch?.[1] ?? directLocationMatch?.[2];
+  const value = singleLocation ? luaNumberTokenValue(L, index, singleLocation) : undefined;
+  return value === undefined ? undefined : `cannot-activate:location-monster-effect:${value}`;
 }
 
 function cardActivationPredicateDescriptor(snippet: string, params: string[] | undefined): string | undefined {

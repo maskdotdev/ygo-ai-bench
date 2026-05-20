@@ -20,6 +20,7 @@ const luaResetChain = 0x80000000;
 const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
 const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:special-summoned-monster-on-field";
 const luaCannotActivateNonSpiritMonsterDescriptor = "cannot-activate:non-spirit-monster-effect";
+const luaCannotActivateLocationMonsterPrefix = "cannot-activate:location-monster-effect:";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
 
 export function isKnownCannotBeMaterialEffect(effect: SerializedDuelEffect): boolean {
@@ -123,6 +124,18 @@ export function isKnownCannotActivateNonSpiritMonsterEffect(effect: SerializedDu
     effect.targetRange?.[1] === 1 &&
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone"
+  );
+}
+
+export function isKnownCannotActivateLocationMonsterEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 6 &&
+    effect.luaValueDescriptor?.startsWith(luaCannotActivateLocationMonsterPrefix) === true &&
+    effect.targetRange?.[0] === 1 &&
+    effect.targetRange?.[1] === 1 &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone"
   );
 }
 

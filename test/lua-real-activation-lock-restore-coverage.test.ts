@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const activationLockFixtureCount = 7;
-const activationLockAllowListFixtureCount = 6;
-const activationLockVariantFixtureCount = 14;
-const activationLockInventoryFixtureCount = 18;
+const activationLockFixtureCount = 8;
+const activationLockAllowListFixtureCount = 7;
+const activationLockVariantFixtureCount = 15;
+const activationLockInventoryFixtureCount = 19;
 const activationLockVariantKindCounts = {
   attributeMonsterActivationLock: 6,
   cardActivationLock: 2,
+  locationMonsterActivationLock: 1,
   nonSpiritMonsterActivationLock: 1,
   opponentEffectActivationLock: 2,
   spellCardActivationLock: 1,
@@ -26,6 +27,7 @@ const activationLockSemanticVariantCounts = {
   hiitaFireChannelerAttributeLock: 1,
   inzektorAxeDamagePhaseCardActivationLock: 1,
   lunalightKaleidoChickBattlePhaseOpponentLock: 1,
+  mindDrainHandMonsterLocationLock: 1,
   sanganSameCodeSearchLock: 1,
   sasukeSamuraiSpellTrapNamedPredicateLock: 1,
   shopinaLightCostRegisteredAttributeLock: 1,
@@ -41,6 +43,7 @@ const activationLockSemanticVariantCounts = {
 type ActivationLockVariantKind =
   | "attributeMonsterActivationLock"
   | "cardActivationLock"
+  | "locationMonsterActivationLock"
   | "nonSpiritMonsterActivationLock"
   | "opponentEffectActivationLock"
   | "spellCardActivationLock"
@@ -55,6 +58,7 @@ type ActivationLockSemanticVariant =
   | "hiitaFireChannelerAttributeLock"
   | "inzektorAxeDamagePhaseCardActivationLock"
   | "lunalightKaleidoChickBattlePhaseOpponentLock"
+  | "mindDrainHandMonsterLocationLock"
   | "sanganSameCodeSearchLock"
   | "sasukeSamuraiSpellTrapNamedPredicateLock"
   | "shopinaLightCostRegisteredAttributeLock"
@@ -175,6 +179,7 @@ function realScriptActivationLockInventoryFiles(): string[] {
     "lua-real-script-hiita-channeler-attribute-activation-lock.test.ts",
     "lua-real-script-inzektor-axe-damage-phase-activation-lock.test.ts",
     "lua-real-script-lunalight-kaleido-chick-remove-activation-lock.test.ts",
+    "lua-real-script-mind-drain-hand-monster-activation-lock.test.ts",
     "lua-real-script-sangan-same-code-activation-lock.test.ts",
     "lua-real-script-sasuke-samurai-spelltrap-activation-lock.test.ts",
     "lua-real-script-shopina-light-activation-lock.test.ts",
@@ -195,6 +200,7 @@ function realScriptActivationLockFixtureFiles(): string[] {
     "lua-real-script-amano-iwato-activation-lock.test.ts",
     "lua-real-script-ancient-gear-beast-card-activation-lock.test.ts",
     "lua-real-script-cold-wave-spelltrap-activation-lock.test.ts",
+    "lua-real-script-mind-drain-hand-monster-activation-lock.test.ts",
     "lua-real-script-sangan-same-code-activation-lock.test.ts",
     "lua-real-script-timegazer-trap-activation-lock.test.ts",
     "lua-real-script-wattgiraffe-battle-activation-lock.test.ts",
@@ -253,6 +259,16 @@ function realScriptActivationLockVariantFixtures(): Array<{
         'action.uid === allowedSpirit!.uid)',
         'host.messages).toContain("allowed Spirit resolved")',
         'host.messages).not.toContain("blocked monster resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-mind-drain-hand-monster-activation-lock.test.ts",
+      kind: "locationMonsterActivationLock",
+      requiredSnippets: [
+        'luaValueDescriptor: "cannot-activate:location-monster-effect:2"',
+        "action.uid === handMonster.uid)).toBe(false)",
+        "action.uid === graveMonster.uid)).toBe(true)",
+        "action.uid === handSpell.uid)).toBe(true)",
       ],
     },
     {
@@ -462,6 +478,18 @@ function realScriptActivationLockSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mind-drain-hand-monster-activation-lock.test.ts",
+      kind: "mindDrainHandMonsterLocationLock",
+      requiredSnippets: [
+        'const mindDrainCode = "68937720"',
+        "restores its LP-cost hand monster-effect activation lock while allowing grave monster effects",
+        'luaValueDescriptor: "cannot-activate:location-monster-effect:2"',
+        "lifePoints).toBe(7000)",
+        "action.uid === handMonster.uid)).toBe(false)",
+        "action.uid === graveMonster.uid)).toBe(true)",
+      ],
+    },
+    {
       file: "test/lua-real-script-sangan-same-code-activation-lock.test.ts",
       kind: "sanganSameCodeSearchLock",
       requiredSnippets: [
@@ -596,6 +624,7 @@ function countActivationLockSemanticVariants(
       hiitaFireChannelerAttributeLock: 0,
       inzektorAxeDamagePhaseCardActivationLock: 0,
       lunalightKaleidoChickBattlePhaseOpponentLock: 0,
+      mindDrainHandMonsterLocationLock: 0,
       sanganSameCodeSearchLock: 0,
       sasukeSamuraiSpellTrapNamedPredicateLock: 0,
       shopinaLightCostRegisteredAttributeLock: 0,
@@ -621,6 +650,7 @@ function countActivationLockVariantKinds(
     {
       attributeMonsterActivationLock: 0,
       cardActivationLock: 0,
+      locationMonsterActivationLock: 0,
       nonSpiritMonsterActivationLock: 0,
       opponentEffectActivationLock: 0,
       spellCardActivationLock: 0,
