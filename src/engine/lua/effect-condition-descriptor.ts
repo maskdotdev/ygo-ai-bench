@@ -16,6 +16,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (/\breturn\s+Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s*~=\s*PHASE_DRAW\b/.test(snippet)) return "condition:not-draw-phase";
   const ownFaceupNormalSummonProcedure = ownFaceupNormalSummonProcedureDescriptor(L, index, snippet, hostState);
   if (ownFaceupNormalSummonProcedure !== undefined) return ownFaceupNormalSummonProcedure;
+  const opponentMonsterCountNormalSummonProcedure = opponentMonsterCountNormalSummonProcedureDescriptor(snippet);
+  if (opponentMonsterCountNormalSummonProcedure !== undefined) return opponentMonsterCountNormalSummonProcedure;
   const damageSourceRelateBattleTargetAttribute = /\bDuel\s*\.\s*GetCurrentPhase\s*\(\s*\)/.test(snippet) && /\bPHASE_DAMAGE\b/.test(snippet) && /\bPHASE_DAMAGE_CAL\b/.test(snippet) && /\bIsRelateToBattle\s*\(\s*\)/.test(snippet) && /\bGetBattleTarget\s*\(\s*\)/.test(snippet)
     ? snippet.match(new RegExp(`\\bIsAttribute\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`))
     : undefined;
@@ -398,6 +400,19 @@ function ownFaceupNormalSummonProcedureDescriptor(L: unknown, functionIndex: num
   const sourceLevelAbove = new RegExp(`\\b${card}\\s*:\\s*GetLevel\\s*\\(\\s*\\)\\s*>\\s*(\\d+)`).exec(snippet)?.[1] ?? "0";
   const ownFaceupFilter = ownFaceupNormalSummonFilterDescriptor(L, functionIndex, filterSnippet);
   return ownFaceupFilter === undefined ? undefined : `condition:normal-summon-proc-own-faceup:${ownFaceupFilter.kind}:${ownFaceupFilter.value}:source-level-above:${sourceLevelAbove}`;
+}
+
+function opponentMonsterCountNormalSummonProcedureDescriptor(snippet: string): string | undefined {
+  const params = luaFunctionParams(snippet);
+  const cardParam = params?.[1], minParam = params?.[2];
+  if (!cardParam || !minParam) return undefined;
+  const card = escapeRegExp(cardParam), min = escapeRegExp(minParam);
+  if (!new RegExp(`\\bif\\s+${card}\\s*==\\s*nil\\s+then\\s+return\\s+true\\s+end`).test(snippet)) return undefined;
+  if (!new RegExp(`\\breturn\\s+${min}\\s*==\\s*0\\b`).test(snippet)) return undefined;
+  if (!new RegExp(`\\b${card}\\s*:\\s*GetLevel\\s*\\(\\s*\\)\\s*>\\s*4\\b`).test(snippet)) return undefined;
+  if (!new RegExp(`\\bDuel\\s*\\.\\s*GetLocationCount\\s*\\(\\s*${card}\\s*:\\s*GetControler\\s*\\(\\s*\\)\\s*,\\s*LOCATION_MZONE\\s*\\)\\s*>\\s*0\\b`).test(snippet)) return undefined;
+  const opponentCount = new RegExp(`\\bDuel\\s*\\.\\s*GetFieldGroupCount\\s*\\(\\s*${card}\\s*:\\s*GetControler\\s*\\(\\s*\\)\\s*,\\s*0\\s*,\\s*LOCATION_MZONE\\s*\\)\\s*>=\\s*(\\d+)\\b`).exec(snippet)?.[1];
+  return opponentCount === undefined ? undefined : `condition:normal-summon-proc-opponent-mzone-count-at-least:${opponentCount}:source-level-above:4`;
 }
 
 function damageSourceDuelBattleTargetAttributeDescriptor(L: unknown, functionIndex: number, snippet: string): number | undefined {

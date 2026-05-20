@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 15;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 16;
 const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 14;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
@@ -20,6 +20,7 @@ const summonProcedureKindCounts = {
   handOpponentBackrowCountProcedure: 1,
   handOpponentSpellTrapOrMstProcedure: 1,
   handSendCostProcedure: 1,
+  noTributeOpponentMonsterCountProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
 const summonProcedureSemanticVariantCounts = {
   broadTypedExtraDeckSpiritGeminiProcedures: 1,
@@ -37,6 +38,7 @@ const summonProcedureSemanticVariantCounts = {
   radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 1,
   sprightBlueLevelOrRankOpenZoneProcedureSearch: 1,
   sprightRedLevelOrLinkOpenZoneProcedure: 1,
+  powerInvaderOpponentTwoMonsterNormalSummonProcedure: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
 
 type SummonProcedureKind =
@@ -52,7 +54,8 @@ type SummonProcedureKind =
   | "handOwnFaceupLevelOrLinkOpenZoneProcedure"
   | "handOpponentBackrowCountProcedure"
   | "handOpponentSpellTrapOrMstProcedure"
-  | "handSendCostProcedure";
+  | "handSendCostProcedure"
+  | "noTributeOpponentMonsterCountProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
   | "caligoClawCrowDarkMonsterOpenZoneProcedure"
@@ -68,7 +71,8 @@ type SummonProcedureSemanticVariant =
   | "pankratopsOpponentControlsMoreHandProcedure"
   | "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch"
   | "sprightBlueLevelOrRankOpenZoneProcedureSearch"
-  | "sprightRedLevelOrLinkOpenZoneProcedure";
+  | "sprightRedLevelOrLinkOpenZoneProcedure"
+  | "powerInvaderOpponentTwoMonsterNormalSummonProcedure";
 
 const summonProcedureFixtures = [
   {
@@ -328,6 +332,21 @@ const summonProcedureFixtures = [
       "currentAttack(restoredMegarock, restored.session.state)).toBe(700)",
     ],
   },
+  {
+    file: "test/lua-real-script-power-invader-opponent-count-summon-procedure.test.ts",
+    kind: "noTributeOpponentMonsterCountProcedure",
+    required: [
+      "no-tribute Normal Summon procedure gated by two opponent monsters",
+      'const powerInvaderCode = "18842395"',
+      'action.type === "tributeSummon"',
+      "Duel.GetFieldGroupCount(c:GetControler(),0,LOCATION_MZONE)>=2",
+      "condition:normal-summon-proc-opponent-mzone-count-at-least:2:source-level-above:4",
+      "getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0))",
+      "getLuaRestoreLegalActionGroups(blocked, 0)).toEqual(getGroupedDuelLegalActions(blocked.session, 0))",
+      'eventName: "normalSummoned"',
+      "eventReason: duelReason.summon",
+    ],
+  },
 ] satisfies Array<{
   file: string;
   kind: SummonProcedureKind;
@@ -408,6 +427,7 @@ function countSummonProcedureKinds(
       handOwnEmptyOpponentMonsterProcedure: 0,
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
+      noTributeOpponentMonsterCountProcedure: 0,
     },
   );
 }
@@ -547,6 +567,17 @@ function summonProcedureSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-power-invader-opponent-count-summon-procedure.test.ts",
+      kind: "powerInvaderOpponentTwoMonsterNormalSummonProcedure",
+      required: [
+        'const powerInvaderCode = "18842395"',
+        "restores its no-tribute Normal Summon procedure gated by two opponent monsters",
+        "Duel.GetFieldGroupCount(c:GetControler(),0,LOCATION_MZONE)>=2",
+        "condition:normal-summon-proc-opponent-mzone-count-at-least:2:source-level-above:4",
+        'eventName: "normalSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-radiant-typhoon-eldam-special-summon-procedure-search.test.ts",
       kind: "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch",
       required: [
@@ -595,7 +626,7 @@ function eventRichSummonProcedureFixtures(): Array<{
   required: string[];
 }> {
   return summonProcedureFixtures
-    .filter(({ kind }) => kind !== "broadTypedProcedure")
+    .filter(({ kind }) => kind !== "broadTypedProcedure" && kind !== "noTributeOpponentMonsterCountProcedure")
     .map(({ file, kind }) => ({
       file,
       kind,
@@ -666,6 +697,7 @@ function countSummonProcedureSemanticVariants(
       radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 0,
       sprightBlueLevelOrRankOpenZoneProcedureSearch: 0,
       sprightRedLevelOrLinkOpenZoneProcedure: 0,
+      powerInvaderOpponentTwoMonsterNormalSummonProcedure: 0,
     },
   );
 }
