@@ -1,4 +1,4 @@
-export const freeChainSpecialSummonFixtureCount = 8;
+export const freeChainSpecialSummonFixtureCount = 9;
 
 export const freeChainSpecialSummonKindCounts = {
   continuousSpellIgnitionHandSummon: 1,
@@ -7,6 +7,7 @@ export const freeChainSpecialSummonKindCounts = {
   targetBanishedRockSummonStep: 1,
   targetGraveDragonSummonReplace: 1,
   targetGraveNormalDragonOathSummon: 1,
+  targetGraveSetcodeSummonSelfBanishToHand: 1,
   targetGraveSetcodeDefenseSummon: 1,
   targetGraveSetcodeSummonEndDestroy: 1,
 } satisfies Record<FreeChainSpecialSummonKind, number>;
@@ -18,6 +19,7 @@ export type FreeChainSpecialSummonKind =
   | "targetBanishedRockSummonStep"
   | "targetGraveDragonSummonReplace"
   | "targetGraveNormalDragonOathSummon"
+  | "targetGraveSetcodeSummonSelfBanishToHand"
   | "targetGraveSetcodeDefenseSummon"
   | "targetGraveSetcodeSummonEndDestroy";
 
@@ -142,6 +144,28 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-speed-recovery-revive-self-banish-to-hand.test.ts",
+      kind: "targetGraveSetcodeSummonSelfBanishToHand",
+      required: [
+        "restores targeted Graveyard Speedroid summon and later aux.exccon self-banish add-to-hand",
+        "return c:IsSetCard(SET_SPEEDROID) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetCondition(aux.exccon)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "return c:IsSetCard(SET_SPEEDROID) and c:IsMonster() and c:IsAbleToHand()",
+        "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "operationInfos: [{ category: 0x200",
+        "operationInfos: [{ category: 0x8",
+        'eventName: "specialSummoned"',
+        'eventName: "banished"',
+        'eventName: "sentToHand"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'summonType: "special"',
+      ],
+    },
+    {
       file: "test/lua-real-script-mayhem-fur-hire-target-revive-summon.test.ts",
       kind: "targetGraveSetcodeDefenseSummon",
       required: [
@@ -168,5 +192,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
 }
