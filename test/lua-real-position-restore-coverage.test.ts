@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const POSITION_FIXTURE_COUNT = 8;
+const POSITION_FIXTURE_COUNT = 9;
 const positionKindCounts = {
   banishCostGroupChange: 1,
   battlePhaseSelfDefenseLock: 1,
+  freeChainAllFieldAttackToDefense: 1,
   freeChainGroupTurnSet: 1,
   overlayTargetChange: 1,
   selectEffectFlipSelfReset: 1,
@@ -20,6 +21,7 @@ const positionSemanticVariantCounts = {
   gagagaEscapeBanishCostGroupPositionChange: 1,
   goblinAttackForceBattlePhasePositionLock: 1,
   legendaryWindUpKeyGroupTurnSet: 1,
+  noEntryAllFieldAttackToDefense: 1,
   otohimeSummonTriggerAttackPosition: 1,
   protectiveSoulAilinUnionPositionIgnition: 1,
   subterrorFinalBattleFlipSelfResetSSet: 1,
@@ -29,6 +31,7 @@ const positionSemanticVariantCounts = {
 type PositionKind =
   | "banishCostGroupChange"
   | "battlePhaseSelfDefenseLock"
+  | "freeChainAllFieldAttackToDefense"
   | "freeChainGroupTurnSet"
   | "overlayTargetChange"
   | "selectEffectFlipSelfReset"
@@ -40,6 +43,7 @@ type PositionSemanticVariant =
   | "gagagaEscapeBanishCostGroupPositionChange"
   | "goblinAttackForceBattlePhasePositionLock"
   | "legendaryWindUpKeyGroupTurnSet"
+  | "noEntryAllFieldAttackToDefense"
   | "otohimeSummonTriggerAttackPosition"
   | "protectiveSoulAilinUnionPositionIgnition"
   | "subterrorFinalBattleFlipSelfResetSSet"
@@ -161,6 +165,21 @@ function positionFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-no-entry-group-position.test.ts",
+      kind: "freeChainAllFieldAttackToDefense",
+      required: [
+        'const noEntryCode = "60306104"',
+        "restores No Entry's free-chain all-field Attack Position group switch to Defense",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_POSITION,g,#g,0,0)",
+        "Duel.ChangePosition(g,POS_FACEUP_DEFENSE)",
+        "operationInfos).toEqual([{ category: 0x1000",
+        "targetUids = [ownAttack.uid, opposingAttack.uid]",
+        'eventName: "positionChanged"',
+        'position: "faceUpDefense", faceUp: true',
+      ],
+    },
+    {
       file: "test/lua-real-script-otohime-position-overload.test.ts",
       kind: "summonTriggerAttackPosition",
       required: [
@@ -221,6 +240,7 @@ function countPositionKinds(fixtures: Array<{ kind: PositionKind }>): Record<Pos
     {
       banishCostGroupChange: 0,
       battlePhaseSelfDefenseLock: 0,
+      freeChainAllFieldAttackToDefense: 0,
       freeChainGroupTurnSet: 0,
       overlayTargetChange: 0,
       selectEffectFlipSelfReset: 0,
@@ -273,6 +293,17 @@ function positionSemanticVariants(): Array<{
         "return c:IsFaceup() and c:IsSetCard(SET_WIND_UP) and c:IsCanTurnSet()",
         'eventName: "positionChanged"',
         'position: "faceDownDefense", faceUp: false',
+      ],
+    },
+    {
+      file: "test/lua-real-script-no-entry-group-position.test.ts",
+      kind: "noEntryAllFieldAttackToDefense",
+      required: [
+        'const noEntryCode = "60306104"',
+        "restores No Entry's free-chain all-field Attack Position group switch to Defense",
+        "return c:IsPosition(POS_FACEUP_ATTACK) and c:IsCanChangePosition()",
+        'eventName: "positionChanged"',
+        'position: "faceUpDefense", faceUp: true',
       ],
     },
     {
@@ -333,6 +364,7 @@ function countPositionSemanticVariants(
       gagagaEscapeBanishCostGroupPositionChange: 0,
       goblinAttackForceBattlePhasePositionLock: 0,
       legendaryWindUpKeyGroupTurnSet: 0,
+      noEntryAllFieldAttackToDefense: 0,
       otohimeSummonTriggerAttackPosition: 0,
       protectiveSoulAilinUnionPositionIgnition: 0,
       subterrorFinalBattleFlipSelfResetSSet: 0,
