@@ -50,6 +50,7 @@ const luaEffectIndestructibleBattle = 42;
 const luaEffectForceMonsterZone = 265;
 const luaEffectFlagClientHint = 0x4000000;
 const luaEffectFlagPlayerTarget = 0x800;
+const luaReinforceCode = "71948047";
 const luaEventAdjust = 1040;
 const luaUnionStateEffectCodes = new Set([luaEffectEquipLimit, luaEffectUnionStatus, luaEffectOldUnionStatus]);
 const luaEquipLeaveFieldBanishTargetCodes = new Set(["48206762", "74694807"]);
@@ -688,6 +689,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
         isKnownLifePointReasonPredicateEffect(effect) ||
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
+        isKnownReinforceMonsterEffectImmunity(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownChangeBattleStatToDefenseEffect(effect) ||
         isKnownDharcProcedurePierceEffect(effect) ||
@@ -1060,6 +1062,19 @@ function isKnownIndestructibleValueEffect(effect: SerializedDuelEffect): boolean
   );
 }
 
+function isKnownReinforceMonsterEffectImmunity(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaReinforceCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 1 &&
+    effect.sourceUid !== undefined &&
+    effect.reset !== undefined &&
+    effect.targetRange === undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
 function isStaticNotSetcodeSummonRestriction(effect: SerializedDuelEffect): boolean {
   return (effect.code === 20 || effect.code === 22) && (notSetcodeTargetDescriptor(effect.luaTargetDescriptor) !== undefined || effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-setcode-extra:") === true);
 }
@@ -1355,6 +1370,15 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   }
   if (effect.luaValueDescriptor === "indestructible:self") {
     return { valuePredicate: (_ctx, player) => player !== undefined && player === effect.controller };
+  }
+  if (isKnownReinforceMonsterEffectImmunity(effect)) {
+    return {
+      valuePredicate: (ctx) => {
+        const relatedEffect = relatedEffectFromContext(ctx);
+        const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid);
+        return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && relatedEffect?.controller !== effect.controller);
+      },
+    };
   }
   if (effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous") {
     return { valuePredicate: (ctx) => ctx.eventReasonPlayer === otherPlayer(effect.controller) && !relatedEffectIsContinuous(ctx) };

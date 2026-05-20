@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 207;
+export const operationFixtureCount = 208;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -101,6 +101,7 @@ export const operationKindCounts = {
   raidraptorBattleDestroyDamage: 1,
   releaseDamage: 3,
   reviveStatBattleDamage: 1,
+  rescueStatProtectGraveSet: 1,
   ritualDeckMaterials: 1,
   searchOrExcavate: 39,
   selfEquipFromHand: 1,
@@ -249,6 +250,7 @@ export type OperationKind =
   | "raidraptorBattleDestroyDamage"
   | "releaseDamage"
   | "reviveStatBattleDamage"
+  | "rescueStatProtectGraveSet"
   | "ritualDeckMaterials"
   | "searchOrExcavate"
   | "selfEquipFromHand"
@@ -3104,6 +3106,31 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-reinforce-stat-protect-grave-set.test.ts",
+      kind: "rescueStatProtectGraveSet",
+      required: [
+        "restores Rescue-ACE target stat protection and grave self-banish Set operation",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsSetCard,SET_RESCUE_ACE),tp,LOCATION_MZONE,0,1,1,nil)",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_UPDATE_DEFENSE",
+        "EFFECT_IMMUNE_EFFECT",
+        "EFFECT_INDESTRUCTABLE_COUNT",
+        "e2:SetCategory(CATEGORY_LEAVE_GRAVE+CATEGORY_SET)",
+        "Cost.SelfBanish",
+        "Duel.SelectTarget(tp,s.setfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SSet(tp,tc)",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "banished"',
+        'eventName: "spellTrapSet"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -3227,6 +3254,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       raidraptorBattleDestroyDamage: 0,
       releaseDamage: 0,
       reviveStatBattleDamage: 0,
+      rescueStatProtectGraveSet: 0,
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
