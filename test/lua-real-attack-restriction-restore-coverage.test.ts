@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackRestrictionFixtureCount = 9;
+const attackRestrictionFixtureCount = 10;
 const attackRestrictionKindCounts = {
   counterGate: 1,
   levelGate: 1,
-  maleficOtherMonsterLock: 1,
+  maleficOtherMonsterLock: 2,
   maintenanceCostGate: 1,
   remainFieldTurnCounter: 1,
   selfCostLock: 2,
@@ -20,6 +20,7 @@ const attackRestrictionSemanticVariantCounts = {
   gravityBindPersistentLevelAttackGate: 1,
   heliosphereTargetCountAttackAnnounceGate: 1,
   maleficCyberEndOtherMonsterLockSelfDestroy: 1,
+  maleficRedEyesDeckOtherMonsterLockSelfDestroy: 1,
   messengerPeaceMaintenanceAtkThresholdGate: 1,
   sixSamuraiKamonCostCannotAttackAnnounce: 1,
   swordsRevealingLightRemainFieldTurnLock: 1,
@@ -41,6 +42,7 @@ type AttackRestrictionSemanticVariant =
   | "gravityBindPersistentLevelAttackGate"
   | "heliosphereTargetCountAttackAnnounceGate"
   | "maleficCyberEndOtherMonsterLockSelfDestroy"
+  | "maleficRedEyesDeckOtherMonsterLockSelfDestroy"
   | "messengerPeaceMaintenanceAtkThresholdGate"
   | "sixSamuraiKamonCostCannotAttackAnnounce"
   | "swordsRevealingLightRemainFieldTurnLock"
@@ -97,6 +99,17 @@ function realScriptAttackRestrictionFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-malefic-red-eyes-deck-attack-self-destroy.test.ts",
+      kind: "maleficOtherMonsterLock",
+      required: [
+        "restores Malefic Deck material summon, other-monster attack lock, and missing-field self-destroy",
+        "aux.AddMaleficSummonProcedure(c,CARD_REDEYES_B_DRAGON,LOCATION_DECK)",
+        "EFFECT_CANNOT_ATTACK_ANNOUNCE",
+        "EFFECT_SELF_DESTROY",
+        "malefic red eyes CanAttack true/false",
+      ],
+    },
     {
       file: "test/lua-real-script-gravity-bind-persistent-attack-lock.test.ts",
       kind: "levelGate",
@@ -263,6 +276,17 @@ function realScriptAttackRestrictionSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-malefic-red-eyes-deck-attack-self-destroy.test.ts",
+      kind: "maleficRedEyesDeckOtherMonsterLockSelfDestroy",
+      required: [
+        'const maleficRedEyesCode = "55343236"',
+        'const redEyesCode = "74677422"',
+        "c:SetUniqueOnField(1,1,aux.MaleficUniqueFilter(c),LOCATION_MZONE)",
+        "hasAttack(battleActions, ally.uid, target.uid)).toBe(false)",
+        "reasonEffectId: 3",
+      ],
+    },
+    {
       file: "test/lua-real-script-kamon-destroy-replace-attack-lock.test.ts",
       kind: "sixSamuraiKamonCostCannotAttackAnnounce",
       required: [
@@ -335,6 +359,7 @@ function countAttackRestrictionSemanticVariants(
       gravityBindPersistentLevelAttackGate: 0,
       heliosphereTargetCountAttackAnnounceGate: 0,
       maleficCyberEndOtherMonsterLockSelfDestroy: 0,
+      maleficRedEyesDeckOtherMonsterLockSelfDestroy: 0,
       messengerPeaceMaintenanceAtkThresholdGate: 0,
       sixSamuraiKamonCostCannotAttackAnnounce: 0,
       swordsRevealingLightRemainFieldTurnLock: 0,
