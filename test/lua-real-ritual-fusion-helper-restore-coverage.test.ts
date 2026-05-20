@@ -1,6 +1,6 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 41, ritual: 18 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 42, ritual: 18 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
@@ -12,7 +12,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionAddProcFunRepSetcodeMetadata: 1,
   fusionAddProcMixMaterialMetadata: 1,
   fusionAddProcMixTableUnpackMaterialMetadata: 1,
-  fusionAddProcMixAttackBelowPredicateMetadata: 1, fusionAddProcMixAttackPredicateMetadata: 1, fusionAddProcMixNamedFilterMetadata: 1, fusionAddProcMixNamedLevelFilterMetadata: 1, fusionAddProcMixNamedPredicateMetadata: 1, fusionAddProcMixNMixedMetadata: 1, fusionAddProcMixNRepeatedAttackBelowMetadata: 1, fusionAddProcMixNRepeatedCodeMetadata: 1, fusionAddProcMixNRepeatedPlusTypeMetadata: 1, fusionAddProcMixNSetcodeMetadata: 1, fusionAddProcMixPlusTypePredicateMetadata: 1, fusionAddProcMixPredicateMetadata: 1,
+  fusionAddProcMixAttackBelowPredicateMetadata: 1, fusionAddProcMixAttackPredicateMetadata: 1, fusionAddProcMixNamedFilterMetadata: 1, fusionAddProcMixNamedLevelFilterMetadata: 1, fusionAddProcMixNamedPredicateMetadata: 1, fusionAddProcMixNMixedMetadata: 1, fusionAddProcMixNRepeatedAttackBelowMetadata: 1, fusionAddProcMixNRepeatedCodeMetadata: 1, fusionAddProcMixNRepeatedPlusTypeMetadata: 1, fusionAddProcMixNRepeatedTypeMetadata: 1, fusionAddProcMixNSetcodeMetadata: 1, fusionAddProcMixPlusTypePredicateMetadata: 1, fusionAddProcMixPredicateMetadata: 1,
   fusionAddProcMixRepExactCodeMetadata: 1, fusionAddProcMixRepLocationMetadata: 1, fusionAddProcMixRepNamedFilterMetadata: 1, fusionAddProcMixRepRequiredSetcodeMetadata: 1, fusionAddProcMixRepSetcodeMetadata: 1,
   fusionDeckMaterialOath: 1,
   fusionForcedHandler: 1,
@@ -63,6 +63,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
   meteonisRequirementFunc: 1,
   polymerizationHandMaterials: 1,
   fullmetalfoesCreateSummonEffSetcodeFilter: 1,
+  theseusAddProcMixNRepeatedType: 1,
   primiteFcheck: 1,
   primiteFcheckSuppression: 1,
   secretsDarkMagicMatcheck: 1,
@@ -72,7 +73,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(59);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(60);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -141,7 +142,7 @@ type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummon
   | "fusionAddProcFun2PredicateMetadata"
   | "fusionAddProcFunRepSetcodeMetadata"
   | "fusionAddProcMixMaterialMetadata" | "fusionAddProcMixTableUnpackMaterialMetadata" | "fusionAddProcMixAttackBelowPredicateMetadata" | "fusionAddProcMixAttackPredicateMetadata"
-  | "fusionAddProcMixNamedFilterMetadata" | "fusionAddProcMixNamedLevelFilterMetadata" | "fusionAddProcMixNamedPredicateMetadata" | "fusionAddProcMixNMixedMetadata" | "fusionAddProcMixNRepeatedAttackBelowMetadata" | "fusionAddProcMixNRepeatedCodeMetadata" | "fusionAddProcMixNRepeatedPlusTypeMetadata" | "fusionAddProcMixNSetcodeMetadata" | "fusionAddProcMixPlusTypePredicateMetadata" | "fusionAddProcMixPredicateMetadata"
+  | "fusionAddProcMixNamedFilterMetadata" | "fusionAddProcMixNamedLevelFilterMetadata" | "fusionAddProcMixNamedPredicateMetadata" | "fusionAddProcMixNMixedMetadata" | "fusionAddProcMixNRepeatedAttackBelowMetadata" | "fusionAddProcMixNRepeatedCodeMetadata" | "fusionAddProcMixNRepeatedPlusTypeMetadata" | "fusionAddProcMixNRepeatedTypeMetadata" | "fusionAddProcMixNSetcodeMetadata" | "fusionAddProcMixPlusTypePredicateMetadata" | "fusionAddProcMixPredicateMetadata"
   | "fusionAddProcMixRepExactCodeMetadata" | "fusionAddProcMixRepLocationMetadata" | "fusionAddProcMixRepNamedFilterMetadata" | "fusionAddProcMixRepRequiredSetcodeMetadata" | "fusionAddProcMixRepSetcodeMetadata"
   | "fusionDeckMaterialOath"
   | "fusionForcedHandler"
@@ -191,6 +192,7 @@ type RitualFusionHelperSemanticVariant =
   | "meteonisRequirementFunc"
   | "polymerizationHandMaterials"
   | "fullmetalfoesCreateSummonEffSetcodeFilter"
+  | "theseusAddProcMixNRepeatedType"
   | "primiteFcheck"
   | "primiteFcheckSuppression"
   | "secretsDarkMagicMatcheck"
@@ -288,6 +290,16 @@ function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: Ritua
         'const fullmetalfoesFusionCode = "39564736"',
         "Fusion.CreateSummonEff(c,aux.FilterBoolFunction(Card.IsSetCard,SET_METALFOES))",
         "summonMaterialUids: [materialA.uid, materialB.uid]",
+      ],
+    },
+    {
+      file: "test/lua-real-script-theseus-addprocmixn-tuner-fusion.test.ts",
+      kind: "theseusAddProcMixNRepeatedType",
+      required: [
+        "restores exactly two Tuner repeated Fusion materials from AddProcMixN",
+        'const polymerizationCode = "24094653", theseusCode = "96334243"',
+        "Fusion.AddProcMixN(c,true,true,aux.FilterBoolFunctionEx(Card.IsType,TYPE_TUNER),2)",
+        "summonMaterialUids: [tunerA.uid, tunerB.uid]",
       ],
     },
     {
@@ -897,6 +909,7 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
     { file: "test/lua-real-script-cyber-end-dragon-addprocmixn-fusion.test.ts", kind: "fusionAddProcMixNRepeatedCodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN metadata", "expect(cyberEnd!.data.fusionMaterials).toEqual([cyberDragonCode, cyberDragonCode, cyberDragonCode])", "expect(restored.session.state.cards.find((card) => card.uid === cyberEnd!.uid)?.data.fusionMaterials).toEqual([cyberDragonCode, cyberDragonCode, cyberDragonCode])", "operationInfos).toEqual([", "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }", 'summonType: "fusion"', "summonMaterialUids: cyberDragons.map((card) => card.uid)", "reason: duelReason.effect | duelReason.material | duelReason.fusion", 'eventName === "usedAsMaterial"', 'eventName === "specialSummoned"', 'expect(restored.host.messages).not.toContain("cyber end responder resolved")'] },
     { file: "test/lua-real-script-vision-hero-trinity-addprocmixn-setcode-fusion.test.ts", kind: "fusionAddProcMixNSetcodeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN setcode metadata", "expect(trinity!.data).toMatchObject({ fusionMaterialMin: 3, fusionMaterialMax: 3, fusionMaterialSetcode: setHero })", "expect(trinity!.data.fusionMaterials).toBeUndefined()", "expect(directFusionActions[0]!.materialUids).toEqual(heroMaterials.map((card) => card.uid))", "directFusionActions.some((action) => action.materialUids.includes(nonHero!.uid))", "summonMaterialUids: heroMaterials.map((card) => card.uid)"] },
     { file: "test/lua-real-script-elder-entity-norden-addprocmixn-plus-type-fusion.test.ts", kind: "fusionAddProcMixNRepeatedPlusTypeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN plus-type metadata", "fusionMaterialType: typeXyz | typeSynchro", "expect(directFusionActions[0]!.materialUids).toEqual(materials.map((card) => card.uid))", "directFusionActions.some((action) => action.materialUids.includes(fusionDecoy!.uid))", "summonMaterialUids: materials.map((card) => card.uid)"] },
+    { file: "test/lua-real-script-theseus-addprocmixn-tuner-fusion.test.ts", kind: "fusionAddProcMixNRepeatedTypeMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN(c,true,true,aux.FilterBoolFunctionEx(Card.IsType,TYPE_TUNER),2)", "fusionMaterialType: typeTuner", "expect(directFusionActions[0]!.materialUids).toEqual([tunerA.uid, tunerB.uid])", "directFusionActions.some((action) => action.materialUids.includes(nonTuner.uid))", "summonMaterialUids: [tunerA.uid, tunerB.uid]", 'expect(restored.host.messages).not.toContain("theseus responder resolved")'] },
     { file: "test/lua-real-script-starving-venom-addprocmixn-named-filter-fusion.test.ts", kind: "fusionAddProcMixNamedFilterMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN named filter metadata", "fusionMaterialAttribute: attributeDark", "fusionMaterialLocation: locationOnField", "fusionMaterialExcludedType: typeToken", "expect(directFusionActions[0]!.materialUids).toEqual(darkMaterials.map((card) => card.uid))", "directFusionActions.some((action) => action.materialUids.includes(darkTokenDecoy!.uid))", "summonMaterialUids: darkMaterials.map((card) => card.uid)"] },
     { file: "test/lua-real-script-darklord-eveningstar-addprocmixn-level-filter-fusion.test.ts", kind: "fusionAddProcMixNamedLevelFilterMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN level filter metadata", "fusionMaterialLevelMin: 6", "fusionMaterialAttribute: attributeDark", "fusionMaterialRace: raceFairy", "expect(directFusionActions[0]!.materialUids).toEqual(materials.map((card) => card.uid))", "directFusionActions.some((action) => action.materialUids.includes(lowDarkFairyDecoy!.uid))", "summonMaterialUids: materials.map((card) => card.uid)"] },
     { file: "test/lua-real-script-ultimate-ancient-gear-golem-addprocmixn-mixed-fusion.test.ts", kind: "fusionAddProcMixNMixedMetadata", families: ["fusion"], required: ["Fusion.AddProcMixN mixed metadata", "expect(ultimateGolem!.data).toMatchObject({ fusionMaterials: [ancientGearGolemCode], fusionMaterialMin: 2, fusionMaterialMax: 2, fusionMaterialSetcode: setAncientGear })", "expect(directFusionActions[0]!.materialUids).toEqual([ancientGearGolem!.uid, ...ancientGearMaterials.map((card) => card.uid)])", "directFusionActions.some((action) => action.materialUids.includes(offSet!.uid))", "summonMaterialUids: [ancientGearGolem!.uid, ...ancientGearMaterials.map((card) => card.uid)]"] },
