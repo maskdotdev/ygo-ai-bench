@@ -4,20 +4,21 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 10;
+const continuousOperationFixtureCount = 11;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
   chainSolvingDoubleSnareNegateDestroy: 1,
   chainSolvingDiceNegateDestroy: 1,
   chainSolvingEquipNegateSend: 1,
   chainSolvingCustomSearch: 1,
-  continuousRedirect: 2,
+  continuousRedirect: 3,
   endPhaseControlReturn: 1,
   originalCodeSummonLock: 1,
   summonTriggerBackrowDestroy: 1,
 } satisfies Record<ContinuousOperationKind, number>;
 const continuousOperationSemanticVariantCounts = {
   abyssScaleMizuchiSpellNegateSend: 1,
+  banisherLightGlobalToGraveRedirect: 1,
   changeOfHeartEndPhaseControlReturn: 1,
   coreOfChaosFaceUpLeaveFieldRedirect: 1,
   darkMagicianOriginalCodeSummonLock: 1,
@@ -42,6 +43,7 @@ type ContinuousOperationKind =
 
 type ContinuousOperationSemanticVariant =
   | "abyssScaleMizuchiSpellNegateSend"
+  | "banisherLightGlobalToGraveRedirect"
   | "changeOfHeartEndPhaseControlReturn"
   | "coreOfChaosFaceUpLeaveFieldRedirect"
   | "darkMagicianOriginalCodeSummonLock"
@@ -196,6 +198,18 @@ function continuousOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-banisher-light-to-grave-redirect.test.ts",
+      kind: "continuousRedirect",
+      required: [
+        "restores global IsPlayerCanRemove EFFECT_TO_GRAVE_REDIRECT for monsters and set Spell/Trap cards",
+        "EFFECT_FLAG_SET_AVAILABLE+EFFECT_FLAG_IGNORE_RANGE+EFFECT_FLAG_IGNORE_IMMUNE",
+        "Duel.IsPlayerCanRemove(e:GetHandlerPlayer(),c)",
+        "property: 0x1a0",
+        "duelReason.effect | duelReason.redirect",
+        'location: "banished"',
+      ],
+    },
+    {
       file: "test/lua-real-script-core-of-chaos-faceup-redirect.test.ts",
       kind: "continuousRedirect",
       required: [
@@ -281,6 +295,17 @@ function continuousOperationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-banisher-light-to-grave-redirect.test.ts",
+      kind: "banisherLightGlobalToGraveRedirect",
+      required: [
+        'const banisherCode = "61528025"',
+        "restores global IsPlayerCanRemove EFFECT_TO_GRAVE_REDIRECT for monsters and set Spell/Trap cards",
+        "targetRange: [0xff, 0xff]",
+        "value: 0x20",
+        "banisher can remove true/true/true",
+      ],
+    },
     {
       file: "test/lua-real-script-skull-archfiend-dice-target-negate.test.ts",
       kind: "skullArchfiendDiceTargetNegateDestroy",
@@ -419,6 +444,7 @@ function countContinuousOperationSemanticVariants(
     },
     {
       abyssScaleMizuchiSpellNegateSend: 0,
+      banisherLightGlobalToGraveRedirect: 0,
       changeOfHeartEndPhaseControlReturn: 0,
       coreOfChaosFaceUpLeaveFieldRedirect: 0,
       darkMagicianOriginalCodeSummonLock: 0,
