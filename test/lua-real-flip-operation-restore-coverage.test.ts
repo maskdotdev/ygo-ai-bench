@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const flipOperationFixtureCount = 5;
+const flipOperationFixtureCount = 6;
 const flipOperationKindCounts = {
   flipGroupDestroy: 1,
   flipSpellTrapDestroy: 1,
-  flipTargetToHand: 3,
+  flipTargetToHand: 4,
 } satisfies Record<FlipOperationKind, number>;
 const flipOperationSemanticVariantCounts = {
+  duckerGraveLevel4ToHand: 1,
   fourStarredLadybugOpponentLevel4GroupDestroy: 1,
   gravekeeperGuardOpponentMonsterReturn: 1,
   magicianOfFaithGraveSpellConfirmToHand: 1,
@@ -18,7 +19,7 @@ const flipOperationSemanticVariantCounts = {
 } satisfies Record<FlipOperationSemanticVariant, number>;
 
 type FlipOperationKind = "flipGroupDestroy" | "flipSpellTrapDestroy" | "flipTargetToHand";
-type FlipOperationSemanticVariant = "fourStarredLadybugOpponentLevel4GroupDestroy" | "gravekeeperGuardOpponentMonsterReturn" | "magicianOfFaithGraveSpellConfirmToHand" | "wormApocalypseSpellTrapDestroy";
+type FlipOperationSemanticVariant = "duckerGraveLevel4ToHand" | "fourStarredLadybugOpponentLevel4GroupDestroy" | "gravekeeperGuardOpponentMonsterReturn" | "magicianOfFaithGraveSpellConfirmToHand" | "wormApocalypseSpellTrapDestroy";
 
 describe("Lua real Flip operation restore coverage", () => {
   it("requires Flip operation fixtures to assert clean Lua registry restore, targets, and operation metadata", () => {
@@ -68,6 +69,23 @@ describe("Lua real Flip operation restore coverage", () => {
 
 function flipOperationFixtureFiles(): Array<{ file: string; kind: FlipOperationKind; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-ducker-flip-grave-level4-to-hand.test.ts",
+      kind: "flipTargetToHand",
+      required: [
+        "restores targeted own Graveyard Level 4 return without public confirmation",
+        'const duckerCode = "14506878"',
+        "return c:GetLevel()==4 and c:IsAbleToHand()",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,g,#g,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "expect(script).not.toContain(\"Duel.ConfirmCards\")",
+        "operationInfos: [{ category: 0x8",
+        "targetUids: [target.uid]",
+        'eventName: "sentToHand"',
+      ],
+    },
     {
       file: "test/lua-real-script-four-starred-ladybug-flip-group-destroy.test.ts",
       kind: "flipGroupDestroy",
@@ -152,6 +170,18 @@ function flipOperationFixtureFiles(): Array<{ file: string; kind: FlipOperationK
 function flipOperationSemanticVariants(): Array<{ file: string; kind: FlipOperationSemanticVariant; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-ducker-flip-grave-level4-to-hand.test.ts",
+      kind: "duckerGraveLevel4ToHand",
+      required: [
+        'const duckerCode = "14506878"',
+        'triggerBucket: "turnMandatory"',
+        "expect(script).not.toContain(\"Duel.ConfirmCards\")",
+        "restoredChain.host.messages).toEqual([])",
+        "eventReasonCardUid: ducker.uid",
+        "eventReasonEffectId: 1",
+      ],
+    },
+    {
       file: "test/lua-real-script-four-starred-ladybug-flip-group-destroy.test.ts",
       kind: "fourStarredLadybugOpponentLevel4GroupDestroy",
       required: [
@@ -213,5 +243,5 @@ function countFlipOperationSemanticVariants(
   return fixtures.reduce<Record<FlipOperationSemanticVariant, number>>((counts, fixture) => {
     counts[fixture.kind] += 1;
     return counts;
-  }, { fourStarredLadybugOpponentLevel4GroupDestroy: 0, gravekeeperGuardOpponentMonsterReturn: 0, magicianOfFaithGraveSpellConfirmToHand: 0, wormApocalypseSpellTrapDestroy: 0 });
+  }, { duckerGraveLevel4ToHand: 0, fourStarredLadybugOpponentLevel4GroupDestroy: 0, gravekeeperGuardOpponentMonsterReturn: 0, magicianOfFaithGraveSpellConfirmToHand: 0, wormApocalypseSpellTrapDestroy: 0 });
 }
