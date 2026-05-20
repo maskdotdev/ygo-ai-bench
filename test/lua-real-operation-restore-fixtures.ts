@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 186;
+export const operationFixtureCount = 187;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -102,6 +102,7 @@ export const operationKindCounts = {
   setAttackFinalSpecialDamage: 1,
   selectEffectStat: 1,
   selectEffectStatDestroyedToGrave: 1,
+  selectEffectStatDestroy: 1,
   specialSearchMaterialDamage: 1,
   summonDelayedStatDestroy: 1,
   summonFieldMillStat: 1,
@@ -233,6 +234,7 @@ export type OperationKind =
   | "setAttackFinalSpecialDamage"
   | "selectEffectStat"
   | "selectEffectStatDestroyedToGrave"
+  | "selectEffectStatDestroy"
   | "specialSearchMaterialDamage"
   | "summonDelayedStatDestroy"
   | "summonFieldMillStat"
@@ -266,6 +268,30 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-dark-end-evaporation-select-stat-destroy.test.ts",
+      kind: "selectEffectStatDestroy",
+      required: [
+        "restores selected stat-loss branch into target destruction",
+        "e2:SetType(EFFECT_TYPE_IGNITION)",
+        "e2:SetRange(LOCATION_MZONE)",
+        "local fustg=Fusion.SummonEffTG()",
+        "local op=Duel.SelectEffect(tp,",
+        "e:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE+CATEGORY_DESTROY)",
+        "e:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,Card.IsAttackPos,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,c)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,c,1,tp,-500)",
+        "Duel.SetOperationInfo(0,CATEGORY_DEFCHANGE,c,1,tp,-500)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,tp,0)",
+        "if c:UpdateAttack(-500)==-500 and c:UpdateDefense(-500)==-500 then",
+        "local tc=Duel.GetFirstTarget()",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        'api: "SelectEffect"',
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-vampire-kingdom-operated-destroy.test.ts",
       kind: "toGraveOperatedDestroy",
@@ -2762,6 +2788,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       setAttackFinalSpecialDamage: 0,
       selectEffectStat: 0,
       selectEffectStatDestroyedToGrave: 0,
+      selectEffectStatDestroy: 0,
       specialSearchMaterialDamage: 0,
       summonDelayedStatDestroy: 0,
       summonFieldMillStat: 0,
