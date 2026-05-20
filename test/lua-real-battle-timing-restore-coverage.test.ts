@@ -4,20 +4,21 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 42;
-const battleTimingEventCodeFixtureCount = 42;
+const battleTimingFixtureCount = 43;
+const battleTimingEventCodeFixtureCount = 43;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 18,
   beforeDamageCalculation: 8,
   duringDamageCalculation: 5,
-  endDamageStep: 6,
+  endDamageStep: 7,
   startDamageStep: 5,
 };
 const battleTimingSemanticVariantCounts = {
   allyOfJusticeNullfierAfterDamageDisable: 1,
   aojOmniWeaponBattledLabelDrawSummon: 1,
   bigShieldGardnaEndDamageStepPosition: 1,
+  blackwingArmorMasterEndDamageCounterStat: 1,
   cipherSoldierBeforeDamageCalculationBoost: 1,
   ddAssailantAfterDamageBanishBoth: 1,
   ddWarriorWallMandatoryBattledSegoc: 1,
@@ -122,6 +123,7 @@ type BattleTimingSemanticVariant =
   | "allyOfJusticeNullfierAfterDamageDisable"
   | "aojOmniWeaponBattledLabelDrawSummon"
   | "bigShieldGardnaEndDamageStepPosition"
+  | "blackwingArmorMasterEndDamageCounterStat"
   | "cipherSoldierBeforeDamageCalculationBoost"
   | "ddAssailantAfterDamageBanishBoth"
   | "ddWarriorWallMandatoryBattledSegoc"
@@ -195,6 +197,21 @@ function battleTimingSemanticVariants(): Array<{
         "Duel.ChangePosition(c,POS_FACEUP_ATTACK)",
         "eventName: \"damageStepEnded\"",
         "eventName: \"positionChanged\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-blackwing-armor-master-counter-stat.test.ts",
+      kind: "blackwingArmorMasterEndDamageCounterStat",
+      required: [
+        "restores battle immunity, end-Damage-Step Wedge Counter placement, and counter-cost final ATK/DEF zeroing",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        "EFFECT_AVOID_BATTLE_DAMAGE",
+        "e3:SetCode(EVENT_DAMAGE_STEP_END)",
+        "atg:AddCounter(0x1002,1)",
+        "Duel.SetTargetCard(g)",
+        "eventName: \"counterAdded\"",
+        "currentAttack(restoredFinalStats.session.state.cards.find((card) => card.uid === target.uid), restoredFinalStats.session.state)).toBe(0)",
+        "currentDefense(restoredFinalStats.session.state.cards.find((card) => card.uid === target.uid), restoredFinalStats.session.state)).toBe(0)",
       ],
     },
     {
@@ -491,6 +508,7 @@ function countBattleTimingSemanticVariants(
       allyOfJusticeNullfierAfterDamageDisable: 0,
       aojOmniWeaponBattledLabelDrawSummon: 0,
       bigShieldGardnaEndDamageStepPosition: 0,
+      blackwingArmorMasterEndDamageCounterStat: 0,
       cipherSoldierBeforeDamageCalculationBoost: 0,
       ddAssailantAfterDamageBanishBoth: 0,
       ddWarriorWallMandatoryBattledSegoc: 0,
@@ -592,6 +610,18 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventCode: 1016",
         "eventReasonEffectId: 2",
         'position: "faceUpAttack"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-blackwing-armor-master-counter-stat.test.ts",
+      kind: "endDamageStep",
+      required: [
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'eventName: "damageStepEnded"',
+        "eventCode: 1141",
+        "eventName: \"counterAdded\"",
+        "currentAttack(restoredFinalStats.session.state.cards.find((card) => card.uid === target.uid), restoredFinalStats.session.state)).toBe(0)",
+        "currentDefense(restoredFinalStats.session.state.cards.find((card) => card.uid === target.uid), restoredFinalStats.session.state)).toBe(0)",
       ],
     },
     {
