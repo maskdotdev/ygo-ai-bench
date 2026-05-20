@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 24;
+const summonTriggerOperationFixtureCount = 25;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
@@ -21,6 +21,7 @@ const summonTriggerOperationKindCounts = {
   summonToGraveDeckSummon: 1,
   summonToDeck: 1,
   summonTargetDestroy: 1,
+  summonTargetLevelUpdate: 1,
   summonToHandBounce: 2,
 } satisfies Record<SummonTriggerOperationKind, number>;
 const summonTriggerOperationSemanticVariantCounts = {
@@ -31,6 +32,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   craneCraneStepReviveDisableOnSummon: 1,
   cyberDinosaurOpponentHandSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
+  flameArmorNinjaSummonLevelUpdate: 1,
   floowandereezeRobinaSearchNormalSummon: 1,
   gemArmadilloNormalSummonSearch: 1,
   gemKnightObsidianHandToGraveyardRevive: 1,
@@ -66,6 +68,7 @@ type SummonTriggerOperationKind =
   | "summonToGraveDeckSummon"
   | "summonToDeck"
   | "summonTargetDestroy"
+  | "summonTargetLevelUpdate"
   | "summonToHandBounce";
 type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
@@ -75,6 +78,7 @@ type SummonTriggerOperationSemanticVariant =
   | "craneCraneStepReviveDisableOnSummon"
   | "cyberDinosaurOpponentHandSummon"
   | "darkDustSpiritMassDestroyOnSummon"
+  | "flameArmorNinjaSummonLevelUpdate"
   | "floowandereezeRobinaSearchNormalSummon"
   | "gemArmadilloNormalSummonSearch"
   | "gemKnightObsidianHandToGraveyardRevive"
@@ -184,6 +188,26 @@ function summonTriggerOperationFixtureFiles(): Array<{
         'eventName: "specialSummoned"',
         "eventReasonCardUid: gargoyle.uid",
         "eventReasonEffectId: 1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-flame-armor-ninja-summon-level.test.ts",
+      kind: "summonTargetLevelUpdate",
+      required: [
+        "restores cloned summon-success target prompt into a Ninja EFFECT_UPDATE_LEVEL boost",
+        'const flameArmorNinjaCode = "33034646"',
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_LEVEL)",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "e1:SetValue(1)",
+        'triggerBucket: "turnOptional"',
+        'eventName: "normalSummoned"',
+        "operationInfos).toBeUndefined()",
+        "flame armor ninja level 4",
       ],
     },
     {
@@ -663,6 +687,19 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-flame-armor-ninja-summon-level.test.ts",
+      kind: "flameArmorNinjaSummonLevelUpdate",
+      requiredSnippets: [
+        'const flameArmorNinjaCode = "33034646"',
+        "restores cloned summon-success target prompt into a Ninja EFFECT_UPDATE_LEVEL boost",
+        "return c:IsFaceup() and c:GetLevel()~=0 and c:IsSetCard(SET_NINJA)",
+        'triggerBucket: "turnOptional"',
+        'eventName: "normalSummoned"',
+        "targetUids: [ninjaTarget.uid]",
+        "flame armor ninja level 4",
+      ],
+    },
+    {
       file: "test/lua-real-script-floowandereeze-robina-search-normal.test.ts",
       kind: "floowandereezeRobinaSearchNormalSummon",
       requiredSnippets: [
@@ -891,6 +928,7 @@ function countSummonTriggerOperationKinds(
       summonToGraveDeckSummon: 0,
       summonToDeck: 0,
       summonTargetDestroy: 0,
+      summonTargetLevelUpdate: 0,
       summonToHandBounce: 0,
     },
   );
@@ -912,6 +950,7 @@ function countSummonTriggerOperationSemanticVariants(
       craneCraneStepReviveDisableOnSummon: 0,
       cyberDinosaurOpponentHandSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
+      flameArmorNinjaSummonLevelUpdate: 0,
       floowandereezeRobinaSearchNormalSummon: 0,
       gemArmadilloNormalSummonSearch: 0,
       gemKnightObsidianHandToGraveyardRevive: 0,
