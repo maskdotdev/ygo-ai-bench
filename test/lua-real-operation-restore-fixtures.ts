@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 129;
+export const operationFixtureCount = 130;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -22,6 +22,7 @@ export const operationKindCounts = {
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
   chainLinkedZoneDisable: 1,
+  chainDetachControlLock: 1,
   chainSolvedAnnounceNegate: 1,
   chainSolvedAnnounceLpPhaseSend: 1,
   chainSolvedTrapDamage: 1,
@@ -99,6 +100,7 @@ export type OperationKind =
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
   | "chainLinkedZoneDisable"
+  | "chainDetachControlLock"
   | "chainSolvedAnnounceNegate"
   | "chainSolvedAnnounceLpPhaseSend"
   | "chainSolvedTrapDamage"
@@ -1409,6 +1411,26 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-time-thief-double-barrel-chain-detach-control-negate.test.ts",
+      kind: "chainDetachControlLock",
+      required: [
+        "restores EVENT_CHAINING Spell overlay detach into control steal and attack/trigger locks",
+        "e1:SetCode(EVENT_CHAINING)",
+        "aux.SelectUnselectGroup(g:Filter(Card.IsType,nil,ty),e,tp,1,3,s.rescon,1,tp,HINTMSG_XMATERIAL)",
+        "card_type=card_type|tc:GetMainCardType()",
+        "Duel.SendtoGrave(sg,REASON_EFFECT)",
+        "Duel.RaiseSingleEvent(c,EVENT_DETACH_MATERIAL,e,0,0,0,0)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e2:SetCode(EFFECT_CANNOT_TRIGGER)",
+        "operationInfos",
+        'eventName: "sentToGraveyard"',
+        'eventName: "detachedMaterial"',
+        'eventName: "controlChanged"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -1453,6 +1475,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
       chainLinkedZoneDisable: 0,
+      chainDetachControlLock: 0,
       chainSolvedAnnounceNegate: 0,
       chainSolvedAnnounceLpPhaseSend: 0,
       chainSolvedTrapDamage: 0,

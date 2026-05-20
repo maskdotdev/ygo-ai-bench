@@ -11,6 +11,9 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   recordPreviousDuelCardState(state, card);
+  if (card.location === "overlay" && to !== "overlay") {
+    for (const holder of state.cards) holder.overlayUids = holder.overlayUids.filter((materialUid) => materialUid !== uid);
+  }
   card.reason = reason;
   card.reasonPlayer = reasonPlayer ?? controller ?? card.controller;
   card.turnId = state.turn;
