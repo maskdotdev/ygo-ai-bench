@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 21;
+const summonTriggerOperationFixtureCount = 22;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
@@ -13,6 +13,7 @@ const summonTriggerOperationKindCounts = {
   summonSearchSelfSummon: 1,
   summonSelfDestroy: 1,
   summonSetFlipToHand: 1,
+  summonSuccessFieldHandSelfSummon: 1,
   summonSuccessHandSpecialSummon: 1,
   summonToGraveGraveyardRevive: 1,
   summonStepReviveDisable: 1,
@@ -26,6 +27,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   ashokaPillarSearchPositionDamage: 1,
   backupIgnisterSearchDiscardOnSummon: 1,
   craneCraneStepReviveDisableOnSummon: 1,
+  cyberDinosaurOpponentHandSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
   floowandereezeRobinaSearchNormalSummon: 1,
   gemArmadilloNormalSummonSearch: 1,
@@ -53,6 +55,7 @@ type SummonTriggerOperationKind =
   | "summonSearchSelfSummon"
   | "summonSelfDestroy"
   | "summonSetFlipToHand"
+  | "summonSuccessFieldHandSelfSummon"
   | "summonSuccessHandSpecialSummon"
   | "summonToGraveGraveyardRevive"
   | "summonStepReviveDisable"
@@ -65,6 +68,7 @@ type SummonTriggerOperationSemanticVariant =
   | "ashokaPillarSearchPositionDamage"
   | "backupIgnisterSearchDiscardOnSummon"
   | "craneCraneStepReviveDisableOnSummon"
+  | "cyberDinosaurOpponentHandSummon"
   | "darkDustSpiritMassDestroyOnSummon"
   | "floowandereezeRobinaSearchNormalSummon"
   | "gemArmadilloNormalSummonSearch"
@@ -136,6 +140,26 @@ function summonTriggerOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-cyber-dinosaur-opponent-hand-summon.test.ts",
+      kind: "summonSuccessFieldHandSelfSummon",
+      required: [
+        "restores opponent hand Special Summon trigger into Cyber Dinosaur self summon",
+        'const cyberDinosaurCode = "39439590"',
+        "e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetRange(LOCATION_HAND)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return c:IsSummonPlayer(1-tp) and c:IsPreviousLocation(LOCATION_HAND)",
+        "eg:IsExists(s.cfilter,1,nil,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,e:GetHandler(),1,0,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        'triggerBucket: "opponentOptional"',
+        'activationLocation: "hand"',
+        'eventName: "specialSummoned"',
+        "eventReasonCardUid: cyberDinosaur.uid",
+        "eventReasonEffectId: 1",
+      ],
+    },
     {
       file: "test/lua-real-script-ashoka-pillar-search-position-damage.test.ts",
       kind: "summonSearch",
@@ -577,6 +601,18 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-cyber-dinosaur-opponent-hand-summon.test.ts",
+      kind: "cyberDinosaurOpponentHandSummon",
+      requiredSnippets: [
+        'const cyberDinosaurCode = "39439590"',
+        "restores opponent hand Special Summon trigger into Cyber Dinosaur self summon",
+        "return c:IsSummonPlayer(1-tp) and c:IsPreviousLocation(LOCATION_HAND)",
+        'triggerBucket: "opponentOptional"',
+        'activationLocation: "hand"',
+        "eventReasonCardUid: cyberDinosaur.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-dark-dust-spirit-destroy.test.ts",
       kind: "darkDustSpiritMassDestroyOnSummon",
       requiredSnippets: [
@@ -783,6 +819,7 @@ function countSummonTriggerOperationKinds(
       summonSearchSelfSummon: 0,
       summonSelfDestroy: 0,
       summonSetFlipToHand: 0,
+      summonSuccessFieldHandSelfSummon: 0,
       summonSuccessHandSpecialSummon: 0,
       summonToGraveGraveyardRevive: 0,
       summonStepReviveDisable: 0,
@@ -807,6 +844,7 @@ function countSummonTriggerOperationSemanticVariants(
       ashokaPillarSearchPositionDamage: 0,
       backupIgnisterSearchDiscardOnSummon: 0,
       craneCraneStepReviveDisableOnSummon: 0,
+      cyberDinosaurOpponentHandSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
       floowandereezeRobinaSearchNormalSummon: 0,
       gemArmadilloNormalSummonSearch: 0,
