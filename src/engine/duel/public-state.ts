@@ -1,8 +1,9 @@
 import { copyDuelActivityCounts } from "#duel/activity.js";
 import { copyBattleWindowState } from "#duel/battle-window-state.js";
+import { continuousEffectAffectsCard } from "#duel/continuous-effects.js";
 import { shouldContinueTriggerSelection } from "#duel/effect-activation.js";
 import { pendingTriggerBucketsForState } from "#duel/trigger-buckets.js";
-import type { DuelCardInstance, DuelPromptState, DuelState, PublicChainLink, PublicDuelCard, PublicDuelState, TriggerOrderPromptState } from "#duel/types.js";
+import type { DuelCardInstance, DuelPromptState, DuelState, PlayerId, PublicChainLink, PublicDuelCard, PublicDuelState, TriggerOrderPromptState } from "#duel/types.js";
 import { copyLuaPromptResumeValues, isLuaOptionPromptDecision } from "#lua/host-types.js";
 
 export function queryPublicState({ state }: { state: DuelState }): PublicDuelState {
@@ -27,7 +28,7 @@ export function queryPublicState({ state }: { state: DuelState }): PublicDuelSta
       0: { ...state.players[0] },
       1: { ...state.players[1] },
     },
-    cards: state.cards.map(toPublicCard).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
+    cards: state.cards.map((card) => toPublicCard(state, card)).sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence),
     chain: state.chain.map(copyPublicChainLink),
     pendingTriggers: state.pendingTriggers.map(copyPendingTrigger),
     pendingTriggerBuckets,
@@ -114,7 +115,8 @@ function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperat
   return { ...prompt };
 }
 
-function toPublicCard(card: DuelCardInstance): PublicDuelCard {
+function toPublicCard(state: DuelState, card: DuelCardInstance): PublicDuelCard {
+  const revealedToPlayers = publicVisibilityPlayers(state, card);
   return {
     uid: card.uid,
     code: card.code,
@@ -128,5 +130,17 @@ function toPublicCard(card: DuelCardInstance): PublicDuelCard {
     faceUp: card.faceUp,
     overlayCount: card.overlayUids.length,
     ...(card.counters ? { counters: { ...card.counters } } : {}),
+    ...(revealedToPlayers.length ? { revealedToPlayers } : {}),
   };
+}
+
+function publicVisibilityPlayers(state: DuelState, card: DuelCardInstance): PlayerId[] {
+  if (card.location !== "hand") return [];
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== 160) continue;
+    const source = state.cards.find((candidate) => candidate.uid === effect.sourceUid);
+    if (!source || !continuousEffectAffectsCard(effect, source, card)) continue;
+    return [0, 1];
+  }
+  return [];
 }

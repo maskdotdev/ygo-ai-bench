@@ -707,6 +707,7 @@ export interface PublicDuelCard {
   faceUp: boolean;
   overlayCount: number;
   counters?: Record<number, number>;
+  revealedToPlayers?: PlayerId[];
 }
 
 export type ScriptedDuelCardExpectation = Partial<PublicDuelCard & Pick<DuelCardInstance, "reason" | "reasonPlayer" | "reasonCardUid" | "reasonEffectId">> & Pick<PublicDuelCard, "uid">;
