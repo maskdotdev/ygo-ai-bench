@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 30;
+const summonTriggerOperationFixtureCount = 31;
 const summonTriggerOperationKindCounts = {
   specialSummonDeckCostLabelDamage: 1,
   specialSummonDamageStatExtraSummon: 1,
@@ -21,7 +21,7 @@ const summonTriggerOperationKindCounts = {
   summonSuccessFieldHandSelfSummon: 2,
   summonSuccessHandSpecialSummon: 1,
   summonToGraveGraveyardRevive: 1,
-  summonStepReviveDisable: 1,
+  summonStepReviveDisable: 2,
   summonToGraveDeckSummon: 1,
   summonToDeck: 1,
   summonTargetDestroy: 1,
@@ -36,6 +36,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   backupIgnisterSearchDiscardOnSummon: 1,
   crashbugZSummonSuccessDeckSpecialSummon: 1,
   craneCraneStepReviveDisableOnSummon: 1,
+  motivatingCaptainStepReviveDisableOnSummon: 1,
   hieraticEsetReleaseDragonNormalStepSummon: 1,
   cyberDinosaurOpponentHandSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
@@ -92,6 +93,7 @@ type SummonTriggerOperationSemanticVariant =
   | "backupIgnisterSearchDiscardOnSummon"
   | "crashbugZSummonSuccessDeckSpecialSummon"
   | "craneCraneStepReviveDisableOnSummon"
+  | "motivatingCaptainStepReviveDisableOnSummon"
   | "hieraticEsetReleaseDragonNormalStepSummon"
   | "cyberDinosaurOpponentHandSummon"
   | "darkDustSpiritMassDestroyOnSummon"
@@ -363,6 +365,30 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "expectRestoredLegalActions(restoredSummonWindow, 0)",
         "expectRestoredLegalActions(restoredTriggerWindow, 0)",
         "expectRestoredLegalActions(restoredChainWindow, 1)",
+        'eventName: "normalSummoned"',
+        'eventName: "specialSummoned"',
+        "category: 0x200",
+        "toEqual([2, 8])",
+        "isCardDisabled",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-motivating-captain-step-revive-disable.test.ts",
+      kind: "summonStepReviveDisable",
+      required: [
+        "restores summon-success Level-below target revive through SpecialSummonStep and disables the revived monster",
+        'const captainCode = "18837926"',
+        "return c:IsLevelBelow(4) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummonStep(tc,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.SpecialSummonComplete()",
+        "expectCleanRestore(restoredSummon)",
+        "expectCleanRestore(restoredTrigger)",
+        "expectCleanRestore(restoredChain)",
+        "expectRestoredLegalActions(restoredSummon, 0)",
+        "expectRestoredLegalActions(restoredTrigger, 0)",
+        "expectRestoredLegalActions(restoredChain, 1)",
         'eventName: "normalSummoned"',
         'eventName: "specialSummoned"',
         "category: 0x200",
@@ -818,6 +844,19 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-motivating-captain-step-revive-disable.test.ts",
+      kind: "motivatingCaptainStepReviveDisableOnSummon",
+      requiredSnippets: [
+        'const captainCode = "18837926"',
+        "restores summon-success Level-below target revive through SpecialSummonStep and disables the revived monster",
+        "return c:IsLevelBelow(4)",
+        'eventName: "specialSummoned"',
+        "position: \"faceUpDefense\"",
+        "toEqual([2, 8])",
+        "isCardDisabled",
+      ],
+    },
+    {
       file: "test/lua-real-script-hieratic-eset-release-step-summon.test.ts",
       kind: "hieraticEsetReleaseDragonNormalStepSummon",
       requiredSnippets: [
@@ -1143,6 +1182,7 @@ function countSummonTriggerOperationSemanticVariants(
       backupIgnisterSearchDiscardOnSummon: 0,
       crashbugZSummonSuccessDeckSpecialSummon: 0,
       craneCraneStepReviveDisableOnSummon: 0,
+      motivatingCaptainStepReviveDisableOnSummon: 0,
       hieraticEsetReleaseDragonNormalStepSummon: 0,
       cyberDinosaurOpponentHandSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
