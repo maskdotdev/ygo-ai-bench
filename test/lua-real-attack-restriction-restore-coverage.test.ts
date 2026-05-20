@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackRestrictionFixtureCount = 8;
+const attackRestrictionFixtureCount = 9;
 const attackRestrictionKindCounts = {
   counterGate: 1,
   levelGate: 1,
+  maleficOtherMonsterLock: 1,
   maintenanceCostGate: 1,
   remainFieldTurnCounter: 1,
   selfCostLock: 2,
@@ -18,6 +19,7 @@ const attackRestrictionSemanticVariantCounts = {
   alienPsychicCounterAttackAnnounceGate: 1,
   gravityBindPersistentLevelAttackGate: 1,
   heliosphereTargetCountAttackAnnounceGate: 1,
+  maleficCyberEndOtherMonsterLockSelfDestroy: 1,
   messengerPeaceMaintenanceAtkThresholdGate: 1,
   sixSamuraiKamonCostCannotAttackAnnounce: 1,
   swordsRevealingLightRemainFieldTurnLock: 1,
@@ -28,6 +30,7 @@ const attackRestrictionSemanticVariantCounts = {
 type AttackRestrictionKind =
   | "counterGate"
   | "levelGate"
+  | "maleficOtherMonsterLock"
   | "maintenanceCostGate"
   | "remainFieldTurnCounter"
   | "selfCostLock"
@@ -37,6 +40,7 @@ type AttackRestrictionSemanticVariant =
   | "alienPsychicCounterAttackAnnounceGate"
   | "gravityBindPersistentLevelAttackGate"
   | "heliosphereTargetCountAttackAnnounceGate"
+  | "maleficCyberEndOtherMonsterLockSelfDestroy"
   | "messengerPeaceMaintenanceAtkThresholdGate"
   | "sixSamuraiKamonCostCannotAttackAnnounce"
   | "swordsRevealingLightRemainFieldTurnLock"
@@ -114,6 +118,17 @@ function realScriptAttackRestrictionFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-malefic-cyber-end-attack-self-destroy.test.ts",
+      kind: "maleficOtherMonsterLock",
+      required: [
+        'const maleficCyberEndCode = "1710476"',
+        "restores Malefic Extra Deck summon, other-monster attack lock, and missing-field self-destroy",
+        "EFFECT_CANNOT_ATTACK_ANNOUNCE",
+        "EFFECT_SELF_DESTROY",
+        "malefic cyber end CanAttack true/false",
+      ],
+    },
+    {
       file: "test/lua-real-script-alien-psychic-counter-attack-lock.test.ts",
       kind: "counterGate",
       required: [
@@ -187,6 +202,7 @@ function countAttackRestrictionKinds(
     {
       counterGate: 0,
       levelGate: 0,
+      maleficOtherMonsterLock: 0,
       maintenanceCostGate: 0,
       remainFieldTurnCounter: 0,
       selfCostLock: 0,
@@ -233,6 +249,17 @@ function realScriptAttackRestrictionSemanticVariants(): Array<{
         "code === 86",
         "heliosphere locked CanAttack false",
         "heliosphere open CanAttack true",
+      ],
+    },
+    {
+      file: "test/lua-real-script-malefic-cyber-end-attack-self-destroy.test.ts",
+      kind: "maleficCyberEndOtherMonsterLockSelfDestroy",
+      required: [
+        'const maleficCyberEndCode = "1710476"',
+        'const cyberEndCode = "1546123"',
+        "c:SetUniqueOnField(1,1,aux.MaleficUniqueFilter(c),LOCATION_MZONE)",
+        "hasAttack(battleActions, ally.uid, target.uid)).toBe(false)",
+        "reasonEffectId: 3",
       ],
     },
     {
@@ -307,6 +334,7 @@ function countAttackRestrictionSemanticVariants(
       alienPsychicCounterAttackAnnounceGate: 0,
       gravityBindPersistentLevelAttackGate: 0,
       heliosphereTargetCountAttackAnnounceGate: 0,
+      maleficCyberEndOtherMonsterLockSelfDestroy: 0,
       messengerPeaceMaintenanceAtkThresholdGate: 0,
       sixSamuraiKamonCostCannotAttackAnnounce: 0,
       swordsRevealingLightRemainFieldTurnLock: 0,
