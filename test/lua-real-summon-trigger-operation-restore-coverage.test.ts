@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 27;
+const summonTriggerOperationFixtureCount = 28;
 const summonTriggerOperationKindCounts = {
   specialSummonDeckCostLabelDamage: 1,
+  specialSummonDamageStatExtraSummon: 1,
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 8,
@@ -28,6 +29,7 @@ const summonTriggerOperationKindCounts = {
 const summonTriggerOperationSemanticVariantCounts = {
   aratamaSpiritSearchOnSummon: 1,
   ashokaPillarSearchPositionDamage: 1,
+  blackwingNothungSummonDamageStatExtraSummon: 1,
   backupIgnisterSearchDiscardOnSummon: 1,
   crashbugZSummonSuccessDeckSpecialSummon: 1,
   craneCraneStepReviveDisableOnSummon: 1,
@@ -57,6 +59,7 @@ const summonTriggerOperationSemanticVariantCounts = {
 
 type SummonTriggerOperationKind =
   | "specialSummonDeckCostLabelDamage"
+  | "specialSummonDamageStatExtraSummon"
   | "summonDraw"
   | "summonMassDestroy"
   | "summonSearch"
@@ -77,6 +80,7 @@ type SummonTriggerOperationKind =
 type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
   | "ashokaPillarSearchPositionDamage"
+  | "blackwingNothungSummonDamageStatExtraSummon"
   | "backupIgnisterSearchDiscardOnSummon"
   | "crashbugZSummonSuccessDeckSpecialSummon"
   | "craneCraneStepReviveDisableOnSummon"
@@ -156,6 +160,30 @@ function summonTriggerOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-blackwing-nothung-summon-damage-stat-extra.test.ts",
+      kind: "specialSummonDamageStatExtraSummon",
+      required: [
+        "restores its Special Summon damage/stat trigger and field extra Blackwing Normal Summon",
+        'const nothungCode = "95040215"',
+        "e1:SetCategory(CATEGORY_DAMAGE+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "Duel.BreakEffect()",
+        "e2:SetCode(EFFECT_EXTRA_SUMMON_COUNT)",
+        "aux.TargetBoolFunction(Card.IsSetCard,SET_BLACKWING)",
+        'eventName: "specialSummoned"',
+        'eventName: "damageDealt"',
+        "operationInfos",
+        "category: 0x80000",
+        "category: 0x200000",
+        "category: 0x400000",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === target.uid), restoredChain.session.state)).toBe(700)",
+        "currentDefense(restoredChain.session.state.cards.find((card) => card.uid === target.uid), restoredChain.session.state)).toBe(700)",
+        "normalSummonAvailable).toBe(false)",
+        "activityCounts[0].normalSummon).toBe(2)",
+      ],
+    },
     {
       file: "test/lua-real-script-driangle-deck-discard-label-damage.test.ts",
       kind: "specialSummonDeckCostLabelDamage",
@@ -694,6 +722,19 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-blackwing-nothung-summon-damage-stat-extra.test.ts",
+      kind: "blackwingNothungSummonDamageStatExtraSummon",
+      requiredSnippets: [
+        'const nothungCode = "95040215"',
+        "restores its Special Summon damage/stat trigger and field extra Blackwing Normal Summon",
+        "Duel.SetTargetParam(800)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "e2:SetCode(EFFECT_EXTRA_SUMMON_COUNT)",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === target.uid), restoredChain.session.state)).toBe(700)",
+        "activityCounts[0].normalSummon).toBe(2)",
+      ],
+    },
+    {
       file: "test/lua-real-script-driangle-deck-discard-label-damage.test.ts",
       kind: "driangleDeckDiscardLabelDamage",
       requiredSnippets: [
@@ -975,6 +1016,7 @@ function countSummonTriggerOperationKinds(
     },
     {
       specialSummonDeckCostLabelDamage: 0,
+      specialSummonDamageStatExtraSummon: 0,
       summonDraw: 0,
       summonMassDestroy: 0,
       summonSearch: 0,
@@ -1007,6 +1049,7 @@ function countSummonTriggerOperationSemanticVariants(
     {
       aratamaSpiritSearchOnSummon: 0,
       ashokaPillarSearchPositionDamage: 0,
+      blackwingNothungSummonDamageStatExtraSummon: 0,
       backupIgnisterSearchDiscardOnSummon: 0,
       crashbugZSummonSuccessDeckSpecialSummon: 0,
       craneCraneStepReviveDisableOnSummon: 0,
