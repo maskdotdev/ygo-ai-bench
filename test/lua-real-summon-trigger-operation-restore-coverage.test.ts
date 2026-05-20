@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 26;
+const summonTriggerOperationFixtureCount = 27;
 const summonTriggerOperationKindCounts = {
+  specialSummonDeckCostLabelDamage: 1,
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 8,
@@ -32,6 +33,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   craneCraneStepReviveDisableOnSummon: 1,
   cyberDinosaurOpponentHandSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
+  driangleDeckDiscardLabelDamage: 1,
   flameArmorNinjaSummonLevelUpdate: 1,
   floowandereezeRobinaSearchNormalSummon: 1,
   gemArmadilloNormalSummonSearch: 1,
@@ -54,6 +56,7 @@ const summonTriggerOperationSemanticVariantCounts = {
 } satisfies Record<SummonTriggerOperationSemanticVariant, number>;
 
 type SummonTriggerOperationKind =
+  | "specialSummonDeckCostLabelDamage"
   | "summonDraw"
   | "summonMassDestroy"
   | "summonSearch"
@@ -79,6 +82,7 @@ type SummonTriggerOperationSemanticVariant =
   | "craneCraneStepReviveDisableOnSummon"
   | "cyberDinosaurOpponentHandSummon"
   | "darkDustSpiritMassDestroyOnSummon"
+  | "driangleDeckDiscardLabelDamage"
   | "flameArmorNinjaSummonLevelUpdate"
   | "floowandereezeRobinaSearchNormalSummon"
   | "gemArmadilloNormalSummonSearch"
@@ -152,6 +156,25 @@ function summonTriggerOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-driangle-deck-discard-label-damage.test.ts",
+      kind: "specialSummonDeckCostLabelDamage",
+      required: [
+        "restores hand self-summon into deck-discard cost label, ATK gain, and effect damage",
+        'const driangleCode = "98248208"',
+        "Duel.IsPlayerCanDiscardDeckAsCost(tp,1)",
+        "Duel.DiscardDeck(tp,1,REASON_COST)",
+        "Duel.GetOperatedGroup():GetFirst():IsMonster() and 1 or 0",
+        "e:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DAMAGE)",
+        "Duel.Damage(1-tp,1000,REASON_EFFECT)",
+        'eventName: "specialSummoned"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "damageDealt"',
+        "effectLabel: 1",
+        "eventReason: duelReason.cost",
+        "currentAttack(restoredDamageChain.session.state.cards.find((card) => card.uid === driangle.uid), restoredDamageChain.session.state)).toBe",
+      ],
+    },
     {
       file: "test/lua-real-script-cyber-dinosaur-opponent-hand-summon.test.ts",
       kind: "summonSuccessFieldHandSelfSummon",
@@ -671,6 +694,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-driangle-deck-discard-label-damage.test.ts",
+      kind: "driangleDeckDiscardLabelDamage",
+      requiredSnippets: [
+        'const driangleCode = "98248208"',
+        "restores hand self-summon into deck-discard cost label, ATK gain, and effect damage",
+        "Duel.GetOperatedGroup():GetFirst():IsMonster() and 1 or 0",
+        "effectLabel: 1",
+        'eventName: "damageDealt"',
+      ],
+    },
+    {
       file: "test/lua-real-script-crane-crane-step-summon-disable.test.ts",
       kind: "craneCraneStepReviveDisableOnSummon",
       requiredSnippets: [
@@ -940,6 +974,7 @@ function countSummonTriggerOperationKinds(
       return counts;
     },
     {
+      specialSummonDeckCostLabelDamage: 0,
       summonDraw: 0,
       summonMassDestroy: 0,
       summonSearch: 0,
@@ -977,6 +1012,7 @@ function countSummonTriggerOperationSemanticVariants(
       craneCraneStepReviveDisableOnSummon: 0,
       cyberDinosaurOpponentHandSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
+      driangleDeckDiscardLabelDamage: 0,
       flameArmorNinjaSummonLevelUpdate: 0,
       floowandereezeRobinaSearchNormalSummon: 0,
       gemArmadilloNormalSummonSearch: 0,
