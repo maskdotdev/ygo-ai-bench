@@ -4,14 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const ignitionStatFixtureCount = 3;
+const ignitionStatFixtureCount = 4;
 const ignitionStatKindCounts = {
+  groupUpdateLevel: 1,
   noTurnResetAttackLevelBoost: 1,
   summedLevelChange: 1,
   targetLevelCopy: 1,
 } satisfies Record<IgnitionStatKind, number>;
 
-type IgnitionStatKind = "noTurnResetAttackLevelBoost" | "summedLevelChange" | "targetLevelCopy";
+type IgnitionStatKind = "groupUpdateLevel" | "noTurnResetAttackLevelBoost" | "summedLevelChange" | "targetLevelCopy";
 type IgnitionStatFixture = { file: string; kind: IgnitionStatKind; required: string[] };
 
 describe("Lua real ignition stat restore coverage", () => {
@@ -72,6 +73,22 @@ function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
         "tc:RegisterEffect(e2)",
         "currentLevel(restoredShogiLance, restoredChain.session.state)).toBe(7)",
         "shogi lance level 7",
+      ],
+    },
+    {
+      file: "test/lua-real-script-starfish-group-update-level.test.ts",
+      kind: "groupUpdateLevel",
+      required: [
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "e1:SetRange(LOCATION_MZONE)",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+        "local g=Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,nil)",
+        "for tc in aux.Next(g) do",
+        "e1:SetCode(EFFECT_UPDATE_LEVEL)",
+        "tc:RegisterEffect(e1)",
+        "currentLevel(card, restoredChain.session.state))).toEqual([4, 4])",
+        "starfish level 4",
+        "starfish decoy level 3",
       ],
     },
     {
