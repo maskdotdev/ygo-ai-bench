@@ -145,7 +145,7 @@ import { otherPlayer } from "#duel/player-id.js";
 import { damageDuelPlayer, recoverDuelPlayer, setDuelPlayerLifePoints } from "#duel/player-life.js";
 import { getPromptResponseActions, resolveDuelPrompt, stampDuelActions } from "#duel/prompt-response.js";
 import { applyYieldedLuaPromptToDuelState, isYieldedLuaPromptCoroutineResult } from "#lua/prompt-state.js";
-import { hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
+import { activationEffectInUsableRange, hasQuickEffectResponses, quickEffectActions as getQuickEffectActions } from "#duel/quick-effect-actions.js";
 import { applyDuelResponse, type DuelResponseHandlers } from "#duel/response-dispatch.js";
 import { runScriptedDuelResponses as runScriptedDuelResponsesWithHandlers } from "#duel/scripted-runner.js";
 import { applyContinuousSelfDestroyEffects } from "#duel/self-destroy-effects.js";
@@ -410,7 +410,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (effect.controller !== player) continue;
       if (effect.event !== "ignition" && effect.event !== "quick") continue;
       const source = findCard(state, effect.sourceUid);
-      if (!source || !effect.range.includes(source.location)) continue;
+      if (!source || !activationEffectInUsableRange(state, effect, source, player)) continue;
       if (!canUseEffectCount(state, effect)) continue;
       if (!canChooseEffect(state, effect, source, player)) continue;
       actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });

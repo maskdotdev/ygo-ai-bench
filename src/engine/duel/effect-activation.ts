@@ -7,6 +7,7 @@ import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
 import { placeActivatedSpellTrapCard } from "#duel/spell-trap-activation.js";
 import { quickEffectEventContext } from "#duel/effect-event-context.js";
+import { activationEffectInUsableRange } from "#duel/quick-effect-actions.js";
 import { createEffectContext } from "#duel/effect-context.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
@@ -103,6 +104,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
   const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid);
   if (!effect) throw new Error(`Effect ${effectId} is not registered`);
   const source = requireControlledCard(session.state, player, uid);
+  if (!activationEffectInUsableRange(session.state, effect, source, player)) throw new Error(`${source.name} effect is not in range`);
   const targetUids: string[] = [];
   const quickEvent = quickEffectEventContext(session.state, effect);
   const ctx = handlers.createEffectContext(
@@ -136,6 +138,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
   try {
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
     if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
+    placeActivatedSpellTrapCard(session.state, player, source, effect);
     handlers.pushChainLink(
       session.state,
       player,
@@ -169,7 +172,6 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
       ctx.activationLocation,
       ctx.activationSequence,
     );
-    placeActivatedSpellTrapCard(session.state, player, source, effect);
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
     markEffectUsed(session.state, effect);
     const responsePlayer = otherPlayer(player);

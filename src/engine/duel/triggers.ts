@@ -51,7 +51,7 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
     if (effect.triggerSourceOnly && candidate.eventCard?.uid !== source.uid) continue;
     if (!effect.range.includes(source.location)) continue;
     if (isTriggerPrevented(state, source)) continue;
-    if (!canChooseEffect(state, effect, source, eventName, candidate.eventCard, candidate.options)) continue;
+    if (!shouldDeferCustomEventChoice(state, eventName) && !canChooseEffect(state, effect, source, eventName, candidate.eventCard, candidate.options)) continue;
     collected.push({ effect, source, index, eventCard: candidate.eventCard, options: candidate.options });
   }
   collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
@@ -78,7 +78,7 @@ export function collectGroupedTriggerEffects(state: DuelState, eventName: DuelEv
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     if (isTriggerPrevented(state, source)) continue;
-    const candidate = firstTriggerEventCandidate(state, effect, source, eventName, uniqueEventCards, groupedOptions, canChooseEffect);
+    const candidate = shouldDeferCustomEventChoice(state, eventName) ? { eventCard: uniqueEventCards[0], options: groupedOptions } : firstTriggerEventCandidate(state, effect, source, eventName, uniqueEventCards, groupedOptions, canChooseEffect);
     if (!candidate.eventCard) continue;
     collected.push({ effect, source, index, eventCard: candidate.eventCard, options: candidate.options });
   }
@@ -128,6 +128,10 @@ function triggerEventCandidate(
   const destroyingCard = destroyingUid === undefined ? undefined : findCard(state, destroyingUid);
   if (!destroyingCard) return { eventCard, options };
   return { eventCard: destroyingCard, options: battleDestroyingTriggerOptions(options, eventCard) };
+}
+
+function shouldDeferCustomEventChoice(state: DuelState, eventName: DuelEventName): boolean {
+  return eventName === "customEvent" && state.status === "resolving";
 }
 
 function battleDestroyingTriggerOptions(options: DuelTriggerCollectOptions, destroyedCard: DuelCardInstance): DuelTriggerCollectOptions {

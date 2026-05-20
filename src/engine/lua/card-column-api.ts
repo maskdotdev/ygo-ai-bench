@@ -10,7 +10,14 @@ export function installCardColumnApi(L: unknown, session: DuelSession): void {
     const card = readCard(state, session);
     const targetUid = readCardUid(state, 2);
     const target = targetUid ? session.state.cards.find((candidate) => candidate.uid === targetUid) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && target && isFieldCard(card) && isFieldCard(target) && card.controller === target.controller && card.sequence === target.sequence));
+    if (targetUid !== undefined) {
+      lua.lua_pushboolean(state, Boolean(card && target && isFieldCard(card) && isFieldCard(target) && card.controller === target.controller && card.sequence === target.sequence));
+      return 1;
+    }
+    const sequence = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : undefined;
+    const player = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
+    const locationMask = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : 0;
+    lua.lua_pushboolean(state, Boolean(card && sequence !== undefined && player !== undefined && isColumnSequence(card, sequence, player, locationMask)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsColumn"));
@@ -74,4 +81,9 @@ function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefine
 
 function isFieldCard(card: DuelCardInstance): boolean {
   return card.location === "monsterZone" || card.location === "spellTrapZone";
+}
+
+function isColumnSequence(card: DuelCardInstance, sequence: number, player: number, locationMask: number): boolean {
+  if (!isFieldCard(card) || card.controller !== player || card.sequence !== sequence) return false;
+  return locationMask === 0 || (locationMask & 0x0c) !== 0;
 }

@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 5;
+const continuousOperationFixtureCount = 6;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
+  chainSolvingCustomSearch: 1,
   continuousRedirect: 1,
   endPhaseControlReturn: 1,
   originalCodeSummonLock: 1,
@@ -17,11 +18,13 @@ const continuousOperationSemanticVariantCounts = {
   coreOfChaosFaceUpLeaveFieldRedirect: 1,
   darkMagicianOriginalCodeSummonLock: 1,
   fenghuangSetBackrowDestroy: 1,
+  magicalMusketeerCasparHandTrapSearch: 1,
   missusRadiantAttributeStatDestroyedToHand: 1,
 } satisfies Record<ContinuousOperationSemanticVariant, number>;
 
 type ContinuousOperationKind =
   | "attributeStatDestroyedToHand"
+  | "chainSolvingCustomSearch"
   | "continuousRedirect"
   | "endPhaseControlReturn"
   | "originalCodeSummonLock"
@@ -32,6 +35,7 @@ type ContinuousOperationSemanticVariant =
   | "coreOfChaosFaceUpLeaveFieldRedirect"
   | "darkMagicianOriginalCodeSummonLock"
   | "fenghuangSetBackrowDestroy"
+  | "magicalMusketeerCasparHandTrapSearch"
   | "missusRadiantAttributeStatDestroyedToHand";
 
 describe("Lua real continuous operation restore coverage", () => {
@@ -82,6 +86,19 @@ function continuousOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-magical-musketeer-caspar-hand-trap-search.test.ts",
+      kind: "chainSolvingCustomSearch",
+      required: [
+        "uses EFFECT_TRAP_ACT_IN_HAND to activate a Magical Musket Trap from hand and raise Caspar's custom search trigger",
+        "EFFECT_TRAP_ACT_IN_HAND",
+        "EVENT_CHAIN_SOLVING",
+        "Duel.RaiseSingleEvent(c,EVENT_CUSTOM+id,e,0,0,0,0)",
+        "action.type === \"activateTrigger\"",
+        "eventName: \"moved\"",
+        "location).toBe(\"hand\")",
+      ],
+    },
     {
       file: "test/lua-real-script-missus-radiant-destroyed-attribute-to-hand.test.ts",
       kind: "attributeStatDestroyedToHand",
@@ -165,6 +182,7 @@ function countContinuousOperationKinds(
     },
     {
       attributeStatDestroyedToHand: 0,
+      chainSolvingCustomSearch: 0,
       continuousRedirect: 0,
       endPhaseControlReturn: 0,
       originalCodeSummonLock: 0,
@@ -179,6 +197,18 @@ function continuousOperationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-magical-musketeer-caspar-hand-trap-search.test.ts",
+      kind: "magicalMusketeerCasparHandTrapSearch",
+      required: [
+        'const casparCode = "32841045"',
+        'const setMagicalMusket = 0x108',
+        "EFFECT_TRAP_ACT_IN_HAND",
+        "EVENT_CHAIN_SOLVING",
+        "Duel.RaiseSingleEvent(c,EVENT_CUSTOM+id,e,0,0,0,0)",
+        "magical musket fixture trap resolved",
+      ],
+    },
     {
       file: "test/lua-real-script-missus-radiant-destroyed-attribute-to-hand.test.ts",
       kind: "missusRadiantAttributeStatDestroyedToHand",
@@ -259,6 +289,7 @@ function countContinuousOperationSemanticVariants(
       coreOfChaosFaceUpLeaveFieldRedirect: 0,
       darkMagicianOriginalCodeSummonLock: 0,
       fenghuangSetBackrowDestroy: 0,
+      magicalMusketeerCasparHandTrapSearch: 0,
       missusRadiantAttributeStatDestroyedToHand: 0,
     },
   );

@@ -2,12 +2,17 @@ import { currentBattleWindowKind } from "#duel/battle-window-state.js";
 import { findCard } from "#duel/card-state.js";
 import { quickEffectEventContext } from "#duel/effect-event-context.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
+import { createEffectContext } from "#duel/effect-context.js";
 import { isBattleEndPhase, isBattleStartPhase } from "#duel/phase-mask.js";
+import { continuousEffectAppliesToCard } from "#duel/continuous-effects.js";
 import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, PlayerId } from "#duel/types.js";
 
 export type DuelEffectChooser = (state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId) => boolean;
 
 const luaEffectTypeActivate = 0x10;
+const luaEffectTrapActInHand = 15;
+const luaEffectQpActInNtpHand = 311;
+const typeQuickPlay = 0x10000;
 const typeCounter = 0x100000;
 const timingBattleStart = 0x8;
 const timingBattleEnd = 0x10;
@@ -18,7 +23,7 @@ export function quickEffectActions(state: DuelState, player: PlayerId, canChoose
   for (const effect of state.effects) {
     if (effect.controller !== player || effect.event !== "quick") continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
+    if (!source || !activationEffectInUsableRange(state, effect, source, player)) continue;
     if (!quickEffectTimingAllows(state, effect, source)) continue;
     if (shouldRequireMatchingFirstChainEvent(state, effect) && quickEffectEventContext(state, effect) === undefined) continue;
     if (!chainLimitsAllow(state, effect, player)) continue;
@@ -27,6 +32,12 @@ export function quickEffectActions(state: DuelState, player: PlayerId, canChoose
     actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
   }
   return actions;
+}
+
+export function activationEffectInUsableRange(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId): boolean {
+  if (effect.range.includes(source.location)) return true;
+  if (((effect.luaTypeFlags ?? 0) & luaEffectTypeActivate) === 0 || source.location !== "hand") return false;
+  return hasHandActivationGrant(state, effect, source, player);
 }
 
 export function hasQuickEffectResponses(state: DuelState, player: PlayerId, canChooseEffect: DuelEffectChooser): boolean {
@@ -98,4 +109,23 @@ function chainLimitsAllow(state: DuelState, effect: DuelEffectDefinition, player
     if (!limit.allows(effect, player, link.player)) return false;
   }
   return true;
+}
+
+function hasHandActivationGrant(state: DuelState, effect: DuelEffectDefinition, card: DuelCardInstance, player: PlayerId): boolean {
+  for (const grant of state.effects) {
+    if (grant.event !== "continuous") continue;
+    if (!handActivationGrantMatchesCard(grant, card, state.turnPlayer !== player)) continue;
+    const source = findCard(state, grant.sourceUid);
+    if (!source || !grant.range.includes(source.location)) continue;
+    if (!continuousEffectAppliesToCard(grant, source, card, createEffectContext(state, card, player))) continue;
+    if (grant.canActivate && !grant.canActivate(createEffectContext(state, source, grant.controller))) continue;
+    if (effect.canActivate && !effect.canActivate(createEffectContext(state, card, player))) continue;
+    return true;
+  }
+  return false;
+}
+
+function handActivationGrantMatchesCard(effect: DuelEffectDefinition, card: DuelCardInstance, opponentTurn: boolean): boolean {
+  if (effect.code === luaEffectTrapActInHand) return card.kind === "trap";
+  return effect.code === luaEffectQpActInNtpHand && opponentTurn && card.kind === "spell" && ((card.data.typeFlags ?? 0) & typeQuickPlay) !== 0;
 }
