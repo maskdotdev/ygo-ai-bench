@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 89;
+export const operationFixtureCount = 90;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -41,7 +41,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 2,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 20,
+  searchOrExcavate: 21,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -731,6 +731,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-bonfire-oath-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "return c:IsLevelBelow(4) and c:IsRace(RACE_PYRO) and c:IsAbleToHand()", "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-preparation-rites-optional-grave-search.test.ts", kind: "searchOrExcavate", required: ["Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_GRAVE)", "Duel.GetMatchingGroup(aux.NecroValleyFilter(s.filter2),tp,LOCATION_GRAVE,0,nil)", "Duel.SelectYesNo(tp,aux.Stringid(id,0))", "Duel.BreakEffect()", 'eventName: "sentToHandConfirmed"', 'api: "SelectYesNo"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-speedroid-scratch-cost-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,c)", "Duel.SendtoGrave(g,REASON_COST)", "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-archfiend-general-search-environment-self-destroy.test.ts", kind: "searchOrExcavate", required: ["e1:SetCost(Cost.SelfDiscardToGrave)", "Duel.GetFirstMatchingCard(s.filter,tp,LOCATION_DECK,0,nil)", "e2:SetCode(EFFECT_SELF_DESTROY)", "return not Duel.IsEnvironment(94585852)", "operationInfos).toEqual([{ category: 0x8", 'eventName: "sentToGraveyard"', 'eventName: "sentToHandConfirmed"', "archfiend environment active false"] },
     { file: "test/lua-real-script-xx-saber-darksoul-end-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)", "e1:SetCode(EVENT_PHASE+PHASE_END)", "return c:IsSetCard(SET_X_SABER) and c:IsMonster() and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "phaseEnd"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-radiant-typhoon-eldam-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCode(EFFECT_SPSUMMON_PROC)", "e2b:SetCode(EVENT_SPSUMMON_SUCCESS)", "not Duel.IsExistingMatchingCard(Card.IsSpellTrap,tp,0,LOCATION_ONFIELD,1,nil)", "return ((c:IsSetCard(SET_RADIANT_TYPHOON) and c:IsMonster()) or c:IsCode(CARD_MYSTICAL_SPACE_TYPHOON)) and c:IsAbleToHand() and not c:IsCode(id)", "operationInfos: [{ category: 0x8", 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-spright-blue-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCode(EFFECT_SPSUMMON_PROC)", "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "return c:IsFaceup() and (c:IsLevel(2) or c:IsRank(2))", "e2:SetProperty(EFFECT_FLAG_DELAY)", "return c:IsSetCard(SET_SPRIGHT) and c:IsMonster() and not c:IsCode(id) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
