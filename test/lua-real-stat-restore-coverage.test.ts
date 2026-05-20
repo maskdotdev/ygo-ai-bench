@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 26;
+const statFixtureCount = 27;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -21,6 +21,7 @@ const statKindCounts = {
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
   selfFinalAttackEndDestroy: 1,
+  singleRangeSetcodeConditionAttackUpdate: 1,
   staticAttackAndExtraAttack: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
@@ -31,6 +32,7 @@ const statSemanticVariantCounts = {
   alLumirajLevelOrRankFieldStat: 1,
   aojGaradholgDuelBattleTargetAttributeStat: 1,
   bladeflyFieldAttributeAttackUpdate: 1,
+  bootUpSoldierGadgetConditionAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
@@ -55,12 +57,13 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
   | "bladeflyFieldAttributeAttackUpdate"
+  | "bootUpSoldierGadgetConditionAttackUpdate"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
@@ -248,6 +251,18 @@ function statFixtureFiles(): Array<{
         "condition:damage-source-relate-battle-target-faceup-attribute:32",
         "currentAttack(restoredBoostedSoldier, restoredBoosted.session.state)).toBe((boosted.luminousSoldier.data.attack ?? 0) + 500)",
         "battleDamage).toEqual({ 0: 0, 1: expectedBoostedDamage })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-boot-up-soldier-gadget-attack.test.ts",
+      kind: "singleRangeSetcodeConditionAttackUpdate",
+      required: [
+        "restores aux.FaceupFilter SetCard conditional single-range ATK updates into battle damage",
+        "return Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_GADGET),e:GetHandlerPlayer(),LOCATION_MZONE,0,1,nil)",
+        "condition:controller-has-faceup-setcode:81",
+        "currentAttack(restoredBootUpSoldier, restored.session.state)).toBe((bootUpSoldier!.data.attack ?? 0) + 2000)",
+        "currentAttack(restoredBootUpSoldier, restored.session.state)).toBe(bootUpSoldier!.data.attack ?? 0)",
+        "battleDamage).toEqual({ 0: 0, 1: 500 })",
       ],
     },
     {
@@ -485,6 +500,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
       selfFinalAttackEndDestroy: 0,
+      singleRangeSetcodeConditionAttackUpdate: 0,
       staticAttackAndExtraAttack: 0,
       targetedDamageStepAttackUpdate: 0,
       targetedDamageStepDefenseUpdate: 0,
@@ -537,6 +553,16 @@ function statSemanticVariants(): Array<{
         "restores cloned field ATK updates for WIND boost and EARTH loss into battle damage",
         "target:attribute:8",
         "target:attribute:1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-boot-up-soldier-gadget-attack.test.ts",
+      kind: "bootUpSoldierGadgetConditionAttackUpdate",
+      required: [
+        'const bootUpSoldierCode = "13316346"',
+        "restores aux.FaceupFilter SetCard conditional single-range ATK updates into battle damage",
+        "condition:controller-has-faceup-setcode:81",
+        "players[1].lifePoints).toBe(7500)",
       ],
     },
     {
@@ -781,6 +807,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       alLumirajLevelOrRankFieldStat: 0,
       aojGaradholgDuelBattleTargetAttributeStat: 0,
       bladeflyFieldAttributeAttackUpdate: 0,
+      bootUpSoldierGadgetConditionAttackUpdate: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
