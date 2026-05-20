@@ -1,7 +1,8 @@
-export const freeChainSpecialSummonFixtureCount = 13;
+export const freeChainSpecialSummonFixtureCount = 14;
 
 export const freeChainSpecialSummonKindCounts = {
   continuousSpellIgnitionHandSummon: 1,
+  faceupSzoneSetcodeDeckSummon: 1,
   handNormalMonsterSummon: 1,
   lpCostTargetGraveSetcodeSummon: 1,
   nonTargetGraveSetcodeDefenseSummon: 1,
@@ -18,6 +19,7 @@ export const freeChainSpecialSummonKindCounts = {
 
 export type FreeChainSpecialSummonKind =
   | "continuousSpellIgnitionHandSummon"
+  | "faceupSzoneSetcodeDeckSummon"
   | "handNormalMonsterSummon"
   | "lpCostTargetGraveSetcodeSummon"
   | "nonTargetGraveSetcodeDefenseSummon"
@@ -37,6 +39,27 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-crystal-beacon-szone-setcode-deck-summon.test.ts",
+      kind: "faceupSzoneSetcodeDeckSummon",
+      required: [
+        "return Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_CRYSTAL_BEAST),tp,LOCATION_SZONE,0,2,nil)",
+        "return c:IsSetCard(SET_CRYSTAL_BEAST) and c:IsCanBeSpecialSummoned(e,0,tp,true,false)",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_DECK,0,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,0,LOCATION_DECK)",
+        "if not Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_CRYSTAL_BEAST),tp,LOCATION_SZONE,0,2,nil) then return end",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,true,false,POS_FACEUP)",
+        "setCrystalBeast",
+        "moveFaceUpToSpellTrap",
+        "offSetDeckDecoy",
+        "operationInfos: [{ category: 0x200",
+        "parameter: 0x1",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'summonType: "special"',
+      ],
+    },
     {
       file: "test/lua-real-script-rival-appears-target-level-hand-summon.test.ts",
       kind: "opponentTargetLevelHandSummon",
@@ -284,5 +307,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, lpCostTargetGraveSetcodeSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, opponentTargetLevelHandSummon: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, faceupSzoneSetcodeDeckSummon: 0, handNormalMonsterSummon: 0, lpCostTargetGraveSetcodeSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, opponentTargetLevelHandSummon: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
 }
