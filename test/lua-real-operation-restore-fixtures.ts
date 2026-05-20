@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 104;
+export const operationFixtureCount = 105;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -29,6 +29,7 @@ export const operationKindCounts = {
   groupToHand: 2,
   graveTargetToHand: 2,
   graveToDeckBottomDraw: 1,
+  groupLevelFinal: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
   fiveGraveToDeckShuffleDraw: 2,
@@ -89,6 +90,7 @@ export type OperationKind =
   | "groupToHand"
   | "graveTargetToHand"
   | "graveToDeckBottomDraw"
+  | "groupLevelFinal"
   | "handDiscardDraw"
   | "handToDeckDraw"
   | "fiveGraveToDeckShuffleDraw"
@@ -125,6 +127,18 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-star-light-star-bright-group-level-final.test.ts",
+      kind: "groupLevelFinal",
+      required: [
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,tc,tc:GetAttack(),tc:GetDefense())",
+        "for lc in aux.Next(g) do",
+        "e1:SetCode(EFFECT_CHANGE_LEVEL_FINAL)",
+        "currentLevel(restoredOpen.session.state.cards.find((card) => card.uid === sameAttack.uid), restoredOpen.session.state)).toBe(7)",
+        "currentLevel(restoredLevelFinal.session.state.cards.find((card) => card.uid === sameDefense.uid), restoredLevelFinal.session.state)).toBe(7)",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-broken-line-column-negate.test.ts",
       kind: "chainNegateColumnDestroy",
@@ -1125,6 +1139,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       flipTargetDestroy: 0,
       fusionDeckMaterials: 0,
       groupDestroy: 0,
+      groupLevelFinal: 0,
       groupToHand: 0,
       graveTargetToHand: 0,
       graveToDeckBottomDraw: 0,
