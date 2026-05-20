@@ -1,4 +1,4 @@
-export const freeChainSpecialSummonFixtureCount = 16;
+export const freeChainSpecialSummonFixtureCount = 17;
 
 export const freeChainSpecialSummonKindCounts = {
   continuousSpellIgnitionHandSummon: 1,
@@ -12,6 +12,7 @@ export const freeChainSpecialSummonKindCounts = {
   trapMonsterAnnounceTraitSummonStep: 1,
   targetBanishedRockSummonStep: 1,
   targetGraveDragonSummonReplace: 1,
+  targetGraveLowRaceDefenseSummon: 1,
   targetGraveNormalDragonOathSummon: 1,
   targetGraveSetcodeAttackSummon: 1,
   targetGraveSetcodeSummonSelfBanishToHand: 1,
@@ -31,6 +32,7 @@ export type FreeChainSpecialSummonKind =
   | "trapMonsterAnnounceTraitSummonStep"
   | "targetBanishedRockSummonStep"
   | "targetGraveDragonSummonReplace"
+  | "targetGraveLowRaceDefenseSummon"
   | "targetGraveNormalDragonOathSummon"
   | "targetGraveSetcodeAttackSummon"
   | "targetGraveSetcodeSummonSelfBanishToHand"
@@ -283,6 +285,24 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-surface-low-aqua-revive.test.ts",
+      kind: "targetGraveLowRaceDefenseSummon",
+      required: [
+        "restores targeted Level 3 or lower Aqua/Fish/Sea Serpent Graveyard Special Summon in Defense Position",
+        "return c:IsLevelBelow(3) and c:IsRace(RACE_FISH|RACE_SEASERPENT|RACE_AQUA) and c:IsCanBeSpecialSummoned(e,0,tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "highLevelDecoy",
+        "wrongRaceDecoy",
+        "operationInfos: [{ category: 0x200",
+        'position: "faceUpDefense"',
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'summonType: "special"',
+      ],
+    },
+    {
       file: "test/lua-real-script-junk-box-revive-end-destroy.test.ts",
       kind: "targetGraveSetcodeSummonEndDestroy",
       required: [
@@ -346,5 +366,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { continuousSpellIgnitionHandSummon: 0, faceupSzoneSetcodeDeckSummon: 0, handNormalMonsterSummon: 0, lpCostTargetGraveSetcodeSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, opponentTargetLevelHandSummon: 0, opponentTurnTargetGraveStepSynchro: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeAttackSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, faceupSzoneSetcodeDeckSummon: 0, handNormalMonsterSummon: 0, lpCostTargetGraveSetcodeSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, opponentTargetLevelHandSummon: 0, opponentTurnTargetGraveStepSynchro: 0, rankUpMagicXyzOverlaySummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveLowRaceDefenseSummon: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeAttackSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
 }
