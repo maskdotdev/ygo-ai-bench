@@ -10,7 +10,7 @@ import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRit
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
 import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKnownBookOfEclipsePhaseEndEffect } from "#lua/snapshot-book-of-eclipse.js";
-import { isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
+import { engraverOfTheMarkDelayedDestroyCanActivate, engraverOfTheMarkDelayedDestroyOperation, isKnownEngraverOfTheMarkDelayedDestroyEffect, isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { luaHandlerDestroyOperation, luaLinkedLeaveFieldDestroyOperation } from "#lua/snapshot-destroy-operations.js";
 import { isKnownLevelNormalEndPhaseDestroyEffect, levelNormalEndPhaseDestroyCanActivate, levelNormalEndPhaseDestroyOperation } from "#lua/snapshot-level-normal-end-phase-destroy.js";
 import { isKnownSelfEndPhaseDestroyEffect, isKnownSelfEndPhaseSendEffect, selfEndPhaseDestroyOperation, selfEndPhaseSendOperation } from "#lua/snapshot-self-end-phase-destroy.js";
@@ -427,10 +427,12 @@ function restoreKnownLuaEffects(
   const restored = new Set(restoredRegistryKeys);
   const added: string[] = [];
   for (const effect of snapshotEffects) {
-    if (!effect.registryKey || !registryKeys.has(effect.registryKey)) continue;
+    if (!effect.registryKey) continue;
+    const knownRestorable = isKnownRestorableLuaEffect(effect, snapshotEffects);
+    if (!registryKeys.has(effect.registryKey) && !(knownRestorable && isKnownEngraverOfTheMarkDelayedDestroyEffect(effect))) continue;
     refreshKnownRestoredLuaEffect(session, effect);
     if (restored.has(effect.registryKey)) continue;
-    if (!isKnownRestorableLuaEffect(effect, snapshotEffects)) continue;
+    if (!knownRestorable) continue;
     const reset = restoredLuaEffectReset(session, effect);
     session.state.effects.push({
       ...effect,
@@ -462,6 +464,10 @@ function refreshKnownRestoredLuaEffect(session: DuelSession, effect: SerializedD
 function restoredLuaEffectReset(session: DuelSession, effect: SerializedDuelEffect): DuelEffectDefinition["reset"] | undefined {
   if (!effect.reset) return undefined;
   if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) return swordsOfRevealingLightRestoredReset(session, effect);
+  if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) {
+    const sameTurnFlag = session.state.flagEffects.some((flag) => flag.ownerType === "card" && flag.code === 50078320 && flag.value === effect.label && flag.turn === session.state.turn);
+    return sameTurnFlag ? { ...effect.reset, count: Math.max(effect.reset.count ?? 3, 3) } : { ...effect.reset };
+  }
   return { ...effect.reset };
 }
 
@@ -629,6 +635,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownGreatLongNoseSkipBattlePhaseEffect(effect) ||
         isKnownUnleashYourPowerDelayedSetEffect(effect) ||
         isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) ||
+        isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) ||
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
         isKnownLevelNormalEndPhaseDestroyEffect(effect) ||
@@ -980,6 +987,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects)) return luaHandlerReturnToHandOperation(effect);
   if (isKnownUnleashYourPowerDelayedSetEffect(effect)) return unleashYourPowerDelayedSetOperation(effect);
   if (isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect)) return tsumuhaKutsunagiDelayedShuffleOperation(effect);
+  if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) return engraverOfTheMarkDelayedDestroyOperation(effect);
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return levelNormalEndPhaseDestroyOperation(effect);
@@ -1167,6 +1175,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (isKnownBookOfEclipsePhaseEndEffect(effect)) return { canActivate: bookOfEclipsePhaseEndCanActivate(effect) };
   if (isKnownMaharaghiPredrawEffect(effect)) return { canActivate: (ctx) => ctx.duel.turnPlayer === effect.controller && topDeckCards(ctx.duel, effect.controller).length > 0 };
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return { canActivate: levelNormalEndPhaseDestroyCanActivate(effect) };
+  if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) return { canActivate: engraverOfTheMarkDelayedDestroyCanActivate(effect) };
   if (isKnownDelayedBattleDestroyPhaseEffect(effect)) {
     const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
     const markerCode = registryCode === undefined ? undefined : Number(registryCode);

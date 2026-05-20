@@ -1,4 +1,4 @@
-import { changeDuelCardPosition, moveDuelCardWithRedirects } from "#duel/core.js";
+import { changeDuelCardPosition, destroyDuelCard, moveDuelCardWithRedirects } from "#duel/core.js";
 import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
@@ -11,6 +11,7 @@ const luaPhaseEndResetFlags = 0x40000000 | 0x200;
 const luaYellowAlertCode = "59277750";
 const luaUnleashYourPowerCode = "73567374";
 const luaTsumuhaKutsunagiCode = "78098950";
+const luaEngraverOfTheMarkCode = "50078320";
 
 export function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
   return (
@@ -71,6 +72,23 @@ export function isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect: SerializedDu
   );
 }
 
+export function isKnownEngraverOfTheMarkDelayedDestroyEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaEngraverOfTheMarkCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.triggerCode === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.label !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    (effect.reset.count ?? 0) >= 1 &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 export function tsumuhaKutsunagiDelayedShuffleOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
   return (ctx) => {
     const targetUids = ctx.duel.cards
@@ -88,6 +106,35 @@ export function tsumuhaKutsunagiDelayedShuffleOperation(effect: SerializedDuelEf
         // EDOPro-style delayed operations ignore cards that can no longer move.
       }
     }
+  };
+}
+
+export function engraverOfTheMarkDelayedDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    for (const uid of engraverOfTheMarkDelayedDestroyTargetUids(ctx.duel, effect)) {
+      const target = ctx.duel.cards.find((card) => card.uid === uid);
+      if (!target) continue;
+      try {
+        destroyDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect | duelReason.destroy, effect.controller, "graveyard", {
+          eventReasonCardUid: effect.sourceUid,
+          ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+        });
+      } catch {
+        // EDOPro-style delayed operations ignore targets that can no longer be destroyed.
+      }
+    }
+  };
+}
+
+export function engraverOfTheMarkDelayedDestroyCanActivate(effect: SerializedDuelEffect): NonNullable<DuelEffectDefinition["canActivate"]> {
+  return (ctx) => {
+    const matchingFlags = ctx.duel.flagEffects.filter((flag) => flag.ownerType === "card" && flag.code === Number(luaEngraverOfTheMarkCode) && flag.value === effect.label);
+    if (matchingFlags.length > 0) {
+      return matchingFlags.some((flag) => flag.turn !== undefined && ctx.duel.turn === flag.turn + 1) && engraverOfTheMarkDelayedDestroyTargetUids(ctx.duel, effect).length > 0;
+    }
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    return source?.turnId !== undefined && ctx.duel.turn === source.turnId + 1 && engraverOfTheMarkDelayedDestroyTargetUids(ctx.duel, effect).length > 0;
   };
 }
 
@@ -109,6 +156,16 @@ export function unleashYourPowerDelayedSetOperation(effect: SerializedDuelEffect
       }
     }
   };
+}
+
+function engraverOfTheMarkDelayedDestroyTargetUids(duel: Parameters<NonNullable<DuelEffectDefinition["operation"]>>[0]["duel"], effect: SerializedDuelEffect): string[] {
+  const fieldId = effect.label;
+  if (fieldId === undefined) return [];
+  const targetUids = duel.flagEffects
+    .filter((flag) => flag.ownerType === "card" && flag.code === Number(luaEngraverOfTheMarkCode) && flag.value === fieldId)
+    .map((flag) => flag.ownerId);
+  const fallbackUid = effect.sourceUid === undefined || targetUids.length > 0 ? [] : [effect.sourceUid];
+  return [...new Set([...targetUids, ...fallbackUid])].filter((uid) => duel.cards.some((card) => card.uid === uid && (card.location === "monsterZone" || card.location === "spellTrapZone")));
 }
 
 function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {

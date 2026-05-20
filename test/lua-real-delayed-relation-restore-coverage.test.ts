@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const delayedRelationFixtureCount = 7;
+const delayedRelationFixtureCount = 8;
 const delayedRelationKindCounts = {
   banishedReviveDestroyRelation: 1,
   battleMarkerEndPhaseDestroy: 1,
   delayedBanishRelation: 1,
+  delayedNextTurnDestroy: 1,
   delayedReturnRelation: 1,
   delayedSelfDestroy: 1,
   reviveEndPhaseDestroy: 1,
@@ -16,6 +17,7 @@ const delayedRelationKindCounts = {
 } satisfies Record<DelayedRelationKind, number>;
 const delayedRelationSemanticVariantCounts = {
   callOfTheHauntedMutualDestroyRelation: 1,
+  engraverMarkNextTurnDelayedDestroy: 1,
   junkBoxMorphtronicReviveEndDestroy: 1,
   kinkaByoReviveLeavesBanishRelation: 1,
   releaseFromStoneBanishedReviveDestroyRelation: 1,
@@ -28,12 +30,14 @@ type DelayedRelationKind =
   | "banishedReviveDestroyRelation"
   | "battleMarkerEndPhaseDestroy"
   | "delayedBanishRelation"
+  | "delayedNextTurnDestroy"
   | "delayedReturnRelation"
   | "delayedSelfDestroy"
   | "reviveEndPhaseDestroy"
   | "reviveDestroyRelation";
 type DelayedRelationSemanticVariant =
   | "callOfTheHauntedMutualDestroyRelation"
+  | "engraverMarkNextTurnDelayedDestroy"
   | "junkBoxMorphtronicReviveEndDestroy"
   | "kinkaByoReviveLeavesBanishRelation"
   | "releaseFromStoneBanishedReviveDestroyRelation"
@@ -90,6 +94,19 @@ function delayedRelationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-engraver-mark-delayed-destroy.test.ts",
+      kind: "delayedNextTurnDestroy",
+      required: [
+        'const engraverCode = "50078320"',
+        "aux.DelayedOperation(tc,PHASE_END,id,e,tp,",
+        "function() return Duel.GetTurnCount()==turn_count+1 end",
+        "advanceRestoredToEndTurn(restoredSameEnd, 0)",
+        "advanceRestoredToEndTurn(restoredNextEnd, 1)",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+      ],
+    },
     {
       file: "test/lua-real-script-junk-box-revive-end-destroy.test.ts",
       kind: "reviveEndPhaseDestroy",
@@ -200,6 +217,7 @@ function countDelayedRelationKinds(
       banishedReviveDestroyRelation: 0,
       battleMarkerEndPhaseDestroy: 0,
       delayedBanishRelation: 0,
+      delayedNextTurnDestroy: 0,
       delayedReturnRelation: 0,
       delayedSelfDestroy: 0,
       reviveEndPhaseDestroy: 0,
@@ -222,6 +240,17 @@ function delayedRelationSemanticVariants(): Array<{
         "restores Call of the Haunted's Continuous Trap revive and mutual destruction",
         "destroyDuelCard(restoredRevive.session.state, call!.uid",
         "destroyDuelCard(restoredTargetDestroy.session.state, target!.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-engraver-mark-delayed-destroy.test.ts",
+      kind: "engraverMarkNextTurnDelayedDestroy",
+      required: [
+        'const engraverCode = "50078320"',
+        "restores its targeted aux.DelayedOperation and destroys the marked card during the next turn End Phase",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DESTROY,g,1,tp,0)",
+        "Duel.Destroy(ag,REASON_EFFECT)",
+        "eventReasonEffectId: 3",
       ],
     },
     {
@@ -303,6 +332,7 @@ function countDelayedRelationSemanticVariants(
     },
     {
       callOfTheHauntedMutualDestroyRelation: 0,
+      engraverMarkNextTurnDelayedDestroy: 0,
       junkBoxMorphtronicReviveEndDestroy: 0,
       kinkaByoReviveLeavesBanishRelation: 0,
       releaseFromStoneBanishedReviveDestroyRelation: 0,
