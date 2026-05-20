@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 13;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 12;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 14;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 13;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 2,
@@ -16,6 +16,7 @@ const summonProcedureKindCounts = {
   handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
   handOwnFaceupLevelOrLinkOpenZoneProcedure: 2,
+  handOpponentBackrowCountProcedure: 1,
   handOpponentSpellTrapOrMstProcedure: 1,
   handSendCostProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
@@ -29,6 +30,7 @@ const summonProcedureSemanticVariantCounts = {
   greatMothCocoonEquipTurnCounterReleaseProcedure: 1,
   magnetDollBothFieldsGimmickOnlyHandProcedure: 1,
   megarockDragonGraveBanishStatProcedure: 1,
+  escherOpponentBackrowCountProcedure: 1,
   pankratopsOpponentControlsMoreHandProcedure: 1,
   radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 1,
   sprightBlueLevelOrRankOpenZoneProcedureSearch: 1,
@@ -45,6 +47,7 @@ type SummonProcedureKind =
   | "handBothFieldsGimmickOnlyProcedure"
   | "handOpponentCountProcedure"
   | "handOwnFaceupLevelOrLinkOpenZoneProcedure"
+  | "handOpponentBackrowCountProcedure"
   | "handOpponentSpellTrapOrMstProcedure"
   | "handSendCostProcedure";
 type SummonProcedureSemanticVariant =
@@ -57,6 +60,7 @@ type SummonProcedureSemanticVariant =
   | "greatMothCocoonEquipTurnCounterReleaseProcedure"
   | "magnetDollBothFieldsGimmickOnlyHandProcedure"
   | "megarockDragonGraveBanishStatProcedure"
+  | "escherOpponentBackrowCountProcedure"
   | "pankratopsOpponentControlsMoreHandProcedure"
   | "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch"
   | "sprightBlueLevelOrRankOpenZoneProcedureSearch"
@@ -147,6 +151,21 @@ const summonProcedureFixtures = [
       "return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_DARK)",
       "expectRestoredActionSurfaces(restored, 0)",
       "applyLuaRestoreResponse(restored, procedure as DuelAction)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-escher-opponent-backrow-special-summon-procedure.test.ts",
+    kind: "handOpponentBackrowCountProcedure",
+    required: [
+      "opponent backrow Special Summon procedure",
+      'const escherCode = "24326617"',
+      'action.type === "specialSummonProcedure"',
+      "Duel.IsExistingMatchingCard(s.filter,tp,0,LOCATION_SZONE,2,nil)",
+      "expect(getDuelLegalActions(session, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === escher!.uid)).toBe(false)",
+      "getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0))",
+      "getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))",
       'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
     ],
@@ -360,6 +379,7 @@ function countSummonProcedureKinds(
       handAttributeBanishCostSearchProcedure: 0,
       handOwnFaceupAttributeOpenZoneProcedure: 0,
       handOwnFaceupLevelOrLinkOpenZoneProcedure: 0,
+      handOpponentBackrowCountProcedure: 0,
       handOpponentSpellTrapOrMstProcedure: 0,
       handReleaseEquipTurnCounterProcedure: 0,
       handBothFieldsGimmickOnlyProcedure: 0,
@@ -482,6 +502,16 @@ function summonProcedureSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-escher-opponent-backrow-special-summon-procedure.test.ts",
+      kind: "escherOpponentBackrowCountProcedure",
+      required: [
+        'const escherCode = "24326617"',
+        "restores its hand procedure gated by two opponent Spell/Trap cards",
+        "Duel.IsExistingMatchingCard(s.filter,tp,0,LOCATION_SZONE,2,nil)",
+        'eventName: "specialSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-radiant-typhoon-eldam-special-summon-procedure-search.test.ts",
       kind: "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch",
       required: [
@@ -595,6 +625,7 @@ function countSummonProcedureSemanticVariants(
       greatMothCocoonEquipTurnCounterReleaseProcedure: 0,
       magnetDollBothFieldsGimmickOnlyHandProcedure: 0,
       megarockDragonGraveBanishStatProcedure: 0,
+      escherOpponentBackrowCountProcedure: 0,
       pankratopsOpponentControlsMoreHandProcedure: 0,
       radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 0,
       sprightBlueLevelOrRankOpenZoneProcedureSearch: 0,
