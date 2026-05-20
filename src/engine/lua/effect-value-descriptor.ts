@@ -59,6 +59,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (params?.[1] && new RegExp(String.raw`\breturn\s+${escapeRegExp(params[1])}\s*:\s*GetDefense\s*\(\s*\)\s*(?:end\b|$)`).test(snippet)) {
     return "stat:current-defense";
   }
+  const handlerEquipCount = handlerEquipCountStatDescriptor(snippet, params);
+  if (handlerEquipCount) return handlerEquipCount;
   const levelOrRankStat = levelOrRankStatDescriptor(snippet, params);
   if (levelOrRankStat) return levelOrRankStat;
   const fieldGroupCountStat = fieldGroupCountStatDescriptor(L, index, snippet, params);
@@ -134,6 +136,18 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${effectTypeContinuousPattern}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
   );
   return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
+}
+
+function handlerEquipCountStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const effectParam = params?.[0];
+  if (!effectParam) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const match = new RegExp(
+    String.raw`\breturn\s+${effect}\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetEquipCount\s*\(\s*\)\s*\*\s*\(?\s*(-?\d+)\s*\)?`,
+  ).exec(snippet);
+  if (!match?.[1]) return undefined;
+  const multiplier = Number(match[1]);
+  return Number.isSafeInteger(multiplier) ? `stat:handler-equip-count:x${multiplier}` : undefined;
 }
 
 function fieldGroupCountStatDescriptor(L: unknown, index: number, snippet: string, params: string[] | undefined): string | undefined {

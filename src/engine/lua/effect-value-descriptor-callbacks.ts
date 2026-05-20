@@ -8,6 +8,13 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
     return (ctx) => ctx.duel.cards.filter((card) => card.location === "graveyard" && (cardTypeFlags(card, ctx.duel) & 0x1) !== 0).length * 100;
   }
   if (luaValueDescriptor === "stat:current-defense") return (ctx, card) => currentDefense(card, ctx.duel);
+  const handlerEquipCount = luaValueDescriptor?.match(/^stat:handler-equip-count:x(-?\d+)$/);
+  if (handlerEquipCount?.[1]) {
+    const multiplier = Number(handlerEquipCount[1]);
+    if (Number.isSafeInteger(multiplier)) {
+      return (ctx) => ctx.duel.cards.filter((candidate) => candidate.equippedToUid === ctx.source.uid).length * multiplier;
+    }
+  }
   const levelOrRank = luaValueDescriptor?.match(/^stat:level-or-rank:x(-?\d+)$/);
   if (levelOrRank?.[1]) {
     const multiplier = Number(levelOrRank[1]);

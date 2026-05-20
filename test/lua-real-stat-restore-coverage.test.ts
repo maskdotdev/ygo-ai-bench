@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 25;
+const statFixtureCount = 26;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -14,7 +14,7 @@ const statKindCounts = {
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 2,
   fieldMatchingFaceupRaceCountStat: 2,
-  fieldAttributeAttackUpdate: 2,
+  fieldAttributeAttackUpdate: 3,
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
   setAttack: 1,
@@ -51,6 +51,7 @@ const statSemanticVariantCounts = {
   steamroidDamageStepBattleSwingStat: 1,
   gracefulDiceDamageStepGroupStat: 1,
   trianglePowerBaseStatEndDestroy: 1,
+  vylonChargerEquipCountAttributeStat: 1,
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
@@ -80,7 +81,8 @@ type StatSemanticVariant =
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
   | "steamroidDamageStepBattleSwingStat"
-  | "trianglePowerBaseStatEndDestroy";
+  | "trianglePowerBaseStatEndDestroy"
+  | "vylonChargerEquipCountAttributeStat";
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
@@ -186,6 +188,17 @@ function statFixtureFiles(): Array<{
         "target:attribute:32",
         "currentAttack(restoredDarkAttacker, restored.session.state)).toBe(1500)",
         "currentDefense(restoredDarkDefender, restored.session.state)).toBe(1200)",
+        "battleDamage[1]).toBe(300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-vylon-charger-equip-count-attribute-stat.test.ts",
+      kind: "fieldAttributeAttackUpdate",
+      required: [
+        "return e:GetHandler():GetEquipCount()*300",
+        "stat:handler-equip-count:x300",
+        "target:attribute:16",
+        "currentAttack(restoredLightAttacker, restored.session.state)).toBe(1800)",
         "battleDamage[1]).toBe(300)",
       ],
     },
@@ -634,6 +647,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-vylon-charger-equip-count-attribute-stat.test.ts",
+      kind: "vylonChargerEquipCountAttributeStat",
+      required: [
+        'const chargerCode = "13220032"',
+        "restores LIGHT field ATK updates with GetEquipCount callback value into battle damage",
+        "e1:SetTarget(aux.TargetBoolFunction(Card.IsAttribute,ATTRIBUTE_LIGHT))",
+        "stat:handler-equip-count:x300",
+        "currentAttack(restoredCharger, restored.session.state)).toBe(1600)",
+      ],
+    },
+    {
       file: "test/lua-real-script-plague-wolf-final-attack-end-destroy.test.ts",
       kind: "plagueWolfFinalAttackEndDestroy",
       required: [
@@ -778,6 +802,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       skyscraperFieldDamageCalculationAttackBoost: 0,
       steamroidDamageStepBattleSwingStat: 0,
       trianglePowerBaseStatEndDestroy: 0,
+      vylonChargerEquipCountAttributeStat: 0,
     },
   );
 }
