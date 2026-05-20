@@ -6,7 +6,7 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
-const realScriptFixtureCount = 1055;
+const realScriptFixtureCount = 1056;
 const restoreCoverageKindRatchetFileCount = 81;
 
 describe("Lua real-script clean restore coverage", () => {

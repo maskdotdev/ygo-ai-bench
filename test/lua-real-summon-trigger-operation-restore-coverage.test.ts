@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 25;
+const summonTriggerOperationFixtureCount = 26;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
-  summonSearch: 7,
+  summonSearch: 8,
   summonSearchDiscard: 1,
   summonSearchSelfSummon: 1,
   summonSelfDestroy: 1,
@@ -44,6 +44,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   izanamiDiscardGraveSpiritReturnOnSummon: 1,
   moonlitPapillonToGraveDeckSummon: 1,
   nuviaSummonSelfDestroyFieldCountStat: 1,
+  rGenexMagmaLevelSetSearch: 1,
   rGenexOverseerClonedSummonHandSpecialSummon: 1,
   senjuClonedSummonRitualMonsterSearch: 1,
   shinobaronessShadePeacockSearchSelfSummon: 1,
@@ -90,6 +91,7 @@ type SummonTriggerOperationSemanticVariant =
   | "izanamiDiscardGraveSpiritReturnOnSummon"
   | "moonlitPapillonToGraveDeckSummon"
   | "nuviaSummonSelfDestroyFieldCountStat"
+  | "rGenexMagmaLevelSetSearch"
   | "rGenexOverseerClonedSummonHandSpecialSummon"
   | "senjuClonedSummonRitualMonsterSearch"
   | "shinobaronessShadePeacockSearchSelfSummon"
@@ -425,6 +427,20 @@ function summonTriggerOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-r-genex-magma-summon-search.test.ts",
+      kind: "summonSearch",
+      required: [
+        "restores EVENT_SUMMON_SUCCESS Level 2 R-Genex Deck search-to-hand and confirmation",
+        'const magmaCode = "1533292"',
+        "return c:GetLevel()==2 and c:IsSetCard(SET_R_GENEX) and c:IsAbleToHand()",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToHand"',
+        "category: 8",
+        "eventName: \"sentToHandConfirmed\"",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-crashbug-z-summon-success-deck-summon.test.ts",
       kind: "summonSuccessDeckSpecialSummon",
       required: [
@@ -724,6 +740,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-r-genex-magma-summon-search.test.ts",
+      kind: "rGenexMagmaLevelSetSearch",
+      requiredSnippets: [
+        'const magmaCode = "1533292"',
+        "restores EVENT_SUMMON_SUCCESS Level 2 R-Genex Deck search-to-hand and confirmation",
+        "return c:GetLevel()==2 and c:IsSetCard(SET_R_GENEX) and c:IsAbleToHand()",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToHand"',
+      ],
+    },
+    {
       file: "test/lua-real-script-crashbug-z-summon-success-deck-summon.test.ts",
       kind: "crashbugZSummonSuccessDeckSpecialSummon",
       requiredSnippets: [
@@ -962,6 +989,7 @@ function countSummonTriggerOperationSemanticVariants(
       izanamiDiscardGraveSpiritReturnOnSummon: 0,
       moonlitPapillonToGraveDeckSummon: 0,
       nuviaSummonSelfDestroyFieldCountStat: 0,
+      rGenexMagmaLevelSetSearch: 0,
       rGenexOverseerClonedSummonHandSpecialSummon: 0,
       senjuClonedSummonRitualMonsterSearch: 0,
       shinobaronessShadePeacockSearchSelfSummon: 0,
