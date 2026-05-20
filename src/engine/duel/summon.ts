@@ -222,7 +222,7 @@ export function fusionSummonDuelCard(
     const result = moveMaterial(material.uid, player, duelReason.material | duelReason.fusion);
     pushDuelLog(state, "fusionMaterial", player, material.name, `Used for ${card.name}`);
     collectSentToGraveyard(result, collectEvent);
-    collectEvent("usedAsMaterial", result.card);
+    collectEvent("usedAsMaterial", result.card, { eventReason: duelReason.fusion, eventReasonPlayer: player, eventReasonCardUid: card.uid });
   }
 
   collectEvent("specialSummoning", card);

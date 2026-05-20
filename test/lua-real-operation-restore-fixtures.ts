@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 101;
+export const operationFixtureCount = 102;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -26,7 +26,7 @@ export const operationKindCounts = {
   fusionDeckMaterials: 1,
   groupDestroy: 10,
   groupToHand: 2,
-  graveTargetToHand: 1,
+  graveTargetToHand: 2,
   graveToDeckBottomDraw: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
@@ -235,6 +235,24 @@ export function operationFixtureFiles(): Array<{
         'location: "monsterZone"',
         'summonType: "special"',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fluffal-cat-fusion-material-polymerization.test.ts",
+      kind: "graveTargetToHand",
+      required: [
+        "restores delayed Fusion-material trigger targeting Polymerization in Graveyard to hand",
+        "e1:SetCode(EVENT_BE_MATERIAL)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DELAY)",
+        "return e:GetHandler():IsLocation(LOCATION_GRAVE) and r==REASON_FUSION",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,g,1,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        'eventName: "usedAsMaterial"',
+        'eventName: "sentToHand"',
+        "operationInfos: [{ category: 0x8",
+        "eventReason: duelReason.fusion",
       ],
     },
     {
