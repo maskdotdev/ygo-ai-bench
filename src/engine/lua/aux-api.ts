@@ -16,7 +16,7 @@ import { installUnionProcedureApi } from "#lua/union-procedure-api.js";
 import type { DuelSession } from "#duel/types.js";
 import type { LuaHostState } from "#lua/host-types.js";
 
-const { lua, lauxlib, to_luastring } = fengari;
+const { lua, lauxlib, to_jsstring, to_luastring } = fengari;
 
 export function installAuxApi(L: unknown, readLuaError: (state: unknown) => string, session?: DuelSession, hostState?: LuaHostState): void {
   lua.lua_newtable(L);
@@ -589,8 +589,21 @@ function knownFixedFilterDescriptor(L: unknown, requireFaceup: boolean): string 
   if (isNamedTableFunction(L, 1, "Card", "IsAttribute")) return `${requireFaceup ? "target:faceup-attribute" : "target:attribute"}:${value}`;
   if (isNamedTableFunction(L, 1, "Card", "IsRace")) return `${requireFaceup ? "target:faceup-race" : "target:race"}:${value}`;
   if (isNamedTableFunction(L, 1, "Card", "IsSetCard")) return `${requireFaceup ? "target:faceup-setcode" : "target:setcode"}:${value}`;
+  if (!requireFaceup && isAuxNotNamedTableFunction(L, 1, "Card", "IsSetCard")) return `target:not-setcode:${value}`;
   if (!requireFaceup && isNamedTableFunction(L, 1, "Card", "IsCode")) return `target:code:${value}`;
   return undefined;
+}
+
+function isAuxNotNamedTableFunction(L: unknown, index: number, tableName: string, fieldName: string): boolean {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  for (let upvalueIndex = 1;; upvalueIndex += 1) {
+    const nameBytes = lua.lua_getupvalue(L, absoluteIndex, upvalueIndex);
+    if (nameBytes === null) return false;
+    const name = typeof nameBytes === "string" ? nameBytes : to_jsstring(nameBytes);
+    const same = name === "f" && lua.lua_isfunction(L, -1) && isNamedTableFunction(L, -1, tableName, fieldName);
+    lua.lua_pop(L, 1);
+    if (same) return true;
+  }
 }
 
 function isNamedTableFunction(L: unknown, index: number, tableName: string, fieldName: string): boolean {

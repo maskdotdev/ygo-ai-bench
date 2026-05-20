@@ -4,18 +4,20 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const tokenSummonFixtureCount = 2;
+const tokenSummonFixtureCount = 3;
 const tokenSummonKindCounts = {
+  battleDestroyedStepTokenSummon: 1,
   previousOnFieldToGraveMandatoryTokenSummon: 1,
   spellStepTokenSummonOathLock: 1,
 } satisfies Record<TokenSummonKind, number>;
 const tokenSummonSemanticVariantCounts = {
+  jurracStaurikoBattleDestroyedStepTokenSummon: 1,
   oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 1,
   scapegoatStepSummonOathLock: 1,
 } satisfies Record<TokenSummonSemanticVariant, number>;
 
-type TokenSummonKind = "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
-type TokenSummonSemanticVariant = "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock";
+type TokenSummonKind = "battleDestroyedStepTokenSummon" | "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
+type TokenSummonSemanticVariant = "jurracStaurikoBattleDestroyedStepTokenSummon" | "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock";
 
 describe("Lua real token summon restore coverage", () => {
   it("requires token summon fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -94,6 +96,21 @@ describe("Lua real token summon restore coverage", () => {
 function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-jurrac-stauriko-battle-destroyed-token-step.test.ts",
+      kind: "battleDestroyedStepTokenSummon",
+      required: [
+        'const staurikoCode = "48411996"',
+        "restores mandatory battle-destroyed staged Jurrac Token summons and unreleasable lock",
+        "e1:SetCode(EVENT_BATTLE_DESTROYED)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOKEN,nil,2,tp,0)",
+        "Duel.IsPlayerCanSpecialSummonMonster(tp,id+1,SET_JURRAC,TYPES_TOKEN,0,0,1,RACE_DINOSAUR,ATTRIBUTE_FIRE)",
+        "local token=Duel.CreateToken(tp,id+1)",
+        "Duel.SpecialSummonStep(token,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "e1:SetValue(aux.TargetBoolFunction(aux.NOT(Card.IsSetCard),SET_JURRAC))",
+        "Duel.SpecialSummonComplete()",
+      ],
+    },
+    {
       file: "test/lua-real-script-oyster-meister-to-grave-token-summon.test.ts",
       kind: "previousOnFieldToGraveMandatoryTokenSummon",
       required: [
@@ -126,6 +143,21 @@ function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind;
 
 function tokenSummonSemanticVariants(): Array<{ file: string; kind: TokenSummonSemanticVariant; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-jurrac-stauriko-battle-destroyed-token-step.test.ts",
+      kind: "jurracStaurikoBattleDestroyedStepTokenSummon",
+      required: [
+        "typesToken",
+        "raceDinosaur",
+        "attributeFire",
+        "setJurrac",
+        "{ category: 0x400, targetUids: [], count: 2, player: 0, parameter: 0 }",
+        "{ category: 0x200, targetUids: [], count: 2, player: 0, parameter: 0 }",
+        "effect.code === 43",
+        "opponentMandatory",
+        'host.messages).not.toContain("jurrac responder resolved")',
+      ],
+    },
     {
       file: "test/lua-real-script-oyster-meister-to-grave-token-summon.test.ts",
       kind: "oysterMeisterPreviousOnFieldToGraveFishTokenSummon",
@@ -163,6 +195,7 @@ function countTokenSummonKinds(fixtures: Array<{ kind: TokenSummonKind }>): Reco
       return counts;
     },
     {
+      battleDestroyedStepTokenSummon: 0,
       previousOnFieldToGraveMandatoryTokenSummon: 0,
       spellStepTokenSummonOathLock: 0,
     },
@@ -178,6 +211,7 @@ function countTokenSummonSemanticVariants(
       return counts;
     },
     {
+      jurracStaurikoBattleDestroyedStepTokenSummon: 0,
       oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 0,
       scapegoatStepSummonOathLock: 0,
     },

@@ -35,6 +35,8 @@ const summonTypeProcCompleteOrTypeLimitDescriptors: Record<string, number> = {
 };
 
 export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  const fixed = knownFixedFunctionDescriptor(L, index, hostState);
+  if (fixed?.startsWith("target:not-setcode:")) return `cannot-material:target-not-setcode:${fixed.slice("target:not-setcode:".length)}`;
   if (isNamedTableFunction(L, index, "aux", "tgoval")) return "cannot-be-effect-target:opponent";
   if (isNamedTableFunction(L, index, "aux", "indoval")) return "indestructible:opponent";
   if (isNamedTableFunction(L, index, "aux", "indsval")) return "indestructible:self";
@@ -727,6 +729,17 @@ function isNamedTableFunction(L: unknown, index: number, tableName: string, fiel
   const same = Boolean(lua.lua_isfunction(L, -1) && lua.lua_rawequal(L, absoluteIndex, -1));
   lua.lua_pop(L, 2);
   return same;
+}
+
+function knownFixedFunctionDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  for (const [ref, descriptor] of hostState.functionDescriptors) {
+    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
+    const matches = Boolean(lua.lua_isfunction(L, -1) && lua.lua_rawequal(L, absoluteIndex, -1));
+    lua.lua_pop(L, 1);
+    if (matches) return descriptor;
+  }
+  return undefined;
 }
 
 function escapeRegExp(value: string): string {

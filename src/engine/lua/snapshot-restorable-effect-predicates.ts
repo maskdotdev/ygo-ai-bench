@@ -23,7 +23,14 @@ const luaCannotActivateNonSpiritMonsterDescriptor = "cannot-activate:non-spirit-
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
 
 export function isKnownCannotBeMaterialEffect(effect: SerializedDuelEffect): boolean {
-  return effect.event === "continuous" && [235, 236, 238, 239, 248].includes(effect.code ?? -1) && (effect.luaValueDescriptor?.startsWith("cannot-material:") === true || effect.value !== undefined);
+  if (effect.event !== "continuous") return false;
+  if ([235, 236, 238, 239, 248].includes(effect.code ?? -1)) return effect.luaValueDescriptor?.startsWith("cannot-material:") === true || effect.value !== undefined;
+  return (
+    effect.code === 43 &&
+    effect.sourceUid !== undefined &&
+    effect.reset !== undefined &&
+    effect.luaValueDescriptor?.startsWith("cannot-material:target-not-") === true
+  );
 }
 
 export function isKnownGeminiStatusEffect(effect: SerializedDuelEffect): boolean {
