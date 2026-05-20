@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 100;
+export const operationFixtureCount = 101;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -26,6 +26,7 @@ export const operationKindCounts = {
   fusionDeckMaterials: 1,
   groupDestroy: 10,
   groupToHand: 2,
+  graveTargetToHand: 1,
   graveToDeckBottomDraw: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
@@ -84,6 +85,7 @@ export type OperationKind =
   | "fusionDeckMaterials"
   | "groupDestroy"
   | "groupToHand"
+  | "graveTargetToHand"
   | "graveToDeckBottomDraw"
   | "handDiscardDraw"
   | "handToDeckDraw"
@@ -232,6 +234,18 @@ export function operationFixtureFiles(): Array<{
         'location: "banished"',
         'location: "monsterZone"',
         'summonType: "special"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-eruption-grave-to-hand.test.ts",
+      kind: "graveTargetToHand",
+      required: [
+        "restores targeted low-ATK DARK Graveyard monster return through GetFirstTarget",
+        "category: 0x8",
+        'eventName: "sentToHand"',
+        'location: "graveyard"',
+        'location: "hand"',
         "host.messages).not.toContain",
       ],
     },
@@ -1063,6 +1077,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fusionDeckMaterials: 0,
       groupDestroy: 0,
       groupToHand: 0,
+      graveTargetToHand: 0,
       graveToDeckBottomDraw: 0,
       handDiscardDraw: 0,
       handToDeckDraw: 0,
