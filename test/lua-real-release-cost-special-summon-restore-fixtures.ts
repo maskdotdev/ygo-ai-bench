@@ -1,7 +1,8 @@
-export const releaseCostSpecialSummonFixtureCount = 9;
+export const releaseCostSpecialSummonFixtureCount = 10;
 
 export const releaseCostSpecialSummonKindCounts = {
   releaseActivationGroupCostHandSummon: 1,
+  releaseGroupCostCodeCompositionHandDeckGraveSummon: 1,
   releaseGroupCostHandDeckSummon: 1,
   releaseGroupCostHandProcedure: 1,
   releaseGroupCostTargetedGraveSummon: 1,
@@ -10,7 +11,7 @@ export const releaseCostSpecialSummonKindCounts = {
   selfReleaseCostDeckSummon: 3,
 } satisfies Record<ReleaseCostSpecialSummonKind, number>;
 
-export type ReleaseCostSpecialSummonKind = "releaseActivationGroupCostHandSummon" | "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostTargetedGraveSummon" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
+export type ReleaseCostSpecialSummonKind = "releaseActivationGroupCostHandSummon" | "releaseGroupCostCodeCompositionHandDeckGraveSummon" | "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostTargetedGraveSummon" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
 
 export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -18,6 +19,25 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   required: string[];
 }> {
   return [{
+    file: "test/lua-real-script-bonding-h2o-release-code-group-summon.test.ts",
+    kind: "releaseGroupCostCodeCompositionHandDeckGraveSummon",
+    required: [
+      "Duel.CheckReleaseGroupCost(tp,Card.IsCode,3,nil,s.spcheck,nil,22587018,58071123)",
+      "Duel.SelectReleaseGroupCost(tp,Card.IsCode,3,3,nil,s.spcheck,nil,22587018,58071123)",
+      "aux.ReleaseCheckMMZ(sg,tp)",
+      "return c:IsCode(58071123) and sg:IsExists(Card.IsCode,2,c,22587018)",
+      "Duel.Release(sg,REASON_COST)",
+      "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(s.spfilter),tp,LOCATION_HAND|LOCATION_DECK|LOCATION_GRAVE,0,1,1,nil,e,tp)",
+      "Duel.SpecialSummon(g,0,tp,tp,true,true,POS_FACEUP)",
+      "g:GetFirst():CompleteProcedure()",
+      "duelReason.release | duelReason.cost",
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      "hasProcedureCompleteStatus",
+      "eventUids",
+      "parameter: 0x13",
+    ],
+  }, {
     file: "test/lua-real-script-ultra-evolution-pill-release-hand-summon.test.ts",
     kind: "releaseActivationGroupCostHandSummon",
     required: [
@@ -184,5 +204,5 @@ export function countReleaseCostSpecialSummonKinds(
   return files.reduce<Record<ReleaseCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { releaseActivationGroupCostHandSummon: 0, releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostTargetedGraveSummon: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
+  }, { releaseActivationGroupCostHandSummon: 0, releaseGroupCostCodeCompositionHandDeckGraveSummon: 0, releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostTargetedGraveSummon: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
 }
