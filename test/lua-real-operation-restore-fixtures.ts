@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 181;
+export const operationFixtureCount = 182;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -102,6 +102,7 @@ export const operationKindCounts = {
   selectEffectStatDestroyedToGrave: 1,
   specialSearchMaterialDamage: 1,
   summonDelayedStatDestroy: 1,
+  summonFieldMillStat: 1,
   targetRelationStatDestroyedBothDamage: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
   spellDraw: 1,
@@ -228,6 +229,7 @@ export type OperationKind =
   | "selectEffectStatDestroyedToGrave"
   | "specialSearchMaterialDamage"
   | "summonDelayedStatDestroy"
+  | "summonFieldMillStat"
   | "targetRelationStatDestroyedBothDamage"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "spellDraw"
@@ -721,6 +723,28 @@ export function operationFixtureFiles(): Array<{
         "Duel.Release(c,REASON_COST)",
         "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
         "currentAttack(restoredTarget, restoredTrigger.session.state)).toBe(4000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-tearlaments-scream-summon-mill-stat.test.ts",
+      kind: "summonFieldMillStat",
+      required: [
+        "restores summon-success field trigger into self Deck mill and opponent ATK reduction",
+        "e1:SetCategory(CATEGORY_DECKDES+CATEGORY_ATKCHANGE)",
+        "e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.IsPlayerCanDiscardDeck(tp,3)",
+        "Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_ONFIELD,0,1,nil)",
+        "Duel.DiscardDeck(tp,3,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetTargetRange(0,LOCATION_MZONE)",
+        "e1:SetValue(-500)",
+        "Duel.RegisterEffect(e1,tp)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === opponent.uid), restoredTrigger.session.state)).toBe(1500)",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToGraveyard"',
+        "operationInfos",
       ],
     },
     {
@@ -2640,6 +2664,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStatDestroyedToGrave: 0,
       specialSearchMaterialDamage: 0,
       summonDelayedStatDestroy: 0,
+      summonFieldMillStat: 0,
       targetRelationStatDestroyedBothDamage: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
       spellDraw: 0,
