@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 134;
+export const operationFixtureCount = 135;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -51,6 +51,7 @@ export const operationKindCounts = {
   ignitionSelfGraveDeckSummon: 1,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
+  linkClassCountDeckSummon: 1,
   monsterIgnitionSpellTrapDestroy: 1,
   mutualHandDiscardDraw: 1,
   opponentHandToDeck: 1,
@@ -133,6 +134,7 @@ export type OperationKind =
   | "ignitionSelfGraveDeckSummon"
   | "lpCostHandDiscard"
   | "lpCostRandomHandDiscard"
+  | "linkClassCountDeckSummon"
   | "monsterIgnitionSpellTrapDestroy"
   | "mutualHandDiscardDraw"
   | "opponentHandToDeck"
@@ -168,6 +170,22 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-link-party-class-count-summon.test.ts",
+      kind: "linkClassCountDeckSummon",
+      required: [
+        "restores five original Link attributes into the Deck Special Summon branch",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsLinkMonster),tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "local ct=lg:GetClassCount(Card.GetOriginalAttribute)",
+        "ct==5 and Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_DECK)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_DECK)",
+        "local sg=g3:Select(tp,1,1,nil)",
+        "Duel.SpecialSummon(sg,0,tp,tp,false,false,POS_FACEUP)",
+        "eventName: \"specialSummoned\"",
+        "host.messages).not.toContain(\"link party responder resolved\")",
+      ],
+    },
     {
       file: "test/lua-real-script-marksman-king-tell-detach-stat-burn.test.ts",
       kind: "detachStatBurn",
@@ -1586,6 +1604,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       ignitionSelfGraveDeckSummon: 0,
       lpCostHandDiscard: 0,
       lpCostRandomHandDiscard: 0,
+      linkClassCountDeckSummon: 0,
       monsterIgnitionSpellTrapDestroy: 0,
       mutualHandDiscardDraw: 0,
       opponentHandToDeck: 0,
