@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 142;
+export const operationFixtureCount = 143;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -21,6 +21,7 @@ export const operationKindCounts = {
   banishedToDeckSelfSummon: 1,
   banishedToSpecialSummon: 1,
   battleDestroyedDeckSummon: 1,
+  damageDeckdesAtk: 1,
   chainNegateDiscardDestroy: 1,
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
@@ -111,6 +112,7 @@ export type OperationKind =
   | "banishedToDeckSelfSummon"
   | "banishedToSpecialSummon"
   | "battleDestroyedDeckSummon"
+  | "damageDeckdesAtk"
   | "chainNegateDiscardDestroy"
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
@@ -235,6 +237,24 @@ export function operationFixtureFiles(): Array<{
         "currentDefense(restoredDarkblaze, restoredStatTrigger.session.state)).toBe(2000)",
         'eventName: "damageDealt"',
         "players[1]!.lifePoints).toBe(5600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-blackfeather-damage-deckdes-atk.test.ts",
+      kind: "damageDeckdesAtk",
+      required: [
+        "restores damage trigger into AnnounceNumberRange Deck send and operated-group ATK gain",
+        "e1:SetCategory(CATEGORY_DECKDES+CATEGORY_ATKCHANGE)",
+        "e1:SetCode(EVENT_DAMAGE)",
+        "return ep==tp",
+        "Duel.SetOperationInfo(0,CATEGORY_DECKDES,nil,0,tp,1)",
+        "Duel.AnnounceNumberRange(tp,1,ct)",
+        "Duel.DiscardDeck(tp,ac,REASON_EFFECT)",
+        "local og=Duel.GetOperatedGroup()",
+        "og:IsExists(s.monfilter,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "eventName: \"sentToGraveyard\"",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === blackfeather.uid), restoredTrigger.session.state)).toBe(3200)",
       ],
     },
     {
@@ -1722,6 +1742,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckToGrave: 0,
       deckSplit: 0,
       deckTopSort: 0,
+      damageDeckdesAtk: 0,
       discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
