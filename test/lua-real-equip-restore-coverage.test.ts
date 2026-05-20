@@ -4,19 +4,19 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 12;
-const equipRelationFixtureCount = 16;
-const equipProbeFixtureCount = 11;
-const equipOperationInfoFixtureCount = 13;
+const equipFixtureCount = 13;
+const equipRelationFixtureCount = 17;
+const equipProbeFixtureCount = 12;
+const equipOperationInfoFixtureCount = 14;
 const equipCleanupFixtureCount = 10;
-const equipInventoryFixtureCount = 19;
+const equipInventoryFixtureCount = 20;
 const equipKindCounts = {
   equipControl: 2,
   equipCost: 1,
   equipDamageLock: 1,
   equipGeminiStatus: 2,
   equipPierce: 2,
-  equipProcedure: 4,
+  equipProcedure: 5,
   equipReturn: 3,
   equipReviveBanish: 1,
   equipReviveDestroy: 1,
@@ -52,6 +52,7 @@ const equipSemanticVariantCounts = {
   prematureBurialDestroy: 1,
   riderPierce: 1,
   riderSubstitute: 1,
+  salamandraFireAttack: 1,
   shootingStarBowDirect: 1,
   smokeGrenadeDiscard: 1,
   snatchStealControl: 1,
@@ -103,6 +104,7 @@ type EquipSemanticVariant =
   | "prematureBurialDestroy"
   | "riderPierce"
   | "riderSubstitute"
+  | "salamandraFireAttack"
   | "shootingStarBowDirect"
   | "smokeGrenadeDiscard"
   | "snatchStealControl"
@@ -274,6 +276,7 @@ function realScriptEquipFixtureFiles(): string[] {
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
+    "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
@@ -296,6 +299,7 @@ function realScriptEquipRelationFixtureFiles(): string[] {
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+    "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
@@ -315,6 +319,7 @@ function realScriptEquipProbeFixtureFiles(): string[] {
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+    "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
@@ -334,6 +339,7 @@ function realScriptEquipOperationInfoFixtureFiles(): string[] {
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
+    "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
@@ -430,6 +436,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     {
       file: "lua-real-script-premature-burial-revive-destroy.test.ts",
       kind: "equipReviveDestroy",
+    },
+    {
+      file: "lua-real-script-salamandra-equip-fire-attack.test.ts",
+      kind: "equipProcedure",
     },
     {
       file: "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
@@ -716,6 +726,15 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
       ],
     },
     {
+      file: "lua-real-script-salamandra-equip-fire-attack.test.ts",
+      kind: "salamandraFireAttack",
+      required: [
+        "restores AddEquipProcedure Card.IsAttribute FIRE target filtering and equip-only ATK update",
+        "const salamandraCode = \"32268901\"",
+        "Salamandra FIRE Target",
+      ],
+    },
+    {
       file: "lua-real-script-equip-procedure-actions-part2.test.ts",
       kind: "shootingStarBowDirect",
       required: [
@@ -849,6 +868,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       prematureBurialDestroy: 0,
       riderPierce: 0,
       riderSubstitute: 0,
+      salamandraFireAttack: 0,
       shootingStarBowDirect: 0,
       smokeGrenadeDiscard: 0,
       snatchStealControl: 0,
