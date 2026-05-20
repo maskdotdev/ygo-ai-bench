@@ -31,6 +31,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (effect.luaTargetDescriptor === "special-summon-limit:summonable-card") return { targetCardPredicate: (ctx, card) => card.kind === "monster" && (cardTypeFlags(card, ctx.duel) & luaTypeSpecialSummon) === 0 };
   if (effect.luaTargetDescriptor === "special-summon-limit:deck-or-extra") return { targetCardPredicate: (_ctx, card) => card.location === "deck" || card.location === "extraDeck" };
   if (effect.luaTargetDescriptor === "special-summon-limit:extra") return { targetCardPredicate: (_ctx, card) => card.location === "extraDeck" };
+  const notSetcodeCodeOrExtra = setcodeCodeOrExtraDescriptor(effect.luaTargetDescriptor);
+  if (notSetcodeCodeOrExtra) return { targetCardPredicate: (ctx, card) => !currentCardMatchesSetcode(card, ctx.duel, notSetcodeCodeOrExtra.setcode) && !currentCardMatchesCode(card, ctx.duel, String(notSetcodeCodeOrExtra.code)) && card.location !== "extraDeck" };
   const sameCodeNotLocation = effect.luaTargetDescriptor?.startsWith("special-summon-limit:same-code-label-not-location:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:same-code-label-not-location:".length)) : undefined;
   if (sameCodeNotLocation !== undefined && Number.isSafeInteger(sameCodeNotLocation)) return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) && !locationMatchesCardMask(card, sameCodeNotLocation) };
   const notTypeExtra = effect.luaTargetDescriptor === "special-summon-limit:non-fusion-extra" ? 0x40 : effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-type-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-type-extra:".length)) : undefined; if (notTypeExtra !== undefined && Number.isSafeInteger(notTypeExtra) && notTypeExtra > 0) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && (cardTypeFlags(card, ctx.duel) & notTypeExtra) === 0 };
@@ -372,6 +374,12 @@ function attributeRaceExtraDescriptor(descriptor: string | undefined): { attribu
   if (!descriptor?.startsWith("special-summon-limit:not-attribute-race-extra:")) return undefined;
   const [attribute, race] = descriptor.slice("special-summon-limit:not-attribute-race-extra:".length).split(":").map(Number);
   return attribute !== undefined && race !== undefined && [attribute, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { attribute, race } : undefined;
+}
+
+function setcodeCodeOrExtraDescriptor(descriptor: string | undefined): { setcode: number; code: number } | undefined {
+  if (!descriptor?.startsWith("special-summon-limit:not-setcode-code-or-extra:")) return undefined;
+  const [setcode, code] = descriptor.slice("special-summon-limit:not-setcode-code-or-extra:".length).split(":").map(Number);
+  return setcode !== undefined && code !== undefined && [setcode, code].every((value) => Number.isSafeInteger(value) && value > 0) ? { setcode, code } : undefined;
 }
 
 function raceTypeOrSetcodeDescriptor(descriptor: string | undefined): { race: number; type: number; setcode: number } | undefined {

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 128;
+export const operationFixtureCount = 129;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -8,6 +8,7 @@ export const operationKindCounts = {
   announceHandDiscard: 1,
   announceTargetBanishProtection: 1,
   announceDecktopMutualLinkExcavate: 1,
+  announceSearchSummonLock: 1,
   callCoinAtkChange: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -84,6 +85,7 @@ export type OperationKind =
   | "announceHandDiscard"
   | "announceTargetBanishProtection"
   | "announceDecktopMutualLinkExcavate"
+  | "announceSearchSummonLock"
   | "callCoinAtkChange"
   | "costBanishDraw" | "costDiscardDraw"
   | "crossPlayerGraveToDeckTrap"
@@ -168,6 +170,30 @@ export function operationFixtureFiles(): Array<{
         'api: "AnnounceCard"',
         "code: 114",
         "currentCardMatchesCode(",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-artmage-acropolis-announce-search-lock.test.ts",
+      kind: "announceSearchSummonLock",
+      required: [
+        "restores discard cost, dynamic announce Deck search, player flag, and non-Artmage summon lock",
+        "e1:SetCode(EFFECT_EXTRA_SUMMON_COUNT)",
+        "e2:SetCost(Cost.Discard(Card.IsSpellTrap))",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsSetCard,SET_ARTMAGE),tp,LOCATION_MZONE,0,nil):GetClass(Card.GetCode)",
+        "table.insert(s.declared_names[tp],ac)",
+        "Duel.SetTargetParam(ac)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil,code)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.RegisterFlagEffect(tp,id,RESET_PHASE|PHASE_END,0,1)",
+        "e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)",
+        "special-summon-limit:not-setcode-code-or-extra:455:97556336",
+        'api: "AnnounceCard"',
+        'eventName: "discarded"',
+        'eventName: "sentToHand"',
+        'eventName: "confirmed"',
+        "operationInfos",
         "host.messages).not.toContain",
       ],
     },
@@ -1413,6 +1439,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceHandDiscard: 0,
       announceTargetBanishProtection: 0,
       announceDecktopMutualLinkExcavate: 0,
+      announceSearchSummonLock: 0,
       callCoinAtkChange: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
