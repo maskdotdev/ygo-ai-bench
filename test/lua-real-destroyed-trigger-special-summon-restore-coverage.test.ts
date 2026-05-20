@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const destroyedTriggerSpecialSummonFixtureCount = 1;
+const destroyedTriggerSpecialSummonFixtureCount = 2;
 const destroyedTriggerSpecialSummonKindCounts = {
+  battleDestroyedDeckHandMachineSummon: 1,
   trapActivationDeckReptileSummon: 1,
 } satisfies Record<DestroyedTriggerSpecialSummonKind, number>;
 
-type DestroyedTriggerSpecialSummonKind = "trapActivationDeckReptileSummon";
+type DestroyedTriggerSpecialSummonKind = "battleDestroyedDeckHandMachineSummon" | "trapActivationDeckReptileSummon";
 
 describe("Lua real destroyed-trigger Special Summon restore coverage", () => {
   it("requires destroyed-trigger Special Summon fixtures to assert clean restore and exact outcomes", () => {
@@ -49,6 +50,22 @@ function realScriptDestroyedTriggerSpecialSummonFixtureSnippets(): Array<{
 }> {
   return [
     {
+      file: "test/lua-real-script-tricular-battle-destroyed-summon.test.ts",
+      kind: "battleDestroyedDeckHandMachineSummon",
+      required: [
+        'const tricularCode = "20797524"',
+        "restores its battle-destroyed Graveyard trigger and Special Summons Bicicular from hand or Deck",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetCode(EVENT_BATTLE_DESTROYED)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND|LOCATION_DECK,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        "reasonEffectId: 1",
+      ],
+    },
+    {
       file: "test/lua-real-script-snake-whistle-destroyed-reptile-deck-summon.test.ts",
       kind: "trapActivationDeckReptileSummon",
       required: [
@@ -76,6 +93,6 @@ function countDestroyedTriggerSpecialSummonKinds(
       counts[fixture.kind] += 1;
       return counts;
     },
-    { trapActivationDeckReptileSummon: 0 },
+    { battleDestroyedDeckHandMachineSummon: 0, trapActivationDeckReptileSummon: 0 },
   );
 }
