@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 80;
+export const operationFixtureCount = 81;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -41,7 +41,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 2,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 11,
+  searchOrExcavate: 12,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -727,6 +727,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-cyber-egg-angel-summon-flip-special-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetProperty(EFFECT_FLAG_DELAY)", "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)", "e3:SetCode(EVENT_SPSUMMON_SUCCESS)", "return ((c:IsSetCard(SET_MACHINE_ANGEL) and c:IsSpell()) or c:IsCode(95658967)) and c:IsAbleToHand()", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-lady-debug-summon-special-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetProperty(EFFECT_FLAG_DELAY)", "e2:SetCode(EVENT_SPSUMMON_SUCCESS)", "return c:IsLevelBelow(3) and c:IsRace(RACE_CYBERSE) and c:IsAbleToHand()", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-majespecter-raccoon-summon-search-protection.test.ts", kind: "searchOrExcavate", required: ["e2:SetCode(EVENT_SUMMON_SUCCESS)", "e3:SetCode(EVENT_SPSUMMON_SUCCESS)", "return c:IsSetCard(SET_MAJESPECTER) and c:IsMonster() and c:IsAbleToHand()", 'luaValueDescriptor: "cannot-be-effect-target:opponent"', 'luaValueDescriptor: "indestructible:opponent"', "targetUids).toEqual([vulnerable.uid])", 'eventName: "sentToHandConfirmed"'] },
+    { file: "test/lua-real-script-speedroid-scratch-cost-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,c)", "Duel.SendtoGrave(g,REASON_COST)", "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-megalith-ophiel-ritual-summon-search.test.ts", kind: "searchOrExcavate", required: ["e:GetHandler():IsRitualSummoned()", "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)", "return c:IsSetCard(SET_MEGALITH) and c:IsMonster() and not c:IsCode(id) and c:IsAbleToHand()", "summonType: \"ritual\"", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-impcantation-candoll-hand-deck-summon-search.test.ts", kind: "searchOrExcavate", required: ["Duel.ShuffleHand(tp)", "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,2,tp,LOCATION_HAND|LOCATION_DECK)", "return c:IsRitualMonster() and c:IsAbleToHand()", "special-summon-limit:extra", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-yellow-gadget-summon-special-search.test.ts", kind: "searchOrExcavate", required: ["local e2=e1:Clone()", "e2:SetCode(EVENT_SPSUMMON_SUCCESS)", "Duel.GetFirstMatchingCard(s.filter,tp,LOCATION_DECK,0,nil)", "operationInfos: [{ category: 8", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
