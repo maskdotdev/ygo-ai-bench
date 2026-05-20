@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 23;
+const statFixtureCount = 24;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -15,7 +15,7 @@ const statKindCounts = {
   fieldGroupCountStat: 2,
   fieldMatchingFaceupRaceCountStat: 1,
   fieldAttributeAttackUpdate: 2,
-  fieldRaceAttackDefenseUpdate: 1,
+  fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
   setAttack: 1,
   setBaseAttack: 1,
@@ -37,6 +37,7 @@ const statSemanticVariantCounts = {
   luminousSoldierDamageStepTargetAttributeStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mildTurkeyDiceScaleUpdate: 1,
+  mountainMultiRaceTargetBoolFunctionRaceStat: 1,
   mukaMukaHandCountAttackDefense: 1,
   neoFlamvellSabreGraveCountThresholdStat: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
@@ -65,6 +66,7 @@ type StatSemanticVariant =
   | "luminousSoldierDamageStepTargetAttributeStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mildTurkeyDiceScaleUpdate"
+  | "mountainMultiRaceTargetBoolFunctionRaceStat"
   | "mukaMukaHandCountAttackDefense"
   | "neoFlamvellSabreGraveCountThresholdStat"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
@@ -196,6 +198,18 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredDinosaurAttacker, restored.session.state)).toBe(1300)",
         "currentDefense(restoredDinosaurDefender, restored.session.state)).toBe(1900)",
         "battleDamage[1]).toBe(100)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mountain-multi-race-field-stat.test.ts",
+      kind: "fieldRaceAttackDefenseUpdate",
+      required: [
+        "multi-race aux.TargetBoolFunction Card.IsRace ATK and DEF field updates",
+        "RACE_DRAGON|RACE_WINGEDBEAST|RACE_THUNDER",
+        "target:race:12800",
+        "currentAttack(restoredDragonAttacker, restored.session.state)).toBe(1200)",
+        "currentDefense(restoredWingedBeastAlly, restored.session.state)).toBe(1800)",
+        "battleDamage[1]).toBe(200)",
       ],
     },
     {
@@ -528,6 +542,16 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mountain-multi-race-field-stat.test.ts",
+      kind: "mountainMultiRaceTargetBoolFunctionRaceStat",
+      required: [
+        'const mountainCode = "50913601"',
+        "restores multi-race aux.TargetBoolFunction Card.IsRace ATK and DEF field updates into battle damage",
+        "target:race:12800",
+        "RACE_DRAGON|RACE_WINGEDBEAST|RACE_THUNDER",
+      ],
+    },
+    {
       file: "test/lua-real-script-luminous-soldier-phase-attribute-stat.test.ts",
       kind: "luminousSoldierDamageStepTargetAttributeStat",
       required: [
@@ -717,6 +741,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       luminousSoldierDamageStepTargetAttributeStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mildTurkeyDiceScaleUpdate: 0,
+      mountainMultiRaceTargetBoolFunctionRaceStat: 0,
       mukaMukaHandCountAttackDefense: 0,
       neoFlamvellSabreGraveCountThresholdStat: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
