@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 28;
+const summonTriggerOperationFixtureCount = 29;
 const summonTriggerOperationKindCounts = {
   specialSummonDeckCostLabelDamage: 1,
   specialSummonDamageStatExtraSummon: 1,
+  releaseTriggerDeckStepSummonStatSet: 1,
   summonDraw: 1,
   summonMassDestroy: 1,
   summonSearch: 8,
@@ -33,6 +34,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   backupIgnisterSearchDiscardOnSummon: 1,
   crashbugZSummonSuccessDeckSpecialSummon: 1,
   craneCraneStepReviveDisableOnSummon: 1,
+  hieraticEsetReleaseDragonNormalStepSummon: 1,
   cyberDinosaurOpponentHandSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
   driangleDeckDiscardLabelDamage: 1,
@@ -60,6 +62,7 @@ const summonTriggerOperationSemanticVariantCounts = {
 type SummonTriggerOperationKind =
   | "specialSummonDeckCostLabelDamage"
   | "specialSummonDamageStatExtraSummon"
+  | "releaseTriggerDeckStepSummonStatSet"
   | "summonDraw"
   | "summonMassDestroy"
   | "summonSearch"
@@ -84,6 +87,7 @@ type SummonTriggerOperationSemanticVariant =
   | "backupIgnisterSearchDiscardOnSummon"
   | "crashbugZSummonSuccessDeckSpecialSummon"
   | "craneCraneStepReviveDisableOnSummon"
+  | "hieraticEsetReleaseDragonNormalStepSummon"
   | "cyberDinosaurOpponentHandSummon"
   | "darkDustSpiritMassDestroyOnSummon"
   | "driangleDeckDiscardLabelDamage"
@@ -201,6 +205,25 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "effectLabel: 1",
         "eventReason: duelReason.cost",
         "currentAttack(restoredDamageChain.session.state.cards.find((card) => card.uid === driangle.uid), restoredDamageChain.session.state)).toBe",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hieratic-eset-release-step-summon.test.ts",
+      kind: "releaseTriggerDeckStepSummonStatSet",
+      required: [
+        "restores EVENT_RELEASE mandatory trigger into Dragon Normal SpecialSummonStep with zero stats",
+        'const esetCode = "4022819"',
+        "e3:SetCode(EVENT_RELEASE)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_DECK|LOCATION_GRAVE)",
+        "Duel.SpecialSummonStep(sc,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.SpecialSummonComplete()",
+        'eventName: "released"',
+        'eventName: "specialSummoned"',
+        "category: 0x200",
+        "parameter: 0x13",
+        "currentAttack(summonedDragon, restoredSummonChain.session.state)).toBe(0)",
+        "currentDefense(summonedDragon, restoredSummonChain.session.state)).toBe(0)",
+        "host.messages).not.toContain",
       ],
     },
     {
@@ -757,6 +780,18 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hieratic-eset-release-step-summon.test.ts",
+      kind: "hieraticEsetReleaseDragonNormalStepSummon",
+      requiredSnippets: [
+        'const esetCode = "4022819"',
+        "restores EVENT_RELEASE mandatory trigger into Dragon Normal SpecialSummonStep with zero stats",
+        "e3:SetCode(EVENT_RELEASE)",
+        "Duel.SpecialSummonStep(sc,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "released"',
+        'eventName: "specialSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-cyber-dinosaur-opponent-hand-summon.test.ts",
       kind: "cyberDinosaurOpponentHandSummon",
       requiredSnippets: [
@@ -1017,6 +1052,7 @@ function countSummonTriggerOperationKinds(
     {
       specialSummonDeckCostLabelDamage: 0,
       specialSummonDamageStatExtraSummon: 0,
+      releaseTriggerDeckStepSummonStatSet: 0,
       summonDraw: 0,
       summonMassDestroy: 0,
       summonSearch: 0,
@@ -1053,6 +1089,7 @@ function countSummonTriggerOperationSemanticVariants(
       backupIgnisterSearchDiscardOnSummon: 0,
       crashbugZSummonSuccessDeckSpecialSummon: 0,
       craneCraneStepReviveDisableOnSummon: 0,
+      hieraticEsetReleaseDragonNormalStepSummon: 0,
       cyberDinosaurOpponentHandSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
       driangleDeckDiscardLabelDamage: 0,
