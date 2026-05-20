@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDestroyedSummonFixtureCount = 5;
+const battleDestroyedSummonFixtureCount = 6;
 const battleDestroyedSummonKindCounts = {
   battleDestroyedTrapActivationDeckSummon: 1,
+  optionalBlueEyesCappedSameCodeDeckSpecialSummon: 1,
   optionalDeckDefenseSpecialSummon: 1,
   optionalDeckRaceDefenseSpecialSummon: 1,
   optionalDeckSpecialSummon: 1,
@@ -14,6 +15,7 @@ const battleDestroyedSummonKindCounts = {
 } satisfies Record<BattleDestroyedSummonKind, number>;
 const battleDestroyedSummonSemanticVariantCounts = {
   heroSignalBattleDestroyedTrapDeckSummon: 1,
+  hyenaBlueEyesCappedSameCodeDeckSummon: 1,
   phantomMagicianHeroDefenseDeckSummon: 1,
   redSparrowOpponentAttackerWarriorDeckSummon: 1,
   tricularBattleDestroyedDeckSummon: 1,
@@ -22,12 +24,14 @@ const battleDestroyedSummonSemanticVariantCounts = {
 
 type BattleDestroyedSummonKind =
   | "battleDestroyedTrapActivationDeckSummon"
+  | "optionalBlueEyesCappedSameCodeDeckSpecialSummon"
   | "optionalDeckDefenseSpecialSummon"
   | "optionalDeckRaceDefenseSpecialSummon"
   | "optionalDeckSpecialSummon"
   | "optionalOpponentAttackerDeckRaceAttackSummon";
 type BattleDestroyedSummonSemanticVariant =
   | "heroSignalBattleDestroyedTrapDeckSummon"
+  | "hyenaBlueEyesCappedSameCodeDeckSummon"
   | "phantomMagicianHeroDefenseDeckSummon"
   | "redSparrowOpponentAttackerWarriorDeckSummon"
   | "tricularBattleDestroyedDeckSummon"
@@ -131,6 +135,21 @@ function battleDestroyedSummonFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hyena-battle-destroyed-blueeyes-cap-summon.test.ts",
+      kind: "optionalBlueEyesCappedSameCodeDeckSpecialSummon",
+      required: [
+        'const hyenaCode = "22873798"',
+        "restores battle-destroyed same-code Deck summons and caps them under CARD_BLUEEYES_SPIRIT",
+        "Duel.IsPlayerAffectedByEffect(tp,CARD_BLUEEYES_SPIRIT)",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,ft,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        "blueEyesSpiritCapScript",
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        "expect(cappedHyena).toMatchObject({ location: \"deck\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-red-sparrow-summoner-battle-destroyed-warrior-summon.test.ts",
       kind: "optionalOpponentAttackerDeckRaceAttackSummon",
       required: [
@@ -210,6 +229,18 @@ function battleDestroyedSummonSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hyena-battle-destroyed-blueeyes-cap-summon.test.ts",
+      kind: "hyenaBlueEyesCappedSameCodeDeckSummon",
+      required: [
+        'triggerEvent: "battleDestroyed"',
+        'type === "activateTrigger"',
+        "return c:IsCode(id) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "CARD_BLUEEYES_SPIRIT",
+        "eventUids: [summonedHyena!.uid]",
+        "eventReasonCardUid: destroyedHyena.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-red-sparrow-summoner-battle-destroyed-warrior-summon.test.ts",
       kind: "redSparrowOpponentAttackerWarriorDeckSummon",
       required: [
@@ -255,6 +286,7 @@ function countBattleDestroyedSummonKinds(fixtures: Array<{ kind: BattleDestroyed
     },
     {
       battleDestroyedTrapActivationDeckSummon: 0,
+      optionalBlueEyesCappedSameCodeDeckSpecialSummon: 0,
       optionalDeckDefenseSpecialSummon: 0,
       optionalDeckRaceDefenseSpecialSummon: 0,
       optionalDeckSpecialSummon: 0,
@@ -273,6 +305,7 @@ function countBattleDestroyedSummonSemanticVariants(
     },
     {
       heroSignalBattleDestroyedTrapDeckSummon: 0,
+      hyenaBlueEyesCappedSameCodeDeckSummon: 0,
       phantomMagicianHeroDefenseDeckSummon: 0,
       redSparrowOpponentAttackerWarriorDeckSummon: 0,
       tricularBattleDestroyedDeckSummon: 0,
