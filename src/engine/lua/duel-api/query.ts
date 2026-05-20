@@ -118,7 +118,7 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   });
   lua.lua_setfield(L, -2, to_luastring("SetTargetCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
-    changeTargetCard(hostState, uniqueUids(readCardOrGroupUids(state, 1)));
+    changeDuelTargetCard(state, session, hostState);
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("ChangeTargetCard"));
@@ -399,6 +399,25 @@ function appendSelectedTargetUids(targetUids: string[], selected: string[]): voi
 
 function selectTargetOptions(hostState: LuaDuelQueryApiHostState): { hostState: LuaDuelQueryApiHostState; targetUids?: string[] } {
   return hostState.activeTargetUids ? { hostState, targetUids: hostState.activeTargetUids } : { hostState };
+}
+
+function changeDuelTargetCard(L: unknown, session: DuelSession, hostState: LuaDuelQueryApiHostState): void {
+  if (lua.lua_isnumber(L, 1)) {
+    const requestedIndex = lua.lua_tointeger(L, 1);
+    const uids = uniqueUids(readCardOrGroupUids(L, 2));
+    const link = chainLinkByLuaIndex(session, requestedIndex);
+    if (!link) return;
+    if (uids.length) link.targetUids = [...uids];
+    else delete link.targetUids;
+    if (hostState.activeContext?.chainLink?.id === link.id) hostState.activeContext.setTargets(uids);
+    return;
+  }
+  changeTargetCard(hostState, uniqueUids(readCardOrGroupUids(L, 1)));
+}
+
+function chainLinkByLuaIndex(session: DuelSession, requestedIndex: number): DuelState["chain"][number] | undefined {
+  if (requestedIndex <= 0) return session.state.chain[session.state.chain.length - 1];
+  return session.state.chain.find((link) => link.chainIndex === requestedIndex) ?? session.state.chain[requestedIndex - 1];
 }
 
 function effectTargetableMatches(L: unknown, session: DuelSession, query: MatchingQuery, hostState?: LuaDuelQueryApiHostState): string[] {

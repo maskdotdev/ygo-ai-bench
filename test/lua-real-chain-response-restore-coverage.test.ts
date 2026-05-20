@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 20;
+const chainResponseFixtureCount = 21;
 const chainResponseKindCounts = {
   chainSearchResponse: 1,
+  chainTargetRetargetResponse: 1,
   destroyOnlyChainedResponse: 4,
   flipSummonTrapResponse: 3,
   genericChainResponse: 1,
@@ -24,6 +25,7 @@ const chainResponseSemanticVariantCounts = {
   adhesionTrapHoleFlipSummonAtkEffect: 1,
   bottomlessTrapHoleSummonSuccessBanish: 1,
   crimsonNinjaFlipConfirmTrapDestroy: 1,
+  fairyHandMirrorSpellTargetRetarget: 1,
   ghostBelleWantedChainNegationAndRecycle: 1,
   goldenFlyingFishReleaseCostTargetDestroy: 1,
   ignisHeatTributeSummonedChainSearch: 1,
@@ -45,6 +47,7 @@ const chainResponseSemanticVariantCounts = {
 
 type ChainResponseKind =
   | "chainSearchResponse"
+  | "chainTargetRetargetResponse"
   | "destroyOnlyChainedResponse"
   | "flipSummonTrapResponse"
   | "genericChainResponse"
@@ -61,6 +64,7 @@ type ChainResponseSemanticVariant =
   | "adhesionTrapHoleFlipSummonAtkEffect"
   | "bottomlessTrapHoleSummonSuccessBanish"
   | "crimsonNinjaFlipConfirmTrapDestroy"
+  | "fairyHandMirrorSpellTargetRetarget"
   | "ghostBelleWantedChainNegationAndRecycle"
   | "goldenFlyingFishReleaseCostTargetDestroy"
   | "ignisHeatTributeSummonedChainSearch"
@@ -128,6 +132,22 @@ function chainResponseFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-fairys-hand-mirror-chain-retarget.test.ts",
+      kind: "chainTargetRetargetResponse",
+      required: [
+        "restores CheckChainTarget and ChangeTargetCard retargeting Book of Moon to a new monster",
+        "Duel.CheckChainTarget(ct,c)",
+        "Duel.ChangeTargetCard(ev,g)",
+        "Duel.SelectTarget(tp,Card.IsCanTurnSet,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        'windowKind).toBe("chainResponse")',
+        "targetUids: [originalTarget.uid]",
+        'eventName: "positionChanged"',
+        "eventCardUid: replacementTarget.uid",
+        'position: "faceDownDefense"',
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-adhesion-trap-hole-flip-summon.test.ts",
       kind: "flipSummonTrapResponse",
@@ -393,6 +413,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
     },
     {
       chainSearchResponse: 0,
+      chainTargetRetargetResponse: 0,
       destroyOnlyChainedResponse: 0,
       flipSummonTrapResponse: 0,
       genericChainResponse: 0,
@@ -433,6 +454,20 @@ function chainResponseSemanticVariants(): Array<{
         "restores Bottomless Trap Hole's summon-success event target and banishes the destroyed monster",
         "restores Bottomless Trap Hole's Flip Summon success chain response and banishes the destroyed monster",
         "location: \"banished\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fairys-hand-mirror-chain-retarget.test.ts",
+      kind: "fairyHandMirrorSpellTargetRetarget",
+      required: [
+        'const fairyMirrorCode = "17653779"',
+        'const bookOfMoonCode = "14087893"',
+        "Duel.CheckChainTarget(ct,c)",
+        "Duel.ChangeTargetCard(ev,g)",
+        "targetUids: [replacementTarget.uid]",
+        "eventReasonCardUid: bookOfMoon.uid",
+        'position: "faceUpAttack"',
+        'position: "faceDownDefense"',
       ],
     },
     {
@@ -649,6 +684,7 @@ function countChainResponseSemanticVariants(
       bottomlessTrapHoleSummonSuccessBanish: 0,
       crimsonNinjaFlipConfirmTrapDestroy: 0,
       deepSweeperSelfTributeDestroy: 0,
+      fairyHandMirrorSpellTargetRetarget: 0,
       ghostBelleWantedChainNegationAndRecycle: 0,
       goldenFlyingFishReleaseCostTargetDestroy: 0,
       ignisHeatTributeSummonedChainSearch: 0,

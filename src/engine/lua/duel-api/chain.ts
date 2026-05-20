@@ -1,5 +1,7 @@
 import fengari from "fengari";
 import { addDuelChainLimit, canNegateDuelChainLinkObject, negateDuelChainLinkObject } from "#duel/core.js";
+import { createEffectContext } from "#duel/effect-context.js";
+import { canLuaCardBeEffectTarget } from "#lua/card-effect-query-api.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { capturedTypeMaskDescriptor, literalActionTypeChainPlayerLimitPredicate, literalCapturedPlayerComparisonPredicate, literalFalsePredicate, literalNotMonsterWithoutLevelActiveTypePredicate, literalNotOpponentControlledTrapPredicate, literalNotSourceOrActiveTypeAndEffectTypePredicateDescriptor, literalResponseMatchesChainPlayerOrActiveTypePredicate, literalResponseMatchesChainPlayerOrCurrentTargetCardsPredicate, literalResponseMatchesChainPlayerOrNotSourceTypePredicate, literalResponseMatchesChainPlayerOrSourceTypeNonActivatePredicate, literalStatelessSourcePredicate, literalTruePredicate } from "#lua/chain-limit-predicate-descriptors.js";
 import { pushGroupTable } from "#lua/group-api.js";
@@ -17,7 +19,7 @@ export interface LuaDuelChainApiHostState {
   getEffectTypeFlags: (id: number) => number | undefined;
   changeChainOperation: (state: unknown, chainIndex: number, operationRef: number) => boolean;
   activeContext: DuelEffectContext | undefined;
-  effects: ReadonlyMap<number, LuaEffectRecord>;
+  effects: Map<number, LuaEffectRecord>;
   loadedScriptBodies?: Map<string, string>;
 }
 
@@ -930,8 +932,46 @@ function pushCheckChainTarget(L: unknown, session: DuelSession, hostState: LuaDu
   const requestedIndex = lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.chain.length;
   const cardUid = readCardUid(L, 2);
   const link = chainLinkByLuaIndex(session, requestedIndex, hostState);
-  lua.lua_pushboolean(L, Boolean(cardUid && link?.targetUids?.includes(cardUid)));
+  lua.lua_pushboolean(L, Boolean(cardUid && link && chainTargetAcceptsCard(L, session, hostState, link, cardUid)));
   return 1;
+}
+
+function chainTargetAcceptsCard(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState, link: DuelState["chain"][number], cardUid: string): boolean {
+  if (link.targetUids?.includes(cardUid)) return true;
+  const candidate = session.state.cards.find((card) => card.uid === cardUid);
+  const source = session.state.cards.find((card) => card.uid === link.sourceUid);
+  const effect = session.state.effects.find((duelEffect) => duelEffect.id === link.effectId && duelEffect.sourceUid === link.sourceUid);
+  if (!candidate || !source || !effect) return false;
+  const luaEffectId = Number(link.effectId.match(/^lua-(\d+)/)?.[1]);
+  const targetEffect = Number.isFinite(luaEffectId) ? hostState.effects.get(luaEffectId) : undefined;
+  if (targetEffect && !canLuaCardBeEffectTarget(L, session, hostState, candidate, targetEffect)) return false;
+  if (!effect.targetCardPredicate) return Boolean(link.targetUids?.length && ((effect.property ?? 0) & 0x10) !== 0);
+  const ctx = createEffectContext(
+    session.state,
+    source,
+    link.player,
+    link.eventName,
+    link.eventCardUid === undefined ? undefined : session.state.cards.find((card) => card.uid === link.eventCardUid),
+    [...(link.targetUids ?? [])],
+    true,
+    link.activationLocation,
+    link.activationSequence,
+    link.targetPlayer,
+    link.targetParam,
+    link,
+    link.eventCode,
+    link.eventPlayer,
+    link.eventValue,
+    link.eventReason,
+    link.eventReasonPlayer,
+    link.eventReasonCardUid,
+    link.eventReasonEffectId,
+    link.relatedEffectId,
+    link.eventChainDepth,
+    link.eventChainLinkId,
+    link.eventUids,
+  );
+  return effect.targetCardPredicate(ctx, candidate) || Boolean(link.targetUids?.length && ((effect.property ?? 0) & 0x10) !== 0);
 }
 
 function pushCheckChainUniqueness(L: unknown, session: DuelSession, hostState: LuaDuelChainApiHostState): number {
