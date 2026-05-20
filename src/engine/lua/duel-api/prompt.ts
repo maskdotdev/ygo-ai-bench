@@ -1,7 +1,9 @@
 import fengari from "fengari";
 import { pushDuelLog } from "#duel/card-state.js";
+import { currentCardMatchesCode } from "#duel/card-code-state.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { cardTypeFlags } from "#lua/card-stat-api.js";
+import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import type { DuelSession } from "#duel/types.js";
 import type { LuaPromptDecision, LuaPromptOverride } from "#lua/host-types.js";
 
@@ -367,8 +369,10 @@ function pushAnnounceCard(L: unknown, session: DuelSession, hostState: LuaDuelPr
 }
 
 function announceCardCodeOptions(L: unknown, session: DuelSession): number[] {
-  const values = readAnnouncementValues(L, 2).filter((value) => Number.isSafeInteger(value) && value >= 0);
+  const values = readAnnouncementValues(L, 2).filter((value) => Number.isFinite(value));
   if (values.length === 0) return knownCardCodes(session);
+  const filteredCodes = announceCardFilterOptions(values, session);
+  if (filteredCodes.length > 0) return filteredCodes;
   const explicitCodes = values.filter((value) => session.state.cards.some((card) => Number(card.code) === value));
   if (explicitCodes.length > 0) return [...new Set(explicitCodes)];
   const typeMask = values.find((value) => value > 0 && value <= 0xff && session.state.cards.some((card) => (cardTypeFlags(card) & value) !== 0));
@@ -378,16 +382,88 @@ function announceCardCodeOptions(L: unknown, session: DuelSession): number[] {
   return knownCardCodes(session, values[0]);
 }
 
-function knownCardCodes(session: DuelSession, typeMask?: number): number[] {
+const opcodeAnd = 0x4000000400000000;
+const opcodeNot = 0x4000000700000000;
+const opcodeIsCode = 0x4000010000000000;
+const opcodeIsSetCard = 0x4000010100000000;
+const opcodeIsType = 0x4000010200000000;
+
+function announceCardFilterOptions(values: number[], session: DuelSession): number[] {
+  const gadgetStyleFilter = announceCardSetcodeNotCodeTypeFilterOptions(values, session);
+  if (gadgetStyleFilter.length > 0) return gadgetStyleFilter;
+  if (!values.some((value) => value >= opcodeAnd)) return [];
   return [
     ...new Set(
       [...session.state.cards]
         .sort((left, right) => Number(left.code) - Number(right.code))
-        .filter((candidate) => typeMask === undefined || typeMask === 0 || (cardTypeFlags(candidate) & typeMask) !== 0)
+        .filter((card) => evaluateAnnounceCardFilter(values, session, card.uid))
         .map((card) => Number(card.code))
         .filter((code) => Number.isSafeInteger(code) && code > 0),
     ),
   ];
+}
+
+function announceCardSetcodeNotCodeTypeFilterOptions(values: number[], session: DuelSession): number[] {
+  if (values.length < 7 || values[1] !== 0 || values[3] !== 0 || values[4] !== 0 || values[5] !== 0 || values[7] !== 0) return [];
+  const setcode = values[0];
+  const excludedCode = values[2];
+  const typeMask = values[6];
+  if (!isPositiveSafeInteger(setcode) || !isPositiveSafeInteger(excludedCode) || !isPositiveSafeInteger(typeMask)) return [];
+  const setcodeValue = setcode;
+  const excludedCodeValue = excludedCode;
+  const typeMaskValue = typeMask;
+  return knownCardsMatching(session, (card) =>
+    cardSetcodes(card).some((candidate) => isSetcodeMatch(setcodeValue, candidate))
+    && !currentCardMatchesCode(card, session.state, String(excludedCodeValue))
+    && (cardTypeFlags(card) & typeMaskValue) !== 0,
+  );
+}
+
+function evaluateAnnounceCardFilter(values: number[], session: DuelSession, uid: string): boolean {
+  const card = session.state.cards.find((candidate) => candidate.uid === uid);
+  if (!card) return false;
+  const stack: Array<number | boolean> = [];
+  for (const value of values) {
+    if (value === opcodeIsCode) {
+      const code = stack.pop();
+      stack.push(typeof code === "number" && currentCardMatchesCode(card, session.state, String(code)));
+    } else if (value === opcodeIsSetCard) {
+      const setcode = stack.pop();
+      stack.push(typeof setcode === "number" && cardSetcodes(card).some((candidate) => isSetcodeMatch(setcode, candidate)));
+    } else if (value === opcodeIsType) {
+      const type = stack.pop();
+      stack.push(typeof type === "number" && (cardTypeFlags(card) & type) !== 0);
+    } else if (value === opcodeNot) {
+      stack.push(!Boolean(stack.pop()));
+    } else if (value === opcodeAnd) {
+      const right = stack.pop();
+      const left = stack.pop();
+      stack.push(Boolean(left) && Boolean(right));
+    } else {
+      stack.push(value);
+    }
+  }
+  return Boolean(stack.at(-1));
+}
+
+function knownCardCodes(session: DuelSession, typeMask?: number): number[] {
+  return knownCardsMatching(session, (candidate) => typeMask === undefined || typeMask === 0 || (cardTypeFlags(candidate) & typeMask) !== 0);
+}
+
+function knownCardsMatching(session: DuelSession, predicate: (card: DuelSession["state"]["cards"][number]) => boolean): number[] {
+  return [
+    ...new Set(
+      [...session.state.cards]
+        .sort((left, right) => Number(left.code) - Number(right.code))
+        .filter(predicate)
+        .map((card) => Number(card.code))
+        .filter((code) => Number.isSafeInteger(code) && code > 0),
+    ),
+  ];
+}
+
+function isPositiveSafeInteger(value: number | undefined): value is number {
+  return value !== undefined && Number.isSafeInteger(value) && value > 0;
 }
 
 function readAnnouncementValues(L: unknown, startIndex: number): number[] {

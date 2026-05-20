@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 115;
+export const operationFixtureCount = 116;
 export const operationKindCounts = {
+  announceChangeCode: 1,
   announceHandBanish: 1,
   announceHandDiscard: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
@@ -67,6 +68,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "announceChangeCode"
   | "announceHandBanish"
   | "announceHandDiscard"
   | "costBanishDraw" | "costDiscardDraw"
@@ -135,6 +137,21 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-ancient-gear-gadget-announce-change-code.test.ts",
+      kind: "announceChangeCode",
+      required: [
+        "Duel.SelectOption(tp,70,71,72)",
+        "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))",
+        "Duel.SetTargetParam(ac)",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e1:SetValue(ac)",
+        'api: "AnnounceCard"',
+        "code: 114",
+        "currentCardMatchesCode(",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-dd-designator-announce-hand-banish.test.ts",
       kind: "announceHandBanish",
@@ -1185,6 +1202,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      announceChangeCode: 0,
       announceHandBanish: 0,
       announceHandDiscard: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
