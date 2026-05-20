@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 19;
+const chainResponseFixtureCount = 20;
 const chainResponseKindCounts = {
+  chainSearchResponse: 1,
   destroyOnlyChainedResponse: 4,
   flipSummonTrapResponse: 3,
   genericChainResponse: 1,
@@ -25,6 +26,7 @@ const chainResponseSemanticVariantCounts = {
   crimsonNinjaFlipConfirmTrapDestroy: 1,
   ghostBelleWantedChainNegationAndRecycle: 1,
   goldenFlyingFishReleaseCostTargetDestroy: 1,
+  ignisHeatTributeSummonedChainSearch: 1,
   deepSweeperSelfTributeDestroy: 1,
   houseAdhesiveTapeFlipSummonDestroy: 1,
   mekkKnightYellowColumnProcedureDestroy: 1,
@@ -42,6 +44,7 @@ const chainResponseSemanticVariantCounts = {
 } satisfies Record<ChainResponseSemanticVariant, number>;
 
 type ChainResponseKind =
+  | "chainSearchResponse"
   | "destroyOnlyChainedResponse"
   | "flipSummonTrapResponse"
   | "genericChainResponse"
@@ -60,6 +63,7 @@ type ChainResponseSemanticVariant =
   | "crimsonNinjaFlipConfirmTrapDestroy"
   | "ghostBelleWantedChainNegationAndRecycle"
   | "goldenFlyingFishReleaseCostTargetDestroy"
+  | "ignisHeatTributeSummonedChainSearch"
   | "deepSweeperSelfTributeDestroy"
   | "houseAdhesiveTapeFlipSummonDestroy"
   | "mekkKnightYellowColumnProcedureDestroy"
@@ -226,6 +230,21 @@ function chainResponseFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ignis-heat-chain-search.test.ts",
+      kind: "chainSearchResponse",
+      required: [
+        'action.type === "activateEffect" && action.uid === ignis.uid',
+        'windowKind: "chainResponse"',
+        "return e:GetHandler():IsTributeSummoned() and rp~=tp",
+        "return c:IsSetCard(SET_TRUE_DRACO_KING) and c:IsContinuousSpell()",
+        "aux.ToHandOrElse(tc,tp,function(c)",
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        'summonType: "tribute"',
+        'host.messages).not.toContain("ignis target activated")',
+      ],
+    },
+    {
       file: "test/lua-real-script-house-adhesive-tape-flip-summon.test.ts",
       kind: "flipSummonTrapResponse",
       required: [
@@ -373,6 +392,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       return counts;
     },
     {
+      chainSearchResponse: 0,
       destroyOnlyChainedResponse: 0,
       flipSummonTrapResponse: 0,
       genericChainResponse: 0,
@@ -470,6 +490,19 @@ function chainResponseSemanticVariants(): Array<{
         "return c:GetColumnGroupCount()>0",
         "Duel.Remove(g,POS_FACEUP,REASON_COST)",
         "mekk-knight yellow responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ignis-heat-chain-search.test.ts",
+      kind: "ignisHeatTributeSummonedChainSearch",
+      required: [
+        'const ignisCode = "22499034"',
+        "restores tribute-summoned Ignis Heat EVENT_CHAINING Continuous Spell search",
+        "e1:SetCode(EFFECT_ADD_EXTRA_TRIBUTE)",
+        "e2:SetCode(EVENT_CHAINING)",
+        "return e:GetHandler():IsTributeSummoned() and rp~=tp",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil,tp)",
+        "confirmed 1:",
       ],
     },
     {
@@ -618,6 +651,7 @@ function countChainResponseSemanticVariants(
       deepSweeperSelfTributeDestroy: 0,
       ghostBelleWantedChainNegationAndRecycle: 0,
       goldenFlyingFishReleaseCostTargetDestroy: 0,
+      ignisHeatTributeSummonedChainSearch: 0,
       houseAdhesiveTapeFlipSummonDestroy: 0,
       mekkKnightYellowColumnProcedureDestroy: 0,
       mysticalSpaceTyphoonFreeChainDestroy: 0,
