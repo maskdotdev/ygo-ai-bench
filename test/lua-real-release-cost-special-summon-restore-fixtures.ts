@@ -1,11 +1,11 @@
-export const releaseCostSpecialSummonFixtureCount = 6;
+export const releaseCostSpecialSummonFixtureCount = 7;
 
 export const releaseCostSpecialSummonKindCounts = {
   releaseGroupCostHandDeckSummon: 1,
   releaseGroupCostHandProcedure: 1,
   releaseGroupCostHandSelfSummonSearch: 1,
   releaseGroupCostHandSummonLeaveDestroy: 1,
-  selfReleaseCostDeckSummon: 2,
+  selfReleaseCostDeckSummon: 3,
 } satisfies Record<ReleaseCostSpecialSummonKind, number>;
 
 export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
@@ -86,6 +86,24 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
       "duelReason.release | duelReason.cost",
       'eventName: "released"',
       "eventReasonEffectId: 2",
+    ],
+  }, {
+    file: "test/lua-real-script-skilled-white-magician-counter-summon.test.ts",
+    kind: "selfReleaseCostDeckSummon",
+    required: [
+      "c:EnableCounterPermit(COUNTER_SPELL)",
+      "e0:SetCode(EVENT_CHAINING)",
+      "e0:SetOperation(aux.chainreg)",
+      "e1:SetCode(EVENT_CHAIN_SOLVED)",
+      "e:GetHandler():GetCounter(COUNTER_SPELL)==3 and e:GetHandler():IsReleasable()",
+      "Duel.Release(e:GetHandler(),REASON_COST)",
+      "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(s.filter),tp,LOCATION_DECK|LOCATION_HAND|LOCATION_GRAVE,0,1,1,nil,e,tp)",
+      "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+      "duelReason.release | duelReason.cost",
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "operationInfos: [{ category: categorySpecialSummon, count: 0, player: 0, parameter: 19, targetUids: [] }]",
     ],
   }, {
     file: "test/lua-real-script-skilled-blue-magician-counter-summon.test.ts",
