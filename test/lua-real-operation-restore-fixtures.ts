@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 163;
+export const operationFixtureCount = 164;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -22,6 +22,7 @@ export const operationKindCounts = {
   controlSwap: 1,
   damageLinkedAtkDown: 1,
   releaseTargetZeroBattleBurn: 1,
+  detachBattleDestroyBurnAtkDestroyedBurn: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 2,
   banishedToDeckSelfSummon: 1,
@@ -131,6 +132,7 @@ export type OperationKind =
   | "controlSwap"
   | "damageLinkedAtkDown"
   | "releaseTargetZeroBattleBurn"
+  | "detachBattleDestroyBurnAtkDestroyedBurn"
   | "banishedToGraveReturn"
   | "banishedToHand"
   | "banishedToDeckSelfSummon"
@@ -282,6 +284,36 @@ export function operationFixtureFiles(): Array<{
         "effectLabelObjectUid: target.uid",
         "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === target.uid), restoredChain.session.state)).toBe(0)",
         "players[1].lifePoints).toBe(5200)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-grenosaurus-giga-cannon-battle-destroyed-burn.test.ts",
+      kind: "detachBattleDestroyBurnAtkDestroyedBurn",
+      required: [
+        "restores battle-destroyed detach burn/ATK gain and destroyed target burn",
+        "Xyz.AddProcedure(c,nil,4,2)",
+        "e1:SetCategory(CATEGORY_DAMAGE+CATEGORY_ATKCHANGE)",
+        "e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetCode(EVENT_BATTLE_DESTROYED)",
+        "e1:SetCost(Cost.DetachFromSelf(1,1,nil))",
+        "bc:IsRelateToBattle()",
+        "bc:IsControler(tp) and bc:IsRace(RACE_DINOSAUR)",
+        "Duel.SetTargetParam(1000)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "Duel.BreakEffect()",
+        "e1:SetProperty(EFFECT_FLAG_COPY_INHERIT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(1000)",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_DAMAGE)",
+        "e2:SetCode(EVENT_DESTROYED)",
+        "return c:IsPreviousLocation(LOCATION_MZONE) and c:IsXyzSummoned()",
+        "Duel.SelectTarget(tp,nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "Duel.Damage(1-tp,1000,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "damageDealt"',
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === greno.uid), restoredTrigger.session.state)).toBe(3200)",
+        "players[1].lifePoints).toBe(4800)",
       ],
     },
     {
@@ -2157,6 +2189,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       controlSwap: 0,
       damageLinkedAtkDown: 0,
       releaseTargetZeroBattleBurn: 0,
+      detachBattleDestroyBurnAtkDestroyedBurn: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
       banishedToDeckSelfSummon: 0,
