@@ -74,7 +74,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectDisableFieldCount: 1,
   selectDisableFieldLoop: 1,
   selectDisableFieldMovement: 3,
-  selectEffectModeChoice: 4,
+  selectEffectModeChoice: 5,
   selectEffectYesNoReplacement: 1,
   selectFieldZoneLoop: 1,
   selectFieldZoneMirrorSummon: 1,
@@ -86,6 +86,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectYesNoNegateDestroy: 1,
 };
 const promptHelperSemanticVariantCounts: Record<PromptHelperSemanticVariant, number> = {
+  apocavitiesCounterSelectDestroy: 1,
   gagagaMagicianAnnounceLevelChange: 1,
   gachiGachiSelectEffectYesNoReplacement: 1,
   gishkiPsycheloneTraitHandShuffle: 1,
@@ -114,6 +115,7 @@ const promptHelperSemanticVariantCounts: Record<PromptHelperSemanticVariant, num
   wattkineticOpponentZoneMove: 1,
 };
 const promptHelperSemanticVariantByFile: Record<string, PromptHelperSemanticVariant> = {
+  "test/lua-real-script-apocavities-counter-select-effect.test.ts": "apocavitiesCounterSelectDestroy",
   "test/lua-real-script-gagaga-magician-announce-level.test.ts": "gagagaMagicianAnnounceLevelChange",
   "test/lua-real-script-gachi-gachi-select-effect-yes-no.test.ts": "gachiGachiSelectEffectYesNoReplacement",
   "test/lua-real-script-gishki-psychelone-announce-traits.test.ts": "gishkiPsycheloneTraitHandShuffle",
@@ -180,7 +182,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(26);
+    expect(representativePromptHelperFixtures()).toHaveLength(27);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -283,6 +285,7 @@ type PromptHelperKind =
   | "selectYesNoActivationLock"
   | "selectYesNoNegateDestroy";
 type PromptHelperSemanticVariant =
+  | "apocavitiesCounterSelectDestroy"
   | "gagagaMagicianAnnounceLevelChange"
   | "gachiGachiSelectEffectYesNoReplacement"
   | "gishkiPsycheloneTraitHandShuffle"
@@ -430,6 +433,21 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         "returned: 1",
         'triggerBucket: "turnOptional"',
         'location: "graveyard"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-apocavities-counter-select-effect.test.ts",
+      kind: "selectEffectModeChoice",
+      apis: ["SelectEffect"],
+      required: [
+        "restores placed counters and selected counter-cost destroy branch",
+        'api: "SelectEffect"',
+        "options: [1, 2, 3, 4]",
+        "returned: 4",
+        "effectLabel: 4",
+        "Duel.RemoveCounter(tp,1,1,COUNTER_CARIES,ct,REASON_COST)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,tc,1,tp,0)",
+        "eventReason: duelReason.effect | duelReason.destroy",
       ],
     },
     {
