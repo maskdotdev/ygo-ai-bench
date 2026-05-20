@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const TO_DECK_FIXTURE_COUNT = 7;
+const TO_DECK_FIXTURE_COUNT = 8;
 const toDeckKindCounts = {
   battleDamageGraveContinuousSpellToDeckTop: 1,
+  battleDestroyingSetTargetCardToDeckTop: 1,
   freeChainReleaseTargetShuffleToDeck: 1,
   graveExtraToExtraDeckTop: 1,
   flipGraveTargetShuffleToDeck: 1,
@@ -21,11 +22,13 @@ const toDeckSemanticVariantCounts = {
   majespecterStormReleaseTargetShuffleToDeck: 1,
   nubianGuardBattleDamageGraveSpellDeckTop: 1,
   outstandingDogMarronToGraveSelfShuffleToDeck: 1,
+  wingedSageFalcosBattleDestroyingDeckTop: 1,
   volcanicRechargeFreeChainGraveShuffleToDeck: 1,
 } satisfies Record<ToDeckSemanticVariant, number>;
 
 type ToDeckKind =
   | "battleDamageGraveContinuousSpellToDeckTop"
+  | "battleDestroyingSetTargetCardToDeckTop"
   | "freeChainReleaseTargetShuffleToDeck"
   | "graveExtraToExtraDeckTop"
   | "flipGraveTargetShuffleToDeck"
@@ -40,6 +43,7 @@ type ToDeckSemanticVariant =
   | "majespecterStormReleaseTargetShuffleToDeck"
   | "nubianGuardBattleDamageGraveSpellDeckTop"
   | "outstandingDogMarronToGraveSelfShuffleToDeck"
+  | "wingedSageFalcosBattleDestroyingDeckTop"
   | "volcanicRechargeFreeChainGraveShuffleToDeck";
 
 describe("Lua real to-Deck restore coverage", () => {
@@ -93,6 +97,23 @@ function toDeckFixtureFiles(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-winged-sage-falcos-battle-destroying-decktop.test.ts",
+      kind: "battleDestroyingSetTargetCardToDeckTop",
+      required: [
+        'const falcosCode = "87523462"',
+        "restores GetBattleTarget SetTargetCard into destroyed monster sent to Deck top",
+        "e1:SetCategory(CATEGORY_TODECK)",
+        "e1:SetCode(EVENT_BATTLE_DESTROYING)",
+        "local bc=c:GetBattleTarget()",
+        "Duel.SetTargetCard(bc)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,bc,1,0,0)",
+        "Duel.SendtoDeck(tc,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        'eventName: "battleDestroyed"',
+        'eventName: "sentToDeck"',
+        "previousPosition: \"faceUpAttack\"",
+      ],
+    },
     {
       file: "test/lua-real-script-nubian-guard-battle-damage-grave-spell-decktop.test.ts",
       kind: "battleDamageGraveContinuousSpellToDeckTop",
@@ -230,6 +251,7 @@ function countToDeckKinds(fixtures: Array<{ kind: ToDeckKind }>): Record<ToDeckK
     },
     {
       battleDamageGraveContinuousSpellToDeckTop: 0,
+      battleDestroyingSetTargetCardToDeckTop: 0,
       freeChainReleaseTargetShuffleToDeck: 0,
       graveExtraToExtraDeckTop: 0,
       flipGraveTargetShuffleToDeck: 0,
@@ -246,6 +268,20 @@ function toDeckSemanticVariants(): Array<{
   required: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-winged-sage-falcos-battle-destroying-decktop.test.ts",
+      kind: "wingedSageFalcosBattleDestroyingDeckTop",
+      required: [
+        'const falcosCode = "87523462"',
+        "restores GetBattleTarget SetTargetCard into destroyed monster sent to Deck top",
+        "bc:IsPreviousPosition(POS_FACEUP_ATTACK)",
+        "Duel.SetTargetCard(bc)",
+        "Duel.GetFirstTarget()",
+        "Duel.SendtoDeck(tc,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        'eventName: "sentToDeck"',
+        "reasonEffectId: 1",
+      ],
+    },
     {
       file: "test/lua-real-script-nubian-guard-battle-damage-grave-spell-decktop.test.ts",
       kind: "nubianGuardBattleDamageGraveSpellDeckTop",
@@ -357,6 +393,7 @@ function countToDeckSemanticVariants(fixtures: Array<{ kind: ToDeckSemanticVaria
       majespecterStormReleaseTargetShuffleToDeck: 0,
       nubianGuardBattleDamageGraveSpellDeckTop: 0,
       outstandingDogMarronToGraveSelfShuffleToDeck: 0,
+      wingedSageFalcosBattleDestroyingDeckTop: 0,
       volcanicRechargeFreeChainGraveShuffleToDeck: 0,
     },
   );
