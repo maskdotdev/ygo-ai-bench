@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 171;
+export const operationFixtureCount = 172;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -15,6 +15,7 @@ export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   copyNegateDamage: 1,
   counterBoostBattleTargetLock: 1,
+  counterDamageReplaceStatBurn: 1,
   counterLevelChange: 1,
   customDestroyReplaceDamage: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -131,6 +132,7 @@ export type OperationKind =
   | "costBanishDraw" | "costDiscardDraw"
   | "copyNegateDamage"
   | "counterBoostBattleTargetLock"
+  | "counterDamageReplaceStatBurn"
   | "counterLevelChange"
   | "customDestroyReplaceDamage"
   | "crossPlayerGraveToDeckTrap"
@@ -768,6 +770,27 @@ export function operationFixtureFiles(): Array<{
         "getDuelCardCounter(restoredCombatWheel, combatCounter)).toBe(1)",
         "currentAttack(restoredCombatWheel, restoredOpen.session.state)).toBe((combatWheel.data.attack ?? 0) + 800)",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-black-winged-dragon-damage-counter-stat.test.ts",
+      kind: "counterDamageReplaceStatBurn",
+      required: [
+        "restores effect-damage replacement into Feather Counter ATK loss and counter-cost burn",
+        'const blackWingedCode = "9012916"',
+        "e1:SetCode(EFFECT_CHANGE_DAMAGE)",
+        "e2:SetCode(EFFECT_NO_EFFECT_DAMAGE)",
+        "e:GetHandler():AddCounter(COUNTER_FEATHER,1)",
+        "return c:GetCounter(COUNTER_FEATHER)*-700",
+        "e:GetHandler():RemoveCounter(tp,COUNTER_FEATHER,ct,REASON_COST)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,e:GetLabel())",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,tc,1,0,-e:GetLabel())",
+        "Duel.Damage(1-tp,val,REASON_EFFECT)",
+        "getDuelCardCounter(restoredDragon, featherCounter)).toBe(1)",
+        "currentAttack(restoredDragon, restoredBurnChain.session.state)).toBe(2100)",
+        "currentAttack(restoredIgnitionChain.session.state.cards.find((card) => card.uid === target.uid), restoredIgnitionChain.session.state)).toBe(300)",
+        'eventName: "counterAdded"',
+        'eventName: "damageDealt"',
       ],
     },
     {
@@ -2329,6 +2352,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       costBanishDraw: 0, costDiscardDraw: 0,
       copyNegateDamage: 0,
       counterBoostBattleTargetLock: 0,
+      counterDamageReplaceStatBurn: 0,
       counterLevelChange: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
