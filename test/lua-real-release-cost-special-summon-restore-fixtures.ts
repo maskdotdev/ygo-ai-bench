@@ -1,14 +1,15 @@
-export const releaseCostSpecialSummonFixtureCount = 7;
+export const releaseCostSpecialSummonFixtureCount = 8;
 
 export const releaseCostSpecialSummonKindCounts = {
   releaseGroupCostHandDeckSummon: 1,
   releaseGroupCostHandProcedure: 1,
+  releaseGroupCostTargetedGraveSummon: 1,
   releaseGroupCostHandSelfSummonSearch: 1,
   releaseGroupCostHandSummonLeaveDestroy: 1,
   selfReleaseCostDeckSummon: 3,
 } satisfies Record<ReleaseCostSpecialSummonKind, number>;
 
-export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
+export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostTargetedGraveSummon" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
 
 export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -30,6 +31,25 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
       "category: 0x200",
       "parameter: 0x3",
       "hasProcedureCompleteStatus",
+    ],
+  }, {
+    file: "test/lua-real-script-bujinfidel-release-target-revive.test.ts",
+    kind: "releaseGroupCostTargetedGraveSummon",
+    required: [
+      "Duel.CheckReleaseGroupCost(tp,s.rfilter,1,false,nil,nil,e,tp,ft)",
+      "Duel.SelectReleaseGroupCost(tp,s.rfilter,1,1,false,nil,nil,e,tp,ft)",
+      "local code=g:GetFirst():GetCode()",
+      "e:SetLabel(code)",
+      "Duel.Release(g,REASON_COST)",
+      "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,code,e,tp)",
+      "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,sg,1,0,0)",
+      "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+      "duelReason.release | duelReason.cost",
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      "effectLabel: Number(releaseCode)",
+      "targetUids: [revive.uid]",
+      "sameCodeDecoy",
     ],
   }, {
     file: "test/lua-real-script-drytron-alpha-tribute-summon-search.test.ts",
@@ -145,5 +165,5 @@ export function countReleaseCostSpecialSummonKinds(
   return files.reduce<Record<ReleaseCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
+  }, { releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostTargetedGraveSummon: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
 }
