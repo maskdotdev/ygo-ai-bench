@@ -4,20 +4,21 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const flipOperationFixtureCount = 4;
+const flipOperationFixtureCount = 5;
 const flipOperationKindCounts = {
   flipGroupDestroy: 1,
   flipSpellTrapDestroy: 1,
-  flipTargetToHand: 2,
+  flipTargetToHand: 3,
 } satisfies Record<FlipOperationKind, number>;
 const flipOperationSemanticVariantCounts = {
   fourStarredLadybugOpponentLevel4GroupDestroy: 1,
   gravekeeperGuardOpponentMonsterReturn: 1,
+  magicianOfFaithGraveSpellConfirmToHand: 1,
   wormApocalypseSpellTrapDestroy: 1,
 } satisfies Record<FlipOperationSemanticVariant, number>;
 
 type FlipOperationKind = "flipGroupDestroy" | "flipSpellTrapDestroy" | "flipTargetToHand";
-type FlipOperationSemanticVariant = "fourStarredLadybugOpponentLevel4GroupDestroy" | "gravekeeperGuardOpponentMonsterReturn" | "wormApocalypseSpellTrapDestroy";
+type FlipOperationSemanticVariant = "fourStarredLadybugOpponentLevel4GroupDestroy" | "gravekeeperGuardOpponentMonsterReturn" | "magicianOfFaithGraveSpellConfirmToHand" | "wormApocalypseSpellTrapDestroy";
 
 describe("Lua real Flip operation restore coverage", () => {
   it("requires Flip operation fixtures to assert clean Lua registry restore, targets, and operation metadata", () => {
@@ -114,6 +115,23 @@ function flipOperationFixtureFiles(): Array<{ file: string; kind: FlipOperationK
       ],
     },
     {
+      file: "test/lua-real-script-magician-of-faith-flip-grave-spell-to-hand.test.ts",
+      kind: "flipTargetToHand",
+      required: [
+        "restores targeted Graveyard Spell return and opponent confirmation",
+        'const magicianCode = "31560081"',
+        "return c:IsSpell() and c:IsAbleToHand()",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,g,#g,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,tc)",
+        'eventName: "sentToHandConfirmed"',
+        "operationInfos: [{ category: 0x8",
+        "targetUids: [spell.uid]",
+      ],
+    },
+    {
       file: "test/lua-real-script-penguin-soldier-flip-to-hand.test.ts",
       kind: "flipTargetToHand",
       required: [
@@ -143,6 +161,18 @@ function flipOperationSemanticVariants(): Array<{ file: string; kind: FlipOperat
         "eventReasonCardUid: ladybug.uid",
         "eventReasonEffectId: 1",
         'host.messages).not.toContain("ladybug responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-magician-of-faith-flip-grave-spell-to-hand.test.ts",
+      kind: "magicianOfFaithGraveSpellConfirmToHand",
+      required: [
+        'const magicianCode = "31560081"',
+        'triggerBucket: "turnMandatory"',
+        "Duel.ConfirmCards(1-tp,tc)",
+        'restoredChain.host.messages).toEqual([`confirmed 1: ${spellCode}`])',
+        "eventReasonCardUid: magician.uid",
+        "eventReasonEffectId: 1",
       ],
     },
     {
@@ -183,5 +213,5 @@ function countFlipOperationSemanticVariants(
   return fixtures.reduce<Record<FlipOperationSemanticVariant, number>>((counts, fixture) => {
     counts[fixture.kind] += 1;
     return counts;
-  }, { fourStarredLadybugOpponentLevel4GroupDestroy: 0, gravekeeperGuardOpponentMonsterReturn: 0, wormApocalypseSpellTrapDestroy: 0 });
+  }, { fourStarredLadybugOpponentLevel4GroupDestroy: 0, gravekeeperGuardOpponentMonsterReturn: 0, magicianOfFaithGraveSpellConfirmToHand: 0, wormApocalypseSpellTrapDestroy: 0 });
 }
