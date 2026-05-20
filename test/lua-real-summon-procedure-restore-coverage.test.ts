@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 10;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 9;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 11;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 10;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 1,
   graveBanishCostStatProcedure: 1,
   handOwnFaceupAttributeOpenZoneProcedure: 1,
+  handAttributeBanishCostSearchProcedure: 1,
   handReleaseEquipTurnCounterProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
@@ -21,6 +22,7 @@ const summonProcedureKindCounts = {
 const summonProcedureSemanticVariantCounts = {
   broadTypedExtraDeckSpiritGeminiProcedures: 1,
   caligoClawCrowDarkMonsterOpenZoneProcedure: 1,
+  collapserpentLightBanishCostSearchProcedure: 1,
   familiarPossessedDeckTwoMaterialShufflePierceProcedure: 1,
   gigaraysGandoraTwoMonsterSendCostProcedure: 1,
   greatMothCocoonEquipTurnCounterReleaseProcedure: 1,
@@ -35,6 +37,7 @@ type SummonProcedureKind =
   | "broadTypedProcedure"
   | "deckTwoMaterialShufflePierceProcedure"
   | "graveBanishCostStatProcedure"
+  | "handAttributeBanishCostSearchProcedure"
   | "handOwnFaceupAttributeOpenZoneProcedure"
   | "handReleaseEquipTurnCounterProcedure"
   | "handBothFieldsGimmickOnlyProcedure"
@@ -45,6 +48,7 @@ type SummonProcedureKind =
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
   | "caligoClawCrowDarkMonsterOpenZoneProcedure"
+  | "collapserpentLightBanishCostSearchProcedure"
   | "familiarPossessedDeckTwoMaterialShufflePierceProcedure"
   | "gigaraysGandoraTwoMonsterSendCostProcedure"
   | "greatMothCocoonEquipTurnCounterReleaseProcedure"
@@ -99,6 +103,28 @@ const summonProcedureFixtures = [
       "getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))",
       "applyRestoredActionAndAssert(restored, procedure!)",
       'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-collapserpent-special-summon-procedure-search.test.ts",
+    kind: "handAttributeBanishCostSearchProcedure",
+    required: [
+      "LIGHT banish-cost hand Special Summon procedure and on-field to-Graveyard Wyverburster search",
+      'const collapserpentCode = "61901281"',
+      'caseKind: "blocked"',
+      'caseKind: "valid"',
+      'action.type === "specialSummonProcedure"',
+      "return c:IsAttribute(ATTRIBUTE_LIGHT) and c:IsAbleToRemoveAsCost() and aux.SpElimFilter(c,true)",
+      "aux.SelectUnselectGroup(rg,e,tp,1,1,nil,1,tp,HINTMSG_REMOVE,nil,nil,true)",
+      "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+      "return e:GetHandler():IsPreviousLocation(LOCATION_ONFIELD)",
+      "return c:IsCode(99234526) and c:IsAbleToHand()",
+      "expectRestoredLegalActions(restoredProcedure, 0)",
+      "applyRestoredActionAndAssert(restoredProcedure, procedure!)",
+      'eventName: "banished"',
+      'eventName: "specialSummoned"',
+      'eventName: "sentToHandConfirmed"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
     ],
   },
@@ -291,6 +317,7 @@ function countSummonProcedureKinds(
       broadTypedProcedure: 0,
       graveBanishCostStatProcedure: 0,
       deckTwoMaterialShufflePierceProcedure: 0,
+      handAttributeBanishCostSearchProcedure: 0,
       handOwnFaceupAttributeOpenZoneProcedure: 0,
       handOwnFaceupLevelOrLinkOpenZoneProcedure: 0,
       handOpponentSpellTrapOrMstProcedure: 0,
@@ -328,6 +355,19 @@ function summonProcedureSemanticVariants(): Array<{
         'fieldCase: "faceDownDark"',
         'fieldCase: "fullMonsterZone"',
         "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+      ],
+    },
+    {
+      file: "test/lua-real-script-collapserpent-special-summon-procedure-search.test.ts",
+      kind: "collapserpentLightBanishCostSearchProcedure",
+      required: [
+        'const collapserpentCode = "61901281"',
+        "restores its LIGHT banish-cost hand Special Summon procedure and on-field to-Graveyard Wyverburster search",
+        'caseKind: "blocked"',
+        'caseKind: "valid"',
+        'eventName: "banished"',
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHandConfirmed"',
       ],
     },
     {
@@ -484,6 +524,7 @@ function countSummonProcedureSemanticVariants(
     {
       broadTypedExtraDeckSpiritGeminiProcedures: 0,
       caligoClawCrowDarkMonsterOpenZoneProcedure: 0,
+      collapserpentLightBanishCostSearchProcedure: 0,
       familiarPossessedDeckTwoMaterialShufflePierceProcedure: 0,
       gigaraysGandoraTwoMonsterSendCostProcedure: 0,
       greatMothCocoonEquipTurnCounterReleaseProcedure: 0,
