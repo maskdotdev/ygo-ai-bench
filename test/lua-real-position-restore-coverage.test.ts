@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const POSITION_FIXTURE_COUNT = 7;
+const POSITION_FIXTURE_COUNT = 8;
 const positionKindCounts = {
   banishCostGroupChange: 1,
   battlePhaseSelfDefenseLock: 1,
   freeChainGroupTurnSet: 1,
   overlayTargetChange: 1,
+  selectEffectFlipSelfReset: 1,
   summonTriggerAttackPosition: 1,
   summonTriggerSet: 1,
   unionEquipTargetDefense: 1,
@@ -21,6 +22,7 @@ const positionSemanticVariantCounts = {
   legendaryWindUpKeyGroupTurnSet: 1,
   otohimeSummonTriggerAttackPosition: 1,
   protectiveSoulAilinUnionPositionIgnition: 1,
+  subterrorFinalBattleFlipSelfResetSSet: 1,
   tsukuyomiSpiritSummonFaceDownSet: 1,
 } satisfies Record<PositionSemanticVariant, number>;
 
@@ -29,6 +31,7 @@ type PositionKind =
   | "battlePhaseSelfDefenseLock"
   | "freeChainGroupTurnSet"
   | "overlayTargetChange"
+  | "selectEffectFlipSelfReset"
   | "summonTriggerAttackPosition"
   | "summonTriggerSet"
   | "unionEquipTargetDefense";
@@ -39,6 +42,7 @@ type PositionSemanticVariant =
   | "legendaryWindUpKeyGroupTurnSet"
   | "otohimeSummonTriggerAttackPosition"
   | "protectiveSoulAilinUnionPositionIgnition"
+  | "subterrorFinalBattleFlipSelfResetSSet"
   | "tsukuyomiSpiritSummonFaceDownSet";
 
 describe("Lua real position restore coverage", () => {
@@ -177,6 +181,22 @@ function positionFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-subterror-final-battle-reset-event.test.ts",
+      kind: "selectEffectFlipSelfReset",
+      required: [
+        "local op=Duel.SelectEffect(tp,",
+        "Duel.SelectPosition(tp,tc,POS_FACEUP_ATTACK+POS_FACEUP_DEFENSE)",
+        "Duel.ChangePosition(tc,pos)",
+        "c:CancelToGrave()",
+        "Duel.RaiseEvent(c,EVENT_SSET,e,REASON_EFFECT,tp,tp,0)",
+        "operationInfos).toEqual([{ category: 0x1000",
+        'eventName: "positionChanged"',
+        'eventName: "spellTrapSet"',
+        'position: "faceUpAttack", faceUp: true',
+        'triggerBucket: "turnMandatory"',
+      ],
+    },
+    {
       file: "test/lua-real-script-tsukuyomi-position-trigger.test.ts",
       kind: "summonTriggerSet",
       required: [
@@ -203,6 +223,7 @@ function countPositionKinds(fixtures: Array<{ kind: PositionKind }>): Record<Pos
       battlePhaseSelfDefenseLock: 0,
       freeChainGroupTurnSet: 0,
       overlayTargetChange: 0,
+      selectEffectFlipSelfReset: 0,
       summonTriggerAttackPosition: 0,
       summonTriggerSet: 0,
       unionEquipTargetDefense: 0,
@@ -273,6 +294,17 @@ function positionSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-subterror-final-battle-reset-event.test.ts",
+      kind: "subterrorFinalBattleFlipSelfResetSSet",
+      required: [
+        'const finalBattleCode = "74640994"',
+        "restores SelectEffect flip-up branch, trap self-reset, and raised EVENT_SSET",
+        "c:CancelToGrave()",
+        'eventName: "spellTrapSet"',
+        'triggerBucket: "turnMandatory"',
+      ],
+    },
+    {
       file: "test/lua-real-script-tsukuyomi-position-trigger.test.ts",
       kind: "tsukuyomiSpiritSummonFaceDownSet",
       required: [
@@ -303,6 +335,7 @@ function countPositionSemanticVariants(
       legendaryWindUpKeyGroupTurnSet: 0,
       otohimeSummonTriggerAttackPosition: 0,
       protectiveSoulAilinUnionPositionIgnition: 0,
+      subterrorFinalBattleFlipSelfResetSSet: 0,
       tsukuyomiSpiritSummonFaceDownSet: 0,
     },
   );
