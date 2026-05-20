@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 21;
+const protectionReplacementFixtureCount = 22;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
@@ -20,6 +20,7 @@ const protectionReplacementKindCounts = {
   persistentDestroyReplace: 4,
   positionConditionProtection: 1,
   temporaryBattleProtection: 1,
+  trapImmunity: 1,
 } satisfies Record<ProtectionReplacementKind, number>;
 const protectionReplacementSemanticVariantCounts = {
   altergeistFifinellagBattleAndTargetProtection: 1,
@@ -43,6 +44,7 @@ const protectionReplacementSemanticVariantCounts = {
   safeZoneLinkedTargetProtection: 1,
   sixSamuraiKamonDestroyReplace: 1,
   wabokuTemporaryBattleProtection: 1,
+  wildheartTrapImmunity: 1,
 } satisfies Record<ProtectionReplacementSemanticVariant, number>;
 
 describe("Lua real protection and replacement restore coverage", () => {
@@ -116,7 +118,8 @@ type ProtectionReplacementKind =
   | "linkedTargetProtection"
   | "persistentDestroyReplace"
   | "positionConditionProtection"
-  | "temporaryBattleProtection";
+  | "temporaryBattleProtection"
+  | "trapImmunity";
 type ProtectionReplacementSemanticVariant =
   | "altergeistFifinellagBattleAndTargetProtection"
   | "checksumDragonAttackPositionProtection"
@@ -138,7 +141,8 @@ type ProtectionReplacementSemanticVariant =
   | "runickSlumberCountLimitedProtection"
   | "safeZoneLinkedTargetProtection"
   | "sixSamuraiKamonDestroyReplace"
-  | "wabokuTemporaryBattleProtection";
+  | "wabokuTemporaryBattleProtection"
+  | "wildheartTrapImmunity";
 
 function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; kind: ProtectionReplacementKind; required: string[] }> {
   return ([
@@ -338,6 +342,20 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
         "deepsea spell immune false",
         "expect(restored.host.messages).toContain(\"deepsea destroy result 0\")",
         "event.eventName === \"destroyed\" && event.eventCardUid === deepsea!.uid)).toEqual([])",
+      ],
+    },
+    {
+      file: "lua-real-script-wildheart-trap-immunity.test.ts",
+      kind: "trapImmunity",
+      required: [
+        "restores always-on Trap immunity and blocks a restored Trap destruction effect",
+        'const wildheartCode = "86188410"',
+        "e1:SetCode(EFFECT_IMMUNE_EFFECT)",
+        "return te:IsTrapEffect()",
+        "wildheart trap immune true",
+        "wildheart spell immune false",
+        "expect(restored.host.messages).toContain(\"wildheart trap destroy result 0\")",
+        "event.eventName === \"destroyed\" && event.eventCardUid === wildheart!.uid)).toEqual([])",
       ],
     },
     {
@@ -581,6 +599,16 @@ function protectionReplacementSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-wildheart-trap-immunity.test.ts",
+      kind: "wildheartTrapImmunity",
+      requiredSnippets: [
+        'const wildheartCode = "86188410"',
+        "restores always-on Trap immunity and blocks a restored Trap destruction effect",
+        "wildheart trap immune true",
+        "wildheart trap destroy result 0",
+      ],
+    },
+    {
       file: "test/lua-real-script-waboku-temporary-battle-protection.test.ts",
       kind: "wabokuTemporaryBattleProtection",
       requiredSnippets: [
@@ -616,6 +644,7 @@ function countProtectionReplacementKinds(
       persistentDestroyReplace: 0,
       positionConditionProtection: 0,
       temporaryBattleProtection: 0,
+      trapImmunity: 0,
     },
   );
 }
@@ -647,6 +676,7 @@ function countProtectionReplacementSemanticVariants(
       safeZoneLinkedTargetProtection: 0,
       sixSamuraiKamonDestroyReplace: 0,
       wabokuTemporaryBattleProtection: 0,
+      wildheartTrapImmunity: 0,
     },
   );
 }
