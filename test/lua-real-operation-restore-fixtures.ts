@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 110;
+export const operationFixtureCount = 111;
 export const operationKindCounts = {
+  announceHandDiscard: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
@@ -65,6 +66,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "announceHandDiscard"
   | "costBanishDraw" | "costDiscardDraw"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
@@ -131,6 +133,20 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-mind-crush-announce-hand-discard.test.ts",
+      kind: "announceHandDiscard",
+      required: [
+        "e1:SetCategory(CATEGORY_HANDES)",
+        "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))",
+        "Duel.GetMatchingGroup(Card.IsCode,tp,0,LOCATION_HAND,nil,ac)",
+        "Duel.SendtoGrave(g,REASON_EFFECT|REASON_DISCARD)",
+        'api: "AnnounceCard"',
+        'eventName: "sentToGraveyard"',
+        "duelReason.effect | duelReason.discard",
+        "duelReason.rule",
+      ],
+    },
     {
       file: "test/lua-real-script-trap-reclamation-return-activated-trap.test.ts",
       kind: "trapReclamationReturn",
@@ -1148,6 +1164,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      announceHandDiscard: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
