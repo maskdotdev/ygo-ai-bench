@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 177;
+export const operationFixtureCount = 178;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -30,6 +30,7 @@ export const operationKindCounts = {
   banishedToSpecialSummon: 1,
   battleDestroyedDeckSummon: 1,
   damageDeckdesAtk: 1,
+  operatedDeckdesStat: 1,
   damageRecoverRaceCountStat: 1,
   chainNegateDiscardDestroy: 1,
   chainNegateDestroyDraw: 1,
@@ -152,6 +153,7 @@ export type OperationKind =
   | "banishedToSpecialSummon"
   | "battleDestroyedDeckSummon"
   | "damageDeckdesAtk"
+  | "operatedDeckdesStat"
   | "damageRecoverRaceCountStat"
   | "chainNegateDiscardDestroy"
   | "chainNegateDestroyDraw"
@@ -614,6 +616,26 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(ct*200)",
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dragon.uid), restoredOpen.session.state)).toBe(2700)",
         'eventName: "banished"',
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-raiden-operated-mill-stat.test.ts",
+      kind: "operatedDeckdesStat",
+      required: [
+        "restores operated Deck mill filtering into delayed ATK gain",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DECKDES)",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "Duel.SetOperationInfo(0,CATEGORY_DECKDES,nil,0,tp,2)",
+        "Duel.DiscardDeck(tp,2,REASON_EFFECT)",
+        "local g=Duel.GetOperatedGroup()",
+        "local ct=g:FilterCount(s.cfilter,nil)",
+        "Duel.BreakEffect()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(200)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === raiden.uid), restoredOpen.session.state)).toBe(1900)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "breakEffect"',
         "operationInfos",
       ],
     },
@@ -2488,6 +2510,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckMoveToField: 0,
       groupBanishCountStat: 0,
       damageDeckdesAtk: 0,
+      operatedDeckdesStat: 0,
       damageRecoverRaceCountStat: 0,
       discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
