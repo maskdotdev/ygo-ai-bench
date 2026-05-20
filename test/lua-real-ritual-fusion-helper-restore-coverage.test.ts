@@ -1,6 +1,6 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 40, ritual: 17 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 40, ritual: 18 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
@@ -32,7 +32,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   ritualExtraDeckMaterial: 1,
   ritualExtraMaterialNormalDeck: 1,
   ritualGraveBanishMaterial: 1,
-  ritualGreaterCode: 1,
+  ritualGreaterCode: 2,
   ritualGraveExtraMaterial: 1,
   ritualMaterialFilter: 1,
   ritualOpponentFieldMaterial: 1,
@@ -47,6 +47,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
   blackSkullDragonAddProcMix: 1,
   cyberEndDragonAddProcMixN: 1,
   contractDarkMasterGreaterCode: 1,
+  doriadoBlessingGreaterCode: 1,
   doubleSubstituteSuppression: 1,
   dynaForcedHandler: 1,
   dynaForcedHandlerSuppression: 1,
@@ -69,7 +70,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(57);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(58);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -172,6 +173,7 @@ type RitualFusionHelperSemanticVariant =
   | "blackSkullDragonAddProcMix"
   | "contractDarkMasterGreaterCode"
   | "cyberEndDragonAddProcMixN"
+  | "doriadoBlessingGreaterCode"
   | "doubleSubstituteSuppression"
   | "dynaForcedHandler"
   | "dynaForcedHandlerSuppression"
@@ -261,6 +263,17 @@ function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: Ritua
         "expect(restored.session.state.chain[0]?.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }])",
         "summonMaterialUids: [materialA!.uid, materialB!.uid]",
         "eventReasonCardUid: contract!.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-doriado-blessing-greater-code-ritual.test.ts",
+      kind: "doriadoBlessingGreaterCode",
+      required: [
+        "restores AddProcGreaterCode level-3 ritual summon with selected materials",
+        "const doriadoBlessingCode = \"23965037\"",
+        "Ritual.AddProcGreaterCode(c,3,nil,99414168)",
+        "summonMaterialUids: [materialA.uid, materialB.uid]",
+        "eventReasonCardUid: blessing.uid",
       ],
     },
     {
@@ -511,6 +524,22 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         'eventName === "sentToGraveyard"',
         "expect(materialGraveEvents.map((event) => event.eventCardUid).sort()).toEqual([materialA!.uid, materialB!.uid].sort())",
         'expect(restored.host.messages).not.toContain("dark master responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-doriado-blessing-greater-code-ritual.test.ts",
+      kind: "ritualGreaterCode",
+      families: ["ritual"],
+      required: [
+        "Ritual.AddProcGreaterCode(c,3,nil,99414168)",
+        "operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]",
+        "expect(restored.session.state.chain[0]?.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }])",
+        'summonType: "ritual"',
+        "summonMaterialUids: [materialA.uid, materialB.uid]",
+        "reason: duelReason.material | duelReason.ritual",
+        'eventName: "specialSummoned"',
+        'eventName === "sentToGraveyard"',
+        'expect(restored.host.messages).not.toContain("doriado responder resolved")',
       ],
     },
     {
