@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 140;
+export const operationFixtureCount = 141;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -20,6 +20,7 @@ export const operationKindCounts = {
   banishedToHand: 2,
   banishedToDeckSelfSummon: 1,
   banishedToSpecialSummon: 1,
+  battleDestroyedDeckSummon: 1,
   chainNegateDiscardDestroy: 1,
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
@@ -108,6 +109,7 @@ export type OperationKind =
   | "banishedToHand"
   | "banishedToDeckSelfSummon"
   | "banishedToSpecialSummon"
+  | "battleDestroyedDeckSummon"
   | "chainNegateDiscardDestroy"
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
@@ -196,6 +198,23 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === gandora.uid), restoredChain.session.state)).toBe(2600)",
         "players[0].lifePoints).toBe(4000)",
         'eventName: "damageDealt"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-tricular-battle-destroyed-deck-summon.test.ts",
+      kind: "battleDestroyedDeckSummon",
+      required: [
+        "restores optional battle-destroyed Graveyard trigger into matching hand-or-Deck Special Summon",
+        "e1:SetCode(EVENT_BATTLE_DESTROYED)",
+        "return e:GetHandler():IsLocation(LOCATION_GRAVE) and e:GetHandler():IsReason(REASON_BATTLE)",
+        "return c:IsCode(83392426) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND|LOCATION_DECK,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        'triggerBucket: "opponentOptional"',
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        'summonType: "special"',
       ],
     },
     {
@@ -1671,6 +1690,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       banishedToHand: 0,
       banishedToDeckSelfSummon: 0,
       banishedToSpecialSummon: 0,
+      battleDestroyedDeckSummon: 0,
       chainNegateDiscardDestroy: 0,
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
