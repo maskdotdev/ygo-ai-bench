@@ -7,6 +7,7 @@ const numericOrIdentifierPattern = String.raw`(?:0x[0-9A-Fa-f]+|\d+|[A-Za-z_]\w*
 const summonTypeConditionValues: Record<string, number> = { Ritual: 0x45000000, Fusion: 0x43000000, Synchro: 0x46000000, Xyz: 0x49000000, Pendulum: 0x4a000000, Link: 0x4c000000 };
 
 export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hostState: LuaHostState): string | undefined {
+  if (isGlobalTableFunction(L, index, "Gemini", "EffectStatusCondition") || isGlobalTableFunction(L, index, "aux", "IsGeminiState")) return "condition:gemini-status";
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   if (/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetLabel\s*\(\s*\)\s+local\s+(\w+)\s*,\s*(\w+)\s*=\s*re\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetOriginalCodeRule\s*\(\s*\)\s+return\s+re\s*:\s*IsMonsterEffect\s*\(\s*\)\s+and\s*\(\s*\2\s*==\s*\1\s+or\s+\3\s*==\s*\1\s*\)/.test(snippet)) return "condition:chain-solving-monster-effect-handler-original-code-label";
@@ -39,6 +40,7 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   if (equippedTargetRaceValue !== undefined) return `condition:equipped-target-race:${equippedTargetRaceValue}`;
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetEquipTarget\s*\(\s*\)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetEquipTarget\s*\(\s*\)\s+return\s+\1\s*(?:~=\s*nil\s*)?(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*GetEquipTarget\s*\(\s*\)\s*(?:~=\s*nil\s*)?(?:end\b|$)/.test(snippet)) return "condition:source-equipped";
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsFaceup\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*IsFaceup\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*,\s*\w+\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s*,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s+return\s+\1\s*:\s*IsFaceup\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-faceup";
+  if (/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+not\s+\1\s*:\s*IsDisabled\s*\(\s*\)\s+and\s+\1\s*:\s*IsGeminiStatus\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:gemini-status";
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsAttackPos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*IsAttackPos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*,\s*\w+\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s*,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s+return\s+\1\s*:\s*IsAttackPos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-attack-position";
   if (/\breturn\s+\w+\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsDefensePos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s+return\s+\1\s*:\s*IsDefensePos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet) || /\blocal\s+(\w+)\s*,\s*\w+\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s*,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s+return\s+\1\s*:\s*IsDefensePos\s*\(\s*\)\s*(?:end\b|$)/.test(snippet)) return "condition:source-defense-position";
   const sourceLocationNot = snippet.match(new RegExp(`\\breturn\\s+not\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)\\s*(?:end\\b|$)`));
@@ -363,6 +365,19 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const identifier = String.raw`[A-Za-z_]\w*`;
   const sourceController = new RegExp(String.raw`\breturn\s+${identifier}\s*:\s*IsControler\s*\(\s*${identifier}\s*\)\s*(?:end\b|$)`);
   return sourceController.test(snippet) ? "condition:source-controller" : undefined;
+}
+
+function isGlobalTableFunction(L: unknown, index: number, tableName: string, fieldName: string): boolean {
+  const absoluteIndex = lua.lua_absindex(L, index);
+  lua.lua_getglobal(L, to_luastring(tableName));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 1);
+    return false;
+  }
+  lua.lua_getfield(L, -1, to_luastring(fieldName));
+  const matches = lua.lua_isfunction(L, -1) && lua.lua_rawequal(L, absoluteIndex, -1) === 1;
+  lua.lua_pop(L, 2);
+  return matches;
 }
 
 function ownFaceupNormalSummonProcedureDescriptor(L: unknown, functionIndex: number, snippet: string, hostState: LuaHostState): string | undefined {

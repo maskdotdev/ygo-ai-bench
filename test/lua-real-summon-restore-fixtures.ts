@@ -118,6 +118,7 @@ export const summonSemanticVariantCounts = {
   mandatoryBanishedPhaseReturnSummons: 1,
   standbySelfToGraveEvolutionSummons: 1,
   weatherPainterReturnRegistration: 1,
+  geminiReviveLeaveFieldTargetDestruction: 1,
 } satisfies Record<SummonSemanticVariant, number>;
 
 export type SummonUnionProcedureKind =
@@ -144,7 +145,7 @@ export type SelfTributeZoneSpecialSummonKind =
   | "selfTributeFreesMonsterZone"
   | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
-  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration";
+  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction";
 export type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -958,6 +959,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     { file: "test/lua-real-script-dd-scout-plane-banished-end-return.test.ts", kind: "mandatoryBanishedPhaseReturnSummons" as const },
     { file: "test/lua-real-script-ultimate-insect-lv3-standby-evolve-summon.test.ts", kind: "standbySelfToGraveEvolutionSummons" as const },
     { file: "test/lua-real-script-weather-thunder-place-banish-return-summon.test.ts", kind: "weatherPainterReturnRegistration" as const },
+    { file: "test/lua-real-script-il-blud-gemini-zombie-revive-leave-destroy.test.ts", kind: "geminiReviveLeaveFieldTargetDestruction" as const },
   ];
 }
 
@@ -992,6 +994,7 @@ export function countSummonSemanticVariants(
       mandatoryBanishedPhaseReturnSummons: 0,
       standbySelfToGraveEvolutionSummons: 0,
       weatherPainterReturnRegistration: 0,
+      geminiReviveLeaveFieldTargetDestruction: 0,
     },
   );
 }
@@ -1027,6 +1030,7 @@ export function groupSummonSemanticVariantFiles(
       mandatoryBanishedPhaseReturnSummons: [],
       standbySelfToGraveEvolutionSummons: [],
       weatherPainterReturnRegistration: [],
+      geminiReviveLeaveFieldTargetDestruction: [],
     },
   );
 }
