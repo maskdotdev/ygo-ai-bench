@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 112;
+export const operationFixtureCount = 113;
 export const operationKindCounts = {
   announceHandBanish: 1,
   announceHandDiscard: 1,
@@ -47,7 +47,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 3,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 32,
+  searchOrExcavate: 33,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -905,6 +905,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-true-name-announce-decktop-tohand.test.ts", kind: "searchOrExcavate", required: ["Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,1)", "aux.ToHandOrElse(sc,tp,", 'api: "AnnounceCard"', 'api: "SelectYesNo"', 'api: "SelectOption"', 'eventName: "confirmed"', 'eventName: "sentToHand"', 'eventName: "sentToHandConfirmed"', "shuffleCheckDisabled).toBe(true)"] },
     { file: "test/lua-real-script-archfiends-oath-lp-decktop.test.ts", kind: "searchOrExcavate", required: ["e2:SetCost(Cost.PayLP(500))", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,1)", "operationInfos).toEqual([", 'eventName: "lifePointCostPaid"', 'eventName: "confirmed"', 'eventName: "sentToHand"', "players[0].lifePoints).toBe(7500)", "shuffleCheckDisabled).toBe(true)"] },
     { file: "test/lua-real-script-alsei-announce-decktop-tohand.test.ts", kind: "searchOrExcavate", required: ["Xyz.AddProcedure(c,nil,8,2)", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,1)", "level: 8", "xyzMaterialCount: 2", "operationInfos).toEqual([", 'eventName: "confirmed"', 'eventName: "sentToHand"', "shuffleCheckDisabled).toBe(true)", "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-gishki-diviner-announce-decktop.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_IGNITION)", "e1:SetRange(LOCATION_MZONE)", "e1:SetCountLimit(1)", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.GetDecktopGroup(tp,1)", "Duel.DisableShuffleCheck()", "Duel.ShuffleHand(tp)", 'api: "AnnounceCard"', 'eventName: "confirmed"', 'eventName: "sentToHand"', "shuffleCheckDisabled).toBe(true)"] },
     { file: "test/lua-real-script-speedroid-scratch-cost-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,c)", "Duel.SendtoGrave(g,REASON_COST)", "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-archfiend-general-search-environment-self-destroy.test.ts", kind: "searchOrExcavate", required: ["e1:SetCost(Cost.SelfDiscardToGrave)", "Duel.GetFirstMatchingCard(s.filter,tp,LOCATION_DECK,0,nil)", "e2:SetCode(EFFECT_SELF_DESTROY)", "return not Duel.IsEnvironment(94585852)", "operationInfos).toEqual([{ category: 0x8", 'eventName: "sentToGraveyard"', 'eventName: "sentToHandConfirmed"', "archfiend environment active false"] },
     { file: "test/lua-real-script-gishki-shadow-self-discard-whole-level-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCost(Cost.SelfDiscard)", "Ritual.AddWholeLevelTribute(c,aux.FilterBoolFunction(Card.IsAttribute,ATTRIBUTE_WATER))", "gishki shadow ritual levels 262150/4", "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)", "operationInfos).toEqual([{ category: 0x8", 'eventName: "sentToGraveyard"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
