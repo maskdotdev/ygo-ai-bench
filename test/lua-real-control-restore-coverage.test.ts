@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 13;
+const controlFixtureCount = 14;
 const controlKindCounts = {
   cannotChangeControl: 1,
   discardCostTemporaryControl: 1,
   equipControl: 1,
-  flipGetControl: 1,
+  flipGetControl: 2,
   flipSetControl: 1,
   releaseCostControl: 1,
   restrictedTemporaryControl: 2,
@@ -25,6 +25,7 @@ const controlSemanticVariantCounts = {
   changeHeartTemporaryReturn: 1,
   creatureSwapControlLock: 1,
   dharcFlipSetControl: 1,
+  electromagneticBagwormOpponentTurnControl: 1,
   electricVirusDiscardControl: 1,
   enemyControllerReleaseControl: 1,
   matazaCannotChangeControl: 1,
@@ -55,6 +56,7 @@ type ControlSemanticVariant =
   | "changeHeartTemporaryReturn"
   | "creatureSwapControlLock"
   | "dharcFlipSetControl"
+  | "electromagneticBagwormOpponentTurnControl"
   | "electricVirusDiscardControl"
   | "enemyControllerReleaseControl"
   | "matazaCannotChangeControl"
@@ -176,6 +178,18 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.GetControl(tc,tp,PHASE_END,1)",
         'luaValueDescriptor: "temporary-control-return"',
         "eventName: \"controlChanged\"",
+      ],
+    },
+    {
+      file: "lua-real-script-electromagnetic-bagworm-opponent-turn-control.test.ts",
+      kind: "flipGetControl",
+      required: [
+        'const bagwormCode = "7914843"',
+        "restores Bagworm's opponent-turn flip GetControl duration branch",
+        "if Duel.IsTurnPlayer(1-tp) then tct=2",
+        "Duel.GetControl(tc,tp,PHASE_END,tct)",
+        "reset: { count: 2, flags: 0x40801200 }",
+        'eventName: "controlChanged"',
       ],
     },
     {
@@ -354,6 +368,18 @@ function realScriptControlSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-electromagnetic-bagworm-opponent-turn-control.test.ts",
+      kind: "electromagneticBagwormOpponentTurnControl",
+      required: [
+        'const bagwormCode = "7914843"',
+        "restores Bagworm's opponent-turn flip GetControl duration branch",
+        "return c:IsFaceup() and c:IsRace(RACE_MACHINE) and c:IsControlerCanBeChanged()",
+        "if Duel.IsTurnPlayer(1-tp) then tct=2",
+        "elseif Duel.IsPhase(PHASE_END) then tct=3 end",
+        "reset: { count: 2, flags: 0x40801200 }",
+      ],
+    },
+    {
       file: "lua-real-script-electric-virus-discard-control.test.ts",
       kind: "electricVirusDiscardControl",
       required: [
@@ -451,6 +477,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       changeHeartTemporaryReturn: 0,
       creatureSwapControlLock: 0,
       dharcFlipSetControl: 0,
+      electromagneticBagwormOpponentTurnControl: 0,
       electricVirusDiscardControl: 0,
       enemyControllerReleaseControl: 0,
       matazaCannotChangeControl: 0,
