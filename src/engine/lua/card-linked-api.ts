@@ -30,6 +30,12 @@ export function installCardLinkedApi(L: unknown, session: DuelSession): void {
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("GetLinkedGroup"));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    pushGroupTable(state, card ? mutualLinkedGroupUidsForCard(session, card) : []);
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetMutualLinkedGroup"));
   pushNumberGetter(L, "GetLinkedGroupCount", session, (card) => (card ? linkedGroupUidsForCard(session, card).length : 0));
 }
 
@@ -63,6 +69,19 @@ function monsterZoneCards(state: DuelState): DuelCardInstance[] {
 
 function linkPointsTo(state: DuelState, source: DuelCardInstance, target: DuelCardInstance): boolean {
   return source.controller === target.controller && (linkedZoneMask(source, state) & (1 << target.sequence)) !== 0;
+}
+
+function mutualLinkedGroupUidsForCard(session: DuelSession, card: DuelCardInstance): string[] {
+  return session.state.cards
+    .filter((candidate) =>
+      candidate.uid !== card.uid &&
+      candidate.controller === card.controller &&
+      candidate.location === "monsterZone" &&
+      candidate.faceUp &&
+      linkPointsTo(session.state, card, candidate) &&
+      linkPointsTo(session.state, candidate, card),
+    )
+    .map((candidate) => candidate.uid);
 }
 
 function freeLinkedZoneMask(session: DuelSession, card: DuelCardInstance, player: PlayerId): number {

@@ -380,6 +380,7 @@ export const cardFieldNames = [
   "GetLinkedZone",
   "GetFreeLinkedZone",
   "GetLinkedGroup",
+  "GetMutualLinkedGroup",
   "GetLinkedGroupCount",
   "IsDrone",
   "IsRikkaReleasable",
