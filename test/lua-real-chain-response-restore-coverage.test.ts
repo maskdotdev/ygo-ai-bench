@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 22;
+const chainResponseFixtureCount = 23;
 const chainResponseKindCounts = {
+  chainParamRetargetResponse: 1,
   chainPlayerRetargetResponse: 1,
   chainSearchResponse: 1,
   chainTargetRetargetResponse: 1,
@@ -33,6 +34,7 @@ const chainResponseSemanticVariantCounts = {
   deepSweeperSelfTributeDestroy: 1,
   houseAdhesiveTapeFlipSummonDestroy: 1,
   mekkKnightYellowColumnProcedureDestroy: 1,
+  markEngraverAnnounceParamRetarget: 1,
   mysticalRefpanelSpellPlayerRetarget: 1,
   mysticalSpaceTyphoonFreeChainDestroy: 1,
   shreddderHandMachineLevelDestroy: 1,
@@ -48,6 +50,7 @@ const chainResponseSemanticVariantCounts = {
 } satisfies Record<ChainResponseSemanticVariant, number>;
 
 type ChainResponseKind =
+  | "chainParamRetargetResponse"
   | "chainPlayerRetargetResponse"
   | "chainSearchResponse"
   | "chainTargetRetargetResponse"
@@ -74,6 +77,7 @@ type ChainResponseSemanticVariant =
   | "deepSweeperSelfTributeDestroy"
   | "houseAdhesiveTapeFlipSummonDestroy"
   | "mekkKnightYellowColumnProcedureDestroy"
+  | "markEngraverAnnounceParamRetarget"
   | "mysticalRefpanelSpellPlayerRetarget"
   | "mysticalSpaceTyphoonFreeChainDestroy"
   | "shreddderHandMachineLevelDestroy"
@@ -136,6 +140,22 @@ function chainResponseFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-engraver-mark-change-target-param.test.ts",
+      kind: "chainParamRetargetResponse",
+      required: [
+        "restores announce-chain response into ChangeTargetParam before the original operation reads it",
+        "Duel.GetOperationInfo(ev,CATEGORY_ANNOUNCE)",
+        "Duel.AnnounceCard(tp,cv)",
+        "Duel.ChangeTargetParam(ev,ac)",
+        "Duel.SetOperationInfo(0,CATEGORY_ANNOUNCE,nil,0,tp,ANNOUNCE_CARD)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PARAM)",
+        'windowKind).toBe("chainResponse")',
+        'api: "AnnounceCard"',
+        "engraver changed target param",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-mystical-refpanel-change-target-player.test.ts",
       kind: "chainPlayerRetargetResponse",
@@ -432,6 +452,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       return counts;
     },
     {
+      chainParamRetargetResponse: 0,
       chainPlayerRetargetResponse: 0,
       chainSearchResponse: 0,
       chainTargetRetargetResponse: 0,
@@ -583,6 +604,17 @@ function chainResponseSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-engraver-mark-change-target-param.test.ts",
+      kind: "markEngraverAnnounceParamRetarget",
+      required: [
+        'const engraverCode = "50078320"',
+        "Engraver ChangeTargetParam",
+        "Duel.ChangeTargetParam(ev,ac)",
+        "Duel.AnnounceCard(tp,cv)",
+        "engraver changed target param",
+      ],
+    },
+    {
       file: "test/lua-real-script-mystical-refpanel-change-target-player.test.ts",
       kind: "mysticalRefpanelSpellPlayerRetarget",
       required: [
@@ -721,6 +753,7 @@ function countChainResponseSemanticVariants(
       goldenFlyingFishReleaseCostTargetDestroy: 0,
       ignisHeatTributeSummonedChainSearch: 0,
       houseAdhesiveTapeFlipSummonDestroy: 0,
+      markEngraverAnnounceParamRetarget: 0,
       mekkKnightYellowColumnProcedureDestroy: 0,
       mysticalRefpanelSpellPlayerRetarget: 0,
       mysticalSpaceTyphoonFreeChainDestroy: 0,
