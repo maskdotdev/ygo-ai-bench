@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 173;
+export const operationFixtureCount = 174;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -61,6 +61,7 @@ export const operationKindCounts = {
   groupDestroyDamageStatLp: 1,
   groupToGraveFinalAttack: 1,
   handStatBoost: 1,
+  pzoneAttackAnnounceStat: 1,
   twoTargetPositionCopyStat: 1,
   groupToHand: 2,
   graveTargetToHand: 2,
@@ -179,6 +180,7 @@ export type OperationKind =
   | "groupDestroyDamageStatLp"
   | "groupToGraveFinalAttack"
   | "handStatBoost"
+  | "pzoneAttackAnnounceStat"
   | "twoTargetPositionCopyStat"
   | "groupToHand"
   | "graveTargetToHand"
@@ -529,6 +531,24 @@ export function operationFixtureFiles(): Array<{
         "eventCardUid)).toEqual([",
         "operationInfos",
         "currentAttack(boosted, restoredOpen.session.state)).toBe(3100)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-odd-eyes-phantom-pzone-attack-stat.test.ts",
+      kind: "pzoneAttackAnnounceStat",
+      required: [
+        "restores PZONE attack-announcement targeting into a temporary battle ATK boost",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetRange(LOCATION_PZONE)",
+        "Duel.IsExistingMatchingCard(Card.IsSetCard,tp,LOCATION_PZONE,0,1,e:GetHandler(),SET_ODD_EYES)",
+        "Duel.SetTargetCard(tc)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(1200)",
+        "eventName: \"attackDeclared\"",
+        "effectLabelObjectUid: attacker.uid",
+        "currentAttack(restoredAttack.session.state.cards.find((card) => card.uid === attacker.uid), restoredAttack.session.state)).toBe(3000)",
+        "operationInfos",
+        "eventName: \"becameTarget\"",
       ],
     },
     {
@@ -2420,6 +2440,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       groupDestroyDamageStatLp: 0,
       groupToGraveFinalAttack: 0,
       handStatBoost: 0,
+      pzoneAttackAnnounceStat: 0,
       twoTargetPositionCopyStat: 0,
       groupLevelFinal: 0,
       groupToHand: 0,
