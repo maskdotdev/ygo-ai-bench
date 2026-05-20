@@ -94,18 +94,22 @@ function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession
 }
 
 function summonActionsForCard(session: DuelSession, card: DuelCardInstance, ignoreCount: boolean, minTributes: number | undefined): DuelAction[] {
+  if (card.location !== "hand") return [];
   const readActions = (): DuelAction[] => [
     ...(canUseNoTributeSummon(session, card) ? [{ type: "normalSummon" as const, player: card.controller, uid: card.uid, label: `Normal Summon ${card.name}` }] : normalSummonActions(session.state, card.controller, [card])),
     ...tributeSummonActions(session.state, card.controller, [card]),
   ].filter((action) => summonPredicateActionAllowed(session, card, action));
   const readWithTributeOverride = (): DuelAction[] => withLuaMinTributeOverride(card, minTributes, readActions);
   if (!ignoreCount) return readWithTributeOverride();
-  const previous = session.state.players[card.controller].normalSummonAvailable;
+  const previousAvailable = session.state.players[card.controller].normalSummonAvailable;
+  const previousNormalSummons = session.state.activityCounts[card.controller].normalSummon;
   session.state.players[card.controller].normalSummonAvailable = true;
+  session.state.activityCounts[card.controller].normalSummon = 0;
   try {
     return readWithTributeOverride();
   } finally {
-    session.state.players[card.controller].normalSummonAvailable = previous;
+    session.state.players[card.controller].normalSummonAvailable = previousAvailable;
+    session.state.activityCounts[card.controller].normalSummon = previousNormalSummons;
   }
 }
 

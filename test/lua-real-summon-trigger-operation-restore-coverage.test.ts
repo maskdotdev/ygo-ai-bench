@@ -4,11 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 20;
+const summonTriggerOperationFixtureCount = 21;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
-  summonSearch: 6,
+  summonSearch: 7,
   summonSearchDiscard: 1,
   summonSearchSelfSummon: 1,
   summonSelfDestroy: 1,
@@ -27,6 +27,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   backupIgnisterSearchDiscardOnSummon: 1,
   craneCraneStepReviveDisableOnSummon: 1,
   darkDustSpiritMassDestroyOnSummon: 1,
+  floowandereezeRobinaSearchNormalSummon: 1,
   gemArmadilloNormalSummonSearch: 1,
   gemKnightObsidianHandToGraveyardRevive: 1,
   gishkiNataliaGraveToDeckTopOnSummon: 1,
@@ -65,6 +66,7 @@ type SummonTriggerOperationSemanticVariant =
   | "backupIgnisterSearchDiscardOnSummon"
   | "craneCraneStepReviveDisableOnSummon"
   | "darkDustSpiritMassDestroyOnSummon"
+  | "floowandereezeRobinaSearchNormalSummon"
   | "gemArmadilloNormalSummonSearch"
   | "gemKnightObsidianHandToGraveyardRevive"
   | "gishkiNataliaGraveToDeckTopOnSummon"
@@ -349,6 +351,26 @@ function summonTriggerOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-floowandereeze-robina-search-normal.test.ts",
+      kind: "summonSearch",
+      required: [
+        "restores summon-success search, special-summon oath cost, and optional follow-up Normal Summon",
+        'const robinaCode = "18940725"',
+        "Duel.GetActivityCount(tp,ACTIVITY_SPSUMMON)==0",
+        "e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)",
+        "return c:IsLevelBelow(4) and c:IsRace(RACE_WINGEDBEAST) and c:IsAbleToHand()",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,3))",
+        "Duel.BreakEffect()",
+        "Duel.ShuffleHand(tp)",
+        "Duel.Summon(tp,sg2,true,nil)",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        "effect.code === 22",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-ichiki-sayori-hime-effect-summon-search.test.ts",
       kind: "summonSearch",
       required: [
@@ -564,6 +586,20 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-floowandereeze-robina-search-normal.test.ts",
+      kind: "floowandereezeRobinaSearchNormalSummon",
+      requiredSnippets: [
+        'const robinaCode = "18940725"',
+        "restores summon-success search, special-summon oath cost, and optional follow-up Normal Summon",
+        "Duel.GetActivityCount(tp,ACTIVITY_SPSUMMON)==0",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,3))",
+        "Duel.Summon(tp,sg2,true,nil)",
+        'eventName: "normalSummoned"',
+        'api: "SelectYesNo"',
+        "effect.code === 22",
+      ],
+    },
+    {
       file: "test/lua-real-script-gem-armadillo-summon-search.test.ts",
       kind: "gemArmadilloNormalSummonSearch",
       requiredSnippets: [
@@ -772,6 +808,7 @@ function countSummonTriggerOperationSemanticVariants(
       backupIgnisterSearchDiscardOnSummon: 0,
       craneCraneStepReviveDisableOnSummon: 0,
       darkDustSpiritMassDestroyOnSummon: 0,
+      floowandereezeRobinaSearchNormalSummon: 0,
       gemArmadilloNormalSummonSearch: 0,
       gemKnightObsidianHandToGraveyardRevive: 0,
       gishkiNataliaGraveToDeckTopOnSummon: 0,
