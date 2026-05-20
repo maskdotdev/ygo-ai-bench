@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 22;
+const summonTriggerOperationFixtureCount = 23;
 const summonTriggerOperationKindCounts = {
   summonDraw: 1,
   summonMassDestroy: 1,
@@ -13,7 +13,7 @@ const summonTriggerOperationKindCounts = {
   summonSearchSelfSummon: 1,
   summonSelfDestroy: 1,
   summonSetFlipToHand: 1,
-  summonSuccessFieldHandSelfSummon: 1,
+  summonSuccessFieldHandSelfSummon: 2,
   summonSuccessHandSpecialSummon: 1,
   summonToGraveGraveyardRevive: 1,
   summonStepReviveDisable: 1,
@@ -33,6 +33,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   gemArmadilloNormalSummonSearch: 1,
   gemKnightObsidianHandToGraveyardRevive: 1,
   gishkiNataliaGraveToDeckTopOnSummon: 1,
+  gorgonicGargoyleRockSummon: 1,
   golemSentryTurnSetFlipReturn: 1,
   hanShiKyudoColumnReturnOnSummon: 1,
   ichikiSayoriHimeEffectSummonSearch: 1,
@@ -74,6 +75,7 @@ type SummonTriggerOperationSemanticVariant =
   | "gemArmadilloNormalSummonSearch"
   | "gemKnightObsidianHandToGraveyardRevive"
   | "gishkiNataliaGraveToDeckTopOnSummon"
+  | "gorgonicGargoyleRockSummon"
   | "golemSentryTurnSetFlipReturn"
   | "hanShiKyudoColumnReturnOnSummon"
   | "ichikiSayoriHimeEffectSummonSearch"
@@ -157,6 +159,26 @@ function summonTriggerOperationFixtureFiles(): Array<{
         'activationLocation: "hand"',
         'eventName: "specialSummoned"',
         "eventReasonCardUid: cyberDinosaur.uid",
+        "eventReasonEffectId: 1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gorgonic-gargoyle-rock-summon.test.ts",
+      kind: "summonSuccessFieldHandSelfSummon",
+      required: [
+        "restores Rock Normal Summon field trigger into hand self Special Summon",
+        "does not trigger from a non-Rock Normal Summon",
+        'const gargoyleCode = "64379261"',
+        "e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetRange(LOCATION_HAND)",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "return ep==tp and eg:GetFirst():IsRace(RACE_ROCK)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,e:GetHandler(),1,0,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        'triggerBucket: "turnOptional"',
+        'eventName: "normalSummoned"',
+        'eventName: "specialSummoned"',
+        "eventReasonCardUid: gargoyle.uid",
         "eventReasonEffectId: 1",
       ],
     },
@@ -666,6 +688,18 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gorgonic-gargoyle-rock-summon.test.ts",
+      kind: "gorgonicGargoyleRockSummon",
+      requiredSnippets: [
+        'const gargoyleCode = "64379261"',
+        "restores Rock Normal Summon field trigger into hand self Special Summon",
+        "does not trigger from a non-Rock Normal Summon",
+        "return ep==tp and eg:GetFirst():IsRace(RACE_ROCK)",
+        'triggerBucket: "turnOptional"',
+        "eventReasonCardUid: gargoyle.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-han-shi-kyudo-spirit-column-return.test.ts",
       kind: "hanShiKyudoColumnReturnOnSummon",
       requiredSnippets: [
@@ -850,6 +884,7 @@ function countSummonTriggerOperationSemanticVariants(
       gemArmadilloNormalSummonSearch: 0,
       gemKnightObsidianHandToGraveyardRevive: 0,
       gishkiNataliaGraveToDeckTopOnSummon: 0,
+      gorgonicGargoyleRockSummon: 0,
       golemSentryTurnSetFlipReturn: 0,
       hanShiKyudoColumnReturnOnSummon: 0,
       ichikiSayoriHimeEffectSummonSearch: 0,
