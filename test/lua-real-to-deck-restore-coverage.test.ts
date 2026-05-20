@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const TO_DECK_FIXTURE_COUNT = 5;
+const TO_DECK_FIXTURE_COUNT = 6;
 const toDeckKindCounts = {
   freeChainReleaseTargetShuffleToDeck: 1,
   graveExtraToExtraDeckTop: 1,
   flipGraveTargetShuffleToDeck: 1,
+  selfTributeCurrentTurnBattleGraveToDeckBottom: 1,
   toGraveSelfShuffleToDeck: 1,
   freeChainMultiGraveShuffleToDeck: 1,
 } satisfies Record<ToDeckKind, number>;
 const toDeckSemanticVariantCounts = {
   adamancipatorLeoniteGraveExtraDeckTop: 1,
+  crimsonSentrySelfTributeBattleGraveToDeckBottom: 1,
   desFeralImpFlipGraveTargetShuffleToDeck: 1,
   majespecterStormReleaseTargetShuffleToDeck: 1,
   outstandingDogMarronToGraveSelfShuffleToDeck: 1,
@@ -24,11 +26,13 @@ type ToDeckKind =
   | "freeChainReleaseTargetShuffleToDeck"
   | "graveExtraToExtraDeckTop"
   | "flipGraveTargetShuffleToDeck"
+  | "selfTributeCurrentTurnBattleGraveToDeckBottom"
   | "toGraveSelfShuffleToDeck"
   | "freeChainMultiGraveShuffleToDeck";
 
 type ToDeckSemanticVariant =
   | "adamancipatorLeoniteGraveExtraDeckTop"
+  | "crimsonSentrySelfTributeBattleGraveToDeckBottom"
   | "desFeralImpFlipGraveTargetShuffleToDeck"
   | "majespecterStormReleaseTargetShuffleToDeck"
   | "outstandingDogMarronToGraveSelfShuffleToDeck"
@@ -122,6 +126,22 @@ function toDeckFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-crimson-sentry-self-tribute-battle-to-deck.test.ts",
+      kind: "selfTributeCurrentTurnBattleGraveToDeckBottom",
+      required: [
+        'const sentryCode = "28358902"',
+        "restores SelfTribute cost into current-turn battle-reason Graveyard target sent to Deck bottom",
+        "e1:SetCost(Cost.SelfTribute)",
+        "return c:IsMonster() and c:GetTurnID()==tid and c:IsReason(REASON_BATTLE) and c:IsAbleToDeck()",
+        "local tid=Duel.GetTurnCount()",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,tid)",
+        "Duel.SendtoDeck(tc,nil,SEQ_DECKBOTTOM,REASON_EFFECT)",
+        "operationInfos: [{ category: 0x10",
+        'eventName: "released"',
+        'eventName: "sentToDeck"',
+      ],
+    },
+    {
       file: "test/lua-real-script-outstanding-dog-marron-to-grave-shuffle.test.ts",
       kind: "toGraveSelfShuffleToDeck",
       required: [
@@ -190,6 +210,7 @@ function countToDeckKinds(fixtures: Array<{ kind: ToDeckKind }>): Record<ToDeckK
       freeChainReleaseTargetShuffleToDeck: 0,
       graveExtraToExtraDeckTop: 0,
       flipGraveTargetShuffleToDeck: 0,
+      selfTributeCurrentTurnBattleGraveToDeckBottom: 0,
       toGraveSelfShuffleToDeck: 0,
       freeChainMultiGraveShuffleToDeck: 0,
     },
@@ -226,6 +247,18 @@ function toDeckSemanticVariants(): Array<{
         'eventName: "sentToDeck"',
         "location: \"deck\"",
         "des feral imp responder resolved",
+      ],
+    },
+    {
+      file: "test/lua-real-script-crimson-sentry-self-tribute-battle-to-deck.test.ts",
+      kind: "crimsonSentrySelfTributeBattleGraveToDeckBottom",
+      required: [
+        'const sentryCode = "28358902"',
+        "moveDuelCard(session.state, battleTarget.uid, \"graveyard\", 0, duelReason.battle, 1).turnId = session.state.turn",
+        "moveDuelCard(session.state, oldBattleDecoy.uid, \"graveyard\", 0, duelReason.battle, 1).turnId = session.state.turn - 1",
+        "moveDuelCard(session.state, effectDecoy.uid, \"graveyard\", 0, duelReason.effect, 0).turnId = session.state.turn",
+        "sequence: 1",
+        "crimson sentry responder resolved",
       ],
     },
     {
@@ -281,6 +314,7 @@ function countToDeckSemanticVariants(fixtures: Array<{ kind: ToDeckSemanticVaria
     },
     {
       adamancipatorLeoniteGraveExtraDeckTop: 0,
+      crimsonSentrySelfTributeBattleGraveToDeckBottom: 0,
       desFeralImpFlipGraveTargetShuffleToDeck: 0,
       majespecterStormReleaseTargetShuffleToDeck: 0,
       outstandingDogMarronToGraveSelfShuffleToDeck: 0,
