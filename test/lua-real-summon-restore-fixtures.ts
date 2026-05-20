@@ -14,8 +14,8 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 312;
-export const summonProcedureFixtureCount = 34;
+export const realScriptSummonFixtureCount = 313;
+export const summonProcedureFixtureCount = 35;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
 export const pendulumHelperFixtureCount = 16;
@@ -31,13 +31,13 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 19,
   pendulum: 21,
   ritual: 27,
-  summon: 160,
+  summon: 161,
   synchro: 21,
   xyz: 16,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
-  genericSpecialSummonProcedure: 22,
+  genericSpecialSummonProcedure: 23,
   pendulumProcedure: 3,
   ritualProcedure: 3,
   tributeProcedure: 2,
@@ -471,6 +471,7 @@ export function realScriptSummonProcedureFixtureFiles(): string[] {
       "lua-real-script-flash-knight-pure-pendulum-procedure.test.ts",
       "lua-real-script-pendulum-procedure-actions.test.ts",
       "lua-real-script-polymerization-fusion-summon.test.ts",
+      "lua-real-script-photon-slasher-defense-special-summon-procedure.test.ts",
       "lua-real-script-prominence-hand-special-summon-procedure.test.ts",
       "lua-real-script-prayers-ritual-matfilter.test.ts",
       "lua-real-script-radiant-typhoon-eldam-special-summon-procedure-search.test.ts",
