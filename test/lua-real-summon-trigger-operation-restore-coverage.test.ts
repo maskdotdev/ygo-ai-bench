@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 29;
+const summonTriggerOperationFixtureCount = 30;
 const summonTriggerOperationKindCounts = {
   specialSummonDeckCostLabelDamage: 1,
   specialSummonDamageStatExtraSummon: 1,
+  summonAdjustInstantlyStatDamage: 1,
   releaseTriggerDeckStepSummonStatSet: 1,
   summonDraw: 1,
   summonMassDestroy: 1,
@@ -31,6 +32,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   aratamaSpiritSearchOnSummon: 1,
   ashokaPillarSearchPositionDamage: 1,
   blackwingNothungSummonDamageStatExtraSummon: 1,
+  crackingDragonSummonStatDamage: 1,
   backupIgnisterSearchDiscardOnSummon: 1,
   crashbugZSummonSuccessDeckSpecialSummon: 1,
   craneCraneStepReviveDisableOnSummon: 1,
@@ -63,6 +65,7 @@ const summonTriggerOperationSemanticVariantCounts = {
 type SummonTriggerOperationKind =
   | "specialSummonDeckCostLabelDamage"
   | "specialSummonDamageStatExtraSummon"
+  | "summonAdjustInstantlyStatDamage"
   | "releaseTriggerDeckStepSummonStatSet"
   | "summonDraw"
   | "summonMassDestroy"
@@ -85,6 +88,7 @@ type SummonTriggerOperationSemanticVariant =
   | "aratamaSpiritSearchOnSummon"
   | "ashokaPillarSearchPositionDamage"
   | "blackwingNothungSummonDamageStatExtraSummon"
+  | "crackingDragonSummonStatDamage"
   | "backupIgnisterSearchDiscardOnSummon"
   | "crashbugZSummonSuccessDeckSpecialSummon"
   | "craneCraneStepReviveDisableOnSummon"
@@ -188,6 +192,26 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "currentDefense(restoredChain.session.state.cards.find((card) => card.uid === target.uid), restoredChain.session.state)).toBe(700)",
         "normalSummonAvailable).toBe(false)",
         "activityCounts[0].normalSummon).toBe(2)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cracking-dragon-summon-stat-damage.test.ts",
+      kind: "summonAdjustInstantlyStatDamage",
+      required: [
+        "restores opponent summon stat loss, AdjustInstantly delta damage, and battle indestructible gate",
+        'const crackingCode = "60349525"',
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2a:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DAMAGE)",
+        "e2a:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e2b:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.AdjustInstantly(sc)",
+        "Duel.Damage(1-tp,atk_diff,REASON_EFFECT)",
+        'eventName: "normalSummoned"',
+        'eventName: "damageDealt"',
+        "operationInfos",
+        "category: 0x200000",
+        "category: 0x80000",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === summoned.uid), restoredChain.session.state)).toBe(1000)",
       ],
     },
     {
@@ -760,6 +784,18 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-cracking-dragon-summon-stat-damage.test.ts",
+      kind: "crackingDragonSummonStatDamage",
+      requiredSnippets: [
+        'const crackingCode = "60349525"',
+        "restores opponent summon stat loss, AdjustInstantly delta damage, and battle indestructible gate",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,sc,1,tp,val)",
+        "Duel.AdjustInstantly(sc)",
+        "Duel.Damage(1-tp,atk_diff,REASON_EFFECT)",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === summoned.uid), restoredChain.session.state)).toBe(1000)",
+      ],
+    },
+    {
       file: "test/lua-real-script-driangle-deck-discard-label-damage.test.ts",
       kind: "driangleDeckDiscardLabelDamage",
       requiredSnippets: [
@@ -1068,6 +1104,7 @@ function countSummonTriggerOperationKinds(
     {
       specialSummonDeckCostLabelDamage: 0,
       specialSummonDamageStatExtraSummon: 0,
+      summonAdjustInstantlyStatDamage: 0,
       releaseTriggerDeckStepSummonStatSet: 0,
       summonDraw: 0,
       summonMassDestroy: 0,
@@ -1102,6 +1139,7 @@ function countSummonTriggerOperationSemanticVariants(
       aratamaSpiritSearchOnSummon: 0,
       ashokaPillarSearchPositionDamage: 0,
       blackwingNothungSummonDamageStatExtraSummon: 0,
+      crackingDragonSummonStatDamage: 0,
       backupIgnisterSearchDiscardOnSummon: 0,
       crashbugZSummonSuccessDeckSpecialSummon: 0,
       craneCraneStepReviveDisableOnSummon: 0,
