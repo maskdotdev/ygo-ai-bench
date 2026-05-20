@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 322;
+export const realScriptSummonFixtureCount = 323;
 export const summonProcedureFixtureCount = 39;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -32,7 +32,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   pendulum: 21,
   ritual: 27,
   summon: 166,
-  synchro: 22,
+  synchro: 23,
   xyz: 16,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
@@ -131,6 +131,7 @@ export const summonSemanticVariantCounts = {
   delayedToHandSelfSummon: 1,
   opponentAttackerBattleDestroyedWarriorDeckSummon: 1,
   vanillaSynchroNonTunerProcedure: 1,
+  handSynchroMaterials: 1,
 } satisfies Record<SummonSemanticVariant, number>;
 
 export type SummonUnionProcedureKind =
@@ -157,7 +158,7 @@ export type SelfTributeZoneSpecialSummonKind =
   | "selfTributeFreesMonsterZone"
   | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
-  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction" | "graveSelfBanishDeckSummonDarkOath" | "summonSuccessWarriorHandSummonTargetLock" | "discardSelfSummonSynchroOath" | "opponentBattleReasonTargetSummon" | "decktopExcavateOptionalSummon" | "selfToGraveHandCodeSummon" | "noCostHandSetcodeTunerSummon" | "delayedDestroyedDeckSetcodeSummon" | "delayedToGraveDeckAttackSummon" | "delayedToHandSelfSummon" | "opponentAttackerBattleDestroyedWarriorDeckSummon" | "vanillaSynchroNonTunerProcedure";
+  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction" | "graveSelfBanishDeckSummonDarkOath" | "summonSuccessWarriorHandSummonTargetLock" | "discardSelfSummonSynchroOath" | "opponentBattleReasonTargetSummon" | "decktopExcavateOptionalSummon" | "selfToGraveHandCodeSummon" | "noCostHandSetcodeTunerSummon" | "delayedDestroyedDeckSetcodeSummon" | "delayedToGraveDeckAttackSummon" | "delayedToHandSelfSummon" | "opponentAttackerBattleDestroyedWarriorDeckSummon" | "vanillaSynchroNonTunerProcedure" | "handSynchroMaterials";
 export type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -990,6 +991,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     { file: "test/lua-real-script-watapon-to-hand-self-summon.test.ts", kind: "delayedToHandSelfSummon" as const },
     { file: "test/lua-real-script-red-sparrow-summoner-battle-destroyed-warrior-summon.test.ts", kind: "opponentAttackerBattleDestroyedWarriorDeckSummon" as const },
     { file: "test/lua-real-script-scrap-archfiend-synchro-nontuner-procedure.test.ts", kind: "vanillaSynchroNonTunerProcedure" as const },
+    { file: "test/lua-real-script-mara-nordic-alfar-hand-synchro.test.ts", kind: "handSynchroMaterials" as const },
   ];
 }
 
@@ -1037,6 +1039,7 @@ export function countSummonSemanticVariants(
       delayedToHandSelfSummon: 0,
       opponentAttackerBattleDestroyedWarriorDeckSummon: 0,
       vanillaSynchroNonTunerProcedure: 0,
+      handSynchroMaterials: 0,
     },
   );
 }
@@ -1085,6 +1088,7 @@ export function groupSummonSemanticVariantFiles(
       delayedToHandSelfSummon: [],
       opponentAttackerBattleDestroyedWarriorDeckSummon: [],
       vanillaSynchroNonTunerProcedure: [],
+      handSynchroMaterials: [],
     },
   );
 }

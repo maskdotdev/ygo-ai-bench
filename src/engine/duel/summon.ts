@@ -507,7 +507,8 @@ export function fusionSummonActions(state: DuelState, player: PlayerId, canUseMa
 }
 
 export function synchroSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  const materialPool = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card));
+  const fieldMaterials = getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card));
+  const materialPool = fieldMaterials.concat(handSynchroMaterials(state, player, fieldMaterials));
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
     if (!isMonsterLike(state, card)) continue;
@@ -812,8 +813,9 @@ function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: 
   } else if (!canGenericSynchroMaterialsMatch(state, card, materials)) {
     throw new Error(`${card.name} synchro materials are not legal`);
   }
+  if (!handSynchroMaterialsAllowed(state, player, materials)) throw new Error(`${card.name} synchro materials are not legal`);
   for (const material of materials) {
-    if (material.location !== "monsterZone" || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as synchro material`);
+    if ((material.location !== "monsterZone" && material.location !== "hand") || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as synchro material`);
     if (!canUseMaterial(material.uid, card.uid)) throw new Error(`${material.name} cannot be used as synchro material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.synchro, card);
@@ -928,6 +930,7 @@ function synchroMaterialRolesMatch(state: DuelState, materials: DuelCardInstance
 function canGenericSynchroMaterialsMatch(state: DuelState, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetLevel = synchroLevel(state, card);
   if (targetLevel <= 0 || materials.length < 2) return false;
+  if (!handSynchroMaterialsAllowed(state, card.controller, materials)) return false;
   if (!synchroMaterialCountsAllowed(state, card, materials)) return false;
   if (!materials.every((material) => !isTuner(state, material) || (synchroTunerLevelMatches(state, card, material) && synchroTunerAttributeMatches(state, card, material) && synchroTunerRaceMatches(state, card, material) && synchroTunerTypeMatches(state, card, material) && synchroTunerSetcodeMatches(state, card, material)))) return false;
   if (!materials.every((material) => isTuner(state, material) || (synchroNonTunerAttributeMatches(state, card, material) && synchroNonTunerRaceMatches(state, card, material) && synchroNonTunerTypeMatches(state, card, material) && synchroNonTunerSetcodeMatches(state, card, material)))) return false;
@@ -977,6 +980,27 @@ function xyzMaterialRankMatches(state: DuelState, target: DuelCardInstance, mate
 
 function isTuner(state: DuelState, card: DuelCardInstance): boolean {
   return (cardTypeFlags(card, state) & 0x1000) !== 0;
+}
+
+function handSynchroMaterials(state: DuelState, player: PlayerId, fieldMaterials: DuelCardInstance[]): DuelCardInstance[] {
+  const handSynchroTuners = fieldMaterials.filter((material) => isHandSynchroTuner(state, material));
+  if (handSynchroTuners.length === 0) return [];
+  return getCards(state, player, "hand").filter((candidate) => handSynchroTuners.some((tuner) => isHandSynchroMaterialForTuner(state, tuner, candidate)));
+}
+
+function handSynchroMaterialsAllowed(state: DuelState, player: PlayerId, materials: DuelCardInstance[]): boolean {
+  const handMaterials = materials.filter((material) => material.location === "hand");
+  if (handMaterials.length === 0) return true;
+  const tuner = materials.find((material) => material.controller === player && material.location === "monsterZone" && isHandSynchroTuner(state, material) && handMaterials.every((handMaterial) => isHandSynchroMaterialForTuner(state, material, handMaterial)));
+  return Boolean(tuner && (tuner.data.handSynchroMaterialCount === undefined || materials.length === tuner.data.handSynchroMaterialCount));
+}
+
+function isHandSynchroTuner(state: DuelState, card: DuelCardInstance): boolean {
+  return card.location === "monsterZone" && isTuner(state, card) && card.data.handSynchroMaterialSetcode !== undefined;
+}
+
+function isHandSynchroMaterialForTuner(state: DuelState, tuner: DuelCardInstance, material: DuelCardInstance): boolean {
+  return material.controller === tuner.controller && material.location === "hand" && isMonsterLike(state, material) && tuner.data.handSynchroMaterialSetcode !== undefined && currentCardMatchesSetcode(material, state, tuner.data.handSynchroMaterialSetcode);
 }
 
 function synchroMaterialCountsAllowed(state: DuelState, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {

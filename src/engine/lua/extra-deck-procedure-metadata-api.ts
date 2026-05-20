@@ -59,6 +59,10 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
   if (synchroTunerType !== undefined) card.data.synchroTunerType = synchroTunerType;
   const synchroTunerSetcode = readSynchroProcedureTunerSetcodeFilter(source);
   if (synchroTunerSetcode !== undefined) card.data.synchroTunerSetcode = synchroTunerSetcode;
+  const handSynchroMaterialSetcode = readHandSynchroMaterialSetcode(source);
+  if (handSynchroMaterialSetcode !== undefined) card.data.handSynchroMaterialSetcode = handSynchroMaterialSetcode;
+  const handSynchroMaterialCount = readHandSynchroMaterialCount(source);
+  if (handSynchroMaterialCount !== undefined) card.data.handSynchroMaterialCount = handSynchroMaterialCount;
   const synchroNonTunerType = readSynchroProcedureNonTunerTypeFilter(source);
   if (synchroNonTunerType !== undefined) card.data.synchroNonTunerType = synchroNonTunerType;
   const synchroNonTunerSetcode = readSynchroProcedureNonTunerSetcodeFilter(source);
@@ -512,6 +516,17 @@ function readAddProcedureNumberFilter(source: string | undefined, procedure: "Li
 function readSynchroNonTunerConstantFilter(source: string | undefined, predicate: string, constantExpression: string): number | undefined {
   const match = source?.match(new RegExp(String.raw`Synchro\.NonTunerEx\(\s*${escapeRegExp(predicate)}\s*,\s*(${constantExpression})\s*\)`));
   return readLuaConstantExpression(match?.[1]);
+}
+
+function readHandSynchroMaterialSetcode(source: string | undefined): number | undefined {
+  const match = source?.match(new RegExp(String.raw`function\s+s\.synfilter\([^)]*\)[\s\S]*?c:IsLocation\(\s*LOCATION_HAND\s*\)[\s\S]*?c:IsSetCard\(\s*(${SET_CONSTANT_EXPRESSION})\s*\)[\s\S]*?end`));
+  return readLuaConstantExpression(match?.[1]);
+}
+
+function readHandSynchroMaterialCount(source: string | undefined): number | undefined {
+  const match = source?.match(/function\s+s\.synop\([^)]*\)\s*return\s+#sg\s*==\s*(\d+)\s*,\s*false\s*end/);
+  const value = match?.[1] === undefined ? undefined : Number.parseInt(match[1], 10);
+  return value !== undefined && value >= 2 ? value : undefined;
 }
 
 function readLuaConstantExpression(expression: string | undefined): number | undefined {

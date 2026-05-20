@@ -158,6 +158,8 @@ export interface DuelCardData {
   synchroTunerRace?: number;
   synchroTunerType?: number;
   synchroTunerSetcode?: number;
+  handSynchroMaterialSetcode?: number;
+  handSynchroMaterialCount?: number;
   synchroNonTunerMin?: number;
   synchroNonTunerMax?: number;
   synchroNonTunerAttribute?: number;

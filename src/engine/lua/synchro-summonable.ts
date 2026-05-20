@@ -17,6 +17,7 @@ export function findLuaSynchroMaterialUidSet(session: DuelSession, card: DuelCar
   const supplied = new Set(suppliedUids);
   const materialPool = uniqueCards([
     ...session.state.cards.filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && canBeSynchroMaterial(session, candidate, card)),
+    ...handSynchroMaterials(session, card.controller),
     ...suppliedUids
       .map((uid) => session.state.cards.find((candidate) => candidate.uid === uid))
       .filter((candidate): candidate is DuelCardInstance => Boolean(candidate && candidate.controller === card.controller && canBeSynchroMaterial(session, candidate, card))),
@@ -68,6 +69,7 @@ function targetAllowsMaterial(session: DuelSession, target: DuelCardInstance, ca
 function canGenericSynchroMaterialsMatch(session: DuelSession, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetLevel = (cardTypeFlags(card, session.state) & 0x2000) !== 0 ? currentLevel(card, session.state) : 0;
   if (targetLevel <= 0 || materials.length < 2) return false;
+  if (!handSynchroMaterialsAllowed(session, card.controller, materials)) return false;
   if (!synchroMaterialCountsAllowed(session, card, materials)) return false;
   if (!materials.every((material) => !isTuner(session, material) || (synchroTunerLevelMatches(session, card, material) && synchroTunerAttributeMatches(session, card, material) && synchroTunerRaceMatches(session, card, material) && synchroTunerTypeMatches(session, card, material) && synchroTunerSetcodeMatches(session, card, material)))) return false;
   if (!materials.every((material) => isTuner(session, material) || (synchroNonTunerAttributeMatches(session, card, material) && synchroNonTunerRaceMatches(session, card, material) && synchroNonTunerTypeMatches(session, card, material) && synchroNonTunerSetcodeMatches(session, card, material)))) return false;
@@ -106,6 +108,27 @@ function cardCombinations(cards: DuelCardInstance[], count: number): DuelCardIns
 
 function isTuner(session: DuelSession, card: DuelCardInstance): boolean {
   return (cardTypeFlags(card, session.state) & 0x1000) !== 0;
+}
+
+function handSynchroMaterials(session: DuelSession, player: PlayerId): DuelCardInstance[] {
+  const handSynchroTuners = session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "monsterZone" && isHandSynchroTuner(session, candidate));
+  if (handSynchroTuners.length === 0) return [];
+  return session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "hand" && handSynchroTuners.some((tuner) => isHandSynchroMaterialForTuner(session, tuner, candidate)));
+}
+
+function handSynchroMaterialsAllowed(session: DuelSession, player: PlayerId, materials: DuelCardInstance[]): boolean {
+  const handMaterials = materials.filter((material) => material.location === "hand");
+  if (handMaterials.length === 0) return true;
+  const tuner = materials.find((material) => material.controller === player && material.location === "monsterZone" && isHandSynchroTuner(session, material) && handMaterials.every((handMaterial) => isHandSynchroMaterialForTuner(session, material, handMaterial)));
+  return Boolean(tuner && (tuner.data.handSynchroMaterialCount === undefined || materials.length === tuner.data.handSynchroMaterialCount));
+}
+
+function isHandSynchroTuner(session: DuelSession, card: DuelCardInstance): boolean {
+  return card.location === "monsterZone" && isTuner(session, card) && card.data.handSynchroMaterialSetcode !== undefined;
+}
+
+function isHandSynchroMaterialForTuner(session: DuelSession, tuner: DuelCardInstance, material: DuelCardInstance): boolean {
+  return material.controller === tuner.controller && material.location === "hand" && isMonsterLike(session, material) && tuner.data.handSynchroMaterialSetcode !== undefined && currentCardMatchesSetcode(material, session.state, tuner.data.handSynchroMaterialSetcode);
 }
 
 function synchroMaterialCountsAllowed(session: DuelSession, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
