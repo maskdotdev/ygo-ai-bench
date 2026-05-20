@@ -1,6 +1,7 @@
-export const releaseCostSpecialSummonFixtureCount = 8;
+export const releaseCostSpecialSummonFixtureCount = 9;
 
 export const releaseCostSpecialSummonKindCounts = {
+  releaseActivationGroupCostHandSummon: 1,
   releaseGroupCostHandDeckSummon: 1,
   releaseGroupCostHandProcedure: 1,
   releaseGroupCostTargetedGraveSummon: 1,
@@ -9,7 +10,7 @@ export const releaseCostSpecialSummonKindCounts = {
   selfReleaseCostDeckSummon: 3,
 } satisfies Record<ReleaseCostSpecialSummonKind, number>;
 
-export type ReleaseCostSpecialSummonKind = "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostTargetedGraveSummon" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
+export type ReleaseCostSpecialSummonKind = "releaseActivationGroupCostHandSummon" | "releaseGroupCostHandDeckSummon" | "releaseGroupCostHandProcedure" | "releaseGroupCostTargetedGraveSummon" | "releaseGroupCostHandSelfSummonSearch" | "releaseGroupCostHandSummonLeaveDestroy" | "selfReleaseCostDeckSummon";
 
 export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   file: string;
@@ -17,6 +18,24 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
   required: string[];
 }> {
   return [{
+    file: "test/lua-real-script-ultra-evolution-pill-release-hand-summon.test.ts",
+    kind: "releaseActivationGroupCostHandSummon",
+    required: [
+      "Duel.CheckReleaseGroup(tp,s.cfilter,1,nil,ft,tp)",
+      "Duel.SelectReleaseGroup(tp,s.cfilter,1,1,nil,ft,tp)",
+      "Duel.Release(g,REASON_COST)",
+      "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND,0,1,1,nil,e,tp)",
+      "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+      "duelReason.release | duelReason.cost",
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "category: 0x200",
+      "parameter: 0x2",
+      "warriorReleaseDecoy",
+      "warriorHandDecoy",
+    ],
+  }, {
     file: "test/lua-real-script-rose-bud-release-cost-special-summon.test.ts",
     kind: "releaseGroupCostHandDeckSummon",
     required: [
@@ -165,5 +184,5 @@ export function countReleaseCostSpecialSummonKinds(
   return files.reduce<Record<ReleaseCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostTargetedGraveSummon: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
+  }, { releaseActivationGroupCostHandSummon: 0, releaseGroupCostHandDeckSummon: 0, releaseGroupCostHandProcedure: 0, releaseGroupCostTargetedGraveSummon: 0, releaseGroupCostHandSelfSummonSearch: 0, releaseGroupCostHandSummonLeaveDestroy: 0, selfReleaseCostDeckSummon: 0 });
 }
