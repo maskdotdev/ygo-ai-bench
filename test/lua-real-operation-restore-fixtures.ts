@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 133;
+export const operationFixtureCount = 134;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -34,6 +34,7 @@ export const operationKindCounts = {
   discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
+  detachStatBurn: 1,
   directRecover: 1,
   drawThenDiscard: 1,
   flipDeckSpecialSummon: 1,
@@ -115,6 +116,7 @@ export type OperationKind =
   | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
   | "directDamage"
+  | "detachStatBurn"
   | "directRecover"
   | "drawThenDiscard"
   | "flipDeckSpecialSummon"
@@ -166,6 +168,26 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-marksman-king-tell-detach-stat-burn.test.ts",
+      kind: "detachStatBurn",
+      required: [
+        "restores global damage flag into detached quick effect, target ATK/DEF loss, and effect damage",
+        "aux.GlobalCheck(s,function()",
+        "ge1:SetCode(EVENT_DAMAGE)",
+        "Duel.RegisterFlagEffect(ep,id,RESET_PHASE|PHASE_END,0,1)",
+        "return Duel.GetFlagEffect(tp,id)~=0",
+        "e1:SetCost(Cost.DetachFromSelf(1))",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,1000)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "Duel.Damage(1-tp,1000,REASON_EFFECT)",
+        "eventName: \"detachedMaterial\"",
+        "currentAttack(restoredTell, restoredOpen.session.state)).toBe(1300)",
+        "currentDefense(restoredTell, restoredOpen.session.state)).toBe(1000)",
+      ],
+    },
     {
       file: "test/lua-real-script-starving-venemy-copy-negate-damage.test.ts",
       kind: "copyNegateDamage",
@@ -1547,6 +1569,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
+      detachStatBurn: 0,
       directRecover: 0,
       drawThenDiscard: 0,
       flipDeckSpecialSummon: 0,
