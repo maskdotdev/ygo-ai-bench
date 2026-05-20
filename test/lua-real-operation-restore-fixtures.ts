@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 169;
+export const operationFixtureCount = 170;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -46,6 +46,7 @@ export const operationKindCounts = {
   directDamage: 1,
   detachDirectDamage: 1,
   detachReplaceDisableBurn: 1,
+  detachDiffDamageStat: 1,
   detachStatBurn: 1,
   destroyedSummonStatBurn: 1,
   directRecover: 1,
@@ -160,6 +161,7 @@ export type OperationKind =
   | "directDamage"
   | "detachDirectDamage"
   | "detachReplaceDisableBurn"
+  | "detachDiffDamageStat"
   | "detachStatBurn"
   | "destroyedSummonStatBurn"
   | "directRecover"
@@ -673,6 +675,24 @@ export function operationFixtureFiles(): Array<{
         'eventName: "detachedMaterial"',
         'eventName: "damageDealt"',
         "currentAttack(resolvedXyz, restoredChain.session.state)).toBe(2800)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-machu-mech-detach-diff-damage-stat.test.ts",
+      kind: "detachDiffDamageStat",
+      required: [
+        "restores detach cost into base/current ATK delta damage and applied-damage ATK gain",
+        'const machuCode = "39139935"',
+        "Xyz.AddProcedure(c,nil,5,2)",
+        "e1:SetCost(Cost.DetachFromSelf(1))",
+        "return c:IsFaceup() and c:GetAttack()~=c:GetBaseAttack()",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,(batk>atk) and (batk-atk) or (atk-batk))",
+        "local dam=Duel.Damage(1-tp,dif,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "eventName: \"detachedMaterial\"",
+        'eventName: "damageDealt"',
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === machu.uid), restoredChain.session.state)).toBe(3100)",
       ],
     },
     {
@@ -2319,6 +2339,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       directDamage: 0,
       detachDirectDamage: 0,
       detachReplaceDisableBurn: 0,
+      detachDiffDamageStat: 0,
       detachStatBurn: 0,
       destroyedSummonStatBurn: 0,
       directRecover: 0,
