@@ -70,6 +70,7 @@ const luaDarkMagicExpandedCode = "111280";
 const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
 const luaDaiDanceCode = "50696588";
+const luaExosisterCarpedivemCode = "30802207";
 const luaEndPhaseReviveDestroyCodes = new Set(["32061744", "37745919", "46874015"]);
 const luaLeaveFieldLinkedDestroyCodes = new Set(["29013526", "29139104", "56524813"]);
 const luaDelayedBattleDestroyCodes = new Set(["85255550", "86100785"]);
@@ -637,6 +638,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownSameOriginalCodeChainSolvingNegateEffect(effect) ||
         isKnownGishkiEmiliaTrapNegateEffect(effect) ||
         isKnownRareMetalmorphChainSolvingNegateEffect(effect) ||
+        isKnownCarpedivemTurnEndHintResetEffect(effect) ||
         isKnownTrapMonsterDisableEffect(effect) ||
         isKnownBookOfEclipsePhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightPhaseEndEffect(effect) ||
@@ -989,6 +991,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownSameOriginalCodeChainSolvingNegateEffect(effect)) return calledByTheGraveChainSolvingNegateOperation(effect);
   if (isKnownGishkiEmiliaTrapNegateEffect(effect)) return gishkiEmiliaTrapNegateOperation(effect);
   if (isKnownRareMetalmorphChainSolvingNegateEffect(effect)) return rareMetalmorphChainSolvingNegateOperation(effect);
+  if (isKnownCarpedivemTurnEndHintResetEffect(effect)) return () => {};
   if (isKnownBookOfEclipsePhaseEndEffect(effect)) return bookOfEclipsePhaseEndOperation(effect);
   if (isKnownSwordsOfRevealingLightPhaseEndEffect(effect)) return swordsOfRevealingLightPhaseEndOperation();
   if (isKnownMaharaghiPredrawEffect(effect)) return maharaghiPredrawOperation(effect);
@@ -1021,6 +1024,13 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function isKnownCarpedivemTurnEndHintResetEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaExosisterCarpedivemCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 1210 &&
+    effect.triggerEvent === "turnEnded";
 }
 
 function luaEquipLeaveFieldDestroyTargetOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {

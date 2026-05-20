@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 123;
+export const operationFixtureCount = 124;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -19,6 +19,7 @@ export const operationKindCounts = {
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
   chainLinkedZoneDisable: 1,
+  chainSolvedAnnounceNegate: 1,
   chainSolvedAnnounceLpPhaseSend: 1,
   chainSolvedTrapDamage: 1,
   deckToGrave: 1,
@@ -90,6 +91,7 @@ export type OperationKind =
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
   | "chainLinkedZoneDisable"
+  | "chainSolvedAnnounceNegate"
   | "chainSolvedAnnounceLpPhaseSend"
   | "chainSolvedTrapDamage"
   | "deckToGrave"
@@ -927,6 +929,21 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-exosister-carpedivem-announce-chain-solving-negate.test.ts",
+      kind: "chainSolvedAnnounceNegate",
+      required: [
+        "restores Xyz-summon AnnounceCard into same-original-code field disable and chain-solving negation",
+        "Duel.AnnounceCard(tp)",
+        "e1:SetCode(EFFECT_DISABLE)",
+        "e2:SetCode(EVENT_CHAIN_SOLVING)",
+        "Duel.NegateEffect(ev)",
+        'api: "AnnounceCard"',
+        'eventName: "chainSolved"',
+        "condition:chain-solving-effect-handler-original-code-label",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-painful-choice-deck-split.test.ts",
       kind: "deckSplit",
       required: [
@@ -1316,6 +1333,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
       chainLinkedZoneDisable: 0,
+      chainSolvedAnnounceNegate: 0,
       chainSolvedAnnounceLpPhaseSend: 0,
       chainSolvedTrapDamage: 0,
       deckToGrave: 0,

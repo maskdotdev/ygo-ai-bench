@@ -11,6 +11,7 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   if (/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetLabel\s*\(\s*\)\s+local\s+(\w+)\s*,\s*(\w+)\s*=\s*re\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetOriginalCodeRule\s*\(\s*\)\s+return\s+re\s*:\s*IsMonsterEffect\s*\(\s*\)\s+and\s*\(\s*\2\s*==\s*\1\s+or\s+\3\s*==\s*\1\s*\)/.test(snippet)) return "condition:chain-solving-monster-effect-handler-original-code-label";
+  if (/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetLabel\s*\(\s*\)\s+local\s+(\w+)\s*,\s*(\w+)\s*=\s*re\s*:\s*GetHandler\s*\(\s*\)\s*:\s*GetOriginalCodeRule\s*\(\s*\)\s+return\s+\2\s*==\s*\1\s+or\s+\3\s*==\s*\1\b/.test(snippet)) return "condition:chain-solving-effect-handler-original-code-label";
   if (/\blocal\s+(\w+)\s*=\s*\w+\s*:\s*GetLabel\s*\(\s*\)\s+return\s+re\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsOriginalCodeRule\s*\(\s*\1\s*\)/.test(snippet)) return "condition:chain-solving-effect-handler-original-code-label";
   if (/\breturn\s+re\s*:\s*GetHandler\s*\(\s*\)\s*:\s*IsOriginalCodeRule\s*\(\s*\w+\s*:\s*GetLabel\s*\(\s*\)\s*\)/.test(snippet)) return "condition:chain-solving-effect-handler-original-code-label";
   const customActivityChainAtLeast = snippet.match(/\breturn\s+Duel\s*\.\s*GetCustomActivityCount\s*\(\s*[^,]+,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s*,\s*ACTIVITY_CHAIN\s*\)\s*>=\s*(\d+)/);
