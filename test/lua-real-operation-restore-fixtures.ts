@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 197;
+export const operationFixtureCount = 198;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -93,7 +93,7 @@ export const operationKindCounts = {
   overlayDetachDamageStat: 1,
   positionSet: 1,
   pzoneControlDelayedDestroy: 1,
-  pzoneDestroySearch: 1,
+  pzoneDestroySearch: 2,
   raidraptorBattleDestroyDamage: 1,
   releaseDamage: 3,
   reviveStatBattleDamage: 1,
@@ -2721,6 +2721,25 @@ export function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'eventName: "sentToHandConfirmed"',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mythical-beast-medusa-pzone-counter-summon.test.ts",
+      kind: "pzoneDestroySearch",
+      required: [
+        "restores Pendulum-zone self-destroy into Graveyard Special Summon and Spell Counter placement",
+        "Pendulum.AddProcedure(c)",
+        "c:EnableCounterPermit(COUNTER_SPELL)",
+        "e1:SetRange(LOCATION_PZONE)",
+        "Duel.GetFieldGroupCount(tp,LOCATION_PZONE,0) == 1",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.Destroy(c,REASON_EFFECT)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "tc:AddCounter(COUNTER_SPELL,1)",
+        'eventName: "destroyed"',
+        'eventName: "specialSummoned"',
+        'eventName: "counterAdded"',
+        "getDuelCardCounter",
       ],
     },
     {
