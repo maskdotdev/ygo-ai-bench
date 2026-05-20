@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 102;
+export const operationFixtureCount = 103;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -14,6 +14,7 @@ export const operationKindCounts = {
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
   chainLinkedZoneDisable: 1,
+  chainSolvedTrapDamage: 1,
   deckToGrave: 1,
   deckSplit: 1,
   discardCostSpecialSummonGroupDestroy: 1,
@@ -73,6 +74,7 @@ export type OperationKind =
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
   | "chainLinkedZoneDisable"
+  | "chainSolvedTrapDamage"
   | "deckToGrave"
   | "deckSplit"
   | "discardCostSpecialSummonGroupDestroy"
@@ -748,6 +750,19 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-chain-burst-trap-chain-solved-damage.test.ts",
+      kind: "chainSolvedTrapDamage",
+      required: [
+        "e2:SetCode(EVENT_CHAINING)",
+        "e2:SetOperation(aux.chainreg)",
+        "e3:SetCode(EVENT_CHAIN_SOLVED)",
+        "Duel.Damage(rp,1000,REASON_EFFECT)",
+        'eventName: "chainSolved"',
+        'eventName: "damageDealt"',
+        "lifePoints).toBe(7000)",
+      ],
+    },
+    {
       file: "test/lua-real-script-painful-choice-deck-split.test.ts",
       kind: "deckSplit",
       required: [
@@ -1083,6 +1098,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
       chainLinkedZoneDisable: 0,
+      chainSolvedTrapDamage: 0,
       deckToGrave: 0,
       deckSplit: 0,
       discardCostSpecialSummonGroupDestroy: 0,
