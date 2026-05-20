@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 161;
+export const operationFixtureCount = 162;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -20,6 +20,7 @@ export const operationKindCounts = {
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
   controlSwap: 1,
+  damageLinkedAtkDown: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 2,
   banishedToDeckSelfSummon: 1,
@@ -127,6 +128,7 @@ export type OperationKind =
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
   | "controlSwap"
+  | "damageLinkedAtkDown"
   | "banishedToGraveReturn"
   | "banishedToHand"
   | "banishedToDeckSelfSummon"
@@ -233,6 +235,27 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === agave.uid), restoredResolved.session.state)).toBe(3200)",
         'eventName: "damageDealt"',
         'eventName: "recoveredLifePoints"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-black-catbat-damage-linked-atkdown.test.ts",
+      kind: "damageLinkedAtkDown",
+      required: [
+        "restores Trickstar monster-effect damage into linked-count opponent ATK reductions",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_TRICKSTAR),2,2)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "e3:SetCode(EVENT_DAMAGE)",
+        "return ep~=tp and r&REASON_BATTLE==0 and re",
+        "and re:IsMonsterEffect() and re:GetHandler():IsSetCard(SET_TRICKSTAR)",
+        "local ct=c:GetLinkedGroupCount()",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "for tc in aux.Next(g) do",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-ct*200)",
+        "operationInfos",
+        'eventName: "damageDealt"',
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === opponentA.uid), restoredResolved.session.state)).toBe(1600)",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === opponentB.uid), restoredResolved.session.state)).toBe(1400)",
       ],
     },
     {
@@ -2106,6 +2129,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
       controlSwap: 0,
+      damageLinkedAtkDown: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
       banishedToDeckSelfSummon: 0,
