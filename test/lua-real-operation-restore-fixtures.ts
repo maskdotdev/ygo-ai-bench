@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 150;
+export const operationFixtureCount = 151;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -15,6 +15,7 @@ export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   copyNegateDamage: 1,
   counterBoostBattleTargetLock: 1,
+  counterLevelChange: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
   controlSwap: 1,
@@ -112,6 +113,7 @@ export type OperationKind =
   | "costBanishDraw" | "costDiscardDraw"
   | "copyNegateDamage"
   | "counterBoostBattleTargetLock"
+  | "counterLevelChange"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
   | "controlSwap"
@@ -212,6 +214,23 @@ export function operationFixtureFiles(): Array<{
         "Duel.SSet(tp,c)",
         'api: "AnnounceNumber"',
         'eventName: "spellTrapSet"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-predaplant-flytrap-counter-level.test.ts",
+      kind: "counterLevelChange",
+      required: [
+        "restores Predator Counter targeting into counter placement and conditional level change",
+        "s.counter_place_list={COUNTER_PREDATOR}",
+        "Duel.SelectTarget(tp,Card.IsCanAddCounter,tp,0,LOCATION_MZONE,1,1,nil,COUNTER_PREDATOR,1)",
+        "tc:AddCounter(COUNTER_PREDATOR,1)",
+        "tc:GetLevel()>1",
+        "e1:SetCode(EFFECT_CHANGE_LEVEL)",
+        "return e:GetHandler():GetCounter(COUNTER_PREDATOR)>0",
+        'eventName: "counterAdded"',
+        "getDuelCardCounter",
+        "currentLevel",
         "host.messages).not.toContain",
       ],
     },
@@ -1862,6 +1881,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       costBanishDraw: 0, costDiscardDraw: 0,
       copyNegateDamage: 0,
       counterBoostBattleTargetLock: 0,
+      counterLevelChange: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
       controlSwap: 0,
