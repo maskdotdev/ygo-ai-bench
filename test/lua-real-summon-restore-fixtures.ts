@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 284;
+export const realScriptSummonFixtureCount = 285;
 export const summonProcedureFixtureCount = 33;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -31,7 +31,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 19,
   pendulum: 20,
   ritual: 26,
-  summon: 136,
+  summon: 137,
   synchro: 20,
   xyz: 16,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -115,6 +115,7 @@ export const summonSemanticVariantCounts = {
   tributeMaterialValuePredicates: tributeMaterialFixtureCount,
   unsummonableSummonSetLocks: unsummonableSummonSetLockFixtureCount,
   forceMonsterZoneSummonLocks: 4,
+  weatherPainterReturnRegistration: 1,
 } satisfies Record<SummonSemanticVariant, number>;
 
 export type SummonUnionProcedureKind =
@@ -141,7 +142,7 @@ export type SelfTributeZoneSpecialSummonKind =
   | "selfTributeFreesMonsterZone"
   | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
-  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks";
+  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "weatherPainterReturnRegistration";
 export type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -952,6 +953,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     { file: "test/lua-real-script-kaiser-sea-horse-double-tribute-summon.test.ts", kind: "tributeMaterialValuePredicates" as const },
     { file: "test/lua-real-script-rare-metal-dragon-unsummonable.test.ts", kind: "unsummonableSummonSetLocks" as const },
     ...realScriptForceMonsterZoneSummonLockFixtureSnippets().map(({ file }) => ({ file, kind: "forceMonsterZoneSummonLocks" as const })),
+    { file: "test/lua-real-script-weather-thunder-place-banish-return-summon.test.ts", kind: "weatherPainterReturnRegistration" as const },
   ];
 }
 
@@ -983,6 +985,7 @@ export function countSummonSemanticVariants(
       tributeMaterialValuePredicates: 0,
       unsummonableSummonSetLocks: 0,
       forceMonsterZoneSummonLocks: 0,
+      weatherPainterReturnRegistration: 0,
     },
   );
 }
@@ -1015,6 +1018,7 @@ export function groupSummonSemanticVariantFiles(
       tributeMaterialValuePredicates: [],
       unsummonableSummonSetLocks: [],
       forceMonsterZoneSummonLocks: [],
+      weatherPainterReturnRegistration: [],
     },
   );
 }
