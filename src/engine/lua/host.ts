@@ -14,7 +14,7 @@ import { restorableStatelessLuaChainLimitSource } from "#lua/chain-limit-predica
 import { scriptFilenameForCard } from "#engine/data-loaders.js";
 import { installTypeCompatibilityApi } from "#lua/type-compatibility-api.js";
 import { installTracebackHandler, loadLuaScriptFile, readLuaError, registerLuaInitialEffectsDetailed, runLuaCardScript, runLuaPromptCoroutine, runLuaPromptCoroutineFromStack } from "#lua/host-script-api.js";
-import { installEffectApi, installGetIdCompatibilityApi, pushLuaEffectTable, majesticCopyLuaEffects, changeLuaChainOperation, registerLuaEffect, runLuaEffectOperationPromptCoroutine, toDuelEffect } from "#lua/host-effect-api.js";
+import { installEffectApi, installGetIdCompatibilityApi, pushLuaEffectTable, majesticCopyLuaEffects, changeLuaChainOperation, registerLuaEffect, runLuaEffectMaterialCheck, runLuaEffectOperationPromptCoroutine, toDuelEffect } from "#lua/host-effect-api.js";
 import { normalizeLuaUnsignedInteger } from "#lua/numeric-utils.js";
 import type { ChainLimit, DuelCardInstance, DuelEffectDefinition, DuelSession, PlayerId } from "#duel/types.js";
 import type { LuaHostState, LuaScriptHost, LuaScriptHostOptions, LuaScriptLoadResult, LuaScriptSource } from "#lua/host-types.js";
@@ -136,6 +136,8 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       if (!effect) return false;
       if (metadata.label === undefined) delete effect.label;
       else effect.label = metadata.label;
+      if (metadata.labels === undefined) delete effect.labels;
+      else effect.labels = [...metadata.labels];
       if (metadata.labelObjectId === undefined) delete effect.labelObjectId;
       else effect.labelObjectId = metadata.labelObjectId;
       return true;
@@ -175,6 +177,9 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       if (!source) return { status: "error", error: `Lua effect source ${sourceUid} was not found` };
       const ctx = createEffectContext(session.state, source, player, undefined, undefined, [], false, source.location, source.sequence);
       return runLuaEffectOperationPromptCoroutine(L, hostState, effectId, source, ctx);
+    },
+    runMaterialCheck(effectId, sourceUid, player) {
+      return runLuaEffectMaterialCheck(L, hostState, effectId, sourceUid, player);
     },
   };
 }

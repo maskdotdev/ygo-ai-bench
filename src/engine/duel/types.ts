@@ -350,6 +350,7 @@ export interface DuelEffectDefinition {
     count?: number;
   };
   label?: number;
+  labels?: number[];
   labelObjectId?: number;
   description?: number;
   category?: number;

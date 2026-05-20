@@ -1,9 +1,10 @@
-import { findCard, hasZoneSpace } from "#duel/card-state.js";
+import { findCard, hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, damageDuelPlayer, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, collectDuelTriggerEvent, damageDuelPlayer, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
@@ -35,7 +36,7 @@ import { luaValueDescriptorStatValue } from "#lua/effect-value-descriptor-callba
 import { locationMatchesCardMask, positionMaskFromPosition } from "#lua/api-utils.js"; import { createLuaMaterialCheckContext } from "#lua/card-effect-query-api.js";
 import { notSetcodeTargetDescriptor, restoredLuaTargetCallbacks, setcodeOrCodeTypeTargetDescriptor, setcodeTargetDescriptor, typeTargetDescriptor } from "#lua/snapshot-target-callbacks.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import type { ApplyDuelResponseResult, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectContext, DuelEffectDefinition, DuelResponse, DuelSession, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
+import type { ApplyDuelResponseResult, ChainLink, DuelAction, DuelCardInstance, DuelCardReader, DuelEffectContext, DuelEffectDefinition, DuelResponse, DuelSession, PendingTrigger, PlayerId, SerializedDuel, SerializedDuelEffect } from "#duel/types.js";
 const luaEffectEquipLimit = 76;
 const luaEffectGeminiStatus = 75;
 const luaEffectAddType = 115;
@@ -134,6 +135,7 @@ function restoreLuaHostEffectMetadata(host: LuaScriptHost, snapshotEffects: Seri
     if (!effect.registryKey?.startsWith("lua:")) continue;
     host.restoreEffectMetadata(effect.registryKey, {
       ...(effect.label === undefined ? {} : { label: effect.label }),
+      ...(effect.labels === undefined ? {} : { labels: [...effect.labels] }),
       ...(effect.labelObjectId === undefined ? {} : { labelObjectId: effect.labelObjectId }),
     });
   }
@@ -158,7 +160,57 @@ export function applyLuaRestoreResponse(restored: LuaSnapshotRestoreResult, resp
   }
   const result = applyResponse(restored.session, response);
   if (!result.ok) return result;
-  return drainRestoredLuaOperationPrompts(restored, result);
+  restoreMaterialCheckTriggers(restored, response);
+  return drainRestoredLuaOperationPrompts(restored, refreshedLuaResponse(restored, result));
+}
+
+function refreshedLuaResponse(restored: LuaSnapshotRestoreResult, result: ApplyDuelResponseResult): ApplyDuelResponseResult {
+  if (!result.ok) return result;
+  const waitingFor = restored.session.state.waitingFor;
+  const legalActions = waitingFor === undefined ? [] : getLuaRestoreLegalActions(restored, waitingFor);
+  const legalActionGroups = waitingFor === undefined ? [] : getLuaRestoreLegalActionGroups(restored, waitingFor);
+  return { ...result, state: queryPublicState(restored.session), legalActions, legalActionGroups };
+}
+
+function restoreMaterialCheckTriggers(restored: LuaSnapshotRestoreResult, response: DuelResponse): void {
+  if (response.type !== "synchroSummon") return;
+  const source = restored.session.state.cards.find((card) => card.uid === response.uid);
+  if (!source) return;
+  const materialCheckEffects = restored.session.state.effects.filter((effect) => effect.sourceUid === source.uid && effect.code === 251);
+  if (materialCheckEffects.length === 0) return;
+  const before = new Set(restored.session.state.pendingTriggers.map(pendingTriggerKey));
+  for (const effect of materialCheckEffects) {
+    const checked = restored.host.runMaterialCheck(effect.id, source.uid, response.player);
+    if (!checked.ok) pushDuelLog(restored.session.state, "luaMaterialCheck", response.player, source.name, checked.error ?? "Lua material check failed");
+  }
+  const event = [...restored.session.state.eventHistory].reverse().find((candidate) => candidate.eventName === "specialSummoned" && candidate.eventCardUid === source.uid);
+  collectDuelTriggerEvent(restored.session.state, "specialSummoned", source, event ? eventPayloadFromHistory(event) : undefined);
+  restored.session.state.pendingTriggers = restored.session.state.pendingTriggers.filter((trigger, index, triggers) => {
+    const key = pendingTriggerKey(trigger);
+    return !before.has(key) || triggers.findIndex((candidate) => pendingTriggerKey(candidate) === key) === index;
+  });
+}
+
+function pendingTriggerKey(trigger: PendingTrigger): string {
+  return [trigger.effectId, trigger.sourceUid, trigger.eventName, trigger.eventCardUid, trigger.eventCode, trigger.eventReason, trigger.eventReasonCardUid].join("|");
+}
+
+function eventPayloadFromHistory(event: DuelSession["state"]["eventHistory"][number]): DuelEventPayload {
+  return {
+    ...(event.eventCode === undefined ? {} : { eventCode: event.eventCode }),
+    ...(event.eventPlayer === undefined ? {} : { eventPlayer: event.eventPlayer }),
+    ...(event.eventValue === undefined ? {} : { eventValue: event.eventValue }),
+    ...(event.eventReason === undefined ? {} : { eventReason: event.eventReason }),
+    ...(event.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: event.eventReasonPlayer }),
+    ...(event.eventReasonCardUid === undefined ? {} : { eventReasonCardUid: event.eventReasonCardUid }),
+    ...(event.eventReasonEffectId === undefined ? {} : { eventReasonEffectId: event.eventReasonEffectId }),
+    ...(event.relatedEffectId === undefined ? {} : { relatedEffectId: event.relatedEffectId }),
+    ...(event.eventChainDepth === undefined ? {} : { eventChainDepth: event.eventChainDepth }),
+    ...(event.eventChainLinkId === undefined ? {} : { eventChainLinkId: event.eventChainLinkId }),
+    ...(event.eventUids === undefined ? {} : { eventUids: event.eventUids }),
+    ...(event.eventPreviousState === undefined ? {} : { eventPreviousState: event.eventPreviousState }),
+    ...(event.eventCurrentState === undefined ? {} : { eventCurrentState: event.eventCurrentState }),
+  };
 }
 
 function drainRestoredLuaOperationPrompts(restored: LuaSnapshotRestoreResult, initial: ApplyDuelResponseResult): ApplyDuelResponseResult {
@@ -256,6 +308,7 @@ function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEf
     ...(snapshotEffect.property === undefined ? {} : { property: snapshotEffect.property }),
     ...(snapshotEffect.reset === undefined ? {} : { reset: { ...snapshotEffect.reset } }),
     ...(snapshotEffect.label === undefined ? {} : { label: snapshotEffect.label }),
+    ...(snapshotEffect.labels === undefined ? {} : { labels: [...snapshotEffect.labels] }),
     ...(snapshotEffect.labelObjectId === undefined ? {} : { labelObjectId: snapshotEffect.labelObjectId }),
     ...(snapshotEffect.labelObjectUid === undefined ? {} : { labelObjectUid: snapshotEffect.labelObjectUid }),
     ...(snapshotEffect.labelObjectUids === undefined ? {} : { labelObjectUids: [...snapshotEffect.labelObjectUids] }),

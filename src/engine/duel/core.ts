@@ -758,6 +758,10 @@ function collectBattleEvent(state: DuelState, eventName: DuelEventName, eventCar
 function collectTriggerEffects(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options?: DuelEventPayload): void {
   collectDuelTriggerEffects(state, eventName, eventCard, options);
 }
+
+export function collectDuelTriggerEvent(state: DuelState, eventName: DuelEventName, eventCard?: DuelCardInstance, options?: DuelEventPayload): void {
+  collectTriggerEffects(state, eventName, eventCard, options);
+}
 function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void {
   const code = 0x1000 | phaseMask(phase);
   for (const effect of [...state.effects]) {

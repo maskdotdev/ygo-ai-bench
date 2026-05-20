@@ -31,7 +31,7 @@ export interface LuaScriptHost {
   loadCardScript(cardCode: string | number, source: LuaScriptSource): LuaScriptLoadResult;
   registerInitialEffects(): number;
   registerInitialEffectsDetailed(): LuaInitialEffectRegistrationResult[];
-  restoreEffectMetadata(registryKey: string, metadata: { label?: number; labelObjectId?: number }): boolean;
+  restoreEffectMetadata(registryKey: string, metadata: { label?: number; labels?: number[]; labelObjectId?: number }): boolean;
   runStartupEffects(): number;
   restoreChainLimit(key: string, limit: ChainLimit): ChainLimit | undefined;
   getGlobalString(name: string): string | undefined;
@@ -39,6 +39,7 @@ export interface LuaScriptHost {
   runPromptCoroutine(code: string, name: string): LuaPromptCoroutineResult;
   runPromptCallback(name: string, args?: Array<number | boolean | string>): LuaPromptCoroutineResult;
   runPromptEffectOperation(effectId: string, sourceUid: string, player: PlayerId): LuaPromptCoroutineResult;
+  runMaterialCheck(effectId: string, sourceUid: string, player: PlayerId): { ok: boolean; error?: string };
 }
 
 export type LuaPromptDecision =

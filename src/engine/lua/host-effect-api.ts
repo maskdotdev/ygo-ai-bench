@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
+import { createEffectContext } from "#duel/effect-context.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
@@ -511,6 +512,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.countLimitCode === undefined ? {} : { countLimitCode: luaEffect.countLimitCode }),
     ...(luaEffect.reset === undefined ? {} : { reset: luaEffect.reset }),
     ...(luaEffect.label === undefined ? {} : { label: luaEffect.label }),
+    ...(luaEffect.labels === undefined ? {} : { labels: [...luaEffect.labels] }),
     ...(luaEffect.labelObjectId === undefined ? {} : { labelObjectId: luaEffect.labelObjectId }),
     ...(luaEffect.labelObjectUid === undefined ? {} : { labelObjectUid: luaEffect.labelObjectUid }),
     ...(luaEffect.labelObjectUids === undefined ? {} : { labelObjectUids: [...luaEffect.labelObjectUids] }),
@@ -880,6 +882,52 @@ export function runLuaEffectOperationPromptCoroutine(
   return wrapLuaEffectOperationCoroutineResult(hostState, luaEffect, ctx, result);
 }
 
+export function runLuaEffectMaterialCheck(L: unknown, hostState: LuaHostState, effectId: string, sourceUid: string, player: PlayerId): { ok: boolean; error?: string } {
+  const id = Number(effectId.match(/^lua-(\d+)/)?.[1]);
+  const luaEffect = Number.isFinite(id) ? hostState.effects.get(id) : undefined;
+  const source = hostState.session.state.cards.find((card) => card.uid === sourceUid);
+  if (!luaEffect) return { ok: false, error: `Lua effect ${effectId} was not found` };
+  if (!source) return { ok: false, error: `Lua material-check source ${sourceUid} was not found` };
+  const ctx = createEffectContext(hostState.session.state, source, player, undefined, undefined, [], false, source.location, source.sequence);
+  try {
+    withLuaCallbackContext(hostState, ctx, luaEffect.id, "value", () => {
+      let valueApplied = false;
+      if (luaEffect.valueRef !== undefined) {
+        lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.valueRef);
+        hostState.pushEffectTable(L, luaEffect.id);
+        pushCardTable(L, source.uid);
+        const status = lua.lua_pcall(L, 2, 0, 0);
+        valueApplied = status === lua.LUA_OK;
+        if (status !== lua.LUA_OK) lua.lua_pop(L, 1);
+      }
+      if (!valueApplied) applySynchroMaterialCheckFallback(hostState, luaEffect, source);
+      else if (luaEffect.operationRef !== undefined) callLuaEffectOperation(L, hostState, luaEffect, source, luaEffect.operationRef, ctx, readLuaError);
+      syncLuaEffectLabelObjectFromRef(L, hostState, luaEffect);
+      syncRegisteredDuelEffectLabels(hostState, luaEffect);
+      syncRegisteredDuelEffectLabelObject(hostState, luaEffect);
+    });
+    return { ok: true };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : String(error) };
+  }
+}
+
+function applySynchroMaterialCheckFallback(hostState: LuaHostState, luaEffect: LuaEffectRecord, source: DuelCardInstance): void {
+  if (source.summonType !== "synchro" || !source.summonMaterialUids?.length) return;
+  const materials = source.summonMaterialUids
+    .map((uid) => hostState.session.state.cards.find((card) => card.uid === uid))
+    .filter((card): card is DuelCardInstance => card !== undefined);
+  const tuner = materials.find((card) => ((card.data.typeFlags ?? (card.kind === "monster" ? 0x1 : 0)) & 0x1000) !== 0);
+  if (!tuner) return;
+  const tunerLevel = tuner.data.level ?? 0;
+  const nontunerLevel = Math.max(0, (source.data.level ?? 0) - tunerLevel);
+  luaEffect.label = tunerLevel;
+  luaEffect.labels = [tunerLevel, nontunerLevel];
+  delete luaEffect.labelObjectId;
+  delete luaEffect.labelObjectUid;
+  delete luaEffect.labelObjectUids;
+}
+
 function callLuaEffectOperation(
   L: unknown,
   hostState: LuaHostState,
@@ -1051,6 +1099,8 @@ function syncRegisteredDuelEffectLabels(hostState: LuaHostState, luaEffect: LuaE
   for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) {
     if (luaEffect.label === undefined) delete effect.label;
     else effect.label = luaEffect.label;
+    if (luaEffect.labels === undefined) delete effect.labels;
+    else effect.labels = [...luaEffect.labels];
   }
 }
 
@@ -1130,6 +1180,7 @@ function syncLuaEffectMetadataFromRegisteredDuelEffect(hostState: LuaHostState, 
   if (!effect) return;
   if (effect.property === undefined) delete luaEffect.property; else luaEffect.property = effect.property;
   if (effect.label === undefined) delete luaEffect.label; else luaEffect.label = effect.label;
+  if (effect.labels === undefined) delete luaEffect.labels; else luaEffect.labels = [...effect.labels];
   if (effect.labelObjectId === undefined) delete luaEffect.labelObjectId; else luaEffect.labelObjectId = effect.labelObjectId;
 }
 

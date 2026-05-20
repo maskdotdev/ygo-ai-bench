@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 193;
+export const operationFixtureCount = 194;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -111,6 +111,7 @@ export const operationKindCounts = {
   specialSummonBaseStat: 1,
   summonDelayedStatDestroy: 1,
   summonRaceStatTargetDestroy: 1,
+  synchroMaterialCheckStatBurn: 1,
   summonFieldMillStat: 1,
   targetRelationStatDestroyedBothDamage: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
@@ -249,6 +250,7 @@ export type OperationKind =
   | "specialSummonBaseStat"
   | "summonDelayedStatDestroy"
   | "summonRaceStatTargetDestroy"
+  | "synchroMaterialCheckStatBurn"
   | "summonFieldMillStat"
   | "targetRelationStatDestroyedBothDamage"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
@@ -679,6 +681,28 @@ export function operationFixtureFiles(): Array<{
         'eventName: "damageDealt"',
         "players[1].lifePoints).toBe(6600)",
         "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-vagnawa-synchro-material-stat-burn.test.ts",
+      kind: "synchroMaterialCheckStatBurn",
+      required: [
+        "restores material-check labels into Synchro summon ATK gain and BreakEffect damage",
+        "e0:SetCode(EFFECT_MATERIAL_CHECK)",
+        "e0:SetValue(s.valcheck)",
+        "e0:SetOperation(s.matop)",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DAMAGE)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e1:SetLabelObject(e0)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,tp,300)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,1,1-tp,300)",
+        "local tuner_lv,nontuner_lv=e:GetLabelObject():GetLabel()",
+        "Duel.BreakEffect()",
+        "Duel.Damage(1-tp,tuner_lv*300,REASON_EFFECT)",
+        "summonMaterialUids: [tuner.uid, nonTuner.uid]",
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        'eventName: "damageDealt"',
       ],
     },
     {
@@ -2945,6 +2969,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       specialSummonBaseStat: 0,
       summonDelayedStatDestroy: 0,
       summonRaceStatTargetDestroy: 0,
+      synchroMaterialCheckStatBurn: 0,
       summonFieldMillStat: 0,
       targetRelationStatDestroyedBothDamage: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
