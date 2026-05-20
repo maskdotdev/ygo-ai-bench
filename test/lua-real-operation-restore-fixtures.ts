@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 147;
+export const operationFixtureCount = 148;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -79,6 +79,7 @@ export const operationKindCounts = {
   trapReclamationReturn: 1,
   trapStepSummonOperatedCounter: 1,
   targetCardsCounterDisable: 1,
+  targetDisableStat: 1,
   targetBanish: 1,
   targetBanishDiscardCost: 1,
   targetDestroy: 2,
@@ -173,6 +174,7 @@ export type OperationKind =
   | "trapReclamationReturn"
   | "trapStepSummonOperatedCounter"
   | "targetCardsCounterDisable"
+  | "targetDisableStat"
   | "targetBanish"
   | "targetBanishDiscardCost"
   | "targetDestroy"
@@ -192,6 +194,25 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-phantasm-spiral-power-disable-stat.test.ts",
+      kind: "targetDisableStat",
+      required: [
+        "restores face-up Normal-only activation into target ATK/DEF loss and effect disable",
+        "Duel.GetFieldGroupCount(tp,LOCATION_MZONE,0)>0",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,g,1,0,0)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e3:SetCode(EFFECT_DISABLE)",
+        "e4:SetCode(EFFECT_DISABLE_EFFECT)",
+        "category: 0x4000",
+        "currentAttack(restoredTarget, restored.session.state)).toBe(1000)",
+        "currentDefense(restoredTarget, restored.session.state)).toBe(700)",
+        "isCardDisabled",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-gandora-x-summon-destroy-stat-lp.test.ts",
       kind: "groupDestroyDamageStatLp",
@@ -1866,6 +1887,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       trapReclamationReturn: 0,
       trapStepSummonOperatedCounter: 0,
       targetCardsCounterDisable: 0,
+      targetDisableStat: 0,
       targetBanish: 0,
       targetBanishDiscardCost: 0,
       targetDestroy: 0,
