@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 286;
+export const realScriptSummonFixtureCount = 287;
 export const summonProcedureFixtureCount = 33;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -31,7 +31,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 19,
   pendulum: 20,
   ritual: 26,
-  summon: 138,
+  summon: 139,
   synchro: 20,
   xyz: 16,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -119,6 +119,7 @@ export const summonSemanticVariantCounts = {
   standbySelfToGraveEvolutionSummons: 1,
   weatherPainterReturnRegistration: 1,
   geminiReviveLeaveFieldTargetDestruction: 1,
+  graveSelfBanishDeckSummonDarkOath: 1,
 } satisfies Record<SummonSemanticVariant, number>;
 
 export type SummonUnionProcedureKind =
@@ -145,7 +146,7 @@ export type SelfTributeZoneSpecialSummonKind =
   | "selfTributeFreesMonsterZone"
   | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
-  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction";
+  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction" | "graveSelfBanishDeckSummonDarkOath";
 export type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -960,6 +961,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     { file: "test/lua-real-script-ultimate-insect-lv3-standby-evolve-summon.test.ts", kind: "standbySelfToGraveEvolutionSummons" as const },
     { file: "test/lua-real-script-weather-thunder-place-banish-return-summon.test.ts", kind: "weatherPainterReturnRegistration" as const },
     { file: "test/lua-real-script-il-blud-gemini-zombie-revive-leave-destroy.test.ts", kind: "geminiReviveLeaveFieldTargetDestruction" as const },
+    { file: "test/lua-real-script-orcust-harp-horror-self-banish-deck-summon-lock.test.ts", kind: "graveSelfBanishDeckSummonDarkOath" as const },
   ];
 }
 
@@ -995,6 +997,7 @@ export function countSummonSemanticVariants(
       standbySelfToGraveEvolutionSummons: 0,
       weatherPainterReturnRegistration: 0,
       geminiReviveLeaveFieldTargetDestruction: 0,
+      graveSelfBanishDeckSummonDarkOath: 0,
     },
   );
 }
@@ -1031,6 +1034,7 @@ export function groupSummonSemanticVariantFiles(
       standbySelfToGraveEvolutionSummons: [],
       weatherPainterReturnRegistration: [],
       geminiReviveLeaveFieldTargetDestruction: [],
+      graveSelfBanishDeckSummonDarkOath: [],
     },
   );
 }
