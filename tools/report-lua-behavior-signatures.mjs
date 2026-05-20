@@ -100,6 +100,19 @@ function buildReport(options) {
 
   const signatures = [...buckets.values()].sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
   const coveredSignatureKeys = new Set([...fixtureCodes].map((code) => codeToSignatureKey.get(code)).filter(Boolean));
+  const fixtureCodesBySignatureKey = new Map();
+  for (const code of fixtureCodes) {
+    const key = codeToSignatureKey.get(code);
+    if (!key) continue;
+    const codes = fixtureCodesBySignatureKey.get(key) ?? [];
+    codes.push(code);
+    fixtureCodesBySignatureKey.set(key, codes);
+  }
+  for (const signature of signatures) {
+    const coveredCodes = fixtureCodesBySignatureKey.get(signature.key) ?? [];
+    signature.fixtureCovered = coveredCodes.length > 0;
+    signature.fixtureCoveredScripts = coveredCodes.sort((a, b) => Number(a) - Number(b));
+  }
   const uncoveredSignatures = signatures.filter((signature) => !coveredSignatureKeys.has(signature.key));
 
   return {
