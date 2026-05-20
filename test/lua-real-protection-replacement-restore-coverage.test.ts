@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 19;
+const protectionReplacementFixtureCount = 20;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
@@ -17,7 +17,7 @@ const protectionReplacementKindCounts = {
   equipDestroySubstitute: 1,
   handGrantedIndestructible: 1,
   linkedTargetProtection: 1,
-  persistentDestroyReplace: 3,
+  persistentDestroyReplace: 4,
   positionConditionProtection: 1,
   temporaryBattleProtection: 1,
 } satisfies Record<ProtectionReplacementKind, number>;
@@ -32,6 +32,7 @@ const protectionReplacementSemanticVariantCounts = {
   gyroidBattleCountProtection: 1,
   heartClearWaterEquipBattleProtectionSelfDestroy: 1,
   nightmareMagicianBattleTargetControlProtection: 1,
+  mitsurugiSajiReleaseDestroyReplace: 1,
   phantomKnightsSwordPersistentDestroyReplace: 1,
   pilgrimContinuousBattleIndestructible: 1,
   redGardnaHandGrantedIndestructible: 1,
@@ -126,6 +127,7 @@ type ProtectionReplacementSemanticVariant =
   | "gyroidBattleCountProtection"
   | "heartClearWaterEquipBattleProtectionSelfDestroy"
   | "nightmareMagicianBattleTargetControlProtection"
+  | "mitsurugiSajiReleaseDestroyReplace"
   | "phantomKnightsSwordPersistentDestroyReplace"
   | "pilgrimContinuousBattleIndestructible"
   | "redGardnaHandGrantedIndestructible"
@@ -148,6 +150,19 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
         "Duel.SelectMatchingCard(tp,s.repfilter,tp,LOCATION_MZONE,0,1,1,c,e)",
         "Duel.Destroy(tc,REASON_EFFECT|REASON_REPLACE)",
         'api: "SelectEffectYesNo"',
+        'action: "destroyReplace"',
+      ],
+    },
+    {
+      file: "lua-real-script-mitsurugi-saji-search-replace-release.test.ts",
+      kind: "persistentDestroyReplace",
+      required: [
+        "restores summon search and Reptile destroy replacement that releases Saji instead",
+        "e4:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,c,96)",
+        "Duel.Release(e:GetHandler(),REASON_EFFECT|REASON_REPLACE)",
+        'api: "SelectEffectYesNo"',
+        "reason: duelReason.effect | duelReason.replace | duelReason.release",
         'action: "destroyReplace"',
       ],
     },
@@ -475,6 +490,18 @@ function protectionReplacementSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mitsurugi-saji-search-replace-release.test.ts",
+      kind: "mitsurugiSajiReleaseDestroyReplace",
+      requiredSnippets: [
+        'const sajiCode = "18176525"',
+        "restores summon search and Reptile destroy replacement that releases Saji instead",
+        "Duel.Release(e:GetHandler(),REASON_EFFECT|REASON_REPLACE)",
+        'api: "SelectEffectYesNo"',
+        "reason: duelReason.effect | duelReason.replace | duelReason.release",
+        'action: "destroyReplace"',
+      ],
+    },
+    {
       file: "test/lua-real-script-phantom-knights-sword-persistent-replace.test.ts",
       kind: "phantomKnightsSwordPersistentDestroyReplace",
       requiredSnippets: [
@@ -584,6 +611,7 @@ function countProtectionReplacementSemanticVariants(
       geminiSoldierBattleCountDeckSummon: 0,
       gyroidBattleCountProtection: 0,
       heartClearWaterEquipBattleProtectionSelfDestroy: 0,
+      mitsurugiSajiReleaseDestroyReplace: 0,
       nightmareMagicianBattleTargetControlProtection: 0,
       phantomKnightsSwordPersistentDestroyReplace: 0,
       pilgrimContinuousBattleIndestructible: 0,
