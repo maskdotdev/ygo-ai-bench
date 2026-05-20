@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 118;
+export const operationFixtureCount = 119;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -56,7 +56,7 @@ export const operationKindCounts = {
   trapReclamationReturn: 1,
   targetBanish: 1,
   targetBanishDiscardCost: 1,
-  targetDestroy: 1,
+  targetDestroy: 2,
   targetDestroyDiscardCost: 2,
   targetDestroyDisableField: 1,
   targetDestroyReleaseCost: 1,
@@ -1094,6 +1094,18 @@ export function operationFixtureFiles(): Array<{
         "targetUids: [target!.uid]",
         'eventName: "destroyed"',
         'position: "faceDownDefense"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-double-snare-validity-destroy.test.ts",
+      kind: "targetDestroy",
+      required: [
+        "restores Card.IsHasEffect(id) targeting and destroys only a Double Snare-valid face-up card",
+        "return c:IsFaceup() and c:IsHasEffect(id)",
+        "aux.DoubleSnareValidity(c,LOCATION_MZONE)",
+        "targetUids: [validTarget.uid]",
+        'eventName: "destroyed"',
         "host.messages).not.toContain",
       ],
     },
