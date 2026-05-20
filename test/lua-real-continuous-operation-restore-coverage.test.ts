@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 7;
+const continuousOperationFixtureCount = 8;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
+  chainSolvingEquipNegateSend: 1,
   chainSolvingCustomSearch: 1,
   continuousRedirect: 2,
   endPhaseControlReturn: 1,
@@ -14,6 +15,7 @@ const continuousOperationKindCounts = {
   summonTriggerBackrowDestroy: 1,
 } satisfies Record<ContinuousOperationKind, number>;
 const continuousOperationSemanticVariantCounts = {
+  abyssScaleMizuchiSpellNegateSend: 1,
   changeOfHeartEndPhaseControlReturn: 1,
   coreOfChaosFaceUpLeaveFieldRedirect: 1,
   darkMagicianOriginalCodeSummonLock: 1,
@@ -25,6 +27,7 @@ const continuousOperationSemanticVariantCounts = {
 
 type ContinuousOperationKind =
   | "attributeStatDestroyedToHand"
+  | "chainSolvingEquipNegateSend"
   | "chainSolvingCustomSearch"
   | "continuousRedirect"
   | "endPhaseControlReturn"
@@ -32,6 +35,7 @@ type ContinuousOperationKind =
   | "summonTriggerBackrowDestroy";
 
 type ContinuousOperationSemanticVariant =
+  | "abyssScaleMizuchiSpellNegateSend"
   | "changeOfHeartEndPhaseControlReturn"
   | "coreOfChaosFaceUpLeaveFieldRedirect"
   | "darkMagicianOriginalCodeSummonLock"
@@ -88,6 +92,22 @@ function continuousOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-abyss-scale-mizuchi-chain-solving-negate.test.ts",
+      kind: "chainSolvingEquipNegateSend",
+      required: [
+        "restores equipped EVENT_CHAIN_SOLVING Spell negation and sends the Equip Spell to Graveyard",
+        "aux.AddEquipProcedure(c,nil,aux.FilterBoolFunction(Card.IsSetCard,SET_MERMAIL))",
+        "EVENT_CHAIN_SOLVING",
+        "re:IsSpellEffect() and Duel.IsChainDisablable(ev)",
+        "Duel.NegateEffect(ev)",
+        "Duel.SendtoGrave(e:GetHandler(),REASON_EFFECT)",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        'eventName: "sentToGraveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-magical-musketeer-caspar-hand-trap-search.test.ts",
       kind: "chainSolvingCustomSearch",
@@ -197,6 +217,7 @@ function countContinuousOperationKinds(
     },
     {
       attributeStatDestroyedToHand: 0,
+      chainSolvingEquipNegateSend: 0,
       chainSolvingCustomSearch: 0,
       continuousRedirect: 0,
       endPhaseControlReturn: 0,
@@ -212,6 +233,18 @@ function continuousOperationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-abyss-scale-mizuchi-chain-solving-negate.test.ts",
+      kind: "abyssScaleMizuchiSpellNegateSend",
+      required: [
+        'const mizuchiCode = "72932673"',
+        'const setMermail = 0x74',
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === mermail.uid), restoredOpen.session.state)).toBe(2400)",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === mermail.uid), restoredChain.session.state)).toBe(1600)",
+        "relatedEffectId: 5",
+        "eventReasonCardUid: mizuchi.uid",
+      ],
+    },
     {
       file: "test/lua-real-script-magical-musketeer-caspar-hand-trap-search.test.ts",
       kind: "magicalMusketeerCasparHandTrapSearch",
@@ -312,6 +345,7 @@ function countContinuousOperationSemanticVariants(
       return counts;
     },
     {
+      abyssScaleMizuchiSpellNegateSend: 0,
       changeOfHeartEndPhaseControlReturn: 0,
       coreOfChaosFaceUpLeaveFieldRedirect: 0,
       darkMagicianOriginalCodeSummonLock: 0,
