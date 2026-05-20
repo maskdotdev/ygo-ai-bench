@@ -33,6 +33,7 @@ const negationSemanticVariantCounts = {
   ghostOgreDestroyOnlyNoNegation: 1,
   heraldPerfectionDamageCalculationNegateDestroy: 1,
   ironCoreLusterConfirmCostNegateDestroy: 1,
+  lightImprisoningMirrorContinuousChainActivatingNegate: 1,
   magicJammerDiscardSpellNegateDestroy: 1,
   mysticalSpaceTyphoonDestroyOnlyNoNegation: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
@@ -72,6 +73,7 @@ type NegationSemanticVariant =
   | "ghostOgreDestroyOnlyNoNegation"
   | "heraldPerfectionDamageCalculationNegateDestroy"
   | "ironCoreLusterConfirmCostNegateDestroy"
+  | "lightImprisoningMirrorContinuousChainActivatingNegate"
   | "magicJammerDiscardSpellNegateDestroy"
   | "mysticalSpaceTyphoonDestroyOnlyNoNegation"
   | "overwhelmTributeGateTrapNegateDestroy"
@@ -502,6 +504,22 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-light-imprisoning-mirror-chain-activating-negate.test.ts",
+      kind: "lightImprisoningMirrorContinuousChainActivatingNegate",
+      required: [
+        'const mirrorCode = "53341729"',
+        "restores EVENT_CHAIN_ACTIVATING continuous negation of a LIGHT monster effect from field",
+        "Duel.GetChainInfo(ev,CHAININFO_TRIGGERING_LOCATION)",
+        "re:IsMonsterEffect() and (loc==LOCATION_MZONE or loc==LOCATION_GRAVE)",
+        "re:GetHandler():IsAttribute(ATTRIBUTE_LIGHT)",
+        "Duel.NegateEffect(ev)",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        'host.messages).not.toContain("light mirror source resolved")',
+        'host.messages).toContain("dark mirror source resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-magic-jammer-chain-negate.test.ts",
       kind: "magicJammerDiscardSpellNegateDestroy",
       required: [
@@ -723,6 +741,7 @@ function countNegationSemanticVariants(
       ghostOgreDestroyOnlyNoNegation: 0,
       heraldPerfectionDamageCalculationNegateDestroy: 0,
       ironCoreLusterConfirmCostNegateDestroy: 0,
+      lightImprisoningMirrorContinuousChainActivatingNegate: 0,
       magicJammerDiscardSpellNegateDestroy: 0,
       mysticalSpaceTyphoonDestroyOnlyNoNegation: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
