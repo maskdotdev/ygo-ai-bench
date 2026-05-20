@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DIRECT_ATTACK_FIXTURE_COUNT = 7;
+const DIRECT_ATTACK_FIXTURE_COUNT = 8;
 const directAttackKindCounts = {
   cannotDirectAttack: 1,
   directAttackConversion: 1,
   directAttackDamageStatTrigger: 1,
+  directAttackGroupGrant: 1,
   directAttackOnly: 1,
   directAttackPermission: 1,
   directAttackTrigger: 1,
@@ -22,18 +23,21 @@ const directAttackSemanticVariantCounts = {
   jinzoSevenDirectAttackOption: 1,
   reverseBusterDirectFaceUpTargetLock: 1,
   toonDefenseAttackToDirectConversion: 1,
+  deltaAttackerGroupDirectGrant: 1,
 } satisfies Record<DirectAttackSemanticVariant, number>;
 
 type DirectAttackKind =
   | "cannotDirectAttack"
   | "directAttackConversion"
   | "directAttackDamageStatTrigger"
+  | "directAttackGroupGrant"
   | "directAttackOnly"
   | "directAttackPermission"
   | "directAttackTrigger"
   | "directTargetLock";
 type DirectAttackSemanticVariant =
   | "dragonicHalberdCannotDirectLock"
+  | "deltaAttackerGroupDirectGrant"
   | "drillBarnacleDirectDamageAtkGain"
   | "hayateDirectAttackBattledSendTrigger"
   | "inabaWhiteRabbitDirectOnlyDamage"
@@ -86,6 +90,18 @@ function realScriptDirectAttackFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-delta-attacker-group-direct-attack.test.ts",
+      kind: "directAttackGroupGrant",
+      required: [
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,nil,tp)",
+        "for tc in aux.Next(g) do",
+        "e1:SetCode(EFFECT_DIRECT_ATTACK)",
+        "hasDirectAttack(battleActions, normal.uid)).toBe(true)",
+        "hasDirectAttack(battleActions, effectDecoy.uid)).toBe(false)",
+        "battleDamage[1]).toBe(1000)",
+      ],
+    },
     {
       file: "test/lua-real-script-dragonic-halberd-cannot-direct.test.ts",
       kind: "cannotDirectAttack",
@@ -169,6 +185,7 @@ function countDirectAttackKinds(fixtures: Array<{ kind: DirectAttackKind }>): Re
       cannotDirectAttack: 0,
       directAttackConversion: 0,
       directAttackDamageStatTrigger: 0,
+      directAttackGroupGrant: 0,
       directAttackOnly: 0,
       directAttackPermission: 0,
       directAttackTrigger: 0,
@@ -183,6 +200,16 @@ function directAttackSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-delta-attacker-group-direct-attack.test.ts",
+      kind: "deltaAttackerGroupDirectGrant",
+      required: [
+        'const deltaAttackerCode = "39719977"',
+        "restores operation-registered direct attack effects for three same-code face-up Normal monsters",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,3,nil,tp)",
+        "for tc in aux.Next(g) do",
+      ],
+    },
     {
       file: "test/lua-real-script-dragonic-halberd-cannot-direct.test.ts",
       kind: "dragonicHalberdCannotDirectLock",
@@ -270,6 +297,7 @@ function countDirectAttackSemanticVariants(
       return counts;
     },
     {
+      deltaAttackerGroupDirectGrant: 0,
       dragonicHalberdCannotDirectLock: 0,
       drillBarnacleDirectDamageAtkGain: 0,
       hayateDirectAttackBattledSendTrigger: 0,
