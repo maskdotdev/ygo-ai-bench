@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 175;
+export const operationFixtureCount = 176;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -42,6 +42,7 @@ export const operationKindCounts = {
   deckToGrave: 1,
   deckSplit: 1,
   deckTopSort: 2,
+  deckMoveToField: 1,
   discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
@@ -162,6 +163,7 @@ export type OperationKind =
   | "deckToGrave"
   | "deckSplit"
   | "deckTopSort"
+  | "deckMoveToField"
   | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
   | "directDamage"
@@ -572,6 +574,25 @@ export function operationFixtureFiles(): Array<{
         "currentDefense(reduced, restoredOpen.session.state)).toBe(600)",
         'eventName: "banished"',
         'eventName: "becameTarget"',
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-virtual-world-kauwloon-gate-place.test.ts",
+      kind: "deckMoveToField",
+      required: [
+        "restores deck Virtual World Gate selection into MoveToField placement and possible branch metadata",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DECKDES+CATEGORY_SPECIAL_SUMMON)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,0,tp,LOCATION_EXTRA)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DECKDES,nil,0,tp,3)",
+        "Duel.SelectMatchingCard(tp,s.tffilter,tp,LOCATION_DECK,0,1,1,nil,tp)",
+        "Duel.MoveToField(tc,tp,tp,LOCATION_SZONE,POS_FACEUP,true)",
+        "Duel.GetLocationCountFromEx(tp,tp,nil,TYPE_FUSION+TYPE_SYNCHRO+TYPE_XYZ)",
+        "Duel.GetUsableMZoneCount(tp)",
+        "Duel.SpecialSummon(rg,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "moved"',
+        'eventName: "chainSolved"',
         "operationInfos",
       ],
     },
@@ -2443,6 +2464,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckToGrave: 0,
       deckSplit: 0,
       deckTopSort: 0,
+      deckMoveToField: 0,
       damageDeckdesAtk: 0,
       damageRecoverRaceCountStat: 0,
       discardCostSpecialSummonGroupDestroy: 0,
