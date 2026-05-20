@@ -1,4 +1,4 @@
-export const releaseCostSpecialSummonFixtureCount = 11;
+export const releaseCostSpecialSummonFixtureCount = 12;
 
 export const releaseCostSpecialSummonKindCounts = {
   releaseActivationGroupCostHandSummon: 1,
@@ -6,7 +6,7 @@ export const releaseCostSpecialSummonKindCounts = {
   releaseGroupCostCompleteProcedureGraveSummon: 1,
   releaseGroupCostHandDeckSummon: 1,
   releaseGroupCostHandProcedure: 1,
-  releaseGroupCostTargetedGraveSummon: 1,
+  releaseGroupCostTargetedGraveSummon: 2,
   releaseGroupCostHandSelfSummonSearch: 1,
   releaseGroupCostHandSummonLeaveDestroy: 1,
   selfReleaseCostDeckSummon: 3,
@@ -129,6 +129,25 @@ export function realScriptReleaseCostSpecialSummonFixtureSnippets(): Array<{
       "eventReason: duelReason.summon | duelReason.specialSummon",
       "operationInfos: [{ category: 0x200, targetUids: [alpha.uid], count: 1, player: 0, parameter: 0x2 }]",
       "possibleOperationInfos: [{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }]",
+    ],
+  }, {
+    file: "test/lua-real-script-cyborg-doctor-release-tuner-special-summon.test.ts",
+    kind: "releaseGroupCostTargetedGraveSummon",
+    required: [
+      "Duel.CheckReleaseGroupCost(tp,s.rfilter,1,false,nil,nil,e,tp,ft)",
+      "Duel.SelectReleaseGroupCost(tp,s.rfilter,1,1,false,nil,nil,e,tp,ft)",
+      "c:IsType(TYPE_TUNER)",
+      "Duel.IsExistingTarget(s.spfilter,tp,LOCATION_GRAVE,0,1,nil,e,tp,c:GetLevel(),c:GetAttribute())",
+      "Duel.Release(rg,REASON_COST)",
+      "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp,lv,att)",
+      "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+      "Duel.GetFirstTarget()",
+      "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+      "duelReason.release | duelReason.cost",
+      'eventName: "released"',
+      'eventName: "specialSummoned"',
+      "wrongLevel",
+      "wrongAttribute",
     ],
   }, {
     file: "test/lua-real-script-storming-wynn-release-summon-leave-destroy.test.ts",
