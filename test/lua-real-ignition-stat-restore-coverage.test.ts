@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const ignitionStatFixtureCount = 2;
+const ignitionStatFixtureCount = 3;
 const ignitionStatKindCounts = {
   noTurnResetAttackLevelBoost: 1,
+  summedLevelChange: 1,
   targetLevelCopy: 1,
 } satisfies Record<IgnitionStatKind, number>;
 
-type IgnitionStatKind = "noTurnResetAttackLevelBoost" | "targetLevelCopy";
+type IgnitionStatKind = "noTurnResetAttackLevelBoost" | "summedLevelChange" | "targetLevelCopy";
 type IgnitionStatFixture = { file: string; kind: IgnitionStatKind; required: string[] };
 
 describe("Lua real ignition stat restore coverage", () => {
@@ -55,6 +56,22 @@ function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
         "e1:SetValue(tc:GetLevel())",
         "currentLevel(restoredCopyPlant, restoredChain.session.state)).toBe(4)",
         "copy plant level 4",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shogi-lance-summed-level-change.test.ts",
+      kind: "summedLevelChange",
+      required: [
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "e1:SetRange(LOCATION_MZONE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return c:IsFaceup() and c:GetLevel()==3 and c:IsRace(RACE_BEASTWARRIOR)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,e:GetHandler())",
+        "local lv=c:GetLevel()+tc:GetLevel()",
+        "e1:SetCode(EFFECT_CHANGE_LEVEL)",
+        "tc:RegisterEffect(e2)",
+        "currentLevel(restoredShogiLance, restoredChain.session.state)).toBe(7)",
+        "shogi lance level 7",
       ],
     },
     {
