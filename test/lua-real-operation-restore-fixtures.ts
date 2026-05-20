@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 189;
+export const operationFixtureCount = 190;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -100,6 +100,7 @@ export const operationKindCounts = {
   selfEquipFromHand: 1,
   selfBanishTargetStat: 1,
   setAttackFinalSpecialDamage: 1,
+  setFinalStatDisableFlag: 1,
   selectEffectStat: 1,
   selectEffectStatDestroyedToGrave: 1,
   selectEffectStatDestroy: 1,
@@ -234,6 +235,7 @@ export type OperationKind =
   | "selfEquipFromHand"
   | "selfBanishTargetStat"
   | "setAttackFinalSpecialDamage"
+  | "setFinalStatDisableFlag"
   | "selectEffectStat"
   | "selectEffectStatDestroyedToGrave"
   | "selectEffectStatDestroy"
@@ -272,6 +274,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-eternal-sunshine-flag-final-disable.test.ts",
+      kind: "setFinalStatDisableFlag",
+      required: [
+        "restores Ancient Fairy count-gated target final stat halve and effect negation",
+        "e1:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "Duel.GetMatchingGroupCount(s.afdfilter,e:GetHandlerPlayer(),LOCATION_ONFIELD,0,nil)*500",
+        "c:IsCode(CARD_ANCIENT_FAIRY_DRAGON)",
+        "c:ListsCode(CARD_ANCIENT_FAIRY_DRAGON) and c:IsMonster()",
+        "Duel.GetFlagEffect(tp,id)<Duel.GetMatchingGroupCount(s.afdfilter,tp,LOCATION_ONFIELD,0,nil)",
+        "Duel.RegisterFlagEffect(tp,id,RESET_PHASE|PHASE_END,0,1)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,g,1,tp,0)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(math.ceil(tc:GetAttack()/2))",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetValue(math.ceil(tc:GetDefense()/2))",
+        "tc:NegateEffects(c,RESETS_STANDARD_PHASE_END)",
+        'eventName: "becameTarget"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-guardragon-andrake-special-base-stat.test.ts",
       kind: "specialSummonBaseStat",
@@ -2838,6 +2863,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selfEquipFromHand: 0,
       selfBanishTargetStat: 0,
       setAttackFinalSpecialDamage: 0,
+      setFinalStatDisableFlag: 0,
       selectEffectStat: 0,
       selectEffectStatDestroyedToGrave: 0,
       selectEffectStatDestroy: 0,
