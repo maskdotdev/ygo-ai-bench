@@ -27,6 +27,7 @@ export const chainNegationOperationVariantCounts = {
   brokenLineColumnNegateDestroy: 1,
   darkBribeNegateDestroyDraw: 1,
   magicJammerDiscardNegateDestroy: 1,
+  mementoFlagStatNegate: 1,
   pitknightLinkedZoneDisable: 1,
 } satisfies Record<ChainNegationOperationVariant, number>;
 
@@ -57,6 +58,7 @@ export type ChainNegationOperationVariant =
   | "brokenLineColumnNegateDestroy"
   | "darkBribeNegateDestroyDraw"
   | "magicJammerDiscardNegateDestroy"
+  | "mementoFlagStatNegate"
   | "pitknightLinkedZoneDisable";
 
 export function groupDestroyOperationVariants(): Array<{ file: string; kind: GroupDestroyOperationVariant; required: string[] }> {
@@ -359,6 +361,17 @@ export function chainNegationOperationVariants(): Array<{ file: string; kind: Ch
       ],
     },
     {
+      file: "test/lua-real-script-mementotlan-cranium-burst-chain-negate.test.ts",
+      kind: "mementoFlagStatNegate",
+      required: [
+        "restores must-attack field effects and once-per-chain monster negation into Tecuhtlica stat loss",
+        "Duel.RegisterFlagEffect(tp,id,RESET_CHAIN,EFFECT_FLAG_OATH,1)",
+        "Duel.NegateEffect(ev)",
+        "currentAttack(restoredResponse.session.state.cards.find((card) => card.uid === tecuhtlica.uid), restoredResponse.session.state)).toBe(4000)",
+        "eventName: \"chainDisabled\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-pitknight-earlie-linked-chain-disable.test.ts",
       kind: "pitknightLinkedZoneDisable",
       required: [
@@ -382,6 +395,7 @@ export function countChainNegationOperationVariants(fixtures: Array<{ kind: Chai
       brokenLineColumnNegateDestroy: 0,
       darkBribeNegateDestroyDraw: 0,
       magicJammerDiscardNegateDestroy: 0,
+      mementoFlagStatNegate: 0,
       pitknightLinkedZoneDisable: 0,
     },
   );

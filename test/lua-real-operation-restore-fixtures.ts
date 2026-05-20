@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 200;
+export const operationFixtureCount = 201;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -40,6 +40,7 @@ export const operationKindCounts = {
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
   chainNegateCostBanishDestroy: 1,
+  chainNegateFlagStat: 1,
   chainLinkedZoneDisable: 1,
   chainDetachControlLock: 1,
   chainSolvedAnnounceNegate: 1,
@@ -181,6 +182,7 @@ export type OperationKind =
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
   | "chainNegateCostBanishDestroy"
+  | "chainNegateFlagStat"
   | "chainLinkedZoneDisable"
   | "chainDetachControlLock"
   | "chainSolvedAnnounceNegate"
@@ -2375,6 +2377,31 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mementotlan-cranium-burst-chain-negate.test.ts",
+      kind: "chainNegateFlagStat",
+      required: [
+        "restores must-attack field effects and once-per-chain monster negation into Tecuhtlica stat loss",
+        "e1:SetCode(EFFECT_MUST_ATTACK)",
+        "e2:SetCode(EFFECT_MUST_ATTACK_MONSTER)",
+        "Duel.GetChainInfo(ev,CHAININFO_TRIGGERING_LOCATION)",
+        "return re:IsMonsterEffect() and (loc&LOCATION_MZONE)~=0 and ep==1-tp and Duel.IsChainDisablable(ev)",
+        "not Duel.HasFlagEffect(tp,id)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsCode,CARD_MEMENTOAL_TECUHTLICA),tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.RegisterFlagEffect(tp,id,RESET_CHAIN,EFFECT_FLAG_OATH,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,eg,1,0,0)",
+        "tc:UpdateAttack(-1000,RESET_EVENT|RESETS_STANDARD,c)",
+        "tc:UpdateDefense(-1000,RESET_EVENT|RESETS_STANDARD,c)",
+        "Duel.NegateEffect(ev)",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        "currentAttack",
+        "currentDefense",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-painful-choice-deck-split.test.ts",
       kind: "deckSplit",
       required: [
@@ -2980,6 +3007,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
       chainNegateCostBanishDestroy: 0,
+      chainNegateFlagStat: 0,
       chainLinkedZoneDisable: 0,
       chainDetachControlLock: 0,
       chainSolvedAnnounceNegate: 0,
