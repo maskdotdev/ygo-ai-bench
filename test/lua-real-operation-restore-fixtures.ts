@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 121;
+export const operationFixtureCount = 122;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -19,6 +19,7 @@ export const operationKindCounts = {
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
   chainLinkedZoneDisable: 1,
+  chainSolvedAnnounceLpPhaseSend: 1,
   chainSolvedTrapDamage: 1,
   deckToGrave: 1,
   deckSplit: 1,
@@ -88,6 +89,7 @@ export type OperationKind =
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
   | "chainLinkedZoneDisable"
+  | "chainSolvedAnnounceLpPhaseSend"
   | "chainSolvedTrapDamage"
   | "deckToGrave"
   | "deckSplit"
@@ -895,6 +897,19 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-dirge-lost-dragon-announce-chain-solved.test.ts",
+      kind: "chainSolvedAnnounceLpPhaseSend",
+      required: [
+        "restores announced-card chain watchers into LP halving and End Phase self-send",
+        "Duel.AnnounceCard(tp)",
+        "Duel.SetLP(rp,Duel.GetLP(rp)/2)",
+        "e1:SetCode(EVENT_PHASE+PHASE_END)",
+        'eventName: "chainSolved"',
+        "lifePoints).toBe(4000)",
+        'eventName: "phaseEnd"',
+      ],
+    },
+    {
       file: "test/lua-real-script-painful-choice-deck-split.test.ts",
       kind: "deckSplit",
       required: [
@@ -1284,6 +1299,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
       chainLinkedZoneDisable: 0,
+      chainSolvedAnnounceLpPhaseSend: 0,
       chainSolvedTrapDamage: 0,
       deckToGrave: 0,
       deckSplit: 0,

@@ -6,7 +6,7 @@ const luaPhaseEndEventCode = 0x1200;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetsStandardPhaseEndRuntime = luaResetsStandardPhaseEnd & ~0x1000;
 const luaSelfEndPhaseDestroyCodes = new Set(["23289281", "55696885"]);
-const luaSelfEndPhaseSendCodes = new Set(["71071546"]);
+const luaSelfEndPhaseSendCodes = new Set(["40971261", "71071546"]);
 
 export function isKnownSelfEndPhaseDestroyEffect(effect: SerializedDuelEffect): boolean {
   const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
@@ -18,7 +18,7 @@ export function isKnownSelfEndPhaseDestroyEffect(effect: SerializedDuelEffect): 
     effect.sourceUid !== undefined &&
     effect.controller !== undefined &&
     effect.range.length === 1 &&
-    effect.range[0] === "monsterZone" &&
+    (effect.range[0] === "monsterZone" || effect.range[0] === "spellTrapZone") &&
     effect.countLimit === 1 &&
     (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaResetsStandardPhaseEndRuntime)
   );
@@ -47,7 +47,7 @@ export function isKnownSelfEndPhaseSendEffect(effect: SerializedDuelEffect): boo
     effect.sourceUid !== undefined &&
     effect.controller !== undefined &&
     effect.range.length === 1 &&
-    effect.range[0] === "monsterZone" &&
+    (effect.range[0] === "monsterZone" || effect.range[0] === "spellTrapZone") &&
     effect.countLimit === 1 &&
     effect.triggerEvent === "phaseEnd"
   );
