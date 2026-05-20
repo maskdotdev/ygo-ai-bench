@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 24;
+const statFixtureCount = 25;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -13,7 +13,7 @@ const statKindCounts = {
   diceScaleUpdate: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 2,
-  fieldMatchingFaceupRaceCountStat: 1,
+  fieldMatchingFaceupRaceCountStat: 2,
   fieldAttributeAttackUpdate: 2,
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
@@ -27,6 +27,7 @@ const statKindCounts = {
   targetedPreDamageFinalAttack: 1,
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
+  aForcesMatchingRaceCountStat: 1,
   alLumirajLevelOrRankFieldStat: 1,
   aojGaradholgDuelBattleTargetAttributeStat: 1,
   bladeflyFieldAttributeAttackUpdate: 1,
@@ -55,6 +56,7 @@ const statSemanticVariantCounts = {
 
 type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack";
 type StatSemanticVariant =
+  | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
   | "bladeflyFieldAttributeAttackUpdate"
@@ -129,6 +131,17 @@ function statFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-a-forces-matching-race-count-stat.test.ts",
+      kind: "fieldMatchingFaceupRaceCountStat",
+      required: [
+        "Duel.GetMatchingGroupCount(s.filter,c:GetControler(),LOCATION_MZONE,0,nil)*200",
+        "stat:matching-faceup-race-count:controller:4:0:include-handler:3:x200",
+        "currentAttack(restoredWarriorAttacker, restored.session.state)).toBe(1400)",
+        "currentAttack(restoredSpellcasterAlly, restored.session.state)).toBe(900)",
+        "battleDamage[1]).toBe(400)",
+      ],
+    },
     {
       file: "test/lua-real-script-aoj-garadholg-battle-light-stat.test.ts",
       kind: "damageStepBattleTargetAttributeAttackBoost",
@@ -474,6 +487,16 @@ function statSemanticVariants(): Array<{
 }> {
   return ([
     {
+      file: "test/lua-real-script-a-forces-matching-race-count-stat.test.ts",
+      kind: "aForcesMatchingRaceCountStat",
+      required: [
+        'const aForcesCode = "403847"',
+        "restores Warrior-only ATK updates from a face-up Warrior or Spellcaster count callback into battle damage",
+        "return c:IsFaceup() and c:IsRace(RACE_WARRIOR|RACE_SPELLCASTER)",
+        "stat:matching-faceup-race-count:controller:4:0:include-handler:3:x200",
+      ],
+    },
+    {
       file: "test/lua-real-script-aoj-garadholg-battle-light-stat.test.ts",
       kind: "aojGaradholgDuelBattleTargetAttributeStat",
       required: [
@@ -730,6 +753,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       return counts;
     },
     {
+      aForcesMatchingRaceCountStat: 0,
       alLumirajLevelOrRankFieldStat: 0,
       aojGaradholgDuelBattleTargetAttributeStat: 0,
       bladeflyFieldAttributeAttackUpdate: 0,
