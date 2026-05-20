@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 139;
+export const operationFixtureCount = 140;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -76,6 +76,7 @@ export const operationKindCounts = {
   targetBanish: 1,
   targetBanishDiscardCost: 1,
   targetDestroy: 2,
+  targetDestroyDamagePzoneMove: 1,
   targetDestroyDiscardCost: 2,
   targetDestroyDisableField: 1,
   targetDestroyReleaseCost: 1,
@@ -163,6 +164,7 @@ export type OperationKind =
   | "targetBanish"
   | "targetBanishDiscardCost"
   | "targetDestroy"
+  | "targetDestroyDamagePzoneMove"
   | "targetDestroyDiscardCost"
   | "targetDestroyDisableField"
   | "targetDestroyReleaseCost"
@@ -1609,6 +1611,24 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-purple-armageddon-destroy-pzone.test.ts",
+      kind: "targetDestroyDamagePzoneMove",
+      required: [
+        "restores targeted monster destruction damage and destroyed trigger placement into the Pendulum Zone",
+        "Pendulum.AddProcedure(c,false)",
+        "Fusion.AddProcMixN(c,true,true,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_DDD),2)",
+        "Duel.SelectTarget(tp,Card.IsPosition,tp,0,LOCATION_MZONE,1,1,nil,POS_FACEUP_ATTACK)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,atk)",
+        "Duel.MoveToField(c,tp,tp,LOCATION_PZONE,POS_FACEUP,true)",
+        "operationInfos: [",
+        'eventName: "destroyed"',
+        'eventName: "moved"',
+        'location: "spellTrapZone"',
+        "effectId: \"lua-6-1029\"",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -1707,6 +1727,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetBanish: 0,
       targetBanishDiscardCost: 0,
       targetDestroy: 0,
+      targetDestroyDamagePzoneMove: 0,
       targetDestroyDiscardCost: 0,
       targetDestroyDisableField: 0,
       targetDestroyReleaseCost: 0,
