@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 190;
+export const operationFixtureCount = 191;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -101,6 +101,7 @@ export const operationKindCounts = {
   selfBanishTargetStat: 1,
   setAttackFinalSpecialDamage: 1,
   setFinalStatDisableFlag: 1,
+  setFinalStatDestroyCost: 1,
   selectEffectStat: 1,
   selectEffectStatDestroyedToGrave: 1,
   selectEffectStatDestroy: 1,
@@ -236,6 +237,7 @@ export type OperationKind =
   | "selfBanishTargetStat"
   | "setAttackFinalSpecialDamage"
   | "setFinalStatDisableFlag"
+  | "setFinalStatDestroyCost"
   | "selectEffectStat"
   | "selectEffectStatDestroyedToGrave"
   | "selectEffectStatDestroy"
@@ -274,6 +276,30 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-true-draco-apocalypse-flag-final-stat.test.ts",
+      kind: "setFinalStatDestroyCost",
+      required: [
+        "restores chain flag cost into own True Draco destruction and opponent final stat halving",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetType(EFFECT_TYPE_QUICK_O)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCost(s.opccost)",
+        "Duel.GetFlagEffect(tp,id)==0",
+        "Duel.RegisterFlagEffect(tp,id,RESET_CHAIN,0,1)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsSetCard,SET_TRUE_DRACO_KING),tp,LOCATION_ONFIELD,0,1,1,c)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "if tc:IsRelateToEffect(e) and Duel.Destroy(tc,REASON_EFFECT)>0 then",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(math.ceil(oc:GetAttack()/2))",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetValue(math.ceil(oc:GetDefense()/2))",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-eternal-sunshine-flag-final-disable.test.ts",
       kind: "setFinalStatDisableFlag",
@@ -2864,6 +2890,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selfBanishTargetStat: 0,
       setAttackFinalSpecialDamage: 0,
       setFinalStatDisableFlag: 0,
+      setFinalStatDestroyCost: 0,
       selectEffectStat: 0,
       selectEffectStatDestroyedToGrave: 0,
       selectEffectStatDestroy: 0,
