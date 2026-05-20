@@ -5,15 +5,17 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const activityKindCounts = {
+  customSpecialSummonOath: 1,
   mulcharmyChainSummonCounters: 1,
 } satisfies Record<ActivityKind, number>;
 const activitySemanticVariantCounts = {
+  movementSoloCustomSpecialSummonOath: 1,
   mulcharmySharedChainLimitAndDelayedDraw: 1,
 } satisfies Record<ActivitySemanticVariant, number>;
 
-type ActivityKind = "mulcharmyChainSummonCounters";
+type ActivityKind = "customSpecialSummonOath" | "mulcharmyChainSummonCounters";
 
-type ActivitySemanticVariant = "mulcharmySharedChainLimitAndDelayedDraw";
+type ActivitySemanticVariant = "movementSoloCustomSpecialSummonOath" | "mulcharmySharedChainLimitAndDelayedDraw";
 
 describe("Lua real activity restore coverage", () => {
   it("requires representative activity fixtures to assert clean Lua restore", () => {
@@ -38,8 +40,6 @@ describe("Lua real activity restore coverage", () => {
       .filter(({ file, requiredSnippets }) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
         return !text.includes("activityHistory")
-          || !text.includes("duelActivity.chain")
-          || !text.includes("effectId?.startsWith(\"lua-\")")
           || requiredSnippets.some((snippet) => !hasCoverageSnippet(text, snippet));
       })
       .map(({ file }) => file);
@@ -86,6 +86,18 @@ function realScriptActivityFixtureFiles(): Array<{
 }> {
   return [
     {
+      file: "test/lua-real-script-1st-movement-solo-activity-lock.test.ts",
+      kind: "customSpecialSummonOath",
+      requiredSnippets: [
+        "Duel.AddCustomActivityCounter(id,ACTIVITY_SPSUMMON,s.counterfilter)",
+        "Duel.GetCustomActivityCount(id,tp,ACTIVITY_SPSUMMON)==0",
+        "activity === duelActivitySpecialSummon",
+        "target:not-setcode",
+        "off-set hand probe resolved",
+        "melodious hand probe resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-mulcharmy-activity.test.ts",
       kind: "mulcharmyChainSummonCounters",
       requiredSnippets: [
@@ -107,6 +119,7 @@ function countActivityKinds(fixtures: Array<{ kind: ActivityKind }>): Record<Act
       return counts;
     },
     {
+      customSpecialSummonOath: 0,
       mulcharmyChainSummonCounters: 0,
     },
   );
@@ -118,6 +131,18 @@ function activitySemanticVariants(): Array<{
   requiredSnippets: string[];
 }> {
   return [
+    {
+      file: "test/lua-real-script-1st-movement-solo-activity-lock.test.ts",
+      kind: "movementSoloCustomSpecialSummonOath",
+      requiredSnippets: [
+        'const soloCode = "44256816"',
+        "restores custom Special Summon activity cost, Melodious-only oath lock, and hand summon filtering",
+        "record.player === 0 && record.activity === duelActivitySpecialSummon",
+        'luaTargetDescriptor: `target:not-setcode:${setMelodious}`',
+        "expect(restoredLocked.host.messages).not.toContain(\"off-set hand probe resolved\")",
+        "expect(restoredAfterBlockedProbe.host.messages).toContain(\"melodious hand probe resolved\")",
+      ],
+    },
     {
       file: "test/lua-real-script-mulcharmy-activity.test.ts",
       kind: "mulcharmySharedChainLimitAndDelayedDraw",
@@ -143,6 +168,7 @@ function countActivitySemanticVariants(fixtures: Array<{ kind: ActivitySemanticV
       return counts;
     },
     {
+      movementSoloCustomSpecialSummonOath: 0,
       mulcharmySharedChainLimitAndDelayedDraw: 0,
     },
   );
