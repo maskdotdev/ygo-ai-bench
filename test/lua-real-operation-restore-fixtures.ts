@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 146;
+export const operationFixtureCount = 147;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -62,7 +62,7 @@ export const operationKindCounts = {
   monsterIgnitionSpellTrapDestroy: 1,
   mutualHandDiscardDraw: 1,
   opponentHandToDeck: 1,
-  overlayAttach: 1,
+  overlayAttach: 2,
   positionSet: 1,
   pzoneControlDelayedDestroy: 1,
   pzoneDestroySearch: 1,
@@ -1093,6 +1093,24 @@ export function operationFixtureFiles(): Array<{
         "reasonCardUid: pillar!.uid",
         "reasonEffectId: 3",
         'eventName === "detachedMaterial"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-chronomaly-vimana-overlay-boost.test.ts",
+      kind: "overlayAttach",
+      required: [
+        "restores Vimana ATK boost followed by graveyard material overlay attachment",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g1,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_LEAVE_GRAVE,g2,1,0,LOCATION_GRAVE)",
+        "Duel.BreakEffect()",
+        "Duel.Overlay(c,tc2)",
+        "operationInfos).toEqual",
+        'location: "overlay"',
+        "overlayUids: [material!.uid]",
+        "reasonCardUid: vimana!.uid",
+        "reasonEffectId: 2",
+        "currentAttack(restoredVimana!, restored.session.state)",
         "host.messages).not.toContain",
       ],
     },
