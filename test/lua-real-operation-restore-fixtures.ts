@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 122;
+export const operationFixtureCount = 123;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -56,6 +56,7 @@ export const operationKindCounts = {
   spellDraw: 1,
   trapDraw: 1,
   trapReclamationReturn: 1,
+  targetCardsCounterDisable: 1,
   targetBanish: 1,
   targetBanishDiscardCost: 1,
   targetDestroy: 2,
@@ -126,6 +127,7 @@ export type OperationKind =
   | "spellDraw"
   | "trapDraw"
   | "trapReclamationReturn"
+  | "targetCardsCounterDisable"
   | "targetBanish"
   | "targetBanishDiscardCost"
   | "targetDestroy"
@@ -850,6 +852,21 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-cubic-wave-target-cards-counter-disable.test.ts",
+      kind: "targetCardsCounterDisable",
+      required: [
+        "restores GetTargetCards target ordering and graveyard counter-cost banish into attack/disable locks",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "Duel.GetTargetCards(e)",
+        "Duel.SetTargetCard(sg)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "EFFECT_CANNOT_ATTACK",
+        "EFFECT_DISABLE",
+        'eventName: "counterAdded"',
+        "operationInfos",
+      ],
+    },
+    {
       file: "test/lua-real-script-monster-reincarnation-discard-to-hand.test.ts",
       kind: "targetToHandDiscardCost",
       required: [
@@ -1336,6 +1353,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       spellDraw: 0,
       trapDraw: 0,
       trapReclamationReturn: 0,
+      targetCardsCounterDisable: 0,
       targetBanish: 0,
       targetBanishDiscardCost: 0,
       targetDestroy: 0,

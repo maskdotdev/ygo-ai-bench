@@ -967,7 +967,7 @@ function isStaticSingleCardLuaRestriction(effect: SerializedDuelEffect): boolean
 }
 
 function isTemporaryRestrictionReset(flags: number | undefined): boolean {
-  return flags === luaTemporaryRestrictionResetFlags || flags === luaResetsStandardPhaseEnd;
+  return flags === luaTemporaryRestrictionResetFlags || flags === luaResetsStandardPhaseEnd || flags === luaResetEventStandard;
 }
 
 function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): DuelEffectDefinition["operation"] {
