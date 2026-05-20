@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const searchSetLockFixtureCount = 6;
+const searchSetLockFixtureCount = 7;
 const searchSetLockKindCounts = {
   continuousMonsterSetLock: 1,
+  continuousSelfSpellTrapSetSpecialLock: 1,
   continuousSpellTrapSetLock: 1,
   facedownSpecialSummonLock: 1,
   searchCreatedSummonSetLock: 1,
@@ -20,10 +21,12 @@ const searchSetLockSemanticVariantCounts = {
   fusionConscriptionSearchedCodeLocks: 1,
   hiddenArmorySearchCreatedSummonSetOath: 1,
   lightInterventionPlayerTargetedSetLocks: 1,
+  secondSarcophagusSelfSetSpecialLocks: 1,
 } satisfies Record<SearchSetLockSemanticVariant, number>;
 
 type SearchSetLockKind =
   | "continuousMonsterSetLock"
+  | "continuousSelfSpellTrapSetSpecialLock"
   | "continuousSpellTrapSetLock"
   | "facedownSpecialSummonLock"
   | "searchCreatedSummonSetLock"
@@ -35,7 +38,8 @@ type SearchSetLockSemanticVariant =
   | "darkSimorghOpponentSetLocks"
   | "fusionConscriptionSearchedCodeLocks"
   | "hiddenArmorySearchCreatedSummonSetOath"
-  | "lightInterventionPlayerTargetedSetLocks";
+  | "lightInterventionPlayerTargetedSetLocks"
+  | "secondSarcophagusSelfSetSpecialLocks";
 
 describe("Lua real search and set-lock restore coverage", () => {
   it("requires representative search-created set locks to assert clean Lua registry restore", () => {
@@ -137,6 +141,21 @@ function searchSetLockFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-second-sarcophagus-self-set-lock.test.ts",
+      kind: "continuousSelfSpellTrapSetSpecialLock",
+      required: [
+        "restores its static cannot-SSet and cannot-Special-Summon self restrictions",
+        "e1:SetCode(EFFECT_CANNOT_SSET)",
+        "e2:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)",
+        "lockCodes(restored.session, secondSarcophagus.uid)).toEqual([effectCannotSpecialSummon, effectCannotSSet])",
+        'action.type === "setSpellTrap"',
+        "second sarcophagus ssetable true/true",
+        "canSpecialSummonDuelCard(restoredMonster.session.state, monsterSarcophagus.uid, 0, undefined, undefined, true)).toBe(false)",
+        "second sarcophagus sset result 0",
+        "second sarcophagus ordinary sset result 1",
+      ],
+    },
+    {
       file: "test/lua-real-script-light-intervention-set-lock.test.ts",
       kind: "continuousMonsterSetLock",
       required: [
@@ -165,6 +184,7 @@ function countSearchSetLockKinds(
     },
     {
       continuousMonsterSetLock: 0,
+      continuousSelfSpellTrapSetSpecialLock: 0,
       continuousSpellTrapSetLock: 0,
       facedownSpecialSummonLock: 0,
       searchCreatedSummonSetLock: 0,
@@ -226,6 +246,18 @@ function searchSetLockSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-second-sarcophagus-self-set-lock.test.ts",
+      kind: "secondSarcophagusSelfSetSpecialLocks",
+      required: [
+        'const secondSarcophagusCode = "4081094"',
+        "restores its static cannot-SSet and cannot-Special-Summon self restrictions",
+        "e1:SetCode(EFFECT_CANNOT_SSET)",
+        "e2:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)",
+        "second sarcophagus ssetable true/true",
+        'action.type === "normalSummon" && action.uid === ordinaryMonster.uid',
+      ],
+    },
+    {
       file: "test/lua-real-script-light-intervention-set-lock.test.ts",
       kind: "lightInterventionPlayerTargetedSetLocks",
       required: [
@@ -256,6 +288,7 @@ function countSearchSetLockSemanticVariants(
       fusionConscriptionSearchedCodeLocks: 0,
       hiddenArmorySearchCreatedSummonSetOath: 0,
       lightInterventionPlayerTargetedSetLocks: 0,
+      secondSarcophagusSelfSetSpecialLocks: 0,
     },
   );
 }
