@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 131;
+export const operationFixtureCount = 132;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -11,6 +11,7 @@ export const operationKindCounts = {
   announceSearchSummonLock: 1,
   callCoinAtkChange: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
+  counterBoostBattleTargetLock: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
   controlSwap: 1,
@@ -90,6 +91,7 @@ export type OperationKind =
   | "announceSearchSummonLock"
   | "callCoinAtkChange"
   | "costBanishDraw" | "costDiscardDraw"
+  | "counterBoostBattleTargetLock"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
   | "controlSwap"
@@ -162,6 +164,22 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-combat-wheel-counter-boost-lock.test.ts",
+      kind: "counterBoostBattleTargetLock",
+      required: [
+        "restores damage-step quick discard cost into ATK boost, counter placement, and battle-target protection",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)",
+        "c:UpdateAttack(atk//2)",
+        "c:AddCounter(0x20e,1)",
+        "e1:SetCode(EFFECT_CANNOT_BE_BATTLE_TARGET)",
+        "eventName: \"discarded\"",
+        "eventName: \"counterAdded\"",
+        "getDuelCardCounter(restoredCombatWheel, combatCounter)).toBe(1)",
+        "currentAttack(restoredCombatWheel, restoredOpen.session.state)).toBe((combatWheel.data.attack ?? 0) + 800)",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-ancient-gear-gadget-announce-change-code.test.ts",
       kind: "announceChangeCode",
@@ -1488,6 +1506,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceSearchSummonLock: 0,
       callCoinAtkChange: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
+      counterBoostBattleTargetLock: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
       controlSwap: 0,
