@@ -115,6 +115,7 @@ export const summonSemanticVariantCounts = {
   tributeMaterialValuePredicates: tributeMaterialFixtureCount,
   unsummonableSummonSetLocks: unsummonableSummonSetLockFixtureCount,
   forceMonsterZoneSummonLocks: 4,
+  mandatoryBanishedPhaseReturnSummons: 1,
   weatherPainterReturnRegistration: 1,
 } satisfies Record<SummonSemanticVariant, number>;
 
@@ -142,7 +143,7 @@ export type SelfTributeZoneSpecialSummonKind =
   | "selfTributeFreesMonsterZone"
   | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
-  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "weatherPainterReturnRegistration";
+  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "weatherPainterReturnRegistration";
 export type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -953,6 +954,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     { file: "test/lua-real-script-kaiser-sea-horse-double-tribute-summon.test.ts", kind: "tributeMaterialValuePredicates" as const },
     { file: "test/lua-real-script-rare-metal-dragon-unsummonable.test.ts", kind: "unsummonableSummonSetLocks" as const },
     ...realScriptForceMonsterZoneSummonLockFixtureSnippets().map(({ file }) => ({ file, kind: "forceMonsterZoneSummonLocks" as const })),
+    { file: "test/lua-real-script-dd-scout-plane-banished-end-return.test.ts", kind: "mandatoryBanishedPhaseReturnSummons" as const },
     { file: "test/lua-real-script-weather-thunder-place-banish-return-summon.test.ts", kind: "weatherPainterReturnRegistration" as const },
   ];
 }
@@ -985,6 +987,7 @@ export function countSummonSemanticVariants(
       tributeMaterialValuePredicates: 0,
       unsummonableSummonSetLocks: 0,
       forceMonsterZoneSummonLocks: 0,
+      mandatoryBanishedPhaseReturnSummons: 0,
       weatherPainterReturnRegistration: 0,
     },
   );
@@ -1018,6 +1021,7 @@ export function groupSummonSemanticVariantFiles(
       tributeMaterialValuePredicates: [],
       unsummonableSummonSetLocks: [],
       forceMonsterZoneSummonLocks: [],
+      mandatoryBanishedPhaseReturnSummons: [],
       weatherPainterReturnRegistration: [],
     },
   );
