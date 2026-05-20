@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 176;
+export const operationFixtureCount = 177;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -43,6 +43,7 @@ export const operationKindCounts = {
   deckSplit: 1,
   deckTopSort: 2,
   deckMoveToField: 1,
+  groupBanishCountStat: 1,
   discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
@@ -164,6 +165,7 @@ export type OperationKind =
   | "deckSplit"
   | "deckTopSort"
   | "deckMoveToField"
+  | "groupBanishCountStat"
   | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
   | "directDamage"
@@ -593,6 +595,25 @@ export function operationFixtureFiles(): Array<{
         "Duel.SpecialSummon(rg,0,tp,tp,false,false,POS_FACEUP)",
         'eventName: "moved"',
         'eventName: "chainSolved"',
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-iron-chain-dragon-group-banish-stat.test.ts",
+      kind: "groupBanishCountStat",
+      required: [
+        "restores SpElim-filtered Iron Chain removal into operated-count ATK gain",
+        "e1:SetCategory(CATEGORY_REMOVE+CATEGORY_ATKCHANGE)",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "return c:IsSetCard(SET_IRON_CHAIN) and c:IsMonster() and c:IsAbleToRemove() and aux.SpElimFilter(c,true)",
+        "Duel.IsExistingMatchingCard(s.rfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_REMOVE,nil,1,tp,LOCATION_GRAVE)",
+        "Duel.GetMatchingGroup(s.rfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,nil)",
+        "local ct=Duel.Remove(g,POS_FACEUP,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(ct*200)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dragon.uid), restoredOpen.session.state)).toBe(2700)",
+        'eventName: "banished"',
         "operationInfos",
       ],
     },
@@ -2465,6 +2486,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckSplit: 0,
       deckTopSort: 0,
       deckMoveToField: 0,
+      groupBanishCountStat: 0,
       damageDeckdesAtk: 0,
       damageRecoverRaceCountStat: 0,
       discardCostSpecialSummonGroupDestroy: 0,
