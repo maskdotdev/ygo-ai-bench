@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 168;
+export const operationFixtureCount = 169;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -68,6 +68,7 @@ export const operationKindCounts = {
   fiveGraveToDeckShuffleDraw: 2,
   fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
+  lpDiscardCostStatToGraveBothDamage: 1,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
   linkClassCountDeckSummon: 1,
@@ -181,6 +182,7 @@ export type OperationKind =
   | "fiveGraveToDeckShuffleDraw"
   | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
+  | "lpDiscardCostStatToGraveBothDamage"
   | "lpCostHandDiscard"
   | "lpCostRandomHandDiscard"
   | "linkClassCountDeckSummon"
@@ -1282,6 +1284,25 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-big-saturn-cost-stat-destroy-damage.test.ts",
+      kind: "lpDiscardCostStatToGraveBothDamage",
+      required: [
+        "restores LP/discard ignition cost into ATK gain and effect-destroyed both-player damage",
+        'const saturnCode = "34004470"',
+        "Duel.CheckLPCost(tp,1000)",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)",
+        "Duel.PayLPCost(tp,1000)",
+        "EFFECT_UPDATE_ATTACK",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,PLAYER_ALL,dam)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PARAM)",
+        "Duel.RDComplete()",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "discarded"',
+        'eventName: "damageDealt"',
+        "currentAttack(",
+      ],
+    },
+    {
       file: "test/lua-real-script-dark-core-discard-banish.test.ts",
       kind: "targetBanishDiscardCost",
       required: [
@@ -2320,6 +2341,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fiveGraveToDeckShuffleDraw: 0,
       fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
+      lpDiscardCostStatToGraveBothDamage: 0,
       lpCostHandDiscard: 0,
       lpCostRandomHandDiscard: 0,
       linkClassCountDeckSummon: 0,

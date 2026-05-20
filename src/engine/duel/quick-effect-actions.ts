@@ -63,7 +63,7 @@ export function findActivationEffectForSource(
   effectId: string,
 ): { effect: DuelEffectDefinition; source: DuelCardInstance } | undefined {
   for (const effect of state.effects) {
-    if (effect.id !== effectId || effect.controller !== player) continue;
+    if (effect.id !== effectId) continue;
     const registeredSource = findCard(state, effect.sourceUid);
     if (!registeredSource) continue;
     const source = activationSourceForEffect(state, effect, registeredSource, player);
