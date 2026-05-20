@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 180;
+export const operationFixtureCount = 181;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -10,6 +10,7 @@ export const operationKindCounts = {
   announceTargetBanishProtection: 1,
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
+  attackAnnounceStatDeckdes: 1,
   callCoinAtkChange: 1,
   coinNegateControl: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
@@ -135,6 +136,7 @@ export type OperationKind =
   | "announceTargetBanishProtection"
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
+  | "attackAnnounceStatDeckdes"
   | "callCoinAtkChange"
   | "coinNegateControl"
   | "costBanishDraw" | "costDiscardDraw"
@@ -471,6 +473,28 @@ export function operationFixtureFiles(): Array<{
         'eventName: "battleDamageDealt"',
         'eventName: "damageDealt"',
         "players[1].lifePoints).toBe(6600)",
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-diviner-attack-stat-deckdes.test.ts",
+      kind: "attackAnnounceStatDeckdes",
+      required: [
+        "restores attack-announced target ATK matching into battle-destroying opponent Deck mill",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "tc:GetAttack()>e:GetHandler():GetAttack()",
+        "e:GetHandler():GetBattleTarget():CreateEffectRelation(e)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(c:GetAttack())",
+        "e3:SetCode(EVENT_BATTLE_DESTROYING)",
+        "tc:IsLocation(LOCATION_GRAVE) and tc:IsReason(REASON_BATTLE)",
+        "Duel.SetOperationInfo(0,CATEGORY_DECKDES,nil,0,1-tp,3)",
+        "Duel.DiscardDeck(1-tp,3,REASON_EFFECT)",
+        "currentAttack(restoredAttack.session.state.cards.find((card) => card.uid === defender.uid), restoredAttack.session.state)).toBe(2000)",
+        'eventName: "attackDeclared"',
+        'eventName: "battleDestroyed"',
+        'eventName: "sentToGraveyard"',
         "operationInfos",
       ],
     },
@@ -2524,6 +2548,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceTargetBanishProtection: 0,
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,
+      attackAnnounceStatDeckdes: 0,
       callCoinAtkChange: 0,
       coinNegateControl: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
