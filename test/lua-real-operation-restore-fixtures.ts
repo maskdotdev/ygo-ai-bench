@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 88;
+export const operationFixtureCount = 89;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -41,7 +41,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   releaseDamage: 2,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 19,
+  searchOrExcavate: 20,
   selfEquipFromHand: 1,
   spellDraw: 1,
   trapDraw: 1,
@@ -724,6 +724,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-pot-greed-spell-draw.test.ts", kind: "spellDraw", required: ["category: 0x10000", "targetParam: 2", "targetPlayer: 0", 'eventName: "cardsDrawn"', "eventValue: 2", "host.messages).not.toContain"] },
     { file: "test/lua-real-script-gather-your-mind-oath-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "return c:IsCode(id) and c:IsAbleToHand()", "category: 0x8", 'eventName: "sentToHand"', 'eventName: "sentToHandConfirmed"', "getLuaRestoreLegalActions(restoredResolved, 0).some((action) => action.type === \"activateEffect\" && action.uid === searchedGather.uid)).toBe(false)", "host.messages).not.toContain"] },
     { file: "test/lua-real-script-kotetsu-flip-equip-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP)", "return c:IsType(TYPE_EQUIP) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "flipSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-prediction-princess-arrowsylph-flip-necrovalley-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP+EFFECT_TYPE_TRIGGER_O)", "e1:SetProperty(EFFECT_FLAG_DELAY)", "return c:IsRitualSpell() and c:IsAbleToHand()", "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(s.thfilter),tp,LOCATION_DECK|LOCATION_GRAVE,0,1,1,nil)", "operationInfos: [{ category: 0x8", 'eventName: "flipSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-cyber-egg-angel-summon-flip-special-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetProperty(EFFECT_FLAG_DELAY)", "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)", "e3:SetCode(EVENT_SPSUMMON_SUCCESS)", "return ((c:IsSetCard(SET_MACHINE_ANGEL) and c:IsSpell()) or c:IsCode(95658967)) and c:IsAbleToHand()", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-lady-debug-summon-special-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetProperty(EFFECT_FLAG_DELAY)", "e2:SetCode(EVENT_SPSUMMON_SUCCESS)", "return c:IsLevelBelow(3) and c:IsRace(RACE_CYBERSE) and c:IsAbleToHand()", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-majespecter-raccoon-summon-search-protection.test.ts", kind: "searchOrExcavate", required: ["e2:SetCode(EVENT_SUMMON_SUCCESS)", "e3:SetCode(EVENT_SPSUMMON_SUCCESS)", "return c:IsSetCard(SET_MAJESPECTER) and c:IsMonster() and c:IsAbleToHand()", 'luaValueDescriptor: "cannot-be-effect-target:opponent"', 'luaValueDescriptor: "indestructible:opponent"', "targetUids).toEqual([vulnerable.uid])", 'eventName: "sentToHandConfirmed"'] },
