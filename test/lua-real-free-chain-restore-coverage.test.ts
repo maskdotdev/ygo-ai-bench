@@ -4,15 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 22;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 21;
+const FREE_CHAIN_FIXTURE_COUNT = 23;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 22;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 22;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 23;
 const freeChainKindCounts = {
   banishRemoval: 1,
   costToGraveDestroy: 1,
   graveyardRevive: 1,
-  multiTargetDestroy: 6,
+  multiTargetDestroy: 7,
   positionChange: 2,
   selectUnselectTargets: 1,
   singleDestroy: 3,
@@ -28,6 +28,7 @@ const freeChainSemanticVariantCounts = {
   darkEruptionGraveDarkToHand: 1,
   dragoncarnationBanishedDragonToHand: 1,
   forcesDarknessChainInfoToHand: 1,
+  heavyStormBothFieldDestroy: 1,
   cosmicCycloneBanish: 1,
   costToGraveDestroy: 1,
   destructionRingBothDamage: 1,
@@ -64,6 +65,7 @@ type FreeChainSemanticVariant =
   | "darkEruptionGraveDarkToHand"
   | "dragoncarnationBanishedDragonToHand"
   | "forcesDarknessChainInfoToHand"
+  | "heavyStormBothFieldDestroy"
   | "cosmicCycloneBanish"
   | "costToGraveDestroy"
   | "destructionRingBothDamage"
@@ -213,6 +215,7 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-spell-shattering-arrow-group-destroy-damage.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-token-sundae-break-effect-select-destroy.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-two-pronged-attack-chaininfo-destroy.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-heavy-storm-group-destroy.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-windstorm-etaqua-group-position.test.ts"));
 }
 
@@ -257,6 +260,10 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
     {
       file: "lua-real-script-destruction-ring-destroy-both-damage.test.ts",
       kind: "singleDestroy",
+    },
+    {
+      file: "lua-real-script-heavy-storm-group-destroy.test.ts",
+      kind: "multiTargetDestroy",
     },
     {
       file: "lua-real-script-infinite-impermanence-target-param.test.ts",
@@ -389,6 +396,18 @@ function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: Free
         "g:Filter(Card.IsRelateToEffect,nil,e)",
         "{ category: 0x8, targetUids: [darkWorldOne.uid, darkWorldTwo.uid], count: 2, player: 0, parameter: 0 }",
         "eventName: \"sentToHandConfirmed\"",
+      ],
+    },
+    {
+      file: "lua-real-script-heavy-storm-group-destroy.test.ts",
+      kind: "heavyStormBothFieldDestroy",
+      required: [
+        "restores prompt-free both-field Spell/Trap group destruction while excluding its own activation card",
+        "const heavyStormCode = \"19613556\"",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,c)",
+        "Duel.Destroy(sg,REASON_EFFECT)",
+        "{ category: 0x1, targetUids: destroyedUids, count: 4, player: 0, parameter: 0 }",
+        "eventUids: destroyedUids",
       ],
     },
     {
@@ -588,6 +607,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       darkEruptionGraveDarkToHand: 0,
       dragoncarnationBanishedDragonToHand: 0,
       forcesDarknessChainInfoToHand: 0,
+      heavyStormBothFieldDestroy: 0,
       cosmicCycloneBanish: 0,
       costToGraveDestroy: 0,
       destructionRingBothDamage: 0,

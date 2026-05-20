@@ -2,9 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
-import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
+import type { DuelAction, DuelCardData, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
@@ -13,54 +13,58 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const heavyStormCode = "19613556";
+const hasHeavyStormScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${heavyStormCode}.lua`));
+const typeSpell = 0x2;
+const typeTrap = 0x4;
+const typeMonster = 0x1;
 
-describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Heavy Storm group destroy", () => {
-  it("restores Heavy Storm's non-targeting all-field Spell/Trap group destroy", () => {
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasHeavyStormScript)("Lua real script Heavy Storm group destroy", () => {
+  it("restores prompt-free both-field Spell/Trap group destruction while excluding its own activation card", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
-    const heavyStormCode = "19613556";
-    const ownBackrowCode = "19613557";
-    const opponentTrapCode = "19613558";
-    const opponentSpellCode = "19613559";
-    const opponentMonsterCode = "19613560";
-    const responderCode = "19613561";
+    const ownSpellCode = "196135560";
+    const ownTrapCode = "196135561";
+    const opponentSpellCode = "196135562";
+    const opponentTrapCode = "196135563";
+    const monsterDecoyCode = "196135564";
+    const responderCode = "196135565";
+    const script = workspace.readScript(`official/c${heavyStormCode}.lua`);
+    expect(script).toContain("e1:SetCategory(CATEGORY_DESTROY)");
+    expect(script).toContain("e1:SetType(EFFECT_TYPE_ACTIVATE)");
+    expect(script).toContain("e1:SetCode(EVENT_FREE_CHAIN)");
+    expect(script).toContain("Duel.GetMatchingGroup(s.filter,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,c)");
+    expect(script).toContain("Duel.Destroy(sg,REASON_EFFECT)");
+
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === heavyStormCode),
-      { code: ownBackrowCode, name: "Heavy Storm Ally Backrow", kind: "trap", typeFlags: 0x4 },
-      { code: opponentTrapCode, name: "Heavy Storm Opponent Trap", kind: "trap", typeFlags: 0x4 },
-      { code: opponentSpellCode, name: "Heavy Storm Opponent Spell", kind: "spell", typeFlags: 0x2 },
-      { code: opponentMonsterCode, name: "Heavy Storm Opponent Monster", kind: "monster", typeFlags: 0x1, level: 4, attack: 1600, defense: 1200 },
-      { code: responderCode, name: "Heavy Storm Chain Responder", kind: "monster", typeFlags: 0x1, level: 4 },
+      { code: ownSpellCode, name: "Heavy Storm Own Spell", kind: "spell", typeFlags: typeSpell },
+      { code: ownTrapCode, name: "Heavy Storm Own Trap", kind: "trap", typeFlags: typeTrap },
+      { code: opponentSpellCode, name: "Heavy Storm Opponent Spell", kind: "spell", typeFlags: typeSpell },
+      { code: opponentTrapCode, name: "Heavy Storm Opponent Trap", kind: "trap", typeFlags: typeTrap },
+      { code: monsterDecoyCode, name: "Heavy Storm Monster Decoy", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1600, defense: 1200 },
+      { code: responderCode, name: "Heavy Storm Chain Responder", kind: "monster", typeFlags: typeMonster, level: 4, attack: 900, defense: 900 },
     ];
     const reader = createCardReader(cards);
-    const session = createDuel({ seed: 196, startingHandSize: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [heavyStormCode, ownBackrowCode] }, 1: { main: [opponentTrapCode, opponentSpellCode, opponentMonsterCode, responderCode] } });
+    const session = createDuel({ seed: 19613556, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [heavyStormCode, ownSpellCode, ownTrapCode, monsterDecoyCode] }, 1: { main: [opponentSpellCode, opponentTrapCode, responderCode] } });
     startDuel(session);
 
-    const heavyStorm = session.state.cards.find((card) => card.code === heavyStormCode);
-    const ownBackrow = session.state.cards.find((card) => card.code === ownBackrowCode);
-    const opponentTrap = session.state.cards.find((card) => card.code === opponentTrapCode);
-    const opponentSpell = session.state.cards.find((card) => card.code === opponentSpellCode);
-    const opponentMonster = session.state.cards.find((card) => card.code === opponentMonsterCode);
-    const responder = session.state.cards.find((card) => card.code === responderCode);
-    expect(heavyStorm).toBeDefined();
-    expect(ownBackrow).toBeDefined();
-    expect(opponentTrap).toBeDefined();
-    expect(opponentSpell).toBeDefined();
-    expect(opponentMonster).toBeDefined();
-    expect(responder).toBeDefined();
-    moveDuelCard(session.state, heavyStorm!.uid, "hand", 0);
-    moveDuelCard(session.state, ownBackrow!.uid, "spellTrapZone", 0);
-    ownBackrow!.position = "faceDown";
-    ownBackrow!.faceUp = false;
-    moveDuelCard(session.state, opponentTrap!.uid, "spellTrapZone", 1);
-    opponentTrap!.position = "faceDown";
-    opponentTrap!.faceUp = false;
-    moveDuelCard(session.state, opponentSpell!.uid, "spellTrapZone", 1);
-    opponentSpell!.position = "faceUpAttack";
-    opponentSpell!.faceUp = true;
-    moveDuelCard(session.state, opponentMonster!.uid, "monsterZone", 1).position = "faceUpAttack";
-    moveDuelCard(session.state, responder!.uid, "hand", 1);
+    const heavyStorm = requireCard(session, heavyStormCode);
+    const ownSpell = requireCard(session, ownSpellCode);
+    const ownTrap = requireCard(session, ownTrapCode);
+    const opponentSpell = requireCard(session, opponentSpellCode);
+    const opponentTrap = requireCard(session, opponentTrapCode);
+    const monsterDecoy = requireCard(session, monsterDecoyCode);
+    const responder = requireCard(session, responderCode);
+    moveDuelCard(session.state, heavyStorm.uid, "hand", 0);
+    moveDuelCard(session.state, ownSpell.uid, "spellTrapZone", 0).faceUp = true;
+    moveDuelCard(session.state, ownTrap.uid, "spellTrapZone", 0).position = "faceDown";
+    moveDuelCard(session.state, opponentSpell.uid, "spellTrapZone", 1).faceUp = true;
+    moveDuelCard(session.state, opponentTrap.uid, "spellTrapZone", 1).position = "faceDown";
+    moveDuelCard(session.state, monsterDecoy.uid, "monsterZone", 1).faceUp = true;
+    moveDuelCard(session.state, responder.uid, "hand", 1);
     session.state.phase = "main1";
+    session.state.turnPlayer = 0;
     session.state.waitingFor = 0;
 
     const source = {
@@ -74,185 +78,71 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
 
-    const heavyStormAction = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === heavyStorm!.uid);
-    expect(heavyStormAction).toBeDefined();
-    applyAndAssert(session, heavyStormAction!);
-    expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchInlineSnapshot(`
+    const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredOpen);
+    expectRestoredLegalActions(restoredOpen, 0);
+    const action = getLuaRestoreLegalActions(restoredOpen, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid === heavyStorm.uid);
+    expect(action, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredOpen, action!);
+    const destroyedUids = [ownSpell.uid, ownTrap.uid, opponentSpell.uid, opponentTrap.uid];
+    expect(restoredOpen.session.state.chain).toHaveLength(1);
+    expect(restoredOpen.session.state.chain).toEqual([
       {
-        "activationLocation": "hand",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-1-1002",
-        "id": "chain-2",
-        "operationInfos": [
-          {
-            "category": 1,
-            "count": 3,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-19613557-1",
-              "p1-deck-19613558-0",
-              "p1-deck-19613559-1",
-            ],
-          },
-        ],
-        "player": 0,
-        "sourceUid": "p0-deck-19613556-0",
-      }
-    `);
-    expect(sortedUids(session.state.chain[0]!.operationInfos?.[0]?.targetUids ?? [])).toEqual(sortedUids([
-      ownBackrow!.uid,
-      opponentTrap!.uid,
-      opponentSpell!.uid,
-    ]));
-
-    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
-    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
-    expect(restored.missingRegistryKeys).toEqual([]);
-    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "hand",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-1-1002",
-        "id": "chain-2",
-        "operationInfos": [
-          {
-            "category": 1,
-            "count": 3,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-19613557-1",
-              "p1-deck-19613558-0",
-              "p1-deck-19613559-1",
-            ],
-          },
-        ],
-        "player": 0,
-        "sourceUid": "p0-deck-19613556-0",
-      }
-    `);
-    expect(sortedUids(restored.session.state.chain[0]!.operationInfos?.[0]?.targetUids ?? [])).toEqual(sortedUids([
-      ownBackrow!.uid,
-      opponentTrap!.uid,
-      opponentSpell!.uid,
-    ]));
-
-    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreResponse(restored, pass!);
-    expect(resolved.ok, resolved.error).toBe(true);
-
-    expect(restored.session.state.cards.find((card) => card.uid === heavyStorm!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.cards.find((card) => card.uid === ownBackrow!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.cards.find((card) => card.uid === opponentTrap!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.cards.find((card) => card.uid === opponentSpell!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restored.session.state.cards.find((card) => card.uid === opponentMonster!.uid)).toMatchObject({ location: "monsterZone" });
-    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "destroyed")).toEqual([
-      {
-        eventName: "destroyed",
-        eventCode: 1029,
-        eventCardUid: ownBackrow!.uid,
-        eventPreviousState: {
-          location: "spellTrapZone",
-          controller: 0,
-          sequence: 0,
-          position: "faceDown",
-          faceUp: false,
-        },
-        eventCurrentState: {
-          location: "graveyard",
-          controller: 0,
-          sequence: 0,
-          position: "faceDown",
-          faceUp: true,
-        },
-        eventReason: duelReason.effect | duelReason.destroy,
-        eventReasonPlayer: 0,
-        eventReasonCardUid: heavyStorm!.uid,
-        eventReasonEffectId: 1,
-      },
-      {
-        eventName: "destroyed",
-        eventCode: 1029,
-        eventCardUid: opponentTrap!.uid,
-        eventPreviousState: {
-          location: "spellTrapZone",
-          controller: 1,
-          sequence: 0,
-          position: "faceDown",
-          faceUp: false,
-        },
-        eventCurrentState: {
-          location: "graveyard",
-          controller: 1,
-          sequence: 0,
-          position: "faceDown",
-          faceUp: true,
-        },
-        eventReason: duelReason.effect | duelReason.destroy,
-        eventReasonPlayer: 0,
-        eventReasonCardUid: heavyStorm!.uid,
-        eventReasonEffectId: 1,
-      },
-      {
-        eventName: "destroyed",
-        eventCode: 1029,
-        eventCardUid: opponentSpell!.uid,
-        eventPreviousState: {
-          location: "spellTrapZone",
-          controller: 1,
-          sequence: 1,
-          position: "faceUpAttack",
-          faceUp: true,
-        },
-        eventCurrentState: {
-          location: "graveyard",
-          controller: 1,
-          sequence: 1,
-          position: "faceUpAttack",
-          faceUp: true,
-        },
-        eventReason: duelReason.effect | duelReason.destroy,
-        eventReasonPlayer: 0,
-        eventReasonCardUid: heavyStorm!.uid,
-        eventReasonEffectId: 1,
-      },
-      {
-        eventName: "destroyed",
-        eventCode: 1029,
-        eventCardUid: ownBackrow!.uid,
-        eventUids: [ownBackrow!.uid, opponentTrap!.uid, opponentSpell!.uid],
-        eventPreviousState: {
-          location: "spellTrapZone",
-          controller: 0,
-          sequence: 0,
-          position: "faceDown",
-          faceUp: false,
-        },
-        eventCurrentState: {
-          location: "graveyard",
-          controller: 0,
-          sequence: 0,
-          position: "faceDown",
-          faceUp: true,
-        },
-        eventReason: duelReason.effect | duelReason.destroy,
-        eventReasonPlayer: 0,
-        eventReasonCardUid: heavyStorm!.uid,
-        eventReasonEffectId: 1,
+        id: "chain-2",
+        chainIndex: 1,
+        player: 0,
+        sourceUid: heavyStorm.uid,
+        effectId: "lua-1-1002",
+        activationLocation: "hand",
+        activationSequence: 0,
+        operationInfos: [{ category: 0x1, targetUids: destroyedUids, count: 4, player: 0, parameter: 0 }],
       },
     ]);
-    expect(restored.host.messages).not.toContain("heavy storm responder resolved");
+
+    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
+    expectCleanRestore(restoredChain);
+    expectRestoredLegalActions(restoredChain, 1);
+    expect(getLuaRestoreLegalActions(restoredChain, 1).some((candidate) => candidate.type === "activateEffect" && candidate.uid === responder.uid)).toBe(true);
+    const pass = getLuaRestoreLegalActions(restoredChain, 1).find((candidate) => candidate.type === "passChain");
+    expect(pass).toBeDefined();
+    applyLuaRestoreAndAssert(restoredChain, pass!);
+
+    expect(restoredChain.session.state.chain).toEqual([]);
+    for (const uid of [...destroyedUids, heavyStorm.uid]) {
+      expect(restoredChain.session.state.cards.find((card) => card.uid === uid)).toMatchObject({ location: "graveyard" });
+    }
+    expect(restoredChain.session.state.cards.find((card) => card.uid === monsterDecoy.uid)).toMatchObject({ location: "monsterZone", controller: 1, faceUp: true });
+    expect(restoredChain.session.state.cards.find((card) => card.uid === responder.uid)).toMatchObject({ location: "hand", controller: 1 });
+    expect(restoredChain.host.messages).not.toContain("heavy storm responder resolved");
+    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "destroyed")).toEqual([
+      destroyedEvent(ownSpell.uid, ownSpell.uid, heavyStorm.uid, 0, 0),
+      destroyedEvent(ownTrap.uid, ownTrap.uid, heavyStorm.uid, 0, 1),
+      destroyedEvent(opponentSpell.uid, opponentSpell.uid, heavyStorm.uid, 1, 0),
+      destroyedEvent(opponentTrap.uid, opponentTrap.uid, heavyStorm.uid, 1, 1),
+      { ...destroyedEvent(ownSpell.uid, ownSpell.uid, heavyStorm.uid, 0, 0), eventUids: destroyedUids },
+    ]);
   });
 });
+
+function destroyedEvent(eventCardUid: string, uid: string, sourceUid: string, controller: PlayerId, sequence: number) {
+  return {
+    eventName: "destroyed",
+    eventCode: 1029,
+    eventCardUid,
+    eventPreviousState: { location: "spellTrapZone", controller, sequence, position: "faceDown", faceUp: true },
+    eventCurrentState: { location: "graveyard", controller, sequence, position: "faceDown", faceUp: true },
+    eventReason: duelReason.effect | duelReason.destroy,
+    eventReasonPlayer: 0,
+    eventReasonCardUid: sourceUid,
+    eventReasonEffectId: 1,
+  };
+}
+
+function requireCard(session: DuelSession, code: string) {
+  const card = session.state.cards.find((candidate) => candidate.code === code);
+  expect(card).toBeDefined();
+  return card!;
+}
 
 function chainResponderScript(): string {
   return `
@@ -269,15 +159,24 @@ function chainResponderScript(): string {
   `;
 }
 
-function sortedUids(uids: string[]): string[] {
-  return [...uids].sort();
+function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
+  expect(restored.missingChainLimitRegistryKeys).toEqual([]);
 }
 
-function applyAndAssert(session: DuelSession, action: DuelAction) {
-  const response = applyResponse(session, action);
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
+function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {
+  const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
-  expect(response.legalActions).toEqual(getLegalActions(session, response.state.waitingFor!));
-  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
+  const waitingFor = restored.session.state.waitingFor;
+  if (waitingFor === undefined) return;
+  expect(response.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
-  return response;
 }
