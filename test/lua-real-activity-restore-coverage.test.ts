@@ -5,17 +5,18 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const activityKindCounts = {
-  customSpecialSummonOath: 1,
+  customSpecialSummonOath: 2,
   mulcharmyChainSummonCounters: 1,
 } satisfies Record<ActivityKind, number>;
 const activitySemanticVariantCounts = {
   movementSoloCustomSpecialSummonOath: 1,
   mulcharmySharedChainLimitAndDelayedDraw: 1,
+  supayDiscardSelfSummonSynchroOath: 1,
 } satisfies Record<ActivitySemanticVariant, number>;
 
 type ActivityKind = "customSpecialSummonOath" | "mulcharmyChainSummonCounters";
 
-type ActivitySemanticVariant = "movementSoloCustomSpecialSummonOath" | "mulcharmySharedChainLimitAndDelayedDraw";
+type ActivitySemanticVariant = "movementSoloCustomSpecialSummonOath" | "mulcharmySharedChainLimitAndDelayedDraw" | "supayDiscardSelfSummonSynchroOath";
 
 describe("Lua real activity restore coverage", () => {
   it("requires representative activity fixtures to assert clean Lua restore", () => {
@@ -109,6 +110,21 @@ function realScriptActivityFixtureFiles(): Array<{
         'location: "hand", controller: 0',
       ],
     },
+    {
+      file: "test/lua-real-script-supay-duskwalker-discard-summon-lock.test.ts",
+      kind: "customSpecialSummonOath",
+      requiredSnippets: [
+        "Duel.AddCustomActivityCounter(id,ACTIVITY_SPSUMMON,s.counterfilter)",
+        "Duel.GetCustomActivityCount(id,tp,ACTIVITY_SPSUMMON)==0",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD,c)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "activity === duelActivitySpecialSummon",
+        "special-summon-limit:not-type-extra:8192",
+        "target:not-original-type:8192",
+        "supay fusion extra special 0",
+        "supay synchro extra special 1",
+      ],
+    },
   ];
 }
 
@@ -158,6 +174,21 @@ function activitySemanticVariants(): Array<{
         "chain summoner hand after summon 0",
       ],
     },
+    {
+      file: "test/lua-real-script-supay-duskwalker-discard-summon-lock.test.ts",
+      kind: "supayDiscardSelfSummonSynchroOath",
+      requiredSnippets: [
+        'const supayCode = "17315396"',
+        "restores discard-cost self summon, optional listed summon, and Extra Deck Synchro oath",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD,c)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "record.player === 0 && record.activity === duelActivitySpecialSummon",
+        'luaTargetDescriptor: "special-summon-limit:not-type-extra:8192"',
+        'luaTargetDescriptor: "target:not-original-type:8192"',
+        '"supay fusion extra special 0"',
+        '"supay synchro extra special 1"',
+      ],
+    },
   ];
 }
 
@@ -170,6 +201,7 @@ function countActivitySemanticVariants(fixtures: Array<{ kind: ActivitySemanticV
     {
       movementSoloCustomSpecialSummonOath: 0,
       mulcharmySharedChainLimitAndDelayedDraw: 0,
+      supayDiscardSelfSummonSynchroOath: 0,
     },
   );
 }

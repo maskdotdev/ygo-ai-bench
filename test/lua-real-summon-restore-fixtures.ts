@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 288;
+export const realScriptSummonFixtureCount = 289;
 export const summonProcedureFixtureCount = 33;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -31,7 +31,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 19,
   pendulum: 20,
   ritual: 26,
-  summon: 140,
+  summon: 141,
   synchro: 20,
   xyz: 16,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -121,6 +121,7 @@ export const summonSemanticVariantCounts = {
   geminiReviveLeaveFieldTargetDestruction: 1,
   graveSelfBanishDeckSummonDarkOath: 1,
   summonSuccessWarriorHandSummonTargetLock: 1,
+  discardSelfSummonSynchroOath: 1,
 } satisfies Record<SummonSemanticVariant, number>;
 
 export type SummonUnionProcedureKind =
@@ -147,7 +148,7 @@ export type SelfTributeZoneSpecialSummonKind =
   | "selfTributeFreesMonsterZone"
   | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
-  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction" | "graveSelfBanishDeckSummonDarkOath" | "summonSuccessWarriorHandSummonTargetLock";
+  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction" | "graveSelfBanishDeckSummonDarkOath" | "summonSuccessWarriorHandSummonTargetLock" | "discardSelfSummonSynchroOath";
 export type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -964,6 +965,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     { file: "test/lua-real-script-il-blud-gemini-zombie-revive-leave-destroy.test.ts", kind: "geminiReviveLeaveFieldTargetDestruction" as const },
     { file: "test/lua-real-script-orcust-harp-horror-self-banish-deck-summon-lock.test.ts", kind: "graveSelfBanishDeckSummonDarkOath" as const },
     { file: "test/lua-real-script-marauding-captain-summon-warrior-target-lock.test.ts", kind: "summonSuccessWarriorHandSummonTargetLock" as const },
+    { file: "test/lua-real-script-supay-duskwalker-discard-summon-lock.test.ts", kind: "discardSelfSummonSynchroOath" as const },
   ];
 }
 
@@ -1001,6 +1003,7 @@ export function countSummonSemanticVariants(
       geminiReviveLeaveFieldTargetDestruction: 0,
       graveSelfBanishDeckSummonDarkOath: 0,
       summonSuccessWarriorHandSummonTargetLock: 0,
+      discardSelfSummonSynchroOath: 0,
     },
   );
 }
@@ -1039,6 +1042,7 @@ export function groupSummonSemanticVariantFiles(
       geminiReviveLeaveFieldTargetDestruction: [],
       graveSelfBanishDeckSummonDarkOath: [],
       summonSuccessWarriorHandSummonTargetLock: [],
+      discardSelfSummonSynchroOath: [],
     },
   );
 }
