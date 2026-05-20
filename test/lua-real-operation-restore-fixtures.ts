@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 155;
+export const operationFixtureCount = 156;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -78,6 +78,7 @@ export const operationKindCounts = {
   selfEquipFromHand: 1,
   selectEffectStat: 1,
   selectEffectStatDestroyedToGrave: 1,
+  specialSearchMaterialDamage: 1,
   summonDelayedStatDestroy: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
   spellDraw: 1,
@@ -179,6 +180,7 @@ export type OperationKind =
   | "selfEquipFromHand"
   | "selectEffectStat"
   | "selectEffectStatDestroyedToGrave"
+  | "specialSearchMaterialDamage"
   | "summonDelayedStatDestroy"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "spellDraw"
@@ -860,6 +862,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "sentToHand"',
         "operationInfos: [{ category: 0x8",
         "eventReason: duelReason.fusion",
+      ],
+    },
+    {
+      file: "test/lua-real-script-tamtam-special-search-fusion-material-damage.test.ts",
+      kind: "specialSearchMaterialDamage",
+      required: [
+        "restores special-summon Polymerization search and Fusion-material ATK damage trigger",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(s.thfilter),tp,LOCATION_DECK|LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "e2:SetCategory(CATEGORY_DAMAGE+CATEGORY_ATKCHANGE)",
+        "e2:SetCode(EVENT_BE_MATERIAL)",
+        "return r==REASON_FUSION and e:GetHandler():IsLocation(LOCATION_GRAVE)",
+        "Duel.SelectTarget(tp,s.damfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "tc:UpdateAttack(-500,RESET_EVENT|RESETS_STANDARD,e:GetHandler())==-500",
+        "Duel.Damage(1-tp,500,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "usedAsMaterial"',
+        'eventName: "damageDealt"',
+        "currentAttack(resolvedMelodious, restoredMaterialTrigger.session.state)).toBe(1100)",
       ],
     },
     {
@@ -2023,6 +2048,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selfEquipFromHand: 0,
       selectEffectStat: 0,
       selectEffectStatDestroyedToGrave: 0,
+      specialSearchMaterialDamage: 0,
       summonDelayedStatDestroy: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
       spellDraw: 0,
