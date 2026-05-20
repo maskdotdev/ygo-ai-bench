@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 9;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 8;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 10;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 9;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 1,
@@ -15,6 +15,7 @@ const summonProcedureKindCounts = {
   handBothFieldsGimmickOnlyProcedure: 1,
   handOpponentCountProcedure: 1,
   handOwnFaceupLevelOrLinkOpenZoneProcedure: 1,
+  handOpponentSpellTrapOrMstProcedure: 1,
   handSendCostProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
 const summonProcedureSemanticVariantCounts = {
@@ -26,6 +27,7 @@ const summonProcedureSemanticVariantCounts = {
   magnetDollBothFieldsGimmickOnlyHandProcedure: 1,
   megarockDragonGraveBanishStatProcedure: 1,
   pankratopsOpponentControlsMoreHandProcedure: 1,
+  radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 1,
   sprightRedLevelOrLinkOpenZoneProcedure: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
 
@@ -38,6 +40,7 @@ type SummonProcedureKind =
   | "handBothFieldsGimmickOnlyProcedure"
   | "handOpponentCountProcedure"
   | "handOwnFaceupLevelOrLinkOpenZoneProcedure"
+  | "handOpponentSpellTrapOrMstProcedure"
   | "handSendCostProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
@@ -48,6 +51,7 @@ type SummonProcedureSemanticVariant =
   | "magnetDollBothFieldsGimmickOnlyHandProcedure"
   | "megarockDragonGraveBanishStatProcedure"
   | "pankratopsOpponentControlsMoreHandProcedure"
+  | "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch"
   | "sprightRedLevelOrLinkOpenZoneProcedure";
 
 const summonProcedureFixtures = [
@@ -184,6 +188,26 @@ const summonProcedureFixtures = [
     ],
   },
   {
+    file: "test/lua-real-script-radiant-typhoon-eldam-special-summon-procedure-search.test.ts",
+    kind: "handOpponentSpellTrapOrMstProcedure",
+    required: [
+      "opponent-field/MST-gated hand Special Summon procedure and summon-success Deck search",
+      'const eldamCode = "54143349"',
+      'caseKind: "blocked"',
+      'caseKind: "openNoOpponentSpell"',
+      'caseKind: "openWithMst"',
+      'action.type === "specialSummonProcedure"',
+      "Duel.IsExistingMatchingCard(Card.IsCode,tp,LOCATION_GRAVE,0,1,nil,CARD_MYSTICAL_SPACE_TYPHOON)",
+      "not Duel.IsExistingMatchingCard(Card.IsSpellTrap,tp,0,LOCATION_ONFIELD,1,nil)",
+      "return ((c:IsSetCard(SET_RADIANT_TYPHOON) and c:IsMonster()) or c:IsCode(CARD_MYSTICAL_SPACE_TYPHOON)) and c:IsAbleToHand() and not c:IsCode(id)",
+      "expectRestoredLegalActions(restoredProcedure, 0)",
+      "applyRestoredActionAndAssert(restoredProcedure, procedure!)",
+      'eventName: "specialSummoned"',
+      'eventName: "sentToHandConfirmed"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
     file: "test/lua-real-script-megarock-dragon-special-summon-procedure.test.ts",
     kind: "graveBanishCostStatProcedure",
     required: [
@@ -269,6 +293,7 @@ function countSummonProcedureKinds(
       deckTwoMaterialShufflePierceProcedure: 0,
       handOwnFaceupAttributeOpenZoneProcedure: 0,
       handOwnFaceupLevelOrLinkOpenZoneProcedure: 0,
+      handOpponentSpellTrapOrMstProcedure: 0,
       handReleaseEquipTurnCounterProcedure: 0,
       handBothFieldsGimmickOnlyProcedure: 0,
       handOpponentCountProcedure: 0,
@@ -365,6 +390,19 @@ function summonProcedureSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-radiant-typhoon-eldam-special-summon-procedure-search.test.ts",
+      kind: "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch",
+      required: [
+        'const eldamCode = "54143349"',
+        "restores its opponent-field/MST-gated hand Special Summon procedure and summon-success Deck search",
+        'caseKind: "blocked"',
+        'caseKind: "openNoOpponentSpell"',
+        'caseKind: "openWithMst"',
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHandConfirmed"',
+      ],
+    },
+    {
       file: "test/lua-real-script-spright-red-release-link2-negate.test.ts",
       kind: "sprightRedLevelOrLinkOpenZoneProcedure",
       required: [
@@ -452,6 +490,7 @@ function countSummonProcedureSemanticVariants(
       magnetDollBothFieldsGimmickOnlyHandProcedure: 0,
       megarockDragonGraveBanishStatProcedure: 0,
       pankratopsOpponentControlsMoreHandProcedure: 0,
+      radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 0,
       sprightRedLevelOrLinkOpenZoneProcedure: 0,
     },
   );
