@@ -1,13 +1,13 @@
 import path from "node:path";
 
-export const operationFixtureCount = 99;
+export const operationFixtureCount = 100;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
   controlSwap: 1,
   banishedToGraveReturn: 1,
-  banishedToHand: 1,
+  banishedToHand: 2,
   banishedToDeckSelfSummon: 1,
   banishedToSpecialSummon: 1,
   chainNegateDiscardDestroy: 1,
@@ -245,6 +245,20 @@ export function operationFixtureFiles(): Array<{
         'location: "banished"',
         'location: "hand"',
         "eventReasonEffectId: 2",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dragoncarnation-banished-to-hand.test.ts",
+      kind: "banishedToHand",
+      required: [
+        "restores face-up banished Dragon targeting through GetFirstTarget and confirms it to hand",
+        "category: 0x8",
+        "parameter: 0",
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        'location: "banished"',
+        'location: "hand"',
         "host.messages).not.toContain",
       ],
     },
