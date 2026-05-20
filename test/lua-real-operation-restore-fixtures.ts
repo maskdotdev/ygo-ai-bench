@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 144;
+export const operationFixtureCount = 145;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -47,6 +47,7 @@ export const operationKindCounts = {
   flipDiscardBattleStat: 1,
   groupDestroy: 10,
   groupDestroyDamageStatLp: 1,
+  handStatBoost: 1,
   groupToHand: 2,
   graveTargetToHand: 2,
   graveToDeckBottomDraw: 1,
@@ -139,6 +140,7 @@ export type OperationKind =
   | "flipDiscardBattleStat"
   | "groupDestroy"
   | "groupDestroyDamageStatLp"
+  | "handStatBoost"
   | "groupToHand"
   | "graveTargetToHand"
   | "graveToDeckBottomDraw"
@@ -276,6 +278,24 @@ export function operationFixtureFiles(): Array<{
         "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
         "currentAttack(restoredAttacker, restoredBattleTrigger.session.state)).toBe(1600)",
         "currentDefense(restoredAttacker, restoredBattleTrigger.session.state)).toBe(1300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-golden-gearbox-karakuri-stat.test.ts",
+      kind: "handStatBoost",
+      required: [
+        "restores Damage Step target selection into Karakuri ATK/DEF boosts",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "return c:IsFaceup() and c:IsSetCard(SET_KARAKURI)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(500)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetValue(1500)",
+        "currentAttack(boosted, restoredChain.session.state)).toBe(2000)",
+        "currentDefense(boosted, restoredChain.session.state)).toBe(2500)",
       ],
     },
     {
@@ -1778,6 +1798,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fusionDeckMaterials: 0,
       groupDestroy: 0,
       groupDestroyDamageStatLp: 0,
+      handStatBoost: 0,
       groupLevelFinal: 0,
       groupToHand: 0,
       graveTargetToHand: 0,
