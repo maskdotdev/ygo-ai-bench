@@ -71,6 +71,10 @@ function eventContextFromSource(state: DuelState, source: DuelEffectEventSource)
 
 function liveQuickEffectEventContext(state: DuelState, effect: DuelEffectDefinition): DuelEffectEventContext | undefined {
   if (!canUseLiveEventHistoryForQuickEffect(state, effect.triggerEvent)) return undefined;
+  if (isGenericLatestEventQuickContext(effect.triggerEvent)) {
+    const event = latestNonChainLifecycleEvent(state);
+    return event && eventSourceMatchesTriggerEffect(event, effect) ? eventContextFromSource(state, event) : undefined;
+  }
   const attack = state.pendingBattle ?? state.currentAttack;
   for (let index = state.eventHistory.length - 1; index >= 0; index--) {
     const event = state.eventHistory[index];
@@ -82,11 +86,37 @@ function liveQuickEffectEventContext(state: DuelState, effect: DuelEffectDefinit
 }
 
 function canUseLiveEventHistoryForQuickEffect(state: DuelState, eventName: DuelEventName | undefined): boolean {
-  if (eventName !== "attackDeclared" && eventName !== "battleDestroyed") return false;
+  if (eventName !== "attackDeclared" && eventName !== "battleDestroyed" && !isGenericLatestEventQuickContext(eventName)) return false;
   const kind = currentBattleWindowKind(state);
   if (eventName === "battleDestroyed") return state.phase === "battle" && (kind === "endDamageStep" || kind === undefined);
+  if (isGenericLatestEventQuickContext(eventName)) return kind === undefined && state.chain.length === 0 && state.pendingTriggers.length === 0;
   if (!(state.pendingBattle ?? state.currentAttack)) return false;
   return kind === "attackDeclaration" || kind === "attackTargetConfirmation" || kind === "attackNegationResponse";
+}
+
+function isGenericLatestEventQuickContext(eventName: DuelEventName | undefined): boolean {
+  return eventName === "destroyed";
+}
+
+function latestNonChainLifecycleEvent(state: DuelState): DuelEventRecord | undefined {
+  for (let index = state.eventHistory.length - 1; index >= 0; index--) {
+    const event = state.eventHistory[index];
+    if (!event || isChainLifecycleEvent(event.eventName) || isMovementAftermathEvent(event.eventName)) continue;
+    return event;
+  }
+  return undefined;
+}
+
+function isChainLifecycleEvent(eventName: DuelEventName): boolean {
+  return eventName === "chainActivating" ||
+    eventName === "chaining" ||
+    eventName === "chainSolving" ||
+    eventName === "chainSolved" ||
+    eventName === "chainEnded";
+}
+
+function isMovementAftermathEvent(eventName: DuelEventName): boolean {
+  return eventName === "leftField" || eventName === "moved" || eventName === "sentToGraveyard";
 }
 
 function eventSourceMatchesTriggerEffect(source: ChainLink | DuelEventRecord, effect: DuelEffectDefinition): source is (ChainLink | DuelEventRecord) & { eventName: DuelEventName } {
