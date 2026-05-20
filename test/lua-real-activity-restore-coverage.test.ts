@@ -5,10 +5,11 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const activityKindCounts = {
-  customSpecialSummonOath: 2,
+  customSpecialSummonOath: 3,
   mulcharmyChainSummonCounters: 1,
 } satisfies Record<ActivityKind, number>;
 const activitySemanticVariantCounts = {
+  chronomalySummonSuccessTargetReviveOath: 1,
   movementSoloCustomSpecialSummonOath: 1,
   mulcharmySharedChainLimitAndDelayedDraw: 1,
   supayDiscardSelfSummonSynchroOath: 1,
@@ -16,7 +17,7 @@ const activitySemanticVariantCounts = {
 
 type ActivityKind = "customSpecialSummonOath" | "mulcharmyChainSummonCounters";
 
-type ActivitySemanticVariant = "movementSoloCustomSpecialSummonOath" | "mulcharmySharedChainLimitAndDelayedDraw" | "supayDiscardSelfSummonSynchroOath";
+type ActivitySemanticVariant = "chronomalySummonSuccessTargetReviveOath" | "movementSoloCustomSpecialSummonOath" | "mulcharmySharedChainLimitAndDelayedDraw" | "supayDiscardSelfSummonSynchroOath";
 
 describe("Lua real activity restore coverage", () => {
   it("requires representative activity fixtures to assert clean Lua restore", () => {
@@ -125,6 +126,19 @@ function realScriptActivityFixtureFiles(): Array<{
         "supay synchro extra special 1",
       ],
     },
+    {
+      file: "test/lua-real-script-chronomaly-sphinx-summon-target-oath.test.ts",
+      kind: "customSpecialSummonOath",
+      requiredSnippets: [
+        "Duel.AddCustomActivityCounter(id,ACTIVITY_SPSUMMON,s.counterfilter)",
+        "Duel.GetCustomActivityCount(id,tp,ACTIVITY_SPSUMMON)==0",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "activity === duelActivitySpecialSummon",
+        "target:not-setcode",
+        "off-set hand probe resolved",
+        "chronomaly hand probe resolved",
+      ],
+    },
   ];
 }
 
@@ -189,6 +203,19 @@ function activitySemanticVariants(): Array<{
         '"supay synchro extra special 1"',
       ],
     },
+    {
+      file: "test/lua-real-script-chronomaly-sphinx-summon-target-oath.test.ts",
+      kind: "chronomalySummonSuccessTargetReviveOath",
+      requiredSnippets: [
+        'const sphinxCode = "65591858"',
+        "restores summon-success Graveyard target revive and Chronomaly Special Summon oath",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "record.player === 0 && record.activity === duelActivitySpecialSummon",
+        "luaTargetDescriptor: `target:not-setcode:${setChronomaly}`",
+        "expect(restoredLocked.host.messages).not.toContain(\"off-set hand probe resolved\")",
+        "expect(restoredAfterBlocked.host.messages).toContain(\"chronomaly hand probe resolved\")",
+      ],
+    },
   ];
 }
 
@@ -199,6 +226,7 @@ function countActivitySemanticVariants(fixtures: Array<{ kind: ActivitySemanticV
       return counts;
     },
     {
+      chronomalySummonSuccessTargetReviveOath: 0,
       movementSoloCustomSpecialSummonOath: 0,
       mulcharmySharedChainLimitAndDelayedDraw: 0,
       supayDiscardSelfSummonSynchroOath: 0,

@@ -1,14 +1,16 @@
-export const summonSuccessTargetSpecialSummonFixtureCount = 3;
+export const summonSuccessTargetSpecialSummonFixtureCount = 4;
 
 export const summonSuccessTargetSpecialSummonKindCounts = {
   graveyardTargetDefenseRevive: 1,
   deckOrGraveNecroValleySummon: 1,
+  summonSuccessActivityOathTargetRevive: 1,
   specialSummonSuccessTrapTargetRevive: 1,
 } satisfies Record<SummonSuccessTargetSpecialSummonKind, number>;
 
 export type SummonSuccessTargetSpecialSummonKind =
   | "deckOrGraveNecroValleySummon"
   | "graveyardTargetDefenseRevive"
+  | "summonSuccessActivityOathTargetRevive"
   | "specialSummonSuccessTrapTargetRevive";
 
 export function realScriptSummonSuccessTargetSpecialSummonFixtureSnippets(): Array<{
@@ -57,6 +59,26 @@ export function realScriptSummonSuccessTargetSpecialSummonFixtureSnippets(): Arr
       "eventReason).toBe(duelReason.summon | duelReason.specialSummon)",
     ],
   }, {
+    file: "test/lua-real-script-chronomaly-sphinx-summon-target-oath.test.ts",
+    kind: "summonSuccessActivityOathTargetRevive",
+    required: [
+      "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+      "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+      "Duel.AddCustomActivityCounter(id,ACTIVITY_SPSUMMON,s.counterfilter)",
+      "Duel.GetCustomActivityCount(id,tp,ACTIVITY_SPSUMMON)==0",
+      "Duel.IsExistingTarget(s.filter,tp,LOCATION_GRAVE,0,1,nil,e,tp)",
+      "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+      "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+      "Duel.GetFirstTarget()",
+      "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+      'eventName: "normalSummoned"',
+      'eventTriggerTiming: "when"',
+      "triggerBucket: \"turnOptional\"",
+      'eventName: "specialSummoned"',
+      "target:not-setcode",
+      "activity === duelActivitySpecialSummon",
+    ],
+  }, {
     file: "test/lua-real-script-nimble-beaver-necrovalley-summon.test.ts",
     kind: "deckOrGraveNecroValleySummon",
     required: [
@@ -82,5 +104,5 @@ export function countSummonSuccessTargetSpecialSummonKinds(
   return files.reduce<Record<SummonSuccessTargetSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { deckOrGraveNecroValleySummon: 0, graveyardTargetDefenseRevive: 0, specialSummonSuccessTrapTargetRevive: 0 });
+  }, { deckOrGraveNecroValleySummon: 0, graveyardTargetDefenseRevive: 0, summonSuccessActivityOathTargetRevive: 0, specialSummonSuccessTrapTargetRevive: 0 });
 }
