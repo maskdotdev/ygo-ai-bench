@@ -433,7 +433,7 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
     targetPlayer === undefined ||
     !destination ||
     !hasOpenFieldZone(session, targetPlayer, destination, zoneMask, uid, requestedSequence) ||
-    !canMoveDuelCardToLocation(session.state, uid, destination, duelReason.effect) ||
+    !canMoveToFieldDestination(session, card, destination, targetPlayer, requestedSequence) ||
     luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)
   ) {
     setOperatedUids(hostState, []);
@@ -445,10 +445,17 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
   beginLuaOperationMoveStep(session, hostState);
   try {
     const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
-    const moved = moveDuelCardWithRedirects(session.state, uid, destination, targetPlayer, duelReason.effect, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.effect, reasonPlayer));
+    const moved = card.location === destination
+      ? moveDuelCard(session.state, uid, destination, targetPlayer, duelReason.effect, reasonPlayer)
+      : moveDuelCardWithRedirects(session.state, uid, destination, targetPlayer, duelReason.effect, reasonPlayer, luaEffectReasonPayload(hostState, duelReason.effect, reasonPlayer));
     if (requestedPosition) applyLuaMovePosition(moved, requestedPosition);
     applyFieldZoneSequence(session, moved, destination, requestedSequence, preservedSequences);
+    assignReasonCard(moved, hostState);
     const changed = didMove(moved, before);
+    if (changed && before.controller !== moved.controller) {
+      pushDuelLog(session.state, "control", targetPlayer, moved.name, `Moved to player ${targetPlayer}'s field`);
+      collectLuaMoveEvent(session, "controlChanged", moved);
+    }
     setOperatedUids(hostState, changed ? [uid] : []);
     finishLuaOperationMoveStep(hostState, changed);
     lua.lua_pushinteger(L, changed ? 1 : 0);
@@ -459,6 +466,17 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
     lua.lua_pushinteger(L, 0);
     return 1;
   }
+}
+
+function canMoveToFieldDestination(
+  session: DuelSession,
+  card: DuelCardInstance,
+  destination: "monsterZone" | "spellTrapZone",
+  targetPlayer: PlayerId,
+  requestedSequence: number | undefined,
+): boolean {
+  if (card.location !== destination) return canMoveDuelCardToLocation(session.state, card.uid, destination, duelReason.effect);
+  return card.controller !== targetPlayer || requestedSequence !== undefined && card.sequence !== requestedSequence;
 }
 
 function hasOpenFieldZone(

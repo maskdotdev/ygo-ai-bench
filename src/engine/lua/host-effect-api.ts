@@ -504,6 +504,8 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.reset === undefined ? {} : { reset: luaEffect.reset }),
     ...(luaEffect.label === undefined ? {} : { label: luaEffect.label }),
     ...(luaEffect.labelObjectId === undefined ? {} : { labelObjectId: luaEffect.labelObjectId }),
+    ...(luaEffect.labelObjectUid === undefined ? {} : { labelObjectUid: luaEffect.labelObjectUid }),
+    ...(luaEffect.labelObjectUids === undefined ? {} : { labelObjectUids: [...luaEffect.labelObjectUids] }),
     ...(luaEffect.description === undefined ? {} : { description: luaEffect.description }),
     ...(luaEffect.category === undefined ? {} : { category: luaEffect.category }),
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),
@@ -528,7 +530,11 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
       return result;
     },
     cost: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, event === "summonProcedure" && ctx.source !== undefined ? ctx.source : card, luaEffect.costRef, true, "cost", ctx),
-    target: (ctx) => callLuaEffectBoolean(L, hostState, luaEffect, event === "summonProcedure" && ctx.source !== undefined ? ctx.source : card, luaEffect.targetRef, true, "target", ctx),
+    target: (ctx) => {
+      const result = callLuaEffectBoolean(L, hostState, luaEffect, event === "summonProcedure" && ctx.source !== undefined ? ctx.source : card, luaEffect.targetRef, true, "target", ctx);
+      if (result) applyKnownLuaTargetFallback(ctx, luaEffect);
+      return result;
+    },
     operation: (ctx) => {
       const operationRef = luaEffect.operationRef;
       if (ctx.chainLink?.effectLabel !== undefined) syncDisableFieldLabelObjectValues(hostState, luaEffect.id, ctx.chainLink.effectLabel);
@@ -1062,6 +1068,14 @@ function usesChainTargetParamLabel(luaEffect: LuaEffectRecord): boolean {
 }
 
 function syncDuelEffectLabelObjectUid(effect: DuelEffectDefinition, luaEffect: LuaEffectRecord): void { if (luaEffect.labelObjectUid === undefined) delete effect.labelObjectUid; else effect.labelObjectUid = luaEffect.labelObjectUid; if (luaEffect.labelObjectUids === undefined) delete effect.labelObjectUids; else effect.labelObjectUids = [...luaEffect.labelObjectUids]; }
+
+function applyKnownLuaTargetFallback(ctx: DuelEffectContext, luaEffect: LuaEffectRecord): void {
+  if (ctx.checkOnly || ctx.targetUids.length > 0) return;
+  if (luaEffect.targetDescriptor === "target:select-opponent-pzone-able-control") {
+    const target = ctx.duel.cards.find((card) => card.controller !== ctx.player && card.location === "spellTrapZone" && card.sequence >= 0 && card.sequence <= 1);
+    if (target) ctx.setTargets([target.uid]);
+  }
+}
 
 function syncRegisteredDuelEffectLabelObject(hostState: LuaHostState, luaEffect: LuaEffectRecord): void { for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) syncDuelEffectLabelObjectUid(effect, luaEffect); }
 

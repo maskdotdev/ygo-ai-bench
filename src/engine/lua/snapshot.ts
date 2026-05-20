@@ -653,6 +653,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) ||
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
+        isKnownZeroParadoxDelayedScaleDestroyEffect(effect) ||
         isKnownLevelNormalEndPhaseDestroyEffect(effect) ||
         isKnownDelayedBattleDestroyMarkerEffect(effect) ||
         isKnownDelayedBattleDestroyPhaseEffect(effect) ||
@@ -677,6 +678,35 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
 }
 
 function isKnownChangeBattleStatToDefenseEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 198 && effect.luaValueDescriptor === "stat:current-defense" && effect.luaTargetDescriptor === "target:source-or-battle-target" && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange?.[0] === 4 && effect.targetRange?.[1] === 4 && effect.reset !== undefined; }
+function isKnownZeroParadoxDelayedScaleDestroyEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:97417863:")) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.sourceUid !== undefined &&
+    effect.labelObjectUid !== undefined &&
+    effect.reset?.flags !== undefined &&
+    effect.reset.count === 2;
+}
+function zeroParadoxDelayedScaleDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const targetUid = effect.labelObjectUid;
+    const target = targetUid ? ctx.duel.cards.find((card) => card.uid === targetUid) : undefined;
+    if (!target) return;
+    try {
+      destroyDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
+        eventReasonCardUid: effect.sourceUid,
+        ...effectReasonIdPayload(effect),
+      });
+    } catch {
+      // EDOPro-style delayed operations ignore targets that can no longer be destroyed.
+    }
+  };
+}
+function effectReasonIdPayload(effect: SerializedDuelEffect): { eventReasonEffectId: number } | Record<string, never> {
+  const id = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(id) ? { eventReasonEffectId: id } : {};
+}
 function isKnownChangeCodeEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 114 && effect.value !== undefined && effect.sourceUid !== undefined && effect.targetRange === undefined; }
 function isKnownChangeTypeEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 117 && effect.value !== undefined && effect.sourceUid !== undefined && effect.targetRange === undefined; }
 function isKnownDharcProcedurePierceEffect(effect: SerializedDuelEffect): boolean { return Boolean(effect.registryKey?.startsWith(`lua:${luaFamiliarPossessedDharcCode}:`)) && effect.event === "continuous" && effect.code === luaEffectPierce && effect.sourceUid !== undefined && hasDefaultLuaFieldRange(effect) && effect.reset?.flags === 0xff1000; }
@@ -1006,6 +1036,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) return engraverOfTheMarkDelayedDestroyOperation(effect);
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
+  if (isKnownZeroParadoxDelayedScaleDestroyEffect(effect)) return zeroParadoxDelayedScaleDestroyOperation(effect);
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return levelNormalEndPhaseDestroyOperation(effect);
   if (isKnownDelayedBattleDestroyPhaseEffect(effect)) return delayedBattleDestroyPhaseOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);

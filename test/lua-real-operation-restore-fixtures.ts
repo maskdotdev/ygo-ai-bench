@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 130;
+export const operationFixtureCount = 131;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -53,6 +53,7 @@ export const operationKindCounts = {
   opponentHandToDeck: 1,
   overlayAttach: 1,
   positionSet: 1,
+  pzoneControlDelayedDestroy: 1,
   pzoneDestroySearch: 1,
   raidraptorBattleDestroyDamage: 1,
   releaseDamage: 3,
@@ -131,6 +132,7 @@ export type OperationKind =
   | "opponentHandToDeck"
   | "overlayAttach"
   | "positionSet"
+  | "pzoneControlDelayedDestroy"
   | "pzoneDestroySearch"
   | "raidraptorBattleDestroyDamage"
   | "releaseDamage"
@@ -1431,6 +1433,28 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-zero-paradox-pzone-control-delayed-destroy.test.ts",
+      kind: "pzoneControlDelayedDestroy",
+      required: [
+        "restores PZone self summon, opponent scale MoveToField, flag, and delayed destroy registration",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_CONTROL)",
+        "e1:SetRange(LOCATION_PZONE)",
+        "Duel.SelectTarget(tp,Card.IsAbleToChangeControler,tp,0,LOCATION_PZONE,1,1,nil)",
+        "Duel.SpecialSummon(c,0,tp,tp,true,true,POS_FACEUP)",
+        "Duel.CheckPendulumZones(tp)",
+        "Duel.MoveToField(tc,tp,tp,LOCATION_PZONE,POS_FACEUP,true)",
+        "tc:RegisterFlagEffect(id,RESET_EVENT|RESETS_STANDARD,0,1)",
+        "e1:SetCode(EVENT_PHASE+PHASE_END)",
+        "e1:SetLabel(Duel.GetTurnCount())",
+        "Duel.RegisterEffect(e1,tp)",
+        'luaTargetDescriptor: "target:select-opponent-pzone-able-control"',
+        "flagEffects.filter((flag) => flag.ownerId === opponentScale.uid)",
+        'eventName: "specialSummoned"',
+        'eventName: "controlChanged"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -1506,6 +1530,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       opponentHandToDeck: 0,
       overlayAttach: 0,
       positionSet: 0,
+      pzoneControlDelayedDestroy: 0,
       pzoneDestroySearch: 0,
       raidraptorBattleDestroyDamage: 0,
       releaseDamage: 0,

@@ -12,6 +12,10 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   if (/\breturn\s+e\s*:\s*GetLabelObject\s*\(\s*\)\s*~=\s*se\b/.test(snippet)) return "special-summon-limit:not-label-object-effect";
+  if (
+    /\bDuel\s*\.\s*SelectTarget\s*\(\s*tp\s*,\s*Card\s*\.\s*IsAbleToChangeControler\s*,\s*tp\s*,\s*0\s*,\s*LOCATION_PZONE\s*,\s*1\s*,\s*1\s*,\s*nil\s*\)/.test(snippet) &&
+    /\bDuel\s*\.\s*SetOperationInfo\s*\(\s*0\s*,\s*CATEGORY_CONTROL\s*,\s*\w+\s*,\s*1\s*,\s*tp\s*,\s*0\s*\)/.test(snippet)
+  ) return "target:select-opponent-pzone-able-control";
   const params = luaFunctionParams(snippet);
   const cardParam = params?.[1] ?? (params?.length === 1 ? params[0] : undefined);
   if (!cardParam) return undefined;
