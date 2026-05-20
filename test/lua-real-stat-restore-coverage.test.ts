@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 27;
+const statFixtureCount = 28;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -25,6 +25,7 @@ const statKindCounts = {
   staticAttackAndExtraAttack: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
+  targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
@@ -33,6 +34,7 @@ const statSemanticVariantCounts = {
   aojGaradholgDuelBattleTargetAttributeStat: 1,
   bladeflyFieldAttributeAttackUpdate: 1,
   bootUpSoldierGadgetConditionAttackUpdate: 1,
+  borreloadChainLimitAttackDefenseDrop: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
@@ -57,13 +59,14 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
   | "bladeflyFieldAttributeAttackUpdate"
   | "bootUpSoldierGadgetConditionAttackUpdate"
+  | "borreloadChainLimitAttackDefenseDrop"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
@@ -376,6 +379,19 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-borreload-chain-limit-atk-def.test.ts",
+      kind: "targetedQuickAttackDefenseUpdateChainLimit",
+      required: [
+        'const borreloadCode = "31833038"',
+        "restores Borreload Dragon's target stat drop and response-matches-chain-player chain limit",
+        "Duel.SetChainLimit(function(_e,_ep,_tp) return _tp==_ep end)",
+        "registryKey: `lua-chain-limit:${borreloadCode}:0:link:known:closure:response-matches-chain-player`",
+        "currentAttack(restoredTarget, restoredResponse.session.state)).toBe(1000)",
+        "currentDefense(restoredTarget, restoredResponse.session.state)).toBe(1000)",
+        "battleDamage[1]).toBe(2000)",
+      ],
+    },
+    {
       file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
       kind: "targetedPreDamageFinalAttack",
       required: [
@@ -505,6 +521,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       targetedDamageStepAttackUpdate: 0,
       targetedDamageStepDefenseUpdate: 0,
       targetedPreDamageFinalAttack: 0,
+      targetedQuickAttackDefenseUpdateChainLimit: 0,
     },
   );
 }
@@ -563,6 +580,17 @@ function statSemanticVariants(): Array<{
         "restores aux.FaceupFilter SetCard conditional single-range ATK updates into battle damage",
         "condition:controller-has-faceup-setcode:81",
         "players[1].lifePoints).toBe(7500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-borreload-chain-limit-atk-def.test.ts",
+      kind: "borreloadChainLimitAttackDefenseDrop",
+      required: [
+        'const borreloadCode = "31833038"',
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetChainLimit(function(_e,_ep,_tp) return _tp==_ep end)",
+        "host.messages).not.toContain(\"borreload opponent responder resolved\")",
       ],
     },
     {
@@ -808,6 +836,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       aojGaradholgDuelBattleTargetAttributeStat: 0,
       bladeflyFieldAttributeAttackUpdate: 0,
       bootUpSoldierGadgetConditionAttackUpdate: 0,
+      borreloadChainLimitAttackDefenseDrop: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
