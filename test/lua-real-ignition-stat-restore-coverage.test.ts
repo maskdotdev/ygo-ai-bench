@@ -4,15 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const ignitionStatFixtureCount = 4;
+const ignitionStatFixtureCount = 5;
 const ignitionStatKindCounts = {
   groupUpdateLevel: 1,
   noTurnResetAttackLevelBoost: 1,
+  selfToGraveTargetUpdateLevel: 1,
   summedLevelChange: 1,
   targetLevelCopy: 1,
 } satisfies Record<IgnitionStatKind, number>;
 
-type IgnitionStatKind = "groupUpdateLevel" | "noTurnResetAttackLevelBoost" | "summedLevelChange" | "targetLevelCopy";
+type IgnitionStatKind = "groupUpdateLevel" | "noTurnResetAttackLevelBoost" | "selfToGraveTargetUpdateLevel" | "summedLevelChange" | "targetLevelCopy";
 type IgnitionStatFixture = { file: string; kind: IgnitionStatKind; required: string[] };
 
 describe("Lua real ignition stat restore coverage", () => {
@@ -30,7 +31,6 @@ describe("Lua real ignition stat restore coverage", () => {
         || !text.includes("getLuaRestoreLegalActionGroups")
         || !text.includes("getGroupedDuelLegalActions")
         || !text.includes("flatMap((group) => group.actions)).toEqual")
-        || !text.includes("SetCountLimit(1)")
         || required.some((snippet) => !hasCoverageSnippet(text, snippet));
     });
 
@@ -50,6 +50,7 @@ function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
       required: [
         "e1:SetType(EFFECT_TYPE_IGNITION)",
         "e1:SetRange(LOCATION_MZONE)",
+        "e1:SetCountLimit(1)",
         "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
         "Duel.SelectTarget(tp,s.lvfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,c,lvl)",
         "local tc=Duel.GetFirstTarget()",
@@ -65,6 +66,7 @@ function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
       required: [
         "e1:SetType(EFFECT_TYPE_IGNITION)",
         "e1:SetRange(LOCATION_MZONE)",
+        "e1:SetCountLimit(1)",
         "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
         "return c:IsFaceup() and c:GetLevel()==3 and c:IsRace(RACE_BEASTWARRIOR)",
         "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,e:GetHandler())",
@@ -81,6 +83,7 @@ function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
       required: [
         "e1:SetType(EFFECT_TYPE_IGNITION)",
         "e1:SetRange(LOCATION_MZONE)",
+        "e1:SetCountLimit(1)",
         "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,1,nil)",
         "local g=Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,nil)",
         "for tc in aux.Next(g) do",
@@ -92,11 +95,28 @@ function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
       ],
     },
     {
+      file: "test/lua-real-script-silent-strider-self-grave-level.test.ts",
+      kind: "selfToGraveTargetUpdateLevel",
+      required: [
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "e1:SetRange(LOCATION_HAND)",
+        "e1:SetCost(Cost.SelfToGrave)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,s.lvfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_LEVEL)",
+        "e1:SetValue(-1)",
+        "currentLevel(restoredTarget, restoredChain.session.state)).toBe(3)",
+        "silent strider level 3",
+      ],
+    },
+    {
       file: "test/lua-real-script-wind-up-no-turn-reset-stat.test.ts",
       kind: "noTurnResetAttackLevelBoost",
       required: [
         "e1:SetType(EFFECT_TYPE_IGNITION)",
         "e1:SetRange(LOCATION_MZONE)",
+        "SetCountLimit(1)",
         "EFFECT_FLAG_NO_TURN_RESET",
         "EFFECT_UPDATE_ATTACK",
         "EFFECT_UPDATE_LEVEL",
