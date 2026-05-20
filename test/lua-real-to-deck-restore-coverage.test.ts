@@ -4,8 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const TO_DECK_FIXTURE_COUNT = 4;
+const TO_DECK_FIXTURE_COUNT = 5;
 const toDeckKindCounts = {
+  freeChainReleaseTargetShuffleToDeck: 1,
   graveExtraToExtraDeckTop: 1,
   flipGraveTargetShuffleToDeck: 1,
   toGraveSelfShuffleToDeck: 1,
@@ -14,15 +15,22 @@ const toDeckKindCounts = {
 const toDeckSemanticVariantCounts = {
   adamancipatorLeoniteGraveExtraDeckTop: 1,
   desFeralImpFlipGraveTargetShuffleToDeck: 1,
+  majespecterStormReleaseTargetShuffleToDeck: 1,
   outstandingDogMarronToGraveSelfShuffleToDeck: 1,
   volcanicRechargeFreeChainGraveShuffleToDeck: 1,
 } satisfies Record<ToDeckSemanticVariant, number>;
 
-type ToDeckKind = "graveExtraToExtraDeckTop" | "flipGraveTargetShuffleToDeck" | "toGraveSelfShuffleToDeck" | "freeChainMultiGraveShuffleToDeck";
+type ToDeckKind =
+  | "freeChainReleaseTargetShuffleToDeck"
+  | "graveExtraToExtraDeckTop"
+  | "flipGraveTargetShuffleToDeck"
+  | "toGraveSelfShuffleToDeck"
+  | "freeChainMultiGraveShuffleToDeck";
 
 type ToDeckSemanticVariant =
   | "adamancipatorLeoniteGraveExtraDeckTop"
   | "desFeralImpFlipGraveTargetShuffleToDeck"
+  | "majespecterStormReleaseTargetShuffleToDeck"
   | "outstandingDogMarronToGraveSelfShuffleToDeck"
   | "volcanicRechargeFreeChainGraveShuffleToDeck";
 
@@ -150,6 +158,25 @@ function toDeckFixtureFiles(): Array<{
         "eventUids: [volcanicOne.uid, volcanicTwo.uid]",
       ],
     },
+    {
+      file: "test/lua-real-script-majespecter-storm-release-to-deck.test.ts",
+      kind: "freeChainReleaseTargetShuffleToDeck",
+      required: [
+        'const stormCode = "13972452"',
+        "restores aux.ReleaseCheckTarget release cost into targeted opponent monster shuffle",
+        "e1:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e1:SetCode(EVENT_FREE_CHAIN)",
+        "Duel.CheckReleaseGroupCost(tp,s.cfilter,1,false,aux.ReleaseCheckTarget,nil,dg)",
+        "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,aux.ReleaseCheckTarget,nil,dg)",
+        "Duel.Release(g,REASON_COST)",
+        "Duel.SelectTarget(tp,Card.IsAbleToDeck,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,g,1,0,0)",
+        "Duel.SendtoDeck(tc,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "operationInfos: [{ category: 0x10",
+        'eventName: "released"',
+        'eventName: "sentToDeck"',
+      ],
+    },
   ];
 }
 
@@ -160,6 +187,7 @@ function countToDeckKinds(fixtures: Array<{ kind: ToDeckKind }>): Record<ToDeckK
       return counts;
     },
     {
+      freeChainReleaseTargetShuffleToDeck: 0,
       graveExtraToExtraDeckTop: 0,
       flipGraveTargetShuffleToDeck: 0,
       toGraveSelfShuffleToDeck: 0,
@@ -227,6 +255,21 @@ function toDeckSemanticVariants(): Array<{
         'location: "graveyard"',
       ],
     },
+    {
+      file: "test/lua-real-script-majespecter-storm-release-to-deck.test.ts",
+      kind: "majespecterStormReleaseTargetShuffleToDeck",
+      required: [
+        'const stormCode = "13972452"',
+        "return c:IsRace(RACE_SPELLCASTER) and c:IsAttribute(ATTRIBUTE_WIND)",
+        "Duel.CheckReleaseGroupCost(tp,s.cfilter,1,false,aux.ReleaseCheckTarget,nil,dg)",
+        "Duel.SelectTarget(tp,Card.IsAbleToDeck,tp,0,LOCATION_MZONE,1,1,nil)",
+        "reason: duelReason.release | duelReason.cost",
+        "operationInfos: [{ category: 0x10",
+        'eventName: "sentToDeck"',
+        'location: "deck"',
+        "majespecter storm responder resolved",
+      ],
+    },
   ];
 }
 
@@ -239,6 +282,7 @@ function countToDeckSemanticVariants(fixtures: Array<{ kind: ToDeckSemanticVaria
     {
       adamancipatorLeoniteGraveExtraDeckTop: 0,
       desFeralImpFlipGraveTargetShuffleToDeck: 0,
+      majespecterStormReleaseTargetShuffleToDeck: 0,
       outstandingDogMarronToGraveSelfShuffleToDeck: 0,
       volcanicRechargeFreeChainGraveShuffleToDeck: 0,
     },
