@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 151;
+export const operationFixtureCount = 153;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -25,6 +25,7 @@ export const operationKindCounts = {
   banishedToSpecialSummon: 1,
   battleDestroyedDeckSummon: 1,
   damageDeckdesAtk: 1,
+  damageRecoverRaceCountStat: 1,
   chainNegateDiscardDestroy: 1,
   chainNegateDestroyDraw: 1,
   chainNegateColumnDestroy: 1,
@@ -123,6 +124,7 @@ export type OperationKind =
   | "banishedToSpecialSummon"
   | "battleDestroyedDeckSummon"
   | "damageDeckdesAtk"
+  | "damageRecoverRaceCountStat"
   | "chainNegateDiscardDestroy"
   | "chainNegateDestroyDraw"
   | "chainNegateColumnDestroy"
@@ -200,6 +202,23 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-agave-dragon-link-summon-race-counts.test.ts",
+      kind: "damageRecoverRaceCountStat",
+      required: [
+        "restores Link Summon trigger race counts into damage, recovery, and field ATK updates",
+        "Link.AddProcedure(c,aux.NOT(aux.FilterBoolFunctionEx(Card.IsType,TYPE_TOKEN)),2)",
+        "Duel.GetMatchingGroup(Card.IsRace,tp,LOCATION_GRAVE,LOCATION_GRAVE,nil,RACE_DRAGON|RACE_DINOSAUR|RACE_SEASERPENT|RACE_WYRM)",
+        "Duel.Damage(1-tp,ct1*100,REASON_EFFECT)",
+        "e1:SetValue(ct2*200)",
+        "e2:SetValue(ct3*-300)",
+        "Duel.Recover(tp,ct4*400,REASON_EFFECT)",
+        "summonTypeLink",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === agave.uid), restoredResolved.session.state)).toBe(3200)",
+        'eventName: "damageDealt"',
+        'eventName: "recoveredLifePoints"',
+      ],
+    },
     {
       file: "test/lua-real-script-pig-iron-announce-lp-sset.test.ts",
       kind: "announceLpStatResetSSet",
@@ -1918,6 +1937,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckSplit: 0,
       deckTopSort: 0,
       damageDeckdesAtk: 0,
+      damageRecoverRaceCountStat: 0,
       discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
