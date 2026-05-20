@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 208;
+export const operationFixtureCount = 209;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -32,6 +32,7 @@ export const operationKindCounts = {
   banishedToSpecialSummon: 1,
   battleDestroyedDeckSummon: 1,
   battleStatBurn: 1,
+  battleTargetPositionDamageStat: 1,
   damageDeckdesAtk: 1,
   damageSynchroMillStat: 1,
   operatedDeckdesStat: 1,
@@ -181,6 +182,7 @@ export type OperationKind =
   | "banishedToSpecialSummon"
   | "battleDestroyedDeckSummon"
   | "battleStatBurn"
+  | "battleTargetPositionDamageStat"
   | "damageDeckdesAtk"
   | "damageSynchroMillStat"
   | "operatedDeckdesStat"
@@ -302,6 +304,26 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-karakuri-saizan-battle-position-stat.test.ts",
+      kind: "battleTargetPositionDamageStat",
+      required: [
+        "restores battle-target defense change and battle-damage Karakuri group stat boost",
+        "e1:SetCode(EFFECT_MUST_ATTACK)",
+        "e3:SetCode(EVENT_BE_BATTLE_TARGET)",
+        "Duel.ChangePosition(c,POS_FACEUP_DEFENSE,0,POS_FACEUP_ATTACK,0)",
+        "e4:SetCode(EVENT_BATTLE_DAMAGE)",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,nil)",
+        "for tc in aux.Next(g) do",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_UPDATE_DEFENSE",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        'eventName: "positionChanged"',
+        'eventName: "battleDamageDealt"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-speedroid-gum-prize-damage-synchro-mill-stat.test.ts",
       kind: "damageSynchroMillStat",
@@ -3184,6 +3206,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       banishedToSpecialSummon: 0,
       battleDestroyedDeckSummon: 0,
       battleStatBurn: 0,
+      battleTargetPositionDamageStat: 0,
       chainNegateDiscardDestroy: 0,
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,
