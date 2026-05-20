@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const activationLockFixtureCount = 8;
-const activationLockAllowListFixtureCount = 7;
-const activationLockVariantFixtureCount = 15;
-const activationLockInventoryFixtureCount = 19;
+const activationLockFixtureCount = 9;
+const activationLockAllowListFixtureCount = 8;
+const activationLockVariantFixtureCount = 16;
+const activationLockInventoryFixtureCount = 20;
 const activationLockVariantKindCounts = {
   attributeMonsterActivationLock: 6,
-  cardActivationLock: 2,
+  cardActivationLock: 3,
   locationMonsterActivationLock: 1,
   nonSpiritMonsterActivationLock: 1,
   opponentEffectActivationLock: 2,
@@ -29,6 +29,7 @@ const activationLockSemanticVariantCounts = {
   lunalightKaleidoChickBattlePhaseOpponentLock: 1,
   mindDrainHandMonsterLocationLock: 1,
   sanganSameCodeSearchLock: 1,
+  salesBanAnnounceSameCodeLock: 1,
   sasukeSamuraiSpellTrapNamedPredicateLock: 1,
   shopinaLightCostRegisteredAttributeLock: 1,
   sonicJammerSpellCardActivationLock: 1,
@@ -60,6 +61,7 @@ type ActivationLockSemanticVariant =
   | "lunalightKaleidoChickBattlePhaseOpponentLock"
   | "mindDrainHandMonsterLocationLock"
   | "sanganSameCodeSearchLock"
+  | "salesBanAnnounceSameCodeLock"
   | "sasukeSamuraiSpellTrapNamedPredicateLock"
   | "shopinaLightCostRegisteredAttributeLock"
   | "sonicJammerSpellCardActivationLock"
@@ -181,6 +183,7 @@ function realScriptActivationLockInventoryFiles(): string[] {
     "lua-real-script-lunalight-kaleido-chick-remove-activation-lock.test.ts",
     "lua-real-script-mind-drain-hand-monster-activation-lock.test.ts",
     "lua-real-script-sangan-same-code-activation-lock.test.ts",
+    "lua-real-script-sales-ban-announce-activation-lock.test.ts",
     "lua-real-script-sasuke-samurai-spelltrap-activation-lock.test.ts",
     "lua-real-script-shopina-light-activation-lock.test.ts",
     "lua-real-script-sonic-jammer-spell-activation-lock.test.ts",
@@ -202,6 +205,7 @@ function realScriptActivationLockFixtureFiles(): string[] {
     "lua-real-script-cold-wave-spelltrap-activation-lock.test.ts",
     "lua-real-script-mind-drain-hand-monster-activation-lock.test.ts",
     "lua-real-script-sangan-same-code-activation-lock.test.ts",
+    "lua-real-script-sales-ban-announce-activation-lock.test.ts",
     "lua-real-script-timegazer-trap-activation-lock.test.ts",
     "lua-real-script-wattgiraffe-battle-activation-lock.test.ts",
     "lua-real-script-witch-black-forest-same-code-activation-lock.test.ts",
@@ -334,6 +338,23 @@ function realScriptActivationLockVariantFixtures(): Array<{
         'targetRange: [0, 1]',
         'action.uid === opponentSpell.uid)).toBe(false)',
         'action.uid === responder.uid)).toBe(true)',
+      ],
+    },
+    {
+      file: "test/lua-real-script-sales-ban-announce-activation-lock.test.ts",
+      kind: "cardActivationLock",
+      requiredSnippets: [
+        'const salesBanCode = "64964750"',
+        "Duel.AnnounceCard(tp)",
+        "return re:GetHandler():IsOriginalCodeRule(e:GetLabel())",
+        'luaValueDescriptor: "cannot-activate:same-code"',
+        "targetRange: [0, 1]",
+        "targetRange: [1, 0]",
+        "reset: { flags: 0 }",
+        "action.uid === p0Declared.uid)).toBe(false)",
+        "action.uid === p1Declared.uid)).toBe(false)",
+        "action.uid === p0Allowed.uid)).toBe(true)",
+        "action.uid === p1Allowed.uid)).toBe(true)",
       ],
     },
     {
@@ -501,6 +522,21 @@ function realScriptActivationLockSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-sales-ban-announce-activation-lock.test.ts",
+      kind: "salesBanAnnounceSameCodeLock",
+      requiredSnippets: [
+        'const salesBanCode = "64964750"',
+        "restores its announced same-original-code activation locks for both players",
+        "Duel.AnnounceCard(tp)",
+        "return re:GetHandler():IsOriginalCodeRule(e:GetLabel())",
+        'luaValueDescriptor: "cannot-activate:same-code"',
+        "targetRange: [0, 1]",
+        "targetRange: [1, 0]",
+        "action.uid === p0Declared.uid)).toBe(false)",
+        "action.uid === p1Declared.uid)).toBe(false)",
+      ],
+    },
+    {
       file: "test/lua-real-script-sasuke-samurai-spelltrap-activation-lock.test.ts",
       kind: "sasukeSamuraiSpellTrapNamedPredicateLock",
       requiredSnippets: [
@@ -626,6 +662,7 @@ function countActivationLockSemanticVariants(
       lunalightKaleidoChickBattlePhaseOpponentLock: 0,
       mindDrainHandMonsterLocationLock: 0,
       sanganSameCodeSearchLock: 0,
+      salesBanAnnounceSameCodeLock: 0,
       sasukeSamuraiSpellTrapNamedPredicateLock: 0,
       shopinaLightCostRegisteredAttributeLock: 0,
       sonicJammerSpellCardActivationLock: 0,
