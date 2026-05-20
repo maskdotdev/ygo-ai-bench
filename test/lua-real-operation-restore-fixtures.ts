@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 194;
+export const operationFixtureCount = 195;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -33,6 +33,7 @@ export const operationKindCounts = {
   battleDestroyedDeckSummon: 1,
   battleStatBurn: 1,
   damageDeckdesAtk: 1,
+  damageSynchroMillStat: 1,
   operatedDeckdesStat: 1,
   damageRecoverRaceCountStat: 1,
   chainNegateDiscardDestroy: 1,
@@ -172,6 +173,7 @@ export type OperationKind =
   | "battleDestroyedDeckSummon"
   | "battleStatBurn"
   | "damageDeckdesAtk"
+  | "damageSynchroMillStat"
   | "operatedDeckdesStat"
   | "damageRecoverRaceCountStat"
   | "chainNegateDiscardDestroy"
@@ -282,6 +284,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-speedroid-gum-prize-damage-synchro-mill-stat.test.ts",
+      kind: "damageSynchroMillStat",
+      required: [
+        "restores damage-trigger self summon, flag-gated Lua Synchro Summon, and material mill ATK gain",
+        "e1:SetCode(EVENT_DAMAGE)",
+        "return Duel.IsBattlePhase()",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "c:RegisterFlagEffect",
+        "return e:GetHandler():GetFlagEffect(id)~=0",
+        "Duel.IsExistingMatchingCard(Card.IsSynchroSummonable",
+        "Duel.SynchroSummon(tp,sg:GetFirst(),c,mg)",
+        "e3:SetCode(EVENT_BE_MATERIAL)",
+        "Duel.DiscardDeck(tp,1,REASON_EFFECT)",
+        "Duel.GetOperatedGroup():GetFirst()",
+        "sync:RegisterEffect(e1)",
+        'eventName: "damageDealt"',
+        'eventName: "specialSummoned"',
+        'eventName: "usedAsMaterial"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-cross-domination-final-disable.test.ts",
       kind: "setFinalStatDisable",
@@ -2905,6 +2930,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckMoveToField: 0,
       groupBanishCountStat: 0,
       damageDeckdesAtk: 0,
+      damageSynchroMillStat: 0,
       operatedDeckdesStat: 0,
       damageRecoverRaceCountStat: 0,
       discardCostSpecialSummonGroupDestroy: 0,

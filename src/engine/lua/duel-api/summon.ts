@@ -264,7 +264,9 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
   const playerFirst = lua.lua_isnumber(L, 1) && readCardUid(L, 2) !== undefined;
   const player = playerFirst ? readOptionalPlayer(L, 1) ?? session.state.turnPlayer : undefined;
   const targetUid = readCardUid(L, playerFirst ? 2 : 1);
-  const materialUids = playerFirst ? readCardOrGroupUids(L, 3) : readCardOrGroupUids(L, 2);
+  const materialUids = summonType === "SynchroSummon" && playerFirst
+    ? uniqueUids([...readCardOrGroupUids(L, 3), ...readCardOrGroupUids(L, 4)])
+    : readCardOrGroupUids(L, playerFirst ? 3 : 2);
   const alreadyMovedIndex = playerFirst ? 4 : 3;
   const positionIndex = playerFirst ? 5 : 4;
   const materialsAlreadyMoved = (summonType === "FusionSummon" || summonType === "RitualSummon") && readOptionalBoolean(L, alreadyMovedIndex);
@@ -306,6 +308,10 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     lua.lua_pushinteger(L, 0);
   }
   return 1;
+}
+
+function uniqueUids(uids: string[]): string[] {
+  return [...new Set(uids)];
 }
 
 function readOptionalBoolean(L: unknown, index: number): boolean {
