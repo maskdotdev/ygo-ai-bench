@@ -92,21 +92,38 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
       range: effect.range,
       triggerEvent: effect.triggerEvent,
     }))).toEqual([
-      { code: 1002, event: "ignition", label: undefined, range: ["hand", "spellTrapZone"], triggerEvent: undefined },
+      { code: 1002, event: "ignition", label: Number(announcedSpellCode), range: ["hand", "spellTrapZone"], triggerEvent: undefined },
       { code: 1027, event: "continuous", label: undefined, range: ["spellTrapZone"], triggerEvent: "chaining" },
       { code: 1022, event: "continuous", label: undefined, range: ["spellTrapZone"], triggerEvent: "chainSolved" },
       { code: 41, event: "continuous", label: undefined, range: ["spellTrapZone"], triggerEvent: undefined },
     ]);
 
-    const announcedActivation = getLuaRestoreLegalActions(restoredOpen, 0).find((action) => action.type === "activateEffect" && action.uid === announcedSpell.uid);
-    expect(announcedActivation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
-    applyRestoredActionAndAssert(restoredOpen, announcedActivation!);
+    const restoredChainWatchers = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
+    expectCleanRestore(restoredChainWatchers);
+    expectRestoredLegalActions(restoredChainWatchers, 0);
+    expect(restoredChainWatchers.session.state.effects.filter((effect) => effect.sourceUid === dirge.uid).map((effect) => ({
+      code: effect.code,
+      event: effect.event,
+      label: effect.label,
+      labelObjectId: effect.labelObjectId,
+      range: effect.range,
+      triggerEvent: effect.triggerEvent,
+    }))).toEqual([
+      { code: 1002, event: "ignition", label: Number(announcedSpellCode), labelObjectId: undefined, range: ["hand", "spellTrapZone"], triggerEvent: undefined },
+      { code: 1027, event: "continuous", label: undefined, labelObjectId: 1, range: ["spellTrapZone"], triggerEvent: "chaining" },
+      { code: 1022, event: "continuous", label: undefined, labelObjectId: 1, range: ["spellTrapZone"], triggerEvent: "chainSolved" },
+      { code: 41, event: "continuous", label: undefined, labelObjectId: undefined, range: ["spellTrapZone"], triggerEvent: undefined },
+    ]);
 
-    expect(restoredOpen.session.state.chain).toEqual([]);
-    expect(restoredOpen.host.messages).toContain("dirge announced spell resolved");
-    expect(restoredOpen.session.state.players[0].lifePoints).toBe(4000);
-    expect(restoredOpen.session.state.players[1].lifePoints).toBe(8000);
-    expect(restoredOpen.session.state.effects.filter((effect) => effect.sourceUid === dirge.uid && effect.triggerEvent === "phaseEnd")).toEqual([
+    const announcedActivation = getLuaRestoreLegalActions(restoredChainWatchers, 0).find((action) => action.type === "activateEffect" && action.uid === announcedSpell.uid);
+    expect(announcedActivation, JSON.stringify(getLuaRestoreLegalActions(restoredChainWatchers, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredChainWatchers, announcedActivation!);
+
+    expect(restoredChainWatchers.session.state.chain).toEqual([]);
+    expect(restoredChainWatchers.host.messages).toContain("dirge announced spell resolved");
+    expect(restoredChainWatchers.session.state.players[0].lifePoints).toBe(4000);
+    expect(restoredChainWatchers.session.state.players[1].lifePoints).toBe(8000);
+    expect(restoredChainWatchers.session.state.effects.filter((effect) => effect.sourceUid === dirge.uid && effect.triggerEvent === "phaseEnd")).toEqual([
       expect.objectContaining({
         code: phaseEndEventCode,
         countLimit: 1,
@@ -116,7 +133,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
         triggerEvent: "phaseEnd",
       }),
     ]);
-    expect(restoredOpen.session.state.eventHistory.filter((event) => ["chaining", "chainSolved"].includes(event.eventName))).toEqual([
+    expect(restoredChainWatchers.session.state.eventHistory.filter((event) => ["chaining", "chainSolved"].includes(event.eventName))).toEqual([
       {
         eventName: "chaining",
         eventCode: 1027,
@@ -167,7 +184,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
       },
     ]);
 
-    const restoredEnd = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
+    const restoredEnd = restoreDuelWithLuaScripts(serializeDuel(restoredChainWatchers.session), source, reader);
     expectCleanRestore(restoredEnd);
     expectRestoredLegalActions(restoredEnd, 0);
     restoredEnd.session.state.phase = "main2";

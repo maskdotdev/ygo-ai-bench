@@ -105,11 +105,12 @@ export function restoreDuelWithLuaScripts(
   const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
   const session = restoreDuel(snapshot, cardReader, {}, luaDenyChainLimitRegistry(chainLimitRegistryKeys), { pruneUnrestoredPendingTriggers: false });
   session.state.actionWindowToken = createActionWindowToken();
-  const host = createLuaScriptHost(session);
+  const host = createLuaScriptHost(session, undefined, { reuseExistingLuaEffectIds: true });
   const registryKeys = luaRegistryKeys(snapshot);
   const scriptRegistryKeys = luaScriptRegistryKeys(registryKeys, snapshot.state.effects);
   const loadedScripts = [...luaRegistryCardCodes(scriptRegistryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));
   const registeredEffects = loadedScripts.every((result) => result.ok) ? host.registerInitialEffects() : 0;
+  if (loadedScripts.every((result) => result.ok)) restoreLuaHostEffectMetadata(host, snapshot.state.effects);
   const restoredStateScripts = loadedScripts.every((result) => result.ok) ? restoreKnownLuaStateEffects(session, host, registryKeys, snapshot.state.effects) : [];
   restoreKnownLuaChainLimits(session, host, chainLimitRegistryKeys);
   const restoredRegistryKeys = filterRestoredLuaEffects(session, registryKeys, snapshot.state.effects);
@@ -123,6 +124,16 @@ export function restoreDuelWithLuaScripts(
   const incompleteReasons = luaRestoreIncompleteReasons([...loadedScripts, ...restoredStateScripts], missingRegistryKeys, missingChainLimitRegistryKeys);
   const restoreComplete = incompleteReasons.length === 0;
   return { session, host, restoreComplete, loadedScripts: [...loadedScripts, ...restoredStateScripts], registeredEffects, restoredRegistryKeys, missingRegistryKeys, chainLimitRegistryKeys, missingChainLimitRegistryKeys, incompleteReasons };
+}
+
+function restoreLuaHostEffectMetadata(host: LuaScriptHost, snapshotEffects: SerializedDuelEffect[]): void {
+  for (const effect of snapshotEffects) {
+    if (!effect.registryKey?.startsWith("lua:")) continue;
+    host.restoreEffectMetadata(effect.registryKey, {
+      ...(effect.label === undefined ? {} : { label: effect.label }),
+      ...(effect.labelObjectId === undefined ? {} : { labelObjectId: effect.labelObjectId }),
+    });
+  }
 }
 export function getLuaRestoreLegalActions(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelAction[] {
   if (!restored.restoreComplete) return [];
@@ -241,6 +252,8 @@ function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEf
     ...effect, ...((snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-battle-target") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-status-summon-type:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-relate-battle-target") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:normal-summon-proc-own-faceup:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:normal-summon-proc-opponent-mzone-count-at-least:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:controller-has-faceup-setcode:") === true || snapshotEffect.luaConditionDescriptor === "condition:damage-source-relate-battle-target" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason-all:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason-all-player:") === true || snapshotEffect.luaConditionDescriptor === "condition:source-previous-controller-reason-player:opponent" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-reason-player-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-side-previous-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location-reason-player:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-position-location-reason-player-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-position-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-position-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-position-position:") === true) ? restoredLuaConditionCallbacks(snapshotEffect) : {}),
     ...(snapshotEffect.property === undefined ? {} : { property: snapshotEffect.property }),
     ...(snapshotEffect.reset === undefined ? {} : { reset: { ...snapshotEffect.reset } }),
+    ...(snapshotEffect.label === undefined ? {} : { label: snapshotEffect.label }),
+    ...(snapshotEffect.labelObjectId === undefined ? {} : { labelObjectId: snapshotEffect.labelObjectId }),
     ...(snapshotEffect.labelObjectUid === undefined ? {} : { labelObjectUid: snapshotEffect.labelObjectUid }),
     ...(snapshotEffect.labelObjectUids === undefined ? {} : { labelObjectUids: [...snapshotEffect.labelObjectUids] }),
     ...restoredLuaValueCallbacks(snapshotEffect),

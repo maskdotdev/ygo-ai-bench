@@ -31,6 +31,7 @@ export interface LuaScriptHost {
   loadCardScript(cardCode: string | number, source: LuaScriptSource): LuaScriptLoadResult;
   registerInitialEffects(): number;
   registerInitialEffectsDetailed(): LuaInitialEffectRegistrationResult[];
+  restoreEffectMetadata(registryKey: string, metadata: { label?: number; labelObjectId?: number }): boolean;
   runStartupEffects(): number;
   restoreChainLimit(key: string, limit: ChainLimit): ChainLimit | undefined;
   getGlobalString(name: string): string | undefined;
@@ -50,6 +51,7 @@ export type LuaPromptOverride =
 
 export interface LuaScriptHostOptions {
   promptOverrides?: LuaPromptOverride[];
+  reuseExistingLuaEffectIds?: boolean;
 }
 
 export const luaOptionPromptApis: ReadonlyArray<Extract<LuaPromptDecision, { options: number[] }>["api"]> = [

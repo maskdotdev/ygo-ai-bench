@@ -27,7 +27,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
   const L = lauxlib.luaL_newstate();
   const hostState: LuaHostState = {
     session,
-    nextEffectId: nextLuaEffectId(session),
+    nextEffectId: options.reuseExistingLuaEffectIds ? 1 : nextLuaEffectId(session),
     nextCopyId: 1,
     effects: new Map(),
     functionDescriptors: new Map(),
@@ -130,6 +130,16 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     registerInitialEffectsDetailed() {
       return registerLuaInitialEffectsDetailed(L, session, hostState.loadedScriptBodies);
     },
+    restoreEffectMetadata(registryKey, metadata) {
+      const effectId = luaEffectIdFromRegistryKey(registryKey);
+      const effect = effectId === undefined ? undefined : hostState.effects.get(effectId);
+      if (!effect) return false;
+      if (metadata.label === undefined) delete effect.label;
+      else effect.label = metadata.label;
+      if (metadata.labelObjectId === undefined) delete effect.labelObjectId;
+      else effect.labelObjectId = metadata.labelObjectId;
+      return true;
+    },
     runStartupEffects() {
       return runLuaStartupEffects(session);
     },
@@ -167,6 +177,12 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       return runLuaEffectOperationPromptCoroutine(L, hostState, effectId, source, ctx);
     },
   };
+}
+
+function luaEffectIdFromRegistryKey(registryKey: string): number | undefined {
+  const match = /:lua-(\d+)(?:-\d+)?$/.exec(registryKey);
+  if (!match) return undefined;
+  return Number(match[1]);
 }
 
 function pushLuaPromptCallbackArg(L: unknown, arg: number | boolean | string): void {

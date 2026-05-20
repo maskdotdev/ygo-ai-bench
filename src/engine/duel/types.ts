@@ -350,6 +350,7 @@ export interface DuelEffectDefinition {
     count?: number;
   };
   label?: number;
+  labelObjectId?: number;
   description?: number;
   category?: number;
   property?: number;
@@ -416,6 +417,7 @@ export interface DuelEffectContext {
   targetParam?: number;
   effectLabel?: number;
   effectLabels?: number[];
+  effectLabelObjectId?: number;
   effectLabelObjectUid?: string;
   effectLabelObjectUids?: string[];
   chainLink?: ChainLink;
@@ -467,6 +469,7 @@ export interface ChainLink {
   targetParam?: number;
   effectLabel?: number;
   effectLabels?: number[];
+  effectLabelObjectId?: number;
   effectLabelObjectUid?: string;
   effectLabelObjectUids?: string[];
   negated?: boolean;

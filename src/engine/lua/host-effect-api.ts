@@ -171,6 +171,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     const labels = Array.from({ length: Math.max(0, lua.lua_gettop(state) - 1) }, (_, index) => lua.lua_isnumber(state, index + 2) ? lua.lua_tointeger(state, index + 2) : 0);
     const label = labels[0] ?? 0; effect.label = label;
     if (labels.length > 1) effect.labels = labels; else delete effect.labels;
+    syncRegisteredDuelEffectLabels(hostState, effect);
     if (hostState.activeLuaEffectId === effect.id && hostState.activeContext) {
       syncActiveLabels(hostState, label, labels);
     }
@@ -198,8 +199,9 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 0;
   });
   pushEffectMethod(L, effects, "GetLabelObject", (state, effect) => {
-    if (effect.labelObjectRef === undefined) lua.lua_pushnil(state);
-    else lua.lua_rawgeti(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
+    if (effect.labelObjectId !== undefined) pushLuaEffectTable(state, effect.labelObjectId, hostState);
+    else if (effect.labelObjectRef !== undefined) lua.lua_rawgeti(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
+    else lua.lua_pushnil(state);
     return 1;
   });
   pushEffectMethod(L, effects, "SetValue", (state, effect) => {
@@ -501,6 +503,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.countLimitCode === undefined ? {} : { countLimitCode: luaEffect.countLimitCode }),
     ...(luaEffect.reset === undefined ? {} : { reset: luaEffect.reset }),
     ...(luaEffect.label === undefined ? {} : { label: luaEffect.label }),
+    ...(luaEffect.labelObjectId === undefined ? {} : { labelObjectId: luaEffect.labelObjectId }),
     ...(luaEffect.description === undefined ? {} : { description: luaEffect.description }),
     ...(luaEffect.category === undefined ? {} : { category: luaEffect.category }),
     ...(luaEffect.property === undefined ? {} : { property: luaEffect.property }),
@@ -515,6 +518,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer, readLuaError) }),
     ...(luaEffect.targetRef === undefined ? {} : { targetCardPredicate: (ctx, targetCard) => callLuaEffectCardTargetPredicate(L, hostState, luaEffect, ctx, targetCard) }),
     canActivate: (ctx) => {
+      syncLuaEffectMetadataFromRegisteredDuelEffect(hostState, luaEffect);
       const result =
         (luaEffect.code !== 1027 || hostState.session.state.chain.length > 0) &&
         callLuaEffectBoolean(L, hostState, luaEffect, event === "summonProcedure" && ctx?.source !== undefined ? ctx.source : card, luaEffect.conditionRef, true, "condition", ctx) &&
@@ -532,7 +536,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
         ctx.log("Lua effect resolved without an operation");
         return;
       }
-      syncLuaEffectPropertyFromRegisteredDuelEffect(hostState, luaEffect);
+      syncLuaEffectMetadataFromRegisteredDuelEffect(hostState, luaEffect);
       withLuaCallbackContext(hostState, ctx, luaEffect.id, "operation", () => {
         if (ctx.chainLink?.effectLabel !== undefined) luaEffect.label = ctx.chainLink.effectLabel;
         if (ctx.chainLink?.effectLabels !== undefined) luaEffect.labels = [...ctx.chainLink.effectLabels];
@@ -861,7 +865,7 @@ function callLuaEffectOperation(
   ctx: DuelEffectContext,
   readLuaError: (state: unknown) => string,
 ): void {
-  applyLuaEffectContextLabelObject(L, luaEffect, ctx);
+  applyLuaEffectContextLabelObject(L, hostState, luaEffect, ctx);
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
   const legacyArgs = secondParameterName(L, -1) === "c";
   const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
@@ -877,7 +881,7 @@ function callLuaEffectOperationNumber(
   operationRef: number,
   ctx: DuelEffectContext,
 ): number | undefined {
-  applyLuaEffectContextLabelObject(L, luaEffect, ctx);
+  applyLuaEffectContextLabelObject(L, hostState, luaEffect, ctx);
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
   const legacyArgs = secondParameterName(L, -1) === "c";
   const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
@@ -896,7 +900,7 @@ function callLuaEffectOperationCoroutine(
   operationRef: number,
   ctx: DuelEffectContext,
 ): LuaPromptCoroutineResult {
-  applyLuaEffectContextLabelObject(L, luaEffect, ctx);
+  applyLuaEffectContextLabelObject(L, hostState, luaEffect, ctx);
   lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, operationRef);
   const legacyArgs = secondParameterName(L, -1) === "c";
   const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, "operation", legacyArgs, ctx);
@@ -933,7 +937,7 @@ function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: Lu
   if (ref === undefined) return fallback;
   syncLuaEffectPropertyFromRegisteredDuelEffect(hostState, luaEffect);
   return withLuaCallbackContext(hostState, ctx, luaEffect.id, kind, () => {
-    applyLuaEffectContextLabelObject(L, luaEffect, ctx);
+    applyLuaEffectContextLabelObject(L, hostState, luaEffect, ctx);
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
     const legacyArgs = secondParameterName(L, -1) === "c";
     if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target") && ![90, 91, 92, 93, 94, 95, 96].includes(luaEffect.code ?? -1)) {
@@ -957,7 +961,7 @@ function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, l
   if (luaEffect.targetRef === undefined) return true;
   syncLuaEffectPropertyFromRegisteredDuelEffect(hostState, luaEffect);
   return withLuaCallbackContext(hostState, ctx, luaEffect.id, "target", () => {
-    applyLuaEffectContextLabelObject(L, luaEffect, ctx);
+    applyLuaEffectContextLabelObject(L, hostState, luaEffect, ctx);
     lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, luaEffect.targetRef);
     pushLuaEffectTable(L, luaEffect.id, hostState);
     if (luaEffect.code === 90) { pushRelatedEffectTable(L, hostState, ctx.relatedEffectId); lua.lua_pushinteger(L, ctx.player ?? card.controller); } else pushCardTable(L, card.uid);
@@ -968,8 +972,16 @@ function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, l
   });
 }
 
-function applyLuaEffectContextLabelObject(L: unknown, luaEffect: LuaEffectRecord, ctx: DuelEffectContext | undefined): void {
-  if (ctx?.effectLabelObjectUid === undefined && ctx?.effectLabelObjectUids === undefined) return;
+function applyLuaEffectContextLabelObject(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, ctx: DuelEffectContext | undefined): void {
+  if (ctx?.effectLabelObjectId === undefined && ctx?.effectLabelObjectUid === undefined && ctx?.effectLabelObjectUids === undefined) return;
+  if (ctx.effectLabelObjectId !== undefined) {
+    if (luaEffect.labelObjectRef !== undefined) lauxlib.luaL_unref(L, lua.LUA_REGISTRYINDEX, luaEffect.labelObjectRef);
+    luaEffect.labelObjectId = ctx.effectLabelObjectId;
+    delete luaEffect.labelObjectUid; delete luaEffect.labelObjectUids;
+    pushLuaEffectTable(L, ctx.effectLabelObjectId, hostState);
+    luaEffect.labelObjectRef = lauxlib.luaL_ref(L, lua.LUA_REGISTRYINDEX);
+    return;
+  }
   if (luaEffect.labelObjectRef !== undefined && ctx.effectLabelObjectUid !== undefined && luaEffect.labelObjectUid === ctx.effectLabelObjectUid) return;
   if (luaEffect.labelObjectRef !== undefined && ctx.effectLabelObjectUids !== undefined && sameUids(luaEffect.labelObjectUids, ctx.effectLabelObjectUids)) return;
   if (luaEffect.labelObjectRef !== undefined) lauxlib.luaL_unref(L, lua.LUA_REGISTRYINDEX, luaEffect.labelObjectRef);
@@ -1009,6 +1021,13 @@ function syncActiveLabels(hostState: LuaHostState, label: number, labels: number
   }
   syncDisableFieldLabelObjectValues(hostState, hostState.activeLuaEffectId, label);
   syncLabelObjectTargetValues(hostState, hostState.activeLuaEffectId, label);
+}
+
+function syncRegisteredDuelEffectLabels(hostState: LuaHostState, luaEffect: LuaEffectRecord): void {
+  for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) {
+    if (luaEffect.label === undefined) delete effect.label;
+    else effect.label = luaEffect.label;
+  }
 }
 
 function syncDisableFieldLabelObjectValues(hostState: LuaHostState, labelObjectId: number | undefined, value: number): void {
@@ -1073,6 +1092,14 @@ function syncLuaEffectLabelObjectFromRef(L: unknown, hostState: LuaHostState, lu
 function syncRegisteredDuelEffectProperty(hostState: LuaHostState, luaEffect: LuaEffectRecord): void { for (const effect of registeredDuelEffectsForLuaEffect(hostState, luaEffect)) if (luaEffect.property === undefined) delete effect.property; else effect.property = luaEffect.property; }
 
 function syncLuaEffectPropertyFromRegisteredDuelEffect(hostState: LuaHostState, luaEffect: LuaEffectRecord): void { const effect = registeredDuelEffectsForLuaEffect(hostState, luaEffect)[0]; if (!effect) return; if (effect.property === undefined) delete luaEffect.property; else luaEffect.property = effect.property; }
+
+function syncLuaEffectMetadataFromRegisteredDuelEffect(hostState: LuaHostState, luaEffect: LuaEffectRecord): void {
+  const effect = registeredDuelEffectsForLuaEffect(hostState, luaEffect)[0];
+  if (!effect) return;
+  if (effect.property === undefined) delete luaEffect.property; else luaEffect.property = effect.property;
+  if (effect.label === undefined) delete luaEffect.label; else luaEffect.label = effect.label;
+  if (effect.labelObjectId === undefined) delete luaEffect.labelObjectId; else luaEffect.labelObjectId = effect.labelObjectId;
+}
 
 function registeredDuelEffectsForLuaEffect(hostState: LuaHostState, luaEffect: LuaEffectRecord): DuelEffectDefinition[] { const duelEffectId = luaEffectDuelId(luaEffect); return hostState.session.state.effects.filter((effect) => effect.id === duelEffectId && (luaEffect.sourceUid === undefined || effect.sourceUid === luaEffect.sourceUid)); }
 
