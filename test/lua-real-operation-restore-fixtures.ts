@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 158;
+export const operationFixtureCount = 159;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -51,6 +51,7 @@ export const operationKindCounts = {
   flipDiscardBattleStat: 1,
   groupDestroy: 10,
   groupDestroyDamageStatLp: 1,
+  groupToGraveFinalAttack: 1,
   handStatBoost: 1,
   groupToHand: 2,
   graveTargetToHand: 2,
@@ -155,6 +156,7 @@ export type OperationKind =
   | "flipDiscardBattleStat"
   | "groupDestroy"
   | "groupDestroyDamageStatLp"
+  | "groupToGraveFinalAttack"
   | "handStatBoost"
   | "groupToHand"
   | "graveTargetToHand"
@@ -535,6 +537,28 @@ export function operationFixtureFiles(): Array<{
         'eventName: "detachedMaterial"',
         'eventName: "damageDealt"',
         "currentAttack(resolvedXyz, restoredChain.session.state)).toBe(2800)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-meklord-asterisk-summon-send-final-atk.test.ts",
+      kind: "groupToGraveFinalAttack",
+      required: [
+        "restores Special Summon trigger sending Meklord targets and setting ATK from operated group",
+        "e2:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_TOGRAVE)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_MZONE,0,1,5,e:GetHandler())",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,g,#g,0,0)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS):Filter(s.atkfilter,nil,e)",
+        "Duel.SendtoGrave(g,REASON_EFFECT)",
+        "Duel.GetOperatedGroup():Filter(Card.IsLocation,nil,LOCATION_GRAVE)",
+        "for tc in aux.Next(ct) do",
+        "tc:GetTextAttack()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(atk)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack(resolvedAsterisk, restoredChain.session.state)).toBe(3000)",
       ],
     },
     {
@@ -2070,6 +2094,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fusionDeckMaterials: 0,
       groupDestroy: 0,
       groupDestroyDamageStatLp: 0,
+      groupToGraveFinalAttack: 0,
       handStatBoost: 0,
       groupLevelFinal: 0,
       groupToHand: 0,
