@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 157;
+export const operationFixtureCount = 158;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -67,6 +67,7 @@ export const operationKindCounts = {
   mutualHandDiscardDraw: 1,
   opponentHandToDeck: 1,
   overlayAttach: 2,
+  overlayDetachDamageStat: 1,
   positionSet: 1,
   pzoneControlDelayedDestroy: 1,
   pzoneDestroySearch: 1,
@@ -170,6 +171,7 @@ export type OperationKind =
   | "mutualHandDiscardDraw"
   | "opponentHandToDeck"
   | "overlayAttach"
+  | "overlayDetachDamageStat"
   | "positionSet"
   | "pzoneControlDelayedDestroy"
   | "pzoneDestroySearch"
@@ -511,6 +513,28 @@ export function operationFixtureFiles(): Array<{
         "eventName: \"detachedMaterial\"",
         "currentAttack(restoredTell, restoredOpen.session.state)).toBe(1300)",
         "currentDefense(restoredTell, restoredOpen.session.state)).toBe(1000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-torpedo-takedown-overlay-damage-atk.test.ts",
+      kind: "overlayDetachDamageStat",
+      required: [
+        "restores overlay detach into hand-count damage and matching ATK gain",
+        "e1:SetCategory(CATEGORY_DAMAGE+CATEGORY_ATKCHANGE)",
+        "return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_WATER) and c:IsType(TYPE_XYZ) and c:GetOverlayCount()>0",
+        "Duel.GetMatchingGroup(nil,tp,LOCATION_HAND,0,e:GetHandler())",
+        "Duel.SetTargetPlayer(1-tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,#hg)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g:GetFirst(),1,tp,0)",
+        "tc:RemoveOverlayCard(tp,1,1,REASON_EFFECT)>0",
+        "Duel.AdjustInstantly(tc)",
+        "local d=Duel.GetFieldGroupCount(tp,LOCATION_HAND,0)*400",
+        "local dam=Duel.Damage(p,d,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "operationInfos",
+        'eventName: "detachedMaterial"',
+        'eventName: "damageDealt"',
+        "currentAttack(resolvedXyz, restoredChain.session.state)).toBe(2800)",
       ],
     },
     {
@@ -2062,6 +2086,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       mutualHandDiscardDraw: 0,
       opponentHandToDeck: 0,
       overlayAttach: 0,
+      overlayDetachDamageStat: 0,
       positionSet: 0,
       pzoneControlDelayedDestroy: 0,
       pzoneDestroySearch: 0,
