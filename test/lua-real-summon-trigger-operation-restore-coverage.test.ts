@@ -55,6 +55,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   senjuClonedSummonRitualMonsterSearch: 1,
   shinobaronessShadePeacockSearchSelfSummon: 1,
   shinobirdCraneDrawOnSpiritSummon: 1,
+  vaylantzGrandDukeSummonBounceBurnAtk: 1,
   yakshaBackrowReturnOnSummon: 1,
   swarmScarabsFlipSummonTargetDestroy: 1,
 } satisfies Record<SummonTriggerOperationSemanticVariant, number>;
@@ -109,6 +110,7 @@ type SummonTriggerOperationSemanticVariant =
   | "shinobaronessShadePeacockSearchSelfSummon"
   | "shinobirdCraneDrawOnSpiritSummon"
   | "swarmScarabsFlipSummonTargetDestroy"
+  | "vaylantzGrandDukeSummonBounceBurnAtk"
   | "yakshaBackrowReturnOnSummon";
 
 describe("Lua real summon-trigger operation restore coverage", () => {
@@ -1026,6 +1028,20 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-vaylantz-grand-duke-summon-bounce-burn-atk.test.ts",
+      kind: "vaylantzGrandDukeSummonBounceBurnAtk",
+      requiredSnippets: [
+        'const grandDukeCode = "76075139"',
+        "restores Special Summon trigger targeting an opponent S/T Monster Card into hand, damage, and ATK gain",
+        "Duel.SelectTarget(tp,s.thfilter,tp,0,LOCATION_SZONE,1,1,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "Duel.Damage(1-tp,atk,REASON_EFFECT)",
+        "e1:SetValue(dam/2)",
+        'eventName: "sentToHand"',
+        'eventName: "damageDealt"',
+      ],
+    },
+    {
       file: "test/lua-real-script-yaksha-spirit-backrow-return.test.ts",
       kind: "yakshaBackrowReturnOnSummon",
       requiredSnippets: [
@@ -1111,6 +1127,7 @@ function countSummonTriggerOperationSemanticVariants(
       shinobaronessShadePeacockSearchSelfSummon: 0,
       shinobirdCraneDrawOnSpiritSummon: 0,
       swarmScarabsFlipSummonTargetDestroy: 0,
+      vaylantzGrandDukeSummonBounceBurnAtk: 0,
       yakshaBackrowReturnOnSummon: 0,
     },
   );
