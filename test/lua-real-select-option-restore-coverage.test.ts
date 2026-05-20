@@ -7,6 +7,7 @@ const root = process.cwd();
 const upstreamOfficialRoot = path.join(root, ".upstream/ignis/script/official");
 const selectOptionKindCounts = {
   leadingBooleanLiteralOptions: 1,
+  regularTargetLevelUpdateOptions: 1,
   leadingBooleanTableUnpack: 1,
   tableUnpackedOptions: 1,
 } satisfies Record<SelectOptionKind, number>;
@@ -14,14 +15,16 @@ const selectOptionSemanticVariantCounts = {
   infernoAshenedOpponentFieldZoneOption: 1,
   magikeyDuoDefenseRitualOption: 1,
   pyroClockTableUnpackTurnEffectOption: 1,
+  starChangerTargetLevelUpdateOption: 1,
 } satisfies Record<SelectOptionSemanticVariant, number>;
 
-type SelectOptionKind = "leadingBooleanLiteralOptions" | "leadingBooleanTableUnpack" | "tableUnpackedOptions";
+type SelectOptionKind = "leadingBooleanLiteralOptions" | "regularTargetLevelUpdateOptions" | "leadingBooleanTableUnpack" | "tableUnpackedOptions";
 
 type SelectOptionSemanticVariant =
   | "infernoAshenedOpponentFieldZoneOption"
   | "magikeyDuoDefenseRitualOption"
-  | "pyroClockTableUnpackTurnEffectOption";
+  | "pyroClockTableUnpackTurnEffectOption"
+  | "starChangerTargetLevelUpdateOption";
 
 describe("Lua real SelectOption restore coverage", () => {
   it("tracks official scripts that use the leading-boolean SelectOption shape", () => {
@@ -176,6 +179,18 @@ function tableUnpackedSelectOptionFixtures(): Array<{
         'expect(restored.host.messages).toContain("pyro clock selected first turn effect")',
       ],
     },
+    {
+      file: "test/lua-real-script-star-changer-target-select-option-level-update.test.ts",
+      kind: "regularTargetLevelUpdateOptions",
+      required: [
+        "restores target-time SelectOption into a temporary targeted EFFECT_UPDATE_LEVEL increase",
+        "Duel.SelectOption(tp,aux.Stringid(id,0),aux.Stringid(id,1))",
+        "e1:SetCode(EFFECT_UPDATE_LEVEL)",
+        "value: 1",
+        "currentLevel(restoredTarget, restoredOpen.session.state)).toBe(5)",
+        'eventName === "levelChanged"',
+      ],
+    },
   ];
 }
 
@@ -187,6 +202,7 @@ function countSelectOptionKinds(fixtures: Array<{ kind: SelectOptionKind }>): Re
     },
     {
       leadingBooleanLiteralOptions: 0,
+      regularTargetLevelUpdateOptions: 0,
       leadingBooleanTableUnpack: 0,
       tableUnpackedOptions: 0,
     },
@@ -235,6 +251,18 @@ function selectOptionSemanticVariants(): Array<{
         "pyro clock selected first turn effect",
       ],
     },
+    {
+      file: "test/lua-real-script-star-changer-target-select-option-level-update.test.ts",
+      kind: "starChangerTargetLevelUpdateOption",
+      required: [
+        'const starChangerCode = "63485233"',
+        "restores target-time SelectOption into a temporary targeted EFFECT_UPDATE_LEVEL increase",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SelectOption(tp,aux.Stringid(id,0),aux.Stringid(id,1))",
+        "registryKey: \"lua:63485233:lua-2-130\"",
+        "currentLevel(restoredLevel.session.state.cards.find((card) => card.uid === target.uid), restoredLevel.session.state)).toBe(5)",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: SelectOptionSemanticVariant;
@@ -252,6 +280,7 @@ function countSelectOptionSemanticVariants(fixtures: Array<{ kind: SelectOptionS
       infernoAshenedOpponentFieldZoneOption: 0,
       magikeyDuoDefenseRitualOption: 0,
       pyroClockTableUnpackTurnEffectOption: 0,
+      starChangerTargetLevelUpdateOption: 0,
     },
   );
 }
