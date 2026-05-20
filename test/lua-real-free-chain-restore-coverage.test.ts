@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const FREE_CHAIN_FIXTURE_COUNT = 19;
-const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 18;
+const FREE_CHAIN_FIXTURE_COUNT = 20;
+const FREE_CHAIN_OPERATION_INFO_FIXTURE_COUNT = 19;
 const CHAINED_FREE_CHAIN_FIXTURE_COUNT = 6;
-const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 19;
+const FREE_CHAIN_INVENTORY_FIXTURE_COUNT = 20;
 const freeChainKindCounts = {
   banishRemoval: 1,
   costToGraveDestroy: 1,
@@ -18,13 +18,14 @@ const freeChainKindCounts = {
   singleDestroy: 3,
   targetNegation: 1,
   toDeckDiscard: 1,
-  toHand: 2,
+  toHand: 3,
 } satisfies Record<FreeChainKind, number>;
 const freeChainSemanticVariantCounts = {
   attentionLevelMismatchGroupDestroy: 1,
   armorBlastMergedTargets: 1,
   bookMoonPositionSet: 1,
   compulsoryToHand: 1,
+  forcesDarknessChainInfoToHand: 1,
   cosmicCycloneBanish: 1,
   costToGraveDestroy: 1,
   destructionRingBothDamage: 1,
@@ -58,6 +59,7 @@ type FreeChainSemanticVariant =
   | "armorBlastMergedTargets"
   | "bookMoonPositionSet"
   | "compulsoryToHand"
+  | "forcesDarknessChainInfoToHand"
   | "cosmicCycloneBanish"
   | "costToGraveDestroy"
   | "destructionRingBothDamage"
@@ -199,6 +201,7 @@ function realScriptChainedFreeChainFixtureFiles(): string[] {
     .filter((file) => !file.endsWith("lua-real-script-crystal-raigeki-cost-target-destroy.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-infinite-impermanence-target-param.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-monster-reborn-free-chain.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-forces-darkness-grave-to-hand.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-omega-judgment-select-unselect-targets.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-recurring-nightmare-grave-to-hand.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-spell-shattering-arrow-group-destroy-damage.test.ts"))
@@ -223,6 +226,10 @@ function realScriptFreeChainFixtures(): Array<{ file: string; kind: FreeChainKin
     },
     {
       file: "lua-real-script-compulsory-evacuation-device-free-chain.test.ts",
+      kind: "toHand",
+    },
+    {
+      file: "lua-real-script-forces-darkness-grave-to-hand.test.ts",
       kind: "toHand",
     },
     {
@@ -329,6 +336,19 @@ function realScriptFreeChainSemanticVariants(): Array<{ file: string; kind: Free
         "restores Compulsory's selected monster target and returns it to hand",
         "const compulsoryCode = \"94192409\"",
         "{ category: 0x8, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 }",
+      ],
+    },
+    {
+      file: "lua-real-script-forces-darkness-grave-to-hand.test.ts",
+      kind: "forcesDarknessChainInfoToHand",
+      required: [
+        "restores targeted Dark World Graveyard monsters from CHAININFO and confirms them to hand",
+        "const forcesCode = \"29826127\"",
+        "return c:IsSetCard(SET_DARK_WORLD) and c:IsMonster() and c:IsAbleToHand()",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "g:Filter(Card.IsRelateToEffect,nil,e)",
+        "{ category: 0x8, targetUids: [darkWorldOne.uid, darkWorldTwo.uid], count: 2, player: 0, parameter: 0 }",
+        "eventName: \"sentToHandConfirmed\"",
       ],
     },
     {
@@ -525,6 +545,7 @@ function countFreeChainSemanticVariants(fixtures: Array<{ kind: FreeChainSemanti
       armorBlastMergedTargets: 0,
       bookMoonPositionSet: 0,
       compulsoryToHand: 0,
+      forcesDarknessChainInfoToHand: 0,
       cosmicCycloneBanish: 0,
       costToGraveDestroy: 0,
       destructionRingBothDamage: 0,
