@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 148;
+export const operationFixtureCount = 149;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -10,6 +10,7 @@ export const operationKindCounts = {
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
   callCoinAtkChange: 1,
+  coinNegateControl: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
   copyNegateDamage: 1,
   counterBoostBattleTargetLock: 1,
@@ -105,6 +106,7 @@ export type OperationKind =
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
   | "callCoinAtkChange"
+  | "coinNegateControl"
   | "costBanishDraw" | "costDiscardDraw"
   | "copyNegateDamage"
   | "counterBoostBattleTargetLock"
@@ -194,6 +196,24 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-head-judging-coin-negate-control.test.ts",
+      kind: "coinNegateControl",
+      required: [
+        "restores monster-effect response into called coin, negated activation, and control steal",
+        "e2:SetCategory(CATEGORY_COIN+CATEGORY_TOGRAVE+CATEGORY_NEGATE+CATEGORY_CONTROL)",
+        "Duel.SetOperationInfo(0,CATEGORY_COIN,nil,0,rp,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,re:GetHandler(),1,0,0)",
+        "if Duel.CallCoin(p) then",
+        "Duel.NegateActivation(ev)",
+        "Duel.GetControl(re:GetHandler(),1-p)",
+        'eventName: "coinTossed"',
+        'eventName: "chainNegated"',
+        'eventName: "controlChanged"',
+        "lastCoinResults).toEqual([0])",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-phantasm-spiral-power-disable-stat.test.ts",
       kind: "targetDisableStat",
@@ -1818,6 +1838,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,
       callCoinAtkChange: 0,
+      coinNegateControl: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
       copyNegateDamage: 0,
       counterBoostBattleTargetLock: 0,
