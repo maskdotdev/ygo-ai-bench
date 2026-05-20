@@ -5,22 +5,27 @@ import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js"
 const luaPhaseEndEventCode = 0x1200;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetsStandardPhaseEndRuntime = luaResetsStandardPhaseEnd & ~0x1000;
+const luaPhaseEndResetFlags = 0x40000200;
 const luaSelfEndPhaseDestroyCodes = new Set(["23289281", "55696885"]);
+const luaSelfDelayedEndPhaseDestroyCodes = new Set(["324483"]);
 const luaSelfEndPhaseSendCodes = new Set(["40971261", "71071546"]);
 
 export function isKnownSelfEndPhaseDestroyEffect(effect: SerializedDuelEffect): boolean {
   const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
-  return (
-    registryCode !== undefined &&
+  if (registryCode === undefined || effect.code !== luaPhaseEndEventCode || effect.sourceUid === undefined || effect.controller === undefined || effect.countLimit !== 1) return false;
+  if (
     luaSelfEndPhaseDestroyCodes.has(registryCode) &&
     (effect.event === "continuous" || effect.event === "trigger") &&
-    effect.code === luaPhaseEndEventCode &&
-    effect.sourceUid !== undefined &&
-    effect.controller !== undefined &&
     effect.range.length === 1 &&
     (effect.range[0] === "monsterZone" || effect.range[0] === "spellTrapZone") &&
-    effect.countLimit === 1 &&
     (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaResetsStandardPhaseEndRuntime)
+  ) return true;
+  return (
+    luaSelfDelayedEndPhaseDestroyCodes.has(registryCode) &&
+    effect.event === "continuous" &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.triggerCode === luaPhaseEndEventCode &&
+    effect.reset?.flags === luaPhaseEndResetFlags
   );
 }
 

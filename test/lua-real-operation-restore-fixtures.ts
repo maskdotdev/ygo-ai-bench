@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 153;
+export const operationFixtureCount = 154;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -78,6 +78,7 @@ export const operationKindCounts = {
   selfEquipFromHand: 1,
   selectEffectStat: 1,
   summonDelayedStatDestroy: 1,
+  targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
   spellDraw: 1,
   trapDraw: 1,
   trapReclamationReturn: 1,
@@ -177,6 +178,7 @@ export type OperationKind =
   | "selfEquipFromHand"
   | "selectEffectStat"
   | "summonDelayedStatDestroy"
+  | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "spellDraw"
   | "trapDraw"
   | "trapReclamationReturn"
@@ -430,6 +432,25 @@ export function operationFixtureFiles(): Array<{
         "Duel.Release(c,REASON_COST)",
         "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
         "currentAttack(restoredTarget, restoredTrigger.session.state)).toBe(4000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ultimate-flame-swordsman-destroy-battle-start.test.ts",
+      kind: "targetDestroyDamageBattleStartDelayedSelfDestroy",
+      required: [
+        "restores targeted monster destruction damage and battle-start final ATK delayed self-destroy",
+        "Fusion.AddProcMix(c,true,true,CARD_FLAME_SWORDSMAN,36319131)",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_DAMAGE)",
+        "e2:SetType(EFFECT_TYPE_QUICK_O)",
+        "Duel.SelectTarget(tp,nil,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,500)",
+        "e3:SetCode(EVENT_BATTLE_START)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "aux.DelayedOperation(c,PHASE_END,id,e,tp,function(cc) Duel.Destroy(cc,REASON_EFFECT) end)",
+        "operationInfos",
+        "currentAttack(restoredBattleTrigger.session.state.cards.find((card) => card.uid === battleSwordsman.uid), restoredBattleTrigger.session.state)).toBe(5600)",
+        'eventName: "damageDealt"',
+        'eventName: "destroyed"',
       ],
     },
     {
@@ -1979,6 +2000,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selfEquipFromHand: 0,
       selectEffectStat: 0,
       summonDelayedStatDestroy: 0,
+      targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
       spellDraw: 0,
       trapDraw: 0,
       trapReclamationReturn: 0,
