@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 105;
+export const operationFixtureCount = 106;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -17,6 +17,7 @@ export const operationKindCounts = {
   chainSolvedTrapDamage: 1,
   deckToGrave: 1,
   deckSplit: 1,
+  deckTopSort: 1,
   discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
@@ -78,6 +79,7 @@ export type OperationKind =
   | "chainSolvedTrapDamage"
   | "deckToGrave"
   | "deckSplit"
+  | "deckTopSort"
   | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
   | "directDamage"
@@ -127,6 +129,18 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-fruits-kozaky-studies-decktop-sort.test.ts",
+      kind: "deckTopSort",
+      required: [
+        "Duel.GetFieldGroupCount(tp,LOCATION_DECK,0)>2",
+        "Duel.SortDecktop(tp,tp,3)",
+        "operationInfos",
+        "deckCodes(restoredOpen.session)).toEqual(initialDeckCodes)",
+        "eventHistory.some((event) => event.eventName === \"cardsDrawn\" || event.eventName === \"sentToDeck\")).toBe(false)",
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-star-light-star-bright-group-level-final.test.ts",
       kind: "groupLevelFinal",
@@ -1130,6 +1144,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainSolvedTrapDamage: 0,
       deckToGrave: 0,
       deckSplit: 0,
+      deckTopSort: 0,
       discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
