@@ -596,6 +596,8 @@ describe("Lua card relation state helpers", () => {
       local c = Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 900), 0, LOCATION_MZONE, 0, 1, 1, nil):GetFirst()
       Debug.Message("fusion type " .. tostring(c:IsSummonType(SUMMON_TYPE_FUSION)) .. "/" .. tostring(c:IsSummonType(SUMMON_TYPE_SPECIAL)) .. "/" .. tostring(c:IsSummonType({SUMMON_TYPE_RITUAL,SUMMON_TYPE_SPECIAL})) .. "/" .. tostring(c:IsSummonType({SUMMON_TYPE_RITUAL,SUMMON_TYPE_SYNCHRO})))
       Debug.Message("fusion phase/materials " .. c:GetSummonPhase() .. "/" .. tostring(c:IsSummonPhase(PHASE_MAIN1)) .. "/" .. tostring(c:IsSummonPhase(PHASE_END,PHASE_MAIN1)) .. "/" .. tostring(c:IsSummonPhase({PHASE_END,PHASE_MAIN1})) .. "/" .. tostring(c:IsSummonPhase(PHASE_END)) .. "/" .. tostring(c:IsSummonPhaseMain()) .. "/" .. tostring(c:IsSummonPhaseBattle()) .. "/" .. c:GetMaterialCount() .. "/" .. c:GetMaterialCountRush())
+      local mg=c:GetMaterial()
+      Debug.Message("fusion material group " .. mg:GetCount() .. "/" .. mg:GetFirst():GetCode())
       Debug.Message("fusion location " .. tostring(c:IsSummonLocation(LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND,LOCATION_EXTRA)) .. "/" .. tostring(c:IsSummonLocation({LOCATION_HAND,LOCATION_EXTRA})) .. "/" .. tostring(c:IsSummonLocation(LOCATION_HAND)))
       Debug.Message("fusion player/type " .. c:GetSummonPlayer() .. "/" .. tostring(c:IsMonsterCard()) .. "/" .. tostring(c:IsFusionMonster()))
       Debug.Message("fusion special " .. tostring(c:IsSpecialSummoned()) .. "/" .. tostring(c:IsFusionSummoned()) .. "/" .. tostring(c:IsRitualSummoned()))
@@ -611,6 +613,7 @@ describe("Lua card relation state helpers", () => {
     expect(fusionResult.ok).toBe(true);
     expect(host.messages).toContain("fusion type false/true/true/false");
     expect(host.messages).toContain("fusion phase/materials 4/true/true/true/false/true/false/2/2");
+    expect(host.messages).toContain("fusion material group 2/100");
     expect(host.messages).toContain("fusion location true/true/true/false");
     expect(host.messages).toContain("fusion player/type 0/true/true");
     expect(host.messages).toContain("fusion special true/false/false");

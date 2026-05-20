@@ -450,6 +450,7 @@ export const cardFieldNames = [
   "IsSummonPhaseBattle",
   "GetMaterialCount",
   "GetMaterialCountRush",
+  "GetMaterial",
   "IsNormalSummoned",
   "IsTributeSummoned",
   "IsFlipSummoned",

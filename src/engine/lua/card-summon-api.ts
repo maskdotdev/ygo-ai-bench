@@ -3,6 +3,7 @@ import { getDuelFlagEffectLabel } from "#duel/flags.js";
 import { phaseMask } from "#duel/phase-mask.js";
 import { locationMatchesCardMask, readTableStringField } from "#lua/api-utils.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
+import { pushGroupTable } from "#lua/group-api.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
@@ -43,6 +44,12 @@ export function installCardSummonApi(L: unknown, session: DuelSession): void {
   });
   pushNumberGetter(L, "GetMaterialCount", session, (card) => materialCount(card));
   pushNumberGetter(L, "GetMaterialCountRush", session, (card) => materialCountRush(card));
+  lua.lua_pushcfunction(L, (state: unknown) => {
+    const card = readCard(state, session);
+    pushGroupTable(state, materialUids(card));
+    return 1;
+  });
+  lua.lua_setfield(L, -2, to_luastring("GetMaterial"));
   pushBooleanGetter(L, "IsNormalSummoned", session, (card) => isSummonTypeMatch(summonTypeMask(card), 0x10000000));
   pushBooleanGetter(L, "IsTributeSummoned", session, (card) => Boolean(card && card.summonType === "tribute"));
   pushBooleanGetter(L, "IsFlipSummoned", session, (card) => Boolean(card && card.summonType === "flip"));
@@ -117,7 +124,11 @@ function summonTypeMask(card: DuelCardInstance | undefined): number {
 }
 
 function materialCount(card: DuelCardInstance | undefined): number {
-  return card?.summonMaterialUids?.length ?? card?.overlayUids.length ?? 0;
+  return materialUids(card).length;
+}
+
+function materialUids(card: DuelCardInstance | undefined): string[] {
+  return [...(card?.summonMaterialUids ?? card?.overlayUids ?? [])];
 }
 
 function materialCountRush(card: DuelCardInstance | undefined): number {
