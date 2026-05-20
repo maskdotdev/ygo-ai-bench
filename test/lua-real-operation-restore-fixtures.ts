@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 165;
+export const operationFixtureCount = 166;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -66,6 +66,7 @@ export const operationKindCounts = {
   handDiscardDraw: 1,
   handToDeckDraw: 1,
   fiveGraveToDeckShuffleDraw: 2,
+  fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
@@ -177,6 +178,7 @@ export type OperationKind =
   | "handDiscardDraw"
   | "handToDeckDraw"
   | "fiveGraveToDeckShuffleDraw"
+  | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
   | "lpCostHandDiscard"
   | "lpCostRandomHandDiscard"
@@ -1835,6 +1837,36 @@ export function operationFixtureFiles(): Array<{
     },
     { file: "test/lua-real-script-jar-avarice-grave-shuffle-draw.test.ts", kind: "fiveGraveToDeckShuffleDraw", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,5,5,nil)", "Duel.GetOperatedGroup()", "Duel.BreakEffect()", "category: 0x10", "category: 0x10000", 'eventName: "sentToDeck"', 'eventName: "cardsDrawn"', "host.messages).not.toContain"] },
     {
+      file: "test/lua-real-script-favorite-hero-shining-flare-wingman-shuffle-draw-burn.test.ts",
+      kind: "fiveGraveShuffleDrawAttackBurn",
+      required: [
+        "restores Extra Deck summon shuffle-draw attack gain and battle-destroying damage",
+        "Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsType,TYPE_FUSION),s.matfilter)",
+        "e1:SetCategory(CATEGORY_TODECK|CATEGORY_DRAW|CATEGORY_ATKCHANGE)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():IsSummonLocation(LOCATION_EXTRA)",
+        "Duel.IsExistingMatchingCard(s.tdfilter,tp,LOCATION_GRAVE,0,5,nil)",
+        "Duel.IsPlayerCanDraw(tp,2)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,nil,5,tp,LOCATION_GRAVE)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,2)",
+        "Duel.SelectMatchingCard(tp,s.tdfilter,tp,LOCATION_GRAVE,0,5,5,nil)",
+        "Duel.SendtoDeck(g,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "Duel.GetOperatedGroup():IsExists(Card.IsLocation,1,nil,LOCATION_DECK)",
+        "Duel.ShuffleDeck(tp)",
+        "Duel.Draw(p,d,REASON_EFFECT)==2",
+        "c:UpdateAttack(1000)",
+        "e2:SetCode(EVENT_BATTLE_DESTROYING)",
+        "local dam=e:GetHandler():GetBattleTarget():GetBaseAttack()",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "sentToDeck"',
+        'eventName: "cardsDrawn"',
+        'eventName: "battleDestroyed"',
+        'eventName: "damageDealt"',
+        "lifePoints).toBe(4500)",
+      ],
+    },
+    {
       file: "test/lua-real-script-raigeki-group-destroy.test.ts",
       kind: "groupDestroy",
       required: [
@@ -2260,6 +2292,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handDiscardDraw: 0,
       handToDeckDraw: 0,
       fiveGraveToDeckShuffleDraw: 0,
+      fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
       lpCostHandDiscard: 0,
       lpCostRandomHandDiscard: 0,
