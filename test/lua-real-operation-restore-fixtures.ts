@@ -1,11 +1,12 @@
 import path from "node:path";
 
-export const operationFixtureCount = 119;
+export const operationFixtureCount = 120;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
   announceHandBanish: 1,
   announceHandDiscard: 1,
+  callCoinAtkChange: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
@@ -73,6 +74,7 @@ export type OperationKind =
   | "announceDeckBanishDisable"
   | "announceHandBanish"
   | "announceHandDiscard"
+  | "callCoinAtkChange"
   | "costBanishDraw" | "costDiscardDraw"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
@@ -1049,6 +1051,21 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-goddess-two-sides-call-coin-atk.test.ts",
+      kind: "callCoinAtkChange",
+      required: [
+        'const goddessCode = "50915474"',
+        "Duel.SetOperationInfo(0,CATEGORY_COIN,nil,0,tp,1)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOGRAVE,g,#g,tp,0)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "if Duel.CallCoin(tp) then",
+        "e1:SetValue(tc:GetAttack()*2)",
+        'eventName: "coinTossed"',
+        "currentAttack(restoredChain.session.state.cards.find",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-ryzeal-cross-grave-to-deck-bottom-draw.test.ts",
       kind: "graveToDeckBottomDraw",
       required: [
@@ -1238,6 +1255,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceDeckBanishDisable: 0,
       announceHandBanish: 0,
       announceHandDiscard: 0,
+      callCoinAtkChange: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
