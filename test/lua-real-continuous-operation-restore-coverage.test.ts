@@ -4,10 +4,11 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 9;
+const continuousOperationFixtureCount = 10;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
   chainSolvingDoubleSnareNegateDestroy: 1,
+  chainSolvingDiceNegateDestroy: 1,
   chainSolvingEquipNegateSend: 1,
   chainSolvingCustomSearch: 1,
   continuousRedirect: 2,
@@ -25,11 +26,13 @@ const continuousOperationSemanticVariantCounts = {
   goraTurtleTargetedSpellNegateDestroy: 1,
   magicalMusketeerCasparHandTrapSearch: 1,
   missusRadiantAttributeStatDestroyedToHand: 1,
+  skullArchfiendDiceTargetNegateDestroy: 1,
 } satisfies Record<ContinuousOperationSemanticVariant, number>;
 
 type ContinuousOperationKind =
   | "attributeStatDestroyedToHand"
   | "chainSolvingDoubleSnareNegateDestroy"
+  | "chainSolvingDiceNegateDestroy"
   | "chainSolvingEquipNegateSend"
   | "chainSolvingCustomSearch"
   | "continuousRedirect"
@@ -46,7 +49,8 @@ type ContinuousOperationSemanticVariant =
   | "fenghuangSetBackrowDestroy"
   | "goraTurtleTargetedSpellNegateDestroy"
   | "magicalMusketeerCasparHandTrapSearch"
-  | "missusRadiantAttributeStatDestroyedToHand";
+  | "missusRadiantAttributeStatDestroyedToHand"
+  | "skullArchfiendDiceTargetNegateDestroy";
 
 describe("Lua real continuous operation restore coverage", () => {
   it("requires continuous operation fixtures to assert clean restore and restored outcomes", () => {
@@ -96,6 +100,28 @@ function continuousOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-skull-archfiend-dice-target-negate.test.ts",
+      kind: "chainSolvingDiceNegateDestroy",
+      required: [
+        "restores mandatory Standby LP upkeep and dice-gated chain-solving targeted-effect negation",
+        "EVENT_PHASE|PHASE_STANDBY",
+        "Duel.CheckLPCost(tp,500)",
+        "Duel.PayLPCost(tp,500)",
+        "Duel.Destroy(e:GetHandler(),REASON_COST)",
+        "EVENT_CHAIN_SOLVING",
+        "Duel.GetChainInfo(ev,CHAININFO_TARGET_CARDS)",
+        "Duel.TossDice(tp,1)",
+        "Duel.NegateEffect(ev)",
+        "Duel.Destroy(rc,REASON_EFFECT)",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "diceTossed"',
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        'eventName: "destroyed"',
+        "host.messages).not.toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-gora-turtle-targeted-spell-negate.test.ts",
       kind: "chainSolvingDoubleSnareNegateDestroy",
@@ -238,6 +264,7 @@ function countContinuousOperationKinds(
     {
       attributeStatDestroyedToHand: 0,
       chainSolvingDoubleSnareNegateDestroy: 0,
+      chainSolvingDiceNegateDestroy: 0,
       chainSolvingEquipNegateSend: 0,
       chainSolvingCustomSearch: 0,
       continuousRedirect: 0,
@@ -254,6 +281,19 @@ function continuousOperationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-skull-archfiend-dice-target-negate.test.ts",
+      kind: "skullArchfiendDiceTargetNegateDestroy",
+      required: [
+        'const skullArchfiendCode = "61370518"',
+        "setArchfiend = 0x45",
+        "eventName: \"lifePointCostPaid\"",
+        "eventName: \"diceTossed\"",
+        "lastDiceResults).toEqual([3])",
+        "relatedEffectId: 4",
+        "eventReasonCardUid: skull.uid",
+      ],
+    },
     {
       file: "test/lua-real-script-gora-turtle-targeted-spell-negate.test.ts",
       kind: "goraTurtleTargetedSpellNegateDestroy",
@@ -387,6 +427,7 @@ function countContinuousOperationSemanticVariants(
       goraTurtleTargetedSpellNegateDestroy: 0,
       magicalMusketeerCasparHandTrapSearch: 0,
       missusRadiantAttributeStatDestroyedToHand: 0,
+      skullArchfiendDiceTargetNegateDestroy: 0,
     },
   );
 }
