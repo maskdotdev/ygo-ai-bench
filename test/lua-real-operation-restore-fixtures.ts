@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 98;
+export const operationFixtureCount = 99;
 export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -25,7 +25,7 @@ export const operationKindCounts = {
   flipTargetDestroy: 1,
   fusionDeckMaterials: 1,
   groupDestroy: 10,
-  groupToHand: 1,
+  groupToHand: 2,
   graveToDeckBottomDraw: 1,
   handDiscardDraw: 1,
   handToDeckDraw: 1,
@@ -246,6 +246,24 @@ export function operationFixtureFiles(): Array<{
         'location: "hand"',
         "eventReasonEffectId: 2",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-pendulum-paradox-extra-hand.test.ts",
+      kind: "groupToHand",
+      required: [
+        'const paradoxCode = "38203732"',
+        "restores face-up Extra Deck Pendulum scale matching into paired to-hand confirmation",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "c:GetLeftScale()==sc and not c:IsCode(cd)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,2,tp,LOCATION_EXTRA)",
+        "Duel.SendtoHand(Group.FromCards(tc1,tc2),nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,Group.FromCards(tc1,tc2))",
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        "eventUids: [pendulumOne.uid, pendulumTwo.uid]",
+        'location: "extraDeck"',
+        'location: "hand"',
       ],
     },
     {
