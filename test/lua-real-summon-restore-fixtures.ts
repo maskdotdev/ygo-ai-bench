@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 300;
+export const realScriptSummonFixtureCount = 301;
 export const summonProcedureFixtureCount = 33;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -31,7 +31,7 @@ export const realScriptSummonKeywordFamilyCounts = {
   link: 19,
   pendulum: 20,
   ritual: 26,
-  summon: 152,
+  summon: 153,
   synchro: 20,
   xyz: 16,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
@@ -127,6 +127,7 @@ export const summonSemanticVariantCounts = {
   selfToGraveHandCodeSummon: 1,
   noCostHandSetcodeTunerSummon: 1,
   delayedDestroyedDeckSetcodeSummon: 1,
+  delayedToGraveDeckAttackSummon: 1,
 } satisfies Record<SummonSemanticVariant, number>;
 
 export type SummonUnionProcedureKind =
@@ -153,7 +154,7 @@ export type SelfTributeZoneSpecialSummonKind =
   | "selfTributeFreesMonsterZone"
   | "selfTributeHandSummonFreesMonsterZone";
 export type SummonSemanticVariant =
-  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction" | "graveSelfBanishDeckSummonDarkOath" | "summonSuccessWarriorHandSummonTargetLock" | "discardSelfSummonSynchroOath" | "opponentBattleReasonTargetSummon" | "decktopExcavateOptionalSummon" | "selfToGraveHandCodeSummon" | "noCostHandSetcodeTunerSummon" | "delayedDestroyedDeckSetcodeSummon";
+  | "realScriptSummonKeywordCorpus" | "summonProcedureLegalWindows" | "typedSummonProcedurePlacement" | "pendulumGrantConsumption" | "pendulumHelperGrantFilters" | "unionEquipAndSummonBackProcedures" | "summonMaterialLockSuppression" | "flipSummonSuccessTrapResponses" | "linkedZoneSpecialSummons" | "selfTributeZoneSpecialSummons" | "releaseCostSpecialSummons" | "freeChainSpecialSummons" | "ignitionCostSpecialSummons" | "discardTriggerSpecialSummons" | "summonSuccessTargetSpecialSummons" | "summonSuccessSelfSpecialSummons" | "tributeMaterialValuePredicates" | "unsummonableSummonSetLocks" | "forceMonsterZoneSummonLocks" | "mandatoryBanishedPhaseReturnSummons" | "standbySelfToGraveEvolutionSummons" | "weatherPainterReturnRegistration" | "geminiReviveLeaveFieldTargetDestruction" | "graveSelfBanishDeckSummonDarkOath" | "summonSuccessWarriorHandSummonTargetLock" | "discardSelfSummonSynchroOath" | "opponentBattleReasonTargetSummon" | "decktopExcavateOptionalSummon" | "selfToGraveHandCodeSummon" | "noCostHandSetcodeTunerSummon" | "delayedDestroyedDeckSetcodeSummon" | "delayedToGraveDeckAttackSummon";
 export type RealScriptSummonKeywordFamily =
   | "fusion"
   | "link"
@@ -976,6 +977,7 @@ export function summonSemanticVariants(): Array<{ file: string; kind: SummonSema
     { file: "test/lua-real-script-black-dragon-chick-self-grave-hand-summon.test.ts", kind: "selfToGraveHandCodeSummon" as const },
     { file: "test/lua-real-script-tg-catapult-dragon-hand-tuner-summon.test.ts", kind: "noCostHandSetcodeTunerSummon" as const },
     { file: "test/lua-real-script-silver-gadget-destroyed-deck-summon.test.ts", kind: "delayedDestroyedDeckSetcodeSummon" as const },
+    { file: "test/lua-real-script-mystic-potato-to-grave-deck-summon.test.ts", kind: "delayedToGraveDeckAttackSummon" as const },
   ];
 }
 
@@ -1019,6 +1021,7 @@ export function countSummonSemanticVariants(
       selfToGraveHandCodeSummon: 0,
       noCostHandSetcodeTunerSummon: 0,
       delayedDestroyedDeckSetcodeSummon: 0,
+      delayedToGraveDeckAttackSummon: 0,
     },
   );
 }
@@ -1063,6 +1066,7 @@ export function groupSummonSemanticVariantFiles(
       selfToGraveHandCodeSummon: [],
       noCostHandSetcodeTunerSummon: [],
       delayedDestroyedDeckSetcodeSummon: [],
+      delayedToGraveDeckAttackSummon: [],
     },
   );
 }
