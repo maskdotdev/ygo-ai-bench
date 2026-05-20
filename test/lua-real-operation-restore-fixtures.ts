@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 167;
+export const operationFixtureCount = 168;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -83,7 +83,7 @@ export const operationKindCounts = {
   releaseDamage: 3,
   reviveStatBattleDamage: 1,
   ritualDeckMaterials: 1,
-  searchOrExcavate: 36,
+  searchOrExcavate: 37,
   selfEquipFromHand: 1,
   setAttackFinalSpecialDamage: 1,
   selectEffectStat: 1,
@@ -1781,6 +1781,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-alsei-announce-decktop-tohand.test.ts", kind: "searchOrExcavate", required: ["Xyz.AddProcedure(c,nil,8,2)", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.ConfirmDecktop(tp,1)", "level: 8", "xyzMaterialCount: 2", "operationInfos).toEqual([", 'eventName: "confirmed"', 'eventName: "sentToHand"', "shuffleCheckDisabled).toBe(true)", "host.messages).not.toContain"] },
     { file: "test/lua-real-script-gishki-diviner-announce-decktop.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_IGNITION)", "e1:SetRange(LOCATION_MZONE)", "e1:SetCountLimit(1)", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.GetDecktopGroup(tp,1)", "Duel.DisableShuffleCheck()", "Duel.ShuffleHand(tp)", 'api: "AnnounceCard"', 'eventName: "confirmed"', 'eventName: "sentToHand"', "shuffleCheckDisabled).toBe(true)"] },
     { file: "test/lua-real-script-dark-designator-announce-opponent-deck-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCategory(CATEGORY_SEARCH)", "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", "Duel.SelectMatchingCard(1-tp,s.filter,1-tp,LOCATION_DECK,0,1,1,nil,code)", "Duel.SendtoHand(tc,nil,REASON_EFFECT)", "Duel.ConfirmCards(tp,tc)", 'api: "AnnounceCard"', 'eventName: "sentToHand"', 'eventName: "confirmed"', "duelReason.rule"] },
+    { file: "test/lua-real-script-dora-dora-decktop-excavate-stat.test.ts", kind: "searchOrExcavate", required: ["restores Deck-top confirmation, excavate-to-Grave, shuffle check suppression, and UpdateAttack", 'const doraCode = "11590299"', "Duel.ConfirmDecktop(tp,1)", "Duel.GetDecktopGroup(tp,1):GetFirst()", "Duel.DisableShuffleCheck()", "Duel.SendtoGrave(tc,REASON_EFFECT|REASON_EXCAVATE)", "e:GetHandler():UpdateAttack(ct*1000)", "Duel.MoveToDeckBottom(tc)", "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dora.uid), restoredOpen.session.state)).toBe(1400)", 'eventName: "confirmed"', 'eventName: "sentToGraveyard"', "shuffleCheckDisabled).toBe(true)"] },
     { file: "test/lua-real-script-lullaby-obedience-announce-option-hand.test.ts", kind: "searchOrExcavate", required: ["e1:SetCost(Cost.PayLP(2000))", "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,1-tp,LOCATION_DECK)", "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,1-tp,LOCATION_DECK)", "g:FilterSelect(1-tp,Card.IsCode,1,1,nil,ac)", "Duel.SelectOption(1-tp,aux.Stringid(id,0),aux.Stringid(id,1))", "Duel.SendtoHand(sg,tp,REASON_EFFECT)", 'api: "SelectOption"', 'eventName: "lifePointCostPaid"', 'eventName: "sentToHand"', "duelReason.rule"] },
     { file: "test/lua-real-script-speedroid-scratch-cost-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_HAND,0,1,1,c)", "Duel.SendtoGrave(g,REASON_COST)", "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK,0,1,1,nil)", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-archfiend-general-search-environment-self-destroy.test.ts", kind: "searchOrExcavate", required: ["e1:SetCost(Cost.SelfDiscardToGrave)", "Duel.GetFirstMatchingCard(s.filter,tp,LOCATION_DECK,0,nil)", "e2:SetCode(EFFECT_SELF_DESTROY)", "return not Duel.IsEnvironment(94585852)", "operationInfos).toEqual([{ category: 0x8", 'eventName: "sentToGraveyard"', 'eventName: "sentToHandConfirmed"', "archfiend environment active false"] },
