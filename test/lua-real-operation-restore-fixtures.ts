@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 111;
+export const operationFixtureCount = 112;
 export const operationKindCounts = {
+  announceHandBanish: 1,
   announceHandDiscard: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -66,6 +67,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "announceHandBanish"
   | "announceHandDiscard"
   | "costBanishDraw" | "costDiscardDraw"
   | "crossPlayerGraveToDeckTrap"
@@ -133,6 +135,22 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-dd-designator-announce-hand-banish.test.ts",
+      kind: "announceHandBanish",
+      required: [
+        "e1:SetCategory(CATEGORY_REMOVE)",
+        "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))",
+        "Duel.ConfirmCards(tp,hg)",
+        "Duel.GetMatchingGroup(Card.IsCode,tp,0,LOCATION_HAND,nil,ac)",
+        "Duel.Remove(sg,POS_FACEUP,REASON_EFFECT)",
+        "Duel.ShuffleHand(1-tp)",
+        'api: "AnnounceCard"',
+        'eventName: "confirmed"',
+        'eventName: "banished"',
+        "duelReason.rule",
+      ],
+    },
     {
       file: "test/lua-real-script-mind-crush-announce-hand-discard.test.ts",
       kind: "announceHandDiscard",
@@ -1164,6 +1182,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      announceHandBanish: 0,
       announceHandDiscard: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
       crossPlayerGraveToDeckTrap: 0,
