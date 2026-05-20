@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const chainResponseFixtureCount = 23;
+const chainResponseFixtureCount = 24;
 const chainResponseKindCounts = {
   chainParamRetargetResponse: 1,
+  chainNegateSelfTributeReviveResponse: 1,
   chainPlayerRetargetResponse: 1,
   chainSearchResponse: 1,
   chainTargetRetargetResponse: 1,
@@ -40,6 +41,7 @@ const chainResponseSemanticVariantCounts = {
   shreddderHandMachineLevelDestroy: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
   raigekiBreakDiscardCostDestroy: 1,
+  ruddyRoseNegateRevive: 1,
   solemnWarningSpecialSummonEffectNegate: 1,
   spellReactorChainDestroyDamage: 1,
   synchBlastWaveSynchroGateTargetDestroy: 1,
@@ -50,6 +52,7 @@ const chainResponseSemanticVariantCounts = {
 } satisfies Record<ChainResponseSemanticVariant, number>;
 
 type ChainResponseKind =
+  | "chainNegateSelfTributeReviveResponse"
   | "chainParamRetargetResponse"
   | "chainPlayerRetargetResponse"
   | "chainSearchResponse"
@@ -83,6 +86,7 @@ type ChainResponseSemanticVariant =
   | "shreddderHandMachineLevelDestroy"
   | "overwhelmTributeGateTrapNegateDestroy"
   | "raigekiBreakDiscardCostDestroy"
+  | "ruddyRoseNegateRevive"
   | "solemnWarningSpecialSummonEffectNegate"
   | "spellReactorChainDestroyDamage"
   | "synchBlastWaveSynchroGateTargetDestroy"
@@ -427,6 +431,21 @@ function chainResponseFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ruddy-rose-negate-revive.test.ts",
+      kind: "chainNegateSelfTributeReviveResponse",
+      required: [
+        "restores destroy-operation chain negation, SelfTribute cost, and optional Black Rose Special Summon",
+        "local ex,tg,tc=Duel.GetOperationInfo(ev,CATEGORY_DESTROY)",
+        "e2:SetCost(Cost.SelfTribute)",
+        "Duel.NegateActivation(ev)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,3))",
+        "Duel.SpecialSummon(sg,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "released"',
+        'eventName: "chainNegated"',
+        'eventName: "specialSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
       kind: "summonEffectNegateResponse",
       required: [
@@ -452,6 +471,7 @@ function countChainResponseKinds(fixtures: Array<{ kind: ChainResponseKind }>): 
       return counts;
     },
     {
+      chainNegateSelfTributeReviveResponse: 0,
       chainParamRetargetResponse: 0,
       chainPlayerRetargetResponse: 0,
       chainSearchResponse: 0,
@@ -656,6 +676,22 @@ function chainResponseSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ruddy-rose-negate-revive.test.ts",
+      kind: "ruddyRoseNegateRevive",
+      required: [
+        'const ruddyRoseCode = "40139997"',
+        'const blackRoseCode = "73580471"',
+        "restores destroy-operation chain negation, SelfTribute cost, and optional Black Rose Special Summon",
+        "Duel.NegateActivation(ev)",
+        "Duel.SpecialSummon(sg,0,tp,tp,false,false,POS_FACEUP)",
+        "api: \"SelectYesNo\"",
+        "eventName: \"released\"",
+        "eventName: \"specialSummoned\"",
+        "eventName: \"chainNegated\"",
+        "host.messages).not.toContain(\"ruddy rose starter resolved\")",
+      ],
+    },
+    {
       file: "test/lua-real-script-solemn-warning-special-summon-effect-negate-part2.test.ts",
       kind: "solemnWarningSpecialSummonEffectNegate",
       required: [
@@ -760,6 +796,7 @@ function countChainResponseSemanticVariants(
       shreddderHandMachineLevelDestroy: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
       raigekiBreakDiscardCostDestroy: 0,
+      ruddyRoseNegateRevive: 0,
       solemnWarningSpecialSummonEffectNegate: 0,
       spellReactorChainDestroyDamage: 0,
       synchBlastWaveSynchroGateTargetDestroy: 0,
