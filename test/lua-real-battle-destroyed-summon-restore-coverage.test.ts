@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDestroyedSummonFixtureCount = 4;
+const battleDestroyedSummonFixtureCount = 5;
 const battleDestroyedSummonKindCounts = {
   battleDestroyedTrapActivationDeckSummon: 1,
   optionalDeckDefenseSpecialSummon: 1,
   optionalDeckRaceDefenseSpecialSummon: 1,
   optionalDeckSpecialSummon: 1,
+  optionalOpponentAttackerDeckRaceAttackSummon: 1,
 } satisfies Record<BattleDestroyedSummonKind, number>;
 const battleDestroyedSummonSemanticVariantCounts = {
   heroSignalBattleDestroyedTrapDeckSummon: 1,
   phantomMagicianHeroDefenseDeckSummon: 1,
+  redSparrowOpponentAttackerWarriorDeckSummon: 1,
   tricularBattleDestroyedDeckSummon: 1,
   unmaskedDragonWyrmDefenseDeckSummon: 1,
 } satisfies Record<BattleDestroyedSummonSemanticVariant, number>;
@@ -22,10 +24,12 @@ type BattleDestroyedSummonKind =
   | "battleDestroyedTrapActivationDeckSummon"
   | "optionalDeckDefenseSpecialSummon"
   | "optionalDeckRaceDefenseSpecialSummon"
-  | "optionalDeckSpecialSummon";
+  | "optionalDeckSpecialSummon"
+  | "optionalOpponentAttackerDeckRaceAttackSummon";
 type BattleDestroyedSummonSemanticVariant =
   | "heroSignalBattleDestroyedTrapDeckSummon"
   | "phantomMagicianHeroDefenseDeckSummon"
+  | "redSparrowOpponentAttackerWarriorDeckSummon"
   | "tricularBattleDestroyedDeckSummon"
   | "unmaskedDragonWyrmDefenseDeckSummon";
 
@@ -127,6 +131,22 @@ function battleDestroyedSummonFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-red-sparrow-summoner-battle-destroyed-warrior-summon.test.ts",
+      kind: "optionalOpponentAttackerDeckRaceAttackSummon",
+      required: [
+        'const sparrowCode = "81354330"',
+        'const warriorTargetCode = "81354331"',
+        "restores opponent-attacker battle destruction into low-ATK Warrior Deck Special Summon",
+        "Duel.GetAttacker():IsControler(1-tp)",
+        "c:IsAttackBelow(1500) and c:IsRace(RACE_WARRIOR)",
+        'triggerBucket: "opponentOptional"',
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        'position: "faceUpAttack"',
+        'location: "deck", controller: 0',
+      ],
+    },
+    {
       file: "test/lua-real-script-tricular-battle-destroyed-summon.test.ts",
       kind: "optionalDeckSpecialSummon",
       required: [
@@ -190,6 +210,19 @@ function battleDestroyedSummonSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-red-sparrow-summoner-battle-destroyed-warrior-summon.test.ts",
+      kind: "redSparrowOpponentAttackerWarriorDeckSummon",
+      required: [
+        'triggerEvent: "battleDestroyed"',
+        "triggerSourceOnly: true",
+        'type === "activateTrigger"',
+        "Duel.GetAttacker():IsControler(1-tp)",
+        "c:IsRace(RACE_WARRIOR)",
+        "POS_FACEUP_ATTACK",
+        "eventReasonCardUid: sparrow.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-tricular-battle-destroyed-summon.test.ts",
       kind: "tricularBattleDestroyedDeckSummon",
       required: [
@@ -225,6 +258,7 @@ function countBattleDestroyedSummonKinds(fixtures: Array<{ kind: BattleDestroyed
       optionalDeckDefenseSpecialSummon: 0,
       optionalDeckRaceDefenseSpecialSummon: 0,
       optionalDeckSpecialSummon: 0,
+      optionalOpponentAttackerDeckRaceAttackSummon: 0,
     },
   );
 }
@@ -240,6 +274,7 @@ function countBattleDestroyedSummonSemanticVariants(
     {
       heroSignalBattleDestroyedTrapDeckSummon: 0,
       phantomMagicianHeroDefenseDeckSummon: 0,
+      redSparrowOpponentAttackerWarriorDeckSummon: 0,
       tricularBattleDestroyedDeckSummon: 0,
       unmaskedDragonWyrmDefenseDeckSummon: 0,
     },
