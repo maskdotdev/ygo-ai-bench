@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 192;
+export const operationFixtureCount = 193;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -27,6 +27,7 @@ export const operationKindCounts = {
   detachBattleDestroyBurnAtkDestroyedBurn: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 2,
+  banishedMachineDeckLinkedDisable: 1,
   banishedToDeckSelfSummon: 1,
   banishedToSpecialSummon: 1,
   battleDestroyedDeckSummon: 1,
@@ -164,6 +165,7 @@ export type OperationKind =
   | "detachBattleDestroyBurnAtkDestroyedBurn"
   | "banishedToGraveReturn"
   | "banishedToHand"
+  | "banishedMachineDeckLinkedDisable"
   | "banishedToDeckSelfSummon"
   | "banishedToSpecialSummon"
   | "battleDestroyedDeckSummon"
@@ -600,6 +602,26 @@ export function operationFixtureFiles(): Array<{
         "currentDefense(restoredTarget, restored.session.state)).toBe(700)",
         "isCardDisabled",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-orcustrion-banished-machine-deck-disable.test.ts",
+      kind: "banishedMachineDeckLinkedDisable",
+      required: [
+        "restores banished Machine targets to Deck, operated shuffle, and linked opponent stat disable",
+        "e3:SetCategory(CATEGORY_TODECK+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE+CATEGORY_DISABLE)",
+        "Duel.SelectTarget(tp,s.tdfilter,tp,LOCATION_REMOVED,0,3,3,nil)",
+        "Duel.SendtoDeck(tg,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        "local og=Duel.GetOperatedGroup()",
+        "Duel.ShuffleDeck(tp)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsLinked),tp,0,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_DISABLE)",
+        "e4:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e5:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        'eventName: "becameTarget"',
+        'eventName: "sentToDeck"',
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -2838,6 +2860,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       detachBattleDestroyBurnAtkDestroyedBurn: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
+      banishedMachineDeckLinkedDisable: 0,
       banishedToDeckSelfSummon: 0,
       banishedToSpecialSummon: 0,
       battleDestroyedDeckSummon: 0,
