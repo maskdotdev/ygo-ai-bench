@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 141;
+export const operationFixtureCount = 142;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -65,6 +65,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 1,
   raidraptorBattleDestroyDamage: 1,
   releaseDamage: 3,
+  reviveStatBattleDamage: 1,
   ritualDeckMaterials: 1,
   searchOrExcavate: 36,
   selfEquipFromHand: 1,
@@ -154,6 +155,7 @@ export type OperationKind =
   | "pzoneDestroySearch"
   | "raidraptorBattleDestroyDamage"
   | "releaseDamage"
+  | "reviveStatBattleDamage"
   | "ritualDeckMaterials"
   | "searchOrExcavate"
   | "selfEquipFromHand"
@@ -215,6 +217,24 @@ export function operationFixtureFiles(): Array<{
         'eventName: "battleDestroyed"',
         'eventName: "specialSummoned"',
         'summonType: "special"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-darkblaze-revive-stat-battle-damage.test.ts",
+      kind: "reviveStatBattleDamage",
+      required: [
+        "restores Graveyard Special Summon stat doubling into battle-destroying target-parameter damage",
+        "return e:GetHandler():IsPreviousLocation(LOCATION_GRAVE)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetCode(EVENT_BATTLE_DESTROYING)",
+        "local bc=c:GetBattleTarget()",
+        "Duel.SetTargetParam(dam)",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+        "currentAttack(restoredDarkblaze, restoredStatTrigger.session.state)).toBe(2400)",
+        "currentDefense(restoredDarkblaze, restoredStatTrigger.session.state)).toBe(2000)",
+        'eventName: "damageDealt"',
+        "players[1]!.lifePoints).toBe(5600)",
       ],
     },
     {
@@ -1735,6 +1755,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       pzoneDestroySearch: 0,
       raidraptorBattleDestroyDamage: 0,
       releaseDamage: 0,
+      reviveStatBattleDamage: 0,
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
