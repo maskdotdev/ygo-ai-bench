@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 14;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 13;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 15;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 14;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 2,
@@ -14,6 +14,7 @@ const summonProcedureKindCounts = {
   handAttributeBanishCostSearchProcedure: 1,
   handReleaseEquipTurnCounterProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
+  handOwnEmptyOpponentMonsterProcedure: 1,
   handOpponentCountProcedure: 1,
   handOwnFaceupLevelOrLinkOpenZoneProcedure: 2,
   handOpponentBackrowCountProcedure: 1,
@@ -29,6 +30,7 @@ const summonProcedureSemanticVariantCounts = {
   gigaraysGandoraTwoMonsterSendCostProcedure: 1,
   greatMothCocoonEquipTurnCounterReleaseProcedure: 1,
   magnetDollBothFieldsGimmickOnlyHandProcedure: 1,
+  earthArmorNinjaOwnEmptyOpponentMonsterProcedure: 1,
   megarockDragonGraveBanishStatProcedure: 1,
   escherOpponentBackrowCountProcedure: 1,
   pankratopsOpponentControlsMoreHandProcedure: 1,
@@ -45,6 +47,7 @@ type SummonProcedureKind =
   | "handOwnFaceupAttributeOpenZoneProcedure"
   | "handReleaseEquipTurnCounterProcedure"
   | "handBothFieldsGimmickOnlyProcedure"
+  | "handOwnEmptyOpponentMonsterProcedure"
   | "handOpponentCountProcedure"
   | "handOwnFaceupLevelOrLinkOpenZoneProcedure"
   | "handOpponentBackrowCountProcedure"
@@ -59,6 +62,7 @@ type SummonProcedureSemanticVariant =
   | "gigaraysGandoraTwoMonsterSendCostProcedure"
   | "greatMothCocoonEquipTurnCounterReleaseProcedure"
   | "magnetDollBothFieldsGimmickOnlyHandProcedure"
+  | "earthArmorNinjaOwnEmptyOpponentMonsterProcedure"
   | "megarockDragonGraveBanishStatProcedure"
   | "escherOpponentBackrowCountProcedure"
   | "pankratopsOpponentControlsMoreHandProcedure"
@@ -107,6 +111,24 @@ const summonProcedureFixtures = [
       'fieldCase: "ownNonPuppet"',
       'fieldCase: "ownFaceDownPuppet"',
       'action.type === "specialSummonProcedure"',
+      "getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0))",
+      "getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))",
+      "applyRestoredActionAndAssert(restored, procedure!)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-earth-armor-ninja-empty-field-procedure.test.ts",
+    kind: "handOwnEmptyOpponentMonsterProcedure",
+    required: [
+      "own MZONE is empty and opponent controls a monster",
+      'fieldCase: "noOpponentMonster"',
+      'fieldCase: "ownMonsterPresent"',
+      'action.type === "specialSummonProcedure"',
+      "Duel.GetFieldGroupCount(c:GetControler(),LOCATION_MZONE,0,nil)==0",
+      "Duel.GetFieldGroupCount(c:GetControler(),0,LOCATION_MZONE,nil)>0",
+      "Duel.GetLocationCount(c:GetControler(),LOCATION_MZONE)>0",
       "getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0))",
       "getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0))",
       "applyRestoredActionAndAssert(restored, procedure!)",
@@ -383,6 +405,7 @@ function countSummonProcedureKinds(
       handOpponentSpellTrapOrMstProcedure: 0,
       handReleaseEquipTurnCounterProcedure: 0,
       handBothFieldsGimmickOnlyProcedure: 0,
+      handOwnEmptyOpponentMonsterProcedure: 0,
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
     },
@@ -481,6 +504,18 @@ function summonProcedureSemanticVariants(): Array<{
         "both-fields Gimmick Puppet-only hand Special Summon procedure",
         'fieldCase: "ownNonPuppet"',
         'fieldCase: "ownFaceDownPuppet"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-earth-armor-ninja-empty-field-procedure.test.ts",
+      kind: "earthArmorNinjaOwnEmptyOpponentMonsterProcedure",
+      required: [
+        'const earthArmorCode = "22812068"',
+        "restores its hand procedure only when own MZONE is empty and opponent controls a monster",
+        'fieldCase: "noOpponentMonster"',
+        'fieldCase: "ownMonsterPresent"',
+        "Duel.GetFieldGroupCount(c:GetControler(),LOCATION_MZONE,0,nil)==0",
+        'eventName: "specialSummoned"',
       ],
     },
     {
@@ -624,6 +659,7 @@ function countSummonProcedureSemanticVariants(
       gigaraysGandoraTwoMonsterSendCostProcedure: 0,
       greatMothCocoonEquipTurnCounterReleaseProcedure: 0,
       magnetDollBothFieldsGimmickOnlyHandProcedure: 0,
+      earthArmorNinjaOwnEmptyOpponentMonsterProcedure: 0,
       megarockDragonGraveBanishStatProcedure: 0,
       escherOpponentBackrowCountProcedure: 0,
       pankratopsOpponentControlsMoreHandProcedure: 0,
