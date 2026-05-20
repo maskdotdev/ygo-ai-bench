@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 172;
+export const operationFixtureCount = 173;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -61,6 +61,7 @@ export const operationKindCounts = {
   groupDestroyDamageStatLp: 1,
   groupToGraveFinalAttack: 1,
   handStatBoost: 1,
+  twoTargetPositionCopyStat: 1,
   groupToHand: 2,
   graveTargetToHand: 2,
   graveToDeckBottomDraw: 1,
@@ -178,6 +179,7 @@ export type OperationKind =
   | "groupDestroyDamageStatLp"
   | "groupToGraveFinalAttack"
   | "handStatBoost"
+  | "twoTargetPositionCopyStat"
   | "groupToHand"
   | "graveTargetToHand"
   | "graveToDeckBottomDraw"
@@ -507,6 +509,26 @@ export function operationFixtureFiles(): Array<{
         "e2:SetValue(1500)",
         "currentAttack(boosted, restoredChain.session.state)).toBe(2000)",
         "currentDefense(boosted, restoredChain.session.state)).toBe(2500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-karakuri-gold-dust-position-copy-stat.test.ts",
+      kind: "twoTargetPositionCopyStat",
+      required: [
+        "restores two-target Damage Step activation into source position change and copied ATK boost",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "return Duel.IsBattlePhase() and aux.StatChangeDamageStepCondition()",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,g1:GetFirst())",
+        "local g=Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "Duel.ChangePosition(tc1,POS_FACEUP_DEFENSE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc1:GetAttack())",
+        'eventName === "becameTarget"',
+        "eventCardUid)).toEqual([",
+        "operationInfos",
+        "currentAttack(boosted, restoredOpen.session.state)).toBe(3100)",
       ],
     },
     {
@@ -2398,6 +2420,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       groupDestroyDamageStatLp: 0,
       groupToGraveFinalAttack: 0,
       handStatBoost: 0,
+      twoTargetPositionCopyStat: 0,
       groupLevelFinal: 0,
       groupToHand: 0,
       graveTargetToHand: 0,
