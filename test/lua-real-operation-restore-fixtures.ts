@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 124;
+export const operationFixtureCount = 125;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -57,6 +57,7 @@ export const operationKindCounts = {
   spellDraw: 1,
   trapDraw: 1,
   trapReclamationReturn: 1,
+  trapStepSummonOperatedCounter: 1,
   targetCardsCounterDisable: 1,
   targetBanish: 1,
   targetBanishDiscardCost: 1,
@@ -129,6 +130,7 @@ export type OperationKind =
   | "spellDraw"
   | "trapDraw"
   | "trapReclamationReturn"
+  | "trapStepSummonOperatedCounter"
   | "targetCardsCounterDisable"
   | "targetBanish"
   | "targetBanishDiscardCost"
@@ -869,6 +871,22 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-cubic-rebirth-step-operated-counter.test.ts",
+      kind: "trapStepSummonOperatedCounter",
+      required: [
+        "restores attack-announce Trap activation into opponent SpecialSummonStep operated-group counters and Cubic hand summon",
+        "Duel.SetTargetCard(bc)",
+        "Duel.SpecialSummonStep(sc,0,opp,opp,false,false,POS_FACEUP_ATTACK)",
+        "Duel.SpecialSummonComplete()",
+        "local og=Duel.GetOperatedGroup()",
+        "tc:AddCounter(COUNTER_CUBIC,1)",
+        "EFFECT_DISABLE",
+        'eventName: "specialSummoned"',
+        'eventName: "counterAdded"',
+        "operationInfos",
+      ],
+    },
+    {
       file: "test/lua-real-script-monster-reincarnation-discard-to-hand.test.ts",
       kind: "targetToHandDiscardCost",
       required: [
@@ -1371,6 +1389,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       spellDraw: 0,
       trapDraw: 0,
       trapReclamationReturn: 0,
+      trapStepSummonOperatedCounter: 0,
       targetCardsCounterDisable: 0,
       targetBanish: 0,
       targetBanishDiscardCost: 0,
