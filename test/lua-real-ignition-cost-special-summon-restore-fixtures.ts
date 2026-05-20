@@ -1,10 +1,11 @@
-export const ignitionCostSpecialSummonFixtureCount = 8;
+export const ignitionCostSpecialSummonFixtureCount = 9;
 
 export const ignitionCostSpecialSummonKindCounts = {
   dragonRulerDiscardDeckSummonCannotAttack: 1,
   filteredDiscardCostSelfSummonSearch: 1,
   graveCostSelfSummonSearchRedirect: 1,
   handCostSelfSummon: 1,
+  machineBanishCostTargetRevive: 1,
   trapCostDeckSummonDefense: 1,
   revealCostSelfSummonSearch: 1,
   releaseBanishLabelBossSummonSearch: 1,
@@ -16,6 +17,7 @@ export type IgnitionCostSpecialSummonKind =
   | "filteredDiscardCostSelfSummonSearch"
   | "graveCostSelfSummonSearchRedirect"
   | "handCostSelfSummon"
+  | "machineBanishCostTargetRevive"
   | "trapCostDeckSummonDefense"
   | "revealCostSelfSummonSearch"
   | "releaseBanishLabelBossSummonSearch"
@@ -85,6 +87,24 @@ export function realScriptIgnitionCostSpecialSummonFixtureSnippets(): Array<{
         'eventName: "lifePointCostPaid"',
         'eventName: "sentToHand"',
         "duelReason.effect | duelReason.redirect",
+      ],
+    },
+    {
+      file: "test/lua-real-script-jack-wyvern-banish-machine-special-summon.test.ts",
+      kind: "machineBanishCostTargetRevive",
+      required: [
+        "restores self plus Machine banish cost into targeted DARK Graveyard Special Summon",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_MZONE,0,1,1,e:GetHandler(),ft)",
+        "rg:AddCard(e:GetHandler())",
+        "Duel.Remove(rg,POS_FACEUP,REASON_COST)",
+        "return c:IsAttribute(ATTRIBUTE_DARK) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "banished"',
+        'eventName: "specialSummoned"',
+        "lightDecoy",
+        "eventUids: [machineCost.uid, wyvern.uid]",
       ],
     },
     {
@@ -190,5 +210,5 @@ export function countIgnitionCostSpecialSummonKinds(
   return files.reduce<Record<IgnitionCostSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, filteredDiscardCostSelfSummonSearch: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, overlayDetachSelfSummonSearch: 0, releaseBanishLabelBossSummonSearch: 0, revealCostSelfSummonSearch: 0, trapCostDeckSummonDefense: 0 });
+  }, { dragonRulerDiscardDeckSummonCannotAttack: 0, filteredDiscardCostSelfSummonSearch: 0, graveCostSelfSummonSearchRedirect: 0, handCostSelfSummon: 0, machineBanishCostTargetRevive: 0, overlayDetachSelfSummonSearch: 0, releaseBanishLabelBossSummonSearch: 0, revealCostSelfSummonSearch: 0, trapCostDeckSummonDefense: 0 });
 }
