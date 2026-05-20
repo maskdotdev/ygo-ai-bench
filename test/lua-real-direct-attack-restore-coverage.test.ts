@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DIRECT_ATTACK_FIXTURE_COUNT = 8;
+const DIRECT_ATTACK_FIXTURE_COUNT = 9;
 const directAttackKindCounts = {
   cannotDirectAttack: 1,
+  conditionalDirectAttack: 1,
   directAttackConversion: 1,
   directAttackDamageStatTrigger: 1,
   directAttackGroupGrant: 1,
@@ -16,6 +17,7 @@ const directAttackKindCounts = {
   directTargetLock: 1,
 } satisfies Record<DirectAttackKind, number>;
 const directAttackSemanticVariantCounts = {
+  blackTyrannoConditionalDirectAttack: 1,
   dragonicHalberdCannotDirectLock: 1,
   drillBarnacleDirectDamageAtkGain: 1,
   hayateDirectAttackBattledSendTrigger: 1,
@@ -28,6 +30,7 @@ const directAttackSemanticVariantCounts = {
 
 type DirectAttackKind =
   | "cannotDirectAttack"
+  | "conditionalDirectAttack"
   | "directAttackConversion"
   | "directAttackDamageStatTrigger"
   | "directAttackGroupGrant"
@@ -36,6 +39,7 @@ type DirectAttackKind =
   | "directAttackTrigger"
   | "directTargetLock";
 type DirectAttackSemanticVariant =
+  | "blackTyrannoConditionalDirectAttack"
   | "dragonicHalberdCannotDirectLock"
   | "deltaAttackerGroupDirectGrant"
   | "drillBarnacleDirectDamageAtkGain"
@@ -90,6 +94,17 @@ function realScriptDirectAttackFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-black-tyranno-conditional-direct.test.ts",
+      kind: "conditionalDirectAttack",
+      required: [
+        "Duel.GetFieldGroupCount(tp,0,LOCATION_SZONE)==0",
+        "not Duel.IsExistingMatchingCard(Card.IsAttackPos,tp,0,LOCATION_MZONE,1,nil)",
+        "hasDirectAttack(openActions, openTyranno.uid)).toBe(true)",
+        "hasDirectAttack(attackBlockedActions, blockedTyranno.uid)).toBe(false)",
+        "hasDirectAttack(spellBlockedActions, spellBlockedTyranno.uid)).toBe(false)",
+      ],
+    },
     {
       file: "test/lua-real-script-delta-attacker-group-direct-attack.test.ts",
       kind: "directAttackGroupGrant",
@@ -183,6 +198,7 @@ function countDirectAttackKinds(fixtures: Array<{ kind: DirectAttackKind }>): Re
     },
     {
       cannotDirectAttack: 0,
+      conditionalDirectAttack: 0,
       directAttackConversion: 0,
       directAttackDamageStatTrigger: 0,
       directAttackGroupGrant: 0,
@@ -200,6 +216,16 @@ function directAttackSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-black-tyranno-conditional-direct.test.ts",
+      kind: "blackTyrannoConditionalDirectAttack",
+      required: [
+        'const blackTyrannoCode = "38670435"',
+        "restores S/T count and Attack Position monster gated direct attack permission",
+        "Duel.GetFieldGroupCount(tp,0,LOCATION_SZONE)==0",
+        "not Duel.IsExistingMatchingCard(Card.IsAttackPos,tp,0,LOCATION_MZONE,1,nil)",
+      ],
+    },
     {
       file: "test/lua-real-script-delta-attacker-group-direct-attack.test.ts",
       kind: "deltaAttackerGroupDirectGrant",
@@ -297,6 +323,7 @@ function countDirectAttackSemanticVariants(
       return counts;
     },
     {
+      blackTyrannoConditionalDirectAttack: 0,
       deltaAttackerGroupDirectGrant: 0,
       dragonicHalberdCannotDirectLock: 0,
       drillBarnacleDirectDamageAtkGain: 0,
