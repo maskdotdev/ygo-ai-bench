@@ -43,7 +43,19 @@ export function installCardTypePredicateApi(L: unknown, session: DuelSession): v
     if (session.state.status === "ended") return 0;
     const card = readCard(state, session);
     const monsterType = lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : 0;
-    if (card) card.data.typeFlags = 0x1 | monsterType;
+    if (card) {
+      card.data.typeFlags = 0x1 | monsterType;
+      const attribute = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : undefined;
+      const race = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : undefined;
+      const level = lua.lua_isnumber(state, 5) ? lua.lua_tointeger(state, 5) : undefined;
+      const attack = lua.lua_isnumber(state, 6) ? lua.lua_tointeger(state, 6) : undefined;
+      const defense = lua.lua_isnumber(state, 7) ? lua.lua_tointeger(state, 7) : undefined;
+      if (attribute !== undefined && attribute !== 0) card.data.attribute = attribute;
+      if (race !== undefined && race !== 0) card.data.race = race;
+      if (level !== undefined && level !== 0) card.data.level = level;
+      if (attack !== undefined && attack !== 0) card.data.attack = attack;
+      if (defense !== undefined && defense !== 0) card.data.defense = defense;
+    }
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("AddMonsterAttribute"));

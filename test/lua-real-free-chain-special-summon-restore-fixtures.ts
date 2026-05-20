@@ -1,9 +1,10 @@
-export const freeChainSpecialSummonFixtureCount = 9;
+export const freeChainSpecialSummonFixtureCount = 10;
 
 export const freeChainSpecialSummonKindCounts = {
   continuousSpellIgnitionHandSummon: 1,
   handNormalMonsterSummon: 1,
   nonTargetGraveSetcodeDefenseSummon: 1,
+  trapMonsterAnnounceTraitSummonStep: 1,
   targetBanishedRockSummonStep: 1,
   targetGraveDragonSummonReplace: 1,
   targetGraveNormalDragonOathSummon: 1,
@@ -16,6 +17,7 @@ export type FreeChainSpecialSummonKind =
   | "continuousSpellIgnitionHandSummon"
   | "handNormalMonsterSummon"
   | "nonTargetGraveSetcodeDefenseSummon"
+  | "trapMonsterAnnounceTraitSummonStep"
   | "targetBanishedRockSummonStep"
   | "targetGraveDragonSummonReplace"
   | "targetGraveNormalDragonOathSummon"
@@ -77,6 +79,29 @@ export function realScriptFreeChainSpecialSummonFixtureSnippets(): Array<{
         "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
         "category: 0x200",
         "parameter: 0x2",
+        'eventName: "specialSummoned"',
+        "eventReason: duelReason.summon | duelReason.specialSummon",
+        'summonType: "special"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-swamp-mirrorer-announce-trap-monster.test.ts",
+      kind: "trapMonsterAnnounceTraitSummonStep",
+      required: [
+        "Duel.AnnounceRace(tp,1,e:GetLabel())",
+        "Duel.AnnounceAttribute(tp,1,att)",
+        "Duel.SetTargetParam(catt)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PARAM)",
+        "c:AddMonsterAttribute(TYPE_NORMAL+TYPE_TRAP,att,rac,0,0,0)",
+        "Duel.SpecialSummonStep(c,0,tp,tp,true,false,POS_FACEUP)",
+        "c:AddMonsterAttributeComplete()",
+        "Duel.SpecialSummonComplete()",
+        'api: "AnnounceRace"',
+        'api: "AnnounceAttribute"',
+        "targetParam: 0x1",
+        "typeFlags: typeMonster | typeTrap | typeNormal",
+        "race: raceWarrior",
+        "attribute: 0x1",
         'eventName: "specialSummoned"',
         "eventReason: duelReason.summon | duelReason.specialSummon",
         'summonType: "special"',
@@ -192,5 +217,5 @@ export function countFreeChainSpecialSummonKinds(
   return files.reduce<Record<FreeChainSpecialSummonKind, number>>((counts, { kind }) => {
     counts[kind] += 1;
     return counts;
-  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
+  }, { continuousSpellIgnitionHandSummon: 0, handNormalMonsterSummon: 0, nonTargetGraveSetcodeDefenseSummon: 0, trapMonsterAnnounceTraitSummonStep: 0, targetBanishedRockSummonStep: 0, targetGraveDragonSummonReplace: 0, targetGraveNormalDragonOathSummon: 0, targetGraveSetcodeDefenseSummon: 0, targetGraveSetcodeSummonEndDestroy: 0, targetGraveSetcodeSummonSelfBanishToHand: 0 });
 }

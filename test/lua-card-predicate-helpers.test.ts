@@ -316,6 +316,37 @@ describe("Lua card predicate helpers", () => {
     expect(card!.data.typeFlags).toBe(0x21);
   });
 
+  it("applies monster attribute helper race, attribute, and nonzero stats", () => {
+    const cards: DuelCardData[] = [{ code: "101", name: "Trap Monster Probe", kind: "trap", typeFlags: 0x4, level: 4, attack: 1800, defense: 1000 }];
+    const session = createDuel({ seed: 208, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["101"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const card = session.state.cards.find((candidate) => candidate.code === "101");
+    expect(card).toBeDefined();
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, 101), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
+      c:AddMonsterAttribute(TYPE_NORMAL+TYPE_TRAP,ATTRIBUTE_LIGHT,RACE_WARRIOR,0,0,0)
+      Debug.Message("trap monster kept " .. c:GetType() .. "/" .. c:GetAttribute() .. "/" .. c:GetRace() .. "/" .. c:GetLevel() .. "/" .. c:GetAttack() .. "/" .. c:GetDefense())
+      c:AddMonsterAttribute(TYPE_EFFECT,ATTRIBUTE_DARK,RACE_SPELLCASTER,3,1200,700)
+      Debug.Message("trap monster changed " .. c:GetType() .. "/" .. c:GetAttribute() .. "/" .. c:GetRace() .. "/" .. c:GetLevel() .. "/" .. c:GetAttack() .. "/" .. c:GetDefense())
+      `,
+      "monster-attribute-traits.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "trap monster kept 21/16/1/4/1800/1000",
+      "trap monster changed 33/32/2/3/1200/700",
+    ]);
+    expect(card!.data).toMatchObject({ typeFlags: 0x21, attribute: 0x20, race: 0x2, level: 3, attack: 1200, defense: 700 });
+  });
+
   function expectAnimeArchetypePredicates(cases: { method: string; code: string; setcode: number; codeMatches?: boolean }[], seed: number): void {
     const cards: DuelCardData[] = [{ code: "9000", name: "Normal Spell", kind: "spell", typeFlags: 0x2 }];
     const main = ["9000"];

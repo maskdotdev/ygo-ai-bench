@@ -69,6 +69,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   announceNumberCost: 1,
   announceNumberRangeToken: 1,
   announceTraitHandShuffle: 1,
+  announceTraitTrapMonsterSummon: 1,
   selectCardsFromCodesSearch: 1,
   selectDisableFieldCount: 1,
   selectDisableFieldLoop: 1,
@@ -108,6 +109,7 @@ const promptHelperSemanticVariantCounts: Record<PromptHelperSemanticVariant, num
   springansBlastFieldZoneLoop: 1,
   springansShipFieldZoneTarget: 1,
   sprindColumnMove: 1,
+  swampMirrorerTraitTrapMonsterSummon: 1,
   vernusylphAttributeActivationLock: 1,
   wattkineticOpponentZoneMove: 1,
 };
@@ -135,6 +137,7 @@ const promptHelperSemanticVariantByFile: Record<string, PromptHelperSemanticVari
   "test/lua-real-script-springans-blast-field-zone-loop.test.ts": "springansBlastFieldZoneLoop",
   "test/lua-real-script-springans-ship-select-field-zone.test.ts": "springansShipFieldZoneTarget",
   "test/lua-real-script-sprind-select-disable-field.test.ts": "sprindColumnMove",
+  "test/lua-real-script-swamp-mirrorer-announce-trap-monster.test.ts": "swampMirrorerTraitTrapMonsterSummon",
   "test/lua-real-script-vernusylph-attribute-activation-lock.test.ts": "vernusylphAttributeActivationLock",
   "test/lua-real-script-wattkinetic-puppeteer-opponent-zone-move.test.ts": "wattkineticOpponentZoneMove",
 };
@@ -177,7 +180,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(25);
+    expect(representativePromptHelperFixtures()).toHaveLength(26);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -264,6 +267,7 @@ type PromptHelperKind =
   | "announceNumberCost"
   | "announceNumberRangeToken"
   | "announceTraitHandShuffle"
+  | "announceTraitTrapMonsterSummon"
   | "selectCardsFromCodesSearch"
   | "selectDisableFieldCount"
   | "selectDisableFieldLoop"
@@ -302,6 +306,7 @@ type PromptHelperSemanticVariant =
   | "springansBlastFieldZoneLoop"
   | "springansShipFieldZoneTarget"
   | "sprindColumnMove"
+  | "swampMirrorerTraitTrapMonsterSummon"
   | "vernusylphAttributeActivationLock"
   | "wattkineticOpponentZoneMove";
 
@@ -333,6 +338,24 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         "effectLabels: [raceWarrior, attributeEarth]",
         'card?.location === "deck"',
         'expect(restored.host.messages).not.toContain("gishki psychelone responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-swamp-mirrorer-announce-trap-monster.test.ts",
+      kind: "announceTraitTrapMonsterSummon",
+      apis: ["AnnounceAttribute", "AnnounceRace"],
+      required: [
+        "restores announced race and attribute into a Trap Monster SpecialSummonStep",
+        'api: "AnnounceRace"',
+        'api: "AnnounceAttribute"',
+        "Duel.SetTargetParam(catt)",
+        "targetParam: 0x1",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PARAM)",
+        "c:AddMonsterAttribute(TYPE_NORMAL+TYPE_TRAP,att,rac,0,0,0)",
+        "typeFlags: typeMonster | typeTrap | typeNormal",
+        "race: raceWarrior",
+        "attribute: 0x1",
+        'expect(restoredChain.host.messages).not.toContain("swamp mirrorer responder resolved")',
       ],
     },
     {
