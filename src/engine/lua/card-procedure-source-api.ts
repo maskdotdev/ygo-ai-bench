@@ -149,10 +149,11 @@ export const cardProcedureSource = `${fusionProcedureSource}
       local e=Effect.CreateEffect(c)
       e:SetType(EFFECT_TYPE_SINGLE)
       e:SetCode(EFFECT_RITUAL_LEVEL)
-      e:SetValue(function(e,ritual_card)
+      e:SetValue(function(e,c,ritual_card)
         local lv=e:GetHandler():GetLevel()
-        if condition and ritual_card and condition(ritual_card,e) then
-          return (lv<<16)|(ritual_card:GetLevel() or lv)
+        local rc=ritual_card or c
+        if condition and rc and condition(rc,e) then
+          return (lv<<16)|(rc:GetLevel() or lv)
         end
         return lv
       end)
