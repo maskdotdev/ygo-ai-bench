@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 188;
+export const operationFixtureCount = 189;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -104,6 +104,7 @@ export const operationKindCounts = {
   selectEffectStatDestroyedToGrave: 1,
   selectEffectStatDestroy: 1,
   specialSearchMaterialDamage: 1,
+  specialSummonBaseStat: 1,
   summonDelayedStatDestroy: 1,
   summonRaceStatTargetDestroy: 1,
   summonFieldMillStat: 1,
@@ -237,6 +238,7 @@ export type OperationKind =
   | "selectEffectStatDestroyedToGrave"
   | "selectEffectStatDestroy"
   | "specialSearchMaterialDamage"
+  | "specialSummonBaseStat"
   | "summonDelayedStatDestroy"
   | "summonRaceStatTargetDestroy"
   | "summonFieldMillStat"
@@ -270,6 +272,26 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-guardragon-andrake-special-base-stat.test.ts",
+      kind: "specialSummonBaseStat",
+      required: [
+        "restores previous-hand Special Summon trigger into base ATK/DEF doubling",
+        "c:EnableUnsummonable()",
+        "c:AddMustBeSpecialSummonedByCardEffect()",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():IsPreviousLocation(LOCATION_HAND|LOCATION_DECK)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,c,1,tp,c:GetBaseAttack())",
+        "Duel.SetOperationInfo(0,CATEGORY_DEFCHANGE,c,1,tp,c:GetBaseDefense())",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e1:SetValue(c:GetBaseAttack()*2)",
+        "e2:SetCode(EFFECT_SET_BASE_DEFENSE)",
+        "e2:SetValue(c:GetBaseDefense()*2)",
+        'eventName: "specialSummoned"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-leraje-summon-race-stat-target-destroy.test.ts",
       kind: "summonRaceStatTargetDestroy",
@@ -2820,6 +2842,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStatDestroyedToGrave: 0,
       selectEffectStatDestroy: 0,
       specialSearchMaterialDamage: 0,
+      specialSummonBaseStat: 0,
       summonDelayedStatDestroy: 0,
       summonRaceStatTargetDestroy: 0,
       summonFieldMillStat: 0,
