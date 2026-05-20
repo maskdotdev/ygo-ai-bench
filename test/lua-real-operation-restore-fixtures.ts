@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 206;
+export const operationFixtureCount = 207;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -112,6 +112,7 @@ export const operationKindCounts = {
   selectEffectStat: 1,
   selectEffectStatDestroyedToGrave: 1,
   selectEffectStatDestroy: 1,
+  selectUnselectTargetStat: 1,
   specialSearchMaterialDamage: 1,
   specialSummonBaseStat: 1,
   stepSummonLevelFinalStat: 1,
@@ -259,6 +260,7 @@ export type OperationKind =
   | "selectEffectStat"
   | "selectEffectStatDestroyedToGrave"
   | "selectEffectStatDestroy"
+  | "selectUnselectTargetStat"
   | "specialSearchMaterialDamage"
   | "specialSummonBaseStat"
   | "stepSummonLevelFinalStat"
@@ -3082,6 +3084,26 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-scareclaw-straddle-select-unselect-stat.test.ts",
+      kind: "selectUnselectTargetStat",
+      required: [
+        "restores SelectUnselectGroup cross-controller targets into max ATK/DEF gain",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.GetTargetGroup(s.atkfilter,tp,LOCATION_MZONE,LOCATION_MZONE,nil,1-tp)",
+        "aux.SelectUnselectGroup(g,e,tp,2,2,aux.dpcheck(Card.GetControler),0)",
+        "Duel.SetTargetCard(tg)",
+        "Duel.GetTargetCards(e)",
+        "math.max(ac:GetAttack(),ac:GetDefense())",
+        "tc:UpdateAttack(val,nil,c)",
+        "tc:UpdateDefense(val,nil,c)",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -3216,6 +3238,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStat: 0,
       selectEffectStatDestroyedToGrave: 0,
       selectEffectStatDestroy: 0,
+      selectUnselectTargetStat: 0,
       specialSearchMaterialDamage: 0,
       specialSummonBaseStat: 0,
       stepSummonLevelFinalStat: 0,
