@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const PERSISTENT_FIXTURE_COUNT = 19;
+const PERSISTENT_FIXTURE_COUNT = 20;
 const TARGETED_PERSISTENT_FIXTURE_COUNT = 13;
 const REVIVE_DESTROY_PERSISTENT_FIXTURE_COUNT = 2;
 const SPIRITS_INVITATION_PERSISTENT_FIXTURE_COUNT = 1;
-const ATTACK_LOCK_PERSISTENT_FIXTURE_COUNT = 9;
+const ATTACK_LOCK_PERSISTENT_FIXTURE_COUNT = 10;
 const persistentKindCounts = {
   chainSolvingNegate: 1,
-  fieldAttackOrPositionLock: 4,
+  fieldAttackOrPositionLock: 5,
   persistentDamage: 3,
   protection: 1,
   ritualOverlay: 1,
@@ -22,6 +22,7 @@ const persistentKindCounts = {
 const persistentSemanticVariantCounts = {
   callOfTheHauntedReviveDestroyRelation: 1,
   dimensionSphinxBattleStepDamageActivation: 1,
+  dragonCaptureJarRacePositionLock: 1,
   dragonsBindBothPlayerSpecialSummonRestriction: 1,
   fiendishChainPersistentDisableCleanup: 1,
   finiteCardsHandLimitDiscard: 1,
@@ -57,6 +58,7 @@ type PersistentKind =
 type PersistentSemanticVariant =
   | "callOfTheHauntedReviveDestroyRelation"
   | "dimensionSphinxBattleStepDamageActivation"
+  | "dragonCaptureJarRacePositionLock"
   | "dragonsBindBothPlayerSpecialSummonRestriction"
   | "fiendishChainPersistentDisableCleanup"
   | "finiteCardsHandLimitDiscard"
@@ -209,7 +211,8 @@ function realScriptPersistentFixtureFiles(): string[] {
 function realScriptTargetedPersistentFixtureFiles(): string[] {
   return realScriptPersistentFixtureFiles()
     .filter((file) =>
-      !file.includes("gravity-bind")
+      !file.includes("dragon-capture")
+      && !file.includes("gravity-bind")
       && !file.includes("level-limit")
       && !file.includes("messenger-peace")
       && !file.includes("power-filter")
@@ -270,6 +273,7 @@ function realScriptAttackLockPersistentFixtureFiles(): string[] {
   return [
     "lua-real-script-fiendish-chain-persistent-disable.test.ts",
     "lua-real-script-gravity-bind-persistent-attack-lock.test.ts",
+    "lua-real-script-dragon-capture-jar-race-position-lock.test.ts",
     "lua-real-script-level-limit-area-b-position-lock.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-messenger-peace-maintenance-attack-lock.test.ts",
@@ -287,6 +291,10 @@ function realScriptPersistentFixtures(): Array<{ file: string; kind: PersistentK
     {
       file: "lua-real-script-dimension-sphinx-persistent-battle-damage.test.ts",
       kind: "persistentDamage",
+    },
+    {
+      file: "lua-real-script-dragon-capture-jar-race-position-lock.test.ts",
+      kind: "fieldAttackOrPositionLock",
     },
     {
       file: "lua-real-script-fiendish-chain-persistent-disable.test.ts",
@@ -429,6 +437,18 @@ function persistentSemanticVariants(): Array<{
       required: [
         'const gravityBindCode = "85742772"',
         "restores official field attack restriction by Level",
+        'type === "declareAttack"',
+      ],
+    },
+    {
+      file: "lua-real-script-dragon-capture-jar-race-position-lock.test.ts",
+      kind: "dragonCaptureJarRacePositionLock",
+      required: [
+        'const jarCode = "50045299"',
+        "restores race-targeted field position setting and cloned cannot-change-position lock",
+        'luaTargetDescriptor: "target:race:8192"',
+        "action.type === \"changePosition\" && action.uid === dragon.uid)).toBe(false)",
+        "action.type === \"changePosition\" && action.uid === warrior.uid)).toBe(true)",
         'type === "declareAttack"',
       ],
     },
@@ -636,6 +656,7 @@ function countPersistentSemanticVariants(
     {
       callOfTheHauntedReviveDestroyRelation: 0,
       dimensionSphinxBattleStepDamageActivation: 0,
+      dragonCaptureJarRacePositionLock: 0,
       dragonsBindBothPlayerSpecialSummonRestriction: 0,
       fiendishChainPersistentDisableCleanup: 0,
       finiteCardsHandLimitDiscard: 0,

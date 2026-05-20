@@ -34,6 +34,9 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   if (statusValue !== undefined) return `target:status:${statusValue}`;
   if (new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsGemini(?:Status|State)\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet)) return "target:gemini-status";
   if (new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsSummonableCard\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet)) return "special-summon-limit:summonable-card";
+  const race = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*(?:end\\b|$)`));
+  const raceValue = race?.[1] ? luaNumberExpressionValue(L, index, race[1]) : undefined;
+  if (raceValue !== undefined) return `target:race:${raceValue}`;
   const notRaceDeckOrExtra = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
   const notRaceDeckOrExtraLocation = notRaceDeckOrExtra?.[1] ? luaNumberExpressionValue(L, index, notRaceDeckOrExtra[1]) : undefined;
   const notRaceDeckOrExtraRace = notRaceDeckOrExtra?.[2] ? luaNumberExpressionValue(L, index, notRaceDeckOrExtra[2]) : undefined;
