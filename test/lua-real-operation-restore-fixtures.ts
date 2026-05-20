@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 156;
+export const operationFixtureCount = 157;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -76,6 +76,7 @@ export const operationKindCounts = {
   ritualDeckMaterials: 1,
   searchOrExcavate: 36,
   selfEquipFromHand: 1,
+  setAttackFinalSpecialDamage: 1,
   selectEffectStat: 1,
   selectEffectStatDestroyedToGrave: 1,
   specialSearchMaterialDamage: 1,
@@ -178,6 +179,7 @@ export type OperationKind =
   | "ritualDeckMaterials"
   | "searchOrExcavate"
   | "selfEquipFromHand"
+  | "setAttackFinalSpecialDamage"
   | "selectEffectStat"
   | "selectEffectStatDestroyedToGrave"
   | "specialSearchMaterialDamage"
@@ -885,6 +887,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "usedAsMaterial"',
         'eventName: "damageDealt"',
         "currentAttack(resolvedMelodious, restoredMaterialTrigger.session.state)).toBe(1100)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-reptilianne-lamia-hand-target-special-damage.test.ts",
+      kind: "setAttackFinalSpecialDamage",
+      required: [
+        "restores hand ignition target ATK final zero, self Special Summon, BreakEffect, and damage",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_SPECIAL_SUMMON+CATEGORY_DAMAGE)",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "e1:SetRange(LOCATION_HAND)",
+        "Duel.GetMatchingGroupCount(aux.FaceupFilter(Card.IsRace,RACE_REPTILE),tp,LOCATION_MZONE,0,nil)==fc",
+        "Duel.SelectTarget(tp,s.tgfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,tp,g:GetFirst():GetBaseAttack())",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.BreakEffect()",
+        "Duel.Damage(tp,atk,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "breakEffect"',
+        'eventName: "damageDealt"',
+        "currentAttack(resolvedOpponent, restoredChain.session.state)).toBe(0)",
       ],
     },
     {
@@ -2046,6 +2071,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
+      setAttackFinalSpecialDamage: 0,
       selectEffectStat: 0,
       selectEffectStatDestroyedToGrave: 0,
       specialSearchMaterialDamage: 0,
