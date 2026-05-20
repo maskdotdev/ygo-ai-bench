@@ -1,8 +1,9 @@
 import path from "node:path";
 
-export const operationFixtureCount = 116;
+export const operationFixtureCount = 117;
 export const operationKindCounts = {
   announceChangeCode: 1,
+  announceDeckBanishDisable: 1,
   announceHandBanish: 1,
   announceHandDiscard: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
@@ -69,6 +70,7 @@ export const operationKindCounts = {
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
   | "announceChangeCode"
+  | "announceDeckBanishDisable"
   | "announceHandBanish"
   | "announceHandDiscard"
   | "costBanishDraw" | "costDiscardDraw"
@@ -149,6 +151,23 @@ export function operationFixtureFiles(): Array<{
         'api: "AnnounceCard"',
         "code: 114",
         "currentCardMatchesCode(",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-crossout-designator-announce-deck-banish.test.ts",
+      kind: "announceDeckBanishDisable",
+      required: [
+        "Duel.GetMatchingGroup(Card.IsAbleToRemove,tp,LOCATION_DECK,0,nil)",
+        "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))",
+        "Duel.SelectMatchingCard(tp,s.rmfilter,tp,LOCATION_DECK,0,1,1,nil,ac)",
+        "Duel.Remove(tc,POS_FACEUP,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_DISABLE)",
+        "e2:SetCode(EVENT_CHAIN_SOLVING)",
+        "e3:SetCode(EFFECT_DISABLE_TRAPMONSTER)",
+        'api: "AnnounceCard"',
+        'eventName: "banished"',
+        "condition:chain-solving-effect-handler-original-code-label",
         "host.messages).not.toContain",
       ],
     },
@@ -1203,6 +1222,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
     },
     {
       announceChangeCode: 0,
+      announceDeckBanishDisable: 0,
       announceHandBanish: 0,
       announceHandDiscard: 0,
       costBanishDraw: 0, costDiscardDraw: 0,

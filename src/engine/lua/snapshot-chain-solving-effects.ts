@@ -17,6 +17,10 @@ export function isKnownCalledByTheGraveChainSolvingNegateEffect(effect: Serializ
   return Boolean(effect.registryKey?.startsWith("lua:24224830:")) && effect.event === "continuous" && effect.code === luaChainSolvingEventCode && effect.luaConditionDescriptor === "condition:chain-solving-monster-effect-handler-original-code-label" && effect.label !== undefined;
 }
 
+export function isKnownSameOriginalCodeChainSolvingNegateEffect(effect: SerializedDuelEffect): boolean {
+  return effect.event === "continuous" && effect.code === luaChainSolvingEventCode && effect.luaConditionDescriptor === "condition:chain-solving-effect-handler-original-code-label" && effect.label !== undefined;
+}
+
 export function isKnownGishkiEmiliaTrapNegateEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith(`lua:${luaGishkiEmiliaCode}:`)) && effect.event === "continuous" && effect.code === luaChainSolvingEventCode && effect.reset?.flags !== undefined && effect.targetRange === undefined;
 }
