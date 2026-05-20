@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const EXTRA_ATTACK_FIXTURE_COUNT = 8;
+const EXTRA_ATTACK_FIXTURE_COUNT = 9;
 const extraAttackKindCounts = {
   attackAll: 2,
   chainAttack: 3,
+  chainFlagExtraAttack: 1,
   extraAttack: 2,
   monsterOnlyExtraAttack: 1,
 } satisfies Record<ExtraAttackKind, number>;
 const extraAttackSemanticVariantCounts = {
   alienHunterBattleDestroyChainAttack: 1,
   asuraPriestSpiritAttackAllMonsters: 1,
+  comboMasterChainFlagExtraAttack: 1,
   elementDoomAttributeGatedChainAttack: 1,
   ghostBirdSequenceGatedMonsterOnlyExtraAttack: 1,
   hayabusaKnightStaticSecondDirectAttack: 1,
@@ -22,10 +24,11 @@ const extraAttackSemanticVariantCounts = {
   nitroWarriorPositionChangedChainAttack: 1,
 } satisfies Record<ExtraAttackSemanticVariant, number>;
 
-type ExtraAttackKind = "attackAll" | "chainAttack" | "extraAttack" | "monsterOnlyExtraAttack";
+type ExtraAttackKind = "attackAll" | "chainAttack" | "chainFlagExtraAttack" | "extraAttack" | "monsterOnlyExtraAttack";
 type ExtraAttackSemanticVariant =
   | "alienHunterBattleDestroyChainAttack"
   | "asuraPriestSpiritAttackAllMonsters"
+  | "comboMasterChainFlagExtraAttack"
   | "elementDoomAttributeGatedChainAttack"
   | "ghostBirdSequenceGatedMonsterOnlyExtraAttack"
   | "hayabusaKnightStaticSecondDirectAttack"
@@ -80,6 +83,17 @@ function realScriptExtraAttackFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-combo-master-chain-extra-attack.test.ts",
+      kind: "chainFlagExtraAttack",
+      required: [
+        "EVENT_CHAINING",
+        "GetCurrentChain()>1",
+        "flagEffects.filter((flag) => flag.ownerId === comboMaster!.uid",
+        "code: 194",
+        "hasDirectAttack(secondActions, comboMaster!.uid)).toBe(true)",
+      ],
+    },
     {
       file: "test/lua-real-script-alien-hunter-chain-attack.test.ts",
       kind: "chainAttack",
@@ -173,6 +187,7 @@ function countExtraAttackKinds(fixtures: Array<{ kind: ExtraAttackKind }>): Reco
     {
       attackAll: 0,
       chainAttack: 0,
+      chainFlagExtraAttack: 0,
       extraAttack: 0,
       monsterOnlyExtraAttack: 0,
     },
@@ -185,6 +200,17 @@ function extraAttackSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-combo-master-chain-extra-attack.test.ts",
+      kind: "comboMasterChainFlagExtraAttack",
+      required: [
+        'const comboMasterCode = "44800181"',
+        "restores its EVENT_CHAINING flag into a conditional extra Battle Phase attack",
+        "Duel.GetCurrentChain()>1",
+        "eventName: \"chaining\"",
+        "hasDirectAttack(secondActions, comboMaster!.uid)).toBe(true)",
+      ],
+    },
     {
       file: "test/lua-real-script-alien-hunter-chain-attack.test.ts",
       kind: "alienHunterBattleDestroyChainAttack",
@@ -283,6 +309,7 @@ function countExtraAttackSemanticVariants(
     {
       alienHunterBattleDestroyChainAttack: 0,
       asuraPriestSpiritAttackAllMonsters: 0,
+      comboMasterChainFlagExtraAttack: 0,
       elementDoomAttributeGatedChainAttack: 0,
       ghostBirdSequenceGatedMonsterOnlyExtraAttack: 0,
       hayabusaKnightStaticSecondDirectAttack: 0,
