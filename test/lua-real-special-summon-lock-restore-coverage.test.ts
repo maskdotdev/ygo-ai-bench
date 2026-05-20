@@ -9,13 +9,13 @@ import {
 } from "./lua-real-special-summon-lock-restore-fixtures.js";
 
 const root = process.cwd();
-const SPECIAL_SUMMON_LOCK_FIXTURE_COUNT = 70;
+const SPECIAL_SUMMON_LOCK_FIXTURE_COUNT = 71;
 const SAME_CODE_EXTRA_DECK_ONCE_LOCK_FIXTURE_COUNT = 2;
 const specialSummonLockKindCounts = {
   broadLocationLock: 4,
   extraDeckTraitLock: 34,
   globalLock: 3,
-  mainDeckTraitLock: 11,
+  mainDeckTraitLock: 12,
   pendulumSpecificLock: 5,
   summonTypeOrProcedureLock: 13,
 } satisfies Record<SpecialSummonLockKind, number>;
@@ -856,6 +856,18 @@ function representativeSpecialSummonLockFixtures(): Array<{ file: string; kind: 
         "augmented heraldry outsider special 0",
         "augmented heraldry psychic xyz special 1",
         "augmented heraldry heraldic special 1",
+      ],
+    },
+    {
+      file: "test/lua-real-script-barrier-statue-water-special-lock.test.ts",
+      kind: "mainDeckTraitLock",
+      requiredSnippets: [
+        'luaTargetDescriptor: "target:not-attribute:2"',
+        "property: 0x800",
+        "targetRange: [1, 1]",
+        "barrier statue can special true/false/true/false",
+        "barrier statue self special 0/1",
+        "barrier statue opponent special 0/1",
       ],
     },
     {

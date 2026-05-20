@@ -5,6 +5,7 @@ const specialSummonLockSemanticVariantByFile = {
   "test/lua-real-script-ashened-extra-pyro-lock.test.ts": "ashenedExtraPyroLock",
   "test/lua-real-script-astral-kuriboh-extra-number-xyz-lock.test.ts": "astralKuribohExtraNumberXyzLock",
   "test/lua-real-script-augmented-heraldry-psychic-xyz-heraldic-lock.test.ts": "augmentedHeraldryPsychicXyzHeraldicLock",
+  "test/lua-real-script-barrier-statue-water-special-lock.test.ts": "barrierStatueWaterSpecialLock",
   "test/lua-real-script-bone-archfiend-extra-dark-dragon-synchro-lock.test.ts": "boneArchfiendExtraDarkDragonSynchroLock",
   "test/lua-real-script-cation-extra-light-xyz-lock.test.ts": "cationExtraLightXyzLock",
   "test/lua-real-script-chimera-doll-extra-machine-xyz-lock.test.ts": "chimeraDollExtraMachineXyzLock",
