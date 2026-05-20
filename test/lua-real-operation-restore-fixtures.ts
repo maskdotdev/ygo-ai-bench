@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 160;
+export const operationFixtureCount = 161;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -16,6 +16,7 @@ export const operationKindCounts = {
   copyNegateDamage: 1,
   counterBoostBattleTargetLock: 1,
   counterLevelChange: 1,
+  customDestroyReplaceDamage: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
   controlSwap: 1,
@@ -122,6 +123,7 @@ export type OperationKind =
   | "copyNegateDamage"
   | "counterBoostBattleTargetLock"
   | "counterLevelChange"
+  | "customDestroyReplaceDamage"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
   | "controlSwap"
@@ -1816,6 +1818,27 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-king-arthur-replace-custom-burn.test.ts",
+      kind: "customDestroyReplaceDamage",
+      required: [
+        "restores battle destroy replacement into custom-event ATK gain and burn",
+        "e1:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,c,96)",
+        "c:RemoveOverlayCard(tp,1,1,REASON_EFFECT)",
+        "Duel.RaiseSingleEvent(c,EVENT_CUSTOM+id,e,0,0,0,0)",
+        "e2:SetCode(EVENT_CUSTOM+id)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,500)",
+        "if c:UpdateAttack(500)==500 then",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "detachedMaterial"',
+        'eventName: "customEvent"',
+        'eventName: "damageDealt"',
+        'api: "SelectEffectYesNo"',
+        "currentAttack(resolvedKingArthur, restoredChain.session.state)).toBe(2900)",
+      ],
+    },
+    {
       file: "test/lua-real-script-saion-toss-coin-restore.test.ts",
       kind: "tossCoin",
       required: [
@@ -2096,6 +2119,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainSolvedAnnounceNegate: 0,
       chainSolvedAnnounceLpPhaseSend: 0,
       chainSolvedTrapDamage: 0,
+      customDestroyReplaceDamage: 0,
       deckToGrave: 0,
       deckSplit: 0,
       deckTopSort: 0,
