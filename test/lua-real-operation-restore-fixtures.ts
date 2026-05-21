@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 249;
+export const operationFixtureCount = 250;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -100,6 +100,7 @@ export const operationKindCounts = {
   handQuickSummonSelectEffectStat: 1,
   handCountReviveMaterialStatLock: 1,
   deckCostLabelStatDestroyedSummon: 1,
+  changeCodeSummonSendFieldStat: 1,
   equipGraveOptionToDeck: 1,
   pzoneAttackAnnounceStat: 1,
   twoTargetPositionCopyStat: 1,
@@ -289,6 +290,7 @@ export type OperationKind =
   | "handQuickSummonSelectEffectStat"
   | "handCountReviveMaterialStatLock"
   | "deckCostLabelStatDestroyedSummon"
+  | "changeCodeSummonSendFieldStat"
   | "equipGraveOptionToDeck"
   | "pzoneAttackAnnounceStat"
   | "twoTargetPositionCopyStat"
@@ -1338,6 +1340,33 @@ export function operationFixtureFiles(): Array<{
         "tc:NegateEffects(c,RESET_PHASE|PHASE_END)",
         "operationInfos",
         "confirmed 1:",
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wightprincess-change-code-field-stat.test.ts",
+      kind: "changeCodeSummonSendFieldStat",
+      required: [
+        "restores GY Skull Servant code, summon-success Deck send, and self-to-GY field ATK/DEF reduction",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e1:SetRange(LOCATION_GRAVE)",
+        "e1:SetValue(CARD_SKULL_SERVANT)",
+        "e2:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return c:IsCode(57473560) and c:IsAbleToGrave()",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.tgfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_EFFECT)",
+        "e4:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e4:SetCost(Cost.SelfToGrave)",
+        "local val=tc:HasLevel() and tc:GetLevel()*-300 or tc:GetRank()*-300",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "operationInfos",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToGraveyard"',
+        "currentCardCodes",
         "currentAttack",
         "currentDefense",
       ],
@@ -4384,6 +4413,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handQuickSummonSelectEffectStat: 0,
       handCountReviveMaterialStatLock: 0,
       deckCostLabelStatDestroyedSummon: 0,
+      changeCodeSummonSendFieldStat: 0,
       equipGraveOptionToDeck: 0,
       pzoneAttackAnnounceStat: 0,
       twoTargetPositionCopyStat: 0,
