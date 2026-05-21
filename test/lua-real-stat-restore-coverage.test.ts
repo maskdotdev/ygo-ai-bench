@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 74;
+const statFixtureCount = 75;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -64,6 +64,7 @@ const statKindCounts = {
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
   targetedIgnitionDisable: 1,
+  toGraveTargetFinalAttackHalve: 1,
   preDamageSelfToGraveBattleMonsterStat: 3,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
@@ -144,9 +145,10 @@ const statSemanticVariantCounts = {
   wormDimiklesFlipSelfStat: 1,
   wormOperaFlipGroupStat: 1,
   plagueWolfFinalAttackEndDestroy: 1,
+  frightfurJarToGraveFinalStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -174,6 +176,7 @@ type StatSemanticVariant =
   | "gadarlaKaijuCounterFinalStat"
   | "greedyVenomFusionDisableRevive"
   | "fortuneLadyPastCallbackSetAtkDef"
+  | "frightfurJarToGraveFinalStat"
   | "gemMerchantDamageStepNormalStat"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
   | "guardragonShieldLinkSumStat"
@@ -1012,6 +1015,21 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-frightfur-jar-to-grave-final-stat.test.ts",
+      kind: "toGraveTargetFinalAttackHalve",
+      required: [
+        'const frightfurJarCode = "18138630"',
+        "restores Toy Vendor code change and delayed EVENT_TO_GRAVE target final ATK halving",
+        "e2:SetCode(EFFECT_CHANGE_CODE)",
+        "e4:SetCode(EVENT_TO_GRAVE)",
+        "e1:SetValue(tc:GetAttack()/2)",
+        "currentCardMatchesCode",
+        "EFFECT_SET_ATTACK_FINAL",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === target.uid), restoredTrigger.session.state)).toBe(1200)",
+        "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-spright-pixies-procedure-precalc-stat.test.ts",
       kind: "preDamageSelfToGraveBattleMonsterStat",
       required: [
@@ -1400,6 +1418,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       targetedIgnitionDisable: 0,
       targetedPreDamageFinalAttack: 0,
       targetedQuickAttackDefenseUpdateChainLimit: 0,
+      toGraveTargetFinalAttackHalve: 0,
       xyzDetachAttributeExceptGroupStat: 0,
     },
   );
@@ -1878,6 +1897,19 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-frightfur-jar-to-grave-final-stat.test.ts",
+      kind: "frightfurJarToGraveFinalStat",
+      required: [
+        'const frightfurJarCode = "18138630"',
+        "restores Toy Vendor code change and delayed EVENT_TO_GRAVE target final ATK halving",
+        "e2:SetRange(LOCATION_SZONE|LOCATION_GRAVE)",
+        "currentCardMatchesCode(restoredOpen.session.state.cards.find((card) => card.uid === frightfurJar.uid), restoredOpen.session.state, toyVendorCode)).toBe(true)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "becameTarget"',
+        'registryKey: "lua:18138630:lua-6-102"',
+      ],
+    },
+    {
       file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
       kind: "rushRecklesslyTargetedDamageStepAttackUpdate",
       required: [
@@ -2337,6 +2369,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       gadarlaKaijuCounterFinalStat: 0,
       greedyVenomFusionDisableRevive: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
+      frightfurJarToGraveFinalStat: 0,
       gemMerchantDamageStepNormalStat: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
       guardragonShieldLinkSumStat: 0,
