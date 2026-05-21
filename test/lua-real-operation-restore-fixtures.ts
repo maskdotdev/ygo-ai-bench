@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 329;
+export const operationFixtureCount = 330;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -218,7 +218,7 @@ export const operationKindCounts = {
   setFinalStatDestroyCost: 1,
   setFinalStatDisable: 1,
   selectEffectStat: 1,
-  selectEffectStatSearch: 1,
+  selectEffectStatSearch: 2,
   selectEffectStatDestroyedToGrave: 1,
   selectEffectStatDestroy: 1,
   selectUnselectTargetStat: 1,
@@ -5326,6 +5326,32 @@ export function operationFixtureFiles(): Array<{
         'eventName: "sentToHandConfirmed"',
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dragon-light-darkness-select-search-stat.test.ts",
+      kind: "selectEffectStatSearch",
+      required: [
+        "restores SelectEffect hand-to-deck search branch and Damage Step Dragon ATK branch",
+        "Duel.CheckEvent(EVENT_CHAINING,true)",
+        "Duel.GetChainInfo(te_ev,CHAININFO_TARGET_CARDS)",
+        "local op=Duel.SelectEffect(tp,",
+        "Duel.RegisterFlagEffect(tp,id,RESET_PHASE|PHASE_END,0,1)",
+        "Duel.RegisterFlagEffect(tp,id+1,RESET_PHASE|PHASE_END,0,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,nil,1,tp,LOCATION_HAND)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)",
+        "Duel.ConfirmCards(1-tp,sc)",
+        "Duel.SendtoDeck(sc,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil,sc:GetAttribute())",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.NegateEffect(te_ev)",
+        'api: "SelectEffect"',
+        'eventName: "sentToDeck"',
+        'eventName: "sentToHandConfirmed"',
+        "currentAttack",
+        "operationInfos",
       ],
     },
     {

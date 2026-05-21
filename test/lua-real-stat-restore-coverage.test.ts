@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 124;
+const statFixtureCount = 125;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -98,7 +98,7 @@ const statKindCounts = {
   trapDetachOperatedDestroyAttackUpdate: 1,
   selfBanishTargetSetcodeAttackDefenseUpdate: 1,
   selfBanishSelectEffectDestroyFinalAttack: 1,
-  targetedDamageStepAttackUpdate: 3,
+  targetedDamageStepAttackUpdate: 4,
   targetedDamageStepDefenseUpdate: 1,
   targetedIgnitionDisable: 2,
   toGraveTargetFinalAttackHalve: 1,
@@ -1109,6 +1109,21 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid)!, restoredOpen.session.state)).toBe(2300)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
         "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dragon-light-darkness-select-search-stat.test.ts",
+      kind: "targetedDamageStepAttackUpdate",
+      required: [
+        "restores SelectEffect hand-to-deck search branch and Damage Step Dragon ATK branch",
+        "local op=Duel.SelectEffect(tp,",
+        "Duel.RegisterFlagEffect(tp,id+1,RESET_PHASE|PHASE_END,0,1)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc:GetLevel()*200)",
+        'api: "SelectEffect"',
+        "currentAttack(restoredStat.session.state.cards.find((card) => card.uid === fieldDragon.uid)!, restoredStat.session.state)).toBe(3300)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
