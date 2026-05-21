@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 305;
+export const operationFixtureCount = 306;
 export const operationKindCounts = {
+  releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -246,6 +247,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -492,6 +494,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-gaia-soul-release-pierce-end-destroy.test.ts",
+      kind: "releaseCostLabelPiercePhaseEndDestroy",
+      required: [
+        "restores release-cost ATK label, piercing battle damage, and End Phase self-destroy",
+        "Duel.CheckReleaseGroupCost(tp,Card.IsRace,1,false,nil,e:GetHandler(),RACE_PYRO)",
+        "Duel.SelectReleaseGroupCost(tp,Card.IsRace,1,2,false,nil,e:GetHandler(),RACE_PYRO)",
+        "Duel.Release(g,REASON_COST)",
+        "e:SetLabel(#g)",
+        "e1:SetProperty(EFFECT_FLAG_COPY_INHERIT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(e:GetLabel()*1000)",
+        "e2:SetCode(EFFECT_PIERCE)",
+        "e3:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,e:GetHandler(),1,0,0)",
+        "Duel.Destroy(c,REASON_EFFECT)",
+        'eventName: "released"',
+        'eventName: "battleDamageDealt"',
+        'eventName: "phaseEnd"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-zubaba-buster-battle-damage-lowest-destroy.test.ts",
       kind: "battleDamageFlagDamageStepLowestDestroyStat",
@@ -5743,6 +5768,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
