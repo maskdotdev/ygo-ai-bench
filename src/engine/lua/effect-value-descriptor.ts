@@ -59,6 +59,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (params?.[1] && new RegExp(String.raw`\breturn\s+${escapeRegExp(params[1])}\s*:\s*GetDefense\s*\(\s*\)\s*(?:end\b|$)`).test(snippet)) {
     return "stat:current-defense";
   }
+  const selfFlagBaseStat = selfFlagBaseStatDescriptor(snippet, params);
+  if (selfFlagBaseStat) return selfFlagBaseStat;
   const handlerEquipCount = handlerEquipCountStatDescriptor(snippet, params);
   if (handlerEquipCount) return handlerEquipCount;
   const levelOrRankStat = levelOrRankStatDescriptor(snippet, params);
@@ -142,6 +144,21 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${effectTypeContinuousPattern}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
   );
   return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
+}
+
+function selfFlagBaseStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const cardParam = params?.[1];
+  if (!cardParam) return undefined;
+  const card = escapeRegExp(cardParam);
+  const flagCheck = String.raw`${card}\s*:\s*GetFlagEffect\s*\(\s*${numericOrIdentifierPattern}\s*\)\s*==\s*0`;
+  const attackDoubleThenHalf = new RegExp(
+    String.raw`\bif\s+${flagCheck}\s+then\s+return\s+${card}\s*:\s*GetBaseAttack\s*\(\s*\)\s*\*\s*2\s+else\s+return\s+${card}\s*:\s*GetBaseAttack\s*\(\s*\)\s*/\s*2\s+end\b`,
+  );
+  if (attackDoubleThenHalf.test(snippet)) return "stat:self-flag-base-attack-zero-double-else-half";
+  const defenseDoubleThenHalf = new RegExp(
+    String.raw`\bif\s+${flagCheck}\s+then\s+return\s+${card}\s*:\s*GetBaseDefense\s*\(\s*\)\s*\*\s*2\s+else\s+return\s+${card}\s*:\s*GetBaseDefense\s*\(\s*\)\s*/\s*2\s+end\b`,
+  );
+  return defenseDoubleThenHalf.test(snippet) ? "stat:self-flag-base-defense-zero-double-else-half" : undefined;
 }
 
 function immuneOpponentCardEffectsDescriptor(snippet: string, params: string[] | undefined): string | undefined {

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 55;
+const statFixtureCount = 56;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -34,6 +34,7 @@ const statKindCounts = {
   setAttack: 1,
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
+  summonBaseAttackDefenseFlaggedHalve: 1,
   setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
   setFinalAttackDefenseHalveProcedure: 1,
@@ -75,6 +76,7 @@ const statSemanticVariantCounts = {
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
   gemMerchantDamageStepNormalStat: 1,
   guardragonShieldLinkSumStat: 1,
+  hourglassCourageSummonFlagBaseStat: 1,
   jurassicWorldTargetBoolFunctionRaceStat: 1,
   juggernautLiebeDetachStatAttackLock: 1,
   luminousSoldierDamageStepTargetAttributeStat: 1,
@@ -109,7 +111,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -131,6 +133,7 @@ type StatSemanticVariant =
   | "genexTurbineTargetBoolFunctionSetcodeStat"
   | "guardragonShieldLinkSumStat"
   | "gracefulDiceDamageStepGroupStat"
+  | "hourglassCourageSummonFlagBaseStat"
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "juggernautLiebeDetachStatAttackLock"
   | "kingOverfiendDetachStatCannotTrigger"
@@ -892,6 +895,21 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hourglass-courage-summon-base-stat.test.ts",
+      kind: "summonBaseAttackDefenseFlaggedHalve",
+      required: [
+        'const hourglassCode = "43530283"',
+        "restores summon-triggered base ATK/DEF setters with self-turn flag halving",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e2:SetCode(EVENT_FLIP_SUMMON_SUCCESS)",
+        "EFFECT_SET_BASE_ATTACK",
+        "EFFECT_SET_BASE_DEFENSE",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === hourglass.uid), restoredTrigger.session.state)).toBe(550)",
+        "flagEffects.filter((effect) => effect.ownerId === hourglass.uid && effect.code === Number(hourglassCode))",
+        "battleDamage).toEqual({ 0: 0, 1: 50 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-graceful-dice-damage-step-stat.test.ts",
       kind: "diceGroupAttackDefenseUpdate",
       required: [
@@ -1006,6 +1024,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
+      summonBaseAttackDefenseFlaggedHalve: 0,
       setFinalAttackDefenseDiscardLock: 0,
       setFinalAttackDefenseDirectLock: 0,
       setFinalAttackDefenseHalveProcedure: 0,
@@ -1460,6 +1479,21 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hourglass-courage-summon-base-stat.test.ts",
+      kind: "hourglassCourageSummonFlagBaseStat",
+      required: [
+        'const hourglassCode = "43530283"',
+        "CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE",
+        "EFFECT_TYPE_TRIGGER_F",
+        "EVENT_SUMMON_SUCCESS",
+        "EVENT_FLIP_SUMMON_SUCCESS",
+        "EFFECT_SET_BASE_ATTACK",
+        "EFFECT_SET_BASE_DEFENSE",
+        "code: 103",
+        "code: 107",
+      ],
+    },
+    {
       file: "test/lua-real-script-blackwing-gale-procedure-final-stat.test.ts",
       kind: "blackwingGaleProcedureFinalStatHalve",
       required: [
@@ -1684,6 +1718,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
       guardragonShieldLinkSumStat: 0,
       gracefulDiceDamageStepGroupStat: 0,
+      hourglassCourageSummonFlagBaseStat: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       juggernautLiebeDetachStatAttackLock: 0,
       kingOverfiendDetachStatCannotTrigger: 0,

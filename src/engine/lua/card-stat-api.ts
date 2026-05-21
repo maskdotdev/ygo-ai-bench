@@ -32,7 +32,7 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   pushAnyNumberMatcher(L, "IsOriginalType", session, (card, requested) => requested.some((value) => (printedCardTypeFlags(card) & value) !== 0));
   pushAnyNumberMatcher(L, "IsNotOriginalType", session, (card, requested) => requested.every((value) => (printedCardTypeFlags(card) & value) === 0));
   pushNumberGetter(L, "GetAttack", session, (card) => currentAttack(card, session.state));
-  pushNumberGetter(L, "GetBaseAttack", session, (card) => currentBaseAttack(card, session.state));
+  pushNumberGetter(L, "GetBaseAttack", session, (card) => currentBaseAttack(card, session.state, hostState.activeContext?.evaluatingStatEffectId));
   pushNumberGetter(L, "GetTextAttack", session, (card) => currentAttack(card, session.state));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateAttack(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateAttack"));
@@ -46,7 +46,7 @@ export function installCardStatApi<EffectRecord extends LuaCardApiEffectRecord>(
   pushNumberMatcher(L, "IsOriginalAttackAbove", session, (card, requested) => (card.data.attack ?? 0) >= requested);
   pushNumberMatcher(L, "IsOriginalAttackBelow", session, (card, requested) => (card.data.attack ?? 0) <= requested);
   pushNumberGetter(L, "GetDefense", session, (card) => currentDefense(card, session.state));
-  pushNumberGetter(L, "GetBaseDefense", session, (card) => currentBaseDefense(card, session.state));
+  pushNumberGetter(L, "GetBaseDefense", session, (card) => currentBaseDefense(card, session.state, hostState.activeContext?.evaluatingStatEffectId));
   pushNumberGetter(L, "GetTextDefense", session, (card) => currentDefense(card, session.state));
   lua.lua_pushcfunction(L, (state: unknown) => pushUpdateDefense(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("UpdateDefense"));

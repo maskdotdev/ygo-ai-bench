@@ -4,6 +4,7 @@ import type { DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelSta
 const effectChangeBattleStat = 198;
 const effectFlagCannotDisable = 0x400;
 const statDisabledSourceChecks = new Set<string>();
+const evaluatingStatEffectIds: string[] = [];
 
 export function cardTypeFlags(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (!card) return 0;
@@ -49,16 +50,18 @@ export function currentDefense(card: DuelCardInstance | undefined, state?: DuelS
   return currentOrderedStat(card, state, currentBaseDefense(card, state) + (card?.defenseModifier ?? 0), { update: 104, set: 105, setFinal: 106 });
 }
 
-export function currentBaseAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
+export function currentBaseAttack(card: DuelCardInstance | undefined, state?: DuelState, excludedEffectId?: string): number {
   if (!card) return 0;
-  if (currentCardHasEffect(card, state, 110)) return setStatEffectValue(card, state, 107) ?? card.data.defense ?? 0;
-  return setStatEffectValue(card, state, 103) ?? card.data.attack ?? 0;
+  excludedEffectId ??= evaluatingStatEffectIds.at(-1);
+  if (currentCardHasEffect(card, state, 110)) return setStatEffectValue(card, state, 107, excludedEffectId) ?? card.data.defense ?? 0;
+  return setStatEffectValue(card, state, 103, excludedEffectId) ?? card.data.attack ?? 0;
 }
 
-export function currentBaseDefense(card: DuelCardInstance | undefined, state?: DuelState): number {
+export function currentBaseDefense(card: DuelCardInstance | undefined, state?: DuelState, excludedEffectId?: string): number {
   if (!card) return 0;
-  if (currentCardHasEffect(card, state, 110)) return setStatEffectValue(card, state, 103) ?? card.data.attack ?? 0;
-  return setStatEffectValue(card, state, 107) ?? card.data.defense ?? 0;
+  excludedEffectId ??= evaluatingStatEffectIds.at(-1);
+  if (currentCardHasEffect(card, state, 110)) return setStatEffectValue(card, state, 103, excludedEffectId) ?? card.data.attack ?? 0;
+  return setStatEffectValue(card, state, 107, excludedEffectId) ?? card.data.defense ?? 0;
 }
 
 export function currentLevel(card: DuelCardInstance | undefined, state?: DuelState): number {
@@ -207,8 +210,13 @@ function statEffectDependsOnEnabledSource(effect: DuelEffectDefinition): boolean
 function statEffectValue(card: DuelCardInstance, state: DuelState | undefined, effect: DuelEffectDefinition, ctx?: DuelEffectContext): number | undefined {
   if (!state) return effect.value;
   const source = state.cards.find((candidate) => candidate.uid === effect.sourceUid) ?? card;
-  const resolvedContext = ctx ?? statEffectContext(state, effect, source);
-  return effect.statValue?.(resolvedContext, card) ?? effect.value;
+  const resolvedContext = { ...(ctx ?? statEffectContext(state, effect, source)), evaluatingStatEffectId: effect.id };
+  evaluatingStatEffectIds.push(effect.id);
+  try {
+    return effect.statValue?.(resolvedContext, card) ?? effect.value;
+  } finally {
+    evaluatingStatEffectIds.pop();
+  }
 }
 
 function statEffectContext(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): DuelEffectContext {

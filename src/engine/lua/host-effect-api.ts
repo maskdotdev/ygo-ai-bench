@@ -203,7 +203,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     for (const label of labels) lua.lua_pushinteger(state, label); return labels.length;
   });
   pushEffectMethod(L, effects, "SetLabelObject", (state, effect) => {
-    if (effect.labelObjectRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.labelObjectRef);
+    unrefLuaEffectRefIfUnique(state, effects, effect, "labelObjectRef");
     delete effect.labelObjectId; delete effect.labelObjectUid; delete effect.labelObjectUids;
     if (lua.lua_isnoneornil(state, 2)) { delete effect.labelObjectRef; syncActiveLabelObject(hostState, effect); syncRegisteredDuelEffectLabelObject(hostState, effect); return 0; }
     const labelObjectId = readTableNumberField(state, 2, "__effect_id");
@@ -226,7 +226,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 1;
   });
   pushEffectMethod(L, effects, "SetValue", (state, effect) => {
-    if (effect.valueRef !== undefined) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, effect.valueRef);
+    unrefLuaEffectRefIfUnique(state, effects, effect, "valueRef");
     delete effect.valueRef; delete effect.value; delete effect.valueDescriptor;
     if (lua.lua_isfunction(state, 2)) {
       const valueDescriptor = knownLuaEffectValueDescriptor(state, 2, hostState);
@@ -353,6 +353,13 @@ function cloneLuaEffectRecord(hostState: LuaHostState, effect: LuaEffectRecord):
   if (effect.reset) clone.reset = { ...effect.reset };
   hostState.effects.set(id, clone);
   return id;
+}
+
+function unrefLuaEffectRefIfUnique(state: unknown, effects: Map<number, LuaEffectRecord>, effect: LuaEffectRecord, field: "labelObjectRef" | "valueRef"): void {
+  const ref = effect[field];
+  if (ref === undefined) return;
+  const shared = [...effects.values()].some((candidate) => candidate.id !== effect.id && candidate[field] === ref);
+  if (!shared) lauxlib.luaL_unref(state, lua.LUA_REGISTRYINDEX, ref);
 }
 
 function nextLuaEffectId(hostState: LuaHostState): number { while (hostState.session.state.effects.some((effect) => effect.id === `lua-${hostState.nextEffectId}` || effect.id.startsWith(`lua-${hostState.nextEffectId}-`))) hostState.nextEffectId += 1; return hostState.nextEffectId++; }

@@ -1,5 +1,5 @@
 import { currentBattleStep } from "#duel/battle-window-state.js";
-import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentDefense, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentBaseAttack, currentBaseDefense, currentDefense, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { locationsFromMask } from "#lua/api-utils.js";
 
@@ -8,6 +8,12 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
     return (ctx) => ctx.duel.cards.filter((card) => card.location === "graveyard" && (cardTypeFlags(card, ctx.duel) & 0x1) !== 0).length * 100;
   }
   if (luaValueDescriptor === "stat:current-defense") return (ctx, card) => currentDefense(card, ctx.duel);
+  if (luaValueDescriptor === "stat:self-flag-base-attack-zero-double-else-half") {
+    return (ctx, card) => hasSelfCodeFlag(ctx, card) ? currentBaseAttack(card, ctx.duel, effectId) / 2 : currentBaseAttack(card, ctx.duel, effectId) * 2;
+  }
+  if (luaValueDescriptor === "stat:self-flag-base-defense-zero-double-else-half") {
+    return (ctx, card) => hasSelfCodeFlag(ctx, card) ? currentBaseDefense(card, ctx.duel, effectId) / 2 : currentBaseDefense(card, ctx.duel, effectId) * 2;
+  }
   const handlerEquipCount = luaValueDescriptor?.match(/^stat:handler-equip-count:x(-?\d+)$/);
   if (handlerEquipCount?.[1]) {
     const multiplier = Number(handlerEquipCount[1]);
@@ -121,4 +127,9 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
     };
   }
   return undefined;
+}
+
+function hasSelfCodeFlag(ctx: Parameters<NonNullable<DuelEffectDefinition["statValue"]>>[0], card: Parameters<NonNullable<DuelEffectDefinition["statValue"]>>[1]): boolean {
+  const code = Number(card.code);
+  return Number.isSafeInteger(code) && ctx.duel.flagEffects.some((flag) => flag.ownerType === "card" && flag.ownerId === card.uid && flag.code === code);
 }
