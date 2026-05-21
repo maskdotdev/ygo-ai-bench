@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 62;
+const statFixtureCount = 63;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
   battleTargetAttackBoost: 3,
   battleTargetStatReset: 1,
   battleConfirmFinalSwapPierceDamage: 1,
+  banishDetachFinalAttackDefenseZero: 1,
   battleStartFinalStatHalve: 1,
   damageStepBattleTargetAttributeAttackBoost: 2,
   damageStepMachineStatDamagePrevention: 1,
@@ -108,6 +109,7 @@ const statSemanticVariantCounts = {
   steadyHandsFinalStatDirectLock: 1,
   unifiedFrontDiscardFinalStatLock: 1,
   shrinkTargetBaseAtkHalving: 1,
+  sharkDrakeVeissBanishDetachZeroStat: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
   sprightGammaBurstGroupSelfBanishStat: 1,
   sprightPixiesProcedurePrecalcStat: 1,
@@ -122,7 +124,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -168,6 +170,7 @@ type StatSemanticVariant =
   | "royalRhinoChainDiceAttackUpdate"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
+  | "sharkDrakeVeissBanishDetachZeroStat"
   | "scoreMelodiousPrecalcFinalStat"
   | "skullgiosBattleConfirmSwapPierceDamage"
   | "shieldSwordSwapBaseAd"
@@ -646,6 +649,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-shark-drake-veiss-banish-detach-zero-stat.test.ts",
+      kind: "banishDetachFinalAttackDefenseZero",
+      required: [
+        'const veissCode = "49221191"',
+        "restores banish plus detach cost into targeted final ATK/DEF zero",
+        "Cost.AND(s.atkdefcost,Cost.DetachFromSelf(1))",
+        "Card.HasNonZeroAttack,Card.HasNonZeroDefense",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SelectTarget(tp,aux.OR(Card.HasNonZeroAttack,Card.HasNonZeroDefense),tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === target.uid), restoredResolved.session.state)).toBe(0)",
+        "currentDefense(restoredResolved.session.state.cards.find((card) => card.uid === target.uid), restoredResolved.session.state)).toBe(0)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-copycat-summon-final-stat.test.ts",
       kind: "setFinalAttackDefenseTargetDirectLock",
       required: [
@@ -1116,6 +1136,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleTargetAttackBoost: 0,
       battleTargetStatReset: 0,
       battleConfirmFinalSwapPierceDamage: 0,
+      banishDetachFinalAttackDefenseZero: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
       damageStepMachineStatDamagePrevention: 0,
       deckCostAttackDefenseUpdate: 0,
@@ -1788,6 +1809,19 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-shark-drake-veiss-banish-detach-zero-stat.test.ts",
+      kind: "sharkDrakeVeissBanishDetachZeroStat",
+      required: [
+        'const veissCode = "49221191"',
+        "restores banish plus detach cost into targeted final ATK/DEF zero",
+        "Duel.GetLP(tp)<=1000",
+        "aux.SpElimFilter(c)",
+        'eventName: "banished"',
+        'eventName: "detachedMaterial"',
+        "value: 0",
+      ],
+    },
+    {
       file: "test/lua-real-script-spright-gamma-burst-group-self-banish-stat.test.ts",
       kind: "sprightGammaBurstGroupSelfBanishStat",
       required: [
@@ -1948,6 +1982,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
       scoreMelodiousPrecalcFinalStat: 0,
+      sharkDrakeVeissBanishDetachZeroStat: 0,
       skullgiosBattleConfirmSwapPierceDamage: 0,
       blackwingGaleProcedureFinalStatHalve: 0,
       shieldSwordSwapBaseAd: 0,
