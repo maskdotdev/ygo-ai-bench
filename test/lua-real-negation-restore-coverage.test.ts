@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 22;
+const negationFixtureCount = 23;
 const chainResponseNegationFixtureCount = 19;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 26;
+const negationInventoryFixtureCount = 27;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 14,
+  chainNegateToGrave: 15,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -31,6 +31,7 @@ const negationSemanticVariantCounts = {
   effectVeilerHandQuickDisableChainLink: 1,
   faceOffDamagePhaseCurrentPhaseNegateDestroy: 1,
   ghostOgreDestroyOnlyNoNegation: 1,
+  giltiGearfriedTargetedChainNegateDestroy: 1,
   heraldPerfectionDamageCalculationNegateDestroy: 1,
   ironCoreLusterConfirmCostNegateDestroy: 1,
   lightImprisoningMirrorContinuousChainActivatingNegate: 1,
@@ -71,6 +72,7 @@ type NegationSemanticVariant =
   | "effectVeilerHandQuickDisableChainLink"
   | "faceOffDamagePhaseCurrentPhaseNegateDestroy"
   | "ghostOgreDestroyOnlyNoNegation"
+  | "giltiGearfriedTargetedChainNegateDestroy"
   | "heraldPerfectionDamageCalculationNegateDestroy"
   | "ironCoreLusterConfirmCostNegateDestroy"
   | "lightImprisoningMirrorContinuousChainActivatingNegate"
@@ -214,6 +216,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-effect-veiler-chain-disable.test.ts",
     "lua-real-script-face-off-damage-phase-negate.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
+    "lua-real-script-gilti-gearfried-target-chain-negate.test.ts",
     "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
     "lua-real-script-iron-core-luster-confirm-negate.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
@@ -243,6 +246,7 @@ function realScriptNegationFixtureFiles(): string[] {
 function realScriptChainResponseNegationFixtureFiles(): string[] {
   return realScriptNegationFixtureFiles()
     .filter((file) => !file.endsWith("lua-real-script-ash-blossom-chain-negate.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-gilti-gearfried-target-chain-negate.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-pollinosis-release-activation-negate.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-spright-red-release-link2-negate.test.ts"));
 }
@@ -283,6 +287,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-face-off-damage-phase-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-gilti-gearfried-target-chain-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -471,6 +479,20 @@ function negationSemanticVariants(): Array<{
         'const ghostOgreCode = "59438930"',
         "restores its hand response, destroys the related field source, and does not negate that chain link",
         '["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([])',
+      ],
+    },
+    {
+      file: "lua-real-script-gilti-gearfried-target-chain-negate.test.ts",
+      kind: "giltiGearfriedTargetedChainNegateDestroy",
+      required: [
+        'const giltiGearfriedCode = "49161188"',
+        "restores targeted chain response negation and selected card destruction",
+        "local loc,tg=Duel.GetChainInfo(ev,CHAININFO_TRIGGERING_LOCATION,CHAININFO_TARGET_CARDS)",
+        "return Duel.IsChainDisablable(ev) and loc~=LOCATION_DECK",
+        "Duel.NegateEffect(ev)",
+        'eventName: "becameTarget"',
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("gilti gearfried targeting starter resolved")',
       ],
     },
     {
@@ -739,6 +761,7 @@ function countNegationSemanticVariants(
       effectVeilerHandQuickDisableChainLink: 0,
       faceOffDamagePhaseCurrentPhaseNegateDestroy: 0,
       ghostOgreDestroyOnlyNoNegation: 0,
+      giltiGearfriedTargetedChainNegateDestroy: 0,
       heraldPerfectionDamageCalculationNegateDestroy: 0,
       ironCoreLusterConfirmCostNegateDestroy: 0,
       lightImprisoningMirrorContinuousChainActivatingNegate: 0,
