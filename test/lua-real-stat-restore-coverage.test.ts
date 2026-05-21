@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 67;
+const statFixtureCount = 68;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -54,6 +54,7 @@ const statKindCounts = {
   singleRangeSetcodeConditionAttackUpdate: 1,
   staticAttackAndExtraAttack: 1,
   selfTributeTargetRaceAttackDefenseUpdate: 1,
+  releaseCostTargetAttackUpdateChainNegate: 1,
   selfBanishTargetSetcodeAttackDefenseUpdate: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
@@ -77,6 +78,7 @@ const statSemanticVariantCounts = {
   cherubiniDeckCostStat: 1,
   clearWingRiderDiceToDeckDestroyStat: 1,
   dinoSewingBattleTargetStatReset: 1,
+  evilTwinGgEzReleaseStatNegate: 1,
   ddSavantNikolaPzoneDiscardStat: 1,
   steelCavalryBattleStartFinalStat: 1,
   scoreMelodiousPrecalcFinalStat: 1,
@@ -132,7 +134,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -152,6 +154,7 @@ type StatSemanticVariant =
   | "ddSavantNikolaPzoneDiscardStat"
   | "digitJammingPrecalcDestroyedStat"
   | "dinoSewingBattleTargetStatReset"
+  | "evilTwinGgEzReleaseStatNegate"
   | "cyberDragonSiegerCodeStatDamagePrevention"
   | "fairyKingAlbverdichDetachAttributeExceptStat"
   | "gadarlaKaijuCounterFinalStat"
@@ -894,6 +897,22 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-evil-twin-gg-ez-release-stat-negate.test.ts",
+      kind: "releaseCostTargetAttackUpdateChainNegate",
+      required: [
+        'const ggEzCode = "34365442"',
+        "restores release-cost targeting into a temporary Ki-sikil/Lil-la ATK boost",
+        "restores release-cost chain response that negates a destruction effect",
+        "Duel.CheckReleaseGroupCost(tp,s.cfilter,1,false,nil,nil,tp)",
+        "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,nil,nil,tp)",
+        "Duel.SelectTarget(tp,s.atktgfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetOperationInfo(ev,CATEGORY_DESTROY)",
+        "Duel.NegateEffect(ev)",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === target.uid), restoredResolved.session.state)).toBe(2500)",
+        'eventName: "chainNegated"',
+      ],
+    },
+    {
       file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
       kind: "targetedPreDamageFinalAttack",
       required: [
@@ -1240,6 +1259,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       preDamageFinalDigitStatDestroyedLingering: 0,
       preDamageSelfToGraveBattleMonsterStat: 0,
       primalDragonBanishAttackDefenseUpdate: 0,
+      releaseCostTargetAttackUpdateChainNegate: 0,
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
@@ -1343,6 +1363,19 @@ function statSemanticVariants(): Array<{
         "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
         "Duel.SetChainLimit(function(_e,_ep,_tp) return _tp==_ep end)",
         "host.messages).not.toContain(\"borreload opponent responder resolved\")",
+      ],
+    },
+    {
+      file: "test/lua-real-script-evil-twin-gg-ez-release-stat-negate.test.ts",
+      kind: "evilTwinGgEzReleaseStatNegate",
+      required: [
+        'const ggEzCode = "34365442"',
+        "EFFECT_COUNT_CODE_OATH",
+        "Duel.CheckReleaseGroupCost",
+        "Duel.SelectReleaseGroupCost",
+        "Duel.SelectTarget(tp,s.atktgfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.NegateEffect(ev)",
+        'eventName: "chainDisabled"',
       ],
     },
     {
@@ -2090,6 +2123,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       ddSavantNikolaPzoneDiscardStat: 0,
       digitJammingPrecalcDestroyedStat: 0,
       dinoSewingBattleTargetStatReset: 0,
+      evilTwinGgEzReleaseStatNegate: 0,
       fairyKingAlbverdichDetachAttributeExceptStat: 0,
       gadarlaKaijuCounterFinalStat: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
