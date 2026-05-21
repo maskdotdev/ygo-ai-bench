@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 71;
+const statFixtureCount = 72;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -61,6 +61,7 @@ const statKindCounts = {
   selfBanishTargetSetcodeAttackDefenseUpdate: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
+  targetedIgnitionDisable: 1,
   preDamageSelfToGraveBattleMonsterStat: 3,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
@@ -112,6 +113,7 @@ const statSemanticVariantCounts = {
   mukaMukaHandCountAttackDefense: 1,
   neoFlamvellSabreGraveCountThresholdStat: 1,
   nordicRelicMegingjordFinalStatDirectLock: 1,
+  oddEyesWingTargetDisable: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
   primalDragonBanishStatNoDamage: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
@@ -140,7 +142,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -185,6 +187,7 @@ type StatSemanticVariant =
   | "mukaMukaHandCountAttackDefense"
   | "neoFlamvellSabreGraveCountThresholdStat"
   | "nordicRelicMegingjordFinalStatDirectLock"
+  | "oddEyesWingTargetDisable"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
   | "primalDragonBanishStatNoDamage"
   | "plagueWolfFinalAttackEndDestroy"
@@ -943,6 +946,20 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-odd-eyes-wing-target-disable.test.ts",
+      kind: "targetedIgnitionDisable",
+      required: [
+        'const oddEyesWingCode = "58074177"',
+        "restores ignition targeting into related-chain negation and monster effect disable",
+        "Duel.SelectTarget(tp,s.disfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e1:SetCode(EFFECT_DISABLE)",
+        "e2:SetCode(EFFECT_DISABLE_EFFECT)",
+        "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-majestic-red-disable-return-stat.test.ts",
       kind: "majesticSynchroDisableReturnAttackUpdate",
       required: [
@@ -1341,6 +1358,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       swapBaseAttackDefense: 0,
       targetedDamageStepAttackUpdate: 0,
       targetedDamageStepDefenseUpdate: 0,
+      targetedIgnitionDisable: 0,
       targetedPreDamageFinalAttack: 0,
       targetedQuickAttackDefenseUpdateChainLimit: 0,
       xyzDetachAttributeExceptGroupStat: 0,
@@ -1455,6 +1473,19 @@ function statSemanticVariants(): Array<{
         "Duel.Remove(rg,POS_FACEUP,REASON_EFFECT)",
         "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
         "customStatusMask = 0x8",
+      ],
+    },
+    {
+      file: "test/lua-real-script-odd-eyes-wing-target-disable.test.ts",
+      kind: "oddEyesWingTargetDisable",
+      required: [
+        'const oddEyesWingCode = "58074177"',
+        "restores ignition targeting into related-chain negation and monster effect disable",
+        "Duel.SelectTarget(tp,s.disfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e1:SetCode(EFFECT_DISABLE)",
+        "e2:SetCode(EFFECT_DISABLE_EFFECT)",
+        'eventName: "becameTarget"',
       ],
     },
     {
@@ -2257,6 +2288,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       mukaMukaHandCountAttackDefense: 0,
       neoFlamvellSabreGraveCountThresholdStat: 0,
       nordicRelicMegingjordFinalStatDirectLock: 0,
+      oddEyesWingTargetDisable: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
       primalDragonBanishStatNoDamage: 0,
       plagueWolfFinalAttackEndDestroy: 0,
