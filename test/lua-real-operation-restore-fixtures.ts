@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 282;
+export const operationFixtureCount = 283;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -147,6 +147,7 @@ export const operationKindCounts = {
   ignitionSelfGraveDeckSummon: 1,
   lpDiscardCostStatToGraveBothDamage: 1,
   lpCostHandDiscard: 1,
+  lpCostFieldWipeStat: 1,
   lpCostRandomHandDiscard: 1,
   lpCostStatReleaseRecover: 1,
   costBanishLevelStat: 1,
@@ -368,6 +369,7 @@ export type OperationKind =
   | "ignitionSelfGraveDeckSummon"
   | "lpDiscardCostStatToGraveBothDamage"
   | "lpCostHandDiscard"
+  | "lpCostFieldWipeStat"
   | "lpCostRandomHandDiscard"
   | "lpCostStatReleaseRecover"
   | "costBanishLevelStat"
@@ -3550,6 +3552,26 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-end-world-ruler-code-wipe-stat.test.ts",
+      kind: "lpCostFieldWipeStat",
+      required: [
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e1:SetRange(LOCATION_HAND|LOCATION_MZONE)",
+        "e2:SetCost(Cost.AND(Cost.SelfReveal,Cost.PayLP(2000),s.applycost))",
+        "c:CheckActivateEffect(true,true,false)~=nil",
+        "Duel.ClearOperationInfo(0)",
+        "e3:SetCost(Cost.PayLP(2000))",
+        "Duel.GetMatchingGroup(nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,e:GetHandler())",
+        "Duel.Destroy(g,REASON_EFFECT)>0",
+        "c:UpdateAttack(2900)",
+        "currentCardMatchesCode(restoredRuler, restoredOpen.session.state, demiseCode)).toBe(true)",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "destroyed"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack(",
+      ],
+    },
+    {
       file: "test/lua-real-script-big-saturn-cost-stat-destroy-damage.test.ts",
       kind: "lpDiscardCostStatToGraveBothDamage",
       required: [
@@ -5232,6 +5254,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       ignitionSelfGraveDeckSummon: 0,
       lpDiscardCostStatToGraveBothDamage: 0,
       lpCostHandDiscard: 0,
+      lpCostFieldWipeStat: 0,
       lpCostRandomHandDiscard: 0,
       lpCostStatReleaseRecover: 0,
       costBanishLevelStat: 0,
