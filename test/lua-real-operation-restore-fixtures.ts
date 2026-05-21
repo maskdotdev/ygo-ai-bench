@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 224;
+export const operationFixtureCount = 225;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -55,6 +55,7 @@ export const operationKindCounts = {
   deckSplit: 1,
   deckTopSort: 2,
   deckMoveToField: 1,
+  selfPositionStatSelfBanishSearch: 1,
   damageStepBanishStatProtect: 1,
   groupBanishCountStat: 1,
   handBanishDrawStat: 1,
@@ -220,6 +221,7 @@ export type OperationKind =
   | "deckSplit"
   | "deckTopSort"
   | "deckMoveToField"
+  | "selfPositionStatSelfBanishSearch"
   | "damageStepBanishStatProtect"
   | "groupBanishCountStat"
   | "handBanishDrawStat"
@@ -3587,6 +3589,31 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ancient-cloak-position-stat-search.test.ts",
+      kind: "selfPositionStatSelfBanishSearch",
+      required: [
+        "restores self position change into DARK target stat boost and grave self-banish Phantom Knights search",
+        "return e:GetHandler():IsPosition(POS_FACEUP_ATTACK)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.ChangePosition(c,POS_FACEUP_DEFENSE)",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END|RESET_OPPO_TURN)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "return c:IsSetCard(SET_THE_PHANTOM_KNIGHTS) and not c:IsCode(id) and c:IsAbleToHand()",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "operationInfos",
+        'eventName: "positionChanged"',
+        'eventName: "banished"',
+        'eventName: "sentToHandConfirmed"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -3660,6 +3687,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckSplit: 0,
       deckTopSort: 0,
       deckMoveToField: 0,
+      selfPositionStatSelfBanishSearch: 0,
       damageStepBanishStatProtect: 0,
       groupBanishCountStat: 0,
       damageDeckdesAtk: 0,
