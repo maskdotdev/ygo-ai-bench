@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const ignitionStatFixtureCount = 7;
+const ignitionStatFixtureCount = 8;
 const ignitionStatKindCounts = {
   counterCostAttackBoost: 1,
+  counterCostTargetPlantAttackDefenseBoost: 1,
   counterCostFinalAttackDirectLockEndSend: 1,
   groupUpdateLevel: 1,
   noTurnResetAttackLevelBoost: 1,
@@ -17,6 +18,7 @@ const ignitionStatKindCounts = {
 
 type IgnitionStatKind =
   | "counterCostAttackBoost"
+  | "counterCostTargetPlantAttackDefenseBoost"
   | "counterCostFinalAttackDirectLockEndSend"
   | "groupUpdateLevel"
   | "noTurnResetAttackLevelBoost"
@@ -53,6 +55,23 @@ describe("Lua real ignition stat restore coverage", () => {
 
 function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
   return [
+    {
+      file: "test/lua-real-script-world-tree-counter-stat.test.ts",
+      kind: "counterCostTargetPlantAttackDefenseBoost",
+      required: [
+        "c:EnableCounterPermit(0x18)",
+        "e:GetHandler():IsCanRemoveCounter(tp,0x18,1,REASON_COST)",
+        "e:GetHandler():RemoveCounter(tp,0x18,1,REASON_COST)",
+        "Duel.SelectTarget(tp,s.filter1,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,1,0,500)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(400)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "targetUids: [plant.uid]",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === plant.uid), restoredChain.session.state)).toBe(1400)",
+        "currentDefense(restoredChain.session.state.cards.find((card) => card.uid === plant.uid), restoredChain.session.state)).toBe(1400)",
+      ],
+    },
     {
       file: "test/lua-real-script-frequency-magician-counter-atk.test.ts",
       kind: "counterCostAttackBoost",

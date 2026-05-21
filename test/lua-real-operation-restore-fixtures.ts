@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 267;
+export const operationFixtureCount = 268;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -25,6 +25,7 @@ export const operationKindCounts = {
   costStatToGraveTrigger: 1,
   copyNegateDamage: 1,
   counterBoostBattleTargetLock: 1,
+  counterCostTargetPlantStat: 1,
   counterDamageReplaceStatBurn: 1,
   counterLevelChange: 1,
   customDirectSummonFinalStatLock: 1,
@@ -231,6 +232,7 @@ export type OperationKind =
   | "costStatToGraveTrigger"
   | "copyNegateDamage"
   | "counterBoostBattleTargetLock"
+  | "counterCostTargetPlantStat"
   | "counterDamageReplaceStatBurn"
   | "counterLevelChange"
   | "customDirectSummonFinalStatLock"
@@ -416,6 +418,23 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-world-tree-counter-stat.test.ts",
+      kind: "counterCostTargetPlantStat",
+      required: [
+        "restores Flower Counter cost into targeted Plant ATK/DEF boost",
+        "c:EnableCounterPermit(0x18)",
+        "e2:SetCode(EVENT_DESTROYED)",
+        "e:GetHandler():RemoveCounter(tp,0x18,1,REASON_COST)",
+        "Duel.SelectTarget(tp,s.filter1,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,1,0,500)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "operationInfos",
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-guardragon-promineses-stat-redirect-summon.test.ts",
       kind: "selfToGraveStatGroupedNormalSummonRedirect",
@@ -4744,6 +4763,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       costBanishDraw: 0, costDiscardDraw: 0,
       copyNegateDamage: 0,
       counterBoostBattleTargetLock: 0,
+      counterCostTargetPlantStat: 0,
       counterDamageReplaceStatBurn: 0,
       counterLevelChange: 0,
       customDirectSummonFinalStatLock: 0,
