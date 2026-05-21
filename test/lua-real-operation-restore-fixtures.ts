@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 225;
+export const operationFixtureCount = 226;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -78,6 +78,7 @@ export const operationKindCounts = {
   flipDeckSpecialSummon: 1,
   fieldRecoverStatTrigger: 1,
   flipTargetDestroy: 1,
+  handSelfToGraveFusionStatSummonSearch: 1,
   fusionDeckMaterials: 1,
   graveReviveEquipPositionStat: 1,
   flipDiscardBattleStat: 1,
@@ -244,6 +245,7 @@ export type OperationKind =
   | "flipDeckSpecialSummon"
   | "fieldRecoverStatTrigger"
   | "flipTargetDestroy"
+  | "handSelfToGraveFusionStatSummonSearch"
   | "fusionDeckMaterials"
   | "graveReviveEquipPositionStat"
   | "flipDiscardBattleStat"
@@ -3614,6 +3616,32 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-aleister-self-grave-stat-search.test.ts",
+      kind: "handSelfToGraveFusionStatSummonSearch",
+      required: [
+        "restores hand SelfToGrave Fusion stat boost and summon-success Invocation search",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e1:SetCost(Cost.SelfToGrave)",
+        "return c:IsFaceup() and c:IsType(TYPE_FUSION)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e3:SetCode(EVENT_FLIP)",
+        "return c:IsCode(74063034) and c:IsAbleToHand()",
+        "Duel.GetFirstMatchingCard(s.thfilter,tp,LOCATION_DECK,0,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,tc)",
+        "operationInfos",
+        'eventName: "sentToGraveyard"',
+        'eventName: "becameTarget"',
+        "normalSummon",
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -3714,6 +3742,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fieldRecoverStatTrigger: 0,
       flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
+      handSelfToGraveFusionStatSummonSearch: 0,
       fusionDeckMaterials: 0,
       graveReviveEquipPositionStat: 0,
       groupDestroy: 0,
