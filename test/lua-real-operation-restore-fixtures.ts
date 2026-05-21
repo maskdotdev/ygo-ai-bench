@@ -1,8 +1,9 @@
 import path from "node:path";
 
-export const operationFixtureCount = 276;
+export const operationFixtureCount = 277;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
+  graveTriggerBranchSummonStatDestroy: 1,
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
   announceHandBanish: 1,
@@ -218,6 +219,7 @@ export const operationKindCounts = {
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
   | "activateDestroyPossibleSummonOptionalStat"
+  | "graveTriggerBranchSummonStatDestroy"
   | "announceChangeCode"
   | "announceDeckBanishDisable"
   | "announceHandBanish"
@@ -434,6 +436,34 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-vouiburial-grave-trigger-branch-stat-destroy.test.ts",
+      kind: "graveTriggerBranchSummonStatDestroy",
+      required: [
+        "restores field EVENT_TO_GRAVE branch into ATK loss, AdjustInstantly, SelectYesNo, and destroy",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e2:SetProperty(EFFECT_FLAG_DELAY)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "return Duel.IsMainPhase() and eg:IsExists(s.effconfilter,1,nil,tp)",
+        "Duel.HasFlagEffect(tp,id)",
+        "Duel.RegisterFlagEffect(tp,id,RESET_PHASE|PHASE_END,0,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,0)",
+        "Duel.RegisterFlagEffect(tp,id+1,RESET_PHASE|PHASE_END,0,1)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DESTROY,nil,1,1-tp,LOCATION_MZONE)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.SelectMatchingCard(tp,aux.FaceupFilter(Card.IsType,TYPE_EFFECT),tp,0,LOCATION_MZONE,1,1,nil):GetFirst()",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "e1:SetValue(-1500)",
+        "Duel.AdjustInstantly(tc)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.BreakEffect()",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "breakEffect"',
+      ],
+    },
     {
       file: "test/lua-real-script-golden-allure-queen-summon-chain-protect.test.ts",
       kind: "quickChainDestroyRegisterProtect",
@@ -4932,6 +4962,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
     },
     {
       activateDestroyPossibleSummonOptionalStat: 0,
+      graveTriggerBranchSummonStatDestroy: 0,
       announceChangeCode: 0,
       announceDeckBanishDisable: 0,
       announceHandBanish: 0,
