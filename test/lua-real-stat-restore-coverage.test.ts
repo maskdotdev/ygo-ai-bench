@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 54;
+const statFixtureCount = 55;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
   battleTargetAttackBoost: 3,
   battleTargetStatReset: 1,
+  battleStartFinalStatHalve: 1,
   damageStepBattleTargetAttributeAttackBoost: 2,
   damageStepMachineStatDamagePrevention: 1,
   diceChainAttackUpdate: 1,
@@ -62,6 +63,7 @@ const statSemanticVariantCounts = {
   royalRhinoChainDiceAttackUpdate: 1,
   catSharkDetachFinalStatIndestructible: 1,
   dinoSewingBattleTargetStatReset: 1,
+  steelCavalryBattleStartFinalStat: 1,
   scoreMelodiousPrecalcFinalStat: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
@@ -107,7 +109,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "battleTargetStatReset" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -151,6 +153,7 @@ type StatSemanticVariant =
   | "shieldSwordSwapBaseAd"
   | "slateWarriorBattleDestroyedStatDrop"
   | "steadyHandsFinalStatDirectLock"
+  | "steelCavalryBattleStartFinalStat"
   | "unifiedFrontDiscardFinalStatLock"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
@@ -472,6 +475,20 @@ function statFixtureFiles(): Array<{
         "e:GetHandler():ResetEffect(RESET_DISABLE,RESET_EVENT)",
         "currentAttack(restoredTargeted.session.state.cards.find((card) => card.uid === dino.uid), restoredTargeted.session.state)).toBe(2000)",
         "battleDamage).toEqual({ 0: 500, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-steel-cavalry-battle-start-final-stat.test.ts",
+      kind: "battleStartFinalStatHalve",
+      required: [
+        'const cavalryCode = "2396042"',
+        "restores battle-start final ATK/DEF halving only against a face-up Pendulum battle target",
+        "EVENT_BATTLE_START",
+        "bc and bc:IsFaceup() and bc:IsType(TYPE_PENDULUM)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === cavalry.uid), restoredTrigger.session.state)).toBe(800)",
+        "battleDamage).toEqual({ 0: 400, 1: 0 })",
       ],
     },
     {
@@ -962,6 +979,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
     {
       battleAttackerTargetSwing: 0,
       battleDestroyedOpponentAttackDefenseDrop: 0,
+      battleStartFinalStatHalve: 0,
       battleTargetAttackBoost: 0,
       battleTargetStatReset: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
@@ -1428,6 +1446,20 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-steel-cavalry-battle-start-final-stat.test.ts",
+      kind: "steelCavalryBattleStartFinalStat",
+      required: [
+        'const cavalryCode = "2396042"',
+        "Pendulum.AddProcedure(c)",
+        "EVENT_BATTLE_START",
+        "TYPE_PENDULUM",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "code: 102",
+        "code: 106",
+      ],
+    },
+    {
       file: "test/lua-real-script-blackwing-gale-procedure-final-stat.test.ts",
       kind: "blackwingGaleProcedureFinalStatHalve",
       required: [
@@ -1675,6 +1707,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       shieldSwordSwapBaseAd: 0,
       slateWarriorBattleDestroyedStatDrop: 0,
       steadyHandsFinalStatDirectLock: 0,
+      steelCavalryBattleStartFinalStat: 0,
       unifiedFrontDiscardFinalStatLock: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
