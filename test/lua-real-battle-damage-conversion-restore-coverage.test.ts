@@ -4,17 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDamageConversionFixtureCount = 6;
+const battleDamageConversionFixtureCount = 7;
 const battleDamageConversionKindCounts: Record<BattleDamageConversionKind, number> = {
   alsoBattleDamage: 1,
   battleDamageToEffect: 1,
   bothBattleDamage: 1,
-  changeBattleDamage: 2,
+  changeBattleDamage: 3,
   reflectBattleDamage: 1,
 };
 const battleDamageConversionSemanticVariantCounts: Record<BattleDamageConversionSemanticVariant, number> = {
   amazonessSwordsWomanReflectBattleDamage: 1,
   gravekeepersVassalBattleDamageToEffect: 1,
+  majespecterSonicsFinalStatHalfDamage: 1,
   numberC96AlsoBattleDamage: 1,
   smokeMosquitoPreDamageHalfBattleDamage: 1,
   speedroidHexasaucerBothBattleDamage: 1,
@@ -84,6 +85,7 @@ type BattleDamageConversionKind = "alsoBattleDamage" | "battleDamageToEffect" | 
 type BattleDamageConversionSemanticVariant =
   | "amazonessSwordsWomanReflectBattleDamage"
   | "gravekeepersVassalBattleDamageToEffect"
+  | "majespecterSonicsFinalStatHalfDamage"
   | "numberC96AlsoBattleDamage"
   | "smokeMosquitoPreDamageHalfBattleDamage"
   | "speedroidHexasaucerBothBattleDamage"
@@ -104,6 +106,7 @@ function countBattleDamageConversionSemanticVariants(
     {
       amazonessSwordsWomanReflectBattleDamage: 0,
       gravekeepersVassalBattleDamageToEffect: 0,
+      majespecterSonicsFinalStatHalfDamage: 0,
       numberC96AlsoBattleDamage: 0,
       smokeMosquitoPreDamageHalfBattleDamage: 0,
       speedroidHexasaucerBothBattleDamage: 0,
@@ -190,6 +193,22 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; kind: Battl
       ],
     },
     {
+      file: "lua-real-script-majespecter-sonics-final-stat-half-damage.test.ts",
+      kind: "changeBattleDamage",
+      required: [
+        "Majespecter Sonics final stat half damage",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "EFFECT_CHANGE_BATTLE_DAMAGE",
+        "HALF_DAMAGE",
+        'registryKey: "lua:13611090:lua-4-208"',
+        "battleDamage).toEqual({ 0: 0, 1: 250 })",
+        "players[1]!.lifePoints).toBe(7750)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 250",
+      ],
+    },
+    {
       file: "lua-real-script-smoke-mosquito-pre-damage-half-battle-damage.test.ts",
       kind: "changeBattleDamage",
       required: [
@@ -272,6 +291,19 @@ function battleDamageConversionSemanticVariants(): Array<{
         "EFFECT_CHANGE_BATTLE_DAMAGE",
         "HALF_DAMAGE",
         "battleDamage).toEqual({ 0: 750, 1: 0 })",
+      ],
+    },
+    {
+      file: "lua-real-script-majespecter-sonics-final-stat-half-damage.test.ts",
+      kind: "majespecterSonicsFinalStatHalfDamage",
+      required: [
+        'const sonicsCode = "13611090"',
+        "restores final ATK/DEF doubling plus target-scoped HALF_DAMAGE battle modifier",
+        "e3:SetValue(aux.ChangeBattleDamage(1,HALF_DAMAGE))",
+        'registryKey: "lua:13611090:lua-4-208"',
+        "currentAttack(boostedAttacker, restoredBoost.session.state)).toBe(2000)",
+        "battleDamage).toEqual({ 0: 0, 1: 250 })",
+        "eventValue: 250",
       ],
     },
     {

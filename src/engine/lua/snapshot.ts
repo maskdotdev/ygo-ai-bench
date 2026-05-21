@@ -87,6 +87,7 @@ const luaResetEvent = 0x1000; const luaResetChain = 0x80000000; const luaResetTu
 const luaResetPhase = 0x40000000; const luaResetOpponentTurn = 0x20000000;
 const luaPhaseBattle = 0x80; const luaPhaseEnd = 0x200;
 const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle; const luaPhaseEndEventCode = luaResetEvent | luaPhaseEnd;
+const luaHalfDamage = 0x80000001;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetsStandardPhaseEndRuntime = luaResetsStandardPhaseEnd & ~luaResetEvent;
 const luaResetEventStandard = luaResetEvent | 0x1fe0000;
@@ -698,6 +699,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownDivineEvolutionCannotNegateEffect(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownChangeBattleStatToDefenseEffect(effect) ||
+        isKnownTargetScopedHalfBattleDamageEffect(effect) ||
         isKnownDharcProcedurePierceEffect(effect) ||
         isKnownTemporaryPierceEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
@@ -749,6 +751,16 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
 }
 
 function isKnownChangeBattleStatToDefenseEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 198 && effect.luaValueDescriptor === "stat:current-defense" && effect.luaTargetDescriptor === "target:source-or-battle-target" && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange?.[0] === 4 && effect.targetRange?.[1] === 4 && effect.reset !== undefined; }
+function isKnownTargetScopedHalfBattleDamageEffect(effect: SerializedDuelEffect): boolean {
+  return effect.event === "continuous" &&
+    effect.code === 208 &&
+    effect.value === undefined &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    effect.reset !== undefined &&
+    effect.targetRange === undefined;
+}
 function isKnownZeroParadoxDelayedScaleDestroyEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith("lua:97417863:")) &&
     effect.event === "continuous" &&
@@ -1519,6 +1531,7 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor?.startsWith("cannot-material:controller-summon-types:")) { const summonTypes = effect.luaValueDescriptor.slice("cannot-material:controller-summon-types:".length).split(",").map(Number); return { valuePredicate: (ctx) => summonTypes.includes(ctx.summonTypeCode ?? 0) && ctx.eventCard?.controller === effect.controller }; }
   if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-setcode:")) return { valuePredicate: (ctx) => !ctx.eventCard || !currentCardMatchesSetcode(ctx.eventCard, ctx.duel, Number(effect.luaValueDescriptor?.split(":").pop())) }; if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-race:")) return { valuePredicate: (ctx) => !ctx.eventCard || (currentRace(ctx.eventCard, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) === 0 }; if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-attribute:")) return { valuePredicate: (ctx) => !ctx.eventCard || (currentAttribute(ctx.eventCard, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) === 0 };
   if (effect.code === 344 && effect.label !== undefined) return { valueCardPredicate: (_ctx, card) => cardFieldId(card) === effect.label };
+  if (isKnownTargetScopedHalfBattleDamageEffect(effect)) return { battleDamageValue: (_ctx, player) => player !== effect.controller ? luaHalfDamage : undefined };
   if (effect.luaValueDescriptor !== "change-damage:effect-double" && effect.luaValueDescriptor !== "change-damage:effect-zero") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number => ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? (effect.luaValueDescriptor === "change-damage:effect-double" ? amount * 2 : 0) : amount;
   return { battleDamageValue: applyValue, lifePointValue: applyValue };
