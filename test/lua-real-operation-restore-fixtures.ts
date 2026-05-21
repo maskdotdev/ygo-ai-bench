@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 213;
+export const operationFixtureCount = 214;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -58,6 +58,7 @@ export const operationKindCounts = {
   discardCostGraveToDeckTop: 1,
   directDamage: 1,
   detachDirectDamage: 1,
+  detachDisableFinalStat: 1,
   detachReplaceDisableBurn: 1,
   detachDiffDamageStat: 1,
   detachStatBurn: 1,
@@ -212,6 +213,7 @@ export type OperationKind =
   | "discardCostGraveToDeckTop"
   | "directDamage"
   | "detachDirectDamage"
+  | "detachDisableFinalStat"
   | "detachReplaceDisableBurn"
   | "detachDiffDamageStat"
   | "detachStatBurn"
@@ -1338,6 +1340,34 @@ export function operationFixtureFiles(): Array<{
         "eventName: \"detachedMaterial\"",
         "currentAttack(restoredTell, restoredOpen.session.state)).toBe(1300)",
         "currentDefense(restoredTell, restoredOpen.session.state)).toBe(1000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shark-drake-leveiss-detach-disable-stat.test.ts",
+      kind: "detachDisableFinalStat",
+      required: [
+        "restores Xyz detach cost into target negation AdjustInstantly and final ATK/DEF zero",
+        "Xyz.AddProcedure(c,nil,5,4,s.altmatfilter,aux.Stringid(id,0),4,s.xyzop)",
+        "e1:SetCategory(CATEGORY_DISABLE+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(function() return not (Duel.IsPhase(PHASE_DAMAGE) and Duel.IsDamageCalculated()) end)",
+        "e1:SetCost(Cost.DetachFromSelf(1,1,nil))",
+        "Duel.SelectTarget(tp,s.disfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,tc,1,tp,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,tc,1,tp,-tc:GetAttack())",
+        "Duel.SetOperationInfo(0,CATEGORY_DEFCHANGE,tc,1,tp,-tc:GetDefense())",
+        "tc:NegateEffects(c)",
+        "Duel.AdjustInstantly(tc)",
+        "if not tc:IsDisabled() then return end",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(0)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetCode(EFFECT_EXTRA_ATTACK)",
+        "e3:SetCode(EFFECT_PIERCE)",
+        "operationInfos",
+        'eventName: "detachedMaterial"',
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -3346,6 +3376,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardCostGraveToDeckTop: 0,
       directDamage: 0,
       detachDirectDamage: 0,
+      detachDisableFinalStat: 0,
       detachReplaceDisableBurn: 0,
       detachDiffDamageStat: 0,
       detachStatBurn: 0,
