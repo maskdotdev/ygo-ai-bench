@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 315;
+export const operationFixtureCount = 316;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -20,6 +20,7 @@ export const operationKindCounts = {
   targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
   summonTargetGroupDestroyCountStat: 1,
+  summonBackrowDestroyAttackDrop: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
   targetDestroyOptionalBreakAttackAnnounceStat: 1,
@@ -274,6 +275,7 @@ export type OperationKind =
   | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
   | "summonTargetGroupDestroyCountStat"
+  | "summonBackrowDestroyAttackDrop"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
   | "targetDestroyOptionalBreakAttackAnnounceStat"
@@ -951,6 +953,28 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === grandtusk.uid), restoredTrigger.session.state)).toBe(2600 + 1200)",
         "battleDamage).toEqual({ 0: 0, 1: 3800 })",
         'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-masked-hero-acid-summon-backrow-destroy-stat.test.ts",
+      kind: "summonBackrowDestroyAttackDrop",
+      required: [
+        "restores mandatory Special Summon trigger into opponent Spell/Trap destruction and monster ATK loss",
+        "e1:SetCode(EFFECT_SPSUMMON_CONDITION)",
+        "e1:SetValue(aux.FALSE)",
+        "e2:SetType(EFFECT_TYPE_TRIGGER_F+EFFECT_TYPE_SINGLE)",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.GetMatchingGroup(s.filter,tp,0,LOCATION_ONFIELD,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "if Duel.Destroy(g,REASON_EFFECT)>0 then",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-300)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
+        'eventName: "specialSummoned"',
         'eventName: "destroyed"',
         "operationInfos",
       ],
@@ -6011,6 +6035,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
       summonTargetGroupDestroyCountStat: 0,
+      summonBackrowDestroyAttackDrop: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
       targetDestroyOptionalBreakAttackAnnounceStat: 0,

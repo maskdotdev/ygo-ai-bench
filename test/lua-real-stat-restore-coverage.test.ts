@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 110;
+const statFixtureCount = 111;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -81,7 +81,7 @@ const statKindCounts = {
   setFinalAttackDefenseDirectLock: 1,
   setFinalAttackDefenseHalveProcedure: 1,
   setFinalAttackDefenseTargetDirectLock: 3,
-  specialSummonTriggerDestroyAttackUpdate: 1,
+  specialSummonTriggerDestroyAttackUpdate: 2,
   synchroTypeTargetAttackUpdate: 1,
   selfFinalAttackEndDestroy: 1,
   swapBaseAttackDefense: 1,
@@ -152,6 +152,7 @@ const statSemanticVariantCounts = {
   juggernautLiebeDetachStatAttackLock: 1,
   luminousSoldierDamageStepTargetAttributeStat: 1,
   majesticRedDisableReturnStat: 1,
+  maskedHeroAcidSummonBackrowDestroyStat: 1,
   masterCerberusCounterBanishStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mildTurkeyDiceScaleUpdate: 1,
@@ -246,6 +247,7 @@ type StatSemanticVariant =
   | "kusanagiTrapNegateStat"
   | "luminousSoldierDamageStepTargetAttributeStat"
   | "majesticRedDisableReturnStat"
+  | "maskedHeroAcidSummonBackrowDestroyStat"
   | "masterCerberusCounterBanishStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mildTurkeyDiceScaleUpdate"
@@ -1504,6 +1506,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-masked-hero-acid-summon-backrow-destroy-stat.test.ts",
+      kind: "specialSummonTriggerDestroyAttackUpdate",
+      required: [
+        'const acidCode = "29095552"',
+        "restores mandatory Special Summon trigger into opponent Spell/Trap destruction and monster ATK loss",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.GetMatchingGroup(s.filter,tp,0,LOCATION_ONFIELD,nil)",
+        "if Duel.Destroy(g,REASON_EFFECT)>0 then",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-300)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === opponentMonsterA.uid), restoredTrigger.session.state)).toBe(1700)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === opponentMonsterB.uid), restoredTrigger.session.state)).toBe(2100)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-veda-kalanta-destroyed-summon-search-stat.test.ts",
       kind: "destroyedTargetAttackUpdate",
       required: [
@@ -2140,6 +2159,21 @@ function statSemanticVariants(): Array<{
         "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g1,1,0,0)",
         "Duel.GetOperationInfo(0,CATEGORY_ATKCHANGE)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-masked-hero-acid-summon-backrow-destroy-stat.test.ts",
+      kind: "maskedHeroAcidSummonBackrowDestroyStat",
+      required: [
+        'const acidCode = "29095552"',
+        "EFFECT_SPSUMMON_CONDITION",
+        "special-summon-condition:false",
+        "CATEGORY_DESTROY+CATEGORY_ATKCHANGE",
+        "EVENT_SPSUMMON_SUCCESS",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "Duel.Destroy(g,REASON_EFFECT)>0",
+        "EFFECT_UPDATE_ATTACK",
+        "value: -300",
       ],
     },
     {
@@ -3252,6 +3286,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       kusanagiTrapNegateStat: 0,
       luminousSoldierDamageStepTargetAttributeStat: 0,
       majesticRedDisableReturnStat: 0,
+      maskedHeroAcidSummonBackrowDestroyStat: 0,
       masterCerberusCounterBanishStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mildTurkeyDiceScaleUpdate: 0,
