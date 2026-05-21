@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 59;
+const statFixtureCount = 60;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -17,6 +17,7 @@ const statKindCounts = {
   diceChainAttackUpdate: 1,
   diceGroupAttackDefenseUpdate: 1,
   diceScaleUpdate: 1,
+  deckCostAttackDefenseUpdate: 1,
   eventChangePositionTargetAttackDefenseDrop: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 2,
@@ -65,6 +66,7 @@ const statSemanticVariantCounts = {
   blackwingGaleProcedureFinalStatHalve: 1,
   royalRhinoChainDiceAttackUpdate: 1,
   catSharkDetachFinalStatIndestructible: 1,
+  cherubiniDeckCostStat: 1,
   dinoSewingBattleTargetStatReset: 1,
   ddSavantNikolaPzoneDiscardStat: 1,
   steelCavalryBattleStartFinalStat: 1,
@@ -116,7 +118,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -128,6 +130,7 @@ type StatSemanticVariant =
   | "bootUpSoldierGadgetConditionAttackUpdate"
   | "borreloadChainLimitAttackDefenseDrop"
   | "catSharkDetachFinalStatIndestructible"
+  | "cherubiniDeckCostStat"
   | "copycatSummonTargetFinalStat"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "ddSavantNikolaPzoneDiscardStat"
@@ -1008,6 +1011,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-cherubini-deck-cost-stat.test.ts",
+      kind: "deckCostAttackDefenseUpdate",
+      required: [
+        'const cherubiniCode = "58699500"',
+        "restores deck-to-Grave cost into targeted Burning Abyss ATK/DEF gain",
+        "Link.AddProcedure(c,aux.FilterBoolFunction(Card.IsLevel,3),2,2)",
+        "return c:IsLevel(3) and (c:GetBaseAttack()>0 or c:GetBaseDefense()>0) and c:IsAbleToGraveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetValue(sc:GetAttack())",
+        "e2:SetValue(sc:GetDefense())",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === target.uid), restoredResolved.session.state)).toBe(2600)",
+        "currentDefense(restoredResolved.session.state.cards.find((card) => card.uid === target.uid), restoredResolved.session.state)).toBe(1700)",
+      ],
+    },
+    {
       file: "test/lua-real-script-morpho-butterspy-position-trigger-stat.test.ts",
       kind: "eventChangePositionTargetAttackDefenseDrop",
       required: [
@@ -1058,6 +1078,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleConfirmFinalSwapPierceDamage: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
       damageStepMachineStatDamagePrevention: 0,
+      deckCostAttackDefenseUpdate: 0,
       diceChainAttackUpdate: 0,
       diceGroupAttackDefenseUpdate: 0,
       diceScaleUpdate: 0,
@@ -1200,6 +1221,19 @@ function statSemanticVariants(): Array<{
         "reason: duelReason.cost | duelReason.discard",
         "value: 2000",
         'eventName: "discarded"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-cherubini-deck-cost-stat.test.ts",
+      kind: "cherubiniDeckCostStat",
+      required: [
+        'const cherubiniCode = "58699500"',
+        "restores deck-to-Grave cost into targeted Burning Abyss ATK/DEF gain",
+        "Link.AddProcedure(c,aux.FilterBoolFunction(Card.IsLevel,3),2,2)",
+        "reason: duelReason.cost",
+        "eventName: \"sentToGraveyard\"",
+        "value: 1200",
+        "value: 700",
       ],
     },
     {
@@ -1811,6 +1845,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       bootUpSoldierGadgetConditionAttackUpdate: 0,
       borreloadChainLimitAttackDefenseDrop: 0,
       catSharkDetachFinalStatIndestructible: 0,
+      cherubiniDeckCostStat: 0,
       copycatSummonTargetFinalStat: 0,
       cyberDragonSiegerCodeStatDamagePrevention: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
