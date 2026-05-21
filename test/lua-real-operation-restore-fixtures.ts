@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 273;
+export const operationFixtureCount = 274;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   announceChangeCode: 1,
@@ -134,6 +134,7 @@ export const operationKindCounts = {
   fieldExtraSummonSendStat: 1,
   quickPlayGraveToDeckDrawStat: 1,
   quickTargetAttackDestroyPrompt: 1,
+  quickSelfTributePendulumStat: 1,
   fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
   lpDiscardCostStatToGraveBothDamage: 1,
@@ -346,6 +347,7 @@ export type OperationKind =
   | "fieldExtraSummonSendStat"
   | "quickPlayGraveToDeckDrawStat"
   | "quickTargetAttackDestroyPrompt"
+  | "quickSelfTributePendulumStat"
   | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
   | "lpDiscardCostStatToGraveBothDamage"
@@ -428,6 +430,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-light-phoenix-self-tribute-stat.test.ts",
+      kind: "quickSelfTributePendulumStat",
+      required: [
+        "restores Damage Step quick SelfTribute cost into targeted Performapal ATK boost",
+        "Pendulum.AddProcedure(c)",
+        "e2:SetType(EFFECT_TYPE_QUICK_O)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e2:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e2:SetCost(Cost.SelfTribute)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,1,0,0)",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "e1:SetValue(1000)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "operationInfos",
+        'eventName: "released"',
+        'location: "extraDeck"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-senko-self-banish-target-stat-destroy.test.ts",
       kind: "selfBanishSelectUnselectStatDestroy",
@@ -4988,6 +5011,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fieldExtraSummonSendStat: 0,
       quickPlayGraveToDeckDrawStat: 0,
       quickTargetAttackDestroyPrompt: 0,
+      quickSelfTributePendulumStat: 0,
       fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
       lpDiscardCostStatToGraveBothDamage: 0,
