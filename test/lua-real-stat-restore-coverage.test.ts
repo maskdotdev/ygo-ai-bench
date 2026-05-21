@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 56;
+const statFixtureCount = 57;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -38,7 +38,7 @@ const statKindCounts = {
   setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
   setFinalAttackDefenseHalveProcedure: 1,
-  setFinalAttackDefenseTargetDirectLock: 2,
+  setFinalAttackDefenseTargetDirectLock: 3,
   selfFinalAttackEndDestroy: 1,
   swapBaseAttackDefense: 1,
   singleRangeSetcodeConditionAttackUpdate: 1,
@@ -71,6 +71,7 @@ const statSemanticVariantCounts = {
   armoredKappaOptionBattleProtection: 1,
   kingOverfiendDetachStatCannotTrigger: 1,
   cyberDragonSiegerCodeStatDamagePrevention: 1,
+  copycatSummonTargetFinalStat: 1,
   fairyKingAlbverdichDetachAttributeExceptStat: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
@@ -123,6 +124,7 @@ type StatSemanticVariant =
   | "bootUpSoldierGadgetConditionAttackUpdate"
   | "borreloadChainLimitAttackDefenseDrop"
   | "catSharkDetachFinalStatIndestructible"
+  | "copycatSummonTargetFinalStat"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "digitJammingPrecalcDestroyedStat"
   | "dinoSewingBattleTargetStatReset"
@@ -611,6 +613,22 @@ function statFixtureFiles(): Array<{
         "EFFECT_SET_DEFENSE_FINAL",
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === catShark.uid)!, restoredOpen.session.state)).toBe(1000)",
         "battleDamage).toEqual({ 0: 600, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-copycat-summon-final-stat.test.ts",
+      kind: "setFinalAttackDefenseTargetDirectLock",
+      required: [
+        'const copycatCode = "26376390"',
+        "restores summon target prompt into final ATK/DEF copied from opponent base stats",
+        "EVENT_SUMMON_SUCCESS",
+        "EVENT_SPSUMMON_SUCCESS",
+        "EVENT_FLIP_SUMMON_SUCCESS",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === copycat.uid), restoredTrigger.session.state)).toBe(1600)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -1494,6 +1512,23 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-copycat-summon-final-stat.test.ts",
+      kind: "copycatSummonTargetFinalStat",
+      required: [
+        'const copycatCode = "26376390"',
+        "EFFECT_TYPE_TRIGGER_F",
+        "EFFECT_FLAG_CARD_TARGET",
+        "EVENT_SUMMON_SUCCESS",
+        "EVENT_SPSUMMON_SUCCESS",
+        "EVENT_FLIP_SUMMON_SUCCESS",
+        "SelectTarget",
+        "value: 1600",
+        "value: 700",
+        "code: 102",
+        "code: 106",
+      ],
+    },
+    {
       file: "test/lua-real-script-blackwing-gale-procedure-final-stat.test.ts",
       kind: "blackwingGaleProcedureFinalStatHalve",
       required: [
@@ -1708,6 +1743,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       bootUpSoldierGadgetConditionAttackUpdate: 0,
       borreloadChainLimitAttackDefenseDrop: 0,
       catSharkDetachFinalStatIndestructible: 0,
+      copycatSummonTargetFinalStat: 0,
       cyberDragonSiegerCodeStatDamagePrevention: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       digitJammingPrecalcDestroyedStat: 0,
