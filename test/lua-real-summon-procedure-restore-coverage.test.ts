@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 19;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 17;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 20;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 18;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 2,
@@ -21,6 +21,7 @@ const summonProcedureKindCounts = {
   handOpponentBackrowCountProcedure: 1,
   handOpponentSpellTrapOrMstProcedure: 1,
   handSendCostProcedure: 1,
+  handZoneMaskProcedureDirectStat: 1,
   noTributeOpponentMonsterCountProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
 const summonProcedureSemanticVariantCounts = {
@@ -43,6 +44,7 @@ const summonProcedureSemanticVariantCounts = {
   sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat: 1,
   sprightRedLevelOrLinkOpenZoneProcedure: 1,
   powerInvaderOpponentTwoMonsterNormalSummonProcedure: 1,
+  redHaredHastyHorseZoneMaskProcedureDirectStat: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
 
 type SummonProcedureKind =
@@ -60,6 +62,7 @@ type SummonProcedureKind =
   | "handOpponentBackrowCountProcedure"
   | "handOpponentSpellTrapOrMstProcedure"
   | "handSendCostProcedure"
+  | "handZoneMaskProcedureDirectStat"
   | "noTributeOpponentMonsterCountProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
@@ -80,9 +83,23 @@ type SummonProcedureSemanticVariant =
   | "sprightBlueLevelOrRankOpenZoneProcedureSearch"
   | "sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat"
   | "sprightRedLevelOrLinkOpenZoneProcedure"
-  | "powerInvaderOpponentTwoMonsterNormalSummonProcedure";
+  | "powerInvaderOpponentTwoMonsterNormalSummonProcedure"
+  | "redHaredHastyHorseZoneMaskProcedureDirectStat";
 
 const summonProcedureFixtures = [
+  {
+    file: "test/lua-real-script-red-hared-hasty-horse-procedure-direct-stat.test.ts",
+    kind: "handZoneMaskProcedureDirectStat",
+    required: [
+      "restores hand Special Summon procedure into base-ATK halving and direct attack permission",
+      'action.type === "specialSummonProcedure"',
+      "applyRestoredActionAndAssert(restoredProcedure, procedure!)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "e1:SetTargetRange(POS_FACEUP_ATTACK,0)",
+      "Duel.GetFieldGroup(tp,LOCATION_ONFIELD,LOCATION_ONFIELD)",
+    ],
+  },
   {
     file: "test/lua-real-script-summon-procedure.test.ts",
     kind: "broadTypedProcedure",
@@ -486,6 +503,7 @@ function countSummonProcedureKinds(
       handOwnEmptyOpponentMonsterProcedure: 0,
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
+      handZoneMaskProcedureDirectStat: 0,
       noTributeOpponentMonsterCountProcedure: 0,
     },
   );
@@ -497,6 +515,22 @@ function summonProcedureSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-red-hared-hasty-horse-procedure-direct-stat.test.ts",
+      kind: "redHaredHastyHorseZoneMaskProcedureDirectStat",
+      required: [
+        'const horseCode = "19636995"',
+        "restores hand Special Summon procedure into base-ATK halving and direct attack permission",
+        "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+        "e1:SetTargetRange(POS_FACEUP_ATTACK,0)",
+        "Duel.GetFieldGroup(tp,LOCATION_ONFIELD,LOCATION_ONFIELD)",
+        "tc:GetColumnZone(LOCATION_MZONE,0,0,tp)",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e2:SetCode(EFFECT_DIRECT_ATTACK)",
+        'eventName: "specialSummoned"',
+        'eventName: "battleDamageDealt"',
+      ],
+    },
     {
       file: "test/lua-real-script-summon-procedure.test.ts",
       kind: "broadTypedExtraDeckSpiritGeminiProcedures",
@@ -799,6 +833,7 @@ function countSummonProcedureSemanticVariants(
       sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat: 0,
       sprightRedLevelOrLinkOpenZoneProcedure: 0,
       powerInvaderOpponentTwoMonsterNormalSummonProcedure: 0,
+      redHaredHastyHorseZoneMaskProcedureDirectStat: 0,
     },
   );
 }

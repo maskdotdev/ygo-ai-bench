@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 306;
+export const operationFixtureCount = 307;
 export const operationKindCounts = {
+  handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
@@ -247,6 +248,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
@@ -494,6 +496,30 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-red-hared-hasty-horse-procedure-direct-stat.test.ts",
+      kind: "handProcedureBaseStatDirectAttack",
+      required: [
+        "restores hand Special Summon procedure into base-ATK halving and direct attack permission",
+        "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+        "e1:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_SPSUM_PARAM)",
+        "e1:SetTargetRange(POS_FACEUP_ATTACK,0)",
+        "Duel.GetFieldGroup(tp,LOCATION_ONFIELD,LOCATION_ONFIELD)",
+        "tc:GetColumnZone(LOCATION_MZONE,0,0,tp)",
+        "e2:SetCode(EVENT_MOVE)",
+        "return #(e:GetHandler():GetColumnGroup()&eg)>0",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,e:GetHandler(),1,0,0)",
+        "e3:SetType(EFFECT_TYPE_IGNITION)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,0,0)",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e1:SetValue(c:GetBaseAttack()/2)",
+        "e2:SetCode(EFFECT_DIRECT_ATTACK)",
+        'eventName: "specialSummoned"',
+        'eventName: "battleDamageDealt"',
+        "currentAttack",
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-gaia-soul-release-pierce-end-destroy.test.ts",
       kind: "releaseCostLabelPiercePhaseEndDestroy",
@@ -5768,6 +5794,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
