@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 118;
+const statFixtureCount = 119;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -56,7 +56,7 @@ const statKindCounts = {
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
   fieldSetcodeTypeScaleAttackUpdate: 1,
-  fusionTargetFinalAttackDisableReviveDestroy: 1,
+  fusionTargetFinalAttackDisableReviveDestroy: 2,
   fusionSummonOpponentFinalAttackDefenseHalve: 1,
   flipGroupAttackUpdate: 1,
   flipSelfAttackDefenseUpdate: 1,
@@ -1209,6 +1209,25 @@ function statFixtureFiles(): Array<{
         "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
         "currentAttack(restoredGreedy, restoredResolved.session.state)).toBe(0)",
         'api: "SelectYesNo"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-four-heavenly-starving-venom-fusion-negate-attribute-stat.test.ts",
+      kind: "fusionTargetFinalAttackDisableReviveDestroy",
+      required: [
+        'const starvingCode = "27118421"',
+        "restores AddProcMixN dark-field fusion metadata into summon trigger negate, DARK change, and final ATK zero",
+        "Fusion.AddProcMixN(c,true,true,s.matfilter,2)",
+        "e1:SetCategory(CATEGORY_ATKCHANGE|CATEGORY_DISABLE)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "tc:NegateEffects(c)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(0)",
+        "e2:SetCode(EFFECT_CHANGE_ATTRIBUTE)",
+        "e2:SetValue(ATTRIBUTE_DARK)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === target.uid), restoredTrigger.session.state)).toBe(0)",
+        "four heavenly starving probe 271184212/0/true/32",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {

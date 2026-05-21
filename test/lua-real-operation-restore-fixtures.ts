@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 323;
+export const operationFixtureCount = 324;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -11,6 +11,7 @@ export const operationKindCounts = {
   handSummonOptionalDrawQuickFinalHalve: 1,
   equipCountTargetNegateStat: 1,
   loadedScriptEquipQuickNegateFinalStat: 1,
+  fusionSummonTriggerAttributeNegateStat: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
@@ -273,6 +274,7 @@ export type OperationKind =
   | "handSummonOptionalDrawQuickFinalHalve"
   | "equipCountTargetNegateStat"
   | "loadedScriptEquipQuickNegateFinalStat"
+  | "fusionSummonTriggerAttributeNegateStat"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
@@ -738,6 +740,30 @@ export function operationFixtureFiles(): Array<{
         "e3:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "ultimate leo probe",
         "operationInfos",
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-four-heavenly-starving-venom-fusion-negate-attribute-stat.test.ts",
+      kind: "fusionSummonTriggerAttributeNegateStat",
+      required: [
+        "restores AddProcMixN dark-field fusion metadata into summon trigger negate, DARK change, and final ATK zero",
+        "Fusion.AddProcMixN(c,true,true,s.matfilter,2)",
+        "return c:IsAttribute(ATTRIBUTE_DARK,fc,sumtype,tp) and c:IsOnField()",
+        "e1:SetCategory(CATEGORY_ATKCHANGE|CATEGORY_DISABLE)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,c)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,g,1,0,0)",
+        "tc:NegateEffects(c)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_CHANGE_ATTRIBUTE)",
+        "e2:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_FUSION_SUMMON)",
+        "Fusion.ForcedHandler",
+        "Fusion.SummonEffTG(fusion_params)",
+        "Fusion.SummonEffOP(fusion_params)",
+        "four heavenly starving probe",
+        "operationInfos",
+        "eventHistory",
         "currentAttack",
       ],
     },
@@ -6215,6 +6241,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handSummonOptionalDrawQuickFinalHalve: 0,
       equipCountTargetNegateStat: 0,
       loadedScriptEquipQuickNegateFinalStat: 0,
+      fusionSummonTriggerAttributeNegateStat: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
