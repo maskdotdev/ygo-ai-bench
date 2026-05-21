@@ -86,7 +86,7 @@ export function duelEventCode(eventName: DuelEventName): number | undefined {
 export function duelEventNameFromCode(code: number | undefined): DuelEventName | undefined {
   if (code === undefined) return undefined;
   if (code >= 0x10000000) return "customEvent";
-  return eventNames.get(code) ?? phaseEventNameFromCode(code);
+  return eventNames.get(code) ?? phaseEventNameFromCode(code) ?? "customEvent";
 }
 
 export function phaseEventCode(phase: DuelPhase): number {

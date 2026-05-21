@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 289;
+export const operationFixtureCount = 290;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -144,6 +144,7 @@ export const operationKindCounts = {
   quickTargetAttackDestroyPrompt: 1,
   quickChainDestroyRegisterProtect: 1,
   quickSelfTributePendulumStat: 1,
+  quickTargetReturnPlaceRaiseStat: 1,
   fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
   lpDiscardCostStatToGraveBothDamage: 1,
@@ -372,6 +373,7 @@ export type OperationKind =
   | "quickTargetAttackDestroyPrompt"
   | "quickChainDestroyRegisterProtect"
   | "quickSelfTributePendulumStat"
+  | "quickTargetReturnPlaceRaiseStat"
   | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
   | "lpDiscardCostStatToGraveBothDamage"
@@ -647,6 +649,31 @@ export function operationFixtureFiles(): Array<{
         "operationInfos",
         'eventName: "released"',
         'location: "extraDeck"',
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sky-magician-return-place-raise-stat.test.ts",
+      kind: "quickTargetReturnPlaceRaiseStat",
+      required: [
+        "restores Continuous Spell return, optional hand placement, raised custom event, and ATK trigger",
+        "e1:SetCode(EVENT_CHAINING)",
+        "e2:SetCode(id)",
+        "e3:SetCategory(CATEGORY_TOHAND)",
+        "e3:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_SZONE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,g,1,0,0)",
+        "c:GetActivateEffect():IsActivatable(tp,true)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)>0",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.MoveToField(sc,tp,tp,LOCATION_SZONE,POS_FACEUP,true)",
+        "local te=sc:GetActivateEffect()",
+        "local cost=te:GetCost()",
+        "Duel.RaiseEvent(sc,id,te,0,tp,tp,Duel.GetCurrentChain())",
+        "e4:SetCode(EVENT_LEAVE_FIELD)",
+        "operationInfos",
+        'api: "SelectYesNo"',
+        'eventName: "sentToHand"',
         "currentAttack",
       ],
     },
@@ -5414,6 +5441,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       quickTargetAttackDestroyPrompt: 0,
       quickChainDestroyRegisterProtect: 0,
       quickSelfTributePendulumStat: 0,
+      quickTargetReturnPlaceRaiseStat: 0,
       fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
       lpDiscardCostStatToGraveBothDamage: 0,
