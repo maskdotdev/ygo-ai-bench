@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 263;
+export const operationFixtureCount = 264;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -125,6 +125,7 @@ export const operationKindCounts = {
   fiveGraveToDeckShuffleDraw: 2,
   fieldExtraSummonSendStat: 1,
   quickPlayGraveToDeckDrawStat: 1,
+  quickTargetAttackDestroyPrompt: 1,
   fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
   lpDiscardCostStatToGraveBothDamage: 1,
@@ -327,6 +328,7 @@ export type OperationKind =
   | "fiveGraveToDeckShuffleDraw"
   | "fieldExtraSummonSendStat"
   | "quickPlayGraveToDeckDrawStat"
+  | "quickTargetAttackDestroyPrompt"
   | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
   | "lpDiscardCostStatToGraveBothDamage"
@@ -4021,6 +4023,27 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gold-pride-star-leon-quick-stat-destroy.test.ts",
+      kind: "quickTargetAttackDestroyPrompt",
+      required: [
+        "restores Quick target ATK gain, possible destroy metadata, SelectYesNo, and BreakEffect destroy",
+        "Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(nil),1,99)",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY)",
+        "e1:SetType(EFFECT_TYPE_QUICK_O)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,s.cfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,0,g:GetFirst():GetBaseAttack())",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.GetLP(tp)<Duel.GetLP(1-tp)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.BreakEffect()",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "possibleOperationInfos",
+        'api: "SelectYesNo"',
+        'eventName: "destroyed"',
+      ],
+    },
+    {
       file: "test/lua-real-script-black-rose-assault-reveal-shuffle-stat.test.ts",
       kind: "handRevealShuffleFinalAttack",
       required: [
@@ -4760,6 +4783,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fiveGraveToDeckShuffleDraw: 0,
       fieldExtraSummonSendStat: 0,
       quickPlayGraveToDeckDrawStat: 0,
+      quickTargetAttackDestroyPrompt: 0,
       fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
       lpDiscardCostStatToGraveBothDamage: 0,

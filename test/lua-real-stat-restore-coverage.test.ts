@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 95;
+const statFixtureCount = 96;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -86,6 +86,7 @@ const statKindCounts = {
   preDamageSelfToGraveBattleMonsterStat: 3,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
+  targetedQuickAttackGainDestroyPrompt: 1,
   trapChainNegateDestroySelfAttackUpdate: 1,
   xyzDetachAttributeExceptGroupStat: 1,
   xyzDetachTargetFinalSelfUpdate: 1,
@@ -183,7 +184,7 @@ const statSemanticVariantCounts = {
   yamorimoriSelfBanishSelectEffectStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleStartOverlayExtraAttackUpdate" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleStartDestroyBaseAttackUpdate" | "battleStartSelfDestroyBattlerAttackBoost" | "chainSpecialSummonNegateSelectAttackUpdate" | "chainMonsterEffectUpdateAttackImmune" | "chainNegateDestroyTextAttackUpdate" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "preDamageBattleTargetAttackGain" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "destroyedTargetAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldCounterCostBanishAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "handRevealShuffleFinalAttackZero" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "operationInfoDestroyFinalAttackDefenseZero" | "ouroborosSageSummonEquipStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishSelectEffectDestroyFinalAttack" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessMaterialCheckDestroyAttackUpdate" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "synchroTypeTargetAttackUpdate" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "trapChainNegateDestroySelfAttackUpdate" | "trapDetachOperatedDestroyAttackUpdate" | "xyzDetachAttributeExceptGroupStat" | "xyzDetachTargetFinalSelfUpdate";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleStartOverlayExtraAttackUpdate" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleStartDestroyBaseAttackUpdate" | "battleStartSelfDestroyBattlerAttackBoost" | "chainSpecialSummonNegateSelectAttackUpdate" | "chainMonsterEffectUpdateAttackImmune" | "chainNegateDestroyTextAttackUpdate" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "preDamageBattleTargetAttackGain" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "destroyedTargetAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldCounterCostBanishAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "handRevealShuffleFinalAttackZero" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "operationInfoDestroyFinalAttackDefenseZero" | "ouroborosSageSummonEquipStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishSelectEffectDestroyFinalAttack" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessMaterialCheckDestroyAttackUpdate" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "synchroTypeTargetAttackUpdate" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "targetedQuickAttackGainDestroyPrompt" | "toGraveTargetFinalAttackHalve" | "trapChainNegateDestroySelfAttackUpdate" | "trapDetachOperatedDestroyAttackUpdate" | "xyzDetachAttributeExceptGroupStat" | "xyzDetachTargetFinalSelfUpdate";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -1488,6 +1489,24 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gold-pride-star-leon-quick-stat-destroy.test.ts",
+      kind: "targetedQuickAttackGainDestroyPrompt",
+      required: [
+        "restores Quick target ATK gain, possible destroy metadata, SelectYesNo, and BreakEffect destroy",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY)",
+        "e1:SetType(EFFECT_TYPE_QUICK_O)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,0,g:GetFirst():GetBaseAttack())",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "c:UpdateAttack(atk,RESET_EVENT|RESETS_STANDARD,c)==atk",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === starLeon.uid), restoredChain.session.state)).toBe(4100)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+        'api: "SelectYesNo"',
+        'eventName: "destroyed"',
+      ],
+    },
+    {
       file: "test/lua-real-script-mild-turkey-dice-scale.test.ts",
       kind: "diceScaleUpdate",
       required: [
@@ -1771,6 +1790,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       targetedDamageStepDefenseUpdate: 0,
       targetedIgnitionDisable: 0,
       targetedPreDamageFinalAttack: 0,
+      targetedQuickAttackGainDestroyPrompt: 0,
       targetedQuickAttackDefenseUpdateChainLimit: 0,
       trapChainNegateDestroySelfAttackUpdate: 0,
       trapDetachOperatedDestroyAttackUpdate: 0,
