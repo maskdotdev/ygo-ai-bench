@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 248;
+export const operationFixtureCount = 249;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -100,6 +100,7 @@ export const operationKindCounts = {
   handQuickSummonSelectEffectStat: 1,
   handCountReviveMaterialStatLock: 1,
   deckCostLabelStatDestroyedSummon: 1,
+  equipGraveOptionToDeck: 1,
   pzoneAttackAnnounceStat: 1,
   twoTargetPositionCopyStat: 1,
   groupToHand: 2,
@@ -288,6 +289,7 @@ export type OperationKind =
   | "handQuickSummonSelectEffectStat"
   | "handCountReviveMaterialStatLock"
   | "deckCostLabelStatDestroyedSummon"
+  | "equipGraveOptionToDeck"
   | "pzoneAttackAnnounceStat"
   | "twoTargetPositionCopyStat"
   | "groupToHand"
@@ -1338,6 +1340,32 @@ export function operationFixtureFiles(): Array<{
         "confirmed 1:",
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-moon-mirror-shield-option-todeck.test.ts",
+      kind: "equipGraveOptionToDeck",
+      required: [
+        "restores face-up Equip to-GY trigger LP cost, SelectOption label, and send to Deck",
+        "aux.AddEquipProcedure(c)",
+        "e3:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e3:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "local val=math.max(tc:GetAttack(),tc:GetDefense())",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e4:SetCategory(CATEGORY_TODECK)",
+        "e4:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)",
+        "e4:SetCode(EVENT_TO_GRAVE)",
+        "return c:IsPreviousPosition(POS_FACEUP) and c:IsPreviousLocation(LOCATION_ONFIELD)",
+        "e4:SetCost(Cost.PayLP(500))",
+        "local opt=Duel.SelectOption(tp,aux.Stringid(id,0),aux.Stringid(id,1))",
+        "e:SetLabel(opt)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,e:GetHandler(),1,0,0)",
+        "Duel.SendtoDeck(e:GetHandler(),nil,e:GetLabel(),REASON_EFFECT)",
+        "operationInfos",
+        'api: "SelectOption"',
+        'eventName: "lifePointCostPaid"',
+        'eventName: "sentToDeck"',
       ],
     },
     {
@@ -4356,6 +4384,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handQuickSummonSelectEffectStat: 0,
       handCountReviveMaterialStatLock: 0,
       deckCostLabelStatDestroyedSummon: 0,
+      equipGraveOptionToDeck: 0,
       pzoneAttackAnnounceStat: 0,
       twoTargetPositionCopyStat: 0,
       groupLevelFinal: 0,
