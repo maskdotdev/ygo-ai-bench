@@ -108,8 +108,8 @@ export function destroyCoreDuelCard(
     applyPostMoveSideEffects(state, lostTargetEquipUids, controlReturnTargetUids, handlers);
     return card;
   }
-  if (destination !== "graveyard") {
-    const redirectLocation = moveDestinationRedirectLocation(state, uid, destination, createContext) ?? leaveFieldRedirectLocation(state, uid, destination, createContext);
+  const redirectLocation = moveDestinationRedirectLocation(state, uid, destination, createContext) ?? leaveFieldRedirectLocation(state, uid, destination, createContext);
+  if (redirectLocation || destination !== "graveyard") {
     const moveDestination = redirectLocation?.location ?? destination;
     const moveReason = redirectLocation ? reason | duelReason.redirect : reason;
     requireCoreDuelMoveAllowed(state, uid, moveDestination, moveReason, handlers);

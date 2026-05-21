@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 245;
+export const operationFixtureCount = 246;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -136,6 +136,7 @@ export const operationKindCounts = {
   rescueStatProtectGraveSet: 1,
   ritualDeckMaterials: 1,
   searchOrExcavate: 39,
+  selfToGraveStatGroupedNormalSummonRedirect: 1,
   selfEquipFromHand: 1,
   selfBanishTargetStat: 1,
   selfSummonBanishDeckGraveStat: 1,
@@ -321,6 +322,7 @@ export type OperationKind =
   | "rescueStatProtectGraveSet"
   | "ritualDeckMaterials"
   | "searchOrExcavate"
+  | "selfToGraveStatGroupedNormalSummonRedirect"
   | "selfEquipFromHand"
   | "selfBanishTargetStat"
   | "selfSummonBanishDeckGraveStat"
@@ -374,6 +376,32 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-guardragon-promineses-stat-redirect-summon.test.ts",
+      kind: "selfToGraveStatGroupedNormalSummonRedirect",
+      required: [
+        "restores SelfToGrave Dragon stat boost and grouped Normal monster to-GY self summon with leave-field redirect",
+        "e1:SetCost(Cost.SelfToGrave)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsRace,RACE_DRAGON),tp,LOCATION_MZONE,0,1,1,nil)",
+        "local ct=Duel.IsTurnPlayer(tp) and 2 or 1",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetProperty(EFFECT_FLAG_DELAY,EFFECT_FLAG2_CHECK_SIMULTANEOUS)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "return not eg:IsContains(e:GetHandler()) and eg:IsExists(s.cfilter,1,nil,tp)",
+        "return c:IsControler(tp) and c:IsType(TYPE_NORMAL)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)>0",
+        "e1:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)",
+        "e1:SetValue(LOCATION_REMOVED)",
+        "operationInfos",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+        "code: 60",
+      ],
+    },
     {
       file: "test/lua-real-script-gizmek-inaba-summon-stat-attack-oath.test.ts",
       kind: "summonHandMachineSelfBanishStatAttackOath",
@@ -4305,6 +4333,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       rescueStatProtectGraveSet: 0,
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
+      selfToGraveStatGroupedNormalSummonRedirect: 0,
       selfEquipFromHand: 0,
       selfBanishTargetStat: 0,
       selfSummonBanishDeckGraveStat: 0,
