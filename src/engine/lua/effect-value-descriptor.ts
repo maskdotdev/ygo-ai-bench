@@ -107,6 +107,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (materialTargetPredicate) return materialTargetPredicate;
   const immuneOpponentCardEffects = immuneOpponentCardEffectsDescriptor(snippet, params);
   if (immuneOpponentCardEffects) return immuneOpponentCardEffects;
+  const immuneMonsterEffects = immuneMonsterEffectsDescriptor(snippet, params);
+  if (immuneMonsterEffects) return immuneMonsterEffects;
   const effectParam = params?.[0];
   const reasonPlayerParam = params?.[2];
   if (effectParam && reasonPlayerParam) {
@@ -150,6 +152,14 @@ function immuneOpponentCardEffectsDescriptor(snippet: string, params: string[] |
     String.raw`\breturn\s+${effect}\s*:\s*GetOwnerPlayer\s*\(\s*\)\s*~=\s*${relatedEffect}\s*:\s*GetOwnerPlayer\s*\(\s*\)`,
   );
   return ownerMismatch.test(snippet) ? "immune-effect:opponent-card-effects" : undefined;
+}
+
+function immuneMonsterEffectsDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const relatedEffectParam = params?.[1];
+  if (!relatedEffectParam) return undefined;
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const monsterEffect = new RegExp(String.raw`\breturn\s+${relatedEffect}\s*:\s*IsMonsterEffect\s*\(\s*\)`);
+  return monsterEffect.test(snippet) ? "immune-effect:monster-effects" : undefined;
 }
 
 function handlerEquipCountStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {
