@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 314;
+export const operationFixtureCount = 315;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -40,6 +40,7 @@ export const operationKindCounts = {
   battleStartHandSummonStatDestroyedTarget: 1,
   attackAnnounceStatDeckdes: 1,
   battleDestroyingStepSummonStat: 1,
+  battleDestroyingDetachCountDestroy: 1,
   battleDestroyingSetTargetReviveDisable: 1,
   battleFinalStatReviveLock: 1,
   quickTributeSummonOrSetDestroyStat: 1,
@@ -293,6 +294,7 @@ export type OperationKind =
   | "battleStartHandSummonStatDestroyedTarget"
   | "attackAnnounceStatDeckdes"
   | "battleDestroyingStepSummonStat"
+  | "battleDestroyingDetachCountDestroy"
   | "battleDestroyingSetTargetReviveDisable"
   | "battleFinalStatReviveLock"
   | "quickTributeSummonOrSetDestroyStat"
@@ -1483,6 +1485,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "specialSummoned"',
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-blade-burner-falcon-battle-destroying-detach-count-destroy.test.ts",
+      kind: "battleDestroyingDetachCountDestroy",
+      required: [
+        "restores battle-destroying detach cost label into exact opponent monster destruction",
+        "Xyz.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsRace,RACE_WINGEDBEAST),4,2)",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.GetLP(1-tp)>=Duel.GetLP(tp)+3000",
+        "c:UpdateAttack(3000)",
+        "e2:SetCategory(CATEGORY_DESTROY)",
+        "e2:SetCode(EVENT_BATTLE_DESTROYING)",
+        "e2:SetCondition(aux.bdocon)",
+        "Cost.DetachFromSelf(1,function(e,tp) return Duel.GetFieldGroupCount(tp,0,LOCATION_MZONE) end,function(e,og) e:SetLabel(#og) end)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,e:GetLabel(),tp,0)",
+        "Duel.SelectMatchingCard(tp,nil,tp,0,LOCATION_MZONE,ct,ct,nil)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        'eventName: "battleDestroyed"',
+        'eventName: "detachedMaterial"',
+        'eventName: "destroyed"',
+        "operationInfos",
       ],
     },
     {
@@ -6006,6 +6031,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       battleStartHandSummonStatDestroyedTarget: 0,
       attackAnnounceStatDeckdes: 0,
       battleDestroyingStepSummonStat: 0,
+      battleDestroyingDetachCountDestroy: 0,
       battleFinalStatReviveLock: 0,
       quickTributeSummonOrSetDestroyStat: 0,
       templeSearchBattleDestroyStat: 0,
