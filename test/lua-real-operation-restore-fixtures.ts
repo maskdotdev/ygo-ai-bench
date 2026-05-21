@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 246;
+export const operationFixtureCount = 247;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -98,6 +98,7 @@ export const operationKindCounts = {
   groupToGraveFinalAttack: 1,
   handStatBoost: 1,
   handQuickSummonSelectEffectStat: 1,
+  handCountReviveMaterialStatLock: 1,
   pzoneAttackAnnounceStat: 1,
   twoTargetPositionCopyStat: 1,
   groupToHand: 2,
@@ -284,6 +285,7 @@ export type OperationKind =
   | "groupToGraveFinalAttack"
   | "handStatBoost"
   | "handQuickSummonSelectEffectStat"
+  | "handCountReviveMaterialStatLock"
   | "pzoneAttackAnnounceStat"
   | "twoTargetPositionCopyStat"
   | "groupToHand"
@@ -1334,6 +1336,33 @@ export function operationFixtureFiles(): Array<{
         "confirmed 1:",
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-greethys-hand-count-revive-material-stat.test.ts",
+      kind: "handCountReviveMaterialStatLock",
+      required: [
+        "restores hand-count GY revive target lock and Synchro material ATK/DEF gain",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "local sum=Duel.GetFieldGroupCount(tp,0,LOCATION_HAND)",
+        "and c:HasLevel() and c:IsLevelBelow(lv) and c:IsCanBeSpecialSummoned(e,0,tp,false,false,POS_FACEUP)",
+        "Duel.IsExistingTarget(s.spfilter,tp,LOCATION_GRAVE,0,1,nil,e,tp,sum)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp,sum)",
+        "Duel.SpecialSummonStep(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "e1:SetCode(EFFECT_CANNOT_TRIGGER)",
+        "Duel.SpecialSummonComplete()",
+        "e2:SetCode(EVENT_BE_MATERIAL)",
+        "return c:IsLocation(LOCATION_GRAVE) and r==REASON_SYNCHRO and Duel.GetFieldGroupCount(tp,0,LOCATION_HAND)>0",
+        "local val=Duel.GetFieldGroupCount(tp,0,LOCATION_HAND)*200",
+        "local sync=c:GetReasonCard()",
+        "sync:UpdateAttack(val,RESET_EVENT|RESETS_STANDARD,c)",
+        "sync:UpdateDefense(val,RESET_EVENT|RESETS_STANDARD,c)",
+        'eventName: "becameTarget"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+        "code === 7",
       ],
     },
     {
@@ -4295,6 +4324,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handBanishDrawStat: 0,
       handStatBoost: 0,
       handQuickSummonSelectEffectStat: 0,
+      handCountReviveMaterialStatLock: 0,
       pzoneAttackAnnounceStat: 0,
       twoTargetPositionCopyStat: 0,
       groupLevelFinal: 0,
