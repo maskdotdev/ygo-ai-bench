@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 281;
+export const operationFixtureCount = 282;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -33,6 +33,7 @@ export const operationKindCounts = {
   counterDamageReplaceStatBurn: 1,
   counterLevelChange: 1,
   customDirectSummonFinalStatLock: 1,
+  customEventMissedTimingDestroyCount: 1,
   deckGraveMonsterEffectSummonStatReplace: 1,
   destroyedOptionalSummonSearchTargetStat: 1,
   summonHandMachineSelfBanishStatAttackOath: 1,
@@ -253,6 +254,7 @@ export type OperationKind =
   | "counterDamageReplaceStatBurn"
   | "counterLevelChange"
   | "customDirectSummonFinalStatLock"
+  | "customEventMissedTimingDestroyCount"
   | "deckGraveMonsterEffectSummonStatReplace"
   | "destroyedOptionalSummonSearchTargetStat"
   | "summonHandMachineSelfBanishStatAttackOath"
@@ -444,6 +446,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-berserk-archfiend-custom-event-stat.test.ts",
+      kind: "customEventMissedTimingDestroyCount",
+      required: [
+        "restores SelectUnselectGroup self summon into operated destroy count custom-event missed timing",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_DESTROY)",
+        "aux.SelectUnselectGroup(g,e,tp,1,2,s.rescon,0)",
+        "Duel.SetTargetCard(dg)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,LOCATION_HAND)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,dg,#dg,tp,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)>0",
+        "local og=Duel.GetOperatedGroup()",
+        "Duel.RaiseSingleEvent(c,EVENT_CUSTOM+id,e,REASON_EFFECT,tp,tp,#og)",
+        "e2:SetCode(EVENT_CUSTOM+id)",
+        "Duel.SelectTarget(tp,s.cfilter,tp,0,LOCATION_MZONE,ev,ev,nil)",
+        "local atk=g:GetSum(Card.GetBaseAttack)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "customEvent",
+        "pendingTriggers).toEqual([])",
+      ],
+    },
     {
       file: "test/lua-real-script-black-fang-magician-pzone-destroy-revive.test.ts",
       kind: "pzoneFinalStatSelfDestroyRevive",
@@ -5096,6 +5119,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       counterDamageReplaceStatBurn: 0,
       counterLevelChange: 0,
       customDirectSummonFinalStatLock: 0,
+      customEventMissedTimingDestroyCount: 0,
       deckGraveMonsterEffectSummonStatReplace: 0,
       destroyedOptionalSummonSearchTargetStat: 0,
       summonHandMachineSelfBanishStatAttackOath: 0,
