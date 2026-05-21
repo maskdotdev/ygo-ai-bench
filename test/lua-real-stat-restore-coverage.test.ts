@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 47;
+const statFixtureCount = 48;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
   battleTargetAttackBoost: 3,
   damageStepBattleTargetAttributeAttackBoost: 2,
+  damageStepMachineStatDamagePrevention: 1,
   diceChainAttackUpdate: 1,
   diceGroupAttackDefenseUpdate: 1,
   diceScaleUpdate: 1,
@@ -58,6 +59,7 @@ const statSemanticVariantCounts = {
   royalRhinoChainDiceAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
+  cyberDragonSiegerCodeStatDamagePrevention: 1,
   fairyKingAlbverdichDetachAttributeExceptStat: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
@@ -96,7 +98,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -108,6 +110,7 @@ type StatSemanticVariant =
   | "borreloadChainLimitAttackDefenseDrop"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "digitJammingPrecalcDestroyedStat"
+  | "cyberDragonSiegerCodeStatDamagePrevention"
   | "fairyKingAlbverdichDetachAttributeExceptStat"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
@@ -320,6 +323,24 @@ function statFixtureFiles(): Array<{
         "condition:damage-source-relate-battle-target-faceup-attribute:32",
         "currentAttack(restoredBoostedSoldier, restoredBoosted.session.state)).toBe((boosted.luminousSoldier.data.attack ?? 0) + 500)",
         "battleDamage).toEqual({ 0: 0, 1: expectedBoostedDamage })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cyber-dragon-sieger-code-stat-damage.test.ts",
+      kind: "damageStepMachineStatDamagePrevention",
+      required: [
+        'const siegerCode = "46724542"',
+        "restores Cyber Dragon code change, battle quick stat boost, and self battle-damage prevention",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsRace,RACE_MACHINE),2,2,s.lcheck)",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e1:SetValue(CARD_CYBER_DRAGON)",
+        "Duel.IsBattlePhase() and aux.StatChangeDamageStepCondition()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e3:SetCode(EFFECT_NO_BATTLE_DAMAGE)",
+        "e4:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid)!, restoredOpen.session.state)).toBe(4300)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -840,6 +861,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleDestroyedOpponentAttackDefenseDrop: 0,
       battleTargetAttackBoost: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
+      damageStepMachineStatDamagePrevention: 0,
       diceChainAttackUpdate: 0,
       diceGroupAttackDefenseUpdate: 0,
       diceScaleUpdate: 0,
@@ -966,6 +988,19 @@ function statSemanticVariants(): Array<{
         'const dForceCode = "6186304"',
         "restores official graveyard-count ATK update and extra attack grant for Plasma",
         "d force plasma attack 2200",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cyber-dragon-sieger-code-stat-damage.test.ts",
+      kind: "cyberDragonSiegerCodeStatDamagePrevention",
+      required: [
+        'const siegerCode = "46724542"',
+        "restores Cyber Dragon code change, battle quick stat boost, and self battle-damage prevention",
+        "Card.IsSummonCode",
+        "currentCardMatchesCode(restoredSieger, restoredOpen.session.state, cyberDragonCode)).toBe(true)",
+        "value: 2100",
+        "code: 200",
+        "code: 201",
       ],
     },
     {
@@ -1420,6 +1455,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       bladeflyFieldAttributeAttackUpdate: 0,
       bootUpSoldierGadgetConditionAttackUpdate: 0,
       borreloadChainLimitAttackDefenseDrop: 0,
+      cyberDragonSiegerCodeStatDamagePrevention: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       digitJammingPrecalcDestroyedStat: 0,
       fairyKingAlbverdichDetachAttributeExceptStat: 0,
