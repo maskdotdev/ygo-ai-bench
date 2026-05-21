@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 253;
+export const operationFixtureCount = 254;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -43,6 +43,7 @@ export const operationKindCounts = {
   battleRevealHandStat: 1,
   battleStatBurn: 1,
   battleTargetPositionDamageStat: 1,
+  targetReviveDefense: 1,
   borreloadDetachReviveLock: 1,
   damageDeckdesAtk: 1,
   damageSynchroMillStat: 1,
@@ -235,6 +236,7 @@ export type OperationKind =
   | "battleRevealHandStat"
   | "battleStatBurn"
   | "battleTargetPositionDamageStat"
+  | "targetReviveDefense"
   | "borreloadDetachReviveLock"
   | "damageDeckdesAtk"
   | "damageSynchroMillStat"
@@ -790,6 +792,28 @@ export function operationFixtureFiles(): Array<{
         'eventName: "battleDamageDealt"',
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-back-to-front-target-defense-revive.test.ts",
+      kind: "targetReviveDefense",
+      required: [
+        "restores free-chain graveyard target selection into face-up Defense Special Summon",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e1:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e1:SetCode(EVENT_FREE_CHAIN)",
+        "e1:SetHintTiming(0,TIMING_END_PHASE)",
+        "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+        "Duel.IsExistingTarget(s.filter,tp,LOCATION_GRAVE,0,1,nil,e,tp)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+        "local tc=Duel.GetFirstTarget()",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "specialSummoned"',
+        'position: "faceUpDefense"',
       ],
     },
     {
@@ -4432,6 +4456,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       battleRevealHandStat: 0,
       battleStatBurn: 0,
       battleTargetPositionDamageStat: 0,
+      targetReviveDefense: 0,
       borreloadDetachReviveLock: 0,
       chainNegateDiscardDestroy: 0,
       chainNegateDestroyDraw: 0,
