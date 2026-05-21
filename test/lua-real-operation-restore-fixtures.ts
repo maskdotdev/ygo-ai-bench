@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 320;
+export const operationFixtureCount = 321;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -8,6 +8,7 @@ export const operationKindCounts = {
   diceSelectEffectToGraveFinalStat: 1,
   diceFieldSearchBattleStartTwoPlayerStat: 1,
   attackAnnounceSelectEffectStatImmune: 1,
+  handSummonOptionalDrawQuickFinalHalve: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
@@ -267,6 +268,7 @@ export type OperationKind =
   | "diceSelectEffectToGraveFinalStat"
   | "diceFieldSearchBattleStartTwoPlayerStat"
   | "attackAnnounceSelectEffectStatImmune"
+  | "handSummonOptionalDrawQuickFinalHalve"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
@@ -658,6 +660,31 @@ export function operationFixtureFiles(): Array<{
         "e3:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
         'api: "SelectEffect"',
         'eventName: "attackDeclared"',
+        "operationInfos",
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-artmage-finmel-summon-draw-quick-disable-stat.test.ts",
+      kind: "handSummonOptionalDrawQuickFinalHalve",
+      required: [
+        "restores hand Special Summon optional draw into main-phase opponent monster negate and final ATK halve",
+        "e1:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e2:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_DRAW)",
+        "e2:SetRange(LOCATION_HAND)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DRAW,nil,1,tp,1)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)>0",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.BreakEffect()",
+        "Duel.Draw(tp,1,REASON_EFFECT)",
+        "e3:SetCategory(CATEGORY_DISABLE+CATEGORY_ATKCHANGE)",
+        "e3:SetType(EFFECT_TYPE_QUICK_O)",
+        "GetBinClassCount(Card.GetRace)>=3",
+        "tc:NegateEffects(c)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        'api: "SelectYesNo"',
+        'eventName: "specialSummoned"',
+        'eventName: "cardsDrawn"',
         "operationInfos",
         "currentAttack",
       ],
@@ -6133,6 +6160,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       diceSelectEffectToGraveFinalStat: 0,
       diceFieldSearchBattleStartTwoPlayerStat: 0,
       attackAnnounceSelectEffectStatImmune: 0,
+      handSummonOptionalDrawQuickFinalHalve: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
