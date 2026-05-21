@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 68;
+const statFixtureCount = 69;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -29,6 +29,7 @@ const statKindCounts = {
   fieldLinkSumAttackDefenseUpdate: 1,
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
+  fusionTargetFinalAttackDisableReviveDestroy: 1,
   fusionSummonOpponentFinalAttackDefenseHalve: 1,
   flipGroupAttackUpdate: 1,
   flipSelfAttackDefenseUpdate: 1,
@@ -91,6 +92,7 @@ const statSemanticVariantCounts = {
   copycatSummonTargetFinalStat: 1,
   fairyKingAlbverdichDetachAttributeExceptStat: 1,
   gadarlaKaijuCounterFinalStat: 1,
+  greedyVenomFusionDisableRevive: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
   gemMerchantDamageStepNormalStat: 1,
@@ -134,7 +136,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -158,6 +160,7 @@ type StatSemanticVariant =
   | "cyberDragonSiegerCodeStatDamagePrevention"
   | "fairyKingAlbverdichDetachAttributeExceptStat"
   | "gadarlaKaijuCounterFinalStat"
+  | "greedyVenomFusionDisableRevive"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "gemMerchantDamageStepNormalStat"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
@@ -913,6 +916,27 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-greedy-venom-fusion-disable-revive.test.ts",
+      kind: "fusionTargetFinalAttackDisableReviveDestroy",
+      required: [
+        'const greedyCode = "51570882"',
+        "restores targeted ATK-final zero and effect disable effects",
+        "restores destroyed-to-grave trigger into field destruction, optional DARK banish, and self summon",
+        "Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_PREDAPLANT),s.ffilter2)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_DISABLE)",
+        "e3:SetCode(EFFECT_DISABLE_EFFECT)",
+        "e3:SetCode(EVENT_TO_GRAVE)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_REMOVE,nil,1,tp,LOCATION_GRAVE)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,e:GetHandler(),1,tp,LOCATION_GRAVE)",
+        "Duel.BreakEffect()",
+        "Duel.Remove(rg,POS_FACEUP,REASON_EFFECT)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "currentAttack(restoredGreedy, restoredResolved.session.state)).toBe(0)",
+        'api: "SelectYesNo"',
+      ],
+    },
+    {
       file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
       kind: "targetedPreDamageFinalAttack",
       required: [
@@ -1251,6 +1275,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       flipGroupAttackUpdate: 0,
       flipSelfAttackDefenseUpdate: 0,
       fusionSummonOpponentFinalAttackDefenseHalve: 0,
+      fusionTargetFinalAttackDisableReviveDestroy: 0,
       groupLevelOrRankLinkAndSelfBanishTargetStat: 0,
       overlayDetachSelfStatAttackLock: 0,
       overlayDetachSelfStatBattleProtection: 0,
@@ -1376,6 +1401,22 @@ function statSemanticVariants(): Array<{
         "Duel.SelectTarget(tp,s.atktgfilter,tp,LOCATION_MZONE,0,1,1,nil)",
         "Duel.NegateEffect(ev)",
         'eventName: "chainDisabled"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-greedy-venom-fusion-disable-revive.test.ts",
+      kind: "greedyVenomFusionDisableRevive",
+      required: [
+        'const greedyCode = "51570882"',
+        "EFFECT_SPSUMMON_CONDITION",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_DISABLE_EFFECT",
+        "EVENT_TO_GRAVE",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.Remove(rg,POS_FACEUP,REASON_EFFECT)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "customStatusMask = 0x8",
       ],
     },
     {
@@ -2126,6 +2167,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       evilTwinGgEzReleaseStatNegate: 0,
       fairyKingAlbverdichDetachAttributeExceptStat: 0,
       gadarlaKaijuCounterFinalStat: 0,
+      greedyVenomFusionDisableRevive: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       gemMerchantDamageStepNormalStat: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
