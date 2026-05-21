@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 292;
+export const operationFixtureCount = 293;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -11,6 +11,7 @@ export const operationKindCounts = {
   announceLpStatResetSSet: 1,
   lpAnnounceOptionTripleBranchStatDestroyReturn: 1,
   moveSelectEffectCostPlaceDestroyTypeChange: 1,
+  targetPierceBattleDamageDestroy: 1,
   announceTargetBanishProtection: 1,
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
@@ -242,6 +243,7 @@ export type OperationKind =
   | "announceLpStatResetSSet"
   | "lpAnnounceOptionTripleBranchStatDestroyReturn"
   | "moveSelectEffectCostPlaceDestroyTypeChange"
+  | "targetPierceBattleDamageDestroy"
   | "announceTargetBanishProtection"
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
@@ -1831,6 +1833,36 @@ export function operationFixtureFiles(): Array<{
         'eventName: "sentToGraveyard"',
         'eventName: "destroyed"',
         'eventName: "moved"',
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-photon-trident-pierce-battle-destroy.test.ts",
+      kind: "targetPierceBattleDamageDestroy",
+      required: [
+        "restores targeted Photon ATK and pierce grant into battle-damage Spell/Trap destruction trigger",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(700)",
+        "e2:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
+        "e2:SetCode(EFFECT_PIERCE)",
+        "e3:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e3:SetCode(EVENT_BATTLE_DAMAGE)",
+        "e3:SetLabelObject(tc)",
+        "return ep~=tp and eg:GetFirst()==e:GetLabelObject()",
+        "Duel.IsExistingTarget(s.desfilter,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,nil)",
+        "Duel.SelectTarget(tp,s.desfilter,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "battleDamageDealt"',
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "sentToGraveyard"',
         "currentAttack",
       ],
     },
@@ -5373,6 +5405,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceLpStatResetSSet: 0,
       lpAnnounceOptionTripleBranchStatDestroyReturn: 0,
       moveSelectEffectCostPlaceDestroyTypeChange: 0,
+      targetPierceBattleDamageDestroy: 0,
       announceTargetBanishProtection: 0,
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,

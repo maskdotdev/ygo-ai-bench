@@ -45,6 +45,9 @@ const luaEffectUnionStatus = 347;
 const luaEffectOldUnionStatus = 348;
 const luaEffectClockLizard = 51476410;
 const luaEffectPierce = 203;
+const luaPhotonTridentCode = 51589188;
+const luaCategoryDestroy = 0x1;
+const luaEventBattleDamage = 1143;
 const luaEffectIndestructibleEffect = 41;
 const luaEffectIndestructibleBattle = 42;
 const luaEffectForceMonsterZone = 265;
@@ -574,6 +577,7 @@ function restoreKnownLuaEffects(
       ...restoredLuaValueCallbacks(effect),
       ...restoredLuaConditionCallbacks(effect), ...restoredLuaCostCallbacks(effect),
       ...restoredLuaTargetCallbacks(effect),
+      ...restoredLuaActivationTargetCallbacks(effect),
       operation: restoredLuaOperation(effect, snapshotEffects),
     });
     added.push(effect.registryKey);
@@ -723,6 +727,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownSelfEndPhaseSendEffect(effect) ||
     isKnownEbonArrowBattleDestroyingDamageEffect(effect) ||
     isKnownMiniGutsBattleDestroyedDamageEffect(effect) ||
+    isKnownPhotonTridentBattleDamageDestroyEffect(effect) ||
     isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect) ||
     isKnownDivineEvolutionAttackAnnounceSendEffect(effect) ||
     isKnownOuroborosSageAttackLimitWatcherEffect(effect) ||
@@ -890,6 +895,15 @@ function isKnownMiniGutsBattleDestroyedDamageEffect(effect: SerializedDuelEffect
     effect.event === "trigger" &&
     effect.code === 1140 &&
     effect.triggerEvent === "battleDestroyed" &&
+    effect.sourceUid !== undefined &&
+    effect.labelObjectUid !== undefined &&
+    effect.reset !== undefined;
+}
+function isKnownPhotonTridentBattleDamageDestroyEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaPhotonTridentCode}:`)) &&
+    effect.event === "trigger" &&
+    effect.code === luaEventBattleDamage &&
+    effect.triggerEvent === "battleDamageDealt" &&
     effect.sourceUid !== undefined &&
     effect.labelObjectUid !== undefined &&
     effect.reset !== undefined;
@@ -1336,6 +1350,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownCelestialMagicianEndSearchEffect(effect)) return celestialMagicianEndSearchOperation(effect);
   if (isKnownEbonArrowBattleDestroyingDamageEffect(effect)) return ebonArrowBattleDestroyingDamageOperation(effect);
   if (isKnownMiniGutsBattleDestroyedDamageEffect(effect)) return miniGutsBattleDestroyedDamageOperation(effect);
+  if (isKnownPhotonTridentBattleDamageDestroyEffect(effect)) return photonTridentBattleDamageDestroyOperation(effect);
   if (isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect)) return mermailAbyssbalaenBattleStartDestroyOperation(effect);
   if (isKnownDivineEvolutionAttackAnnounceSendEffect(effect)) return divineEvolutionAttackAnnounceSendOperation(effect);
   if (isKnownOuroborosSageAttackLimitWatcherEffect(effect)) return ouroborosSageAttackLimitWatcherOperation(effect);
@@ -1359,6 +1374,24 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   return () => {};
 }
 
+function restoredLuaActivationTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "target"> {
+  if (isKnownPhotonTridentBattleDamageDestroyEffect(effect)) return { target: photonTridentBattleDamageDestroyTarget() };
+  return {};
+}
+
+function photonTridentBattleDamageDestroyTarget(): NonNullable<DuelEffectDefinition["target"]> {
+  return (ctx) => {
+    const target = ctx.duel.cards
+      .filter((card) => card.location === "monsterZone" || card.location === "spellTrapZone")
+      .filter((card) => (cardTypeFlags(card, ctx.duel) & 0x6) !== 0)
+      .sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence)[0];
+    if (!target) return false;
+    ctx.setTargets([target.uid]);
+    ctx.operationInfos = [{ category: luaCategoryDestroy, targetUids: [target.uid], count: 1, player: ctx.player, parameter: 0 }];
+    return true;
+  };
+}
+
 function divineEvolutionAttackAnnounceSendOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
   return (ctx) => {
     const sendPlayer = otherPlayer(effect.controller);
@@ -1373,6 +1406,24 @@ function divineEvolutionAttackAnnounceSendOperation(effect: SerializedDuelEffect
       });
     } catch {
       // EDOPro-style restored trigger ignores a target that can no longer be sent.
+    }
+  };
+}
+
+function photonTridentBattleDamageDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const target = ctx.getTargets()[0] ?? ctx.duel.cards
+      .filter((card) => card.location === "monsterZone" || card.location === "spellTrapZone")
+      .filter((card) => (cardTypeFlags(card, ctx.duel) & 0x6) !== 0)
+      .sort((a, b) => a.controller - b.controller || a.location.localeCompare(b.location) || a.sequence - b.sequence)[0];
+    if (!target) return;
+    try {
+      destroyDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
+        eventReasonCardUid: effect.sourceUid,
+        ...effectReasonIdPayload(effect),
+      });
+    } catch {
+      // EDOPro-style restored trigger ignores a target that can no longer be destroyed.
     }
   };
 }
@@ -1760,6 +1811,7 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return { canActivate: levelNormalEndPhaseDestroyCanActivate(effect) };
   if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) return { canActivate: engraverOfTheMarkDelayedDestroyCanActivate(effect) };
   if (isKnownPurushaddollAeonDelayedFlipEffect(effect)) return { canActivate: purushaddollAeonDelayedFlipCanActivate(effect) };
+  if (isKnownPhotonTridentBattleDamageDestroyEffect(effect)) return { canActivate: (ctx) => ctx.eventPlayer === otherPlayer(effect.controller) && ctx.eventCard?.uid === effect.labelObjectUid };
   if (isKnownDelayedBattleDestroyPhaseEffect(effect)) {
     const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
     const markerCode = registryCode === undefined ? undefined : Number(registryCode);
