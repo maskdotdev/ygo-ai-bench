@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 228;
+export const operationFixtureCount = 229;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -76,6 +76,7 @@ export const operationKindCounts = {
   drawThenDiscard: 1,
   equipBottomDeckDrawStat: 1,
   flipDeckSpecialSummon: 1,
+  flipHandSummonGraveStat: 1,
   fieldRecoverStatTrigger: 1,
   flipTargetDestroy: 1,
   handSelfToGraveFusionStatSummonSearch: 1,
@@ -245,6 +246,7 @@ export type OperationKind =
   | "drawThenDiscard"
   | "equipBottomDeckDrawStat"
   | "flipDeckSpecialSummon"
+  | "flipHandSummonGraveStat"
   | "fieldRecoverStatTrigger"
   | "flipTargetDestroy"
   | "handSelfToGraveFusionStatSummonSearch"
@@ -2174,6 +2176,33 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-qadshaddoll-keios-flip-summon-grave-stat.test.ts",
+      kind: "flipHandSummonGraveStat",
+      required: [
+        "restores Shaddoll Flip hand summon and effect-to-Grave hand send field stat boost",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_SET)",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP+EFFECT_TYPE_TRIGGER_O)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND)",
+        "Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_HAND,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_DEFENSE)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "return e:GetHandler():IsReason(REASON_EFFECT)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_HAND)",
+        "Duel.SelectMatchingCard(tp,s.disfilter,tp,LOCATION_HAND,0,1,1,c):GetFirst()",
+        "Duel.SendtoGrave(tc,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetTargetRange(LOCATION_MZONE,0)",
+        "Duel.RegisterEffect(e1,tp)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "operationInfos",
+        'eventName: "flipSummoned"',
+        'eventName: "specialSummoned"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-castle-gate-release-cost-damage.test.ts",
       kind: "releaseDamage",
       required: [
@@ -3767,6 +3796,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       drawThenDiscard: 0,
       equipBottomDeckDrawStat: 0,
       flipDeckSpecialSummon: 0,
+      flipHandSummonGraveStat: 0,
       fieldRecoverStatTrigger: 0,
       flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
