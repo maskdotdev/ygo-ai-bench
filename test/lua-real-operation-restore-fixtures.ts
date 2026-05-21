@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 333;
+export const operationFixtureCount = 334;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -68,6 +68,7 @@ export const operationKindCounts = {
   counterLevelChange: 1,
   customDirectSummonFinalStatLock: 1,
   customEventMissedTimingDestroyCount: 1,
+  customSummonTriggerDisableToken: 1,
   deckGraveMonsterEffectSummonStatReplace: 1,
   destroyedOptionalSummonSearchTargetStat: 1,
   summonHandMachineSelfBanishStatAttackOath: 1,
@@ -334,6 +335,7 @@ export type OperationKind =
   | "counterLevelChange"
   | "customDirectSummonFinalStatLock"
   | "customEventMissedTimingDestroyCount"
+  | "customSummonTriggerDisableToken"
   | "deckGraveMonsterEffectSummonStatReplace"
   | "destroyedOptionalSummonSearchTargetStat"
   | "summonHandMachineSelfBanishStatAttackOath"
@@ -1306,6 +1308,34 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "customEvent",
         "pendingTriggers).toEqual([])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-you-and-ai-custom-token-disable.test.ts",
+      kind: "customSummonTriggerDisableToken",
+      required: [
+        "restores SPSUMMON_SUCCESS custom trigger into field disable and Ignister Token summon branches",
+        "e2:SetCode(EVENT_CUSTOM+id)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.RaiseSingleEvent(e:GetHandler(),EVENT_CUSTOM+id,e,0,tp,tp,0)",
+        "Duel.GetFlagEffect(tp,id)==0",
+        "Duel.RegisterFlagEffect(tp,id,RESET_CHAIN,0,1)",
+        "attr&(ATTRIBUTE_WIND|ATTRIBUTE_LIGHT)~=0",
+        "e:SetCategory(CATEGORY_DISABLE)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,nil,1,PLAYER_ALL,LOCATION_ONFIELD)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e3:SetCode(EFFECT_DISABLE_TRAPMONSTER)",
+        "attr&(ATTRIBUTE_DARK|ATTRIBUTE_FIRE)~=0",
+        "e:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_TOKEN)",
+        "Duel.IsPlayerCanSpecialSummonMonster(tp,TOKEN_IGNISTER,SET_IGNISTER,TYPES_TOKEN,0,0,1,RACE_CYBERSE,ATTRIBUTE_DARK)",
+        "local token=Duel.CreateToken(tp,TOKEN_IGNISTER)",
+        "Duel.SpecialSummon(token,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "customEvent"',
+        'eventName: "specialSummoned"',
+        "code: 2",
+        "code: 8",
+        "typesToken",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -6509,6 +6539,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       counterLevelChange: 0,
       customDirectSummonFinalStatLock: 0,
       customEventMissedTimingDestroyCount: 0,
+      customSummonTriggerDisableToken: 0,
       deckGraveMonsterEffectSummonStatReplace: 0,
       destroyedOptionalSummonSearchTargetStat: 0,
       summonHandMachineSelfBanishStatAttackOath: 0,
