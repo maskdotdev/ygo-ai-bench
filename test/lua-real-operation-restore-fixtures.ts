@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 331;
+export const operationFixtureCount = 332;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -224,7 +224,7 @@ export const operationKindCounts = {
   sequentialNormalCountStatDisableDeckSearch: 1,
   selectUnselectTargetStat: 1,
   specialSearchMaterialDamage: 1,
-  specialSummonDelayedReturnStat: 1,
+  specialSummonDelayedReturnStat: 2,
   specialSummonFusionBattleStatLock: 1,
   specialSummonBaseStat: 1,
   stepSummonLevelFinalStat: 1,
@@ -4439,6 +4439,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "becameTarget"',
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-rugal-step-summon-delayed-stat.test.ts",
+      kind: "specialSummonDelayedReturnStat",
+      required: [
+        "restores opponent-turn SpecialSummonStep negate/delayed return and TO_GRAVE race-count ATK loss",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsRace,RACES_BEAST_BWARRIOR_WINGB),2)",
+        "return Duel.IsTurnPlayer(1-tp) and Duel.IsMainPhase()",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_GRAVE)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_MZONE)",
+        "Duel.SpecialSummonStep(sc,0,tp,tp,false,false,POS_FACEUP)",
+        "sc:NegateEffects(e:GetHandler())",
+        "aux.DelayedOperation(sc,PHASE_END,id,e,tp,function(ag) Duel.SendtoHand(ag,nil,REASON_EFFECT) end,nil,0,0,aux.Stringid(id,2))",
+        "Duel.SpecialSummonComplete()",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,0,nil):GetClassCount(Card.GetRace)*-300",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHand"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack",
       ],
     },
     {

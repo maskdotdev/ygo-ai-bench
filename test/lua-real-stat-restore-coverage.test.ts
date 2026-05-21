@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 126;
+const statFixtureCount = 127;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -50,7 +50,7 @@ const statKindCounts = {
   fieldCounterCostBanishAttackUpdate: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 4,
-  fieldMatchingFaceupRaceCountStat: 2,
+  fieldMatchingFaceupRaceCountStat: 3,
   fieldAttributeAttackUpdate: 3,
   fieldLinkSumAttackDefenseUpdate: 1,
   fieldRaceAttackDefenseUpdate: 2,
@@ -888,6 +888,18 @@ function statFixtureFiles(): Array<{
         "currentAttack(perfectKing, session.state)).toBe((perfectKing.data.attack ?? 0) + 1000)",
         "currentAttack(perfectKing, session.state)).toBe((perfectKing.data.attack ?? 0) + 1500)",
         "battleDamage).toEqual({ 0: 0, 1: 700 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-rugal-step-summon-delayed-stat.test.ts",
+      kind: "fieldMatchingFaceupRaceCountStat",
+      required: [
+        "restores opponent-turn SpecialSummonStep negate/delayed return and TO_GRAVE race-count ATK loss",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,0,nil):GetClassCount(Card.GetRace)*-300",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === opponent.uid)!, restoredTrigger.session.state)).toBe(1500)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
