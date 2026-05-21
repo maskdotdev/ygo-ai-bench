@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 216;
+export const operationFixtureCount = 217;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -109,6 +109,7 @@ export const operationKindCounts = {
   raidraptorBattleDestroyDamage: 1,
   releaseDamage: 3,
   reviveStatBattleDamage: 1,
+  ritualToGraveSearchSend: 1,
   rescueStatProtectGraveSet: 1,
   ritualDeckMaterials: 1,
   searchOrExcavate: 39,
@@ -266,6 +267,7 @@ export type OperationKind =
   | "raidraptorBattleDestroyDamage"
   | "releaseDamage"
   | "reviveStatBattleDamage"
+  | "ritualToGraveSearchSend"
   | "rescueStatProtectGraveSet"
   | "ritualDeckMaterials"
   | "searchOrExcavate"
@@ -948,6 +950,37 @@ export function operationFixtureFiles(): Array<{
         "currentDefense(restoredDarkblaze, restoredStatTrigger.session.state)).toBe(2000)",
         'eventName: "damageDealt"',
         "players[1]!.lifePoints).toBe(5600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-revendread-slayer-banish-stat-search-send.test.ts",
+      kind: "ritualToGraveSearchSend",
+      required: [
+        "restores ritual-to-grave search then send and tracks battle banish-cost stat script coverage",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "return e:GetHandler():GetBattleTarget()~=nil",
+        "return c:IsRace(RACE_ZOMBIE) and c:IsAbleToRemoveAsCost() and aux.SpElimFilter(c,true)",
+        "c:RegisterFlagEffect(id,RESET_CHAIN,0,1)",
+        "Duel.SelectMatchingCard(tp,s.atkcfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,1,1,c)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(300)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "return c:IsPreviousLocation(LOCATION_MZONE) and c:IsRitualSummoned()",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_DECK)",
+        "return c:IsRitualSpell() and c:IsAbleToHand()",
+        "return c:IsMonster() and c:IsSetCard(SET_VENDREAD) and c:IsAbleToGrave()",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(hg,tp,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,hg)",
+        "Duel.SelectMatchingCard(tp,s.tgfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "sentToHand"',
+        'eventName: "confirmed"',
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "sentToGraveyard"',
       ],
     },
     {
@@ -3486,6 +3519,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       raidraptorBattleDestroyDamage: 0,
       releaseDamage: 0,
       reviveStatBattleDamage: 0,
+      ritualToGraveSearchSend: 0,
       rescueStatProtectGraveSet: 0,
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
