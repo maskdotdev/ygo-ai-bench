@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 211;
+export const operationFixtureCount = 212;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -64,6 +64,7 @@ export const operationKindCounts = {
   directRecover: 1,
   xmaterialQuickDestroyDirect: 1,
   drawThenDiscard: 1,
+  equipBottomDeckDrawStat: 1,
   flipDeckSpecialSummon: 1,
   fieldRecoverStatTrigger: 1,
   flipTargetDestroy: 1,
@@ -216,6 +217,7 @@ export type OperationKind =
   | "directRecover"
   | "xmaterialQuickDestroyDirect"
   | "drawThenDiscard"
+  | "equipBottomDeckDrawStat"
   | "flipDeckSpecialSummon"
   | "fieldRecoverStatTrigger"
   | "flipTargetDestroy"
@@ -328,6 +330,34 @@ export function operationFixtureFiles(): Array<{
         "Duel.SetTargetParam(1000)",
         "operationInfos",
         'eventName: "recoveredLifePoints"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-amaze-attraction-wonder-wheel-draw-stat.test.ts",
+      kind: "equipBottomDeckDrawStat",
+      required: [
+        "restores equipped self hand-to-bottom draw and opponent ATK/DEF swap branches",
+        "aux.AddAttractionEquipProc(c)",
+        "e1:SetCategory(CATEGORY_TODECK+CATEGORY_DRAW)",
+        "e1:SetCondition(aux.AttractionEquipCon(true))",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,nil,1,tp,LOCATION_HAND)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER)",
+        "Duel.SelectMatchingCard(p,aux.TRUE,p,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoDeck(g,nil,SEQ_DECKBOTTOM,REASON_EFFECT)",
+        "Duel.Draw(p,1,REASON_EFFECT)",
+        "e2:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e2:SetCondition(aux.AttractionEquipCon(false))",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(def)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetValue(atk)",
+        "operationInfos",
+        'eventName: "sentToDeck"',
+        'eventName: "cardsDrawn"',
         "currentAttack",
         "currentDefense",
       ],
@@ -3294,6 +3324,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       directRecover: 0,
       xmaterialQuickDestroyDirect: 0,
       drawThenDiscard: 0,
+      equipBottomDeckDrawStat: 0,
       flipDeckSpecialSummon: 0,
       fieldRecoverStatTrigger: 0,
       flipDiscardBattleStat: 0,
