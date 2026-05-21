@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 132;
+const statFixtureCount = 133;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -29,7 +29,7 @@ const statKindCounts = {
   battleStartDestroyBaseAttackUpdate: 1,
   battledDestroyGroupAttackUpdate: 1,
   battleStartSelfDestroyBattlerAttackBoost: 1,
-  chainSpecialSummonNegateSelectAttackUpdate: 1,
+  chainSpecialSummonNegateSelectAttackUpdate: 2,
   chainMonsterEffectUpdateAttackImmune: 1,
   chainNegateDestroyTextAttackUpdate: 1,
   chainNegateReturnExtraLeaveFieldAttackUpdate: 1,
@@ -188,6 +188,7 @@ const statSemanticVariantCounts = {
   shanawoPzoneSummonReviveStatDisable: 1,
   clearWingFastPzoneCostDisable: 1,
   electricJellyfishUmiSummonNegateStat: 1,
+  gemKnightHollowcoreSummonNegateStat: 1,
   unifiedFrontDiscardFinalStatLock: 1,
   shrinkTargetBaseAtkHalving: 1,
   sharkDrakeVeissBanishDetachZeroStat: 1,
@@ -293,6 +294,7 @@ type StatSemanticVariant =
   | "shanawoPzoneSummonReviveStatDisable"
   | "clearWingFastPzoneCostDisable"
   | "electricJellyfishUmiSummonNegateStat"
+  | "gemKnightHollowcoreSummonNegateStat"
   | "steelCavalryBattleStartFinalStat"
   | "steamedSabersaurusBattleStartSelfDestroyStat"
   | "unifiedFrontDiscardFinalStatLock"
@@ -2163,6 +2165,24 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gem-knight-hollowcore-summon-negate-stat.test.ts",
+      kind: "chainSpecialSummonNegateSelectAttackUpdate",
+      required: [
+        "restores deck-send self summon and graveyard multi-banish chain negate into Gem-Knight ATK gain",
+        "Duel.SelectMatchingCard(tp,s.spcostfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.SelectMatchingCard(tp,s.negcostfilter,tp,LOCATION_GRAVE,0,2,2,c)",
+        "Duel.Remove(g+c,POS_FACEUP,REASON_COST)",
+        "Duel.NegateEffect(ev)",
+        "Duel.BreakEffect()",
+        "tc:UpdateAttack(1000,RESET_EVENT|RESETS_STANDARD,c)",
+        "currentAttack(restoredResponse.session.state.cards.find((card) => card.uid === gemKnightFusionMonster.uid), restoredResponse.session.state)).toBe(3300)",
+        "currentAttack(restoredResponse.session.state.cards.find((card) => card.uid === gemKnightAlly.uid), restoredResponse.session.state)).toBe(2600)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-gaia-magical-knight-code-quick-destroy-battle-stat.test.ts",
       kind: "changeCodeQuickAttackSpendDestroyBattleStat",
       required: [
@@ -2905,6 +2925,19 @@ function statSemanticVariants(): Array<{
         "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
         "currentAttack(restoredResponse.session.state.cards.find((card) => card.uid === jellyfish.uid), restoredResponse.session.state)).toBe(2000)",
         "currentDefense(restoredResponse.session.state.cards.find((card) => card.uid === jellyfish.uid), restoredResponse.session.state)).toBe(2300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gem-knight-hollowcore-summon-negate-stat.test.ts",
+      kind: "gemKnightHollowcoreSummonNegateStat",
+      required: [
+        'const hollowcoreCode = "88225269"',
+        "Duel.SelectMatchingCard(tp,s.spcostfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.Remove(g+c,POS_FACEUP,REASON_COST)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsSetCard,SET_GEM_KNIGHT),tp,LOCATION_MZONE,0,nil)",
+        "tc:UpdateAttack(1000,RESET_EVENT|RESETS_STANDARD,c)",
+        "currentAttack(restoredResponse.session.state.cards.find((card) => card.uid === gemKnightFusionMonster.uid), restoredResponse.session.state)).toBe(3300)",
+        "currentAttack(restoredResponse.session.state.cards.find((card) => card.uid === gemKnightAlly.uid), restoredResponse.session.state)).toBe(2600)",
       ],
     },
     {
@@ -3743,6 +3776,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       shanawoPzoneSummonReviveStatDisable: 0,
       clearWingFastPzoneCostDisable: 0,
       electricJellyfishUmiSummonNegateStat: 0,
+      gemKnightHollowcoreSummonNegateStat: 0,
       steelCavalryBattleStartFinalStat: 0,
       steamedSabersaurusBattleStartSelfDestroyStat: 0,
       unifiedFrontDiscardFinalStatLock: 0,
