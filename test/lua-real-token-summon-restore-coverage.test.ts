@@ -4,22 +4,24 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const tokenSummonFixtureCount = 4;
+const tokenSummonFixtureCount = 5;
 const tokenSummonKindCounts = {
   battleDestroyedStepTokenSummon: 1,
+  crossFieldDestroyDualTokenStat: 1,
   phaseEndTokenSelfDestroy: 1,
   previousOnFieldToGraveMandatoryTokenSummon: 1,
   spellStepTokenSummonOathLock: 1,
 } satisfies Record<TokenSummonKind, number>;
 const tokenSummonSemanticVariantCounts = {
+  demiurgeSpellTrapDestroyDualTokenStat: 1,
   fiendishEnginePhaseEndTokenSelfDestroy: 1,
   jurracStaurikoBattleDestroyedStepTokenSummon: 1,
   oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 1,
   scapegoatStepSummonOathLock: 1,
 } satisfies Record<TokenSummonSemanticVariant, number>;
 
-type TokenSummonKind = "battleDestroyedStepTokenSummon" | "phaseEndTokenSelfDestroy" | "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
-type TokenSummonSemanticVariant = "fiendishEnginePhaseEndTokenSelfDestroy" | "jurracStaurikoBattleDestroyedStepTokenSummon" | "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock";
+type TokenSummonKind = "battleDestroyedStepTokenSummon" | "crossFieldDestroyDualTokenStat" | "phaseEndTokenSelfDestroy" | "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
+type TokenSummonSemanticVariant = "demiurgeSpellTrapDestroyDualTokenStat" | "fiendishEnginePhaseEndTokenSelfDestroy" | "jurracStaurikoBattleDestroyedStepTokenSummon" | "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock";
 
 describe("Lua real token summon restore coverage", () => {
   it("requires token summon fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -98,6 +100,20 @@ describe("Lua real token summon restore coverage", () => {
 function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-demiurge-ema-spelltrap-token-stat.test.ts",
+      kind: "crossFieldDestroyDualTokenStat",
+      required: [
+        'const demiurgeCode = "26364381"',
+        "restores cross-field Spell/Trap targets into destroy, dual Token step summon, and ATK gain",
+        "Duel.SetOperationInfo(0,CATEGORY_TOKEN,0,2,PLAYER_ALL,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,0,2,PLAYER_ALL,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,tp,1600)",
+        "Duel.SpecialSummonStep(token1,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.SpecialSummonStep(token2,0,tp,1-tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.SpecialSummonComplete()",
+      ],
+    },
+    {
       file: "test/lua-real-script-jurrac-stauriko-battle-destroyed-token-step.test.ts",
       kind: "battleDestroyedStepTokenSummon",
       required: [
@@ -161,6 +177,21 @@ function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind;
 
 function tokenSummonSemanticVariants(): Array<{ file: string; kind: TokenSummonSemanticVariant; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-demiurge-ema-spelltrap-token-stat.test.ts",
+      kind: "demiurgeSpellTrapDestroyDualTokenStat",
+      required: [
+        "typesToken",
+        "raceFairy",
+        "attributeLight",
+        "{ category: 0x400, targetUids: [], count: 2, player: 0, parameter: 0 }",
+        "{ category: 0x200, targetUids: [], count: 2, player: 0, parameter: 0 }",
+        "{ category: 0x200000, targetUids: [demiurge.uid], count: 1, player: 0, parameter: 1600 }",
+        'eventName: "destroyed"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-fiendish-engine-token-end-destroy.test.ts",
       kind: "fiendishEnginePhaseEndTokenSelfDestroy",
@@ -229,6 +260,7 @@ function countTokenSummonKinds(fixtures: Array<{ kind: TokenSummonKind }>): Reco
     },
     {
       battleDestroyedStepTokenSummon: 0,
+      crossFieldDestroyDualTokenStat: 0,
       phaseEndTokenSelfDestroy: 0,
       previousOnFieldToGraveMandatoryTokenSummon: 0,
       spellStepTokenSummonOathLock: 0,
@@ -245,6 +277,7 @@ function countTokenSummonSemanticVariants(
       return counts;
     },
     {
+      demiurgeSpellTrapDestroyDualTokenStat: 0,
       fiendishEnginePhaseEndTokenSelfDestroy: 0,
       jurracStaurikoBattleDestroyedStepTokenSummon: 0,
       oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 0,

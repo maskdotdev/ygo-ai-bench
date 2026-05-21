@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 266;
+export const operationFixtureCount = 267;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -38,6 +38,7 @@ export const operationKindCounts = {
   controlSwap: 1,
   damageLinkedAtkDown: 1,
   fusionLinkMaterialDeckdesStat: 1,
+  crossFieldSpellTrapDestroyDualTokenStat: 1,
   releaseTargetZeroBattleBurn: 1,
   detachBattleDestroyBurnAtkDestroyedBurn: 1,
   banishedToGraveReturn: 1,
@@ -243,6 +244,7 @@ export type OperationKind =
   | "controlSwap"
   | "damageLinkedAtkDown"
   | "fusionLinkMaterialDeckdesStat"
+  | "crossFieldSpellTrapDestroyDualTokenStat"
   | "releaseTargetZeroBattleBurn"
   | "detachBattleDestroyBurnAtkDestroyedBurn"
   | "banishedToGraveReturn"
@@ -764,6 +766,30 @@ export function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'eventName: "breakEffect"',
         'eventName: "specialSummoned"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-demiurge-ema-spelltrap-token-stat.test.ts",
+      kind: "crossFieldSpellTrapDestroyDualTokenStat",
+      required: [
+        "restores cross-field Spell/Trap targets into destroy, dual Token step summon, and ATK gain",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_TOKEN+CATEGORY_SPECIAL_SUMMON+CATEGORY_ATKCHANGE)",
+        "Duel.GetTargetGroup(Card.IsSpellTrap,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,nil)",
+        "sg:GetClassCount(Card.GetControler,nil)==2",
+        "aux.SelectUnselectGroup(g,e,tp,2,2,s.rescon,0)",
+        "Duel.SetTargetCard(tg)",
+        "Duel.GetTargetCards(e)",
+        "Duel.Destroy(tg,REASON_EFFECT)",
+        "Duel.BreakEffect()",
+        "Duel.SpecialSummonStep(token1,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.SpecialSummonStep(token2,0,tp,1-tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.SpecialSummonComplete()",
+        "c:UpdateAttack(1600)",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
       ],
     },
     {
@@ -4729,6 +4755,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       controlSwap: 0,
       damageLinkedAtkDown: 0,
       fusionLinkMaterialDeckdesStat: 0,
+      crossFieldSpellTrapDestroyDualTokenStat: 0,
       releaseTargetZeroBattleBurn: 0,
       detachBattleDestroyBurnAtkDestroyedBurn: 0,
       banishedToGraveReturn: 0,
