@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 287;
+export const operationFixtureCount = 288;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -200,6 +200,7 @@ export const operationKindCounts = {
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
   targetDisableFinalImmunity: 1,
   targetImmuneDelayedGraveDestroyStat: 1,
+  targetSendFusionStat: 1,
   spellDraw: 1,
   trapDraw: 1,
   trapReclamationReturn: 1,
@@ -426,6 +427,7 @@ export type OperationKind =
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "targetDisableFinalImmunity"
   | "targetImmuneDelayedGraveDestroyStat"
+  | "targetSendFusionStat"
   | "targetSendStatDelayedSet"
   | "spellDraw"
   | "trapDraw"
@@ -1841,6 +1843,30 @@ export function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'eventName: "sentToGraveyard"',
         "currentAttack(",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cruel-whale-frightfur-send-stat.test.ts",
+      kind: "targetSendFusionStat",
+      required: [
+        "restores targeted Fusion ATK gain after sending a Frightfur card from Deck to GY",
+        "Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_EDGE_IMP),aux.FilterBoolFunctionEx(Card.IsSetCard,SET_FLUFFAL))",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e1:SetCondition(function(e) return e:GetHandler():IsFusionSummoned() end)",
+        "aux.SelectUnselectGroup(g,e,tp,2,2,aux.dpcheck(Card.GetControler),1,tp,HINTMSG_DESTROY)",
+        "e2:SetCategory(CATEGORY_TOGRAVE+CATEGORY_ATKCHANGE)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e2:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_DECK|LOCATION_EXTRA)",
+        "Duel.SelectMatchingCard(tp,s.gyfilter,tp,LOCATION_DECK|LOCATION_EXTRA,0,1,1,nil):GetFirst()",
+        "Duel.SendtoGrave(sc,REASON_EFFECT)>0",
+        "e1:SetValue(tc:GetBaseAttack()/2)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        'eventName: "becameTarget"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack",
       ],
     },
     {
@@ -5417,6 +5443,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
       targetDisableFinalImmunity: 0,
       targetImmuneDelayedGraveDestroyStat: 0,
+      targetSendFusionStat: 0,
       trapMonsterStatSummonRedirect: 0,
       spellDraw: 0,
       trapDraw: 0,
