@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 279;
+export const operationFixtureCount = 280;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -83,6 +83,7 @@ export const operationKindCounts = {
   groupBanishCountStat: 1,
   handBanishDrawStat: 1,
   discardCostSpecialSummonGroupDestroy: 1,
+  discardCostSpecialSummonTargetDestroyBattleStartDestroy: 1,
   discardCostGraveToDeckTop: 1,
   discardCostSpecialSearchReleaseStat: 1,
   targetStatImmuneSelfBanishSearch: 1,
@@ -301,6 +302,7 @@ export type OperationKind =
   | "groupBanishCountStat"
   | "handBanishDrawStat"
   | "discardCostSpecialSummonGroupDestroy"
+  | "discardCostSpecialSummonTargetDestroyBattleStartDestroy"
   | "discardCostGraveToDeckTop"
   | "discardCostSpecialSearchReleaseStat"
   | "targetStatImmuneSelfBanishSearch"
@@ -440,6 +442,28 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-mermail-abyssbalaen-discard-release-battle.test.ts",
+      kind: "discardCostSpecialSummonTargetDestroyBattleStartDestroy",
+      required: [
+        "restores four-card discard self Special Summon into mandatory target destroy and ATK gain",
+        "restores release-cost Main Phase ignition into temporary battle-start defense destroy trigger",
+        "Duel.DiscardHand(tp,s.cfilter,4,4,REASON_COST|REASON_DISCARD,e:GetHandler())",
+        "Duel.SpecialSummon(c,1,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY)",
+        "return e:GetHandler():GetSummonType()==SUMMON_TYPE_SPECIAL+1",
+        "Duel.SelectTarget(tp,aux.TRUE,tp,0,LOCATION_ONFIELD,1,ct,nil)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "Duel.CheckReleaseGroupCost(tp,s.rfilter,1,false,nil,e:GetHandler())",
+        "Duel.SelectReleaseGroupCost(tp,s.rfilter,1,1,false,nil,e:GetHandler())",
+        "Duel.Release(g,REASON_COST)",
+        "e1:SetCode(EVENT_BATTLE_START)",
+        "Duel.GetAttacker()==e:GetHandler() and d~=nil and d:IsDefensePos()",
+        "Duel.Destroy(d,REASON_EFFECT)",
+        "eventName: \"battleStarted\"",
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-sacred-fire-king-garunix-destroyed-summon-stat.test.ts",
       kind: "simultaneousDestroyedSelfSummonDestroyStat",
@@ -5098,6 +5122,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       operatedDeckdesStat: 0,
       damageRecoverRaceCountStat: 0,
       discardCostSpecialSummonGroupDestroy: 0,
+      discardCostSpecialSummonTargetDestroyBattleStartDestroy: 0,
       discardCostGraveToDeckTop: 0,
       discardCostSpecialSearchReleaseStat: 0,
       targetStatImmuneSelfBanishSearch: 0,

@@ -73,6 +73,7 @@ const luaDarkMagicExpandedCode = "111280";
 const luaEbonArrowCode = "88341502";
 const luaDivineEvolutionCode = "7373632";
 const luaMiniGutsCode = "99004752";
+const luaMermailAbyssbalaenCode = "75180828";
 const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
 const luaDaiDanceCode = "50696588";
@@ -718,6 +719,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownSelfEndPhaseSendEffect(effect) ||
     isKnownEbonArrowBattleDestroyingDamageEffect(effect) ||
     isKnownMiniGutsBattleDestroyedDamageEffect(effect) ||
+    isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect) ||
     isKnownDivineEvolutionAttackAnnounceSendEffect(effect) ||
     isKnownOuroborosSageAttackLimitWatcherEffect(effect) ||
     isKnownOuroborosSageAttackDoubleEffect(effect) ||
@@ -887,6 +889,29 @@ function isKnownMiniGutsBattleDestroyedDamageEffect(effect: SerializedDuelEffect
     effect.sourceUid !== undefined &&
     effect.labelObjectUid !== undefined &&
     effect.reset !== undefined;
+}
+function isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaMermailAbyssbalaenCode}:`)) &&
+    effect.event === "trigger" &&
+    effect.code === 1132 &&
+    effect.triggerEvent === "battleStarted" &&
+    effect.sourceUid !== undefined &&
+    effect.reset !== undefined;
+}
+function mermailAbyssbalaenBattleStartDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle;
+    const target = battle?.targetUid ? ctx.duel.cards.find((card) => card.uid === battle.targetUid) : undefined;
+    if (!target || (target.position !== "faceUpDefense" && target.position !== "faceDownDefense")) return;
+    try {
+      destroyDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect | duelReason.destroy, ctx.player, "graveyard", {
+        eventReasonCardUid: effect.sourceUid,
+        ...effectReasonIdPayload(effect),
+      });
+    } catch {
+      // EDOPro-style temporary battle-start triggers do nothing if the target stops being destroyable.
+    }
+  };
 }
 function isKnownDivineEvolutionCannotNegateEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith(`lua:${luaDivineEvolutionCode}:`)) &&
@@ -1307,6 +1332,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownCelestialMagicianEndSearchEffect(effect)) return celestialMagicianEndSearchOperation(effect);
   if (isKnownEbonArrowBattleDestroyingDamageEffect(effect)) return ebonArrowBattleDestroyingDamageOperation(effect);
   if (isKnownMiniGutsBattleDestroyedDamageEffect(effect)) return miniGutsBattleDestroyedDamageOperation(effect);
+  if (isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect)) return mermailAbyssbalaenBattleStartDestroyOperation(effect);
   if (isKnownDivineEvolutionAttackAnnounceSendEffect(effect)) return divineEvolutionAttackAnnounceSendOperation(effect);
   if (isKnownOuroborosSageAttackLimitWatcherEffect(effect)) return ouroborosSageAttackLimitWatcherOperation(effect);
   if (isKnownOuroborosSageAttackDoubleEffect(effect)) return ouroborosSageAttackDoubleOperation(effect);
