@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 280;
+export const operationFixtureCount = 281;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -108,6 +108,7 @@ export const operationKindCounts = {
   fieldDestroyAttackLock: 1,
   fieldDestroyPlantsPreviousAtkRevive: 1,
   flipTargetDestroy: 1,
+  pzoneFinalStatSelfDestroyRevive: 1,
   handSelfToGraveFusionStatSummonSearch: 1,
   fusionDeckMaterials: 1,
   graveReviveEquipPositionStat: 1,
@@ -327,6 +328,7 @@ export type OperationKind =
   | "fieldDestroyAttackLock"
   | "fieldDestroyPlantsPreviousAtkRevive"
   | "flipTargetDestroy"
+  | "pzoneFinalStatSelfDestroyRevive"
   | "handSelfToGraveFusionStatSummonSearch"
   | "fusionDeckMaterials"
   | "graveReviveEquipPositionStat"
@@ -442,6 +444,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-black-fang-magician-pzone-destroy-revive.test.ts",
+      kind: "pzoneFinalStatSelfDestroyRevive",
+      required: [
+        "restores PZONE target halve into self-destroyed delayed DARK Spellcaster revive",
+        "Pendulum.AddProcedure(c)",
+        "e1:SetRange(LOCATION_PZONE)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,e:GetHandler(),1,0,0)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(math.floor(tc:GetAttack()/2))",
+        "Duel.BreakEffect()",
+        "Duel.Destroy(c,REASON_EFFECT)",
+        "e3:SetProperty(EFFECT_FLAG_DELAY+EFFECT_FLAG_CARD_TARGET)",
+        "e3:SetCode(EVENT_DESTROYED)",
+        "return r&(REASON_EFFECT|REASON_BATTLE)~=0",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-mermail-abyssbalaen-discard-release-battle.test.ts",
       kind: "discardCostSpecialSummonTargetDestroyBattleStartDestroy",
@@ -5147,6 +5170,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fieldDestroyPlantsPreviousAtkRevive: 0,
       flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
+      pzoneFinalStatSelfDestroyRevive: 0,
       handSelfToGraveFusionStatSummonSearch: 0,
       fusionDeckMaterials: 0,
       graveReviveEquipPositionStat: 0,
