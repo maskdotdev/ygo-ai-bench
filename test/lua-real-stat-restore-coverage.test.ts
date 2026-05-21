@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 122;
+const statFixtureCount = 123;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -98,7 +98,7 @@ const statKindCounts = {
   trapDetachOperatedDestroyAttackUpdate: 1,
   selfBanishTargetSetcodeAttackDefenseUpdate: 1,
   selfBanishSelectEffectDestroyFinalAttack: 1,
-  targetedDamageStepAttackUpdate: 2,
+  targetedDamageStepAttackUpdate: 3,
   targetedDamageStepDefenseUpdate: 1,
   targetedIgnitionDisable: 1,
   toGraveTargetFinalAttackHalve: 1,
@@ -1094,6 +1094,21 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid)!, restoredOpen.session.state)).toBe(3300)",
         "operationInfos",
         "eventHistory",
+      ],
+    },
+    {
+      file: "test/lua-real-script-phantom-knights-wing-stat-revive-redirect.test.ts",
+      kind: "targetedDamageStepAttackUpdate",
+      required: [
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(500)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_COUNT)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid)!, restoredOpen.session.state)).toBe(2300)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+        "operationInfos",
       ],
     },
     {

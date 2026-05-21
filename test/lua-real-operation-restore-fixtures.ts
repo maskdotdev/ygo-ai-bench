@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 327;
+export const operationFixtureCount = 328;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -122,6 +122,7 @@ export const operationKindCounts = {
   discardCostGraveToDeckTop: 1,
   discardCostSpecialSearchReleaseStat: 1,
   targetStatImmuneSelfBanishSearch: 1,
+  targetProtectSelfBanishReviveRedirect: 1,
   trapMonsterStatSummonRedirect: 2,
   directDamage: 1,
   detachDirectDamage: 1,
@@ -385,6 +386,7 @@ export type OperationKind =
   | "discardCostGraveToDeckTop"
   | "discardCostSpecialSearchReleaseStat"
   | "targetStatImmuneSelfBanishSearch"
+  | "targetProtectSelfBanishReviveRedirect"
   | "trapMonsterStatSummonRedirect"
   | "directDamage"
   | "detachDirectDamage"
@@ -6278,6 +6280,28 @@ export function operationFixtureFiles(): Array<{
         "host.messages).not.toContain",
       ],
     },
+    {
+      file: "test/lua-real-script-phantom-knights-wing-stat-revive-redirect.test.ts",
+      kind: "targetProtectSelfBanishReviveRedirect",
+      required: [
+        "restores Damage Step target protection and grave self-banish revive with leave-field redirect",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,g,1,0,0)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_COUNT)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)>0",
+        "e1:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)",
+        "e1:SetValue(LOCATION_REMOVED)",
+        'eventName: "becameTarget"',
+        'eventName: "banished"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "operationInfos",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: OperationKind;
@@ -6409,6 +6433,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardCostGraveToDeckTop: 0,
       discardCostSpecialSearchReleaseStat: 0,
       targetStatImmuneSelfBanishSearch: 0,
+      targetProtectSelfBanishReviveRedirect: 0,
       directDamage: 0,
       detachDirectDamage: 0,
       detachDisableFinalStat: 0,
