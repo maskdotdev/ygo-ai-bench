@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 302;
+export const operationFixtureCount = 303;
 export const operationKindCounts = {
+  armedDragonThresholdQuickWipe: 1,
   persistentLinkCountStatBattledDestroy: 1,
   attackAnnounceStatExactSpendFieldDestroy: 1,
   linkAttributeCostDestroyFlag: 1,
@@ -243,6 +244,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "armedDragonThresholdQuickWipe"
   | "persistentLinkCountStatBattledDestroy"
   | "attackAnnounceStatExactSpendFieldDestroy"
   | "linkAttributeCostDestroyFlag"
@@ -486,6 +488,36 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-armed-dragon-thunder-lv10-quick-wipe.test.ts",
+      kind: "armedDragonThresholdQuickWipe",
+      required: [
+        "restores flagged threshold effects, opponent-turn discard destroy boost, and 10000 ATK field wipe",
+        'Duel.LoadCardScript("c59464593.lua")',
+        "Duel.IsChainSolving()",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e1:SetValue(59464593)",
+        "e10:SetCode(EFFECT_CANNOT_CHANGE_CONTROL)",
+        "e100:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e1000:SetType(EFFECT_TYPE_QUICK_O)",
+        "e1000:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "return Duel.IsTurnPlayer(1-tp) and s.atkcon(1000)(e,tp,eg,ep,ev,re,r,rp)",
+        "Duel.IsExistingMatchingCard(Card.IsAbleToGraveAsCost,tp,LOCATION_HAND,0,1,nil)",
+        "Duel.DiscardHand(tp,Card.IsAbleToGraveAsCost,1,1,REASON_COST)",
+        "Duel.SelectTarget(tp,nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,c)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,tp,0)",
+        "local tc=Duel.GetFirstTarget()",
+        "tc:IsRelateToEffect(e) and Duel.Destroy(tc,REASON_EFFECT)>0",
+        "c:UpdateAttack(1000)",
+        "e10000:SetType(EFFECT_TYPE_IGNITION)",
+        "Duel.GetMatchingGroup(nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,e:GetHandler())",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        'eventName: "becameTarget"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-zero-extra-link-persistent-stat-destroy.test.ts",
       kind: "persistentLinkCountStatBattledDestroy",
@@ -5654,6 +5686,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      armedDragonThresholdQuickWipe: 0,
       persistentLinkCountStatBattledDestroy: 0,
       attackAnnounceStatExactSpendFieldDestroy: 0,
       linkAttributeCostDestroyFlag: 0,
