@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 332;
+export const operationFixtureCount = 333;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -104,6 +104,7 @@ export const operationKindCounts = {
   chainNegateCostBanishDestroy: 1,
   chainNegateFlagStat: 1,
   chainNegateCopyInheritStatRevive: 1,
+  chainNegateReturnExtraLeaveFieldStat: 1,
   chainLinkedZoneDisable: 1,
   chainDetachControlLock: 1,
   chainSolvedAnnounceNegate: 1,
@@ -369,6 +370,7 @@ export type OperationKind =
   | "chainNegateCostBanishDestroy"
   | "chainNegateFlagStat"
   | "chainNegateCopyInheritStatRevive"
+  | "chainNegateReturnExtraLeaveFieldStat"
   | "chainLinkedZoneDisable"
   | "chainDetachControlLock"
   | "chainSolvedAnnounceNegate"
@@ -5494,6 +5496,32 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-springans-interluder-chain-negate-extra-stat.test.ts",
+      kind: "chainNegateReturnExtraLeaveFieldStat",
+      required: [
+        "restores Xyz return to Extra into SelectEffect chain negate and leave-field ATK loss trigger",
+        "e2:SetCode(EVENT_CHAINING)",
+        "return rp==1-tp",
+        "Duel.SetOperationInfo(0,CATEGORY_TOEXTRA,nil,1,tp,LOCATION_MZONE)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DISABLE,eg,1,tp,0)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)",
+        "Duel.SendtoDeck(sc,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "local op=Duel.SelectEffect(tp,",
+        "Duel.NegateEffect(ev)",
+        "e3:SetCode(EVENT_LEAVE_FIELD)",
+        "c:IsPreviousPosition(POS_FACEUP) and c:IsPreviousLocation(LOCATION_MZONE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-1000)",
+        'api: "SelectEffect"',
+        'eventName: "sentToDeck"',
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        "currentAttack",
+        "operationInfos",
+        "host.messages).not.toContain",
+      ],
+    },
+    {
       file: "test/lua-real-script-painful-choice-deck-split.test.ts",
       kind: "deckSplit",
       required: [
@@ -6511,6 +6539,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainNegateCostBanishDestroy: 0,
       chainNegateFlagStat: 0,
       chainNegateCopyInheritStatRevive: 0,
+      chainNegateReturnExtraLeaveFieldStat: 0,
       chainLinkedZoneDisable: 0,
       chainDetachControlLock: 0,
       chainSolvedAnnounceNegate: 0,
