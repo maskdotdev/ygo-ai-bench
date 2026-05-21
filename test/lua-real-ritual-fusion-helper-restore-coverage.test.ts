@@ -1,9 +1,9 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 43, ritual: 18 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 44, ritual: 18 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
-  contactFusionOpponentMaterial: 1, contactFusionSendCost: 1,
+  contactFusionOpponentMaterial: 1, contactFusionSendCost: 2,
   customRitualOperation: 1,
   fusionAddProcCode2ExactCodeMetadata: 1,
   fusionAddProcCodeFunPredicateMetadata: 1,
@@ -74,7 +74,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(61);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(62);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -800,6 +800,22 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "expect(restored.session.state.pendingTriggers.some((trigger) => trigger.sourceUid === andabata!.uid && trigger.eventName === \"specialSummoned\")).toBe(true)",
         "expect(getLegalActions(restored.session, 0).some((action) => action.type === \"activateTrigger\" && action.uid === andabata!.uid)).toBe(true)",
         "expect(getLegalActions(restored.session, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === andabata!.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-timaeus-contact-grave-fusion.test.ts",
+      kind: "contactFusionSendCost",
+      families: ["fusion"],
+      required: [
+        "Fusion.AddProcMix(c,true,true,80019195,85800949,84565800)",
+        "Fusion.AddContactProc(c,s.contactfil,s.contactop,true)",
+        "Duel.SendtoGrave(g,REASON_COST|REASON_MATERIAL)",
+        'summonType: "fusion"',
+        "summonMaterialUids: [materialA.uid, materialB.uid, materialC.uid]",
+        "reason: duelReason.cost | duelReason.material",
+        'eventName: "specialSummoned"',
+        'eventName === "sentToGraveyard"',
+        "expect(getLuaRestoreLegalActions(restoredAfterSummon, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === timaeus.uid)).toBe(false)",
       ],
     },
     {
