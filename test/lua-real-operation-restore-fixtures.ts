@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 218;
+export const operationFixtureCount = 219;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -24,6 +24,7 @@ export const operationKindCounts = {
   controlReturn: 1,
   controlSwap: 1,
   damageLinkedAtkDown: 1,
+  fusionLinkMaterialDeckdesStat: 1,
   releaseTargetZeroBattleBurn: 1,
   detachBattleDestroyBurnAtkDestroyedBurn: 1,
   banishedToGraveReturn: 1,
@@ -183,6 +184,7 @@ export type OperationKind =
   | "controlReturn"
   | "controlSwap"
   | "damageLinkedAtkDown"
+  | "fusionLinkMaterialDeckdesStat"
   | "releaseTargetZeroBattleBurn"
   | "detachBattleDestroyBurnAtkDestroyedBurn"
   | "banishedToGraveReturn"
@@ -669,6 +671,31 @@ export function operationFixtureFiles(): Array<{
         'eventName: "damageDealt"',
         "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === opponentA.uid), restoredResolved.session.state)).toBe(1600)",
         "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === opponentB.uid), restoredResolved.session.state)).toBe(1400)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cyberse-clock-dragon-fusion-mill-stat.test.ts",
+      kind: "fusionLinkMaterialDeckdesStat",
+      required: [
+        "restores Fusion.AddProcMixRep Link material metadata, operated Deck mill, ATK gain, and attack lock",
+        "Fusion.AddProcMixRep(c,true,true,aux.FilterBoolFunctionEx(Card.IsType,TYPE_LINK),1,99,21830679)",
+        "e1:SetCategory(CATEGORY_TOGRAVE+CATEGORY_ATKCHANGE+CATEGORY_DECKDES)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():IsFusionSummoned()",
+        "c:GetMaterial():Filter(Card.IsType,nil,TYPE_LINK):GetSum(Card.GetLink)",
+        "Duel.IsPlayerCanDiscardDeck(tp,ct)",
+        "Duel.SetOperationInfo(0,CATEGORY_DECKDES,nil,0,tp,ct)",
+        "Duel.DiscardDeck(tp,ct,REASON_EFFECT)",
+        "Duel.GetOperatedGroup():FilterCount(Card.IsLocation,nil,LOCATION_GRAVE)*1000",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_CANNOT_ATTACK)",
+        "Duel.RegisterEffect(e2,tp)",
+        "e2:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e3:SetCode(EFFECT_CANNOT_SELECT_BATTLE_TARGET)",
+        "operationInfos",
+        'eventName: "discarded"',
+        "currentAttack).toBe(4500)",
+        "summonType: \"fusion\"",
       ],
     },
     {
@@ -3464,6 +3491,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       controlReturn: 0,
       controlSwap: 0,
       damageLinkedAtkDown: 0,
+      fusionLinkMaterialDeckdesStat: 0,
       releaseTargetZeroBattleBurn: 0,
       detachBattleDestroyBurnAtkDestroyedBurn: 0,
       banishedToGraveReturn: 0,
