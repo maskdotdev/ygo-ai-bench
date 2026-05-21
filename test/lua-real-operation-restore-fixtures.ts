@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 326;
+export const operationFixtureCount = 327;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -244,7 +244,7 @@ export const operationKindCounts = {
   targetCardsCounterDisable: 1,
   targetDisableStat: 2,
   targetSendStatDelayedSet: 1,
-  targetBanish: 1,
+  targetBanish: 2,
   targetBanishDiscardCost: 1,
   targetDestroy: 2,
   targetDestroyDamagePzoneMove: 1,
@@ -5177,6 +5177,26 @@ export function operationFixtureFiles(): Array<{
         'eventName: "banished"',
         'location: "banished"',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-kashtira-overlap-banish-stat-negate.test.ts",
+      kind: "targetBanish",
+      required: [
+        "restores target ATK boost banish activation and removed-card monster negate trigger",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_REMOVE)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,tc,1,0,1500)",
+        "Duel.SetOperationInfo(0,CATEGORY_REMOVE,nil,1,PLAYER_EITHER,LOCATION_HAND|LOCATION_GRAVE|LOCATION_MZONE)",
+        "Duel.Remove(rg,POS_FACEUP,REASON_EFFECT)",
+        "e2:SetCode(EVENT_REMOVE)",
+        "Duel.SelectTarget(tp,s.disfilter,tp,0,LOCATION_MZONE,1,1,nil):GetFirst()",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,tc,1,0,0)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        'eventName: "becameTarget"',
+        'eventName: "banished"',
+        "currentAttack",
+        "operationInfos",
       ],
     },
     {

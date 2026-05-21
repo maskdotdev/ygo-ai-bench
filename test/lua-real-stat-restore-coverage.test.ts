@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 121;
+const statFixtureCount = 122;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -98,7 +98,7 @@ const statKindCounts = {
   trapDetachOperatedDestroyAttackUpdate: 1,
   selfBanishTargetSetcodeAttackDefenseUpdate: 1,
   selfBanishSelectEffectDestroyFinalAttack: 1,
-  targetedDamageStepAttackUpdate: 1,
+  targetedDamageStepAttackUpdate: 2,
   targetedDamageStepDefenseUpdate: 1,
   targetedIgnitionDisable: 1,
   toGraveTargetFinalAttackHalve: 1,
@@ -1079,6 +1079,21 @@ function statFixtureFiles(): Array<{
         "e1:SetValue(700)",
         "currentAttack(restoredAttacker, restoredBoost.session.state)).toBe(2200)",
         "battleDamage).toEqual({ 0: 0, 1: 200 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-kashtira-overlap-banish-stat-negate.test.ts",
+      kind: "targetedDamageStepAttackUpdate",
+      required: [
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_REMOVE)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,tc,1,0,1500)",
+        "Duel.SetOperationInfo(0,CATEGORY_REMOVE,nil,1,PLAYER_EITHER,LOCATION_HAND|LOCATION_GRAVE|LOCATION_MZONE)",
+        "Duel.Remove(rg,POS_FACEUP,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid)!, restoredOpen.session.state)).toBe(3300)",
+        "operationInfos",
+        "eventHistory",
       ],
     },
     {
