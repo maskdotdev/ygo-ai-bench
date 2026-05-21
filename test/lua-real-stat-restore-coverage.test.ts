@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 43;
+const statFixtureCount = 44;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -31,6 +31,7 @@ const statKindCounts = {
   setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
   setFinalAttackDefenseHalveProcedure: 1,
+  setFinalAttackDefenseTargetDirectLock: 1,
   selfFinalAttackEndDestroy: 1,
   swapBaseAttackDefense: 1,
   singleRangeSetcodeConditionAttackUpdate: 1,
@@ -66,6 +67,7 @@ const statSemanticVariantCounts = {
   morphoButterspyPositionChangeTargetStat: 1,
   mukaMukaHandCountAttackDefense: 1,
   neoFlamvellSabreGraveCountThresholdStat: 1,
+  nordicRelicMegingjordFinalStatDirectLock: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   reliableGuardianTargetedDamageStepDefenseUpdate: 1,
@@ -88,7 +90,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -113,6 +115,7 @@ type StatSemanticVariant =
   | "morphoButterspyPositionChangeTargetStat"
   | "mukaMukaHandCountAttackDefense"
   | "neoFlamvellSabreGraveCountThresholdStat"
+  | "nordicRelicMegingjordFinalStatDirectLock"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
   | "plagueWolfFinalAttackEndDestroy"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
@@ -486,6 +489,22 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-nordic-relic-megingjord-final-stat-direct-lock.test.ts",
+      kind: "setFinalAttackDefenseTargetDirectLock",
+      required: [
+        'const megingjordCode = "86827882"',
+        "restores targeted Damage Step legal final ATK/DEF doubling and cannot-direct-attack lock",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,exc)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e3:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "currentAttack(state.cards.find((card) => card.uid === nordicTarget.uid)!, state)).toBe(2400)",
+        "currentDefense(state.cards.find((card) => card.uid === nordicTarget.uid)!, state)).toBe(1800)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-unified-front-discard-final-stat-lock.test.ts",
       kind: "setFinalAttackDefenseDiscardLock",
       required: [
@@ -785,6 +804,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setFinalAttackDefenseDiscardLock: 0,
       setFinalAttackDefenseDirectLock: 0,
       setFinalAttackDefenseHalveProcedure: 0,
+      setFinalAttackDefenseTargetDirectLock: 0,
       selfFinalAttackEndDestroy: 0,
       singleRangeSetcodeConditionAttackUpdate: 0,
       staticAttackAndExtraAttack: 0,
@@ -996,6 +1016,21 @@ function statSemanticVariants(): Array<{
         "restores thresholded GetFieldGroupCount opponent Graveyard ATK callback into battle damage",
         "stat:controller-field-group-count-threshold:0:16:lte4:600:gte8:-300:else0",
         "currentAttack(restoredHigh.session.state.cards.find((card) => card.uid === high.sabre.uid)!, restoredHigh.session.state)).toBe((high.sabre.data.attack ?? 0) - 300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nordic-relic-megingjord-final-stat-direct-lock.test.ts",
+      kind: "nordicRelicMegingjordFinalStatDirectLock",
+      required: [
+        'const megingjordCode = "86827882"',
+        "restores targeted Damage Step legal final ATK/DEF doubling and cannot-direct-attack lock",
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP",
+        "tc:GetBaseAttack()*2",
+        "tc:GetBaseDefense()*2",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        'eventName: "becameTarget"',
+        "value: 2400",
+        "value: 1800",
       ],
     },
     {
@@ -1299,6 +1334,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       morphoButterspyPositionChangeTargetStat: 0,
       mukaMukaHandCountAttackDefense: 0,
       neoFlamvellSabreGraveCountThresholdStat: 0,
+      nordicRelicMegingjordFinalStatDirectLock: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
       plagueWolfFinalAttackEndDestroy: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
