@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 283;
+export const operationFixtureCount = 284;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -108,6 +108,7 @@ export const operationKindCounts = {
   fieldRecoverStatTrigger: 1,
   fieldDestroyAttackLock: 1,
   fieldDestroyPlantsPreviousAtkRevive: 1,
+  fieldZoneDestroyReviveStat: 1,
   flipTargetDestroy: 1,
   pzoneFinalStatSelfDestroyRevive: 1,
   handSelfToGraveFusionStatSummonSearch: 1,
@@ -330,6 +331,7 @@ export type OperationKind =
   | "fieldRecoverStatTrigger"
   | "fieldDestroyAttackLock"
   | "fieldDestroyPlantsPreviousAtkRevive"
+  | "fieldZoneDestroyReviveStat"
   | "flipTargetDestroy"
   | "pzoneFinalStatSelfDestroyRevive"
   | "handSelfToGraveFusionStatSummonSearch"
@@ -1136,6 +1138,31 @@ export function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'eventName: "breakEffect"',
         'eventName: "specialSummoned"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-invasive-alien-field-destroy-revive.test.ts",
+      kind: "fieldZoneDestroyReviveStat",
+      required: [
+        "restores opponent Field Zone gated indestructibility, targeted destroy ATK gain, and grave self-summon",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "LOCATION_FZONE",
+        "e3:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e3:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,nil,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,tp,1000)",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e4:SetRange(LOCATION_GRAVE)",
+        "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "specialSummoned"',
+        "currentAttack(",
       ],
     },
     {
@@ -5214,6 +5241,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fieldRecoverStatTrigger: 0,
       fieldDestroyAttackLock: 0,
       fieldDestroyPlantsPreviousAtkRevive: 0,
+      fieldZoneDestroyReviveStat: 0,
       flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
       pzoneFinalStatSelfDestroyRevive: 0,
