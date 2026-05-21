@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 30;
+const statFixtureCount = 31;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -23,6 +23,7 @@ const statKindCounts = {
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
   selfFinalAttackEndDestroy: 1,
+  swapBaseAttackDefense: 1,
   singleRangeSetcodeConditionAttackUpdate: 1,
   staticAttackAndExtraAttack: 1,
   targetedDamageStepAttackUpdate: 1,
@@ -54,6 +55,7 @@ const statSemanticVariantCounts = {
   reliableGuardianTargetedDamageStepDefenseUpdate: 1,
   rushRecklesslyTargetedDamageStepAttackUpdate: 1,
   sangaPreDamageFinalAttackZero: 1,
+  shieldSwordSwapBaseAd: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
   steamroidDamageStepBattleSwingStat: 1,
@@ -63,7 +65,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -90,6 +92,7 @@ type StatSemanticVariant =
   | "royalRhinoChainDiceAttackUpdate"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
+  | "shieldSwordSwapBaseAd"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
   | "steamroidDamageStepBattleSwingStat"
@@ -366,6 +369,17 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-shield-sword-swap-base-ad.test.ts",
+      kind: "swapBaseAttackDefense",
+      required: [
+        "Duel.SetTargetCard(g)",
+        "EFFECT_SWAP_BASE_AD",
+        "currentBaseAttack(ownMonster, restoredChain.session.state)).toBe(900)",
+        "currentBaseAttack(opponentMonster, restoredChain.session.state)).toBe(2100)",
+        "battleDamage[0]).toBe(1200)",
+      ],
+    },
+    {
       file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
       kind: "targetedDamageStepAttackUpdate",
       required: [
@@ -550,6 +564,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       selfFinalAttackEndDestroy: 0,
       singleRangeSetcodeConditionAttackUpdate: 0,
       staticAttackAndExtraAttack: 0,
+      swapBaseAttackDefense: 0,
       targetedDamageStepAttackUpdate: 0,
       targetedDamageStepDefenseUpdate: 0,
       targetedPreDamageFinalAttack: 0,
@@ -807,6 +822,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-shield-sword-swap-base-ad.test.ts",
+      kind: "shieldSwordSwapBaseAd",
+      required: [
+        'const shieldSwordCode = "52097679"',
+        "restores SetTargetCard group activation into temporary EFFECT_SWAP_BASE_AD for all face-up monsters",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "EFFECT_SWAP_BASE_AD",
+        "players[0].lifePoints).toBe(6800)",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "skyscraperFieldDamageCalculationAttackBoost",
       required: [
@@ -910,6 +936,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       royalRhinoChainDiceAttackUpdate: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
+      shieldSwordSwapBaseAd: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
       steamroidDamageStepBattleSwingStat: 0,
