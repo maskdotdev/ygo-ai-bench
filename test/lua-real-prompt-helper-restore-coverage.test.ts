@@ -74,7 +74,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
   selectDisableFieldCount: 1,
   selectDisableFieldLoop: 1,
   selectDisableFieldMovement: 3,
-  selectEffectModeChoice: 5,
+  selectEffectModeChoice: 6,
   selectEffectYesNoReplacement: 1,
   selectFieldZoneLoop: 1,
   selectFieldZoneMirrorSummon: 1,
@@ -87,6 +87,7 @@ const promptHelperKindCounts: Record<PromptHelperKind, number> = {
 };
 const promptHelperSemanticVariantCounts: Record<PromptHelperSemanticVariant, number> = {
   apocavitiesCounterSelectDestroy: 1,
+  cyberEnergyShockTrapBranchPrompt: 1,
   gagagaMagicianAnnounceLevelChange: 1,
   gachiGachiSelectEffectYesNoReplacement: 1,
   gishkiPsycheloneTraitHandShuffle: 1,
@@ -116,6 +117,7 @@ const promptHelperSemanticVariantCounts: Record<PromptHelperSemanticVariant, num
 };
 const promptHelperSemanticVariantByFile: Record<string, PromptHelperSemanticVariant> = {
   "test/lua-real-script-apocavities-counter-select-effect.test.ts": "apocavitiesCounterSelectDestroy",
+  "test/lua-real-script-cyber-energy-shock-trap-branch-prompt.test.ts": "cyberEnergyShockTrapBranchPrompt",
   "test/lua-real-script-gagaga-magician-announce-level.test.ts": "gagagaMagicianAnnounceLevelChange",
   "test/lua-real-script-gachi-gachi-select-effect-yes-no.test.ts": "gachiGachiSelectEffectYesNoReplacement",
   "test/lua-real-script-gishki-psychelone-announce-traits.test.ts": "gishkiPsycheloneTraitHandShuffle",
@@ -182,7 +184,7 @@ describe("Lua real prompt helper restore coverage", () => {
   });
 
   it("keeps the representative prompt helper fixture inventory broad", () => {
-    expect(representativePromptHelperFixtures()).toHaveLength(27);
+    expect(representativePromptHelperFixtures()).toHaveLength(28);
   });
 
   it("keeps every officially-used prompt API represented by restore fixtures", () => {
@@ -286,6 +288,7 @@ type PromptHelperKind =
   | "selectYesNoNegateDestroy";
 type PromptHelperSemanticVariant =
   | "apocavitiesCounterSelectDestroy"
+  | "cyberEnergyShockTrapBranchPrompt"
   | "gagagaMagicianAnnounceLevelChange"
   | "gachiGachiSelectEffectYesNoReplacement"
   | "gishkiPsycheloneTraitHandShuffle"
@@ -448,6 +451,21 @@ function representativePromptHelperFixtures(): Array<{ file: string; kind: Promp
         "Duel.RemoveCounter(tp,1,1,COUNTER_CARIES,ct,REASON_COST)",
         "Duel.SetOperationInfo(0,CATEGORY_DESTROY,tc,1,tp,0)",
         "eventReason: duelReason.effect | duelReason.destroy",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cyber-energy-shock-trap-branch-prompt.test.ts",
+      kind: "selectEffectModeChoice",
+      apis: ["SelectEffect", "SelectYesNo"],
+      required: [
+        "restores trap destruction, optional SelectYesNo, SelectEffect branch prompt, and graveyard sends",
+        "const cyberEnergyShockCode = \"38265153\"",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "local op=Duel.SelectEffect(tp,",
+        "Duel.BreakEffect()",
+        'api: "SelectYesNo"',
+        'api: "SelectEffect"',
+        "eventName: \"destroyed\"",
       ],
     },
     {
