@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 217;
+export const operationFixtureCount = 218;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -11,6 +11,7 @@ export const operationKindCounts = {
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
   attackAnnounceStatDeckdes: 1,
+  tributeSearchSummonStatLock: 1,
   callCoinAtkChange: 1,
   coinNegateControl: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
@@ -169,6 +170,7 @@ export type OperationKind =
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
   | "attackAnnounceStatDeckdes"
+  | "tributeSearchSummonStatLock"
   | "callCoinAtkChange"
   | "coinNegateControl"
   | "costBanishDraw" | "costDiscardDraw"
@@ -370,6 +372,35 @@ export function operationFixtureFiles(): Array<{
         'eventName: "cardsDrawn"',
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-floowandereeze-empen-search-summon-stat.test.ts",
+      kind: "tributeSearchSummonStatLock",
+      required: [
+        "restores tribute-summoned search, opponent activation lock, and optional follow-up Normal Summon",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH+CATEGORY_SUMMON)",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "return e:GetHandler():IsTributeSummoned()",
+        "return c:IsSetCard(SET_FLOOWANDEREEZE) and c:IsSpellTrap() and c:IsAbleToHand()",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.BreakEffect()",
+        "Duel.ShuffleHand(tp)",
+        "Duel.Summon(tp,sc,true,nil)",
+        "e2:SetCode(EFFECT_CANNOT_ACTIVATE)",
+        "re:IsMonsterEffect()",
+        "e3:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "c:RegisterFlagEffect(id,RESET_CHAIN,0,1)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "operationInfos",
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        'summonType: "tribute"',
+        'summonType: "normal"',
       ],
     },
     {
@@ -3421,6 +3452,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,
       attackAnnounceStatDeckdes: 0,
+      tributeSearchSummonStatLock: 0,
       callCoinAtkChange: 0,
       coinNegateControl: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
