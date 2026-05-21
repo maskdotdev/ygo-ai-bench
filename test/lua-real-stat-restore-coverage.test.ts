@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 120;
+const statFixtureCount = 121;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -49,7 +49,7 @@ const statKindCounts = {
   eventChangePositionTargetAttackDefenseDrop: 1,
   fieldCounterCostBanishAttackUpdate: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
-  fieldGroupCountStat: 2,
+  fieldGroupCountStat: 3,
   fieldMatchingFaceupRaceCountStat: 2,
   fieldAttributeAttackUpdate: 3,
   fieldLinkSumAttackDefenseUpdate: 1,
@@ -847,6 +847,22 @@ function statFixtureFiles(): Array<{
         "stat:controller-field-group-count-threshold:0:16:lte4:600:gte8:-300:else0",
         "currentAttack(restoredLowSabre, restoredLow.session.state)).toBe((low.sabre.data.attack ?? 0) + 600)",
         "battleDamage).toEqual({ 0: 0, 1: 200 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hundred-dragon-level-attack-grave-protect.test.ts",
+      kind: "fieldGroupCountStat",
+      required: [
+        'const hundredCode = "90788081"',
+        "restores field-count Level/ATK ignition and TO_GRAVE Extra Deck summon indestructible-count grant",
+        "Duel.GetFieldGroupCount(tp,LOCATION_ONFIELD,0)",
+        "c:UpdateLevel(count,RESETS_STANDARD_DISABLE|RESET_PHASE|PHASE_END)",
+        "c:UpdateAttack(count*100,RESETS_STANDARD_DISABLE|RESET_PHASE|PHASE_END)",
+        "currentLevel(restoredOpen.session.state.cards.find((card) => card.uid === hundred.uid), restoredOpen.session.state)).toBe(7)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === hundred.uid), restoredOpen.session.state)).toBe(2100)",
+        "attackModifier: 300",
+        "levelModifier: 3",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 325;
+export const operationFixtureCount = 326;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -164,7 +164,7 @@ export const operationKindCounts = {
   groupToHand: 2,
   graveTargetToHand: 2,
   graveToDeckBottomDraw: 1,
-  groupLevelFinal: 1,
+  groupLevelFinal: 2,
   handDiscardDraw: 1,
   handRevealShuffleFinalAttack: 1,
   handSummonDefenseTargetHeroStat: 1,
@@ -4188,6 +4188,26 @@ export function operationFixtureFiles(): Array<{
         "currentLevel(restoredOpen.session.state.cards.find((card) => card.uid === sameAttack.uid), restoredOpen.session.state)).toBe(7)",
         "currentLevel(restoredLevelFinal.session.state.cards.find((card) => card.uid === sameDefense.uid), restoredLevelFinal.session.state)).toBe(7)",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hundred-dragon-level-attack-grave-protect.test.ts",
+      kind: "groupLevelFinal",
+      required: [
+        "restores field-count Level/ATK ignition and TO_GRAVE Extra Deck summon indestructible-count grant",
+        "e1:SetCategory(CATEGORY_LVCHANGE+CATEGORY_ATKCHANGE)",
+        "Duel.GetFieldGroupCount(tp,LOCATION_ONFIELD,0)",
+        "c:UpdateLevel(count,RESETS_STANDARD_DISABLE|RESET_PHASE|PHASE_END)",
+        "c:UpdateAttack(count*100,RESETS_STANDARD_DISABLE|RESET_PHASE|PHASE_END)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "Card.IsSummonLocation,LOCATION_EXTRA",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_COUNT)",
+        "EFFECT_FLAG_NO_TURN_RESET",
+        "destroyDuelCard",
+        "operationInfos",
+        "eventHistory",
+        "currentLevel",
+        "currentAttack",
       ],
     },
     {
