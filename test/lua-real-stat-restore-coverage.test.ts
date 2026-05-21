@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 52;
+const statFixtureCount = 53;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -44,7 +44,7 @@ const statKindCounts = {
   selfBanishTargetSetcodeAttackDefenseUpdate: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
-  preDamageSelfToGraveBattleMonsterStat: 2,
+  preDamageSelfToGraveBattleMonsterStat: 3,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
   xyzDetachAttributeExceptGroupStat: 1,
@@ -60,6 +60,7 @@ const statSemanticVariantCounts = {
   blackwingGaleProcedureFinalStatHalve: 1,
   royalRhinoChainDiceAttackUpdate: 1,
   catSharkDetachFinalStatIndestructible: 1,
+  scoreMelodiousPrecalcFinalStat: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
   armoredKappaOptionBattleProtection: 1,
@@ -143,6 +144,7 @@ type StatSemanticVariant =
   | "royalRhinoChainDiceAttackUpdate"
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
+  | "scoreMelodiousPrecalcFinalStat"
   | "shieldSwordSwapBaseAd"
   | "slateWarriorBattleDestroyedStatDrop"
   | "steadyHandsFinalStatDirectLock"
@@ -770,6 +772,21 @@ function statFixtureFiles(): Array<{
         "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === attacker.uid), restoredOpen.session.state)).toBe(2700)",
         "battleDamage).toEqual({ 0: 0, 1: 500 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-score-melodious-precalc-final-stat.test.ts",
+      kind: "preDamageSelfToGraveBattleMonsterStat",
+      required: [
+        'const scoreCode = "41767843"',
+        "restores hand SelfToGrave pre-damage Melodious battle opponent ATK/DEF final zeroing",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e1:SetCost(Cost.SelfToGrave)",
+        "a:IsSetCard(SET_MELODIOUS) and a:IsRelateToBattle()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === defender.uid), restoredOpen.session.state)).toBe(0)",
+        "battleDamage).toEqual({ 0: 0, 1: 1200 })",
       ],
     },
     {
@@ -1441,6 +1458,20 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-score-melodious-precalc-final-stat.test.ts",
+      kind: "scoreMelodiousPrecalcFinalStat",
+      required: [
+        'const scoreCode = "41767843"',
+        "Cost.SelfToGrave",
+        "Duel.GetAttacker()",
+        "Duel.GetAttackTarget()",
+        "SET_MELODIOUS",
+        "code: 102",
+        "code: 106",
+        "value: 0",
+      ],
+    },
+    {
       file: "test/lua-real-script-gem-merchant-damage-step-normal-stat.test.ts",
       kind: "gemMerchantDamageStepNormalStat",
       required: [
@@ -1606,6 +1637,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       royalRhinoChainDiceAttackUpdate: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
+      scoreMelodiousPrecalcFinalStat: 0,
       blackwingGaleProcedureFinalStatHalve: 0,
       shieldSwordSwapBaseAd: 0,
       slateWarriorBattleDestroyedStatDrop: 0,
