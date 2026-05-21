@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 50;
+const statFixtureCount = 51;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -44,7 +44,7 @@ const statKindCounts = {
   selfBanishTargetSetcodeAttackDefenseUpdate: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
-  preDamageSelfToGraveBattleMonsterStat: 1,
+  preDamageSelfToGraveBattleMonsterStat: 2,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
   xyzDetachAttributeExceptGroupStat: 1,
@@ -67,6 +67,7 @@ const statSemanticVariantCounts = {
   fairyKingAlbverdichDetachAttributeExceptStat: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
+  gemMerchantDamageStepNormalStat: 1,
   guardragonShieldLinkSumStat: 1,
   jurassicWorldTargetBoolFunctionRaceStat: 1,
   juggernautLiebeDetachStatAttackLock: 1,
@@ -118,6 +119,7 @@ type StatSemanticVariant =
   | "cyberDragonSiegerCodeStatDamagePrevention"
   | "fairyKingAlbverdichDetachAttributeExceptStat"
   | "fortuneLadyPastCallbackSetAtkDef"
+  | "gemMerchantDamageStepNormalStat"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
   | "guardragonShieldLinkSumStat"
   | "gracefulDiceDamageStepGroupStat"
@@ -736,6 +738,22 @@ function statFixtureFiles(): Array<{
         "reason: duelReason.cost",
         "currentAttack(restoredBattle.session.state.cards.find((card) => card.uid === enabler.uid), restoredBattle.session.state)).toBe(2800)",
         "battleDamage[1]).toBe(1000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gem-merchant-damage-step-normal-stat.test.ts",
+      kind: "preDamageSelfToGraveBattleMonsterStat",
+      required: [
+        'const gemMerchantCode = "53408006"',
+        "restores hand SelfToGrave Damage Step boost for an attacking EARTH Normal monster",
+        "Cost.SelfToGrave",
+        "c:IsAttribute(ATTRIBUTE_EARTH) and c:IsType(TYPE_NORMAL)",
+        "local a=Duel.GetAttacker()",
+        "local d=Duel.GetAttackTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === attacker.uid), restoredOpen.session.state)).toBe(2700)",
+        "battleDamage).toEqual({ 0: 0, 1: 500 })",
       ],
     },
     {
@@ -1407,6 +1425,19 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gem-merchant-damage-step-normal-stat.test.ts",
+      kind: "gemMerchantDamageStepNormalStat",
+      required: [
+        'const gemMerchantCode = "53408006"',
+        "Cost.SelfToGrave",
+        "c:IsAttribute(ATTRIBUTE_EARTH) and c:IsType(TYPE_NORMAL)",
+        "Duel.GetCurrentPhase()",
+        "Duel.GetAttacker()",
+        "Duel.GetAttackTarget()",
+        "value: 1000",
+      ],
+    },
+    {
       file: "test/lua-real-script-spright-gamma-burst-group-self-banish-stat.test.ts",
       kind: "sprightGammaBurstGroupSelfBanishStat",
       required: [
@@ -1523,6 +1554,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       digitJammingPrecalcDestroyedStat: 0,
       fairyKingAlbverdichDetachAttributeExceptStat: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
+      gemMerchantDamageStepNormalStat: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
       guardragonShieldLinkSumStat: 0,
       gracefulDiceDamageStepGroupStat: 0,
