@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 32;
+const statFixtureCount = 33;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -22,6 +22,7 @@ const statKindCounts = {
   setAttack: 1,
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
+  setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
   selfFinalAttackEndDestroy: 1,
   swapBaseAttackDefense: 1,
@@ -58,6 +59,7 @@ const statSemanticVariantCounts = {
   sangaPreDamageFinalAttackZero: 1,
   shieldSwordSwapBaseAd: 1,
   steadyHandsFinalStatDirectLock: 1,
+  unifiedFrontDiscardFinalStatLock: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
   steamroidDamageStepBattleSwingStat: 1,
@@ -67,7 +69,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDirectLock" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -96,6 +98,7 @@ type StatSemanticVariant =
   | "sangaPreDamageFinalAttackZero"
   | "shieldSwordSwapBaseAd"
   | "steadyHandsFinalStatDirectLock"
+  | "unifiedFrontDiscardFinalStatLock"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
   | "steamroidDamageStepBattleSwingStat"
@@ -398,6 +401,21 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-unified-front-discard-final-stat-lock.test.ts",
+      kind: "setFinalAttackDefenseDiscardLock",
+      required: [
+        "restores discard-cost stat cloning and player direct-attack oath lock",
+        "Duel.SendtoGrave(g,REASON_COST|REASON_DISCARD)",
+        "Duel.SelectTarget(tp,s.tgfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil,g:GetFirst())",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "currentAttack(restoredTarget, restoredOpen.session.state)).toBe(1800)",
+        "currentDefense(restoredTarget, restoredOpen.session.state)).toBe(1200)",
+        "battleDamage[1]).toBe(500)",
+      ],
+    },
+    {
       file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
       kind: "targetedDamageStepAttackUpdate",
       required: [
@@ -579,6 +597,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
+      setFinalAttackDefenseDiscardLock: 0,
       setFinalAttackDefenseDirectLock: 0,
       selfFinalAttackEndDestroy: 0,
       singleRangeSetcodeConditionAttackUpdate: 0,
@@ -863,6 +882,18 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-unified-front-discard-final-stat-lock.test.ts",
+      kind: "unifiedFrontDiscardFinalStatLock",
+      required: [
+        'const unifiedFrontCode = "31472884"',
+        "restores discard-cost stat cloning and player direct-attack oath lock",
+        "Duel.GetFlagEffect(tp,id)==0",
+        "Duel.SendtoGrave(g,REASON_COST|REASON_DISCARD)",
+        "reason: duelReason.cost | duelReason.discard",
+        "players[1].lifePoints).toBe(7500)",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "skyscraperFieldDamageCalculationAttackBoost",
       required: [
@@ -968,6 +999,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       sangaPreDamageFinalAttackZero: 0,
       shieldSwordSwapBaseAd: 0,
       steadyHandsFinalStatDirectLock: 0,
+      unifiedFrontDiscardFinalStatLock: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
       steamroidDamageStepBattleSwingStat: 0,
