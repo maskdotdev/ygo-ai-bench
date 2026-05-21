@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 274;
+export const operationFixtureCount = 275;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   announceChangeCode: 1,
@@ -134,6 +134,7 @@ export const operationKindCounts = {
   fieldExtraSummonSendStat: 1,
   quickPlayGraveToDeckDrawStat: 1,
   quickTargetAttackDestroyPrompt: 1,
+  quickChainDestroyRegisterProtect: 1,
   quickSelfTributePendulumStat: 1,
   fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
@@ -347,6 +348,7 @@ export type OperationKind =
   | "fieldExtraSummonSendStat"
   | "quickPlayGraveToDeckDrawStat"
   | "quickTargetAttackDestroyPrompt"
+  | "quickChainDestroyRegisterProtect"
   | "quickSelfTributePendulumStat"
   | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
@@ -430,6 +432,28 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-golden-allure-queen-summon-chain-protect.test.ts",
+      kind: "quickChainDestroyRegisterProtect",
+      required: [
+        "restores opponent EVENT_CHAINING response that destroys a card and registers Allure Queen protection",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsRace,RACE_SPELLCASTER),3,3)",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_ATKCHANGE)",
+        "e2:SetCode(EFFECT_GOLDEN_ALLURE_QUEEN)",
+        "e3:SetType(EFFECT_TYPE_QUICK_O)",
+        "e3:SetCode(EVENT_CHAINING)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,PLAYER_ALL,LOCATION_ONFIELD)",
+        "Duel.SelectMatchingCard(tp,nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "e1:SetTarget(aux.TargetBoolFunction(Card.IsSetCard,SET_ALLURE_QUEEN))",
+        "Duel.RegisterEffect(e1,tp)",
+        "aux.RegisterClientHint(c,nil,tp,1,0,aux.Stringid(id,2))",
+        'eventName: "destroyed"',
+        'eventName: "sentToGraveyard"',
+        "host.messages).toContain",
+      ],
+    },
     {
       file: "test/lua-real-script-light-phoenix-self-tribute-stat.test.ts",
       kind: "quickSelfTributePendulumStat",
@@ -5011,6 +5035,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fieldExtraSummonSendStat: 0,
       quickPlayGraveToDeckDrawStat: 0,
       quickTargetAttackDestroyPrompt: 0,
+      quickChainDestroyRegisterProtect: 0,
       quickSelfTributePendulumStat: 0,
       fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
