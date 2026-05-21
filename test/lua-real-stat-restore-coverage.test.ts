@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 76;
+const statFixtureCount = 77;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -43,6 +43,7 @@ const statKindCounts = {
   pzoneDiscardTargetAttackDefenseUpdate: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
   primalDragonBanishAttackDefenseUpdate: 1,
+  rankSumAttackUpdate: 1,
   setAttack: 1,
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
@@ -117,6 +118,7 @@ const statSemanticVariantCounts = {
   morphoButterspyPositionChangeTargetStat: 1,
   mukaMukaHandCountAttackDefense: 1,
   neoFlamvellSabreGraveCountThresholdStat: 1,
+  numeronDragonRankSumStat: 1,
   nordicRelicMegingjordFinalStatDirectLock: 1,
   oddEyesWingTargetDisable: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
@@ -150,7 +152,7 @@ const statSemanticVariantCounts = {
   rocketHandEquipCostFinalStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -196,6 +198,7 @@ type StatSemanticVariant =
   | "morphoButterspyPositionChangeTargetStat"
   | "mukaMukaHandCountAttackDefense"
   | "neoFlamvellSabreGraveCountThresholdStat"
+  | "numeronDragonRankSumStat"
   | "nordicRelicMegingjordFinalStatDirectLock"
   | "oddEyesWingTargetDisable"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
@@ -701,6 +704,20 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredMusket, restoredOpen.session.state)).toBe(2000)",
         "currentDefense(restoredMusket, restoredOpen.session.state)).toBe(1600)",
         "battleDamage[1]).toBe(800)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-numeron-dragon-rank-sum-stat.test.ts",
+      kind: "rankSumAttackUpdate",
+      required: [
+        'const numeronDragonCode = "57314798"',
+        "restores detach cost into GetMatchingGroup Rank sum ATK gain and battle damage",
+        "e1:SetCost(Cost.DetachFromSelf(1,1,nil))",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "local atk=g:GetSum(Card.GetRank)",
+        "e1:SetValue(atk*1000)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === numeronDragon.uid), restoredOpen.session.state)).toBe(16000)",
+        "battleDamage).toEqual({ 0: 0, 1: 1000 })",
       ],
     },
     {
@@ -1414,6 +1431,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       preDamageFinalDigitStatDestroyedLingering: 0,
       preDamageSelfToGraveBattleMonsterStat: 0,
       primalDragonBanishAttackDefenseUpdate: 0,
+      rankSumAttackUpdate: 0,
       releaseCostTargetAttackUpdateChainNegate: 0,
       remainTrapEquipCostFinalAttackLock: 0,
       setAttack: 0,
@@ -1844,6 +1862,19 @@ function statSemanticVariants(): Array<{
         "restores thresholded GetFieldGroupCount opponent Graveyard ATK callback into battle damage",
         "stat:controller-field-group-count-threshold:0:16:lte4:600:gte8:-300:else0",
         "currentAttack(restoredHigh.session.state.cards.find((card) => card.uid === high.sabre.uid)!, restoredHigh.session.state)).toBe((high.sabre.data.attack ?? 0) - 300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-numeron-dragon-rank-sum-stat.test.ts",
+      kind: "numeronDragonRankSumStat",
+      required: [
+        'const numeronDragonCode = "57314798"',
+        "restores detach cost into GetMatchingGroup Rank sum ATK gain and battle damage",
+        "Xyz.AddProcedure(c,s.xyzfilter,nil,2,nil,nil,nil,nil,false,s.xyzcheck)",
+        "e1:SetReset(RESETS_STANDARD_DISABLE_PHASE_END|RESET_OPPO_TURN)",
+        'eventName: "detachedMaterial"',
+        'registryKey: "lua:57314798:lua-5-100"',
+        "players[1].lifePoints).toBe(7000)",
       ],
     },
     {
@@ -2421,6 +2452,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       morphoButterspyPositionChangeTargetStat: 0,
       mukaMukaHandCountAttackDefense: 0,
       neoFlamvellSabreGraveCountThresholdStat: 0,
+      numeronDragonRankSumStat: 0,
       nordicRelicMegingjordFinalStatDirectLock: 0,
       oddEyesWingTargetDisable: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
