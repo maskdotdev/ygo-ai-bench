@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 261;
+export const operationFixtureCount = 262;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -14,6 +14,7 @@ export const operationKindCounts = {
   attackAnnounceStatDeckdes: 1,
   battleDestroyingStepSummonStat: 1,
   battleFinalStatReviveLock: 1,
+  quickTributeSummonOrSetDestroyStat: 1,
   templeSearchBattleDestroyStat: 1,
   tributeSearchSummonStatLock: 1,
   typeBranchDirectLockStatSearch: 1,
@@ -214,6 +215,7 @@ export type OperationKind =
   | "attackAnnounceStatDeckdes"
   | "battleDestroyingStepSummonStat"
   | "battleFinalStatReviveLock"
+  | "quickTributeSummonOrSetDestroyStat"
   | "templeSearchBattleDestroyStat"
   | "tributeSearchSummonStatLock"
   | "typeBranchDirectLockStatSearch"
@@ -1692,6 +1694,32 @@ export function operationFixtureFiles(): Array<{
         "operationInfos",
         'eventName: "sentToHandConfirmed"',
         'eventName: "destroyed"',
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-doodle-beast-tyranno-quick-tribute-stat.test.ts",
+      kind: "quickTributeSummonOrSetDestroyStat",
+      required: [
+        "restores quick hand Tribute SummonOrSet into material-labeled destroy and ATK gain",
+        "aux.AddNormalSummonProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,aux.Stringid(id,0),s.otfilter)",
+        "aux.AddNormalSetProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,aux.Stringid(id,0),s.otfilter)",
+        "e1:SetCategory(CATEGORY_SUMMON+CATEGORY_SET)",
+        "e1:SetType(EFFECT_TYPE_QUICK_O)",
+        "e1:SetRange(LOCATION_HAND)",
+        "if chk==0 then return c:CanSummonOrSet(true,nil,1) end",
+        "Duel.SetOperationInfo(0,CATEGORY_SUMMON,c,1,tp,LOCATION_HAND)",
+        "Duel.SummonOrSet(tp,c,true,nil,1)",
+        "e3:SetCode(EFFECT_MATERIAL_CHECK)",
+        "if g:IsExists(Card.IsSetCard,1,nil,SET_DOODLE_BEAST) then",
+        "Duel.SelectMatchingCard(tp,nil,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "operationInfos",
+        'eventName: "normalSummoned"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "destroyed"',
+        "summonMaterialUids: [tribute.uid]",
         "currentAttack",
       ],
     },
@@ -4604,6 +4632,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackAnnounceStatDeckdes: 0,
       battleDestroyingStepSummonStat: 0,
       battleFinalStatReviveLock: 0,
+      quickTributeSummonOrSetDestroyStat: 0,
       templeSearchBattleDestroyStat: 0,
       tributeSearchSummonStatLock: 0,
       typeBranchDirectLockStatSearch: 0,

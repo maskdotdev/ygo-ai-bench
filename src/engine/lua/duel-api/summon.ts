@@ -29,7 +29,7 @@ import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelReason } from "#duel/reasons.js";
-import { fusionMaterialMatches, fusionMaterialSelectionMatches, fusionRequiredMaterialPredicateMatches, hasGenericFusionMaterialRequirement, normalSummon, tributeSetDuelCard } from "#duel/summon.js";
+import { fusionMaterialMatches, fusionMaterialSelectionMatches, fusionRequiredMaterialPredicateMatches, hasGenericFusionMaterialRequirement, normalSummon, tributeSetDuelCard, tributeSummonDuelCard } from "#duel/summon.js";
 import { consumePendulumSummon, grantExtraPendulumSummons, hasPendulumSummonAvailable, pendulumSummonCandidatesForAvailability } from "#duel/pendulum-availability.js";
 import { cardTypeFlags, currentCardHasEffect, currentLeftScale, currentLevel, currentRightScale } from "#duel/card-stats.js";
 import { pendulumAnyLevelScaleEffectCode, pendulumLevelBypassEffectCode } from "#duel/pendulum-effect-codes.js";
@@ -44,10 +44,13 @@ import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { luaMoveBlockedByImmunity, type LuaMoveImmunityHostState } from "#lua/duel-api/move-immunity.js";
 import { readCardOrGroupUids, readOptionalPlayer } from "#lua/duel-api/move-readers.js";
+import { withLuaMinTributeOverride } from "#lua/tribute-metadata-api.js";
 import { findLuaLinkMaterialUidSet } from "#lua/link-summonable.js";
 import { findLuaSynchroMaterialUidSet } from "#lua/synchro-summonable.js";
 import { findLuaXyzMaterialUidSet } from "#lua/xyz-summonable.js";
 import { pushGroupTable } from "#lua/group-api.js";
+import { runLuaEffectMaterialCheck } from "#lua/host-effect-api.js";
+import type { LuaHostState } from "#lua/host-types.js";
 import { applyMonsterZoneMask, hasOpenMonsterZone, monsterZoneSequenceSnapshot, restoreMonsterZoneSequenceSnapshot } from "#lua/monster-zone-mask.js";
 import type { CardPosition, DuelAction, DuelCardInstance, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 
@@ -135,8 +138,14 @@ function pushSummonOrSetResult(L: unknown, session: DuelSession, hostState: LuaD
     return 1;
   }
   const tributeUids = readCardCollectionUids(L, 4);
-  const action = selectSummonOrSetAction(session, player, target, tributeUids);
-  const result = action ? applyResponse(session, action) : { ok: false };
+  const ignoreCount = Boolean(lua.lua_toboolean(L, 3));
+  const minimumTributes = lua.lua_isnumber(L, 5) ? Math.max(0, lua.lua_tointeger(L, 5)) : 0;
+  const action = selectSummonOrSetAction(session, player, target, tributeUids, minimumTributes);
+  const result = action
+    ? applyResponse(session, action)
+    : tributeUids.length > 0 || minimumTributes > 0
+    ? summonOrSetWithTributes(L, session, hostState, player, target, tributeUids, minimumTributes, ignoreCount)
+    : { ok: false };
   setOperatedUids(hostState, result.ok ? [target.uid] : []);
   lua.lua_pushinteger(L, result.ok ? 1 : 0);
   return 1;
@@ -147,12 +156,58 @@ function selectSummonOrSetAction(
   player: PlayerId,
   target: DuelCardInstance,
   tributeUids: string[],
+  minimumTributes = 0,
 ): LuaSummonOrSetAction | undefined {
   const actions = getLegalActions(session, player);
   const summon = actions.find((candidate): candidate is LuaSummonOrSetAction => candidate.type === "normalSummon" && candidate.uid === target.uid);
   if (summon) return summon;
   if (tributeUids.length > 0) return actions.find((candidate): candidate is LuaSummonOrSetAction => candidate.type === "tributeSummon" && candidate.uid === target.uid && sameStringMembers(candidate.tributeUids, tributeUids));
+  const tributeSummons = actions.filter((candidate): candidate is LuaSummonOrSetAction => candidate.type === "tributeSummon" && candidate.uid === target.uid && candidate.tributeUids.length >= minimumTributes);
+  if (tributeSummons.length === 1) return tributeSummons[0];
   return actions.find((candidate): candidate is LuaSummonOrSetAction => candidate.type === "setMonster" && candidate.uid === target.uid);
+}
+
+function summonOrSetWithTributes(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, player: PlayerId, target: DuelCardInstance, tributeUids: string[], minimumTributes: number, ignoreCount: boolean): { ok: boolean } {
+  const selectedTributeUids = tributeUids.length > 0 ? tributeUids : inferTributeUidsForLuaSummonOrSet(session, player, target, minimumTributes);
+  if (selectedTributeUids.length === 0) return { ok: false };
+  try {
+    withLuaMinTributeOverride(target, minimumTributes > 0 ? minimumTributes : undefined, () => tributeSummonDuelCard(
+      session.state,
+      player,
+      target.uid,
+      selectedTributeUids,
+      (eventName, eventCard) => collectLuaSummonEvent(session, eventName, eventCard),
+      (uid, controller, reason) => {
+        const card = moveDuelCard(session.state, uid, "graveyard", controller, reason, player);
+        card.reasonCardUid = target.uid;
+        return { card };
+      },
+      undefined,
+      ignoreCount ? () => true : undefined,
+    ));
+    runLuaMaterialCheckEffectsForSummon(L, session, hostState, player, target);
+    return { ok: true };
+  } catch {
+    return { ok: false };
+  }
+}
+
+function runLuaMaterialCheckEffectsForSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, player: PlayerId, source: DuelCardInstance): void {
+  const materialCheckEffects = session.state.effects.filter((effect) => effect.sourceUid === source.uid && effect.code === 251);
+  for (const effect of materialCheckEffects) runLuaEffectMaterialCheck(L, hostState as LuaHostState, effect.id, source.uid, player);
+}
+
+function inferTributeUidsForLuaSummonOrSet(session: DuelSession, player: PlayerId, target: DuelCardInstance, minimumTributes: number): string[] {
+  const tributeSummons = getLegalActions(session, player)
+    .filter((candidate): candidate is Extract<LuaSummonOrSetAction, { type: "tributeSummon" }> => candidate.type === "tributeSummon" && candidate.uid === target.uid && candidate.tributeUids.length >= minimumTributes);
+  const onlyTributeSummon = tributeSummons[0];
+  if (tributeSummons.length === 1 && onlyTributeSummon) return onlyTributeSummon.tributeUids;
+  if (minimumTributes <= 0) return [];
+  return session.state.cards
+    .filter((card) => card.controller === player && card.location === "monsterZone" && card.uid !== target.uid)
+    .sort((a, b) => b.sequence - a.sequence || a.uid.localeCompare(b.uid))
+    .slice(0, minimumTributes)
+    .map((card) => card.uid);
 }
 
 function pushBasicSummonResult(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, type: "normalSummon" | "setMonster" | "setSpellTrap"): number {
