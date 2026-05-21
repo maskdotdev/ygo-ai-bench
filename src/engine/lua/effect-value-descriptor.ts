@@ -59,6 +59,10 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (params?.[1] && new RegExp(String.raw`\breturn\s+${escapeRegExp(params[1])}\s*:\s*GetDefense\s*\(\s*\)\s*(?:end\b|$)`).test(snippet)) {
     return "stat:current-defense";
   }
+  if (params?.[1]) {
+    const currentScale = snippet.match(new RegExp(String.raw`\breturn\s+${escapeRegExp(params[1])}\s*:\s*GetScale\s*\(\s*\)\s*\*\s*(-?\d+)\s*(?:end\b|$)`));
+    if (currentScale?.[1]) return `stat:current-scale:x${currentScale[1]}`;
+  }
   const selfFlagBaseStat = selfFlagBaseStatDescriptor(snippet, params);
   if (selfFlagBaseStat) return selfFlagBaseStat;
   const handlerEquipCount = handlerEquipCountStatDescriptor(snippet, params);

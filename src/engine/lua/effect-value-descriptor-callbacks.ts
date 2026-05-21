@@ -1,5 +1,5 @@
 import { currentBattleStep } from "#duel/battle-window-state.js";
-import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentBaseAttack, currentBaseDefense, currentDefense, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentBaseAttack, currentBaseDefense, currentDefense, currentLeftScale, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { locationsFromMask } from "#lua/api-utils.js";
 
@@ -8,6 +8,11 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
     return (ctx) => ctx.duel.cards.filter((card) => card.location === "graveyard" && (cardTypeFlags(card, ctx.duel) & 0x1) !== 0).length * 100;
   }
   if (luaValueDescriptor === "stat:current-defense") return (ctx, card) => currentDefense(card, ctx.duel);
+  const currentScale = luaValueDescriptor?.match(/^stat:current-scale:x(-?\d+)$/);
+  if (currentScale?.[1]) {
+    const multiplier = Number(currentScale[1]);
+    if (Number.isSafeInteger(multiplier)) return (ctx, card) => currentLeftScale(card, ctx.duel) * multiplier;
+  }
   if (luaValueDescriptor === "stat:self-flag-base-attack-zero-double-else-half") {
     return (ctx, card) => hasSelfCodeFlag(ctx, card) ? currentBaseAttack(card, ctx.duel, effectId) / 2 : currentBaseAttack(card, ctx.duel, effectId) * 2;
   }

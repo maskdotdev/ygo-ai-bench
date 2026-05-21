@@ -47,6 +47,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const race = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*(?:end\\b|$)`));
   const raceValue = race?.[1] ? luaNumberExpressionValue(L, index, race[1]) : undefined;
   if (raceValue !== undefined) return `target:race:${raceValue}`;
+  const setcodeType = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)|${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))\\s*(?:end\\b|$)`));
+  const setcodeTypeSetcodeToken = setcodeType?.[1] ?? setcodeType?.[4];
+  const setcodeTypeTypeToken = setcodeType?.[2] ?? setcodeType?.[3];
+  const setcodeTypeSetcode = setcodeTypeSetcodeToken ? luaNumberExpressionValue(L, index, setcodeTypeSetcodeToken) : undefined;
+  const setcodeTypeType = setcodeTypeTypeToken ? luaNumberExpressionValue(L, index, setcodeTypeTypeToken) : undefined;
+  if (setcodeTypeSetcode !== undefined && setcodeTypeType !== undefined) return `target:setcode-type:${setcodeTypeSetcode}:${setcodeTypeType}`;
   const notLocationNotSpellTrap = snippet.match(new RegExp(`\\breturn\\s+(?:not\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSpellTrap\\s*\\(\\s*\\)|not\\s+${card}\\s*:\\s*IsSpellTrap\\s*\\(\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))`));
   const notLocationNotSpellTrapToken = notLocationNotSpellTrap?.[1] ?? notLocationNotSpellTrap?.[2];
   const notLocationNotSpellTrapValue = notLocationNotSpellTrapToken ? luaNumberExpressionValue(L, index, notLocationNotSpellTrapToken) : undefined;

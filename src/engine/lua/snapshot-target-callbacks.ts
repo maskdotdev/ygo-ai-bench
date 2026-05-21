@@ -9,6 +9,7 @@ import { specialSummonTypeIsAnyTargetDescriptor, specialSummonTypeIsTargetDescri
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
+const luaSetcodeTypeTargetDescriptorPrefix = "target:setcode-type:";
 const luaSetcodeTargetDescriptorPrefix = "target:setcode:";
 const luaFaceupSetcodeTargetDescriptorPrefix = "target:faceup-setcode:";
 const luaTypeTargetDescriptorPrefix = "target:type:";
@@ -61,6 +62,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (setcodeOrCodeType !== undefined) {
     return { targetCardPredicate: (ctx, card) => currentCardMatchesSetcode(card, ctx.duel, setcodeOrCodeType.setcode) || (currentCardMatchesCode(card, ctx.duel, String(setcodeOrCodeType.code)) && (cardTypeFlags(card, ctx.duel) & setcodeOrCodeType.type) !== 0) };
   }
+  const setcodeType = setcodeTypeTargetDescriptor(effect.luaTargetDescriptor);
+  if (setcodeType !== undefined) return { targetCardPredicate: (ctx, card) => currentCardMatchesSetcode(card, ctx.duel, setcodeType.setcode) && (cardTypeFlags(card, ctx.duel) & setcodeType.type) !== 0 };
   const notCodeStatus = notCodeStatusDescriptor(effect.luaTargetDescriptor);
   if (notCodeStatus) return { targetCardPredicate: (ctx, card) => !currentCardMatchesCode(card, ctx.duel, String(notCodeStatus.code)) && (targetCardStatusMask(card) & notCodeStatus.status) !== 0 };
   const notSetcode = notSetcodeTargetDescriptor(effect.luaTargetDescriptor); const notSetcodeAny = notSetcodeAnyTargetDescriptor(effect.luaTargetDescriptor); const notRaceExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-extra:".length)) : undefined; const notAttributeExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-attribute-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-attribute-extra:".length)) : undefined; const notAttribute = effect.luaTargetDescriptor?.startsWith("target:not-attribute:") ? Number(effect.luaTargetDescriptor.slice("target:not-attribute:".length)) : undefined; const attribute = effect.luaTargetDescriptor?.startsWith("target:attribute:") ? Number(effect.luaTargetDescriptor.slice("target:attribute:".length)) : undefined; const faceupAttribute = effect.luaTargetDescriptor?.startsWith(luaFaceupAttributeTargetDescriptorPrefix) ? Number(effect.luaTargetDescriptor.slice(luaFaceupAttributeTargetDescriptorPrefix.length)) : undefined; const race = effect.luaTargetDescriptor?.startsWith("target:race:") ? Number(effect.luaTargetDescriptor.slice("target:race:".length)) : undefined; const faceupRace = effect.luaTargetDescriptor?.startsWith(luaFaceupRaceTargetDescriptorPrefix) ? Number(effect.luaTargetDescriptor.slice(luaFaceupRaceTargetDescriptorPrefix.length)) : undefined; const notRace = effect.luaTargetDescriptor?.startsWith("target:not-race:") ? Number(effect.luaTargetDescriptor.slice("target:not-race:".length)) : undefined; const notCode = effect.luaTargetDescriptor?.startsWith("target:not-code:") ? Number(effect.luaTargetDescriptor.slice("target:not-code:".length)) : undefined; const code = effect.luaTargetDescriptor?.startsWith("target:code:") ? Number(effect.luaTargetDescriptor.slice("target:code:".length)) : undefined;
@@ -301,6 +304,13 @@ export function setcodeOrCodeTypeTargetDescriptor(descriptor: string | undefined
   const [setcode, code, type] = descriptor.slice(luaSetcodeOrCodeTypeTargetDescriptorPrefix.length).split(":").map(Number);
   if (setcode === undefined || code === undefined || type === undefined) return undefined;
   return [setcode, code, type].every((value) => Number.isSafeInteger(value) && value > 0) ? { setcode, code, type } : undefined;
+}
+
+export function setcodeTypeTargetDescriptor(descriptor: string | undefined): { setcode: number; type: number } | undefined {
+  if (!descriptor?.startsWith(luaSetcodeTypeTargetDescriptorPrefix)) return undefined;
+  const [setcode, type] = descriptor.slice(luaSetcodeTypeTargetDescriptorPrefix.length).split(":").map(Number);
+  if (setcode === undefined || type === undefined) return undefined;
+  return [setcode, type].every((value) => Number.isSafeInteger(value) && value > 0) ? { setcode, type } : undefined;
 }
 
 function typeAttributeExtraDescriptor(descriptor: string | undefined): { type: number; attribute: number } | undefined {
