@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 268;
+export const operationFixtureCount = 269;
 export const operationKindCounts = {
+  activateDestroyPossibleSummonOptionalStat: 1,
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
   announceHandBanish: 1,
@@ -209,6 +210,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "activateDestroyPossibleSummonOptionalStat"
   | "announceChangeCode"
   | "announceDeckBanishDisable"
   | "announceHandBanish"
@@ -418,6 +420,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-shattered-colorless-realm-destroy-stat.test.ts",
+      kind: "activateDestroyPossibleSummonOptionalStat",
+      required: [
+        "restores target destruction into optional Vicious Astroud ATK boost",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_SPECIAL_SUMMON+CATEGORY_ATKCHANGE)",
+        "e1:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,c)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,tp,0)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_REMOVED)",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.BreakEffect()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(1500)",
+        "possibleOperationInfos",
+        "operationInfos",
+        'api: "SelectYesNo"',
+        'eventName: "destroyed"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-world-tree-counter-stat.test.ts",
       kind: "counterCostTargetPlantStat",
@@ -4741,6 +4766,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      activateDestroyPossibleSummonOptionalStat: 0,
       announceChangeCode: 0,
       announceDeckBanishDisable: 0,
       announceHandBanish: 0,
