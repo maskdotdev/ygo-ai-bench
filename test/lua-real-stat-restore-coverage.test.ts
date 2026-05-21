@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 64;
+const statFixtureCount = 65;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -28,6 +28,7 @@ const statKindCounts = {
   fieldLinkSumAttackDefenseUpdate: 1,
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
+  fusionSummonOpponentFinalAttackDefenseHalve: 1,
   flipGroupAttackUpdate: 1,
   flipSelfAttackDefenseUpdate: 1,
   groupLevelOrRankLinkAndSelfBanishTargetStat: 1,
@@ -118,6 +119,7 @@ const statSemanticVariantCounts = {
   terminusBurningAbyssSelfBanishStat: 1,
   steamroidDamageStepBattleSwingStat: 1,
   gracefulDiceDamageStepGroupStat: 1,
+  greatTornadoFusionOpponentFinalStat: 1,
   trianglePowerBaseStatEndDestroy: 1,
   vylonChargerEquipCountAttributeStat: 1,
   wingedMinionSelfTributeFiendStat: 1,
@@ -126,7 +128,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -153,6 +155,7 @@ type StatSemanticVariant =
   | "genexTurbineTargetBoolFunctionSetcodeStat"
   | "guardragonShieldLinkSumStat"
   | "gracefulDiceDamageStepGroupStat"
+  | "greatTornadoFusionOpponentFinalStat"
   | "hourglassCourageSummonFlagBaseStat"
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "juggernautLiebeDetachStatAttackLock"
@@ -401,6 +404,21 @@ function statFixtureFiles(): Array<{
         'eventName: "counterRemoved"',
         "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === ally.uid), restoredResolved.session.state)).toBe(1100)",
         "battleDamage).toEqual({ 0: 200, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-great-tornado-fusion-final-stat.test.ts",
+      kind: "fusionSummonOpponentFinalAttackDefenseHalve",
+      required: [
+        'const greatTornadoCode = "3642509"',
+        "restores Fusion.AddProcMix metadata into fusion-summoned opponent final ATK/DEF halving",
+        "Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_ELEMENTAL_HERO),aux.FilterBoolFunctionEx(Card.IsAttribute,ATTRIBUTE_WIND))",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():IsFusionSummoned()",
+        "e3:SetValue(aux.fuslimit)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === opponentA.uid), restoredTrigger.session.state)).toBe(1200)",
+        "battleDamage).toEqual({ 0: 0, 1: 800 })",
       ],
     },
     {
@@ -1173,6 +1191,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fieldSetcodeAttackUpdate: 0,
       flipGroupAttackUpdate: 0,
       flipSelfAttackDefenseUpdate: 0,
+      fusionSummonOpponentFinalAttackDefenseHalve: 0,
       groupLevelOrRankLinkAndSelfBanishTargetStat: 0,
       overlayDetachSelfStatAttackLock: 0,
       overlayDetachSelfStatBattleProtection: 0,
@@ -1402,6 +1421,20 @@ function statSemanticVariants(): Array<{
         "code: 102",
         "code: 106",
         "eventReason: duelReason.cost",
+      ],
+    },
+    {
+      file: "test/lua-real-script-great-tornado-fusion-final-stat.test.ts",
+      kind: "greatTornadoFusionOpponentFinalStat",
+      required: [
+        'const greatTornadoCode = "3642509"',
+        "fusionRequiredMaterialPredicates).toEqual([{ setcode: setElementalHero }, { attribute: attributeWind }])",
+        "summonType: \"fusion\"",
+        "triggerBucket: \"turnMandatory\"",
+        "eventName: \"specialSummoned\"",
+        "code: 102",
+        "code: 106",
+        "eventReason: duelReason.summon | duelReason.specialSummon | duelReason.fusion",
       ],
     },
     {
@@ -1995,6 +2028,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
       guardragonShieldLinkSumStat: 0,
       gracefulDiceDamageStepGroupStat: 0,
+      greatTornadoFusionOpponentFinalStat: 0,
       hourglassCourageSummonFlagBaseStat: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       juggernautLiebeDetachStatAttackLock: 0,
