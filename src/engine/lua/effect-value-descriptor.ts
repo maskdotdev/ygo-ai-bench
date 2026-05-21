@@ -105,6 +105,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (controllerCannotMaterialSummonTypes) return controllerCannotMaterialSummonTypes;
   const materialTargetPredicate = materialTargetPredicateDescriptor(L, index, snippet, params);
   if (materialTargetPredicate) return materialTargetPredicate;
+  const immuneOpponentCardEffects = immuneOpponentCardEffectsDescriptor(snippet, params);
+  if (immuneOpponentCardEffects) return immuneOpponentCardEffects;
   const effectParam = params?.[0];
   const reasonPlayerParam = params?.[2];
   if (effectParam && reasonPlayerParam) {
@@ -136,6 +138,18 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
     `\\breturn\\s+${relatedEffect}\\s+and\\s+not\\s+${relatedEffect}\\s*:\\s*IsHasType\\s*\\(\\s*${effectTypeContinuousPattern}\\s*\\)\\s+and\\s+${reasonPlayer}\\s*==\\s*1\\s*-\\s*${effect}\\s*:\\s*GetOwnerPlayer\\s*\\(\\s*\\)`,
   );
   return reflectOpponentNonContinuous.test(snippet) ? "reflect-damage:opponent-non-continuous" : undefined;
+}
+
+function immuneOpponentCardEffectsDescriptor(snippet: string, params: string[] | undefined): string | undefined {
+  const effectParam = params?.[0];
+  const relatedEffectParam = params?.[1];
+  if (!effectParam || !relatedEffectParam) return undefined;
+  const effect = escapeRegExp(effectParam);
+  const relatedEffect = escapeRegExp(relatedEffectParam);
+  const ownerMismatch = new RegExp(
+    String.raw`\breturn\s+${effect}\s*:\s*GetOwnerPlayer\s*\(\s*\)\s*~=\s*${relatedEffect}\s*:\s*GetOwnerPlayer\s*\(\s*\)`,
+  );
+  return ownerMismatch.test(snippet) ? "immune-effect:opponent-card-effects" : undefined;
 }
 
 function handlerEquipCountStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {

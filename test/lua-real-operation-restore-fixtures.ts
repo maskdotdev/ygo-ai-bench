@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 222;
+export const operationFixtureCount = 223;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -61,6 +61,7 @@ export const operationKindCounts = {
   discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
   discardCostSpecialSearchReleaseStat: 1,
+  targetStatImmuneSelfBanishSearch: 1,
   directDamage: 1,
   detachDirectDamage: 1,
   detachDisableFinalStat: 1,
@@ -224,6 +225,7 @@ export type OperationKind =
   | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
   | "discardCostSpecialSearchReleaseStat"
+  | "targetStatImmuneSelfBanishSearch"
   | "directDamage"
   | "detachDirectDamage"
   | "detachDisableFinalStat"
@@ -3535,6 +3537,30 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-silent-sword-slash-stat-immune-search.test.ts",
+      kind: "targetStatImmuneSelfBanishSearch",
+      required: [
+        "restores targeted Silent Swordsman stat immunity and grave self-banish search",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_CANNOT_INACTIVATE+EFFECT_FLAG_CANNOT_NEGATE)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e3:SetCode(EFFECT_IMMUNE_EFFECT)",
+        "return e:GetOwnerPlayer()~=re:GetOwnerPlayer()",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "immune-effect:opponent-card-effects",
+        'eventName: "becameTarget"',
+        'eventName: "banished"',
+        'eventName: "sentToHandConfirmed"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -3617,6 +3643,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
       discardCostSpecialSearchReleaseStat: 0,
+      targetStatImmuneSelfBanishSearch: 0,
       directDamage: 0,
       detachDirectDamage: 0,
       detachDisableFinalStat: 0,

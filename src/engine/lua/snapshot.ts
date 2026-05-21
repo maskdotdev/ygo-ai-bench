@@ -683,6 +683,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         effect.code === luaEffectClockLizard ||
         isKnownCannotBeMaterialEffect(effect) ||
         (effect.code === 71 && effect.luaValueDescriptor === "cannot-be-effect-target:opponent") ||
+        (effect.code === 1 && effect.luaValueDescriptor === "immune-effect:opponent-card-effects") ||
         (effect.code === 73 && effect.sourceUid !== undefined && effect.reset !== undefined) ||
         isKnownIndestructibleValueEffect(effect) ||
         effect.luaValueDescriptor === "change-damage:effect-double" || (effect.luaValueDescriptor === "change-damage:effect-zero" && effect.reset !== undefined) ||
@@ -1377,6 +1378,14 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
         const relatedEffect = relatedEffectFromContext(ctx);
         const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid);
         return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & luaTypeMonster) !== 0 && relatedEffect?.controller !== effect.controller);
+      },
+    };
+  }
+  if (effect.luaValueDescriptor === "immune-effect:opponent-card-effects") {
+    return {
+      valuePredicate: (ctx) => {
+        const relatedEffect = relatedEffectFromContext(ctx);
+        return relatedEffect !== undefined && (relatedEffect.ownerPlayer ?? relatedEffect.controller) !== (effect.ownerPlayer ?? effect.controller);
       },
     };
   }
