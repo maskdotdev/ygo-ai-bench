@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 60;
+const statFixtureCount = 61;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -37,6 +37,7 @@ const statKindCounts = {
   setAttack: 1,
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
+  summonSuccessTargetAttackUpdate: 1,
   summonBaseAttackDefenseFlaggedHalve: 1,
   setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
@@ -58,6 +59,7 @@ const statKindCounts = {
 const statSemanticVariantCounts = {
   aForcesMatchingRaceCountStat: 1,
   alLumirajLevelOrRankFieldStat: 1,
+  antidoteNurseSummonTargetStat: 1,
   aromageBergamotRecoverPierceStat: 1,
   aojGaradholgDuelBattleTargetAttributeStat: 1,
   bladeflyFieldAttributeAttackUpdate: 1,
@@ -118,10 +120,11 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
+  | "antidoteNurseSummonTargetStat"
   | "aromageBergamotRecoverPierceStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
   | "armoredKappaOptionBattleProtection"
@@ -1028,6 +1031,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-antidote-nurse-summon-target-stat.test.ts",
+      kind: "summonSuccessTargetAttackUpdate",
+      required: [
+        'const nurseCode = "31539614"',
+        "restores EVENT_SPSUMMON_SUCCESS SetTargetCard into summoned monster ATK gain",
+        "Xyz.AddProcedure(c,nil,3,2,nil,nil,Xyz.InfiniteMats)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():GetOverlayCount()>=3 and #g>0",
+        "Duel.SetTargetCard(g)",
+        "Duel.GetTargetCards(e):Match(Card.IsFaceup,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(900)",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === summoned.uid), restoredResolved.session.state)).toBe(2200)",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === opponentSummoned.uid), restoredResolved.session.state)).toBe(1700)",
+      ],
+    },
+    {
       file: "test/lua-real-script-morpho-butterspy-position-trigger-stat.test.ts",
       kind: "eventChangePositionTargetAttackDefenseDrop",
       required: [
@@ -1102,6 +1122,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
+      summonSuccessTargetAttackUpdate: 0,
       summonBaseAttackDefenseFlaggedHalve: 0,
       setFinalAttackDefenseDiscardLock: 0,
       setFinalAttackDefenseDirectLock: 0,
@@ -1234,6 +1255,19 @@ function statSemanticVariants(): Array<{
         "eventName: \"sentToGraveyard\"",
         "value: 1200",
         "value: 700",
+      ],
+    },
+    {
+      file: "test/lua-real-script-antidote-nurse-summon-target-stat.test.ts",
+      kind: "antidoteNurseSummonTargetStat",
+      required: [
+        'const nurseCode = "31539614"',
+        "restores EVENT_SPSUMMON_SUCCESS SetTargetCard into summoned monster ATK gain",
+        "specialSummonDuelCard(restoredOpen.session.state, summoned.uid, 0)",
+        "specialSummonDuelCard(restoredOpen.session.state, opponentSummoned.uid, 1)",
+        "eventName: \"specialSummoned\"",
+        "triggerBucket: \"turnOptional\"",
+        "value: 900",
       ],
     },
     {
@@ -1838,6 +1872,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
     {
       aForcesMatchingRaceCountStat: 0,
       alLumirajLevelOrRankFieldStat: 0,
+      antidoteNurseSummonTargetStat: 0,
       aromageBergamotRecoverPierceStat: 0,
       aojGaradholgDuelBattleTargetAttributeStat: 0,
       armoredKappaOptionBattleProtection: 0,
