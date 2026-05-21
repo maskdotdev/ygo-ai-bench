@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 236;
+export const operationFixtureCount = 237;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -121,6 +121,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 2,
   raidraptorBattleDestroyDamage: 1,
   releaseDamage: 3,
+  releaseBattleStatReviveRedirect: 1,
   reviveStatBattleDamage: 1,
   ritualToGraveSearchSend: 1,
   ritualSummonSearchReleaseStat: 1,
@@ -297,6 +298,7 @@ export type OperationKind =
   | "pzoneDestroySearch"
   | "raidraptorBattleDestroyDamage"
   | "releaseDamage"
+  | "releaseBattleStatReviveRedirect"
   | "reviveStatBattleDamage"
   | "ritualToGraveSearchSend"
   | "ritualSummonSearchReleaseStat"
@@ -375,6 +377,31 @@ export function operationFixtureFiles(): Array<{
         "effect.code === 110",
         "currentBaseAttack",
         "currentBaseDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-rikka-erica-release-battle-stat-revive.test.ts",
+      kind: "releaseBattleStatReviveRedirect",
+      required: [
+        "restores hand self-tribute battle stat boost and graveyard release-trigger revive redirect",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetRange(LOCATION_MZONE|LOCATION_HAND)",
+        "e1:SetCost(Cost.SelfTribute)",
+        "tc:IsRace(RACE_PLANT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetCode(EVENT_RELEASE)",
+        "return eg:IsExists(s.spcfilter,1,nil,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,0,LOCATION_GRAVE)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "e1:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_CLIENT_HINT)",
+        "operationInfos",
+        'eventName: "released"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+        "code: 60",
       ],
     },
     {
@@ -4042,6 +4069,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       pzoneDestroySearch: 0,
       raidraptorBattleDestroyDamage: 0,
       releaseDamage: 0,
+      releaseBattleStatReviveRedirect: 0,
       reviveStatBattleDamage: 0,
       ritualToGraveSearchSend: 0,
       ritualSummonSearchReleaseStat: 0,
