@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 288;
+export const operationFixtureCount = 289;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -196,6 +196,7 @@ export const operationKindCounts = {
   summonRaceStatTargetDestroy: 1,
   synchroMaterialCheckStatBurn: 1,
   summonFieldMillStat: 1,
+  summonTargetDestroyEndPhaseSendStat: 1,
   targetRelationStatDestroyedBothDamage: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
   targetDisableFinalImmunity: 1,
@@ -423,6 +424,7 @@ export type OperationKind =
   | "summonRaceStatTargetDestroy"
   | "synchroMaterialCheckStatBurn"
   | "summonFieldMillStat"
+  | "summonTargetDestroyEndPhaseSendStat"
   | "targetRelationStatDestroyedBothDamage"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "targetDisableFinalImmunity"
@@ -1843,6 +1845,33 @@ export function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         'eventName: "sentToGraveyard"',
         "currentAttack(",
+      ],
+    },
+    {
+      file: "test/lua-real-script-slifer-special-end-stat-destroy.test.ts",
+      kind: "summonTargetDestroyEndPhaseSendStat",
+      required: [
+        "restores special-summoned Slifer hand-count stats, summon-success ATK loss/destroy, and End Phase send",
+        "aux.AddNormalSummonProcedure(c,true,false,3,3)",
+        "e3:SetCode(EFFECT_CANNOT_DISABLE_SUMMON)",
+        "Duel.SetChainLimitTillChainEnd(aux.FALSE)",
+        "e5:SetCode(EVENT_PHASE+PHASE_END)",
+        "return e:GetHandler():IsSpecialSummoned()",
+        "Duel.SendtoGrave(c,REASON_EFFECT)",
+        "e6:SetCode(EFFECT_UPDATE_ATTACK)",
+        "return Duel.GetFieldGroupCount(c:GetControler(),LOCATION_HAND,0)*1000",
+        "e8:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY)",
+        "e9:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SetTargetCard(eg:Filter(s.atkfilter,nil,tp))",
+        "local g=Duel.GetTargetCards(e):Match(Card.IsFaceup,nil)",
+        "e1:SetValue(-2000)",
+        "Duel.BreakEffect()",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -5439,6 +5468,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       synchroMaterialCheckStatBurn: 0,
       synchroSearchDestroyTypeStat: 0,
       summonFieldMillStat: 0,
+      summonTargetDestroyEndPhaseSendStat: 0,
       targetRelationStatDestroyedBothDamage: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
       targetDisableFinalImmunity: 0,
