@@ -67,6 +67,7 @@ const luaMaharaghiCode = "40695128";
 const luaHinoKaguTsuchiCode = "75745607";
 const luaGreatLongNoseCode = "2356994";
 const luaXxSaberDarksoulCode = "31383545";
+const luaPerformapalCelestialMagicianCode = "58092907";
 const luaFamiliarPossessedDharcCode = "21390858";
 const luaDarkMagicExpandedCode = "111280";
 const luaEbonArrowCode = "88341502";
@@ -399,6 +400,11 @@ function restoreKnownLuaStateEffects(
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownXxSaberDarksoulEndSearchEffect(effect))
       .map((effect) => effect.sourceUid),
   );
+  const celestialTypeBranchSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownCelestialMagicianEndSearchEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
   const results: LuaScriptLoadResult[] = [];
   for (const sourceUid of unionStateSourceUids) {
     const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
@@ -487,6 +493,52 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-xx-saber-darksoul-end-search-${card.uid}.lua`));
+  }
+  for (const sourceUid of celestialTypeBranchSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card || card.location !== "monsterZone") continue;
+    const script = `
+      local c=Duel.GetFieldCard(${card.controller},LOCATION_MZONE,${card.sequence})
+      if c and c:IsFieldID(${cardFieldId(card)}) then
+        local e1=Effect.CreateEffect(c)
+        e1:SetDescription(3205)
+        e1:SetProperty(EFFECT_FLAG_CLIENT_HINT)
+        e1:SetType(EFFECT_TYPE_SINGLE)
+        e1:SetCode(EFFECT_DIRECT_ATTACK)
+        e1:SetValue(1)
+        e1:SetReset(RESETS_STANDARD_PHASE_END)
+        c:RegisterEffect(e1)
+        local e2=Effect.CreateEffect(c)
+        e2:SetType(EFFECT_TYPE_FIELD)
+        e2:SetCode(EFFECT_CANNOT_ACTIVATE)
+        e2:SetProperty(EFFECT_FLAG_PLAYER_TARGET)
+        e2:SetTargetRange(0,1)
+        e2:SetValue(function(e,re,tp) return re:IsMonsterEffect() end)
+        e2:SetReset(RESETS_STANDARD_PHASE_END)
+        Duel.RegisterEffect(e2,${card.controller})
+        local e3=Effect.CreateEffect(c)
+        e3:SetType(EFFECT_TYPE_SINGLE)
+        e3:SetCode(EFFECT_SET_ATTACK_FINAL)
+        e3:SetValue(c:GetBaseAttack()*2)
+        e3:SetReset(RESETS_STANDARD_DISABLE_PHASE_END)
+        c:RegisterEffect(e3)
+        local e4=Effect.CreateEffect(c)
+        e4:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e4:SetCode(EVENT_PHASE+PHASE_END)
+        e4:SetCountLimit(1)
+        e4:SetOperation(function(e,tp,eg,ep,ev,re,r,rp)
+          Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
+          local g=Duel.SelectMatchingCard(tp,function(tc) return tc:IsType(TYPE_PENDULUM) and tc:IsAbleToHand() end,tp,LOCATION_DECK,0,1,1,nil)
+          if #g>0 then
+            Duel.SendtoHand(g,nil,REASON_EFFECT)
+            Duel.ConfirmCards(1-tp,g)
+          end
+        end)
+        e4:SetReset(RESET_PHASE|PHASE_END)
+        Duel.RegisterEffect(e4,${card.controller})
+      end
+    `;
+    results.push(host.loadScript(script, `restore-celestial-magician-type-branch-${card.uid}.lua`));
   }
   return results;
 }
@@ -742,6 +794,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownDelayedBattleDestroyMarkerEffect(effect) ||
         isKnownDelayedBattleDestroyPhaseEffect(effect) ||
         isKnownBorreloadExchargeEndPhaseBanishEffect(effect) ||
+        isKnownCelestialMagicianEndSearchEffect(effect) ||
         isKnownEndPhaseReviveDestroyEffect(effect) ||
         isKnownLeaveFieldLinkedDestroyEffect(effect) ||
         isKnownDarkMagicExpandedChainingLimitEffect(effect) ||
@@ -968,6 +1021,17 @@ function isKnownXxSaberDarksoulEndSearchEffect(effect: SerializedDuelEffect): bo
     effect.range[0] === "graveyard" &&
     effect.countLimit === 1 &&
     (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaResetsStandardPhaseEndRuntime)
+  );
+}
+
+function isKnownCelestialMagicianEndSearchEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaPerformapalCelestialMagicianCode}:`)) &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags
   );
 }
 
@@ -1230,6 +1294,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return levelNormalEndPhaseDestroyOperation(effect);
   if (isKnownDelayedBattleDestroyPhaseEffect(effect)) return delayedBattleDestroyPhaseOperation(effect);
   if (isKnownBorreloadExchargeEndPhaseBanishEffect(effect)) return luaLabelObjectBanishOperation(effect);
+  if (isKnownCelestialMagicianEndSearchEffect(effect)) return celestialMagicianEndSearchOperation(effect);
   if (isKnownEbonArrowBattleDestroyingDamageEffect(effect)) return ebonArrowBattleDestroyingDamageOperation(effect);
   if (isKnownMiniGutsBattleDestroyedDamageEffect(effect)) return miniGutsBattleDestroyedDamageOperation(effect);
   if (isKnownDivineEvolutionAttackAnnounceSendEffect(effect)) return divineEvolutionAttackAnnounceSendOperation(effect);
@@ -1268,6 +1333,40 @@ function divineEvolutionAttackAnnounceSendOperation(effect: SerializedDuelEffect
       });
     } catch {
       // EDOPro-style restored trigger ignores a target that can no longer be sent.
+    }
+  };
+}
+
+function celestialMagicianEndSearchOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    const target = ctx.duel.cards
+      .filter((card) => card.controller === ctx.player && card.location === "deck" && (cardTypeFlags(card, ctx.duel) & 0x1000000) !== 0)
+      .sort((a, b) => a.sequence - b.sequence)[0];
+    if (!target) return;
+    const previous = { controller: target.controller, faceUp: target.faceUp, location: target.location, position: target.position, sequence: target.sequence };
+    try {
+      moveDuelCardWithRedirects(ctx.duel, target.uid, "hand", target.controller, duelReason.effect, ctx.player, {
+        eventReasonCardUid: effect.sourceUid,
+        ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+      });
+      const moved = ctx.duel.cards.find((card) => card.uid === target.uid);
+      if (!moved) return;
+      const payload = {
+        eventPlayer: otherPlayer(ctx.player),
+        eventValue: 1,
+        eventUids: [moved.uid],
+        eventReason: duelReason.effect,
+        eventReasonPlayer: ctx.player,
+        eventReasonCardUid: effect.sourceUid,
+        ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+        eventPreviousState: previous,
+        eventCurrentState: { controller: moved.controller, faceUp: moved.faceUp, location: moved.location, position: moved.position, sequence: moved.sequence },
+      };
+      collectDuelGroupedTriggerEffects(ctx.duel, "confirmed", [moved], { eventCode: 1211, ...payload });
+      collectDuelGroupedTriggerEffects(ctx.duel, "sentToHandConfirmed", [moved], { eventCode: 1212, ...payload });
+    } catch {
+      // EDOPro-style delayed search ignores cards that can no longer be moved.
     }
   };
 }

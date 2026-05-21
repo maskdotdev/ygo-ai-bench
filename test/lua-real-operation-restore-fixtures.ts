@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 257;
+export const operationFixtureCount = 258;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -15,6 +15,7 @@ export const operationKindCounts = {
   battleDestroyingStepSummonStat: 1,
   battleFinalStatReviveLock: 1,
   tributeSearchSummonStatLock: 1,
+  typeBranchDirectLockStatSearch: 1,
   unnegatableGrantAttackSend: 1,
   callCoinAtkChange: 1,
   coinNegateControl: 1,
@@ -211,6 +212,7 @@ export type OperationKind =
   | "battleDestroyingStepSummonStat"
   | "battleFinalStatReviveLock"
   | "tributeSearchSummonStatLock"
+  | "typeBranchDirectLockStatSearch"
   | "unnegatableGrantAttackSend"
   | "callCoinAtkChange"
   | "coinNegateControl"
@@ -775,6 +777,30 @@ export function operationFixtureFiles(): Array<{
         'eventName: "sentToHandConfirmed"',
         'summonType: "tribute"',
         'summonType: "normal"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-celestial-magician-type-branch-search-lock.test.ts",
+      kind: "typeBranchDirectLockStatSearch",
+      required: [
+        "restores summoned-turn type branches into direct attack, monster-effect lock, final ATK, and End Phase Pendulum search",
+        "Pendulum.AddProcedure(c)",
+        "aux.GlobalCheck(s,function()",
+        "ge1:SetOperation(aux.sumreg)",
+        "return e:GetHandler():GetFlagEffect(id)>0",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsType,TYPE_FUSION+TYPE_SYNCHRO+TYPE_XYZ+TYPE_PENDULUM),tp,LOCATION_MZONE,0,c)",
+        "e1:SetCode(EFFECT_DIRECT_ATTACK)",
+        "e2:SetCode(EFFECT_CANNOT_ACTIVATE)",
+        "return re:IsMonsterEffect()",
+        "e3:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e4:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "operationInfos",
+        "currentAttack",
+        "declareAttack",
+        'eventName: "sentToHandConfirmed"',
+        "reasonEffectId: 11",
       ],
     },
     {
@@ -4494,6 +4520,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       battleDestroyingStepSummonStat: 0,
       battleFinalStatReviveLock: 0,
       tributeSearchSummonStatLock: 0,
+      typeBranchDirectLockStatSearch: 0,
       unnegatableGrantAttackSend: 0,
       callCoinAtkChange: 0,
       coinNegateControl: 0,
