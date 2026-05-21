@@ -45,6 +45,20 @@ export function isKnownTemporaryFieldIdAttackAnnounceLockEffect(effect: Serializ
   );
 }
 
+export function isKnownTemporarySetcodeAttackAnnounceLockEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 86 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor?.startsWith("target:not-setcode:") === true &&
+    targetRangeEquals(effect, luaLocationMonsterZone, 0) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 export function isKnownTemporaryBattleProtectionEffect(effect: SerializedDuelEffect): boolean {
   return isKnownTemporaryPlayerBattleDamageAvoidEffect(effect) || isKnownTemporaryMonsterBattleIndestructibleEffect(effect) || isKnownTemporarySelfIndestructibleEffect(effect);
 }
