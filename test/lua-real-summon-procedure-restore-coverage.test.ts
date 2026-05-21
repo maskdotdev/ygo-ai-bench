@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 21;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 18;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 22;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 19;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 2,
@@ -17,6 +17,7 @@ const summonProcedureKindCounts = {
   handOwnEmptyOpponentMonsterProcedure: 1,
   handOpponentCountProcedure: 1,
   handOwnFaceupLevelOrLinkOpenZoneProcedure: 3,
+  handOwnFaceupLink1OrLevel2SynchroProcedure: 1,
   handOwnFaceupSetcodeOpenZoneProcedure: 1,
   handOpponentBackrowCountProcedure: 1,
   handOpponentSpellTrapOrMstProcedure: 1,
@@ -46,6 +47,7 @@ const summonProcedureSemanticVariantCounts = {
   sprightRedLevelOrLinkOpenZoneProcedure: 1,
   powerInvaderOpponentTwoMonsterNormalSummonProcedure: 1,
   redHaredHastyHorseZoneMaskProcedureDirectStat: 1,
+  cookyYummyLinkSynchroProcedureSelectDestroy: 1,
   warRockMammudNoTributeBattledStat: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
 
@@ -61,6 +63,7 @@ type SummonProcedureKind =
   | "handOwnEmptyOpponentMonsterProcedure"
   | "handOpponentCountProcedure"
   | "handOwnFaceupLevelOrLinkOpenZoneProcedure"
+  | "handOwnFaceupLink1OrLevel2SynchroProcedure"
   | "handOpponentBackrowCountProcedure"
   | "handOpponentSpellTrapOrMstProcedure"
   | "handSendCostProcedure"
@@ -88,9 +91,23 @@ type SummonProcedureSemanticVariant =
   | "sprightRedLevelOrLinkOpenZoneProcedure"
   | "powerInvaderOpponentTwoMonsterNormalSummonProcedure"
   | "redHaredHastyHorseZoneMaskProcedureDirectStat"
+  | "cookyYummyLinkSynchroProcedureSelectDestroy"
   | "warRockMammudNoTributeBattledStat";
 
 const summonProcedureFixtures = [
+  {
+    file: "test/lua-real-script-cooky-yummy-procedure-synchro-branch.test.ts",
+    kind: "handOwnFaceupLink1OrLevel2SynchroProcedure",
+    required: [
+      "restores Link-1 hand procedure and Synchro-effect summon trigger into SelectEffect destroy branch",
+      "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+      "return Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.IsExistingMatchingCard(s.spconfilter,tp,LOCATION_MZONE,0,1,nil)",
+      "return (c:IsLink(1) or (c:IsType(TYPE_SYNCHRO) and c:IsLevel(2))) and c:IsFaceup()",
+      'action.type === "specialSummonProcedure"',
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
   {
     file: "test/lua-real-script-war-rock-mammud-battled-backrow-stat.test.ts",
     kind: "noTributeOwnWarriorProcedure",
@@ -513,6 +530,7 @@ function countSummonProcedureKinds(
       handOwnFaceupAttributeOpenZoneProcedure: 0,
       handOwnFaceupSetcodeOpenZoneProcedure: 0,
       handOwnFaceupLevelOrLinkOpenZoneProcedure: 0,
+      handOwnFaceupLink1OrLevel2SynchroProcedure: 0,
       handOpponentBackrowCountProcedure: 0,
       handOpponentSpellTrapOrMstProcedure: 0,
       handReleaseEquipTurnCounterProcedure: 0,
@@ -533,6 +551,21 @@ function summonProcedureSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-cooky-yummy-procedure-synchro-branch.test.ts",
+      kind: "cookyYummyLinkSynchroProcedureSelectDestroy",
+      required: [
+        'const cookyCode = "68810435"',
+        "restores Link-1 hand procedure and Synchro-effect summon trigger into SelectEffect destroy branch",
+        "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return (c:IsLink(1) or (c:IsType(TYPE_SYNCHRO) and c:IsLevel(2))) and c:IsFaceup()",
+        'eventName: "specialSummoned"',
+        "op=Duel.SelectEffect(tp,",
+        'api: "SelectEffect"',
+        'eventName: "destroyed"',
+      ],
+    },
     {
       file: "test/lua-real-script-war-rock-mammud-battled-backrow-stat.test.ts",
       kind: "warRockMammudNoTributeBattledStat",
@@ -866,6 +899,7 @@ function countSummonProcedureSemanticVariants(
       sprightRedLevelOrLinkOpenZoneProcedure: 0,
       powerInvaderOpponentTwoMonsterNormalSummonProcedure: 0,
       redHaredHastyHorseZoneMaskProcedureDirectStat: 0,
+      cookyYummyLinkSynchroProcedureSelectDestroy: 0,
       warRockMammudNoTributeBattledStat: 0,
     },
   );

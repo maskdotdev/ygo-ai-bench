@@ -1,8 +1,9 @@
 import path from "node:path";
 
-export const operationFixtureCount = 309;
+export const operationFixtureCount = 310;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
+  handProcedureSynchroSummonSelectDestroy: 1,
   diceStatDrawDirect: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
@@ -251,6 +252,7 @@ export const operationKindCounts = {
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
   | "battledBackrowDestroyGroupStat"
+  | "handProcedureSynchroSummonSelectDestroy"
   | "diceStatDrawDirect"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
@@ -500,6 +502,28 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-cooky-yummy-procedure-synchro-branch.test.ts",
+      kind: "handProcedureSynchroSummonSelectDestroy",
+      required: [
+        "restores Link-1 hand procedure and Synchro-effect summon trigger into SelectEffect destroy branch",
+        "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return (c:IsLink(1) or (c:IsType(TYPE_SYNCHRO) and c:IsLevel(2))) and c:IsFaceup()",
+        "local e3=e2:Clone()",
+        "e3:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_ATKCHANGE,tc,1,tp,-1000)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DESTROY,tc,1,tp,0)",
+        "op=Duel.SelectEffect(tp,",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        'api: "SelectEffect"',
+        'eventName: "specialSummoned"',
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-war-rock-mammud-battled-backrow-stat.test.ts",
       kind: "battledBackrowDestroyGroupStat",
@@ -5842,6 +5866,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
     },
     {
       battledBackrowDestroyGroupStat: 0,
+      handProcedureSynchroSummonSelectDestroy: 0,
       diceStatDrawDirect: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
