@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 270;
+export const operationFixtureCount = 271;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   announceChangeCode: 1,
@@ -125,6 +125,7 @@ export const operationKindCounts = {
   groupLevelFinal: 1,
   handDiscardDraw: 1,
   handRevealShuffleFinalAttack: 1,
+  handSummonDefenseTargetHeroStat: 1,
   handProcedureDestroyReleaseStat: 1,
   handToDeckDraw: 1,
   handSelfDiscardDestroyStat: 1,
@@ -334,6 +335,7 @@ export type OperationKind =
   | "groupLevelFinal"
   | "handDiscardDraw"
   | "handRevealShuffleFinalAttack"
+  | "handSummonDefenseTargetHeroStat"
   | "handProcedureDestroyReleaseStat"
   | "handToDeckDraw"
   | "handSelfDiscardDestroyStat"
@@ -422,6 +424,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-vicious-claws-hand-summon-stat.test.ts",
+      kind: "handSummonDefenseTargetHeroStat",
+      required: [
+        "restores hand Special Summon in defense into targeted HERO ATK boost",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_ATKCHANGE)",
+        "e1:SetRange(LOCATION_HAND)",
+        "c:IsCanBeSpecialSummoned(e,0,tp,false,false,POS_FACEUP_DEFENSE)",
+        "Duel.IsExistingTarget(aux.FaceupFilter(Card.IsSetCard,SET_HERO),tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsSetCard,SET_HERO),tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,1,tp,300)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP_DEFENSE)>0",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(300)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-garunix-eternity-detach-destroy-stat.test.ts",
       kind: "detachSpellTrapDestroySelfStat",
@@ -4908,6 +4931,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       graveToDeckBottomDraw: 0,
       handDiscardDraw: 0,
       handRevealShuffleFinalAttack: 0,
+      handSummonDefenseTargetHeroStat: 0,
       handProcedureDestroyReleaseStat: 0,
       handToDeckDraw: 0,
       handSelfDiscardDestroyStat: 0,
