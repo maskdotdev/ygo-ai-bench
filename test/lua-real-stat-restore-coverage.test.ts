@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 111;
+const statFixtureCount = 112;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -75,7 +75,7 @@ const statKindCounts = {
   summonSuccessTargetAttackUpdate: 1,
   summonSuccessTargetAttackDisableChainPzone: 1,
   summonBaseAttackDefenseFlaggedHalve: 1,
-  summonSuccessMaterialCheckDestroyAttackUpdate: 1,
+  summonSuccessMaterialCheckDestroyAttackUpdate: 2,
   summonTargetGroupDestroyCountStat: 1,
   setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
@@ -1566,6 +1566,24 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredBattle.session.state.cards.find((card) => card.uid === battleSerket.uid), restoredBattle.session.state)).toBe(3500)",
         'eventName: "destroyed"',
         'battleWindow?.kind).toBe("startDamageStep")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-satellite-cannon-falcon-xyz-chainlimit-quick-stat.test.ts",
+      kind: "summonSuccessMaterialCheckDestroyAttackUpdate",
+      required: [
+        'const falconCode = "23603403"',
+        "restores Raidraptor material-check summon wipe and detach-count quick ATK loss",
+        "e2:SetCode(EFFECT_MATERIAL_CHECK)",
+        "e2:SetLabelObject(e1)",
+        "g:IsExists(Card.IsSetCard,1,nil,SET_RAIDRAPTOR)",
+        "Duel.SetChainLimit(s.chainlm)",
+        "Cost.DetachFromSelf(1)",
+        "Duel.GetMatchingGroupCount(s.atkfilter,tp,LOCATION_GRAVE,0,nil)",
+        "e1:SetValue(ct*-800)",
+        "currentAttack(restoredQuick.session.state.cards.find((card) => card.uid === opponentMonster.uid), restoredQuick.session.state)).toBe(0)",
+        "value: -2400",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {

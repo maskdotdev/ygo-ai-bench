@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 316;
+export const operationFixtureCount = 317;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -13,6 +13,7 @@ export const operationKindCounts = {
   persistentLinkCountStatBattledDestroy: 1,
   attackAnnounceStatExactSpendFieldDestroy: 1,
   linkAttributeCostDestroyFlag: 1,
+  xyzMaterialCheckChainLimitQuickStatDestroy: 1,
   linkGyAttackReleaseCountDestroy: 1,
   changeCodeQuickAttackSpendDestroyBattleStat: 1,
   opponentTurnQuickAttackSpendDestroy: 1,
@@ -268,6 +269,7 @@ export type OperationKind =
   | "persistentLinkCountStatBattledDestroy"
   | "attackAnnounceStatExactSpendFieldDestroy"
   | "linkAttributeCostDestroyFlag"
+  | "xyzMaterialCheckChainLimitQuickStatDestroy"
   | "linkGyAttackReleaseCountDestroy"
   | "changeCodeQuickAttackSpendDestroyBattleStat"
   | "opponentTurnQuickAttackSpendDestroy"
@@ -754,6 +756,33 @@ export function operationFixtureFiles(): Array<{
         "Duel.Destroy(g,REASON_EFFECT)",
         'eventName: "attackDeclared"',
         'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-satellite-cannon-falcon-xyz-chainlimit-quick-stat.test.ts",
+      kind: "xyzMaterialCheckChainLimitQuickStatDestroy",
+      required: [
+        "restores Raidraptor material-check summon wipe and detach-count quick ATK loss",
+        "Xyz.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsRace,RACE_WINGEDBEAST),8,2)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e1:SetCondition(s.descon)",
+        "e2:SetCode(EFFECT_MATERIAL_CHECK)",
+        "e2:SetValue(s.valcheck)",
+        "e2:SetLabelObject(e1)",
+        "g:IsExists(Card.IsSetCard,1,nil,SET_RAIDRAPTOR)",
+        "Duel.SetChainLimit(s.chainlm)",
+        "return tp==rp",
+        "e3:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e3:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e3:SetCost(Cost.DetachFromSelf(1))",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetMatchingGroupCount(s.atkfilter,tp,LOCATION_GRAVE,0,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(ct*-800)",
+        'eventName: "specialSummoned"',
+        'eventName: "destroyed"',
+        'eventName: "detachedMaterial"',
         "operationInfos",
       ],
     },
@@ -6028,6 +6057,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       persistentLinkCountStatBattledDestroy: 0,
       attackAnnounceStatExactSpendFieldDestroy: 0,
       linkAttributeCostDestroyFlag: 0,
+      xyzMaterialCheckChainLimitQuickStatDestroy: 0,
       linkGyAttackReleaseCountDestroy: 0,
       changeCodeQuickAttackSpendDestroyBattleStat: 0,
       opponentTurnQuickAttackSpendDestroy: 0,

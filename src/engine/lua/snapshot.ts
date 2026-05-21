@@ -186,7 +186,7 @@ function refreshedLuaResponse(restored: LuaSnapshotRestoreResult, result: ApplyD
 }
 
 function restoreMaterialCheckTriggers(restored: LuaSnapshotRestoreResult, response: DuelResponse): void {
-  if (response.type !== "synchroSummon") return;
+  if (response.type !== "synchroSummon" && response.type !== "xyzSummon") return;
   const source = restored.session.state.cards.find((card) => card.uid === response.uid);
   if (!source) return;
   const materialCheckEffects = restored.session.state.effects.filter((effect) => effect.sourceUid === source.uid && effect.code === 251);
