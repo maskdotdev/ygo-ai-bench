@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 79;
+const statFixtureCount = 80;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -71,6 +71,7 @@ const statKindCounts = {
   preDamageSelfToGraveBattleMonsterStat: 3,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
+  trapChainNegateDestroySelfAttackUpdate: 1,
   xyzDetachAttributeExceptGroupStat: 1,
   xyzDetachTargetFinalSelfUpdate: 1,
 } satisfies Record<StatKind, number>;
@@ -154,9 +155,10 @@ const statSemanticVariantCounts = {
   frightfurJarToGraveFinalStat: 1,
   rocketHandEquipCostFinalStat: 1,
   darkRequiemXyzDetachFinalStat: 1,
+  kusanagiTrapNegateStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "ouroborosSageSummonEquipStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "xyzDetachAttributeExceptGroupStat" | "xyzDetachTargetFinalSelfUpdate";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "ouroborosSageSummonEquipStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "trapChainNegateDestroySelfAttackUpdate" | "xyzDetachAttributeExceptGroupStat" | "xyzDetachTargetFinalSelfUpdate";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -195,6 +197,7 @@ type StatSemanticVariant =
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "juggernautLiebeDetachStatAttackLock"
   | "kingOverfiendDetachStatCannotTrigger"
+  | "kusanagiTrapNegateStat"
   | "luminousSoldierDamageStepTargetAttributeStat"
   | "majesticRedDisableReturnStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
@@ -1412,6 +1415,19 @@ function statFixtureFiles(): Array<{
         'eventName: "detachedMaterial"',
       ],
     },
+    {
+      file: "test/lua-real-script-kusanagi-trap-negate-stat.test.ts",
+      kind: "trapChainNegateDestroySelfAttackUpdate",
+      required: [
+        'const kusanagiCode = "74593218"',
+        "restores trap activation negation, source destruction, detach cost, and self ATK update",
+        "re:IsHasType(EFFECT_TYPE_ACTIVATE) and re:IsTrapEffect() and Duel.IsChainNegatable(ev)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        "currentAttack(restoredResponse.session.state.cards.find((card) => card.uid === kusanagi.uid), restoredResponse.session.state)).toBe(3000)",
+        'eventName: "chainNegated"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatKind;
@@ -1490,6 +1506,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       targetedIgnitionDisable: 0,
       targetedPreDamageFinalAttack: 0,
       targetedQuickAttackDefenseUpdateChainLimit: 0,
+      trapChainNegateDestroySelfAttackUpdate: 0,
       toGraveTargetFinalAttackHalve: 0,
       xyzDetachAttributeExceptGroupStat: 0,
       xyzDetachTargetFinalSelfUpdate: 0,
@@ -2418,6 +2435,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-kusanagi-trap-negate-stat.test.ts",
+      kind: "kusanagiTrapNegateStat",
+      required: [
+        'const kusanagiCode = "74593218"',
+        "e1:SetProperty(EFFECT_FLAG_COPY_INHERIT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(500)",
+        "battleDamage).toEqual({ 0: 2000, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-royal-rhino-chain-dice-atk.test.ts",
       kind: "royalRhinoChainDiceAttackUpdate",
       required: [
@@ -2504,6 +2532,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       juggernautLiebeDetachStatAttackLock: 0,
       kingOverfiendDetachStatCannotTrigger: 0,
+      kusanagiTrapNegateStat: 0,
       luminousSoldierDamageStepTargetAttributeStat: 0,
       majesticRedDisableReturnStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
