@@ -114,7 +114,8 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_pushcfunction(L, (state: unknown) => {
     const uid = readCardUid(state, 2);
     if (uid) setGroupUids(state, 1, readGroupUids(state, 1).filter((candidate) => candidate !== uid));
-    return 0;
+    lua.lua_pushvalue(state, 1);
+    return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("RemoveCard"));
   lua.lua_pushcfunction(L, (state: unknown) => {
