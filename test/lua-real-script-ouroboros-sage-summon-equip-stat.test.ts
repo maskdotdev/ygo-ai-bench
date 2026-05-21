@@ -225,6 +225,77 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ZS
 
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === defender.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
+
+    restoredTrigger.session.state.phase = "battle";
+    restoredTrigger.session.state.waitingFor = 0;
+    const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
+    expectCleanRestore(restoredBattle);
+    expectRestoredLegalActions(restoredBattle, 0);
+    const attack = getLuaRestoreLegalActions(restoredBattle, 0).find((action) => (
+      action.type === "declareAttack" &&
+      action.attackerUid === numberTarget.uid &&
+      action.targetUid === defender.uid
+    ));
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredBattle, attack!);
+
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
+      {
+        id: "trigger-9-1",
+        player: 0,
+        sourceUid: ouroborosSage.uid,
+        effectId: "lua-11-1130",
+        eventName: "attackDeclared",
+        triggerBucket: "turnOptional",
+        eventTriggerTiming: "when",
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: ouroborosSage.uid,
+        eventReasonEffectId: 1,
+        eventCode: 1130,
+        eventPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: true,
+          location: "graveyard",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 2,
+        },
+        eventCardUid: numberTarget.uid,
+      },
+    ]);
+    const restoredAttackTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), workspace, reader);
+    expectCleanRestore(restoredAttackTrigger);
+    expectRestoredLegalActions(restoredAttackTrigger, 0);
+    const doubleAttack = getLuaRestoreLegalActions(restoredAttackTrigger, 0).find((action) => (
+      action.type === "activateTrigger" &&
+      action.uid === ouroborosSage.uid &&
+      action.effectId === "lua-11-1130"
+    ));
+    expect(doubleAttack, JSON.stringify(getLuaRestoreLegalActions(restoredAttackTrigger, 0), null, 2)).toBeDefined();
+    expect(currentAttack(restoredAttackTrigger.session.state.cards.find((card) => card.uid === numberTarget.uid), restoredAttackTrigger.session.state)).toBe(5400);
+    applyRestoredActionAndAssert(restoredAttackTrigger, doubleAttack!);
+    expect(currentAttack(restoredAttackTrigger.session.state.cards.find((card) => card.uid === numberTarget.uid), restoredAttackTrigger.session.state)).toBe(10800);
+    expect(restoredAttackTrigger.session.state.effects.filter((effect) => effect.code === 102)).toEqual([
+      {
+        id: "lua-11-1130-set-attack-final",
+        sourceUid: numberTarget.uid,
+        controller: 0,
+        event: "continuous",
+        code: 102,
+        value: 10800,
+        range: ["monsterZone"],
+        reset: { flags: 33427456 },
+        operation: expect.any(Function),
+      },
+    ]);
   });
 });
 

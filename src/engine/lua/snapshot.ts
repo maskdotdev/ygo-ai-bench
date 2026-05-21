@@ -2,7 +2,7 @@ import { findCard, hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
 import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, collectDuelTriggerEvent, damageDuelPlayer, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelLocations } from "#duel/location-kinds.js";
@@ -91,6 +91,7 @@ const luaHalfDamage = 0x80000001;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetsStandardPhaseEndRuntime = luaResetsStandardPhaseEnd & ~luaResetEvent;
 const luaResetEventStandard = luaResetEvent | 0x1fe0000;
+const luaPhaseEndResetFlags = luaResetPhase | luaPhaseEnd;
 const luaTemporaryRestrictionResetFlags = luaResetsStandardPhaseEnd & ~luaResetTurnSet; const luaTemporaryPositionLockResetFlags = luaResetPhase | luaPhaseEnd;
 export interface LuaSnapshotRestoreResult {
   session: DuelSession;
@@ -512,6 +513,7 @@ function restoreKnownLuaEffects(
       ...(reset ? { reset } : {}),
       ...(effect.targetRange ? { targetRange: [...effect.targetRange] } : {}),
       ...(effect.hintTiming ? { hintTiming: [...effect.hintTiming] } : {}),
+      ...restoredLuaTypeFlagMetadata(session, effect),
       ...restoredLuaValueCallbacks(effect),
       ...restoredLuaConditionCallbacks(effect), ...restoredLuaCostCallbacks(effect),
       ...restoredLuaTargetCallbacks(effect),
@@ -520,6 +522,14 @@ function restoreKnownLuaEffects(
     added.push(effect.registryKey);
   }
   return added;
+}
+
+function restoredLuaTypeFlagMetadata(session: DuelSession, effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "luaTypeFlags"> {
+  const source = session.state.cards.find((card) => card.uid === effect.sourceUid);
+  if (effect.event === "continuous" && isKnownStatValueEffect(effect) && effect.range.length === 1 && effect.range[0] === "spellTrapZone" && source?.equippedToUid !== undefined) {
+    return { luaTypeFlags: 0x4 };
+  }
+  return {};
 }
 
 function refreshKnownRestoredLuaEffect(session: DuelSession, effect: SerializedDuelEffect): void {
@@ -657,6 +667,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownEbonArrowBattleDestroyingDamageEffect(effect) ||
     isKnownMiniGutsBattleDestroyedDamageEffect(effect) ||
     isKnownDivineEvolutionAttackAnnounceSendEffect(effect) ||
+    isKnownOuroborosSageAttackLimitWatcherEffect(effect) ||
+    isKnownOuroborosSageAttackDoubleEffect(effect) ||
     isKnownTaiStrikeDamageStepEndEffect(effect) ||
     (effect.event === "continuous" &&
       (effect.code === 2 ||
@@ -831,6 +843,25 @@ function isKnownDivineEvolutionAttackAnnounceSendEffect(effect: SerializedDuelEf
     effect.triggerEvent === "attackDeclared" &&
     effect.sourceUid !== undefined &&
     effect.reset !== undefined;
+}
+function isKnownOuroborosSageAttackLimitWatcherEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:32281491:")) &&
+    effect.event === "continuous" &&
+    effect.code === 1130 &&
+    effect.triggerEvent === "attackDeclared" &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    hasDefaultLuaFieldRange(effect);
+}
+function isKnownOuroborosSageAttackDoubleEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:32281491:")) &&
+    effect.event === "trigger" &&
+    effect.code === 1130 &&
+    effect.triggerEvent === "attackDeclared" &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone" &&
+    effect.reset?.flags === luaResetEventStandard;
 }
 function isKnownTaiStrikeDamageStepEndEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith("lua:86449372:")) &&
@@ -1202,6 +1233,8 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownEbonArrowBattleDestroyingDamageEffect(effect)) return ebonArrowBattleDestroyingDamageOperation(effect);
   if (isKnownMiniGutsBattleDestroyedDamageEffect(effect)) return miniGutsBattleDestroyedDamageOperation(effect);
   if (isKnownDivineEvolutionAttackAnnounceSendEffect(effect)) return divineEvolutionAttackAnnounceSendOperation(effect);
+  if (isKnownOuroborosSageAttackLimitWatcherEffect(effect)) return ouroborosSageAttackLimitWatcherOperation(effect);
+  if (isKnownOuroborosSageAttackDoubleEffect(effect)) return ouroborosSageAttackDoubleOperation(effect);
   if (isKnownTaiStrikeDamageStepEndEffect(effect)) return taiStrikeDamageStepEndOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
@@ -1236,6 +1269,49 @@ function divineEvolutionAttackAnnounceSendOperation(effect: SerializedDuelEffect
     } catch {
       // EDOPro-style restored trigger ignores a target that can no longer be sent.
     }
+  };
+}
+
+function ouroborosSageAttackLimitWatcherOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    if (ctx.duel.turnPlayer !== effect.controller) return;
+    ctx.duel.effects.push({
+      id: `${effect.id}-cannot-attack-announce`,
+      sourceUid: effect.sourceUid,
+      controller: effect.controller,
+      event: "continuous",
+      code: 86,
+      property: luaEffectFlagPlayerTarget,
+      targetRange: [1, 0],
+      range: [...duelLocations],
+      reset: { flags: luaPhaseEndResetFlags },
+      operation: () => {},
+    });
+  };
+}
+
+function ouroborosSageAttackDoubleOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    const equippedTargetUid = source?.equippedToUid;
+    const equippedTarget = equippedTargetUid ? ctx.duel.cards.find((card) => card.uid === equippedTargetUid) : undefined;
+    const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle;
+    const battleTarget = battle?.targetUid ? ctx.duel.cards.find((card) => card.uid === battle.targetUid) : undefined;
+    if (!source || source.location !== "spellTrapZone" || !equippedTarget || !battle || battle.attackerUid !== equippedTarget.uid) return;
+    if (!battleTarget || battleTarget.controller === effect.controller) return;
+    const attack = currentAttack(equippedTarget, ctx.duel);
+    if (attack <= 0) return;
+    ctx.duel.effects.push({
+      id: `${effect.id}-set-attack-final`,
+      sourceUid: equippedTarget.uid,
+      controller: effect.controller,
+      event: "continuous",
+      code: 102,
+      value: attack * 2,
+      range: ["monsterZone"],
+      reset: { flags: luaResetEventStandard },
+      operation: () => {},
+    });
   };
 }
 
