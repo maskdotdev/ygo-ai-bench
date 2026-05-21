@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 42;
+const statFixtureCount = 43;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -40,6 +40,7 @@ const statKindCounts = {
   preDamageSelfToGraveBattleMonsterStat: 1,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
+  xyzDetachAttributeExceptGroupStat: 1,
 } satisfies Record<StatKind, number>;
 const statSemanticVariantCounts = {
   aForcesMatchingRaceCountStat: 1,
@@ -53,6 +54,7 @@ const statSemanticVariantCounts = {
   royalRhinoChainDiceAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
+  fairyKingAlbverdichDetachAttributeExceptStat: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
   guardragonShieldLinkSumStat: 1,
@@ -86,7 +88,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -98,6 +100,7 @@ type StatSemanticVariant =
   | "borreloadChainLimitAttackDefenseDrop"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "digitJammingPrecalcDestroyedStat"
+  | "fairyKingAlbverdichDetachAttributeExceptStat"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
   | "guardragonShieldLinkSumStat"
@@ -338,6 +341,22 @@ function statFixtureFiles(): Array<{
         "code: 105",
         'type === "declareAttack"',
         "lifePoints).toBe(7700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fairy-king-albverdich-detach-group-stat.test.ts",
+      kind: "xyzDetachAttributeExceptGroupStat",
+      required: [
+        'const albverdichCode = "28290705"',
+        "restores Xyz detach cost and Card.IsAttributeExcept group ATK/DEF loss",
+        "e1:SetCost(Cost.DetachFromSelf(1,1,nil))",
+        "aux.FaceupFilter(Card.IsAttributeExcept,ATTRIBUTE_EARTH)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "reason: duelReason.cost",
+        "currentAttack(restored.session.state.cards.find((card) => card.uid === darkOwn.uid)!, restored.session.state)).toBe(1200)",
+        "currentDefense(restored.session.state.cards.find((card) => card.uid === darkOpponent.uid)!, restored.session.state)).toBe(800)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -774,6 +793,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       targetedDamageStepDefenseUpdate: 0,
       targetedPreDamageFinalAttack: 0,
       targetedQuickAttackDefenseUpdateChainLimit: 0,
+      xyzDetachAttributeExceptGroupStat: 0,
     },
   );
 }
@@ -874,6 +894,18 @@ function statSemanticVariants(): Array<{
         'const pastCode = "57869175"',
         "restores callback-valued set ATK/DEF effects and uses them for battle calculation",
         "lifePoints).toBe(7700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-fairy-king-albverdich-detach-group-stat.test.ts",
+      kind: "fairyKingAlbverdichDetachAttributeExceptStat",
+      required: [
+        'const albverdichCode = "28290705"',
+        "restores Xyz detach cost and Card.IsAttributeExcept group ATK/DEF loss",
+        "Xyz.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsAttribute,ATTRIBUTE_EARTH),4,2)",
+        "aux.FaceupFilter(Card.IsAttributeExcept,ATTRIBUTE_EARTH)",
+        'eventName: "detachedMaterial"',
+        "value: -500",
       ],
     },
     {
@@ -1254,6 +1286,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       borreloadChainLimitAttackDefenseDrop: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       digitJammingPrecalcDestroyedStat: 0,
+      fairyKingAlbverdichDetachAttributeExceptStat: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
       guardragonShieldLinkSumStat: 0,
