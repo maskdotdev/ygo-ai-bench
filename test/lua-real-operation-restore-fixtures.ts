@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 330;
+export const operationFixtureCount = 331;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -221,6 +221,7 @@ export const operationKindCounts = {
   selectEffectStatSearch: 2,
   selectEffectStatDestroyedToGrave: 1,
   selectEffectStatDestroy: 1,
+  sequentialNormalCountStatDisableDeckSearch: 1,
   selectUnselectTargetStat: 1,
   specialSearchMaterialDamage: 1,
   specialSummonDelayedReturnStat: 1,
@@ -485,6 +486,7 @@ export type OperationKind =
   | "selectEffectStatSearch"
   | "selectEffectStatDestroyedToGrave"
   | "selectEffectStatDestroy"
+  | "sequentialNormalCountStatDisableDeckSearch"
   | "selectUnselectTargetStat"
   | "specialSearchMaterialDamage"
   | "specialSummonDelayedReturnStat"
@@ -5376,6 +5378,33 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-toil-normal-sequential-stat-disable-search.test.ts",
+      kind: "sequentialNormalCountStatDisableDeckSearch",
+      required: [
+        "restores five-Normal sequence into field ATK/protection, effect negate, Deck shuffle, and search",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DISABLE+CATEGORY_TODECK+CATEGORY_TOHAND+CATEGORY_SEARCH)",
+        "Duel.GetMatchingGroup(Card.IsType,tp,LOCATION_GRAVE,0,nil,TYPE_NORMAL):GetClassCount(Card.GetCode)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_ATKCHANGE,nil,0,tp,800)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DISABLE,nil,1,tp,LOCATION_MZONE)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TODECK,nil,1,tp,LOCATION_MZONE)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)",
+        "Duel.RegisterEffect(e1,tp)",
+        "aux.RegisterClientHint(c,0,tp,1,0,aux.Stringid(id,1))",
+        "sc:NegateEffects(c,RESET_PHASE|PHASE_END)",
+        "Duel.AdjustInstantly(sc)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "Duel.SendtoDeck(g,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        'eventName: "breakEffect"',
+        'eventName: "sentToDeck"',
+        'eventName: "sentToHandConfirmed"',
+        "currentAttack",
+        "operationInfos",
+      ],
+    },
+    {
       file: "test/lua-real-script-chain-burst-trap-chain-solved-damage.test.ts",
       kind: "chainSolvedTrapDamage",
       required: [
@@ -6582,6 +6611,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStatSearch: 0,
       selectEffectStatDestroyedToGrave: 0,
       selectEffectStatDestroy: 0,
+      sequentialNormalCountStatDisableDeckSearch: 0,
       selectUnselectTargetStat: 0,
       specialSearchMaterialDamage: 0,
       specialSummonDelayedReturnStat: 0,

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 125;
+const statFixtureCount = 126;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -49,7 +49,7 @@ const statKindCounts = {
   eventChangePositionTargetAttackDefenseDrop: 1,
   fieldCounterCostBanishAttackUpdate: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
-  fieldGroupCountStat: 3,
+  fieldGroupCountStat: 4,
   fieldMatchingFaceupRaceCountStat: 2,
   fieldAttributeAttackUpdate: 3,
   fieldLinkSumAttackDefenseUpdate: 1,
@@ -862,6 +862,20 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === hundred.uid), restoredOpen.session.state)).toBe(2100)",
         "attackModifier: 300",
         "levelModifier: 3",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-toil-normal-sequential-stat-disable-search.test.ts",
+      kind: "fieldGroupCountStat",
+      required: [
+        "restores five-Normal sequence into field ATK/protection, effect negate, Deck shuffle, and search",
+        "Duel.GetMatchingGroup(Card.IsType,tp,LOCATION_GRAVE,0,nil,TYPE_NORMAL):GetClassCount(Card.GetCode)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_ATKCHANGE,nil,0,tp,800)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.RegisterEffect(e1,tp)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === fieldNormal.uid)!, restoredOpen.session.state)).toBe(1800)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
