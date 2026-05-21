@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 72;
+const statFixtureCount = 73;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -38,6 +38,7 @@ const statKindCounts = {
   overlayDetachSelfStatAttackLock: 1,
   overlayDetachSelfStatBattleProtection: 1,
   overlayDetachTargetStatTriggerLock: 1,
+  pzoneContractNameCountAttackDestroy: 1,
   pzoneDiscardTargetAttackDefenseUpdate: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
   primalDragonBanishAttackDefenseUpdate: 1,
@@ -89,6 +90,7 @@ const statSemanticVariantCounts = {
   scoreMelodiousPrecalcFinalStat: 1,
   skullgiosBattleConfirmSwapPierceDamage: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
+  ddGryphonPzoneContractStatDestroy: 1,
   digitJammingPrecalcDestroyedStat: 1,
   armoredKappaOptionBattleProtection: 1,
   kingOverfiendDetachStatCannotTrigger: 1,
@@ -142,7 +144,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -160,6 +162,7 @@ type StatSemanticVariant =
   | "clearWingRiderDiceToDeckDestroyStat"
   | "copycatSummonTargetFinalStat"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
+  | "ddGryphonPzoneContractStatDestroy"
   | "ddSavantNikolaPzoneDiscardStat"
   | "digitJammingPrecalcDestroyedStat"
   | "dinoSewingBattleTargetStatReset"
@@ -1193,6 +1196,22 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-dd-gryphon-pzone-contract-stat-destroy.test.ts",
+      kind: "pzoneContractNameCountAttackDestroy",
+      required: [
+        'const gryphonCode = "28406301"',
+        "restores PZone Dark Contract name-count targeting into Fiend ATK gain and self destruction",
+        "Pendulum.AddProcedure(c)",
+        "e1:SetRange(LOCATION_PZONE)",
+        "return c:IsSetCard(SET_DARK_CONTRACT) and c:IsSpellTrap() and c:IsFaceup()",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsRace,RACE_FIEND),tp,LOCATION_MZONE,0,1,1,nil)",
+        "g:GetClassCount(Card.GetCode)*500",
+        "Duel.Destroy(c,REASON_EFFECT)",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === target.uid), restoredResolved.session.state)).toBe(2200)",
+        "value: 1000",
+      ],
+    },
+    {
       file: "test/lua-real-script-dd-savant-nikola-pzone-discard-stat.test.ts",
       kind: "pzoneDiscardTargetAttackDefenseUpdate",
       required: [
@@ -1334,6 +1353,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       overlayDetachSelfStatAttackLock: 0,
       overlayDetachSelfStatBattleProtection: 0,
       overlayDetachTargetStatTriggerLock: 0,
+      pzoneContractNameCountAttackDestroy: 0,
       pzoneDiscardTargetAttackDefenseUpdate: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
       preDamageSelfToGraveBattleMonsterStat: 0,
@@ -1511,6 +1531,19 @@ function statSemanticVariants(): Array<{
         'const dForceCode = "6186304"',
         "restores official graveyard-count ATK update and extra attack grant for Plasma",
         "d force plasma attack 2200",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dd-gryphon-pzone-contract-stat-destroy.test.ts",
+      kind: "ddGryphonPzoneContractStatDestroy",
+      required: [
+        'const gryphonCode = "28406301"',
+        "restores PZone Dark Contract name-count targeting into Fiend ATK gain and self destruction",
+        "aux.FaceupFilter(Card.IsRace,RACE_FIEND)",
+        "g:GetClassCount(Card.GetCode)*500",
+        "reason: duelReason.effect | duelReason.destroy",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
       ],
     },
     {
@@ -2262,6 +2295,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       copycatSummonTargetFinalStat: 0,
       cyberDragonSiegerCodeStatDamagePrevention: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
+      ddGryphonPzoneContractStatDestroy: 0,
       ddSavantNikolaPzoneDiscardStat: 0,
       digitJammingPrecalcDestroyedStat: 0,
       dinoSewingBattleTargetStatReset: 0,
