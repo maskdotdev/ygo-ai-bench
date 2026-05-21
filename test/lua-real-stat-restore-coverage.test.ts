@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 119;
+const statFixtureCount = 120;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -75,7 +75,7 @@ const statKindCounts = {
   primalDragonBanishAttackDefenseUpdate: 1,
   rankSumAttackUpdate: 1,
   setAttack: 1,
-  setBaseAttack: 1,
+  setBaseAttack: 2,
   setBaseAttackDefenseEndDestroy: 1,
   summonSuccessTargetAttackUpdate: 1,
   summonSuccessTargetAttackDisableChainPzone: 1,
@@ -873,6 +873,22 @@ function statFixtureFiles(): Array<{
         'type === "passChain"',
         'type === "declareAttack"',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lost-wind-negate-base-atk-grave-set.test.ts",
+      kind: "setBaseAttack",
+      required: [
+        'const lostWindCode = "74003290"',
+        "restores special-summoned target negation/base ATK halve and opponent Extra Deck summon grave self-set redirect",
+        "e3:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e3:SetValue(tc:GetBaseAttack()/2)",
+        "Duel.AdjustInstantly(tc)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid), restoredOpen.session.state)).toBe(1200)",
+        "lost wind probe 740032900/1200/true",
+        "code: 103",
+        "value: 1200",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {

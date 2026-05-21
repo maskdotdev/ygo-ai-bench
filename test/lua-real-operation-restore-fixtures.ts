@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 324;
+export const operationFixtureCount = 325;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -242,7 +242,7 @@ export const operationKindCounts = {
   trapReclamationReturn: 1,
   trapStepSummonOperatedCounter: 1,
   targetCardsCounterDisable: 1,
-  targetDisableStat: 1,
+  targetDisableStat: 2,
   targetSendStatDelayedSet: 1,
   targetBanish: 1,
   targetBanishDiscardCost: 1,
@@ -2754,6 +2754,26 @@ export function operationFixtureFiles(): Array<{
         "currentDefense(restoredTarget, restored.session.state)).toBe(700)",
         "isCardDisabled",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lost-wind-negate-base-atk-grave-set.test.ts",
+      kind: "targetDisableStat",
+      required: [
+        "restores special-summoned target negation/base ATK halve and opponent Extra Deck summon grave self-set redirect",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DISABLE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "aux.StatChangeDamageStepCondition",
+        "return c:IsFaceup() and c:IsSpecialSummoned()",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "Duel.AdjustInstantly(tc)",
+        "e3:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "Duel.SSet(tp,c)",
+        "e1:SetCode(EFFECT_LEAVE_FIELD_REDIRECT)",
+        "operationInfos",
+        "eventHistory",
+        "currentAttack",
+        "lost wind probe",
       ],
     },
     {
