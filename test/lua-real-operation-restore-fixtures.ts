@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 238;
+export const operationFixtureCount = 239;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -92,6 +92,7 @@ export const operationKindCounts = {
   groupDestroyDamageStatLp: 1,
   groupToGraveFinalAttack: 1,
   handStatBoost: 1,
+  handQuickSummonSelectEffectStat: 1,
   pzoneAttackAnnounceStat: 1,
   twoTargetPositionCopyStat: 1,
   groupToHand: 2,
@@ -270,6 +271,7 @@ export type OperationKind =
   | "groupDestroyDamageStatLp"
   | "groupToGraveFinalAttack"
   | "handStatBoost"
+  | "handQuickSummonSelectEffectStat"
   | "pzoneAttackAnnounceStat"
   | "twoTargetPositionCopyStat"
   | "groupToHand"
@@ -382,6 +384,29 @@ export function operationFixtureFiles(): Array<{
         "currentAttack",
         "currentDefense",
         "code: 201",
+      ],
+    },
+    {
+      file: "test/lua-real-script-vs-pluton-hand-summon-select-stat.test.ts",
+      kind: "handQuickSummonSelectEffectStat",
+      required: [
+        "restores opponent-turn hand Quick Summon and reveal-cost SelectEffect DEF boost",
+        "e1:SetType(EFFECT_TYPE_QUICK_O)",
+        "e1:SetRange(LOCATION_HAND)",
+        "Duel.IsTurnPlayer(1-tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,0,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "e2:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectEffect(tp,",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.ShuffleHand(tp)",
+        "c:UpdateDefense(3000,RESETS_STANDARD_DISABLE_PHASE_END)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "confirmed"',
+        "promptDecisions",
+        "defenseModifier: 3000",
       ],
     },
     {
@@ -4066,6 +4091,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       groupToGraveFinalAttack: 0,
       handBanishDrawStat: 0,
       handStatBoost: 0,
+      handQuickSummonSelectEffectStat: 0,
       pzoneAttackAnnounceStat: 0,
       twoTargetPositionCopyStat: 0,
       groupLevelFinal: 0,
