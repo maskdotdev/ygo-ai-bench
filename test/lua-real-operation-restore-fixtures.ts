@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 322;
+export const operationFixtureCount = 323;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -10,6 +10,7 @@ export const operationKindCounts = {
   attackAnnounceSelectEffectStatImmune: 1,
   handSummonOptionalDrawQuickFinalHalve: 1,
   equipCountTargetNegateStat: 1,
+  loadedScriptEquipQuickNegateFinalStat: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
@@ -271,6 +272,7 @@ export type OperationKind =
   | "attackAnnounceSelectEffectStatImmune"
   | "handSummonOptionalDrawQuickFinalHalve"
   | "equipCountTargetNegateStat"
+  | "loadedScriptEquipQuickNegateFinalStat"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
@@ -712,6 +714,29 @@ export function operationFixtureFiles(): Array<{
         "Duel.Equip(tp,tc,c,true,true)",
         "e1:SetCode(EFFECT_EQUIP_LIMIT)",
         "Duel.EquipComplete()",
+        "operationInfos",
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ultimate-leo-utopia-ray-load-negate-final-stat.test.ts",
+      kind: "loadedScriptEquipQuickNegateFinalStat",
+      required: [
+        "restores LoadCardScript dependency, ZW equip-gated quick negate, and final ATK halve",
+        'Duel.LoadCardScript("c56840427.lua")',
+        "e1:SetCategory(CATEGORY_EQUIP)",
+        "e1:SetCost(Cost.DetachFromSelf(1))",
+        "Duel.SetOperationInfo(0,CATEGORY_EQUIP,nil,1,tp,LOCATION_DECK|LOCATION_EXTRA)",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK|LOCATION_EXTRA,0,1,1,nil,c,tp)",
+        "eff:GetOperation()(tc,eff:GetLabelObject(),tp,c)",
+        "return e:GetHandler():GetEquipGroup():IsExists(s.discfilter,1,nil)",
+        "c:IsSetCard(SET_ZW)",
+        "e2:SetCategory(CATEGORY_DISABLE+CATEGORY_ATKCHANGE)",
+        "e2:SetCode(EVENT_FREE_CHAIN)",
+        "Duel.SelectTarget(tp,s.disfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.AdjustInstantly(tc)",
+        "e3:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "ultimate leo probe",
         "operationInfos",
         "currentAttack",
       ],
@@ -6189,6 +6214,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackAnnounceSelectEffectStatImmune: 0,
       handSummonOptionalDrawQuickFinalHalve: 0,
       equipCountTargetNegateStat: 0,
+      loadedScriptEquipQuickNegateFinalStat: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,

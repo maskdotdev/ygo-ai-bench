@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 117;
+const statFixtureCount = 118;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -42,7 +42,7 @@ const statKindCounts = {
   diceFieldBattleStartTwoPlayerAttackUpdate: 1,
   attackAnnounceSelectEffectAttackImmune: 1,
   handSummonDrawQuickFinalHalve: 1,
-  equipCountTargetNegateAttackUpdate: 1,
+  equipCountTargetNegateAttackUpdate: 2,
   diceScaleUpdate: 1,
   destroyGrantMonsterExtraAttackBattleDestroyingStat: 1,
   deckCostAttackDefenseUpdate: 1,
@@ -1546,6 +1546,24 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === gram.uid), restoredOpen.session.state)).toBe(1900)",
         "value: -1000",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ultimate-leo-utopia-ray-load-negate-final-stat.test.ts",
+      kind: "equipCountTargetNegateAttackUpdate",
+      required: [
+        'const leoCode = "68679595"',
+        "restores LoadCardScript dependency, ZW equip-gated quick negate, and final ATK halve",
+        'Duel.LoadCardScript("c56840427.lua")',
+        "return e:GetHandler():GetEquipGroup():IsExists(s.discfilter,1,nil)",
+        "e2:SetCategory(CATEGORY_DISABLE+CATEGORY_ATKCHANGE)",
+        "Duel.SelectTarget(tp,s.disfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.AdjustInstantly(tc)",
+        "local atk=tc:GetAttack()/2",
+        "e3:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e3:SetValue(atk)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid), restoredOpen.session.state)).toBe(1200)",
+        "ultimate leo probe 686795951/1200/true",
       ],
     },
     {
