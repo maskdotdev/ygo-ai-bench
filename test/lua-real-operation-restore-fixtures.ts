@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 278;
+export const operationFixtureCount = 279;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -95,6 +95,7 @@ export const operationKindCounts = {
   detachStatBurn: 1,
   detachSearchXyzBattleDamage: 1,
   destroyedSummonStatBurn: 1,
+  simultaneousDestroyedSelfSummonDestroyStat: 1,
   destroyedHeroSummonBaseStat: 1,
   directRecover: 1,
   xmaterialQuickDestroyDirect: 1,
@@ -312,6 +313,7 @@ export type OperationKind =
   | "detachStatBurn"
   | "detachSearchXyzBattleDamage"
   | "destroyedSummonStatBurn"
+  | "simultaneousDestroyedSelfSummonDestroyStat"
   | "destroyedHeroSummonBaseStat"
   | "directRecover"
   | "xmaterialQuickDestroyDirect"
@@ -438,6 +440,33 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-sacred-fire-king-garunix-destroyed-summon-stat.test.ts",
+      kind: "simultaneousDestroyedSelfSummonDestroyStat",
+      required: [
+        "restores simultaneous-check destroyed FIRE trigger into hand self Special Summon",
+        "restores summon-success FIRE destroy selection into ATK gain from destroyed monster",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DELAY,EFFECT_FLAG2_CHECK_SIMULTANEOUS)",
+        "e1:SetCode(EVENT_DESTROYED)",
+        "e1:SetRange(LOCATION_HAND|LOCATION_GRAVE)",
+        "return eg:IsExists(s.spconfilter,1,nil,tp)",
+        "and not (c:IsLocation(LOCATION_GRAVE) and eg:IsContains(c))",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e2:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,nil,1,tp,LOCATION_HAND|LOCATION_DECK|LOCATION_MZONE)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,tp,0)",
+        "Duel.SelectMatchingCard(tp,s.desfilter,tp,LOCATION_HAND|LOCATION_DECK|LOCATION_MZONE,0,1,1,nil):GetFirst()",
+        "local atk=tc:GetAttack()//2",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "c:UpdateAttack(atk,RESETS_STANDARD_DISABLE_PHASE_END)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-ancient-warriors-zhang-yuan-battle-summon-destroy.test.ts",
       kind: "battleStartHandSummonStatDestroyedTarget",
@@ -5080,6 +5109,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       detachStatBurn: 0,
       detachSearchXyzBattleDamage: 0,
       destroyedSummonStatBurn: 0,
+      simultaneousDestroyedSelfSummonDestroyStat: 0,
       destroyedHeroSummonBaseStat: 0,
       directRecover: 0,
       xmaterialQuickDestroyDirect: 0,
