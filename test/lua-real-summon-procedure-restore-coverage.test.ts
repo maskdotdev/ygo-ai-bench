@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 18;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 16;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 19;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 17;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 2,
   graveBanishCostStatProcedure: 1,
-  handOwnFaceupAttributeOpenZoneProcedure: 1,
+  handOwnFaceupAttributeOpenZoneProcedure: 2,
   handAttributeBanishCostSearchProcedure: 1,
   handReleaseEquipTurnCounterProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
@@ -26,6 +26,7 @@ const summonProcedureKindCounts = {
 const summonProcedureSemanticVariantCounts = {
   broadTypedExtraDeckSpiritGeminiProcedures: 1,
   caligoClawCrowDarkMonsterOpenZoneProcedure: 1,
+  gokaFireMonsterOpenZoneProcedureDestroyReleaseStat: 1,
   blackwingGaleSetcodeOpenZoneProcedureFinalStat: 1,
   collapserpentLightBanishCostSearchProcedure: 1,
   familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure: 1,
@@ -64,6 +65,7 @@ type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
   | "blackwingGaleSetcodeOpenZoneProcedureFinalStat"
   | "caligoClawCrowDarkMonsterOpenZoneProcedure"
+  | "gokaFireMonsterOpenZoneProcedureDestroyReleaseStat"
   | "collapserpentLightBanishCostSearchProcedure"
   | "familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure"
   | "familiarPossessedDeckTwoMaterialShufflePierceProcedure"
@@ -183,6 +185,22 @@ const summonProcedureFixtures = [
       "return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_DARK)",
       "expectRestoredActionSurfaces(restored, 0)",
       "applyLuaRestoreResponse(restored, procedure as DuelAction)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-goka-procedure-destroy-release-stat.test.ts",
+    kind: "handOwnFaceupAttributeOpenZoneProcedure",
+    required: [
+      "restores FIRE-gated inherent Special Summon, mandatory destroy trigger, and release-cost ATK gain",
+      'action.type === "specialSummonProcedure"',
+      "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+      "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsAttribute,ATTRIBUTE_FIRE),tp,LOCATION_MZONE,0,1,nil)",
+      "e2:SetCondition(function(e) return e:GetHandler():IsSummonType(SUMMON_TYPE_SPECIAL+1) end)",
+      "expectRestoredLegalActions(restoredProcedure, 0)",
+      "applyRestoredActionAndAssert(restoredProcedure, procedure!)",
+      "summonTypeCode: 0x40000001",
       'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
     ],
@@ -571,6 +589,20 @@ function summonProcedureSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-goka-procedure-destroy-release-stat.test.ts",
+      kind: "gokaFireMonsterOpenZoneProcedureDestroyReleaseStat",
+      required: [
+        'const gokaCode = "23116808"',
+        "restores FIRE-gated inherent Special Summon, mandatory destroy trigger, and release-cost ATK gain",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsAttribute,ATTRIBUTE_FIRE),tp,LOCATION_MZONE,0,1,nil)",
+        "e2:SetCondition(function(e) return e:GetHandler():IsSummonType(SUMMON_TYPE_SPECIAL+1) end)",
+        "Duel.CheckReleaseGroupCost(tp,Card.IsAttribute,1,false,nil,c,ATTRIBUTE_FIRE)",
+        'eventName: "specialSummoned"',
+        'eventName: "destroyed"',
+        'eventName: "released"',
+      ],
+    },
+    {
       file: "test/lua-real-script-gimmick-puppet-magnet-doll-special-summon-procedure.test.ts",
       kind: "magnetDollBothFieldsGimmickOnlyHandProcedure",
       required: [
@@ -751,6 +783,7 @@ function countSummonProcedureSemanticVariants(
       broadTypedExtraDeckSpiritGeminiProcedures: 0,
       blackwingGaleSetcodeOpenZoneProcedureFinalStat: 0,
       caligoClawCrowDarkMonsterOpenZoneProcedure: 0,
+      gokaFireMonsterOpenZoneProcedureDestroyReleaseStat: 0,
       collapserpentLightBanishCostSearchProcedure: 0,
       familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure: 0,
       familiarPossessedDeckTwoMaterialShufflePierceProcedure: 0,

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 265;
+export const operationFixtureCount = 266;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -121,6 +121,7 @@ export const operationKindCounts = {
   groupLevelFinal: 1,
   handDiscardDraw: 1,
   handRevealShuffleFinalAttack: 1,
+  handProcedureDestroyReleaseStat: 1,
   handToDeckDraw: 1,
   handSelfDiscardDestroyStat: 1,
   fiveGraveToDeckShuffleDraw: 2,
@@ -325,6 +326,7 @@ export type OperationKind =
   | "groupLevelFinal"
   | "handDiscardDraw"
   | "handRevealShuffleFinalAttack"
+  | "handProcedureDestroyReleaseStat"
   | "handToDeckDraw"
   | "handSelfDiscardDestroyStat"
   | "fiveGraveToDeckShuffleDraw"
@@ -3940,6 +3942,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-xx-saber-darksoul-end-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)", "e1:SetCode(EVENT_PHASE+PHASE_END)", "return c:IsSetCard(SET_X_SABER) and c:IsMonster() and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "phaseEnd"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-radiant-typhoon-eldam-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCode(EFFECT_SPSUMMON_PROC)", "e2b:SetCode(EVENT_SPSUMMON_SUCCESS)", "not Duel.IsExistingMatchingCard(Card.IsSpellTrap,tp,0,LOCATION_ONFIELD,1,nil)", "return ((c:IsSetCard(SET_RADIANT_TYPHOON) and c:IsMonster()) or c:IsCode(CARD_MYSTICAL_SPACE_TYPHOON)) and c:IsAbleToHand() and not c:IsCode(id)", "operationInfos: [{ category: 0x8", 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-spright-blue-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCode(EFFECT_SPSUMMON_PROC)", "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)", "return c:IsFaceup() and (c:IsLevel(2) or c:IsRank(2))", "e2:SetProperty(EFFECT_FLAG_DELAY)", "return c:IsSetCard(SET_SPRIGHT) and c:IsMonster() and not c:IsCode(id) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-goka-procedure-destroy-release-stat.test.ts", kind: "handProcedureDestroyReleaseStat", required: ["restores FIRE-gated inherent Special Summon, mandatory destroy trigger, and release-cost ATK gain", "e1:SetCode(EFFECT_SPSUMMON_PROC)", "e2:SetCode(EVENT_SPSUMMON_SUCCESS)", "e2:SetCondition(function(e) return e:GetHandler():IsSummonType(SUMMON_TYPE_SPECIAL+1) end)", "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsAttribute,ATTRIBUTE_FIRE),tp,LOCATION_MZONE,0,1,1,nil)", "Duel.Destroy(tc,REASON_EFFECT)", "Duel.CheckReleaseGroupCost(tp,Card.IsAttribute,1,false,nil,c,ATTRIBUTE_FIRE)", "Duel.SelectReleaseGroupCost(tp,Card.IsAttribute,1,1,false,nil,c,ATTRIBUTE_FIRE)", "Duel.Release(g,REASON_COST)", "e1:SetCode(EFFECT_UPDATE_ATTACK)", "e1:SetValue(500)", "operationInfos: [{ category: 0x1", 'eventName: "specialSummoned"', 'eventName: "becameTarget"', 'eventName: "destroyed"', 'eventName: "released"', "currentAttack"] },
     { file: "test/lua-real-script-collapserpent-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e2:SetCode(EFFECT_SPSUMMON_PROC)", "aux.SelectUnselectGroup(rg,e,tp,1,1,nil,1,tp,HINTMSG_REMOVE,nil,nil,true)", "Duel.Remove(g,POS_FACEUP,REASON_COST)", "return c:IsCode(99234526) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "sentToGraveyard"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-familiar-possessed-dharc-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCode(EFFECT_SPSUMMON_PROC)", "aux.SelectUnselectGroup(g1,e,tp,2,2,s.rescon,1,tp,HINTMSG_TOGRAVE)", "Duel.SendtoGrave(g,REASON_COST)", "return (lv==3 or lv==4) and c:IsAttribute(ATTRIBUTE_LIGHT) and c:IsRace(RACE_SPELLCASTER) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-megalith-ophiel-ritual-summon-search.test.ts", kind: "searchOrExcavate", required: ["e:GetHandler():IsRitualSummoned()", "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)", "return c:IsSetCard(SET_MEGALITH) and c:IsMonster() and not c:IsCode(id) and c:IsAbleToHand()", "summonType: \"ritual\"", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
@@ -4809,6 +4812,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       graveToDeckBottomDraw: 0,
       handDiscardDraw: 0,
       handRevealShuffleFinalAttack: 0,
+      handProcedureDestroyReleaseStat: 0,
       handToDeckDraw: 0,
       handSelfDiscardDestroyStat: 0,
       fiveGraveToDeckShuffleDraw: 0,
