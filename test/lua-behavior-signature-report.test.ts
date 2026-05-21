@@ -121,6 +121,70 @@ describe("Lua behavior signature report", () => {
     });
     expect(topSignature!.examples).toHaveLength(2);
   });
+
+  it("prints largest uncovered signatures when requested", () => {
+    const scriptsRoot = makeTempFiles("lua-behavior-signatures-uncovered-scripts-", {
+      "c10.lua": `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e1=Effect.CreateEffect(c)
+          e1:SetCategory(CATEGORY_DAMAGE)
+          e1:SetType(EFFECT_TYPE_ACTIVATE)
+          e1:SetCode(EVENT_FREE_CHAIN)
+          e1:SetOperation(function(e,tp) Duel.Damage(1-tp,500,REASON_EFFECT) end)
+          c:RegisterEffect(e1)
+        end
+      `,
+      "c11.lua": `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e1=Effect.CreateEffect(c)
+          e1:SetCategory(CATEGORY_DAMAGE)
+          e1:SetType(EFFECT_TYPE_ACTIVATE)
+          e1:SetCode(EVENT_FREE_CHAIN)
+          e1:SetOperation(function(e,tp) Duel.Damage(1-tp,800,REASON_EFFECT) end)
+          c:RegisterEffect(e1)
+        end
+      `,
+      "c20.lua": `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e1=Effect.CreateEffect(c)
+          e1:SetType(EFFECT_TYPE_SINGLE)
+          e1:SetCode(EFFECT_PIERCE)
+          c:RegisterEffect(e1)
+        end
+      `,
+      "c30.lua": `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e1=Effect.CreateEffect(c)
+          e1:SetCategory(CATEGORY_DRAW)
+          e1:SetType(EFFECT_TYPE_ACTIVATE)
+          e1:SetCode(EVENT_FREE_CHAIN)
+          e1:SetOperation(function(e,tp) Duel.Draw(tp,1,REASON_EFFECT) end)
+          c:RegisterEffect(e1)
+        end
+      `,
+    });
+    const testRoot = makeTempFiles("lua-behavior-signatures-uncovered-tests-", {
+      "lua-real-script-draw.test.ts": `
+        const drawCode = "30";
+      `,
+    });
+
+    const result = spawnSync(process.execPath, ["tools/report-lua-behavior-signatures.mjs", "--scripts", scriptsRoot, "--test-root", testRoot, "--uncovered-only", "--top", "1"], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain("Top uncovered signatures: 1");
+    expect(result.stdout).toContain("- 2 scripts");
+    expect(result.stdout).toContain("fixture covered: no");
+    expect(result.stdout).toContain("categories: CATEGORY_DAMAGE");
+    expect(result.stdout).not.toContain("categories: CATEGORY_DRAW");
+  });
 });
 
 function makeTempFiles(prefix: string, files: Record<string, string>): string {

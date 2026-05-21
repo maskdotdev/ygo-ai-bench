@@ -25,6 +25,7 @@ function parseArgs(argv) {
     testRoot: defaultTestRoot,
     json: false,
     help: false,
+    uncoveredOnly: false,
     top: 20,
   };
 
@@ -32,6 +33,7 @@ function parseArgs(argv) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--json") options.json = true;
+    else if (arg === "--uncovered-only") options.uncoveredOnly = true;
     else if (arg === "--scripts") options.scriptsRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--test-root") options.testRoot = requireOptionValue(argv, ++index, arg);
     else if (arg === "--top") options.top = requirePositiveInt(requireOptionValue(argv, ++index, arg), arg);
@@ -219,9 +221,12 @@ function printReport(report, options) {
   console.log(`Singleton signatures: ${report.singletonSignatures}`);
   console.log(`Fixture-covered signatures: ${report.fixtureCoverage.coveredSignatures}/${report.uniqueSignatures} (${report.fixtureCoverage.signatureCoveragePercent.toFixed(1)}%)`);
   console.log(`Fixture-covered scripts: ${report.fixtureCoverage.coveredScripts}/${report.totalScripts}`);
-  console.log(`Top signatures: ${Math.min(options.top, report.signatures.length)}`);
-  for (const signature of report.signatures.slice(0, options.top)) {
+  const signatures = options.uncoveredOnly ? report.signatures.filter((signature) => !signature.fixtureCovered) : report.signatures;
+  console.log(`${options.uncoveredOnly ? "Top uncovered signatures" : "Top signatures"}: ${Math.min(options.top, signatures.length)}`);
+  for (const signature of signatures.slice(0, options.top)) {
     console.log(`- ${signature.count} scripts`);
+    console.log(`  fixture covered: ${signature.fixtureCovered ? "yes" : "no"}`);
+    if (signature.fixtureCoveredScripts.length > 0) console.log(`  fixture codes: ${signature.fixtureCoveredScripts.join(", ")}`);
     console.log(`  categories: ${signature.categories.join(", ") || "none"}`);
     console.log(`  effect types: ${signature.effectTypes.join(", ") || "none"}`);
     console.log(`  event/effect codes: ${signature.eventCodes.join(", ") || "none"}`);
@@ -242,6 +247,7 @@ Options:
   --json             Print machine-readable JSON
   --scripts <path>   Project Ignis script root. Default: ${defaultScriptsRoot}
   --test-root <path> Test root for real-script fixture coverage. Default: ${defaultTestRoot}
+  --uncovered-only   Print only signatures without a representative real-script fixture
   --top <count>      Number of largest signatures to print. Default: 20
 `);
 }
