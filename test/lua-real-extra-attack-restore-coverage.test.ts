@@ -4,17 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const EXTRA_ATTACK_FIXTURE_COUNT = 10;
+const EXTRA_ATTACK_FIXTURE_COUNT = 11;
 const extraAttackKindCounts = {
   attackAll: 2,
   chainAttack: 3,
   chainFlagExtraAttack: 1,
-  extraAttack: 2,
+  extraAttack: 3,
   monsterOnlyExtraAttack: 1,
   overlayCountMonsterExtraAttack: 1,
 } satisfies Record<ExtraAttackKind, number>;
 const extraAttackSemanticVariantCounts = {
   alienHunterBattleDestroyChainAttack: 1,
+  ashuraKingOverlayCountExtraAttack: 1,
   asuraPriestSpiritAttackAllMonsters: 1,
   comboMasterChainFlagExtraAttack: 1,
   elementDoomAttributeGatedChainAttack: 1,
@@ -29,6 +30,7 @@ const extraAttackSemanticVariantCounts = {
 type ExtraAttackKind = "attackAll" | "chainAttack" | "chainFlagExtraAttack" | "extraAttack" | "monsterOnlyExtraAttack" | "overlayCountMonsterExtraAttack";
 type ExtraAttackSemanticVariant =
   | "alienHunterBattleDestroyChainAttack"
+  | "ashuraKingOverlayCountExtraAttack"
   | "asuraPriestSpiritAttackAllMonsters"
   | "comboMasterChainFlagExtraAttack"
   | "elementDoomAttributeGatedChainAttack"
@@ -126,6 +128,17 @@ function realScriptExtraAttackFixtureFiles(): Array<{
         "code: 193",
         "hasDirectAttack(openingActions, asura!.uid)).toBe(false)",
         "hasAttack(secondActions, asura!.uid, secondTarget!.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ashura-king-battle-extra-stat.test.ts",
+      kind: "extraAttack",
+      required: [
+        'const ashuraCode = "80993256"',
+        "e1:SetCode(EFFECT_EXTRA_ATTACK)",
+        "return math.max(0,oc-1)",
+        "hasDirectAttack(secondActions, ashura.uid)).toBe(false)",
+        "secondAttack",
       ],
     },
     {
@@ -248,6 +261,16 @@ function extraAttackSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ashura-king-battle-extra-stat.test.ts",
+      kind: "ashuraKingOverlayCountExtraAttack",
+      required: [
+        'const ashuraCode = "80993256"',
+        "restores overlay-count extra attacks and mandatory battle-start ATK stacking",
+        "EFFECT_EXTRA_ATTACK",
+        "hasDirectAttack(secondActions, ashura.uid)).toBe(false)",
+      ],
+    },
+    {
       file: "test/lua-real-script-element-doom-chain-attack.test.ts",
       kind: "elementDoomAttributeGatedChainAttack",
       required: [
@@ -334,6 +357,7 @@ function countExtraAttackSemanticVariants(
     },
     {
       alienHunterBattleDestroyChainAttack: 0,
+      ashuraKingOverlayCountExtraAttack: 0,
       asuraPriestSpiritAttackAllMonsters: 0,
       comboMasterChainFlagExtraAttack: 0,
       elementDoomAttributeGatedChainAttack: 0,
