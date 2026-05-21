@@ -1,10 +1,11 @@
 import path from "node:path";
 
-export const operationFixtureCount = 317;
+export const operationFixtureCount = 318;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
   diceStatDrawDirect: 1,
+  diceSelectEffectToGraveFinalStat: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
@@ -261,6 +262,7 @@ export type OperationKind =
   | "battledBackrowDestroyGroupStat"
   | "handProcedureSynchroSummonSelectDestroy"
   | "diceStatDrawDirect"
+  | "diceSelectEffectToGraveFinalStat"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
@@ -579,6 +581,32 @@ export function operationFixtureFiles(): Array<{
         "currentAttack",
         "currentDefense",
         "lastDiceResults).toEqual([3, 3, 3])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lucky-straight-dice-select-tograve-stat.test.ts",
+      kind: "diceSelectEffectToGraveFinalStat",
+      required: [
+        "restores detach into two-dice final ATK and SelectEffect send-all-other-field-cards branch",
+        "Xyz.AddProcedure(c,nil,7,3)",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_TOGRAVE+CATEGORY_SPECIAL_SUMMON+CATEGORY_DRAW+CATEGORY_HANDES)",
+        "e1:SetCost(Cost.DetachFromSelf(1,1,nil))",
+        "Duel.SetOperationInfo(0,CATEGORY_DICE,nil,0,tp,2)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOGRAVE,nil,1,PLAYER_ALL,LOCATION_ONFIELD)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,PLAYER_ALL,LOCATION_HAND|LOCATION_GRAVE)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DRAW,nil,0,tp,3)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_HANDES,nil,0,tp,2)",
+        "local d1,d2=Duel.TossDice(tp,2)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(d1*700)",
+        "local op=Duel.SelectEffect(tp,",
+        "Duel.GetMatchingGroup(Card.IsAbleToGrave,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,c)",
+        "Duel.SendtoGrave(g,REASON_EFFECT)",
+        'api: "SelectEffect"',
+        'eventName: "diceTossed"',
+        'eventName: "sentToGraveyard"',
+        "operationInfos",
+        "currentAttack",
       ],
     },
     {
@@ -6049,6 +6077,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       battledBackrowDestroyGroupStat: 0,
       handProcedureSynchroSummonSelectDestroy: 0,
       diceStatDrawDirect: 0,
+      diceSelectEffectToGraveFinalStat: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
