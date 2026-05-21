@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 297;
+export const operationFixtureCount = 298;
 export const operationKindCounts = {
+  targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
@@ -238,6 +239,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
@@ -476,6 +478,31 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-scrap-sheen-target-destroy-team-stat.test.ts",
+      kind: "targetDestroyRemainingGroupStat",
+      required: [
+        "restores targeted Scrap destruction into remaining Scrap ATK boost",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return c:IsFaceup() and c:IsSetCard(SET_SCRAP)",
+        "Duel.IsExistingTarget(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,2,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.Destroy(tc,REASON_EFFECT)~=0",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,nil)",
+        "for ac in aux.Next(g) do",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(1000)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "currentAttack",
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-ojamuscle-target-destroy-count-stat.test.ts",
       kind: "targetGroupDestroyCountStat",
@@ -5513,6 +5540,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
