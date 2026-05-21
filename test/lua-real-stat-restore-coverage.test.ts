@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 51;
+const statFixtureCount = 52;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -35,7 +35,7 @@ const statKindCounts = {
   setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
   setFinalAttackDefenseHalveProcedure: 1,
-  setFinalAttackDefenseTargetDirectLock: 1,
+  setFinalAttackDefenseTargetDirectLock: 2,
   selfFinalAttackEndDestroy: 1,
   swapBaseAttackDefense: 1,
   singleRangeSetcodeConditionAttackUpdate: 1,
@@ -59,6 +59,7 @@ const statSemanticVariantCounts = {
   borreloadChainLimitAttackDefenseDrop: 1,
   blackwingGaleProcedureFinalStatHalve: 1,
   royalRhinoChainDiceAttackUpdate: 1,
+  catSharkDetachFinalStatIndestructible: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
   armoredKappaOptionBattleProtection: 1,
@@ -114,6 +115,7 @@ type StatSemanticVariant =
   | "blackwingGaleProcedureFinalStatHalve"
   | "bootUpSoldierGadgetConditionAttackUpdate"
   | "borreloadChainLimitAttackDefenseDrop"
+  | "catSharkDetachFinalStatIndestructible"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "digitJammingPrecalcDestroyedStat"
   | "cyberDragonSiegerCodeStatDamagePrevention"
@@ -556,6 +558,20 @@ function statFixtureFiles(): Array<{
         "currentAttack(state.cards.find((card) => card.uid === nordicTarget.uid)!, state)).toBe(2400)",
         "currentDefense(state.cards.find((card) => card.uid === nordicTarget.uid)!, state)).toBe(1800)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cat-shark-detach-final-stat-indestructible.test.ts",
+      kind: "setFinalAttackDefenseTargetDirectLock",
+      required: [
+        'const catSharkCode = "84224627"',
+        "restores detach-targeted final ATK/DEF doubling and WATER material battle indestructibility",
+        "Cost.DetachFromSelf(1)",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === catShark.uid)!, restoredOpen.session.state)).toBe(1000)",
+        "battleDamage).toEqual({ 0: 600, 1: 0 })",
       ],
     },
     {
@@ -1438,6 +1454,19 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-cat-shark-detach-final-stat-indestructible.test.ts",
+      kind: "catSharkDetachFinalStatIndestructible",
+      required: [
+        'const catSharkCode = "84224627"',
+        "GetOverlayGroup():IsExists(Card.IsAttribute,1,nil,ATTRIBUTE_WATER)",
+        "Cost.DetachFromSelf(1)",
+        "code: 42",
+        "code: 102",
+        "code: 106",
+        "overlayUids).toEqual([waterMaterial.uid])",
+      ],
+    },
+    {
       file: "test/lua-real-script-spright-gamma-burst-group-self-banish-stat.test.ts",
       kind: "sprightGammaBurstGroupSelfBanishStat",
       required: [
@@ -1549,6 +1578,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       bladeflyFieldAttributeAttackUpdate: 0,
       bootUpSoldierGadgetConditionAttackUpdate: 0,
       borreloadChainLimitAttackDefenseDrop: 0,
+      catSharkDetachFinalStatIndestructible: 0,
       cyberDragonSiegerCodeStatDamagePrevention: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       digitJammingPrecalcDestroyedStat: 0,

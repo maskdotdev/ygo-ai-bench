@@ -368,6 +368,9 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const commaLocalSourceOverlayCount = snippet.match(/\blocal\s+(\w+)\s*,\s*\w+\s*=\s*\w+\s*:\s*GetHandler\s*\(\s*\)\s*,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s+return\s+\1\s*:\s*GetOverlayCount\s*\(\s*\)\s*(==|~=|>|>=)\s*0\s*(?:end\b|$)/);
   const sourceOverlayCountOperator = sourceOverlayCount?.[1] ?? localSourceOverlayCount?.[2] ?? commaLocalSourceOverlayCount?.[2];
   if (sourceOverlayCountOperator) return sourceOverlayCountOperator === "==" ? "condition:source-overlay-count-zero" : "condition:source-overlay-count-positive";
+  const sourceOverlayAttribute = snippet.match(new RegExp(`\\breturn\\s+\\w+\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetOverlayGroup\\s*\\(\\s*\\)\\s*:\\s*IsExists\\s*\\(\\s*Card\\s*\\.\\s*IsAttribute\\s*,\\s*1\\s*,\\s*nil\\s*,\\s*(${numericOrIdentifierPattern}(?:\\s*[|+]\\s*${numericOrIdentifierPattern})*)\\s*\\)`));
+  const sourceOverlayAttributeValue = sourceOverlayAttribute?.[1] ? luaNumberExpressionValue(L, index, sourceOverlayAttribute[1]) : undefined;
+  if (sourceOverlayAttributeValue !== undefined) return `condition:source-overlay-has-attribute:${sourceOverlayAttributeValue}`;
   const params = luaFunctionParams(snippet);
   if (params && params.length > 0) return undefined;
   const identifier = String.raw`[A-Za-z_]\w*`;
