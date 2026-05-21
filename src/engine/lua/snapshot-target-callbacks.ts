@@ -1,4 +1,5 @@
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
+import { cardFieldId } from "#duel/card-field-id.js";
 import { cardLink, cardRank, cardTypeFlags, currentAttack, currentAttribute, currentBaseAttack, currentLevel, currentLink, currentRace, currentRank, printedCardTypeFlags } from "#duel/card-stats.js";
 import { getDuelCardCounter } from "#duel/counters.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
@@ -18,6 +19,7 @@ const luaLocationMonsterZone = 0x4;
 const luaTypeSpecialSummon = 0x2000000;
 
 export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
+  if (effect.code === 86 && effect.label !== undefined && effect.targetRange?.[0] === luaLocationMonsterZone && effect.targetRange?.[1] === 0) return { targetCardPredicate: (_ctx, card) => cardFieldId(card) !== effect.label };
   const battleTargetType = effect.luaTargetDescriptor?.startsWith("target:source-battle-target-type:") ? Number(effect.luaTargetDescriptor.slice("target:source-battle-target-type:".length)) : undefined; if (battleTargetType !== undefined && Number.isSafeInteger(battleTargetType) && battleTargetType > 0) return { targetCardPredicate: (ctx, card) => { const source = ctx.duel.cards.find((candidate) => candidate.uid === effect.sourceUid); const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle; const battleTargetUid = source?.uid === battle?.attackerUid ? battle?.targetUid : source?.uid === battle?.targetUid ? battle?.attackerUid : undefined; return card.uid === battleTargetUid && (cardTypeFlags(card, ctx.duel) & battleTargetType) !== 0; } };
   if (effect.luaTargetDescriptor === "target:source-battle-target" || effect.luaTargetDescriptor === "target:source-or-battle-target") return { targetCardPredicate: (ctx, card) => { const source = ctx.duel.cards.find((candidate) => candidate.uid === effect.sourceUid); const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle; const battleTargetUid = source?.uid === battle?.attackerUid ? battle?.targetUid : source?.uid === battle?.targetUid ? battle?.attackerUid : undefined; return card.uid === battleTargetUid || (effect.luaTargetDescriptor === "target:source-or-battle-target" && card.uid === source?.uid); } };
   if (effect.luaTargetDescriptor === "target:select-opponent-pzone-able-control") return { targetCardPredicate: (ctx, card) => card.controller !== ctx.player && card.location === "spellTrapZone" && card.sequence >= 0 && card.sequence <= 1 };

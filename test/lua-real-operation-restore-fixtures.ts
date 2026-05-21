@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 244;
+export const operationFixtureCount = 245;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -24,6 +24,7 @@ export const operationKindCounts = {
   counterLevelChange: 1,
   customDirectSummonFinalStatLock: 1,
   deckGraveMonsterEffectSummonStatReplace: 1,
+  summonHandMachineSelfBanishStatAttackOath: 1,
   customDestroyReplaceDamage: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
@@ -208,6 +209,7 @@ export type OperationKind =
   | "counterLevelChange"
   | "customDirectSummonFinalStatLock"
   | "deckGraveMonsterEffectSummonStatReplace"
+  | "summonHandMachineSelfBanishStatAttackOath"
   | "customDestroyReplaceDamage"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
@@ -372,6 +374,34 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-gizmek-inaba-summon-stat-attack-oath.test.ts",
+      kind: "summonHandMachineSelfBanishStatAttackOath",
+      required: [
+        "restores summon-success hand Machine summon and grave self-banish stat set plus selected-only attack oath",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "return c:IsDefense(c:GetAttack()) and c:IsRace(RACE_MACHINE)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,0,LOCATION_HAND)",
+        "Duel.SelectMatchingCard(tp,s.hfilter,tp,LOCATION_HAND,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.SelectTarget(tp,s.ffilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e:SetLabel(g:GetFirst():GetFieldID())",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK_ANNOUNCE)",
+        "e1:SetProperty(EFFECT_FLAG_OATH+EFFECT_FLAG_CLIENT_HINT)",
+        "Duel.RegisterEffect(e1,tp)",
+        "Duel.GetMatchingGroup(s.ffilter,tp,LOCATION_MZONE,0,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "return e:GetLabel()~=c:GetFieldID()",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "banished"',
+        'eventName: "becameTarget"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-fengli-deck-grave-summon-halve-stat-replace.test.ts",
       kind: "deckGraveMonsterEffectSummonStatReplace",
@@ -4164,6 +4194,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       counterLevelChange: 0,
       customDirectSummonFinalStatLock: 0,
       deckGraveMonsterEffectSummonStatReplace: 0,
+      summonHandMachineSelfBanishStatAttackOath: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
       controlSwap: 0,

@@ -30,6 +30,21 @@ export function isKnownTemporaryPlayerAttackAnnounceLockEffect(effect: Serialize
   );
 }
 
+export function isKnownTemporaryFieldIdAttackAnnounceLockEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 86 &&
+    effect.sourceUid !== undefined &&
+    effect.label !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    targetRangeEquals(effect, luaLocationMonsterZone, 0) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 export function isKnownTemporaryBattleProtectionEffect(effect: SerializedDuelEffect): boolean {
   return isKnownTemporaryPlayerBattleDamageAvoidEffect(effect) || isKnownTemporaryMonsterBattleIndestructibleEffect(effect);
 }
