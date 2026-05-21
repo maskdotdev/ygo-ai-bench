@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 63;
+const statFixtureCount = 64;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -14,6 +14,7 @@ const statKindCounts = {
   banishDetachFinalAttackDefenseZero: 1,
   battleStartFinalStatHalve: 1,
   damageStepBattleTargetAttributeAttackBoost: 2,
+  damageStepCounterFinalGroupHalve: 1,
   damageStepMachineStatDamagePrevention: 1,
   diceChainAttackUpdate: 1,
   diceGroupAttackDefenseUpdate: 1,
@@ -83,6 +84,7 @@ const statSemanticVariantCounts = {
   cyberDragonSiegerCodeStatDamagePrevention: 1,
   copycatSummonTargetFinalStat: 1,
   fairyKingAlbverdichDetachAttributeExceptStat: 1,
+  gadarlaKaijuCounterFinalStat: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
   gemMerchantDamageStepNormalStat: 1,
@@ -124,7 +126,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -145,6 +147,7 @@ type StatSemanticVariant =
   | "dinoSewingBattleTargetStatReset"
   | "cyberDragonSiegerCodeStatDamagePrevention"
   | "fairyKingAlbverdichDetachAttributeExceptStat"
+  | "gadarlaKaijuCounterFinalStat"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "gemMerchantDamageStepNormalStat"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
@@ -382,6 +385,22 @@ function statFixtureFiles(): Array<{
         "e4:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)",
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid)!, restoredOpen.session.state)).toBe(4300)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gadarla-kaiju-counter-final-stat.test.ts",
+      kind: "damageStepCounterFinalGroupHalve",
+      required: [
+        'const gadarlaCode = "36956512"',
+        "restores Kaiju counter cost into damage-step-capable final ATK/DEF halving",
+        "Duel.IsCanRemoveCounter(tp,1,1,COUNTER_KAIJU,3,REASON_COST)",
+        "Duel.RemoveCounter(tp,1,1,COUNTER_KAIJU,3,REASON_COST)",
+        "e3:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        'eventName: "counterRemoved"',
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === ally.uid), restoredResolved.session.state)).toBe(1100)",
+        "battleDamage).toEqual({ 0: 200, 1: 0 })",
       ],
     },
     {
@@ -1138,6 +1157,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleConfirmFinalSwapPierceDamage: 0,
       banishDetachFinalAttackDefenseZero: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
+      damageStepCounterFinalGroupHalve: 0,
       damageStepMachineStatDamagePrevention: 0,
       deckCostAttackDefenseUpdate: 0,
       diceChainAttackUpdate: 0,
@@ -1369,6 +1389,19 @@ function statSemanticVariants(): Array<{
         "aux.FaceupFilter(Card.IsAttributeExcept,ATTRIBUTE_EARTH)",
         'eventName: "detachedMaterial"',
         "value: -500",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gadarla-kaiju-counter-final-stat.test.ts",
+      kind: "gadarlaKaijuCounterFinalStat",
+      required: [
+        'const gadarlaCode = "36956512"',
+        "local e1,e2=aux.AddKaijuProcedure(c)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,c)",
+        "for tc in aux.Next(tg) do",
+        "code: 102",
+        "code: 106",
+        "eventReason: duelReason.cost",
       ],
     },
     {
@@ -1956,6 +1989,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       digitJammingPrecalcDestroyedStat: 0,
       dinoSewingBattleTargetStatReset: 0,
       fairyKingAlbverdichDetachAttributeExceptStat: 0,
+      gadarlaKaijuCounterFinalStat: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       gemMerchantDamageStepNormalStat: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
