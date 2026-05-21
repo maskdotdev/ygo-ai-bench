@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 272;
+export const operationFixtureCount = 273;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   announceChangeCode: 1,
@@ -163,6 +163,7 @@ export const operationKindCounts = {
   selfToGraveStatGroupedNormalSummonRedirect: 1,
   selfEquipFromHand: 1,
   selfBanishTargetStat: 1,
+  selfBanishSelectUnselectStatDestroy: 1,
   selfSummonBanishDeckGraveStat: 1,
   setAttackFinalSpecialDamage: 1,
   setFinalStatDisableFlag: 1,
@@ -374,6 +375,7 @@ export type OperationKind =
   | "selfToGraveStatGroupedNormalSummonRedirect"
   | "selfEquipFromHand"
   | "selfBanishTargetStat"
+  | "selfBanishSelectUnselectStatDestroy"
   | "selfSummonBanishDeckGraveStat"
   | "setAttackFinalSpecialDamage"
   | "setFinalStatDisableFlag"
@@ -426,6 +428,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-senko-self-banish-target-stat-destroy.test.ts",
+      kind: "selfBanishSelectUnselectStatDestroy",
+      required: [
+        "restores SelfBanish SelectUnselectGroup targets into own Warrior ATK loss and opponent destroy",
+        "e3:SetCost(Cost.SelfBanish)",
+        "aux.SelectUnselectGroup(rg,e,tp,2,2,s.rescon,0)",
+        "aux.SelectUnselectGroup(rg,e,tp,2,2,s.rescon,1,tp,HINTMSG_TARGET)",
+        "Duel.SetTargetCard(tg)",
+        "e:SetLabelObject(hg:GetFirst())",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,hg,1,tp,-1500)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,tg-hg,1,tp,0)",
+        "local g=Duel.GetTargetCards(e)",
+        "tc1:UpdateAttack(-1500,RESET_EVENT|RESETS_STANDARD,e:GetHandler())==-1500",
+        "Duel.Destroy(tc2,REASON_EFFECT)",
+        "effectLabelObjectUid",
+        'eventName: "banished"',
+        'eventName: "destroyed"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-ancient-gear-tanker-destroy-field-stat.test.ts",
       kind: "ignitionDestroyOwnFaceupFieldGolemStat",
@@ -4995,6 +5018,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selfToGraveStatGroupedNormalSummonRedirect: 0,
       selfEquipFromHand: 0,
       selfBanishTargetStat: 0,
+      selfBanishSelectUnselectStatDestroy: 0,
       selfSummonBanishDeckGraveStat: 0,
       setAttackFinalSpecialDamage: 0,
       setFinalStatDisableFlag: 0,
