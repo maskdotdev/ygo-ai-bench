@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 301;
+export const operationFixtureCount = 302;
 export const operationKindCounts = {
+  persistentLinkCountStatBattledDestroy: 1,
   attackAnnounceStatExactSpendFieldDestroy: 1,
   linkAttributeCostDestroyFlag: 1,
   twoTargetLabelStatDestroy: 1,
@@ -242,6 +243,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "persistentLinkCountStatBattledDestroy"
   | "attackAnnounceStatExactSpendFieldDestroy"
   | "linkAttributeCostDestroyFlag"
   | "twoTargetLabelStatDestroy"
@@ -484,6 +486,31 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-zero-extra-link-persistent-stat-destroy.test.ts",
+      kind: "persistentLinkCountStatBattledDestroy",
+      required: [
+        "restores persistent co-linked Link targeting into dynamic ATK and battled self-destroy",
+        "aux.AddPersistentProcedure(c,0,s.filter)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetTarget(aux.PersistentTargetFilter)",
+        "Duel.GetMatchingGroupCount(s.cfilter,e:GetHandlerPlayer(),LOCATION_MZONE,LOCATION_MZONE,nil)*800",
+        "e:SetLabel(val)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e2:SetLabelObject(e1)",
+        "c:IsLinkMonster() and c:IsLinkSummoned() and c:HasFlagEffect(id)",
+        "e1:SetValue(e:GetLabelObject():GetLabel())",
+        "e3:SetCode(EVENT_LEAVE_FIELD_P)",
+        "ec:IsHasCardTarget(c) and c:IsReason(REASON_MATERIAL|REASON_LINK)",
+        "GetReasonCard():RegisterFlagEffect(id,RESET_EVENT|RESETS_STANDARD&~RESET_TOFIELD,0,1)",
+        "e4:SetCode(EVENT_BATTLED)",
+        "return e:GetHandler():IsHasCardTarget(Duel.GetAttacker())",
+        "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
+        'eventName: "afterDamageCalculation"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-festiballoon-attack-field-wipe.test.ts",
       kind: "attackAnnounceStatExactSpendFieldDestroy",
@@ -5627,6 +5654,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      persistentLinkCountStatBattledDestroy: 0,
       attackAnnounceStatExactSpendFieldDestroy: 0,
       linkAttributeCostDestroyFlag: 0,
       twoTargetLabelStatDestroy: 0,
