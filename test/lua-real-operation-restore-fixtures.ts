@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 230;
+export const operationFixtureCount = 231;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -11,6 +11,7 @@ export const operationKindCounts = {
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
   attackAnnounceStatDeckdes: 1,
+  battleFinalStatReviveLock: 1,
   tributeSearchSummonStatLock: 1,
   callCoinAtkChange: 1,
   coinNegateControl: 1,
@@ -182,6 +183,7 @@ export type OperationKind =
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
   | "attackAnnounceStatDeckdes"
+  | "battleFinalStatReviveLock"
   | "tributeSearchSummonStatLock"
   | "callCoinAtkChange"
   | "coinNegateControl"
@@ -3268,6 +3270,35 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-aquarium-lighting-battle-revive-lock.test.ts",
+      kind: "battleFinalStatReviveLock",
+      required: [
+        "restores Aquaactress battle final stats and on-field-to-Grave Aqua revive lock",
+        "c:SetUniqueOnField(1,0,id)",
+        "e2:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "local tc=Duel.GetAttacker()",
+        "local bc=Duel.GetAttackTarget()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e3:SetCode(EVENT_TO_GRAVE)",
+        "return e:GetHandler():IsPreviousLocation(LOCATION_ONFIELD)",
+        "return c:IsRace(RACE_AQUA) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)",
+        "Duel.RegisterEffect(e1,tp)",
+        'eventName: "beforeDamageCalculation"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "becameTarget"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+        "operationInfos",
+      ],
+    },
+    {
       file: "test/lua-real-script-ryzeal-cross-grave-to-deck-bottom-draw.test.ts",
       kind: "graveToDeckBottomDraw",
       required: [
@@ -3763,6 +3794,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,
       attackAnnounceStatDeckdes: 0,
+      battleFinalStatReviveLock: 0,
       tributeSearchSummonStatLock: 0,
       callCoinAtkChange: 0,
       coinNegateControl: 0,
