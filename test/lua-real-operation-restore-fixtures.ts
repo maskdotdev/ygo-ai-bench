@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 221;
+export const operationFixtureCount = 222;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -60,6 +60,7 @@ export const operationKindCounts = {
   handBanishDrawStat: 1,
   discardCostSpecialSummonGroupDestroy: 1,
   discardCostGraveToDeckTop: 1,
+  discardCostSpecialSearchReleaseStat: 1,
   directDamage: 1,
   detachDirectDamage: 1,
   detachDisableFinalStat: 1,
@@ -222,6 +223,7 @@ export type OperationKind =
   | "handBanishDrawStat"
   | "discardCostSpecialSummonGroupDestroy"
   | "discardCostGraveToDeckTop"
+  | "discardCostSpecialSearchReleaseStat"
   | "directDamage"
   | "detachDirectDamage"
   | "detachDisableFinalStat"
@@ -2382,6 +2384,33 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-dd-count-surveyor-special-search-stat.test.ts",
+      kind: "discardCostSpecialSearchReleaseStat",
+      required: [
+        "restores discard-cost hand Special Summon into Special Summon success D/D zero-stat search",
+        "Pendulum.AddProcedure(c)",
+        "e1:SetCategory(CATEGORY_RELEASE+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetRange(LOCATION_PZONE)",
+        "aux.SelectUnselectGroup(g,e,tp,3,3,s.rescon,1,tp,HINTMSG_TARGET)",
+        "Duel.GetTargetCards(e):Filter(Card.IsFaceup,nil)",
+        "Duel.HintSelection(sg)",
+        "Duel.Release(sg,REASON_EFFECT)",
+        "atkdef_c:UpdateAttack(atk,RESET_EVENT|RESETS_STANDARD,c)",
+        "atkdef_c:UpdateDefense(def,RESET_EVENT|RESETS_STANDARD,c)",
+        "e2:SetCost(Cost.Discard(function(c) return c:IsSetCard(SET_DD) and c:IsMonster() end,true))",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e4:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "operationInfos",
+        'eventName: "discarded"',
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHandConfirmed"',
+        "confirmed 1",
+      ],
+    },
+    {
       file: "test/lua-real-script-foolish-burial-deck-to-grave.test.ts",
       kind: "deckToGrave",
       required: [
@@ -3587,6 +3616,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       damageRecoverRaceCountStat: 0,
       discardCostSpecialSummonGroupDestroy: 0,
       discardCostGraveToDeckTop: 0,
+      discardCostSpecialSearchReleaseStat: 0,
       directDamage: 0,
       detachDirectDamage: 0,
       detachDisableFinalStat: 0,
