@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 77;
+const statFixtureCount = 78;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -39,6 +39,7 @@ const statKindCounts = {
   overlayDetachSelfStatAttackLock: 1,
   overlayDetachSelfStatBattleProtection: 1,
   overlayDetachTargetStatTriggerLock: 1,
+  ouroborosSageSummonEquipStat: 1,
   pzoneContractNameCountAttackDestroy: 1,
   pzoneDiscardTargetAttackDefenseUpdate: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
@@ -121,6 +122,7 @@ const statSemanticVariantCounts = {
   numeronDragonRankSumStat: 1,
   nordicRelicMegingjordFinalStatDirectLock: 1,
   oddEyesWingTargetDisable: 1,
+  ouroborosSageSummonEquipStat: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
   primalDragonBanishStatNoDamage: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
@@ -152,7 +154,7 @@ const statSemanticVariantCounts = {
   rocketHandEquipCostFinalStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "ouroborosSageSummonEquipStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -201,6 +203,7 @@ type StatSemanticVariant =
   | "numeronDragonRankSumStat"
   | "nordicRelicMegingjordFinalStatDirectLock"
   | "oddEyesWingTargetDisable"
+  | "ouroborosSageSummonEquipStat"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
   | "primalDragonBanishStatNoDamage"
   | "plagueWolfFinalAttackEndDestroy"
@@ -718,6 +721,20 @@ function statFixtureFiles(): Array<{
         "e1:SetValue(atk*1000)",
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === numeronDragon.uid), restoredOpen.session.state)).toBe(16000)",
         "battleDamage).toEqual({ 0: 0, 1: 1000 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ouroboros-sage-summon-equip-stat.test.ts",
+      kind: "ouroborosSageSummonEquipStat",
+      required: [
+        'const ouroborosSageCode = "32281491"',
+        "restores summon trigger into non-LIGHT Number revive, dual equips, disables, and equip ATK gains",
+        "Duel.SpecialSummonStep(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "aux.EquipAndLimitRegister(ec,e,tp,tc)",
+        "EFFECT_DISABLE_EFFECT",
+        "EFFECT_EQUIP_LIMIT",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === numberTarget.uid), restoredTrigger.session.state)).toBe(5400)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -1426,6 +1443,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       overlayDetachSelfStatAttackLock: 0,
       overlayDetachSelfStatBattleProtection: 0,
       overlayDetachTargetStatTriggerLock: 0,
+      ouroborosSageSummonEquipStat: 0,
       pzoneContractNameCountAttackDestroy: 0,
       pzoneDiscardTargetAttackDefenseUpdate: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
@@ -1890,6 +1908,19 @@ function statSemanticVariants(): Array<{
         'eventName: "becameTarget"',
         "value: 2400",
         "value: 1800",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ouroboros-sage-summon-equip-stat.test.ts",
+      kind: "ouroborosSageSummonEquipStat",
+      required: [
+        'const ouroborosSageCode = "32281491"',
+        "restores summon trigger into non-LIGHT Number revive, dual equips, disables, and equip ATK gains",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_EQUIP)",
+        "return c:IsSetCard(SET_NUMBER) and c:IsAttributeExcept(ATTRIBUTE_LIGHT)",
+        'eventName: "specialSummoned"',
+        'eventName: "equipped"',
+        'registryKey: "lua:322814910:lua-9-100"',
       ],
     },
     {
@@ -2455,6 +2486,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       numeronDragonRankSumStat: 0,
       nordicRelicMegingjordFinalStatDirectLock: 0,
       oddEyesWingTargetDisable: 0,
+      ouroborosSageSummonEquipStat: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
       primalDragonBanishStatNoDamage: 0,
       plagueWolfFinalAttackEndDestroy: 0,
