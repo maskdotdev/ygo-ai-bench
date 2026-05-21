@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 31;
+const statFixtureCount = 32;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -22,6 +22,7 @@ const statKindCounts = {
   setAttack: 1,
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
+  setFinalAttackDefenseDirectLock: 1,
   selfFinalAttackEndDestroy: 1,
   swapBaseAttackDefense: 1,
   singleRangeSetcodeConditionAttackUpdate: 1,
@@ -56,6 +57,7 @@ const statSemanticVariantCounts = {
   rushRecklesslyTargetedDamageStepAttackUpdate: 1,
   sangaPreDamageFinalAttackZero: 1,
   shieldSwordSwapBaseAd: 1,
+  steadyHandsFinalStatDirectLock: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
   steamroidDamageStepBattleSwingStat: 1,
@@ -65,7 +67,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDirectLock" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -93,6 +95,7 @@ type StatSemanticVariant =
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
   | "shieldSwordSwapBaseAd"
+  | "steadyHandsFinalStatDirectLock"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
   | "steamroidDamageStepBattleSwingStat"
@@ -380,6 +383,21 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-steady-hands-final-stat-direct-lock.test.ts",
+      kind: "setFinalAttackDefenseDirectLock",
+      required: [
+        "restores GlobalCheck direct-attack flag filtering and doubles original ATK/DEF with a direct-attack lock",
+        "aux.GlobalCheck(s,function()",
+        "ge1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "currentAttack(restoredMusket, restoredOpen.session.state)).toBe(2000)",
+        "currentDefense(restoredMusket, restoredOpen.session.state)).toBe(1600)",
+        "battleDamage[1]).toBe(800)",
+      ],
+    },
+    {
       file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
       kind: "targetedDamageStepAttackUpdate",
       required: [
@@ -561,6 +579,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
+      setFinalAttackDefenseDirectLock: 0,
       selfFinalAttackEndDestroy: 0,
       singleRangeSetcodeConditionAttackUpdate: 0,
       staticAttackAndExtraAttack: 0,
@@ -833,6 +852,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-steady-hands-final-stat-direct-lock.test.ts",
+      kind: "steadyHandsFinalStatDirectLock",
+      required: [
+        'const steadyHandsCode = "67901914"',
+        "restores GlobalCheck direct-attack flag filtering and doubles original ATK/DEF with a direct-attack lock",
+        "return c:IsFaceup() and c:IsSetCard(SET_MAGICAL_MUSKET) and c:GetFlagEffect(id)==0",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        "players[1].lifePoints).toBe(7200)",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "skyscraperFieldDamageCalculationAttackBoost",
       required: [
@@ -937,6 +967,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
       shieldSwordSwapBaseAd: 0,
+      steadyHandsFinalStatDirectLock: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
       steamroidDamageStepBattleSwingStat: 0,
