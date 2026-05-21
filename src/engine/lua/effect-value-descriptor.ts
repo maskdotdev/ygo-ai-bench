@@ -71,6 +71,8 @@ export function knownLuaEffectValueDescriptor(L: unknown, index: number, hostSta
   if (matchingFaceupRaceCountStat) return matchingFaceupRaceCountStat;
   const namedMatchingFaceupRaceCountStat = namedMatchingFaceupRaceCountStatDescriptor(L, index, hostState, snippet, params);
   if (namedMatchingFaceupRaceCountStat) return namedMatchingFaceupRaceCountStat;
+  const matchingTypeSumLinkStat = matchingTypeSumLinkStatDescriptor(L, index, snippet);
+  if (matchingTypeSumLinkStat) return matchingTypeSumLinkStat;
   const battleAttackerTargetSwingStat = battleAttackerTargetSwingStatDescriptor(snippet, params);
   if (battleAttackerTargetSwingStat) return battleAttackerTargetSwingStat;
   const damageCalculationAttackBoost = damageCalculationAttackerLowerAttackBoostDescriptor(snippet, params);
@@ -259,6 +261,19 @@ function namedFaceupRaceFilterMask(L: unknown, index: number, hostState: LuaHost
     if (value !== undefined) return value;
   }
   return undefined;
+}
+
+function matchingTypeSumLinkStatDescriptor(L: unknown, index: number, snippet: string): string | undefined {
+  const match = new RegExp(
+    String.raw`\blocal\s+(\w+)\s*=\s*Duel\s*\.\s*GetMatchingGroup\s*\(\s*Card\s*\.\s*IsType\s*,\s*[01]\s*,\s*(${numericMaskExpressionPattern})\s*,\s*(${numericMaskExpressionPattern})\s*,\s*nil\s*,\s*(${numericMaskExpressionPattern})\s*\)\s+return\s+\1\s*:\s*GetSum\s*\(\s*Card\s*\.\s*GetLink\s*\)\s*\*\s*\(?\s*(-?\d+)\s*\)?`,
+  ).exec(snippet);
+  if (!match?.[2] || !match[3] || !match[4] || !match[5]) return undefined;
+  const selfMask = luaNumberMaskExpressionValue(L, index, match[2]);
+  const opponentMask = luaNumberMaskExpressionValue(L, index, match[3]);
+  const typeMask = luaNumberMaskExpressionValue(L, index, match[4]);
+  const multiplier = Number(match[5]);
+  if ([selfMask, opponentMask, typeMask, multiplier].some((value) => value === undefined || !Number.isSafeInteger(value))) return undefined;
+  return `stat:matching-type-sum-link:player0:${selfMask}:${opponentMask}:${typeMask}:x${multiplier}`;
 }
 
 function levelOrRankStatDescriptor(snippet: string, params: string[] | undefined): string | undefined {

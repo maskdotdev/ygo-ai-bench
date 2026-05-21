@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 22;
+const protectionReplacementFixtureCount = 23;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
@@ -17,7 +17,7 @@ const protectionReplacementKindCounts = {
   equipDestroySubstitute: 1,
   handGrantedIndestructible: 1,
   linkedTargetProtection: 1,
-  persistentDestroyReplace: 4,
+  persistentDestroyReplace: 5,
   positionConditionProtection: 1,
   temporaryBattleProtection: 1,
   trapImmunity: 1,
@@ -32,6 +32,7 @@ const protectionReplacementSemanticVariantCounts = {
   forbiddenLanceActivatedImmunityStatLoss: 1,
   geminiSoldierBattleCountDeckSummon: 1,
   gyroidBattleCountProtection: 1,
+  guardragonShieldNormalMonsterDestroyReplace: 1,
   heartClearWaterEquipBattleProtectionSelfDestroy: 1,
   nightmareMagicianBattleTargetControlProtection: 1,
   mitsurugiSajiReleaseDestroyReplace: 1,
@@ -130,6 +131,7 @@ type ProtectionReplacementSemanticVariant =
   | "forbiddenLanceActivatedImmunityStatLoss"
   | "geminiSoldierBattleCountDeckSummon"
   | "gyroidBattleCountProtection"
+  | "guardragonShieldNormalMonsterDestroyReplace"
   | "heartClearWaterEquipBattleProtectionSelfDestroy"
   | "nightmareMagicianBattleTargetControlProtection"
   | "mitsurugiSajiReleaseDestroyReplace"
@@ -168,6 +170,19 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
         "Duel.SelectMatchingCard(tp,s.repfilter,tp,LOCATION_MZONE,0,1,1,c,e)",
         "Duel.Destroy(tc,REASON_EFFECT|REASON_REPLACE)",
         'api: "SelectEffectYesNo"',
+        'action: "destroyReplace"',
+      ],
+    },
+    {
+      file: "lua-real-script-guardragon-shield-link-stat-replace.test.ts",
+      kind: "persistentDestroyReplace",
+      required: [
+        "restores Field Spell activation, Link-sum Dragon stat boost, and Normal monster destroy replacement",
+        "e3:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,e:GetHandler(),96)",
+        "Duel.SendtoGrave(sg,REASON_EFFECT|REASON_REPLACE)",
+        'api: "SelectEffectYesNo"',
+        "reason: duelReason.effect | duelReason.replace",
         'action: "destroyReplace"',
       ],
     },
@@ -503,6 +518,16 @@ function protectionReplacementSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-guardragon-shield-link-stat-replace.test.ts",
+      kind: "guardragonShieldNormalMonsterDestroyReplace",
+      requiredSnippets: [
+        'const shieldCode = "50186558"',
+        "restores Field Spell activation, Link-sum Dragon stat boost, and Normal monster destroy replacement",
+        "Duel.SendtoGrave(sg,REASON_EFFECT|REASON_REPLACE)",
+        'action: "destroyReplace"',
+      ],
+    },
+    {
       file: "test/lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
       kind: "heartClearWaterEquipBattleProtectionSelfDestroy",
       requiredSnippets: [
@@ -664,6 +689,7 @@ function countProtectionReplacementSemanticVariants(
       forbiddenLanceActivatedImmunityStatLoss: 0,
       geminiSoldierBattleCountDeckSummon: 0,
       gyroidBattleCountProtection: 0,
+      guardragonShieldNormalMonsterDestroyReplace: 0,
       heartClearWaterEquipBattleProtectionSelfDestroy: 0,
       mitsurugiSajiReleaseDestroyReplace: 0,
       nightmareMagicianBattleTargetControlProtection: 0,

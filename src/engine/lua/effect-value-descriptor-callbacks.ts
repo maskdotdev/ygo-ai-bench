@@ -1,5 +1,5 @@
 import { currentBattleStep } from "#duel/battle-window-state.js";
-import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentDefense, currentLevel, currentRace, currentRank } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentDefense, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
 import type { DuelEffectDefinition } from "#duel/types.js";
 import { locationsFromMask } from "#lua/api-utils.js";
 
@@ -76,6 +76,24 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
           return (candidate.controller === player && selfLocations.includes(candidate.location)) ||
             (candidate.controller === opponent && opponentLocations.includes(candidate.location));
         }).length * multiplier;
+      };
+    }
+  }
+  const matchingTypeSumLink = luaValueDescriptor?.match(/^stat:matching-type-sum-link:player([01]):(\d+):(\d+):(\d+):x(-?\d+)$/);
+  if (matchingTypeSumLink?.[1] && matchingTypeSumLink[2] && matchingTypeSumLink[3] && matchingTypeSumLink[4] && matchingTypeSumLink[5]) {
+    const player = Number(matchingTypeSumLink[1]);
+    const selfMask = Number(matchingTypeSumLink[2]);
+    const opponentMask = Number(matchingTypeSumLink[3]);
+    const typeMask = Number(matchingTypeSumLink[4]);
+    const multiplier = Number(matchingTypeSumLink[5]);
+    if ([player, selfMask, opponentMask, typeMask, multiplier].every(Number.isSafeInteger)) {
+      const selfLocations = locationsFromMask(selfMask);
+      const opponentLocations = locationsFromMask(opponentMask);
+      return (ctx) => {
+        const opponent = player === 0 ? 1 : 0;
+        return ctx.duel.cards
+          .filter((candidate) => ((candidate.controller === player && selfLocations.includes(candidate.location)) || (candidate.controller === opponent && opponentLocations.includes(candidate.location))) && (cardTypeFlags(candidate, ctx.duel) & typeMask) !== 0)
+          .reduce((total, candidate) => total + currentLink(candidate, ctx.duel), 0) * multiplier;
       };
     }
   }

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 29;
+const statFixtureCount = 30;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -16,6 +16,7 @@ const statKindCounts = {
   fieldGroupCountStat: 2,
   fieldMatchingFaceupRaceCountStat: 2,
   fieldAttributeAttackUpdate: 3,
+  fieldLinkSumAttackDefenseUpdate: 1,
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
   setAttack: 1,
@@ -40,6 +41,7 @@ const statSemanticVariantCounts = {
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
+  guardragonShieldLinkSumStat: 1,
   jurassicWorldTargetBoolFunctionRaceStat: 1,
   luminousSoldierDamageStepTargetAttributeStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
@@ -61,7 +63,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -72,6 +74,7 @@ type StatSemanticVariant =
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
+  | "guardragonShieldLinkSumStat"
   | "gracefulDiceDamageStepGroupStat"
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "luminousSoldierDamageStepTargetAttributeStat"
@@ -221,6 +224,16 @@ function statFixtureFiles(): Array<{
         "currentAttack(restoredGenexAllyAttacker, restored.session.state)).toBe(1500)",
         "currentAttack(restoredOpponentGenex, restored.session.state)).toBe(1200)",
         "battleDamage[1]).toBe(300)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-guardragon-shield-link-stat-replace.test.ts",
+      kind: "fieldLinkSumAttackDefenseUpdate",
+      required: [
+        "return g:GetSum(Card.GetLink)*100",
+        "stat:matching-type-sum-link:player0:4:4:67108864:x100",
+        "currentAttack(dragonTarget, restoredStatEffects.session.state)).toBe(2000)",
+        "currentDefense(dragonTarget, restoredStatEffects.session.state)).toBe(1700)",
       ],
     },
     {
@@ -528,6 +541,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fieldGroupCountStat: 0,
       fieldMatchingFaceupRaceCountStat: 0,
       fieldLevelOrRankAttackDefenseUpdate: 0,
+      fieldLinkSumAttackDefenseUpdate: 0,
       fieldRaceAttackDefenseUpdate: 0,
       fieldSetcodeAttackUpdate: 0,
       setAttack: 0,
@@ -637,6 +651,16 @@ function statSemanticVariants(): Array<{
         "restores aux.TargetBoolFunction Card.IsSetCard field ATK updates into battle damage",
         "target:setcode:2",
         "currentAttack(restoredGenexAllyAttacker, restored.session.state)).toBe(1500)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-guardragon-shield-link-stat-replace.test.ts",
+      kind: "guardragonShieldLinkSumStat",
+      required: [
+        'const shieldCode = "50186558"',
+        "restores Field Spell activation, Link-sum Dragon stat boost, and Normal monster destroy replacement",
+        "return g:GetSum(Card.GetLink)*100",
+        "stat:matching-type-sum-link:player0:4:4:67108864:x100",
       ],
     },
     {
@@ -870,6 +894,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
+      guardragonShieldLinkSumStat: 0,
       gracefulDiceDamageStepGroupStat: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       luminousSoldierDamageStepTargetAttributeStat: 0,
