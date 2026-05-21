@@ -124,11 +124,23 @@ function triggerEventCandidate(
   options: DuelTriggerCollectOptions,
 ): TriggerEventCandidate {
   if (eventName === "detachedMaterial" && eventCard) return detachedMaterialTriggerCandidate(state, eventCard, options);
-  if (!isBattleDestroyingTrigger(effect, eventName) || !eventCard) return { eventCard, options };
+  if (!isBattleDestroyingTrigger(effect, eventName) || !eventCard) return { eventCard, options: eventCard ? eventCardReasonTriggerOptions(options, eventCard) : options };
   const destroyingUid = battleDestroyingSourceUid(state, eventCard);
   const destroyingCard = destroyingUid === undefined ? undefined : findCard(state, destroyingUid);
   if (!destroyingCard) return { eventCard, options };
   return { eventCard: destroyingCard, options: battleDestroyingTriggerOptions(options, eventCard) };
+}
+
+function eventCardReasonTriggerOptions(options: DuelTriggerCollectOptions, eventCard: DuelCardInstance): DuelTriggerCollectOptions {
+  const reasonPayload = eventCardReasonPayload(eventCard);
+  return {
+    ...options,
+    ...(options.eventPlayer === undefined ? { eventPlayer: eventCard.controller } : {}),
+    ...(options.eventReason === undefined && reasonPayload.eventReason !== undefined ? { eventReason: reasonPayload.eventReason } : {}),
+    ...(options.eventReasonPlayer === undefined && reasonPayload.eventReasonPlayer !== undefined ? { eventReasonPlayer: reasonPayload.eventReasonPlayer } : {}),
+    ...(options.eventReasonCardUid === undefined && reasonPayload.eventReasonCardUid !== undefined ? { eventReasonCardUid: reasonPayload.eventReasonCardUid } : {}),
+    ...(options.eventReasonEffectId === undefined && reasonPayload.eventReasonEffectId !== undefined ? { eventReasonEffectId: reasonPayload.eventReasonEffectId } : {}),
+  };
 }
 
 function detachedMaterialTriggerCandidate(

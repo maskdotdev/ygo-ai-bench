@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 243;
+export const operationFixtureCount = 244;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -23,6 +23,7 @@ export const operationKindCounts = {
   counterDamageReplaceStatBurn: 1,
   counterLevelChange: 1,
   customDirectSummonFinalStatLock: 1,
+  deckGraveMonsterEffectSummonStatReplace: 1,
   customDestroyReplaceDamage: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
@@ -206,6 +207,7 @@ export type OperationKind =
   | "counterDamageReplaceStatBurn"
   | "counterLevelChange"
   | "customDirectSummonFinalStatLock"
+  | "deckGraveMonsterEffectSummonStatReplace"
   | "customDestroyReplaceDamage"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
@@ -370,6 +372,32 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-fengli-deck-grave-summon-halve-stat-replace.test.ts",
+      kind: "deckGraveMonsterEffectSummonStatReplace",
+      required: [
+        "restores monster-effect Deck send into delayed self summon, optional ATK/DEF halve, and Deck Plant destroy replacement",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetCode(EVENT_TO_GRAVE)",
+        "return e:GetHandler():IsPreviousLocation(LOCATION_DECK)",
+        "(r&REASON_EFFECT)>0 and re:IsMonsterEffect()",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,0,LOCATION_GRAVE)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)>0",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.BreakEffect()",
+        "Duel.HintSelection(g,true)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,c,96)",
+        "Duel.SelectMatchingCard(tp,s.desrepfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_EFFECT|REASON_REPLACE)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-ogre-scarlet-sorrow-custom-direct-summon.test.ts",
       kind: "customDirectSummonFinalStatLock",
@@ -4135,6 +4163,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       counterDamageReplaceStatBurn: 0,
       counterLevelChange: 0,
       customDirectSummonFinalStatLock: 0,
+      deckGraveMonsterEffectSummonStatReplace: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
       controlSwap: 0,

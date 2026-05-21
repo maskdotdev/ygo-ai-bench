@@ -156,6 +156,18 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     lua.lua_pushboolean(state, requested !== 0 && (ownerType & requested) !== 0);
     return 1;
   });
+  pushEffectMethod(L, effects, "IsMonsterEffect", (state, effect) => {
+    lua.lua_pushboolean(state, (activeTypeFlags(sourceCard(session, effect), session) & 0x1) !== 0);
+    return 1;
+  });
+  pushEffectMethod(L, effects, "IsSpellEffect", (state, effect) => {
+    lua.lua_pushboolean(state, (activeTypeFlags(sourceCard(session, effect), session) & 0x2) !== 0);
+    return 1;
+  });
+  pushEffectMethod(L, effects, "IsTrapEffect", (state, effect) => {
+    lua.lua_pushboolean(state, (activeTypeFlags(sourceCard(session, effect), session) & 0x4) !== 0);
+    return 1;
+  });
   pushEffectMethod(L, effects, "IsActivated", (state, effect) => {
     lua.lua_pushboolean(state, ((effect.typeFlags ?? 0) & (0x10 | 0x20 | 0x40 | 0x80 | 0x100 | 0x200 | 0x400)) !== 0);
     return 1;
