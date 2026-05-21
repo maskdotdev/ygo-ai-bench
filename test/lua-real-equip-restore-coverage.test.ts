@@ -4,19 +4,19 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 13;
-const equipRelationFixtureCount = 17;
-const equipProbeFixtureCount = 12;
+const equipFixtureCount = 14;
+const equipRelationFixtureCount = 18;
+const equipProbeFixtureCount = 13;
 const equipOperationInfoFixtureCount = 14;
 const equipCleanupFixtureCount = 10;
-const equipInventoryFixtureCount = 20;
+const equipInventoryFixtureCount = 21;
 const equipKindCounts = {
   equipControl: 2,
   equipCost: 1,
   equipDamageLock: 1,
   equipGeminiStatus: 2,
   equipPierce: 2,
-  equipProcedure: 5,
+  equipProcedure: 6,
   equipReturn: 3,
   equipReviveBanish: 1,
   equipReviveDestroy: 1,
@@ -47,6 +47,7 @@ const equipSemanticVariantCounts = {
   magePowerDynamicStats: 1,
   maskAccursedDamageLock: 1,
   megamorphLpAttack: 1,
+  mordschlagImmunityPrecalcStat: 1,
   nuzzlerTopDeck: 1,
   orbYasakaSpiritReturn: 1,
   prematureBurialDestroy: 1,
@@ -99,6 +100,7 @@ type EquipSemanticVariant =
   | "magePowerDynamicStats"
   | "maskAccursedDamageLock"
   | "megamorphLpAttack"
+  | "mordschlagImmunityPrecalcStat"
   | "nuzzlerTopDeck"
   | "orbYasakaSpiritReturn"
   | "prematureBurialDestroy"
@@ -275,6 +277,7 @@ function realScriptEquipFixtureFiles(): string[] {
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
+    "lua-real-script-mordschlag-equip-immunity-precalc-stat.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
@@ -297,6 +300,7 @@ function realScriptEquipRelationFixtureFiles(): string[] {
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
+    "lua-real-script-mordschlag-equip-immunity-precalc-stat.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
     "lua-real-script-salamandra-equip-fire-attack.test.ts",
@@ -318,6 +322,7 @@ function realScriptEquipProbeFixtureFiles(): string[] {
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
+    "lua-real-script-mordschlag-equip-immunity-precalc-stat.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
     "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
@@ -428,6 +433,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     {
       file: "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
       kind: "equipDamageLock",
+    },
+    {
+      file: "lua-real-script-mordschlag-equip-immunity-precalc-stat.test.ts",
+      kind: "equipProcedure",
     },
     {
       file: "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
@@ -681,6 +690,17 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
       ],
     },
     {
+      file: "lua-real-script-mordschlag-equip-immunity-precalc-stat.test.ts",
+      kind: "mordschlagImmunityPrecalcStat",
+      required: [
+        "restores Normal Summoned equip filtering, equipped monster immunity, and pre-damage Special Summoned target stat loss",
+        "const mordschlagCode = \"12760674\"",
+        "te:GetOwnerPlayer()~=e:GetHandlerPlayer() and te:IsMonsterEffect() and te:IsActivated() and te:GetHandler():IsSpecialSummoned()",
+        "mordschlag destroy result 0",
+        "mordschlag probe 12760674/127606740/true",
+      ],
+    },
+    {
       file: "lua-real-script-equip-return-actions.test.ts",
       kind: "nuzzlerTopDeck",
       required: [
@@ -863,6 +883,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       magePowerDynamicStats: 0,
       maskAccursedDamageLock: 0,
       megamorphLpAttack: 0,
+      mordschlagImmunityPrecalcStat: 0,
       nuzzlerTopDeck: 0,
       orbYasakaSpiritReturn: 0,
       prematureBurialDestroy: 0,
