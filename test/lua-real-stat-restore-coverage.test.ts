@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 53;
+const statFixtureCount = 54;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
   battleTargetAttackBoost: 3,
+  battleTargetStatReset: 1,
   damageStepBattleTargetAttributeAttackBoost: 2,
   damageStepMachineStatDamagePrevention: 1,
   diceChainAttackUpdate: 1,
@@ -60,6 +61,7 @@ const statSemanticVariantCounts = {
   blackwingGaleProcedureFinalStatHalve: 1,
   royalRhinoChainDiceAttackUpdate: 1,
   catSharkDetachFinalStatIndestructible: 1,
+  dinoSewingBattleTargetStatReset: 1,
   scoreMelodiousPrecalcFinalStat: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
@@ -105,7 +107,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "battleTargetStatReset" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -119,6 +121,7 @@ type StatSemanticVariant =
   | "catSharkDetachFinalStatIndestructible"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
   | "digitJammingPrecalcDestroyedStat"
+  | "dinoSewingBattleTargetStatReset"
   | "cyberDragonSiegerCodeStatDamagePrevention"
   | "fairyKingAlbverdichDetachAttributeExceptStat"
   | "fortuneLadyPastCallbackSetAtkDef"
@@ -455,6 +458,20 @@ function statFixtureFiles(): Array<{
         "expect(restoredDamageCalc.session.state.battleDamage).toEqual({ 0: 0, 1: 2800 })",
         'eventName: "battleDamageDealt"',
         'location: "banished"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-dino-sewing-battle-target-stat-reset.test.ts",
+      kind: "battleTargetStatReset",
+      required: [
+        'const dinoCode = "27143874"',
+        "restores battle-target ATK/DEF gain, battle indestructibility, and battled ResetEffect cleanup",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2:SetCode(EVENT_BE_BATTLE_TARGET)",
+        "e3:SetCode(EVENT_BATTLED)",
+        "e:GetHandler():ResetEffect(RESET_DISABLE,RESET_EVENT)",
+        "currentAttack(restoredTargeted.session.state.cards.find((card) => card.uid === dino.uid), restoredTargeted.session.state)).toBe(2000)",
+        "battleDamage).toEqual({ 0: 500, 1: 0 })",
       ],
     },
     {
@@ -946,6 +963,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleAttackerTargetSwing: 0,
       battleDestroyedOpponentAttackDefenseDrop: 0,
       battleTargetAttackBoost: 0,
+      battleTargetStatReset: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
       damageStepMachineStatDamagePrevention: 0,
       diceChainAttackUpdate: 0,
@@ -1434,6 +1452,20 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-dino-sewing-battle-target-stat-reset.test.ts",
+      kind: "dinoSewingBattleTargetStatReset",
+      required: [
+        'const dinoCode = "27143874"',
+        "EVENT_BE_BATTLE_TARGET",
+        "EVENT_BATTLED",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        "code: 100",
+        "code: 104",
+        "ResetEffect(RESET_DISABLE,RESET_EVENT)",
+        "toEqual([])",
+      ],
+    },
+    {
       file: "test/lua-real-script-unified-front-discard-final-stat-lock.test.ts",
       kind: "unifiedFrontDiscardFinalStatLock",
       required: [
@@ -1613,6 +1645,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       cyberDragonSiegerCodeStatDamagePrevention: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
       digitJammingPrecalcDestroyedStat: 0,
+      dinoSewingBattleTargetStatReset: 0,
       fairyKingAlbverdichDetachAttributeExceptStat: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       gemMerchantDamageStepNormalStat: 0,
