@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 260;
+export const operationFixtureCount = 261;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -14,6 +14,7 @@ export const operationKindCounts = {
   attackAnnounceStatDeckdes: 1,
   battleDestroyingStepSummonStat: 1,
   battleFinalStatReviveLock: 1,
+  templeSearchBattleDestroyStat: 1,
   tributeSearchSummonStatLock: 1,
   typeBranchDirectLockStatSearch: 1,
   unnegatableGrantAttackSend: 1,
@@ -213,6 +214,7 @@ export type OperationKind =
   | "attackAnnounceStatDeckdes"
   | "battleDestroyingStepSummonStat"
   | "battleFinalStatReviveLock"
+  | "templeSearchBattleDestroyStat"
   | "tributeSearchSummonStatLock"
   | "typeBranchDirectLockStatSearch"
   | "unnegatableGrantAttackSend"
@@ -1665,6 +1667,32 @@ export function operationFixtureFiles(): Array<{
         'eventName: "destroyed"',
         "currentCardCodes",
         "currentFiniteEffectValues",
+      ],
+    },
+    {
+      file: "test/lua-real-script-merciless-scorpion-serket-procedure-search-battle-stat.test.ts",
+      kind: "templeSearchBattleDestroyStat",
+      required: [
+        "restores Temple-gated hand procedure cost, search ignition, and battle-start destroy ATK gain",
+        "e0:SetCode(EFFECT_SPSUMMON_PROC)",
+        "e0:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsCode,CARD_TEMPLE_OF_THE_KINGS),tp,LOCATION_ONFIELD,0,1,nil)",
+        "return c:IsLevelAbove(10) and c:IsAbleToRemoveAsCost()",
+        "aux.SelectUnselectGroup(rg,e,tp,1,1,nil,1,tp,HINTMSG_REMOVE,nil,nil,true)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "e2:SetCode(EVENT_BATTLE_START)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,bc,1,tp,0)",
+        "Duel.Destroy(bc,REASON_EFFECT)",
+        "c:UpdateAttack(atk)",
+        "operationInfos",
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "destroyed"',
+        "currentAttack",
       ],
     },
     {
@@ -4576,6 +4604,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackAnnounceStatDeckdes: 0,
       battleDestroyingStepSummonStat: 0,
       battleFinalStatReviveLock: 0,
+      templeSearchBattleDestroyStat: 0,
       tributeSearchSummonStatLock: 0,
       typeBranchDirectLockStatSearch: 0,
       unnegatableGrantAttackSend: 0,
