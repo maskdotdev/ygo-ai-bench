@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 328;
+export const operationFixtureCount = 329;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -243,7 +243,7 @@ export const operationKindCounts = {
   trapReclamationReturn: 1,
   trapStepSummonOperatedCounter: 1,
   targetCardsCounterDisable: 1,
-  targetDisableStat: 2,
+  targetDisableStat: 3,
   targetSendStatDelayedSet: 1,
   targetBanish: 2,
   targetBanishDiscardCost: 1,
@@ -2776,6 +2776,29 @@ export function operationFixtureFiles(): Array<{
         "eventHistory",
         "currentAttack",
         "lost wind probe",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nekroz-clausolas-search-final-disable.test.ts",
+      kind: "targetDisableStat",
+      required: [
+        "restores self-discard Nekroz search and Damage Step Extra Deck monster final ATK disable",
+        "c:EnableReviveLimit()",
+        "e1:SetCode(EFFECT_SPSUMMON_CONDITION)",
+        "e2:SetCost(Cost.SelfDiscard)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "e3:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e2:SetCode(EFFECT_DISABLE)",
+        "e3:SetCode(EFFECT_DISABLE_EFFECT)",
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "becameTarget"',
+        "currentAttack",
+        "operationInfos",
       ],
     },
     {

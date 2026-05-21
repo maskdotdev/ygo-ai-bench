@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 123;
+const statFixtureCount = 124;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -100,7 +100,7 @@ const statKindCounts = {
   selfBanishSelectEffectDestroyFinalAttack: 1,
   targetedDamageStepAttackUpdate: 3,
   targetedDamageStepDefenseUpdate: 1,
-  targetedIgnitionDisable: 1,
+  targetedIgnitionDisable: 2,
   toGraveTargetFinalAttackHalve: 1,
   preDamageSelfToGraveBattleMonsterStat: 3,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
@@ -1303,6 +1303,23 @@ function statFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_DISABLE)",
         "e2:SetCode(EFFECT_DISABLE_EFFECT)",
         "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nekroz-clausolas-search-final-disable.test.ts",
+      kind: "targetedIgnitionDisable",
+      required: [
+        "restores self-discard Nekroz search and Damage Step Extra Deck monster final ATK disable",
+        "e3:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e3:SetCondition(aux.StatChangeDamageStepCondition)",
+        "return c:IsSummonLocation(LOCATION_EXTRA) and not (c:GetAttack()==0 and c:IsDisabled())",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e2:SetCode(EFFECT_DISABLE)",
+        "e3:SetCode(EFFECT_DISABLE_EFFECT)",
+        "currentAttack(restoredDisable.session.state.cards.find((card) => card.uid === extraTarget.uid)!, restoredDisable.session.state)).toBe(0)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
