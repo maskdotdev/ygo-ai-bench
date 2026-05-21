@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 296;
+export const operationFixtureCount = 297;
 export const operationKindCounts = {
+  targetGroupDestroyCountStat: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
   targetDestroyOptionalBreakAttackAnnounceStat: 1,
@@ -237,6 +238,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "targetGroupDestroyCountStat"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
   | "targetDestroyOptionalBreakAttackAnnounceStat"
@@ -474,6 +476,28 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-ojamuscle-target-destroy-count-stat.test.ts",
+      kind: "targetGroupDestroyCountStat",
+      required: [
+        "restores Ojama King targeting into grouped Ojama destruction and count-based ATK gain",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return c:IsFaceup() and c:IsCode(90140980)",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_OJAMA),0,LOCATION_MZONE,LOCATION_MZONE,1,c)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsSetCard,SET_OJAMA),0,LOCATION_MZONE,LOCATION_MZONE,g:GetFirst())",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,dg,#dg,0,0)",
+        "Duel.GetFirstTarget()",
+        "local ct=Duel.Destroy(dg,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(ct*1000)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "currentAttack",
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-tgx1-hl-damage-step-final-stat-spelltrap-destroy.test.ts",
       kind: "damageStepTargetFinalStatSpellTrapDestroy",
@@ -5489,6 +5513,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      targetGroupDestroyCountStat: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
       targetDestroyOptionalBreakAttackAnnounceStat: 0,
