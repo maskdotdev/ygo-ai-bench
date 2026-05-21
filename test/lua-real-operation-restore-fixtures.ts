@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 258;
+export const operationFixtureCount = 259;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -27,6 +27,7 @@ export const operationKindCounts = {
   counterLevelChange: 1,
   customDirectSummonFinalStatLock: 1,
   deckGraveMonsterEffectSummonStatReplace: 1,
+  destroyedOptionalSummonSearchTargetStat: 1,
   summonHandMachineSelfBanishStatAttackOath: 1,
   customDestroyReplaceDamage: 1,
   crossPlayerGraveToDeckTrap: 1,
@@ -224,6 +225,7 @@ export type OperationKind =
   | "counterLevelChange"
   | "customDirectSummonFinalStatLock"
   | "deckGraveMonsterEffectSummonStatReplace"
+  | "destroyedOptionalSummonSearchTargetStat"
   | "summonHandMachineSelfBanishStatAttackOath"
   | "customDestroyReplaceDamage"
   | "crossPlayerGraveToDeckTrap"
@@ -801,6 +803,34 @@ export function operationFixtureFiles(): Array<{
         "declareAttack",
         'eventName: "sentToHandConfirmed"',
         "reasonEffectId: 11",
+      ],
+    },
+    {
+      file: "test/lua-real-script-veda-kalanta-destroyed-summon-search-stat.test.ts",
+      kind: "destroyedOptionalSummonSearchTargetStat",
+      required: [
+        "restores destroyed-card hand Special Summon into optional Clear New World search",
+        "restores own destroyed monster trigger into opponent target destruction and ATK gain",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_TOHAND+CATEGORY_SEARCH)",
+        "e1:SetCode(EVENT_DESTROYED)",
+        "e1:SetProperty(EFFECT_FLAG_DELAY)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK|LOCATION_GRAVE)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.BreakEffect()",
+        "Duel.SendtoHand(sg,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,sg)",
+        "e2:SetProperty(EFFECT_FLAG_DELAY+EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,nil,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc:GetBaseAttack())",
+        "operationInfos",
+        "possibleOperationInfos",
+        'api: "SelectYesNo"',
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "destroyed"',
+        "currentAttack",
       ],
     },
     {
@@ -4531,6 +4561,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       counterLevelChange: 0,
       customDirectSummonFinalStatLock: 0,
       deckGraveMonsterEffectSummonStatReplace: 0,
+      destroyedOptionalSummonSearchTargetStat: 0,
       summonHandMachineSelfBanishStatAttackOath: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
