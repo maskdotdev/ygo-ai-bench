@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 234;
+export const operationFixtureCount = 235;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -73,6 +73,7 @@ export const operationKindCounts = {
   detachStatBurn: 1,
   detachSearchXyzBattleDamage: 1,
   destroyedSummonStatBurn: 1,
+  destroyedHeroSummonBaseStat: 1,
   directRecover: 1,
   xmaterialQuickDestroyDirect: 1,
   drawThenDiscard: 1,
@@ -247,6 +248,7 @@ export type OperationKind =
   | "detachStatBurn"
   | "detachSearchXyzBattleDamage"
   | "destroyedSummonStatBurn"
+  | "destroyedHeroSummonBaseStat"
   | "directRecover"
   | "xmaterialQuickDestroyDirect"
   | "drawThenDiscard"
@@ -1513,6 +1515,32 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "eventName: \"damageDealt\"",
         "currentAttack(restoredDeepEyes, restoredSummonTrigger.session.state)).toBe(3000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-apparition-destroyed-hero-summon-base-stat.test.ts",
+      kind: "destroyedHeroSummonBaseStat",
+      required: [
+        "restores destroyed HERO Trap activation into Vision HERO deck summon and optional base stat halving",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_DELAY+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCode(EVENT_DESTROYED)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return c:IsPreviousSetCard(SET_HERO) and c:IsPreviousControler(tp) and c:IsPreviousLocation(LOCATION_MZONE) and c:IsPreviousPosition(POS_FACEUP)",
+        "return c:IsLevelBelow(4) and c:IsSetCard(SET_VISION_HERO) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_DECK,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.SelectMatchingCard(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.BreakEffect()",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e2:SetCode(EFFECT_SET_BASE_DEFENSE)",
+        "operationInfos",
+        'eventName: "destroyed"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -3942,6 +3970,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       detachStatBurn: 0,
       detachSearchXyzBattleDamage: 0,
       destroyedSummonStatBurn: 0,
+      destroyedHeroSummonBaseStat: 0,
       directRecover: 0,
       xmaterialQuickDestroyDirect: 0,
       drawThenDiscard: 0,
