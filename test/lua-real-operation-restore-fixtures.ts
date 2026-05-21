@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 303;
+export const operationFixtureCount = 304;
 export const operationKindCounts = {
+  timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
   persistentLinkCountStatBattledDestroy: 1,
   attackAnnounceStatExactSpendFieldDestroy: 1,
@@ -244,6 +245,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
   | "persistentLinkCountStatBattledDestroy"
   | "attackAnnounceStatExactSpendFieldDestroy"
@@ -488,6 +490,35 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-timaeus-united-immunity-stat-destroy.test.ts",
+      kind: "timaeusImmunityPreDamageSpellCountDestroy",
+      required: [
+        "restores pre-damage Spell count ATK gain and opponent-turn Spell/Trap destroy with summon-immunity script coverage",
+        "Fusion.AddProcMix(c,true,true,{CARD_DARK_MAGICIAN,CARD_DARK_MAGICIAN_GIRL},aux.FilterBoolFunctionEx(Card.IsRace,RACE_DRAGON|RACE_SPELLCASTER))",
+        "e0:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e1:SetCode(EFFECT_IMMUNE_EFFECT)",
+        "e1:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END,ct)",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "Duel.GetMatchingGroupCount(aux.FaceupFilter(Card.IsSpell),tp,LOCATION_GRAVE|LOCATION_REMOVED,LOCATION_GRAVE|LOCATION_REMOVED,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,tp,100*ct)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(100*ct)",
+        "e2:SetType(EFFECT_TYPE_QUICK_O)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e2:SetCondition(function(e,tp) return Duel.IsTurnPlayer(1-tp) end)",
+        "Duel.IsExistingTarget(Card.IsSpellTrap,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsSpellTrap,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,tp,0)",
+        "local tc=Duel.GetFirstTarget()",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "sentToGraveyard"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-armed-dragon-thunder-lv10-quick-wipe.test.ts",
       kind: "armedDragonThresholdQuickWipe",
@@ -5686,6 +5717,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
       persistentLinkCountStatBattledDestroy: 0,
       attackAnnounceStatExactSpendFieldDestroy: 0,
