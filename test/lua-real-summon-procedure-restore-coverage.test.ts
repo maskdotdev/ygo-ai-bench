@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 17;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 15;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 18;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 16;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 2,
@@ -16,7 +16,7 @@ const summonProcedureKindCounts = {
   handBothFieldsGimmickOnlyProcedure: 1,
   handOwnEmptyOpponentMonsterProcedure: 1,
   handOpponentCountProcedure: 1,
-  handOwnFaceupLevelOrLinkOpenZoneProcedure: 2,
+  handOwnFaceupLevelOrLinkOpenZoneProcedure: 3,
   handOwnFaceupSetcodeOpenZoneProcedure: 1,
   handOpponentBackrowCountProcedure: 1,
   handOpponentSpellTrapOrMstProcedure: 1,
@@ -39,6 +39,7 @@ const summonProcedureSemanticVariantCounts = {
   pankratopsOpponentControlsMoreHandProcedure: 1,
   radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 1,
   sprightBlueLevelOrRankOpenZoneProcedureSearch: 1,
+  sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat: 1,
   sprightRedLevelOrLinkOpenZoneProcedure: 1,
   powerInvaderOpponentTwoMonsterNormalSummonProcedure: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
@@ -75,6 +76,7 @@ type SummonProcedureSemanticVariant =
   | "pankratopsOpponentControlsMoreHandProcedure"
   | "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch"
   | "sprightBlueLevelOrRankOpenZoneProcedureSearch"
+  | "sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat"
   | "sprightRedLevelOrLinkOpenZoneProcedure"
   | "powerInvaderOpponentTwoMonsterNormalSummonProcedure";
 
@@ -337,6 +339,22 @@ const summonProcedureFixtures = [
       "getLuaRestoreLegalActions(restoredChain, 0).some((action) => action.type === \"specialSummonProcedure\" && action.uid === secondBlue.uid)).toBe(false)",
       'eventName: "specialSummoned"',
       'eventName: "sentToHandConfirmed"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-spright-pixies-procedure-precalc-stat.test.ts",
+    kind: "handOwnFaceupLevelOrLinkOpenZoneProcedure",
+    required: [
+      "oath hand procedure and pre-damage SelfToGrave GetBattleMonster stat boost",
+      'const pixiesCode = "49928686"',
+      'action.type === "specialSummonProcedure"',
+      "Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.IsExistingMatchingCard(s.spconfilter,tp,LOCATION_MZONE,0,1,nil)",
+      "e2:SetCost(Cost.SelfToGrave)",
+      "local a,d=Duel.GetBattleMonster(tp)",
+      "expectRestoredLegalActions(restoredProcedure, 0)",
+      "applyRestoredActionAndAssert(restoredProcedure, procedure!)",
+      'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
     ],
   },
@@ -639,6 +657,18 @@ function summonProcedureSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-spright-pixies-procedure-precalc-stat.test.ts",
+      kind: "sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat",
+      required: [
+        'const pixiesCode = "49928686"',
+        "restores oath hand procedure and pre-damage SelfToGrave GetBattleMonster stat boost",
+        "Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.IsExistingMatchingCard(s.spconfilter,tp,LOCATION_MZONE,0,1,nil)",
+        "e2:SetCost(Cost.SelfToGrave)",
+        "local a,d=Duel.GetBattleMonster(tp)",
+        "battleDamage[1]).toBe(1000)",
+      ],
+    },
+    {
       file: "test/lua-real-script-spright-red-release-link2-negate.test.ts",
       kind: "sprightRedLevelOrLinkOpenZoneProcedure",
       required: [
@@ -733,6 +763,7 @@ function countSummonProcedureSemanticVariants(
       pankratopsOpponentControlsMoreHandProcedure: 0,
       radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 0,
       sprightBlueLevelOrRankOpenZoneProcedureSearch: 0,
+      sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat: 0,
       sprightRedLevelOrLinkOpenZoneProcedure: 0,
       powerInvaderOpponentTwoMonsterNormalSummonProcedure: 0,
     },

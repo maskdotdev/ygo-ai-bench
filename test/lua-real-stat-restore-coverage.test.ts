@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 35;
+const statFixtureCount = 36;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -32,6 +32,7 @@ const statKindCounts = {
   staticAttackAndExtraAttack: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
+  preDamageSelfToGraveBattleMonsterStat: 1,
   targetedQuickAttackDefenseUpdateChainLimit: 1,
   targetedPreDamageFinalAttack: 1,
 } satisfies Record<StatKind, number>;
@@ -66,6 +67,7 @@ const statSemanticVariantCounts = {
   unifiedFrontDiscardFinalStatLock: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
+  sprightPixiesProcedurePrecalcStat: 1,
   steamroidDamageStepBattleSwingStat: 1,
   gracefulDiceDamageStepGroupStat: 1,
   trianglePowerBaseStatEndDestroy: 1,
@@ -73,7 +75,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "preDamageFinalDigitStatDestroyedLingering" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -107,6 +109,7 @@ type StatSemanticVariant =
   | "unifiedFrontDiscardFinalStatLock"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
+  | "sprightPixiesProcedurePrecalcStat"
   | "steamroidDamageStepBattleSwingStat"
   | "trianglePowerBaseStatEndDestroy"
   | "vylonChargerEquipCountAttributeStat";
@@ -507,6 +510,22 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-spright-pixies-procedure-precalc-stat.test.ts",
+      kind: "preDamageSelfToGraveBattleMonsterStat",
+      required: [
+        'const pixiesCode = "49928686"',
+        "restores oath hand procedure and pre-damage SelfToGrave GetBattleMonster stat boost",
+        "e2:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e2:SetCost(Cost.SelfToGrave)",
+        "local a,d=Duel.GetBattleMonster(tp)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "reason: duelReason.cost",
+        "currentAttack(restoredBattle.session.state.cards.find((card) => card.uid === enabler.uid), restoredBattle.session.state)).toBe(2800)",
+        "battleDamage[1]).toBe(1000)",
+      ],
+    },
+    {
       file: "test/lua-real-script-plague-wolf-final-attack-end-destroy.test.ts",
       kind: "selfFinalAttackEndDestroy",
       required: [
@@ -630,6 +649,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fieldRaceAttackDefenseUpdate: 0,
       fieldSetcodeAttackUpdate: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
+      preDamageSelfToGraveBattleMonsterStat: 0,
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
@@ -955,6 +975,18 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-spright-pixies-procedure-precalc-stat.test.ts",
+      kind: "sprightPixiesProcedurePrecalcStat",
+      required: [
+        'const pixiesCode = "49928686"',
+        "restores oath hand procedure and pre-damage SelfToGrave GetBattleMonster stat boost",
+        "Duel.GetLocationCount(tp,LOCATION_MZONE)>0 and Duel.IsExistingMatchingCard(s.spconfilter,tp,LOCATION_MZONE,0,1,nil)",
+        "e2:SetCost(Cost.SelfToGrave)",
+        "local a,d=Duel.GetBattleMonster(tp)",
+        "battleDamage[1]).toBe(1000)",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "skyscraperFieldDamageCalculationAttackBoost",
       required: [
@@ -1065,6 +1097,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       unifiedFrontDiscardFinalStatLock: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
+      sprightPixiesProcedurePrecalcStat: 0,
       steamroidDamageStepBattleSwingStat: 0,
       trianglePowerBaseStatEndDestroy: 0,
       vylonChargerEquipCountAttributeStat: 0,
