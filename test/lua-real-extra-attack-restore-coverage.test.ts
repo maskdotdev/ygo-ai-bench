@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const EXTRA_ATTACK_FIXTURE_COUNT = 11;
+const EXTRA_ATTACK_FIXTURE_COUNT = 12;
 const extraAttackKindCounts = {
   attackAll: 2,
   chainAttack: 3,
   chainFlagExtraAttack: 1,
   extraAttack: 3,
-  monsterOnlyExtraAttack: 1,
+  monsterOnlyExtraAttack: 2,
   overlayCountMonsterExtraAttack: 1,
 } satisfies Record<ExtraAttackKind, number>;
 const extraAttackSemanticVariantCounts = {
@@ -20,6 +20,7 @@ const extraAttackSemanticVariantCounts = {
   comboMasterChainFlagExtraAttack: 1,
   elementDoomAttributeGatedChainAttack: 1,
   ghostBirdSequenceGatedMonsterOnlyExtraAttack: 1,
+  hexeTrudeDestroyGrantMonsterOnlyExtraAttack: 1,
   hayabusaKnightStaticSecondDirectAttack: 1,
   juggernautLiebeOverlayCountMonsterExtraAttack: 1,
   machineLordUrAttackAllNoDirectAttack: 1,
@@ -35,6 +36,7 @@ type ExtraAttackSemanticVariant =
   | "comboMasterChainFlagExtraAttack"
   | "elementDoomAttributeGatedChainAttack"
   | "ghostBirdSequenceGatedMonsterOnlyExtraAttack"
+  | "hexeTrudeDestroyGrantMonsterOnlyExtraAttack"
   | "hayabusaKnightStaticSecondDirectAttack"
   | "juggernautLiebeOverlayCountMonsterExtraAttack"
   | "machineLordUrAttackAllNoDirectAttack"
@@ -148,6 +150,17 @@ function realScriptExtraAttackFixtureFiles(): Array<{
         "code: 346",
         "hasAttack(actions, ghostBird.uid, target.uid)).toBe(true)",
         "hasDirectAttack(noTargetActions, ghostBird.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hexe-trude-destroy-extra-battle-stat.test.ts",
+      kind: "monsterOnlyExtraAttack",
+      required: [
+        "restores Golden Castle destroy into monster-only extra attack and battle-destroying ATK trigger",
+        "e1:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
+        "value: 1",
+        "secondAttack",
+        "action.directAttack === true)).toBe(false)",
       ],
     },
     {
@@ -291,6 +304,17 @@ function extraAttackSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hexe-trude-destroy-extra-battle-stat.test.ts",
+      kind: "hexeTrudeDestroyGrantMonsterOnlyExtraAttack",
+      required: [
+        'const hexeCode = "46294982"',
+        "restores Golden Castle destroy into monster-only extra attack and battle-destroying ATK trigger",
+        "e1:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
+        "secondAttack",
+        "action.directAttack === true)).toBe(false)",
+      ],
+    },
+    {
       file: "test/lua-real-script-hayabusa-knight-extra-attack.test.ts",
       kind: "hayabusaKnightStaticSecondDirectAttack",
       required: [
@@ -362,6 +386,7 @@ function countExtraAttackSemanticVariants(
       comboMasterChainFlagExtraAttack: 0,
       elementDoomAttributeGatedChainAttack: 0,
       ghostBirdSequenceGatedMonsterOnlyExtraAttack: 0,
+      hexeTrudeDestroyGrantMonsterOnlyExtraAttack: 0,
       hayabusaKnightStaticSecondDirectAttack: 0,
       juggernautLiebeOverlayCountMonsterExtraAttack: 0,
       machineLordUrAttackAllNoDirectAttack: 0,
