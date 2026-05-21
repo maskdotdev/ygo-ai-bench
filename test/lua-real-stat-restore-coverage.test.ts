@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 46;
+const statFixtureCount = 47;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -38,6 +38,7 @@ const statKindCounts = {
   singleRangeSetcodeConditionAttackUpdate: 1,
   staticAttackAndExtraAttack: 1,
   selfTributeTargetRaceAttackDefenseUpdate: 1,
+  selfBanishTargetSetcodeAttackDefenseUpdate: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
   preDamageSelfToGraveBattleMonsterStat: 1,
@@ -84,6 +85,7 @@ const statSemanticVariantCounts = {
   skyscraperFieldDamageCalculationAttackBoost: 1,
   sprightGammaBurstGroupSelfBanishStat: 1,
   sprightPixiesProcedurePrecalcStat: 1,
+  terminusBurningAbyssSelfBanishStat: 1,
   steamroidDamageStepBattleSwingStat: 1,
   gracefulDiceDamageStepGroupStat: 1,
   trianglePowerBaseStatEndDestroy: 1,
@@ -94,7 +96,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -136,6 +138,7 @@ type StatSemanticVariant =
   | "skyscraperFieldDamageCalculationAttackBoost"
   | "sprightGammaBurstGroupSelfBanishStat"
   | "sprightPixiesProcedurePrecalcStat"
+  | "terminusBurningAbyssSelfBanishStat"
   | "steamroidDamageStepBattleSwingStat"
   | "trianglePowerBaseStatEndDestroy"
   | "vylonChargerEquipCountAttributeStat"
@@ -617,6 +620,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-terminus-burning-abyss-self-banish-stat.test.ts",
+      kind: "selfBanishTargetSetcodeAttackDefenseUpdate",
+      required: [
+        'const terminusCode = "44771289"',
+        "restores aux.exccon grave self-banish into targeted Burning Abyss ATK/DEF boost",
+        "Fusion.CreateSummonEff(c,aux.FilterBoolFunction(Card.IsSetCard,SET_BURNING_ABYSS))",
+        "e2:SetCondition(aux.exccon)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "return c:IsFaceup() and c:IsSetCard(SET_BURNING_ABYSS)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid)!, restoredOpen.session.state)).toBe(2000)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
       kind: "targetedDamageStepDefenseUpdate",
       required: [
@@ -844,6 +864,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setFinalAttackDefenseDirectLock: 0,
       setFinalAttackDefenseHalveProcedure: 0,
       setFinalAttackDefenseTargetDirectLock: 0,
+      selfBanishTargetSetcodeAttackDefenseUpdate: 0,
       selfFinalAttackEndDestroy: 0,
       selfTributeTargetRaceAttackDefenseUpdate: 0,
       singleRangeSetcodeConditionAttackUpdate: 0,
@@ -1301,6 +1322,19 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-terminus-burning-abyss-self-banish-stat.test.ts",
+      kind: "terminusBurningAbyssSelfBanishStat",
+      required: [
+        'const terminusCode = "44771289"',
+        "restores aux.exccon grave self-banish into targeted Burning Abyss ATK/DEF boost",
+        "SET_BURNING_ABYSS",
+        "Cost.SelfBanish",
+        'eventName: "banished"',
+        'eventName: "becameTarget"',
+        "value: 800",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "skyscraperFieldDamageCalculationAttackBoost",
       required: [
@@ -1419,6 +1453,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       skyscraperFieldDamageCalculationAttackBoost: 0,
       sprightGammaBurstGroupSelfBanishStat: 0,
       sprightPixiesProcedurePrecalcStat: 0,
+      terminusBurningAbyssSelfBanishStat: 0,
       steamroidDamageStepBattleSwingStat: 0,
       trianglePowerBaseStatEndDestroy: 0,
       vylonChargerEquipCountAttributeStat: 0,
