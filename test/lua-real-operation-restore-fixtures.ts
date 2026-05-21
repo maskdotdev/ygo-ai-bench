@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 210;
+export const operationFixtureCount = 211;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -90,6 +90,7 @@ export const operationKindCounts = {
   lpDiscardCostStatToGraveBothDamage: 1,
   lpCostHandDiscard: 1,
   lpCostRandomHandDiscard: 1,
+  lpCostStatReleaseRecover: 1,
   costBanishLevelStat: 1,
   linkClassCountDeckSummon: 1,
   monsterIgnitionSpellTrapDestroy: 1,
@@ -241,6 +242,7 @@ export type OperationKind =
   | "lpDiscardCostStatToGraveBothDamage"
   | "lpCostHandDiscard"
   | "lpCostRandomHandDiscard"
+  | "lpCostStatReleaseRecover"
   | "costBanishLevelStat"
   | "linkClassCountDeckSummon"
   | "monsterIgnitionSpellTrapDestroy"
@@ -2084,6 +2086,34 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-sun-god-unification-release-recover.test.ts",
+      kind: "lpCostStatReleaseRecover",
+      required: [
+        "restores LP payment stat boost and release-cost recovery through chain target params",
+        "EFFECT_TRAP_ACT_IN_SET_TURN",
+        "EFFECT_FLAG_SET_AVAILABLE",
+        "Duel.GetLP(tp)-100",
+        "Duel.PayLPCost(tp,cost)",
+        "Duel.RegisterFlagEffect(tp,id,RESET_CHAIN,0,1)",
+        "Duel.SelectMatchingCard(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "tc:UpdateAttack(atk,nil,c)",
+        "tc:UpdateDefense(atk,nil,c)",
+        "Duel.CheckReleaseGroupCost(tp,s.lpfilter,1,false,nil,nil)",
+        "Duel.SelectReleaseGroupCost(tp,s.lpfilter,1,1,false,nil,nil)",
+        "Duel.Release(tc,REASON_COST)",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(rec)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "Duel.Recover(p,d,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "released"',
+        'eventName: "recoveredLifePoints"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-dragged-down-mutual-discard-draw.test.ts",
       kind: "mutualHandDiscardDraw",
       required: [
@@ -3291,6 +3321,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       lpDiscardCostStatToGraveBothDamage: 0,
       lpCostHandDiscard: 0,
       lpCostRandomHandDiscard: 0,
+      lpCostStatReleaseRecover: 0,
       costBanishLevelStat: 0,
       linkClassCountDeckSummon: 0,
       monsterIgnitionSpellTrapDestroy: 0,
