@@ -1,6 +1,6 @@
 import fs from "node:fs"; import path from "node:path";
 import { describe, expect, it } from "vitest"; import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
-const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 44, ritual: 18 };
+const root = process.cwd(), representativeRitualFusionHelperFamilyCounts: Record<RitualFusionHelperFamily, number> = { fusion: 45, ritual: 18 };
 const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind, number> = {
   contactFusionBanish: 1, contactFusionCustomSummonType: 1,
   contactFusionOpponentMaterial: 1, contactFusionSendCost: 2,
@@ -20,6 +20,7 @@ const representativeRitualFusionHelperKindCounts: Record<RitualFusionHelperKind,
   fusionGraveBanishMaterial: 1,
   fusionHandMaterial: 1,
   fusionCreateSummonEffSetcodeFilter: 1,
+  fusionDeckMaterialStage2Target: 1,
   fusionHexSealedExtraRelease: 1,
   fusionMaterialCheck: 1,
   fusionOpponentExtrafil: 1,
@@ -63,6 +64,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
   luaPredicateFusionSubstitute: 1,
   meteonisRequirementFunc: 1,
   polymerizationHandMaterials: 1,
+  brilliantFusionDeckStage2Target: 1,
   fullmetalfoesCreateSummonEffSetcodeFilter: 1,
   theseusAddProcMixNRepeatedType: 1,
   primiteFcheck: 1,
@@ -74,7 +76,7 @@ const ritualFusionHelperSemanticVariantCounts: Record<RitualFusionHelperSemantic
 
 describe("Lua real Ritual and Fusion helper restore coverage", () => {
   it("keeps the representative Ritual/Fusion helper fixture inventory broad", () => {
-    expect(representativeRitualFusionHelperFixtures()).toHaveLength(62);
+    expect(representativeRitualFusionHelperFixtures()).toHaveLength(63);
   });
 
   it("keeps representative Ritual/Fusion helper fixture families balanced", () => {
@@ -151,6 +153,7 @@ type RitualFusionHelperKind = "contactFusionBanish" | "contactFusionCustomSummon
   | "fusionGraveBanishMaterial"
   | "fusionHandMaterial"
   | "fusionCreateSummonEffSetcodeFilter"
+  | "fusionDeckMaterialStage2Target"
   | "fusionHexSealedExtraRelease"
   | "fusionMaterialCheck"
   | "fusionOpponentExtrafil"
@@ -193,6 +196,7 @@ type RitualFusionHelperSemanticVariant =
   | "luaPredicateFusionSubstitute"
   | "meteonisRequirementFunc"
   | "polymerizationHandMaterials"
+  | "brilliantFusionDeckStage2Target"
   | "fullmetalfoesCreateSummonEffSetcodeFilter"
   | "theseusAddProcMixNRepeatedType"
   | "primiteFcheck"
@@ -293,6 +297,21 @@ function ritualFusionHelperSemanticVariants(): Array<{ file: string; kind: Ritua
         "Ritual.AddProcGreaterCode(c,3,nil,99414168)",
         "summonMaterialUids: [materialA.uid, materialB.uid]",
         "eventReasonCardUid: blessing.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-brilliant-fusion-deck-stage2-target.test.ts",
+      kind: "brilliantFusionDeckStage2Target",
+      required: [
+        "restores Fusion.CreateSummonEff deck materials, zeroed stage2 stats, discard stat restore, and leave-field target destruction",
+        'const brilliantFusionCode = "7394770"',
+        "Fusion.CreateSummonEff(c,aux.FilterBoolFunction(Card.IsSetCard,SET_GEM_KNIGHT),aux.FALSE,s.extrafil",
+        "Duel.GetMatchingGroup(Fusion.IsMonsterFilter(Card.IsAbleToGrave),tp,LOCATION_DECK,0,nil)",
+        "summonMaterialUids: [materialB.uid, materialA.uid]",
+        "currentAttack(gemFusion, restoredChain.session.state)).toBe(0)",
+        "currentAttack(gemFusion, restoredIgnition.session.state)).toBe(2200)",
+        "cardTargetUids).toEqual([gemFusion.uid])",
+        'eventName: "destroyed"',
       ],
     },
     {
@@ -598,6 +617,24 @@ function representativeRitualFusionHelperFixtures(): Array<{ file: string; kind:
         "event.eventCardUid === material!.uid",
         "special-summon-limit:non-fusion-extra",
         'expect(restored.host.messages).not.toContain("branded fusion responder resolved")',
+      ],
+    },
+    {
+      file: "test/lua-real-script-brilliant-fusion-deck-stage2-target.test.ts",
+      kind: "fusionDeckMaterialStage2Target",
+      families: ["fusion"],
+      required: [
+        "Fusion.CreateSummonEff(c,aux.FilterBoolFunction(Card.IsSetCard,SET_GEM_KNIGHT),aux.FALSE,s.extrafil",
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }",
+        "{ category: 0x20, targetUids: [], count: 0, player: 0, parameter: 0x1 }",
+        'summonType: "fusion"',
+        "summonMaterialUids: [materialB.uid, materialA.uid]",
+        "reason: duelReason.effect | duelReason.material | duelReason.fusion",
+        "cardTargetUids).toEqual([gemFusion.uid])",
+        "currentAttack(gemFusion, restoredIgnition.session.state)).toBe(2200)",
+        'eventName: "specialSummoned"',
+        'eventName: "destroyed"',
+        'expect(restoredChain.host.messages).not.toContain("brilliant fusion responder resolved")',
       ],
     },
     {
