@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 41;
+const statFixtureCount = 42;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -21,6 +21,7 @@ const statKindCounts = {
   fieldLinkSumAttackDefenseUpdate: 1,
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
+  flipGroupAttackUpdate: 1,
   flipSelfAttackDefenseUpdate: 1,
   groupLevelOrRankLinkAndSelfBanishTargetStat: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
@@ -81,10 +82,11 @@ const statSemanticVariantCounts = {
   trianglePowerBaseStatEndDestroy: 1,
   vylonChargerEquipCountAttributeStat: 1,
   wormDimiklesFlipSelfStat: 1,
+  wormOperaFlipGroupStat: 1,
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -126,7 +128,8 @@ type StatSemanticVariant =
   | "steamroidDamageStepBattleSwingStat"
   | "trianglePowerBaseStatEndDestroy"
   | "vylonChargerEquipCountAttributeStat"
-  | "wormDimiklesFlipSelfStat";
+  | "wormDimiklesFlipSelfStat"
+  | "wormOperaFlipGroupStat";
 
 describe("Lua real stat restore coverage", () => {
   it("requires stat-changing fixtures to assert clean Lua registry restore and restored battle outcomes", () => {
@@ -347,6 +350,19 @@ function statFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
         "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === dimikles.uid), restoredTrigger.session.state)).toBe(2000)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-worm-opera-flip-group-stat.test.ts",
+      kind: "flipGroupAttackUpdate",
+      required: [
+        'const operaCode = "28465301"',
+        "restores FLIP GetMatchingGroup aux.Next ATK loss excluding face-up Worm Reptiles",
+        "local g=Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "for tc in aux.Next(g) do",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "currentAttack(state.cards.find((card) => card.uid === ownNonWorm.uid), state)).toBe(1000)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -739,6 +755,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fieldLinkSumAttackDefenseUpdate: 0,
       fieldRaceAttackDefenseUpdate: 0,
       fieldSetcodeAttackUpdate: 0,
+      flipGroupAttackUpdate: 0,
       flipSelfAttackDefenseUpdate: 0,
       groupLevelOrRankLinkAndSelfBanishTargetStat: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
@@ -1026,6 +1043,17 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-worm-opera-flip-group-stat.test.ts",
+      kind: "wormOperaFlipGroupStat",
+      required: [
+        'const operaCode = "28465301"',
+        "restores FLIP GetMatchingGroup aux.Next ATK loss excluding face-up Worm Reptiles",
+        "not (c:IsSetCard(SET_WORM) and c:IsRace(RACE_REPTILE))",
+        "eventName: \"flipSummoned\"",
+        "value: -500",
+      ],
+    },
+    {
       file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
       kind: "reliableGuardianTargetedDamageStepDefenseUpdate",
       required: [
@@ -1258,6 +1286,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       trianglePowerBaseStatEndDestroy: 0,
       vylonChargerEquipCountAttributeStat: 0,
       wormDimiklesFlipSelfStat: 0,
+      wormOperaFlipGroupStat: 0,
     },
   );
 }
