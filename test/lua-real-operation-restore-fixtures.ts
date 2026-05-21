@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 240;
+export const operationFixtureCount = 241;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -124,6 +124,7 @@ export const operationKindCounts = {
   pzoneDestroySearch: 2,
   raidraptorBattleDestroyDamage: 1,
   releaseDamage: 3,
+  releaseRaDelayedStat: 1,
   releaseBattleStatReviveRedirect: 1,
   reviveStatBattleDamage: 1,
   ritualToGraveSearchSend: 1,
@@ -304,6 +305,7 @@ export type OperationKind =
   | "pzoneDestroySearch"
   | "raidraptorBattleDestroyDamage"
   | "releaseDamage"
+  | "releaseRaDelayedStat"
   | "releaseBattleStatReviveRedirect"
   | "reviveStatBattleDamage"
   | "ritualToGraveSearchSend"
@@ -381,6 +383,33 @@ export function operationFixtureFiles(): Array<{
         "Duel.SpecialSummonComplete()",
         "operationInfos",
         'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dangers-divine-release-ra-delayed.test.ts",
+      kind: "releaseRaDelayedStat",
+      required: [
+        "restores LP plus release cost into ignored-condition Ra SpecialSummonStep, stat lock, attack lock, and delayed return",
+        "e1:SetCost(Cost.AND(Cost.PayLP(1/2),s.cost))",
+        "Duel.CheckReleaseGroupCost(tp,s.spcostfilter,1,false,nil,nil,tp)",
+        "Duel.SelectReleaseGroupCost(tp,s.spcostfilter,1,1,false,nil,nil,tp)",
+        "Duel.Release(g,REASON_COST)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_REMOVED)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_MZONE)",
+        "Duel.SpecialSummonStep(sc,0,tp,tp,true,false,POS_FACEUP)",
+        "e1:SetCode(EFFECT_SET_ATTACK)",
+        "e2:SetCode(EFFECT_SET_DEFENSE)",
+        "e3:SetCode(EFFECT_CANNOT_ATTACK)",
+        "aux.DelayedOperation(sc,PHASE_END,id,e,tp,",
+        "Duel.SendtoHand(ag,nil,REASON_EFFECT)",
+        "function() return Duel.GetTurnCount()==turn_count+1 end",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "operationInfos",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "released"',
         'eventName: "specialSummoned"',
         "currentAttack",
         "currentDefense",
@@ -4147,6 +4176,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       pzoneDestroySearch: 0,
       raidraptorBattleDestroyDamage: 0,
       releaseDamage: 0,
+      releaseRaDelayedStat: 0,
       releaseBattleStatReviveRedirect: 0,
       reviveStatBattleDamage: 0,
       ritualToGraveSearchSend: 0,
