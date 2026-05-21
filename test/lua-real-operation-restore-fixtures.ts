@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 298;
+export const operationFixtureCount = 299;
 export const operationKindCounts = {
+  twoTargetLabelStatDestroy: 1,
   targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
@@ -239,6 +240,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "twoTargetLabelStatDestroy"
   | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
   | "damageStepTargetFinalStatSpellTrapDestroy"
@@ -478,6 +480,34 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-drytron-asterism-two-target-stat-destroy.test.ts",
+      kind: "twoTargetLabelStatDestroy",
+      required: [
+        "restores dual targets into Drytron ATK loss and opponent monster destruction",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return Duel.IsMainPhase()",
+        "return c:IsFaceup() and c:GetAttack()>=1000 and (c:IsSetCard(SET_DRYTRON) or c:IsRitualMonster())",
+        "Duel.IsExistingTarget(s.atkfilter,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,0,LOCATION_MZONE,1,nil)",
+        "local g1=Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "local g2=Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "e:SetLabelObject(g1:GetFirst())",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g2,1,0,LOCATION_MZONE)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g1,1,0,0)",
+        "local tc=e:GetLabelObject()",
+        "local g=Duel.GetTargetCards(e)",
+        "if dc==tc then dc=g:GetNext() end",
+        "tc:UpdateAttack(-1000,RESETS_STANDARD_PHASE_END|RESET_OPPO_TURN,c)==-1000",
+        "Duel.Destroy(dc,REASON_EFFECT)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "currentAttack",
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-scrap-sheen-target-destroy-team-stat.test.ts",
       kind: "targetDestroyRemainingGroupStat",
@@ -5540,6 +5570,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      twoTargetLabelStatDestroy: 0,
       targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
