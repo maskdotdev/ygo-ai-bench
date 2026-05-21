@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 226;
+export const operationFixtureCount = 227;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -128,6 +128,7 @@ export const operationKindCounts = {
   setFinalStatDestroyCost: 1,
   setFinalStatDisable: 1,
   selectEffectStat: 1,
+  selectEffectStatSearch: 1,
   selectEffectStatDestroyedToGrave: 1,
   selectEffectStatDestroy: 1,
   selectUnselectTargetStat: 1,
@@ -295,6 +296,7 @@ export type OperationKind =
   | "setFinalStatDestroyCost"
   | "setFinalStatDisable"
   | "selectEffectStat"
+  | "selectEffectStatSearch"
   | "selectEffectStatDestroyedToGrave"
   | "selectEffectStatDestroy"
   | "selectUnselectTargetStat"
@@ -2784,6 +2786,29 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-vs-mad-love-select-effect-stat-search.test.ts",
+      kind: "selectEffectStatSearch",
+      required: [
+        "restores Vanquish Soul SelectEffect reveal branch into stat reduction and summon search",
+        "Duel.GetFlagEffect(tp,id)==0",
+        "Duel.RegisterFlagEffect(tp,id,RESET_CHAIN,0,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.SelectEffect(tp,",
+        "Duel.ShuffleHand(tp)",
+        "tc:UpdateAttack(-500,RESET_EVENT|RESETS_STANDARD,c)",
+        "tc:UpdateDefense(-500,RESET_EVENT|RESETS_STANDARD,c)",
+        'api: "SelectEffect"',
+        "operationInfos",
+        'eventName: "confirmed"',
+        'eventName: "sentToHandConfirmed"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-hallo-opponent-select-effect-destroyed-tograve.test.ts",
       kind: "selectEffectStatDestroyedToGrave",
       required: [
@@ -3792,6 +3817,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       setFinalStatDestroyCost: 0,
       setFinalStatDisable: 0,
       selectEffectStat: 0,
+      selectEffectStatSearch: 0,
       selectEffectStatDestroyedToGrave: 0,
       selectEffectStatDestroy: 0,
       selectUnselectTargetStat: 0,
