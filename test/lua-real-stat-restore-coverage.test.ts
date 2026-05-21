@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 69;
+const statFixtureCount = 70;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -34,6 +34,7 @@ const statKindCounts = {
   flipGroupAttackUpdate: 1,
   flipSelfAttackDefenseUpdate: 1,
   groupLevelOrRankLinkAndSelfBanishTargetStat: 1,
+  majesticSynchroDisableReturnAttackUpdate: 1,
   overlayDetachSelfStatAttackLock: 1,
   overlayDetachSelfStatBattleProtection: 1,
   overlayDetachTargetStatTriggerLock: 1,
@@ -101,6 +102,7 @@ const statSemanticVariantCounts = {
   jurassicWorldTargetBoolFunctionRaceStat: 1,
   juggernautLiebeDetachStatAttackLock: 1,
   luminousSoldierDamageStepTargetAttributeStat: 1,
+  majesticRedDisableReturnStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mildTurkeyDiceScaleUpdate: 1,
   mountainMultiRaceTargetBoolFunctionRaceStat: 1,
@@ -136,7 +138,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -172,6 +174,7 @@ type StatSemanticVariant =
   | "juggernautLiebeDetachStatAttackLock"
   | "kingOverfiendDetachStatCannotTrigger"
   | "luminousSoldierDamageStepTargetAttributeStat"
+  | "majesticRedDisableReturnStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mildTurkeyDiceScaleUpdate"
   | "mountainMultiRaceTargetBoolFunctionRaceStat"
@@ -937,6 +940,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-majestic-red-disable-return-stat.test.ts",
+      kind: "majesticSynchroDisableReturnAttackUpdate",
+      required: [
+        'const majesticCode = "67030233"',
+        "restores targeted disable AdjustInstantly ATK gain and End Phase Extra Deck return revive",
+        "Synchro.AddMajesticProcedure(c,aux.FilterBoolFunction(Card.IsCode,21159309),true,aux.FilterBoolFunction(Card.IsCode,CARD_RED_DRAGON_ARCHFIEND),true,Synchro.NonTuner(nil),false)",
+        "Duel.AdjustInstantly(tc)",
+        "e3:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.SendtoDeck(c,nil,SEQ_DECKTOP,REASON_EFFECT)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "customStatusMask = 0x8",
+        "currentAttack(restoredNegated.session.state.cards.find((card) => card.uid === majestic.uid), restoredNegated.session.state)).toBe(7200)",
+        'eventName: "sentToDeck"',
+        'eventName: "specialSummoned"',
+      ],
+    },
+    {
       file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
       kind: "targetedPreDamageFinalAttack",
       required: [
@@ -1277,6 +1297,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fusionSummonOpponentFinalAttackDefenseHalve: 0,
       fusionTargetFinalAttackDisableReviveDestroy: 0,
       groupLevelOrRankLinkAndSelfBanishTargetStat: 0,
+      majesticSynchroDisableReturnAttackUpdate: 0,
       overlayDetachSelfStatAttackLock: 0,
       overlayDetachSelfStatBattleProtection: 0,
       overlayDetachTargetStatTriggerLock: 0,
@@ -1417,6 +1438,22 @@ function statSemanticVariants(): Array<{
         "Duel.Remove(rg,POS_FACEUP,REASON_EFFECT)",
         "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
         "customStatusMask = 0x8",
+      ],
+    },
+    {
+      file: "test/lua-real-script-majestic-red-disable-return-stat.test.ts",
+      kind: "majesticRedDisableReturnStat",
+      required: [
+        'const majesticCode = "67030233"',
+        "Synchro.AddMajesticProcedure",
+        "EVENT_BATTLED",
+        "EFFECT_MATERIAL_CHECK",
+        "EFFECT_MULTIPLE_TUNERS",
+        "Duel.SelectTarget(tp,s.disfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.AdjustInstantly(tc)",
+        "EFFECT_UPDATE_ATTACK",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.SendtoDeck(c,nil,SEQ_DECKTOP,REASON_EFFECT)",
       ],
     },
     {
@@ -2179,6 +2216,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       juggernautLiebeDetachStatAttackLock: 0,
       kingOverfiendDetachStatCannotTrigger: 0,
       luminousSoldierDamageStepTargetAttributeStat: 0,
+      majesticRedDisableReturnStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mildTurkeyDiceScaleUpdate: 0,
       mountainMultiRaceTargetBoolFunctionRaceStat: 0,

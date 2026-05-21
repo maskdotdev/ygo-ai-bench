@@ -178,6 +178,22 @@ export const cardProcedureSource = `${fusionProcedureSource}
       local mt=c:GetMetatable(false)
       if mt then mt.synchro_materials={...} end
     end
+    function Synchro.AddMajesticProcedure(c,...)
+      local mt=c:GetMetatable(false)
+      if mt then
+        mt.synchro_type=2
+        mt.synchro_materials={...}
+      end
+      local e1=Effect.CreateEffect(c)
+      e1:SetType(EFFECT_TYPE_FIELD)
+      e1:SetDescription(1172)
+      e1:SetCode(EFFECT_SPSUMMON_PROC)
+      e1:SetProperty(EFFECT_FLAG_UNCOPYABLE+EFFECT_FLAG_IGNORE_IMMUNE)
+      e1:SetRange(LOCATION_EXTRA)
+      e1:SetValue(SUMMON_TYPE_SYNCHRO)
+      c:RegisterEffect(e1)
+      return e1
+    end
     function Synchro.CreateHandMaterialEffect(c,id,material_filter,synchro_filter,banish_mats,rc)
       local e1=Effect.CreateEffect(rc or c)
       e1:SetType(EFFECT_TYPE_SINGLE)
