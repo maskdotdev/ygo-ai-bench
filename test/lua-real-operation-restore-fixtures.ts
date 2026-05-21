@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 220;
+export const operationFixtureCount = 221;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -45,6 +45,7 @@ export const operationKindCounts = {
   chainNegateColumnDestroy: 1,
   chainNegateCostBanishDestroy: 1,
   chainNegateFlagStat: 1,
+  chainNegateCopyInheritStatRevive: 1,
   chainLinkedZoneDisable: 1,
   chainDetachControlLock: 1,
   chainSolvedAnnounceNegate: 1,
@@ -206,6 +207,7 @@ export type OperationKind =
   | "chainNegateColumnDestroy"
   | "chainNegateCostBanishDestroy"
   | "chainNegateFlagStat"
+  | "chainNegateCopyInheritStatRevive"
   | "chainLinkedZoneDisable"
   | "chainDetachControlLock"
   | "chainSolvedAnnounceNegate"
@@ -2858,6 +2860,34 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-light-dark-dragonlord-chain-stat-negate.test.ts",
+      kind: "chainNegateCopyInheritStatRevive",
+      required: [
+        "restores EVENT_CHAINING stat loss negation and destroyed Dragon revive targeting",
+        "Fusion.AddProcMix(c,true,true,s.matfilter(ATTRIBUTE_LIGHT),s.matfilter(ATTRIBUTE_DARK))",
+        "e1:SetCode(EFFECT_ADD_ATTRIBUTE)",
+        "e2:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE+CATEGORY_NEGATE)",
+        "e2:SetCode(EVENT_CHAINING)",
+        "e2:SetCountLimit(1,0,EFFECT_COUNT_CODE_CHAIN)",
+        "Duel.SetOperationInfo(0,CATEGORY_NEGATE,eg,1,tp,0)",
+        "e1:SetProperty(EFFECT_FLAG_COPY_INHERIT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "Duel.GetCurrentChain()==ev+1",
+        "Duel.NegateActivation(ev)",
+        "e3:SetProperty(EFFECT_FLAG_DELAY+EFFECT_FLAG_CARD_TARGET)",
+        "e3:SetCode(EVENT_DESTROYED)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "operationInfos",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        "currentAttack",
+        "currentDefense",
+        "currentAttribute",
+      ],
+    },
+    {
       file: "test/lua-real-script-mausoleum-white-send-stat.test.ts",
       kind: "fieldExtraSummonSendStat",
       required: [
@@ -3538,6 +3568,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       chainNegateColumnDestroy: 0,
       chainNegateCostBanishDestroy: 0,
       chainNegateFlagStat: 0,
+      chainNegateCopyInheritStatRevive: 0,
       chainLinkedZoneDisable: 0,
       chainDetachControlLock: 0,
       chainSolvedAnnounceNegate: 0,
