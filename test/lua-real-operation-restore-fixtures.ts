@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 293;
+export const operationFixtureCount = 294;
 export const operationKindCounts = {
+  targetDestroyOptionalBreakAttackAnnounceStat: 1,
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
   announceChangeCode: 1,
@@ -234,6 +235,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "targetDestroyOptionalBreakAttackAnnounceStat"
   | "activateDestroyPossibleSummonOptionalStat"
   | "graveTriggerBranchSummonStatDestroy"
   | "announceChangeCode"
@@ -468,6 +470,39 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-mementotlan-fracture-dance-destroy-attack-stat.test.ts",
+      kind: "targetDestroyOptionalBreakAttackAnnounceStat",
+      required: [
+        "restores targeted destroy with optional BreakEffect destroy and graveyard attack-announce ATK loss",
+        "e1:SetCategory(CATEGORY_DESTROY)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,c)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "Duel.GetMatchingGroup(nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,e:GetHandler())",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsCode,CARD_MEMENTOAL_TECUHTLICA),tp,LOCATION_ONFIELD,0,1,nil)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.HintSelection(dg,true)",
+        "Duel.BreakEffect()",
+        "e2:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e2:SetRange(LOCATION_GRAVE)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "local yc,oc=Duel.GetBattleMonster(tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,#g,1-tp,-1000)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-1000)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        'api: "SelectYesNo"',
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "breakEffect"',
+        'eventName: "attackDeclared"',
+        "currentAttack",
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-berserk-archfiend-custom-event-stat.test.ts",
       kind: "customEventMissedTimingDestroyCount",
@@ -5396,6 +5431,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      targetDestroyOptionalBreakAttackAnnounceStat: 0,
       activateDestroyPossibleSummonOptionalStat: 0,
       graveTriggerBranchSummonStatDestroy: 0,
       announceChangeCode: 0,

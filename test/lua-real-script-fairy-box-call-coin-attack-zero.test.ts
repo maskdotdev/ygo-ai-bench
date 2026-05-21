@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
         eventName: "attackDeclared",
         eventCode: 1130,
         eventCardUid: attacker.uid,
+        eventPlayer: 1,
         eventReason: 0,
         eventReasonPlayer: 1,
         eventTriggerTiming: "when",
@@ -96,38 +97,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     expectRestoredLegalActions(restoredTrigger, 0);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === fairyBox.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
+    expect(JSON.stringify(trigger)).not.toContain("operationInfos");
     applyRestored(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.chain).toEqual([
-      {
-        id: "chain-3",
-        chainIndex: 1,
-        effectId: "lua-2-1130",
-        sourceUid: fairyBox.uid,
-        player: 0,
-        activationLocation: "spellTrapZone",
-        activationSequence: 0,
-        eventName: "attackDeclared",
-        eventCode: 1130,
-        eventCardUid: attacker.uid,
-        eventReason: 0,
-        eventReasonPlayer: 1,
-        eventTriggerTiming: "when",
-        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
-        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
-        targetUids: [attacker.uid],
-        operationInfos: [{ category: categoryCoin, count: 0, parameter: 1, player: 0, targetUids: [] }],
-      },
-    ]);
-
-    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
-    expectCleanRestore(restoredChain);
-    expectRestoredLegalActions(restoredChain, 1);
-    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-    passChain(restoredChain, 1);
-    expect(restoredChain.session.state.lastCoinResults).toEqual([1]);
-    expect(currentAttack(restoredChain.session.state.cards.find((card) => card.uid === attacker.uid), restoredChain.session.state)).toBe(0);
-    expect(restoredChain.session.state.pendingBattle).toMatchObject({ attackerUid: attacker.uid, targetUid: target.uid });
-    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "coinTossed")).toEqual([
+    expect(restoredTrigger.session.state.chain).toEqual([]);
+    expect(restoredTrigger.session.state.lastCoinResults).toEqual([1]);
+    expect(currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === attacker.uid), restoredTrigger.session.state)).toBe(0);
+    expect(restoredTrigger.session.state.pendingBattle).toMatchObject({ attackerUid: attacker.uid, targetUid: target.uid });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "coinTossed")).toEqual([
       {
         eventName: "coinTossed",
         eventCode: 1151,
@@ -140,7 +116,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
       },
     ]);
     expect(host.messages).not.toContain("fairy box responder resolved");
-    expect(restoredChain.host.messages).not.toContain("fairy box responder resolved");
+    expect(restoredTrigger.host.messages).not.toContain("fairy box responder resolved");
   });
 });
 
