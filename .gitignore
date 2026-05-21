@@ -4,6 +4,13 @@ coverage/
 .vite/
 .tmp/
 .DS_Store
+.codex/
+.logs/
+logs/
+codex*.log
+codex-*.jsonl
+codex-*.txt
+*.codex.log
 .upstream/
 public/card-data/
 public/card-scripts/
