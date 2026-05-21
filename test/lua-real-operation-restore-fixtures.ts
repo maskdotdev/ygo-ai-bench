@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 254;
+export const operationFixtureCount = 255;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -187,6 +187,7 @@ export const operationKindCounts = {
   targetDestroyRecover: 1,
   targetDestroySkipDraw: 1,
   targetToHandDiscardCost: 1,
+  temporaryBanishStatReturn: 1,
   temporaryFinalAttackDamageStepBurn: 1,
   toGraveOperatedDestroy: 1,
   trapDrawSkipDraw: 1,
@@ -380,6 +381,7 @@ export type OperationKind =
   | "targetDestroyRecover"
   | "targetDestroySkipDraw"
   | "targetToHandDiscardCost"
+  | "temporaryBanishStatReturn"
   | "temporaryFinalAttackDamageStepBurn"
   | "toGraveOperatedDestroy"
   | "trapDrawSkipDraw"
@@ -3901,6 +3903,22 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-world-legacy-clash-temp-banish-stat-return.test.ts",
+      kind: "temporaryBanishStatReturn",
+      required: [
+        "restores banish-as-cost label state into stat reduction and End Phase ReturnToField",
+        "Duel.Remove(rc,POS_FACEUP,REASON_COST+REASON_TEMPORARY)",
+        "Duel.ReturnToField(e:GetLabelObject())",
+        "reason: duelReason.cost | duelReason.temporary",
+        "currentAttack(restoredTarget, restoredOpen.session.state)).toBe(800)",
+        "currentDefense(restoredTarget, restoredOpen.session.state)).toBe(800)",
+        "registryKey: \"lua:93236220:lua-2-4608\"",
+        "reasonEffectId: 2",
+        'eventName: "moved"',
+        "eventCurrentState: { controller: 0, faceUp: true, location: \"monsterZone\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-aquarium-lighting-battle-revive-lock.test.ts",
       kind: "battleFinalStatReviveLock",
       required: [
@@ -4601,6 +4619,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDestroyRecover: 0,
       targetDestroySkipDraw: 0,
       targetToHandDiscardCost: 0,
+      temporaryBanishStatReturn: 0,
       temporaryFinalAttackDamageStepBurn: 0,
       toGraveOperatedDestroy: 0,
       trapDrawSkipDraw: 0,

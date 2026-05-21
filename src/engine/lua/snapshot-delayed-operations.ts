@@ -126,6 +126,40 @@ export function isKnownPurushaddollAeonDelayedFlipEffect(effect: SerializedDuelE
   );
 }
 
+export function isKnownTemporaryBanishReturnToFieldEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.triggerCode === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.labelObjectUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function temporaryBanishReturnToFieldOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    const targetUid = effect.labelObjectUid;
+    const target = targetUid === undefined ? undefined : ctx.duel.cards.find((card) => card.uid === targetUid);
+    const destination = target?.previousLocation === "monsterZone" || target?.previousLocation === "spellTrapZone" ? target.previousLocation : undefined;
+    const controller = target?.previousController;
+    if (!target || !destination || controller === undefined) return;
+    try {
+      moveDuelCardWithRedirects(ctx.duel, target.uid, destination, controller, duelReason.effect, effect.controller, {
+        eventReasonCardUid: effect.sourceUid,
+        ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+      });
+    } catch {
+      // EDOPro-style delayed operations ignore targets that can no longer return.
+    }
+  };
+}
+
 export function tsumuhaKutsunagiDelayedShuffleOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
   return (ctx) => {
     const targetUids = ctx.duel.cards

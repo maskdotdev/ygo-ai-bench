@@ -11,7 +11,7 @@ import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRit
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
 import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKnownBookOfEclipsePhaseEndEffect } from "#lua/snapshot-book-of-eclipse.js";
-import { delayedFlaggedSendToHandOperation, engraverOfTheMarkDelayedDestroyCanActivate, engraverOfTheMarkDelayedDestroyOperation, isKnownDelayedSendToHandEffect, isKnownEngraverOfTheMarkDelayedDestroyEffect, isKnownPurushaddollAeonDelayedFlipEffect, isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, purushaddollAeonDelayedFlipCanActivate, purushaddollAeonDelayedFlipOperation, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
+import { delayedFlaggedSendToHandOperation, engraverOfTheMarkDelayedDestroyCanActivate, engraverOfTheMarkDelayedDestroyOperation, isKnownDelayedSendToHandEffect, isKnownEngraverOfTheMarkDelayedDestroyEffect, isKnownPurushaddollAeonDelayedFlipEffect, isKnownTemporaryBanishReturnToFieldEffect, isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, purushaddollAeonDelayedFlipCanActivate, purushaddollAeonDelayedFlipOperation, temporaryBanishReturnToFieldOperation, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { luaHandlerDestroyOperation, luaLinkedLeaveFieldDestroyOperation } from "#lua/snapshot-destroy-operations.js";
 import { isKnownLevelNormalEndPhaseDestroyEffect, levelNormalEndPhaseDestroyCanActivate, levelNormalEndPhaseDestroyOperation } from "#lua/snapshot-level-normal-end-phase-destroy.js";
 import { isKnownSelfEndPhaseDestroyEffect, isKnownSelfEndPhaseSendEffect, selfEndPhaseDestroyOperation, selfEndPhaseSendOperation } from "#lua/snapshot-self-end-phase-destroy.js";
@@ -720,6 +720,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) ||
         isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) ||
         isKnownPurushaddollAeonDelayedFlipEffect(effect) ||
+        isKnownTemporaryBanishReturnToFieldEffect(effect) ||
         isKnownMulcharmyDrawWatcherEffect(effect) ||
         isKnownMulcharmyEndPhaseShuffleEffect(effect) ||
         isKnownZeroParadoxDelayedScaleDestroyEffect(effect) ||
@@ -1179,6 +1180,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect)) return tsumuhaKutsunagiDelayedShuffleOperation(effect);
   if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) return engraverOfTheMarkDelayedDestroyOperation(effect);
   if (isKnownPurushaddollAeonDelayedFlipEffect(effect)) return purushaddollAeonDelayedFlipOperation(effect);
+  if (isKnownTemporaryBanishReturnToFieldEffect(effect)) return temporaryBanishReturnToFieldOperation(effect);
   if (isKnownMulcharmyDrawWatcherEffect(effect)) return mulcharmyDrawWatcherOperation(effect);
   if (isKnownMulcharmyEndPhaseShuffleEffect(effect)) return mulcharmyEndPhaseShuffleOperation(effect);
   if (isKnownZeroParadoxDelayedScaleDestroyEffect(effect)) return zeroParadoxDelayedScaleDestroyOperation(effect);
