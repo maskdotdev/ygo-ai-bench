@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 247;
+export const operationFixtureCount = 248;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -99,6 +99,7 @@ export const operationKindCounts = {
   handStatBoost: 1,
   handQuickSummonSelectEffectStat: 1,
   handCountReviveMaterialStatLock: 1,
+  deckCostLabelStatDestroyedSummon: 1,
   pzoneAttackAnnounceStat: 1,
   twoTargetPositionCopyStat: 1,
   groupToHand: 2,
@@ -286,6 +287,7 @@ export type OperationKind =
   | "handStatBoost"
   | "handQuickSummonSelectEffectStat"
   | "handCountReviveMaterialStatLock"
+  | "deckCostLabelStatDestroyedSummon"
   | "pzoneAttackAnnounceStat"
   | "twoTargetPositionCopyStat"
   | "groupToHand"
@@ -1334,6 +1336,34 @@ export function operationFixtureFiles(): Array<{
         "tc:NegateEffects(c,RESET_PHASE|PHASE_END)",
         "operationInfos",
         "confirmed 1:",
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-kozmo-delta-shuttle-cost-stat-summon.test.ts",
+      kind: "deckCostLabelStatDestroyedSummon",
+      required: [
+        "restores Deck send cost label ATK/DEF reduction and destroyed self-banish Deck summon",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_DECK,0,1,nil)",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(tc,REASON_COST)",
+        "e:SetLabel(tc:GetLevel())",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "return c:IsReason(REASON_DESTROY) and c:IsReason(REASON_BATTLE|REASON_EFFECT)",
+        "Duel.Remove(c,POS_FACEUP,REASON_COST)",
+        "return c:IsSetCard(SET_KOZMO) and c:IsLevelBelow(4) and c:IsCanBeSpecialSummoned(e,0,tp,false,false)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_DECK)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "becameTarget"',
+        'eventName: "banished"',
+        'eventName: "specialSummoned"',
         "currentAttack",
         "currentDefense",
       ],
@@ -4325,6 +4355,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handStatBoost: 0,
       handQuickSummonSelectEffectStat: 0,
       handCountReviveMaterialStatLock: 0,
+      deckCostLabelStatDestroyedSummon: 0,
       pzoneAttackAnnounceStat: 0,
       twoTargetPositionCopyStat: 0,
       groupLevelFinal: 0,
