@@ -106,7 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ro
     const rhinoAction = getLuaRestoreLegalActions(restoredResponse, 1).find((action) => action.type === "activateEffect" && action.uid === rhino.uid);
     expect(rhinoAction, JSON.stringify(getLuaRestoreLegalActions(restoredResponse, 1), null, 2)).toBeDefined();
     applyRestoredAction(restoredResponse, rhinoAction!);
-    expect(restoredResponse.session.state.chain[1]).toEqual({
+    expect(restoredResponse.session.state.chain[1]).toMatchObject({
       id: "chain-3",
       chainIndex: 2,
       effectId: "lua-3-1027",
@@ -114,6 +114,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ro
       player: 1,
       activationLocation: "monsterZone",
       activationSequence: 0,
+      eventName: "chaining",
+      eventCode: 1027,
+      eventPlayer: 0,
+      eventValue: 1,
+      eventReasonPlayer: 0,
+      eventChainDepth: 1,
+      eventChainLinkId: "chain-2",
+      eventCardUid: starter.uid,
       operationInfos: [
         { category: 0x2000000, targetUids: [], count: 1, player: 1, parameter: 0 },
         { category: 0x200000, targetUids: [rhino.uid], count: 1, player: 1, parameter: 500 },

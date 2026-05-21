@@ -18,8 +18,15 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 const hasClearWingScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${clearWingCode}.lua`));
 const typeMonster = 0x1;
+const typeSpell = 0x2;
 const typeEffect = 0x20;
+const typeTuner = 0x1000;
+const typeSynchro = 0x2000;
+const attributeWind = 0x8;
 const attributeDark = 0x20;
+const starterCode = "546035251";
+const tunerCode = "546035252";
+const synchroCode = "546035253";
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasClearWingScript)("Lua real script Clear Wing Four Heavenly step Synchro stat", () => {
   it("restores delayed Special Summon trigger into opponent Effect Monster destroy and ATK gain", () => {
@@ -67,6 +74,70 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasClearWingScri
     expect(currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === clearWing.uid), restoredResolved.session.state)).toBe(5500);
     expect(restoredResolved.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
+
+  it("keeps the opponent activation chain open for its Step summon and optional WIND Synchro response", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const script = workspace.readScript(`official/c${clearWingCode}.lua`);
+    expectScriptShape(script);
+
+    const { session, reader, source } = createSession(workspace);
+    const clearWing = requireCard(session, clearWingCode);
+    const starter = requireCard(session, starterCode);
+    const tuner = requireCard(session, tunerCode);
+    const synchro = requireCard(session, synchroCode);
+    moveFaceUpAttack(session, clearWing, 0);
+    moveDuelCard(session.state, starter.uid, "hand", 1);
+    moveDuelCard(session.state, tuner.uid, "hand", 0);
+    session.state.phase = "main1";
+    session.state.turnPlayer = 1;
+    session.state.waitingFor = 1;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(clearWingCode), source).ok).toBe(true);
+    expect(host.loadCardScript(Number(starterCode), source).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(2);
+
+    const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
+    expectCleanRestore(restoredOpen);
+    expectRestoredLegalActions(restoredOpen, 1);
+    const starterAction = getLuaRestoreLegalActions(restoredOpen, 1).find((action) => action.type === "activateEffect" && action.uid === starter.uid);
+    expect(starterAction, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 1), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredOpen, starterAction!);
+    expect(restoredOpen.session.state.chain).toHaveLength(1);
+    expect(restoredOpen.session.state.waitingFor).toBe(0);
+
+    const restoredResponse = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
+    expectCleanRestore(restoredResponse);
+    expectRestoredLegalActions(restoredResponse, 0);
+    const clearWingAction = getLuaRestoreLegalActions(restoredResponse, 0).find((action) => action.type === "activateEffect" && action.uid === clearWing.uid);
+    expect(clearWingAction, JSON.stringify(getLuaRestoreLegalActions(restoredResponse, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredResponse, clearWingAction!);
+    resolveRestoredChain(restoredResponse);
+
+    expect(restoredResponse.session.state.cards.find((card) => card.uid === tuner.uid)).toMatchObject({
+      location: "graveyard",
+      controller: 0,
+      reason: duelReason.material | duelReason.synchro,
+      reasonPlayer: 0,
+      reasonCardUid: clearWing.uid,
+      reasonEffectId: 3,
+    });
+    expect(restoredResponse.session.state.cards.find((card) => card.uid === clearWing.uid)).toMatchObject({
+      location: "graveyard",
+      controller: 0,
+      reason: duelReason.material | duelReason.synchro,
+      reasonPlayer: 0,
+      reasonCardUid: clearWing.uid,
+      reasonEffectId: 3,
+    });
+    expect(restoredResponse.session.state.cards.find((card) => card.uid === synchro.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      faceUp: true,
+      summonType: "synchro",
+    });
+    expect(restoredResponse.host.messages).toContain("clear wing starter resolved");
+  });
 });
 
 function expectScriptShape(script: string | undefined): void {
@@ -92,13 +163,34 @@ function createSession(workspace: ReturnType<typeof createUpstreamNodeWorkspace>
   const cards: DuelCardData[] = [
     ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === clearWingCode),
     { code: targetCode, name: "Four Heavenly Effect Target", kind: "monster", typeFlags: typeMonster | typeEffect, attribute: attributeDark, level: 8, attack: 3000, defense: 2500 },
+    { code: starterCode, name: "Four Heavenly Starter Spell", kind: "spell", typeFlags: typeSpell },
+    { code: tunerCode, name: "Four Heavenly WIND Tuner", kind: "monster", typeFlags: typeMonster | typeEffect | typeTuner, attribute: attributeWind, level: 2, attack: 800, defense: 800 },
+    { code: synchroCode, name: "Four Heavenly WIND Synchro", kind: "extra", typeFlags: typeMonster | typeEffect | typeSynchro, attribute: attributeWind, level: 9, attack: 3000, defense: 2500 },
   ];
   const reader = createCardReader(cards);
   const session = createDuel({ seed: 54603525, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
-  loadDecks(session, { 0: { main: [clearWingCode] }, 1: { main: [targetCode] } });
+  loadDecks(session, { 0: { main: [clearWingCode, tunerCode], extra: [synchroCode] }, 1: { main: [targetCode, starterCode] } });
   startDuel(session);
-  const source = { readScript(name: string) { return workspace.readScript(name); } };
+  const source = {
+    readScript(name: string) {
+      if (name === `c${starterCode}.lua`) return starterScript();
+      return workspace.readScript(name);
+    },
+  };
   return { session, reader, source };
+}
+
+function starterScript(): string {
+  return `
+    local s,id=GetID()
+    function s.initial_effect(c)
+      local e=Effect.CreateEffect(c)
+      e:SetType(EFFECT_TYPE_ACTIVATE)
+      e:SetCode(EVENT_FREE_CHAIN)
+      e:SetOperation(function(e,tp) Debug.Message("clear wing starter resolved") end)
+      c:RegisterEffect(e)
+    end
+  `;
 }
 
 function requireCard(session: DuelSession, code: string): DuelCardInstance {

@@ -1,5 +1,6 @@
 import { currentBattleWindowKind } from "#duel/battle-window-state.js";
 import { findCard } from "#duel/card-state.js";
+import { duelEventCode } from "#duel/event-codes.js";
 import type { ChainLink, DuelCardInstance, DuelEffectDefinition, DuelEventCardState, DuelEventName, DuelEventRecord, DuelState, PlayerId, TriggerTiming } from "#duel/types.js";
 
 export interface DuelEffectEventContext {
@@ -23,6 +24,7 @@ export interface DuelEffectEventContext {
 
 export function quickEffectEventContext(state: DuelState, effect: DuelEffectDefinition): DuelEffectEventContext | undefined {
   if (effect.event !== "quick" || effect.triggerEvent === undefined) return undefined;
+  if (state.chain.length > 0 && isChainLifecycleEvent(effect.triggerEvent)) return chainQuickEffectEventContext(state, effect);
   const firstLink = state.chain[0];
   if (firstLink) return eventSourceMatchesTriggerEffect(firstLink, effect) ? eventContextFromSource(state, firstLink) : undefined;
   return liveQuickEffectEventContext(state, effect);
@@ -67,6 +69,24 @@ function eventContextFromSource(state: DuelState, source: DuelEffectEventSource)
     ...(source.eventCurrentState === undefined ? {} : { eventCurrentState: { ...source.eventCurrentState } }),
     ...(source.eventTriggerTiming === undefined ? {} : { eventTriggerTiming: source.eventTriggerTiming }),
   };
+}
+
+function chainQuickEffectEventContext(state: DuelState, effect: DuelEffectDefinition): DuelEffectEventContext | undefined {
+  const link = state.chain[state.chain.length - 1];
+  if (!link || effect.triggerEvent === undefined) return undefined;
+  const eventCode = duelEventCode(effect.triggerEvent);
+  return eventContextFromSource(state, {
+    eventName: effect.triggerEvent,
+    ...(eventCode === undefined ? {} : { eventCode }),
+    eventPlayer: link.player,
+    eventValue: state.chain.length,
+    ...(link.eventReason === undefined ? {} : { eventReason: link.eventReason }),
+    eventReasonPlayer: link.player,
+    ...(link.relatedEffectId === undefined ? {} : { relatedEffectId: link.relatedEffectId }),
+    eventChainDepth: state.chain.length,
+    eventChainLinkId: link.id,
+    eventCardUid: link.sourceUid,
+  });
 }
 
 function liveQuickEffectEventContext(state: DuelState, effect: DuelEffectDefinition): DuelEffectEventContext | undefined {
