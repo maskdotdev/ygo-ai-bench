@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 300;
+export const operationFixtureCount = 301;
 export const operationKindCounts = {
+  attackAnnounceStatExactSpendFieldDestroy: 1,
   linkAttributeCostDestroyFlag: 1,
   twoTargetLabelStatDestroy: 1,
   targetDestroyRemainingGroupStat: 1,
@@ -241,6 +242,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "attackAnnounceStatExactSpendFieldDestroy"
   | "linkAttributeCostDestroyFlag"
   | "twoTargetLabelStatDestroy"
   | "targetDestroyRemainingGroupStat"
@@ -482,6 +484,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-festiballoon-attack-field-wipe.test.ts",
+      kind: "attackAnnounceStatExactSpendFieldDestroy",
+      required: [
+        "restores attack-announce ATK gain and exact 5000 ATK field-wipe ignition",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e1:SetTargetRange(LOCATION_MZONE,LOCATION_MZONE)",
+        "return c==handler or c==handler:GetBattleTarget()",
+        "e2:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e2:SetOperation(function(e) e:GetHandler():UpdateAttack(1000) end)",
+        "e3:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY)",
+        "e3:SetType(EFFECT_TYPE_IGNITION)",
+        "e3:SetRange(LOCATION_MZONE)",
+        "e3:SetCountLimit(1,id)",
+        "local g=Duel.GetFieldGroup(tp,LOCATION_ONFIELD,LOCATION_ONFIELD)-c",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,tp,0)",
+        "c:UpdateAttack(-5000)==-5000",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        'eventName: "attackDeclared"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-accesscode-talker-link-cost-destroy.test.ts",
       kind: "linkAttributeCostDestroyFlag",
@@ -5602,6 +5627,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      attackAnnounceStatExactSpendFieldDestroy: 0,
       linkAttributeCostDestroyFlag: 0,
       twoTargetLabelStatDestroy: 0,
       targetDestroyRemainingGroupStat: 0,
