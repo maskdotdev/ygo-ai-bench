@@ -25,6 +25,21 @@ export function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffe
 }
 
 export function yellowAlertDelayedReturnOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return delayedFlaggedSendToHandOperation(effect);
+}
+
+export function isKnownDelayedSendToHandEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    (effect.code === luaBattlePhaseEventCode || effect.code === luaPhaseEndEventCode) &&
+    effect.label !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function delayedFlaggedSendToHandOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
   return (ctx) => {
     const fieldId = effect.label;
     const flagCode = Number(ctx.source.code);
@@ -34,12 +49,17 @@ export function yellowAlertDelayedReturnOperation(effect: SerializedDuelEffect):
       const target = ctx.duel.cards.find((card) => card.uid === uid);
       if (!target) continue;
       try {
-        moveDuelCardWithRedirects(ctx.duel, target.uid, "hand", target.controller, duelReason.effect, ctx.player, { eventReasonCardUid: ctx.source.uid });
+        moveDuelCardWithRedirects(ctx.duel, target.uid, "hand", target.controller, duelReason.effect, ctx.player, { eventReasonCardUid: ctx.source.uid, ...effectReasonIdPayload(effect) });
       } catch {
         // EDOPro-style delayed operations ignore targets that can no longer move.
       }
     }
   };
+}
+
+function effectReasonIdPayload(effect: SerializedDuelEffect): { eventReasonEffectId: number } | Record<string, never> {
+  const id = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(id) ? { eventReasonEffectId: id } : {};
 }
 
 export function isKnownUnleashYourPowerDelayedSetEffect(effect: SerializedDuelEffect): boolean {

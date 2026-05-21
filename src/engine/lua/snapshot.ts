@@ -11,7 +11,7 @@ import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRit
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
 import { bookOfEclipsePhaseEndCanActivate, bookOfEclipsePhaseEndOperation, isKnownBookOfEclipsePhaseEndEffect } from "#lua/snapshot-book-of-eclipse.js";
-import { engraverOfTheMarkDelayedDestroyCanActivate, engraverOfTheMarkDelayedDestroyOperation, isKnownEngraverOfTheMarkDelayedDestroyEffect, isKnownPurushaddollAeonDelayedFlipEffect, isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, purushaddollAeonDelayedFlipCanActivate, purushaddollAeonDelayedFlipOperation, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
+import { delayedFlaggedSendToHandOperation, engraverOfTheMarkDelayedDestroyCanActivate, engraverOfTheMarkDelayedDestroyOperation, isKnownDelayedSendToHandEffect, isKnownEngraverOfTheMarkDelayedDestroyEffect, isKnownPurushaddollAeonDelayedFlipEffect, isKnownTsumuhaKutsunagiDelayedShuffleEffect, isKnownUnleashYourPowerDelayedSetEffect, isKnownYellowAlertDelayedReturnEffect, purushaddollAeonDelayedFlipCanActivate, purushaddollAeonDelayedFlipOperation, tsumuhaKutsunagiDelayedShuffleOperation, unleashYourPowerDelayedSetOperation, yellowAlertDelayedReturnOperation } from "#lua/snapshot-delayed-operations.js";
 import { luaHandlerDestroyOperation, luaLinkedLeaveFieldDestroyOperation } from "#lua/snapshot-destroy-operations.js";
 import { isKnownLevelNormalEndPhaseDestroyEffect, levelNormalEndPhaseDestroyCanActivate, levelNormalEndPhaseDestroyOperation } from "#lua/snapshot-level-normal-end-phase-destroy.js";
 import { isKnownSelfEndPhaseDestroyEffect, isKnownSelfEndPhaseSendEffect, selfEndPhaseDestroyOperation, selfEndPhaseSendOperation } from "#lua/snapshot-self-end-phase-destroy.js";
@@ -696,6 +696,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownDharcProcedurePierceEffect(effect) ||
         isKnownTemporaryPierceEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
+        isKnownDelayedSendToHandEffect(effect) ||
         isKnownCalledByTheGraveChainSolvingNegateEffect(effect) ||
         isKnownSameOriginalCodeChainSolvingNegateEffect(effect) ||
         isKnownGishkiEmiliaTrapNegateEffect(effect) ||
@@ -1119,6 +1120,7 @@ function isTemporaryRestrictionReset(flags: number | undefined): boolean {
 
 function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[] = []): DuelEffectDefinition["operation"] {
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return yellowAlertDelayedReturnOperation(effect);
+  if (isKnownDelayedSendToHandEffect(effect)) return delayedFlaggedSendToHandOperation(effect);
   if (isKnownCalledByTheGraveChainSolvingNegateEffect(effect)) return calledByTheGraveChainSolvingNegateOperation(effect);
   if (isKnownSameOriginalCodeChainSolvingNegateEffect(effect)) return calledByTheGraveChainSolvingNegateOperation(effect);
   if (isKnownGishkiEmiliaTrapNegateEffect(effect)) return gishkiEmiliaTrapNegateOperation(effect);

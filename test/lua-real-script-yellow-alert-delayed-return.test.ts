@@ -95,6 +95,9 @@ describe.skipIf(!hasUpstreamScripts || !hasYellowAlertScript)("Lua real script I
           "event": "continuous",
           "id": "lua-2-4224",
           "label": 1,
+          "labelObjectUids": [
+            "p1-deck-300-2",
+          ],
           "luaTypeFlags": 2050,
           "oncePerTurn": true,
           "operation": [Function],
@@ -179,6 +182,9 @@ describe.skipIf(!hasUpstreamScripts || !hasYellowAlertScript)("Lua real script I
           "event": "continuous",
           "id": "lua-2-4224",
           "label": 1,
+          "labelObjectUids": [
+            "p1-deck-300-2",
+          ],
           "oncePerTurn": true,
           "operation": [Function],
           "ownerPlayer": 1,

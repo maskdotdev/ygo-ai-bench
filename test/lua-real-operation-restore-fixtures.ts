@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 233;
+export const operationFixtureCount = 234;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -138,6 +138,7 @@ export const operationKindCounts = {
   selectEffectStatDestroy: 1,
   selectUnselectTargetStat: 1,
   specialSearchMaterialDamage: 1,
+  specialSummonDelayedReturnStat: 1,
   specialSummonFusionBattleStatLock: 1,
   specialSummonBaseStat: 1,
   stepSummonLevelFinalStat: 1,
@@ -311,6 +312,7 @@ export type OperationKind =
   | "selectEffectStatDestroy"
   | "selectUnselectTargetStat"
   | "specialSearchMaterialDamage"
+  | "specialSummonDelayedReturnStat"
   | "specialSummonFusionBattleStatLock"
   | "specialSummonBaseStat"
   | "stepSummonLevelFinalStat"
@@ -2101,6 +2103,31 @@ export function operationFixtureFiles(): Array<{
         'eventName: "usedAsMaterial"',
         'eventName: "damageDealt"',
         "currentAttack(resolvedMelodious, restoredMaterialTrigger.session.state)).toBe(1100)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nemleria-louve-summon-delayed-stat.test.ts",
+      kind: "specialSummonDelayedReturnStat",
+      required: [
+        "restores deck summon with delayed return and grave self-banish face-down banished count stat reduction",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_HAND|LOCATION_DECK,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummon(sc,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "aux.DelayedOperation(sc,PHASE_END,id,e,tp,function(ag) Duel.SendtoHand(ag,nil,REASON_EFFECT) end,nil,0,0,aux.Stringid(id,2))",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.IsExistingMatchingCard(Card.IsFacedown,tp,LOCATION_REMOVED,0,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetMatchingGroupCount(Card.IsFacedown,tp,LOCATION_REMOVED,0,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHand"',
+        'eventName: "banished"',
+        'eventName: "becameTarget"',
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -3981,6 +4008,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStatDestroy: 0,
       selectUnselectTargetStat: 0,
       specialSearchMaterialDamage: 0,
+      specialSummonDelayedReturnStat: 0,
       specialSummonFusionBattleStatLock: 0,
       specialSummonBaseStat: 0,
       stepSummonLevelFinalStat: 0,
