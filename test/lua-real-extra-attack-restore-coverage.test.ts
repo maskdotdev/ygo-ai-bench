@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const EXTRA_ATTACK_FIXTURE_COUNT = 9;
+const EXTRA_ATTACK_FIXTURE_COUNT = 10;
 const extraAttackKindCounts = {
   attackAll: 2,
   chainAttack: 3,
   chainFlagExtraAttack: 1,
   extraAttack: 2,
   monsterOnlyExtraAttack: 1,
+  overlayCountMonsterExtraAttack: 1,
 } satisfies Record<ExtraAttackKind, number>;
 const extraAttackSemanticVariantCounts = {
   alienHunterBattleDestroyChainAttack: 1,
@@ -19,12 +20,13 @@ const extraAttackSemanticVariantCounts = {
   elementDoomAttributeGatedChainAttack: 1,
   ghostBirdSequenceGatedMonsterOnlyExtraAttack: 1,
   hayabusaKnightStaticSecondDirectAttack: 1,
+  juggernautLiebeOverlayCountMonsterExtraAttack: 1,
   machineLordUrAttackAllNoDirectAttack: 1,
   matazaControlLockStaticExtraAttack: 1,
   nitroWarriorPositionChangedChainAttack: 1,
 } satisfies Record<ExtraAttackSemanticVariant, number>;
 
-type ExtraAttackKind = "attackAll" | "chainAttack" | "chainFlagExtraAttack" | "extraAttack" | "monsterOnlyExtraAttack";
+type ExtraAttackKind = "attackAll" | "chainAttack" | "chainFlagExtraAttack" | "extraAttack" | "monsterOnlyExtraAttack" | "overlayCountMonsterExtraAttack";
 type ExtraAttackSemanticVariant =
   | "alienHunterBattleDestroyChainAttack"
   | "asuraPriestSpiritAttackAllMonsters"
@@ -32,6 +34,7 @@ type ExtraAttackSemanticVariant =
   | "elementDoomAttributeGatedChainAttack"
   | "ghostBirdSequenceGatedMonsterOnlyExtraAttack"
   | "hayabusaKnightStaticSecondDirectAttack"
+  | "juggernautLiebeOverlayCountMonsterExtraAttack"
   | "machineLordUrAttackAllNoDirectAttack"
   | "matazaControlLockStaticExtraAttack"
   | "nitroWarriorPositionChangedChainAttack";
@@ -154,6 +157,18 @@ function realScriptExtraAttackFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-juggernaut-liebe-detach-stat-attack-lock.test.ts",
+      kind: "overlayCountMonsterExtraAttack",
+      required: [
+        'const liebeCode = "26096328"',
+        "restores detach-cost self stat boost, other-monster attack lock, and overlay-count extra monster attack",
+        "e2:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
+        "return math.max(0,oc)",
+        "hasAttack(secondActions, liebe.uid, secondTarget.uid)).toBe(true)",
+        "hasDirectAttack(battleActions, liebe.uid)).toBe(false)",
+      ],
+    },
+    {
       file: "test/lua-real-script-mataza-control-extra-attack.test.ts",
       kind: "extraAttack",
       required: [
@@ -190,6 +205,7 @@ function countExtraAttackKinds(fixtures: Array<{ kind: ExtraAttackKind }>): Reco
       chainFlagExtraAttack: 0,
       extraAttack: 0,
       monsterOnlyExtraAttack: 0,
+      overlayCountMonsterExtraAttack: 0,
     },
   );
 }
@@ -272,6 +288,16 @@ function extraAttackSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-juggernaut-liebe-detach-stat-attack-lock.test.ts",
+      kind: "juggernautLiebeOverlayCountMonsterExtraAttack",
+      required: [
+        'const liebeCode = "26096328"',
+        "restores detach-cost self stat boost, other-monster attack lock, and overlay-count extra monster attack",
+        "e2:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
+        "hasAttack(secondActions, liebe.uid, secondTarget.uid)).toBe(true)",
+      ],
+    },
+    {
       file: "test/lua-real-script-mataza-control-extra-attack.test.ts",
       kind: "matazaControlLockStaticExtraAttack",
       required: [
@@ -313,6 +339,7 @@ function countExtraAttackSemanticVariants(
       elementDoomAttributeGatedChainAttack: 0,
       ghostBirdSequenceGatedMonsterOnlyExtraAttack: 0,
       hayabusaKnightStaticSecondDirectAttack: 0,
+      juggernautLiebeOverlayCountMonsterExtraAttack: 0,
       machineLordUrAttackAllNoDirectAttack: 0,
       matazaControlLockStaticExtraAttack: 0,
       nitroWarriorPositionChangedChainAttack: 0,

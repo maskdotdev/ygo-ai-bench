@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 45;
+const statFixtureCount = 46;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -24,6 +24,7 @@ const statKindCounts = {
   flipGroupAttackUpdate: 1,
   flipSelfAttackDefenseUpdate: 1,
   groupLevelOrRankLinkAndSelfBanishTargetStat: 1,
+  overlayDetachSelfStatAttackLock: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
   setAttack: 1,
   setBaseAttack: 1,
@@ -61,6 +62,7 @@ const statSemanticVariantCounts = {
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
   guardragonShieldLinkSumStat: 1,
   jurassicWorldTargetBoolFunctionRaceStat: 1,
+  juggernautLiebeDetachStatAttackLock: 1,
   luminousSoldierDamageStepTargetAttributeStat: 1,
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mildTurkeyDiceScaleUpdate: 1,
@@ -92,7 +94,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -110,6 +112,7 @@ type StatSemanticVariant =
   | "guardragonShieldLinkSumStat"
   | "gracefulDiceDamageStepGroupStat"
   | "jurassicWorldTargetBoolFunctionRaceStat"
+  | "juggernautLiebeDetachStatAttackLock"
   | "luminousSoldierDamageStepTargetAttributeStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mildTurkeyDiceScaleUpdate"
@@ -582,6 +585,22 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-juggernaut-liebe-detach-stat-attack-lock.test.ts",
+      kind: "overlayDetachSelfStatAttackLock",
+      required: [
+        'const liebeCode = "26096328"',
+        "restores detach-cost self stat boost, other-monster attack lock, and overlay-count extra monster attack",
+        "e1:SetCost(Cost.DetachFromSelf(1,1,nil))",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e0:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e2:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
+        "reason: duelReason.cost",
+        "currentAttack(state.cards.find((card) => card.uid === liebe.uid)!, state)).toBe(6000)",
+        "battleDamage).toEqual({ 0: 0, 1: 5000 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-winged-minion-self-tribute-fiend-stat.test.ts",
       kind: "selfTributeTargetRaceAttackDefenseUpdate",
       required: [
@@ -815,6 +834,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       flipGroupAttackUpdate: 0,
       flipSelfAttackDefenseUpdate: 0,
       groupLevelOrRankLinkAndSelfBanishTargetStat: 0,
+      overlayDetachSelfStatAttackLock: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
       preDamageSelfToGraveBattleMonsterStat: 0,
       setAttack: 0,
@@ -976,6 +996,20 @@ function statSemanticVariants(): Array<{
         "restores aux.TargetBoolFunction Card.IsRace ATK and DEF field updates into battle damage",
         "target:race:65536",
         "e2:SetTarget(aux.TargetBoolFunction(Card.IsRace,RACE_DINOSAUR))",
+      ],
+    },
+    {
+      file: "test/lua-real-script-juggernaut-liebe-detach-stat-attack-lock.test.ts",
+      kind: "juggernautLiebeDetachStatAttackLock",
+      required: [
+        'const liebeCode = "26096328"',
+        "restores detach-cost self stat boost, other-monster attack lock, and overlay-count extra monster attack",
+        "Cost.DetachFromSelf(1,1,nil)",
+        "EFFECT_CANNOT_ATTACK",
+        "EFFECT_EXTRA_ATTACK_MONSTER",
+        "eventName: \"detachedMaterial\"",
+        "value: 2000",
+        "hasDirectAttack(battleActions, liebe.uid)).toBe(false)",
       ],
     },
     {
@@ -1360,6 +1394,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       guardragonShieldLinkSumStat: 0,
       gracefulDiceDamageStepGroupStat: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
+      juggernautLiebeDetachStatAttackLock: 0,
       luminousSoldierDamageStepTargetAttributeStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mildTurkeyDiceScaleUpdate: 0,
