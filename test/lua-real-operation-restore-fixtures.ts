@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 321;
+export const operationFixtureCount = 322;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -9,6 +9,7 @@ export const operationKindCounts = {
   diceFieldSearchBattleStartTwoPlayerStat: 1,
   attackAnnounceSelectEffectStatImmune: 1,
   handSummonOptionalDrawQuickFinalHalve: 1,
+  equipCountTargetNegateStat: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
@@ -269,6 +270,7 @@ export type OperationKind =
   | "diceFieldSearchBattleStartTwoPlayerStat"
   | "attackAnnounceSelectEffectStatImmune"
   | "handSummonOptionalDrawQuickFinalHalve"
+  | "equipCountTargetNegateStat"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
@@ -685,6 +687,31 @@ export function operationFixtureFiles(): Array<{
         'api: "SelectYesNo"',
         'eventName: "specialSummoned"',
         'eventName: "cardsDrawn"',
+        "operationInfos",
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dragunity-arma-gram-equip-count-negate-stat.test.ts",
+      kind: "equipCountTargetNegateStat",
+      required: [
+        "restores target negation with face-up Equip count ATK loss while pinning summon and battle-equip branches",
+        "e1:SetRange(LOCATION_HAND|LOCATION_GRAVE)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetCategory(CATEGORY_DISABLE+CATEGORY_ATKCHANGE)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,s.distg,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil,eqpc)",
+        "Duel.SetOperationInfo(0,CATEGORY_DISABLE,g,1,0,0)",
+        "e1:SetCode(EFFECT_DISABLE)",
+        "e2:SetCode(EFFECT_DISABLE_EFFECT)",
+        "Duel.GetMatchingGroupCount(aux.FaceupFilter(Card.IsType,TYPE_EQUIP),tp,LOCATION_SZONE,0,nil)",
+        "e3:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e3:SetValue(-ct*1000)",
+        "Duel.SetOperationInfo(0,CATEGORY_LEAVE_GRAVE,eqg,1,0,0)",
+        "Duel.Equip(tp,tc,c,true,true)",
+        "e1:SetCode(EFFECT_EQUIP_LIMIT)",
+        "Duel.EquipComplete()",
         "operationInfos",
         "currentAttack",
       ],
@@ -6161,6 +6188,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       diceFieldSearchBattleStartTwoPlayerStat: 0,
       attackAnnounceSelectEffectStatImmune: 0,
       handSummonOptionalDrawQuickFinalHalve: 0,
+      equipCountTargetNegateStat: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
