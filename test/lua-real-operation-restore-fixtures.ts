@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 312;
+export const operationFixtureCount = 313;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -15,6 +15,7 @@ export const operationKindCounts = {
   linkAttributeCostDestroyFlag: 1,
   linkGyAttackReleaseCountDestroy: 1,
   changeCodeQuickAttackSpendDestroyBattleStat: 1,
+  opponentTurnQuickAttackSpendDestroy: 1,
   twoTargetLabelStatDestroy: 1,
   targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
@@ -266,6 +267,7 @@ export type OperationKind =
   | "linkAttributeCostDestroyFlag"
   | "linkGyAttackReleaseCountDestroy"
   | "changeCodeQuickAttackSpendDestroyBattleStat"
+  | "opponentTurnQuickAttackSpendDestroy"
   | "twoTargetLabelStatDestroy"
   | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
@@ -826,6 +828,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "becameTarget"',
         'eventName: "destroyed"',
         'eventName: "battleDestroyed"',
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dogurad-opponent-turn-quick-destroy-stat.test.ts",
+      kind: "opponentTurnQuickAttackSpendDestroy",
+      required: [
+        "restores opponent Main Phase target destruction paid by matching ATK loss",
+        "Link.AddProcedure(c,nil,2,3,s.matcheck)",
+        "return g:IsExists(Card.IsRace,1,nil,RACE_ROCK,sc,sumtype,tp)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc:GetAttack())",
+        "e2:SetCondition(function(e,tp) return Duel.IsMainPhase() and Duel.IsTurnPlayer(1-tp) end)",
+        "return c:HasNonZeroAttack() and c:IsAttackBelow(atk)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,c,1,tp,-g:GetFirst():GetAttack())",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,tp,0)",
+        "c:UpdateAttack(-tc:GetAttack())==-tc:GetAttack()",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "currentAttack(restored.session.state.cards.find((card) => card.uid === dogurad.uid), restored.session.state)).toBe(2000)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
         "operationInfos",
       ],
     },
@@ -5932,6 +5957,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       linkAttributeCostDestroyFlag: 0,
       linkGyAttackReleaseCountDestroy: 0,
       changeCodeQuickAttackSpendDestroyBattleStat: 0,
+      opponentTurnQuickAttackSpendDestroy: 0,
       twoTargetLabelStatDestroy: 0,
       targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
