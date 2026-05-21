@@ -1,11 +1,12 @@
 import path from "node:path";
 
-export const operationFixtureCount = 318;
+export const operationFixtureCount = 319;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
   diceStatDrawDirect: 1,
   diceSelectEffectToGraveFinalStat: 1,
+  diceFieldSearchBattleStartTwoPlayerStat: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
@@ -263,6 +264,7 @@ export type OperationKind =
   | "handProcedureSynchroSummonSelectDestroy"
   | "diceStatDrawDirect"
   | "diceSelectEffectToGraveFinalStat"
+  | "diceFieldSearchBattleStartTwoPlayerStat"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
@@ -606,6 +608,32 @@ export function operationFixtureFiles(): Array<{
         'eventName: "diceTossed"',
         'eventName: "sentToGraveyard"',
         "operationInfos",
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dice-dungeon-search-battle-start-dice-stat.test.ts",
+      kind: "diceFieldSearchBattleStartTwoPlayerStat",
+      required: [
+        "restores field activation optional search into battle-start two-player dice ATK changes",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,0))",
+        "Duel.SendtoHand(sg,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,sg)",
+        "e2:SetCategory(CATEGORY_DICE+CATEGORY_ATKCHANGE)",
+        "e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e2:SetCode(EVENT_PHASE|PHASE_BATTLE_START)",
+        "Duel.SetOperationInfo(0,CATEGORY_DICE,nil,1,PLAYER_ALL,0)",
+        "local res1=Duel.TossDice(turn_p,1)",
+        "local res2=Duel.TossDice(1-turn_p,1)",
+        "g1:ForEach(s.atkchange,res1,c)",
+        "g2:ForEach(s.atkchange,res2,c)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        'api: "SelectYesNo"',
+        'eventName: "sentToHand"',
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "phaseBattle"',
+        'eventName: "diceTossed"',
         "currentAttack",
       ],
     },
@@ -6078,6 +6106,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handProcedureSynchroSummonSelectDestroy: 0,
       diceStatDrawDirect: 0,
       diceSelectEffectToGraveFinalStat: 0,
+      diceFieldSearchBattleStartTwoPlayerStat: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
