@@ -49,7 +49,7 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
     const candidate = triggerEventCandidate(state, effect, eventName, eventCard, options);
     if (isBattleDestroyingSingleTrigger(effect, eventName) && candidate.eventCard?.uid !== source.uid) continue;
     if (effect.triggerSourceOnly && candidate.eventCard?.uid !== source.uid) continue;
-    if (!effect.range.includes(source.location)) continue;
+    if (!triggerSourceInRange(effect, source, eventName, candidate.eventCard)) continue;
     if (isTriggerPrevented(state, source)) continue;
     if (!shouldDeferCustomEventChoice(state, eventName) && !canChooseEffect(state, effect, source, eventName, candidate.eventCard, candidate.options)) continue;
     collected.push({ effect, source, index, eventCard: candidate.eventCard, options: candidate.options });
@@ -76,15 +76,27 @@ export function collectGroupedTriggerEffects(state: DuelState, eventName: DuelEv
     if (effect.optional !== false && effect.triggerTiming === "when" && !eventIsLast) continue;
     if (!canUseEffectCount(state, effect)) continue;
     const source = findCard(state, effect.sourceUid);
-    if (!source || !effect.range.includes(source.location)) continue;
+    if (!source) continue;
     if (isTriggerPrevented(state, source)) continue;
     const candidate = shouldDeferCustomEventChoice(state, eventName) ? { eventCard: uniqueEventCards[0], options: groupedOptions } : firstTriggerEventCandidate(state, effect, source, eventName, uniqueEventCards, groupedOptions, canChooseEffect);
     if (!candidate.eventCard) continue;
+    if (!triggerSourceInRange(effect, source, eventName, candidate.eventCard)) continue;
     collected.push({ effect, source, index, eventCard: candidate.eventCard, options: candidate.options });
   }
   collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
   for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, trigger.eventCard, trigger.options));
   setWaitingForPendingTriggerBucket(state);
+}
+
+function triggerSourceInRange(effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard: DuelCardInstance | undefined): boolean {
+  if (effect.range.includes(source.location)) return true;
+  return Boolean(
+    effect.triggerSourceOnly
+      && eventName === "destroyed"
+      && eventCard?.uid === source.uid
+      && source.previousLocation
+      && effect.range.includes(source.previousLocation),
+  );
 }
 
 function uniqueCards(cards: DuelCardInstance[]): DuelCardInstance[] {

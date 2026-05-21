@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 34;
+const statFixtureCount = 35;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -19,6 +19,7 @@ const statKindCounts = {
   fieldLinkSumAttackDefenseUpdate: 1,
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
+  preDamageFinalDigitStatDestroyedLingering: 1,
   setAttack: 1,
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
@@ -44,6 +45,7 @@ const statSemanticVariantCounts = {
   blackwingGaleProcedureFinalStatHalve: 1,
   royalRhinoChainDiceAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
+  digitJammingPrecalcDestroyedStat: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
   genexTurbineTargetBoolFunctionSetcodeStat: 1,
   guardragonShieldLinkSumStat: 1,
@@ -71,7 +73,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "preDamageFinalDigitStatDestroyedLingering" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -81,6 +83,7 @@ type StatSemanticVariant =
   | "bootUpSoldierGadgetConditionAttackUpdate"
   | "borreloadChainLimitAttackDefenseDrop"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
+  | "digitJammingPrecalcDestroyedStat"
   | "fortuneLadyPastCallbackSetAtkDef"
   | "genexTurbineTargetBoolFunctionSetcodeStat"
   | "guardragonShieldLinkSumStat"
@@ -433,6 +436,21 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-digit-jamming-precalc-destroyed-stat.test.ts",
+      kind: "preDamageFinalDigitStatDestroyedLingering",
+      required: [
+        "restores pre-damage final digit stats and destroyed lingering stat recalculation",
+        "e2:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e3:SetCode(EVENT_DESTROYED)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "currentAttack(attacker, restoredBattle.session.state)).toBe(600)",
+        "currentDefense(opponent, restoredBattle.session.state)).toBe(400)",
+        "currentAttack(lingeringAttacker, restoredTrigger.session.state)).toBe(600)",
+        "battleDamage).toEqual({ 0: 100, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
       kind: "targetedDamageStepAttackUpdate",
       required: [
@@ -611,6 +629,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fieldLinkSumAttackDefenseUpdate: 0,
       fieldRaceAttackDefenseUpdate: 0,
       fieldSetcodeAttackUpdate: 0,
+      preDamageFinalDigitStatDestroyedLingering: 0,
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
@@ -912,6 +931,18 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-digit-jamming-precalc-destroyed-stat.test.ts",
+      kind: "digitJammingPrecalcDestroyedStat",
+      required: [
+        'const digitJammingCode = "49658464"',
+        "restores pre-damage final digit stats and destroyed lingering stat recalculation",
+        "e2:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e3:SetCode(EVENT_DESTROYED)",
+        "destroyDuelCard(restoredDestroyed.session.state, digitJamming.uid, 0, duelReason.effect | duelReason.destroy, 1)",
+        "players[0].lifePoints).toBe(7900)",
+      ],
+    },
+    {
       file: "test/lua-real-script-unified-front-discard-final-stat-lock.test.ts",
       kind: "unifiedFrontDiscardFinalStatLock",
       required: [
@@ -1009,6 +1040,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       bootUpSoldierGadgetConditionAttackUpdate: 0,
       borreloadChainLimitAttackDefenseDrop: 0,
       dForcePlasmaGraveyardCountAtkExtraAttack: 0,
+      digitJammingPrecalcDestroyedStat: 0,
       fortuneLadyPastCallbackSetAtkDef: 0,
       genexTurbineTargetBoolFunctionSetcodeStat: 0,
       guardragonShieldLinkSumStat: 0,
