@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 284;
+export const operationFixtureCount = 285;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -165,6 +165,7 @@ export const operationKindCounts = {
   releaseDamage: 3,
   releaseRaDelayedStat: 1,
   releaseBattleStatReviveRedirect: 1,
+  releaseRaceSelfSummonDiscardDestroyStat: 1,
   reviveStatBattleDamage: 1,
   ritualToGraveSearchSend: 1,
   ritualSummonSearchReleaseStat: 1,
@@ -388,6 +389,7 @@ export type OperationKind =
   | "releaseDamage"
   | "releaseRaDelayedStat"
   | "releaseBattleStatReviveRedirect"
+  | "releaseRaceSelfSummonDiscardDestroyStat"
   | "reviveStatBattleDamage"
   | "ritualToGraveSearchSend"
   | "ritualSummonSearchReleaseStat"
@@ -1063,6 +1065,31 @@ export function operationFixtureFiles(): Array<{
         "currentAttack",
         "currentDefense",
         "code: 60",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ddd-pendragon-release-discard-stat.test.ts",
+      kind: "releaseRaceSelfSummonDiscardDestroyStat",
+      required: [
+        "restores Dragon+Fiend release-cost self summon and discard-cost optional Spell/Trap destroy after ATK gain",
+        "Duel.CheckReleaseGroupCost(tp,Card.IsRace,2,true,s.spcheck,e:GetHandler(),RACE_DRAGON|RACE_FIEND)",
+        "aux.ReleaseCheckMMZ(sg,tp)",
+        "Duel.SelectReleaseGroupCost(tp,Card.IsRace,2,2,true,s.spcheck,e:GetHandler(),RACE_DRAGON|RACE_FIEND)",
+        "Duel.Release(sg,REASON_COST)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,e:GetHandler(),1,0,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.HintSelection(dg)",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "released"',
+        'eventName: "discarded"',
+        'eventName: "breakEffect"',
+        'eventName: "destroyed"',
+        'api: "SelectYesNo"',
+        "currentAttack(",
       ],
     },
     {
@@ -5300,6 +5327,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       releaseDamage: 0,
       releaseRaDelayedStat: 0,
       releaseBattleStatReviveRedirect: 0,
+      releaseRaceSelfSummonDiscardDestroyStat: 0,
       reviveStatBattleDamage: 0,
       ritualToGraveSearchSend: 0,
       ritualSummonSearchReleaseStat: 0,
