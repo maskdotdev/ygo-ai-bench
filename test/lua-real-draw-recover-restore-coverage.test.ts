@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DRAW_RECOVER_FIXTURE_COUNT = 21;
+const DRAW_RECOVER_FIXTURE_COUNT = 22;
 const drawRecoverKindCounts = {
   costBanishDraw: 3,
+  diceDraw: 1,
   costDiscardDraw: 1,
   costGraveDraw: 1,
   drawRecoverOrDamage: 2,
@@ -25,6 +26,7 @@ const drawRecoverSemanticVariantCounts = {
   darkseaFloatDestroyedToGraveDraw: 1,
   darkseaRescueSynchroMaterialDraw: 1,
   damageMageEventDamageSummonRecover: 1,
+  orgothTripleDiceDrawDirect: 1,
   geminiSparkReleaseDestroyDraw: 1,
   morayGreedHandToDeckDraw: 1,
   morayAvariceFieldBanishDraw: 1,
@@ -41,7 +43,7 @@ const drawRecoverSemanticVariantCounts = {
   xyzGiftOverlayDetachDraw: 1,
 } satisfies Record<DrawRecoverSemanticVariant, number>;
 
-type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "costGraveDraw" | "drawRecoverOrDamage" | "drawTrigger" | "handToDeckDraw" | "negateThenDraw" | "overlayDetachDraw" | "recoverTrigger" | "releaseDestroyDraw";
+type DrawRecoverKind = "costBanishDraw" | "costDiscardDraw" | "costGraveDraw" | "diceDraw" | "drawRecoverOrDamage" | "drawTrigger" | "handToDeckDraw" | "negateThenDraw" | "overlayDetachDraw" | "recoverTrigger" | "releaseDestroyDraw";
 
 type DrawRecoverSemanticVariant =
   | "badReactionDrawThenDamage"
@@ -51,6 +53,7 @@ type DrawRecoverSemanticVariant =
   | "darkseaFloatDestroyedToGraveDraw"
   | "darkseaRescueSynchroMaterialDraw"
   | "damageMageEventDamageSummonRecover"
+  | "orgothTripleDiceDrawDirect"
   | "geminiSparkReleaseDestroyDraw"
   | "kujiKiriLevel9GraveDraw"
   | "morayGreedHandToDeckDraw"
@@ -211,6 +214,20 @@ function drawRecoverFixtureFiles(): Array<{
         "Duel.ConfirmCards(1-p,sg)",
         "Duel.SendtoDeck(sg,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
         "Duel.Draw(p,3,REASON_EFFECT)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-orgoth-dice-draw-direct-stat.test.ts",
+      kind: "diceDraw",
+      required: [
+        'const orgothCode = "15744417"',
+        "restores triple dice into ATK/DEF gain, draw, protection, and direct attack permission",
+        "Duel.SetOperationInfo(0,CATEGORY_DICE,nil,0,tp,3)",
+        "Duel.Draw(tp,2,REASON_EFFECT)",
+        'eventName: "diceTossed"',
+        'eventName: "cardsDrawn"',
+        "operationInfos",
+        "lastDiceResults).toEqual([3, 3, 3])",
       ],
     },
     {
@@ -421,6 +438,7 @@ function countDrawRecoverKinds(fixtures: Array<{ kind: DrawRecoverKind }>): Reco
       costBanishDraw: 0,
       costDiscardDraw: 0,
       costGraveDraw: 0,
+      diceDraw: 0,
       drawRecoverOrDamage: 0,
       drawTrigger: 0,
       handToDeckDraw: 0,
@@ -650,6 +668,17 @@ function drawRecoverSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-orgoth-dice-draw-direct-stat.test.ts",
+      kind: "orgothTripleDiceDrawDirect",
+      required: [
+        'const orgothCode = "15744417"',
+        "restores triple dice into ATK/DEF gain, draw, protection, and direct attack permission",
+        "Duel.Draw(tp,2,REASON_EFFECT)",
+        'eventName: "cardsDrawn"',
+        "players[1].lifePoints).toBe(8000 - (orgothData!.attack ?? 0) - 900)",
+      ],
+    },
+    {
       file: "test/lua-real-script-skull-mark-ladybug-to-grave-recover.test.ts",
       kind: "skullMarkLadybugToGraveRecover",
       required: [
@@ -719,6 +748,7 @@ function countDrawRecoverSemanticVariants(fixtures: Array<{ kind: DrawRecoverSem
       darkseaFloatDestroyedToGraveDraw: 0,
       darkseaRescueSynchroMaterialDraw: 0,
       geminiSparkReleaseDestroyDraw: 0,
+      orgothTripleDiceDrawDirect: 0,
       kujiKiriLevel9GraveDraw: 0,
       morayGreedHandToDeckDraw: 0,
       morayAvariceFieldBanishDraw: 0,

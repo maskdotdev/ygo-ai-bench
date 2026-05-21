@@ -46,7 +46,7 @@ export function isKnownTemporaryFieldIdAttackAnnounceLockEffect(effect: Serializ
 }
 
 export function isKnownTemporaryBattleProtectionEffect(effect: SerializedDuelEffect): boolean {
-  return isKnownTemporaryPlayerBattleDamageAvoidEffect(effect) || isKnownTemporaryMonsterBattleIndestructibleEffect(effect);
+  return isKnownTemporaryPlayerBattleDamageAvoidEffect(effect) || isKnownTemporaryMonsterBattleIndestructibleEffect(effect) || isKnownTemporarySelfIndestructibleEffect(effect);
 }
 
 export function isKnownTemporaryPlayerHalfBattleDamageEffect(effect: SerializedDuelEffect): boolean {
@@ -463,6 +463,22 @@ function isPlainPlayerTargetPhaseEndEffect(effect: SerializedDuelEffect): boolea
 
 function isKnownTemporaryMonsterBattleIndestructibleEffect(effect: SerializedDuelEffect): boolean {
   return isPlainTemporaryStaticValueEffect(effect, 42) && !hasPlayerTargetFlag(effect) && targetRangeEquals(effect, luaLocationMonsterZone, 0);
+}
+
+function isKnownTemporarySelfIndestructibleEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    (effect.code === 41 || effect.code === 42) &&
+    effect.sourceUid !== undefined &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardPhaseEnd) &&
+    effect.value === 1 &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    effect.targetRange === undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
 }
 
 function isPlainTemporaryStaticValueEffect(effect: SerializedDuelEffect, code: number): boolean {

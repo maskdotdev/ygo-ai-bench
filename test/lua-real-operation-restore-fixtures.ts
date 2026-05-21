@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 307;
+export const operationFixtureCount = 308;
 export const operationKindCounts = {
+  diceStatDrawDirect: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
@@ -248,6 +249,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "diceStatDrawDirect"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
@@ -496,6 +498,28 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-orgoth-dice-draw-direct-stat.test.ts",
+      kind: "diceStatDrawDirect",
+      required: [
+        "restores triple dice into ATK/DEF gain, draw, protection, and direct attack permission",
+        "e1:SetCategory(CATEGORY_DICE+CATEGORY_ATKCHANGE+CATEGORY_DRAW)",
+        "Duel.SetOperationInfo(0,CATEGORY_DICE,nil,0,tp,3)",
+        "for _,i in ipairs({Duel.TossDice(tp,3)}) do",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "Duel.Draw(tp,2,REASON_EFFECT)",
+        "e3:SetCode(EFFECT_DIRECT_ATTACK)",
+        'eventName: "diceTossed"',
+        'eventName: "cardsDrawn"',
+        'eventName: "battleDamageDealt"',
+        "currentAttack",
+        "currentDefense",
+        "lastDiceResults).toEqual([3, 3, 3])",
+      ],
+    },
     {
       file: "test/lua-real-script-red-hared-hasty-horse-procedure-direct-stat.test.ts",
       kind: "handProcedureBaseStatDirectAttack",
@@ -5794,6 +5818,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      diceStatDrawDirect: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
