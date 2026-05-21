@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 223;
+export const operationFixtureCount = 224;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -68,6 +68,7 @@ export const operationKindCounts = {
   detachReplaceDisableBurn: 1,
   detachDiffDamageStat: 1,
   detachStatBurn: 1,
+  detachSearchXyzBattleDamage: 1,
   destroyedSummonStatBurn: 1,
   directRecover: 1,
   xmaterialQuickDestroyDirect: 1,
@@ -232,6 +233,7 @@ export type OperationKind =
   | "detachReplaceDisableBurn"
   | "detachDiffDamageStat"
   | "detachStatBurn"
+  | "detachSearchXyzBattleDamage"
   | "destroyedSummonStatBurn"
   | "directRecover"
   | "xmaterialQuickDestroyDirect"
@@ -3561,6 +3563,30 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-recital-starling-detach-search-stat.test.ts",
+      kind: "detachSearchXyzBattleDamage",
+      required: [
+        "restores Xyz summon metadata, overlay-count stat trigger, battle-damage modifier, and detach search",
+        "Xyz.AddProcedure(c,nil,1,2,nil,nil,Xyz.InfiniteMats)",
+        "return e:GetHandler():IsXyzSummoned() and e:GetHandler():GetOverlayCount()>0",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetCode(EFFECT_ALSO_BATTLE_DAMAGE)",
+        "return e:GetHandler():IsXyzSummoned()",
+        "e3:SetCost(Cost.DetachFromSelf(1))",
+        "return c:GetLevel()==1 and c:IsRace(RACE_WINGEDBEAST) and c:IsAbleToHand()",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "operationInfos",
+        'eventName: "detachedMaterial"',
+        'eventName: "sentToHandConfirmed"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -3650,6 +3676,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       detachReplaceDisableBurn: 0,
       detachDiffDamageStat: 0,
       detachStatBurn: 0,
+      detachSearchXyzBattleDamage: 0,
       destroyedSummonStatBurn: 0,
       directRecover: 0,
       xmaterialQuickDestroyDirect: 0,
