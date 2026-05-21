@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 66;
+const statFixtureCount = 67;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -43,6 +43,7 @@ const statKindCounts = {
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
   summonSuccessTargetAttackUpdate: 1,
+  summonSuccessTargetAttackDisableChainPzone: 1,
   summonBaseAttackDefenseFlaggedHalve: 1,
   setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
@@ -112,6 +113,7 @@ const statSemanticVariantCounts = {
   shieldSwordSwapBaseAd: 1,
   slateWarriorBattleDestroyedStatDrop: 1,
   steadyHandsFinalStatDirectLock: 1,
+  starvingVenomWingSummonChainPzoneStat: 1,
   unifiedFrontDiscardFinalStatLock: 1,
   shrinkTargetBaseAtkHalving: 1,
   sharkDrakeVeissBanishDetachZeroStat: 1,
@@ -130,7 +132,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -185,6 +187,7 @@ type StatSemanticVariant =
   | "shieldSwordSwapBaseAd"
   | "slateWarriorBattleDestroyedStatDrop"
   | "steadyHandsFinalStatDirectLock"
+  | "starvingVenomWingSummonChainPzoneStat"
   | "steelCavalryBattleStartFinalStat"
   | "unifiedFrontDiscardFinalStatLock"
   | "shrinkTargetBaseAtkHalving"
@@ -1144,6 +1147,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-starving-venom-wing-summon-chain-pzone.test.ts",
+      kind: "summonSuccessTargetAttackDisableChainPzone",
+      required: [
+        'const starvingCode = "5148778"',
+        "restores opponent Special Summon targeting, ATK gain/negate, chain destruction, and destroyed PZone placement",
+        "Duel.SetTargetCard(tc)",
+        "local tc=Duel.GetFirstTarget()",
+        "c:UpdateAttack(tc:GetAttack(),RESETS_STANDARD_DISABLE_PHASE_END)",
+        "tc:NegateEffects(c,RESETS_STANDARD_PHASE_END)",
+        "e3:SetCode(EVENT_CHAINING)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "Duel.MoveToField(c,tp,tp,LOCATION_PZONE,POS_FACEUP,true)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === starving.uid), restoredTrigger.session.state)).toBe((starving.data.attack ?? 0) + 1800)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-morpho-butterspy-position-trigger-stat.test.ts",
       kind: "eventChangePositionTargetAttackDefenseDrop",
       required: [
@@ -1223,6 +1243,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
+      summonSuccessTargetAttackDisableChainPzone: 0,
       summonSuccessTargetAttackUpdate: 0,
       summonBaseAttackDefenseFlaggedHalve: 0,
       setFinalAttackDefenseDiscardLock: 0,
@@ -1455,6 +1476,20 @@ function statSemanticVariants(): Array<{
         "code: 102",
         "code: 106",
         "eventReason: duelReason.summon | duelReason.specialSummon | duelReason.fusion",
+      ],
+    },
+    {
+      file: "test/lua-real-script-starving-venom-wing-summon-chain-pzone.test.ts",
+      kind: "starvingVenomWingSummonChainPzoneStat",
+      required: [
+        'const starvingCode = "5148778"',
+        "Pendulum.AddProcedure(c,false)",
+        "Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsType,TYPE_FUSION),aux.FilterBoolFunctionEx(Card.IsSetCard,SET_CLEAR_WING))",
+        "EVENT_SPSUMMON_SUCCESS",
+        "EVENT_CHAINING",
+        "EVENT_DESTROYED",
+        "Duel.CheckPendulumZones(tp)",
+        "location: \"spellTrapZone\"",
       ],
     },
     {
@@ -2090,6 +2125,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       shieldSwordSwapBaseAd: 0,
       slateWarriorBattleDestroyedStatDrop: 0,
       steadyHandsFinalStatDirectLock: 0,
+      starvingVenomWingSummonChainPzoneStat: 0,
       steelCavalryBattleStartFinalStat: 0,
       unifiedFrontDiscardFinalStatLock: 0,
       shrinkTargetBaseAtkHalving: 0,
