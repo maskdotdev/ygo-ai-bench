@@ -122,6 +122,22 @@ export function isKnownTemporaryDirectAttackEffect(effect: SerializedDuelEffect)
   );
 }
 
+export function isKnownTemporaryCannotDirectAttackEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 73 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    effect.targetRange !== undefined &&
+    effect.targetRange[0] === luaLocationMonsterZone &&
+    effect.targetRange[1] === 0 &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 export function isKnownPlayerDamageZeroEffect(effect: SerializedDuelEffect): boolean {
   return (
     (isPlainPhaseEndStaticValueEffect(effect, 82, 0) || isPlainPhaseEndStaticValueEffect(effect, 335, 0)) &&

@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 241;
+export const operationFixtureCount = 242;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -39,6 +39,7 @@ export const operationKindCounts = {
   battleRevealHandStat: 1,
   battleStatBurn: 1,
   battleTargetPositionDamageStat: 1,
+  borreloadDetachReviveLock: 1,
   damageDeckdesAtk: 1,
   damageSynchroMillStat: 1,
   damageStepSendStatAvoidSummon: 1,
@@ -220,6 +221,7 @@ export type OperationKind =
   | "battleRevealHandStat"
   | "battleStatBurn"
   | "battleTargetPositionDamageStat"
+  | "borreloadDetachReviveLock"
   | "damageDeckdesAtk"
   | "damageSynchroMillStat"
   | "damageStepSendStatAvoidSummon"
@@ -413,6 +415,36 @@ export function operationFixtureFiles(): Array<{
         'eventName: "specialSummoned"',
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-borreload-excharge-detach-revive-lock.test.ts",
+      kind: "borreloadDetachReviveLock",
+      required: [
+        "restores Xyz detach target stat reduction, optional Borrel revive, End Phase banish watcher, and temporary summon/direct locks",
+        "e1:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "return e:GetHandler():IsXyzSummoned()",
+        "e2:SetCost(Cost.DetachFromSelf(1))",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_GRAVE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.SpecialSummon(sc,0,tp,tp,false,false,POS_FACEUP)",
+        "sc:RegisterFlagEffect(id,RESET_EVENT|RESETS_STANDARD,0,1)",
+        "e3:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.RegisterEffect(e3,tp)",
+        "Duel.Remove(tc,POS_FACEUP,REASON_EFFECT)",
+        "ge1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)",
+        "ge2:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "aux.RegisterClientHint(e:GetHandler(),nil,tp,1,0,aux.Stringid(id,2),nil)",
+        "operationInfos",
+        'eventName: "detachedMaterial"',
+        'eventName: "becameTarget"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+        "isDirectAttackPrevented",
       ],
     },
     {
@@ -4091,6 +4123,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       battleRevealHandStat: 0,
       battleStatBurn: 0,
       battleTargetPositionDamageStat: 0,
+      borreloadDetachReviveLock: 0,
       chainNegateDiscardDestroy: 0,
       chainNegateDestroyDraw: 0,
       chainNegateColumnDestroy: 0,

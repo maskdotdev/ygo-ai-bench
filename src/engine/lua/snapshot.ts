@@ -16,7 +16,7 @@ import { luaHandlerDestroyOperation, luaLinkedLeaveFieldDestroyOperation } from 
 import { isKnownLevelNormalEndPhaseDestroyEffect, levelNormalEndPhaseDestroyCanActivate, levelNormalEndPhaseDestroyOperation } from "#lua/snapshot-level-normal-end-phase-destroy.js";
 import { isKnownSelfEndPhaseDestroyEffect, isKnownSelfEndPhaseSendEffect, selfEndPhaseDestroyOperation, selfEndPhaseSendOperation } from "#lua/snapshot-self-end-phase-destroy.js";
 import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
-import { isKnownPlayerDamageZeroEffect, isKnownStaticForbiddenCardEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryArtifactLanceaBanishLockEffect, isKnownTemporaryAttackAnnounceNegateEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackAnnounceSelfEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryDirectAttackEffect, isKnownTemporaryEarthshatteringDeckGraveLockEffect, isKnownTemporaryForbiddenCardEffect, isKnownTemporaryMonsterAttackAllEffect, isKnownTemporaryMonsterExtraAttackEffect, isKnownTemporaryMonsterNoBattleDamageEffect, isKnownTemporaryOpponentCannotBattlePhaseEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryOpponentTurnSkipMain2Effect, isKnownTemporaryOpponentTurnSkipTurnEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporaryPlayerHalfBattleDamageEffect, isKnownTemporarySameCodeActivationOathEffect, isKnownTemporarySelfTurnCannotEndPhaseEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySummonSetLockEffect, temporaryAttackAnnounceNegateOperation, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
+import { isKnownPlayerDamageZeroEffect, isKnownStaticForbiddenCardEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryArtifactLanceaBanishLockEffect, isKnownTemporaryAttackAnnounceNegateEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryCannotAttackAnnounceSelfEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryCannotDirectAttackEffect, isKnownTemporaryDirectAttackEffect, isKnownTemporaryEarthshatteringDeckGraveLockEffect, isKnownTemporaryForbiddenCardEffect, isKnownTemporaryMonsterAttackAllEffect, isKnownTemporaryMonsterExtraAttackEffect, isKnownTemporaryMonsterNoBattleDamageEffect, isKnownTemporaryOpponentCannotBattlePhaseEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryOpponentTurnSkipMain2Effect, isKnownTemporaryOpponentTurnSkipTurnEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporaryPlayerHalfBattleDamageEffect, isKnownTemporarySameCodeActivationOathEffect, isKnownTemporarySelfTurnCannotEndPhaseEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySummonSetLockEffect, temporaryAttackAnnounceNegateOperation, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
 import { isKnownMulcharmyDrawWatcherEffect, isKnownMulcharmyEndPhaseShuffleEffect, mulcharmyDrawWatcherOperation, mulcharmyEndPhaseShuffleOperation } from "#lua/snapshot-mulcharmy.js";
 import { assaultZoneExtraDeckReleaseValueCallbacks, assaultZoneReleaseFlagConditionCallbacks, assaultZoneReleaseFlagOperation, isAssaultZoneExtraDeckReleaseRestoreEffect } from "#lua/snapshot-assault-zone.js";
 import { calledByTheGraveChainSolvingNegateOperation, gishkiEmiliaTrapNegateOperation, isKnownCalledByTheGraveChainSolvingNegateEffect, isKnownGishkiEmiliaTrapNegateEffect, isKnownRareMetalmorphChainSolvingNegateEffect, isKnownSameOriginalCodeChainSolvingNegateEffect, rareMetalmorphChainSolvingNegateOperation } from "#lua/snapshot-chain-solving-effects.js";
@@ -707,7 +707,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownBookOfEclipsePhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightPhaseEndEffect(effect) ||
         isKnownSwordsOfRevealingLightResetEffect(effect) ||
-        isKnownTemporaryPlayerAttackAnnounceLockEffect(effect) || isKnownTemporaryAttackAnnounceNegateEffect(effect) || isKnownTemporaryCannotAttackEffect(effect) || isKnownTemporaryCannotAttackAnnounceSelfEffect(effect) || isKnownTemporaryDirectAttackEffect(effect) || isKnownTemporaryBattleProtectionEffect(effect) || isKnownTemporaryPlayerHalfBattleDamageEffect(effect) || isKnownPlayerDamageZeroEffect(effect) || isKnownTemporaryMonsterNoBattleDamageEffect(effect) || isKnownTemporaryMonsterExtraAttackEffect(effect) || isKnownTemporaryMonsterAttackAllEffect(effect) || isKnownTemporaryMustAttackEffect(effect) || isKnownTemporarySummonSetLockEffect(effect) || isKnownTemporaryActivationLockEffect(effect) || isKnownTemporaryForbiddenCardEffect(effect) || isKnownStaticForbiddenCardEffect(effect) || isKnownTemporarySelfTurnSkipBattlePhaseEffect(effect) || isKnownTemporaryOpponentTurnSkipMain1Effect(effect) || isKnownTemporaryOpponentTurnSkipMain2Effect(effect) || isKnownTemporarySelfTurnCannotEndPhaseEffect(effect) || isKnownTemporarySameCodeActivationOathEffect(effect) || isKnownTemporaryOpponentTurnSkipTurnEffect(effect) || isKnownTemporaryOpponentCannotBattlePhaseEffect(effect) || isKnownTemporaryArtifactLanceaBanishLockEffect(effect) || isKnownTemporaryEarthshatteringDeckGraveLockEffect(effect) ||
+        isKnownTemporaryPlayerAttackAnnounceLockEffect(effect) || isKnownTemporaryAttackAnnounceNegateEffect(effect) || isKnownTemporaryCannotAttackEffect(effect) || isKnownTemporaryCannotAttackAnnounceSelfEffect(effect) || isKnownTemporaryDirectAttackEffect(effect) || isKnownTemporaryCannotDirectAttackEffect(effect) || isKnownTemporaryBattleProtectionEffect(effect) || isKnownTemporaryPlayerHalfBattleDamageEffect(effect) || isKnownPlayerDamageZeroEffect(effect) || isKnownTemporaryMonsterNoBattleDamageEffect(effect) || isKnownTemporaryMonsterExtraAttackEffect(effect) || isKnownTemporaryMonsterAttackAllEffect(effect) || isKnownTemporaryMustAttackEffect(effect) || isKnownTemporarySummonSetLockEffect(effect) || isKnownTemporaryActivationLockEffect(effect) || isKnownTemporaryForbiddenCardEffect(effect) || isKnownStaticForbiddenCardEffect(effect) || isKnownTemporarySelfTurnSkipBattlePhaseEffect(effect) || isKnownTemporaryOpponentTurnSkipMain1Effect(effect) || isKnownTemporaryOpponentTurnSkipMain2Effect(effect) || isKnownTemporarySelfTurnCannotEndPhaseEffect(effect) || isKnownTemporarySameCodeActivationOathEffect(effect) || isKnownTemporaryOpponentTurnSkipTurnEffect(effect) || isKnownTemporaryOpponentCannotBattlePhaseEffect(effect) || isKnownTemporaryArtifactLanceaBanishLockEffect(effect) || isKnownTemporaryEarthshatteringDeckGraveLockEffect(effect) ||
         isAssaultZoneExtraDeckReleaseRestoreEffect(effect) ||
         isKnownMaharaghiPredrawEffect(effect) ||
         isKnownHinoKaguTsuchiPredrawDiscardEffect(effect) ||
@@ -722,6 +722,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownLevelNormalEndPhaseDestroyEffect(effect) ||
         isKnownDelayedBattleDestroyMarkerEffect(effect) ||
         isKnownDelayedBattleDestroyPhaseEffect(effect) ||
+        isKnownBorreloadExchargeEndPhaseBanishEffect(effect) ||
         isKnownEndPhaseReviveDestroyEffect(effect) ||
         isKnownLeaveFieldLinkedDestroyEffect(effect) ||
         isKnownDarkMagicExpandedChainingLimitEffect(effect) ||
@@ -749,7 +750,7 @@ function isKnownZeroParadoxDelayedScaleDestroyEffect(effect: SerializedDuelEffec
     effect.code === luaPhaseEndEventCode &&
     effect.triggerEvent === "phaseEnd" &&
     effect.sourceUid !== undefined &&
-    effect.labelObjectUid !== undefined &&
+    (effect.labelObjectUid !== undefined || (effect.labelObjectUids?.length ?? 0) > 0) &&
     effect.reset?.flags !== undefined &&
     effect.reset.count === 2;
 }
@@ -869,6 +870,20 @@ function isKnownEndPhaseReviveDestroyEffect(effect: SerializedDuelEffect): boole
     effect.range[0] === "monsterZone" &&
     effect.countLimit === 1 &&
     (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaResetsStandardPhaseEndRuntime)
+  );
+}
+
+function isKnownBorreloadExchargeEndPhaseBanishEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith("lua:6247535:")) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.triggerEvent === "phaseEnd" &&
+    effect.triggerCode === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    (effect.labelObjectUid !== undefined || (effect.labelObjectUids?.length ?? 0) > 0) &&
+    effect.countLimit === 1
   );
 }
 
@@ -1146,6 +1161,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownZeroParadoxDelayedScaleDestroyEffect(effect)) return zeroParadoxDelayedScaleDestroyOperation(effect);
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return levelNormalEndPhaseDestroyOperation(effect);
   if (isKnownDelayedBattleDestroyPhaseEffect(effect)) return delayedBattleDestroyPhaseOperation(effect);
+  if (isKnownBorreloadExchargeEndPhaseBanishEffect(effect)) return luaLabelObjectBanishOperation(effect);
   if (isKnownEbonArrowBattleDestroyingDamageEffect(effect)) return ebonArrowBattleDestroyingDamageOperation(effect);
   if (isKnownMiniGutsBattleDestroyedDamageEffect(effect)) return miniGutsBattleDestroyedDamageOperation(effect);
   if (isKnownTaiStrikeDamageStepEndEffect(effect)) return taiStrikeDamageStepEndOperation(effect);
@@ -1257,7 +1273,8 @@ function luaEquipLeaveFieldDestroyTargetOperation(effect: SerializedDuelEffect):
 function miniGutsBattleDestroyedDamageOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
   const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
   return (ctx) => {
-    const target = effect.labelObjectUid ? ctx.duel.cards.find((card) => card.uid === effect.labelObjectUid) : undefined;
+    const targetUid = effect.labelObjectUid ?? effect.labelObjectUids?.[0];
+    const target = targetUid ? ctx.duel.cards.find((card) => card.uid === targetUid) : undefined;
     if (!target || target.location !== "graveyard" || ((target.reason ?? 0) & duelReason.battle) === 0 || target.owner === ctx.player) return;
     const damagedPlayer: PlayerId = ctx.player === 0 ? 1 : 0;
     const baseAttack = target.data.attack ?? 0;
@@ -1289,6 +1306,22 @@ function luaEquipLeaveFieldBanishTargetOperation(effect: SerializedDuelEffect): 
       });
     } catch {
       // EDOPro-style equip cleanup ignores targets that are no longer removable.
+    }
+  };
+}
+
+function luaLabelObjectBanishOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    const target = effect.labelObjectUid ? ctx.duel.cards.find((card) => card.uid === effect.labelObjectUid) : undefined;
+    if (!target || target.location !== "monsterZone") return;
+    try {
+      banishDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect, ctx.player, {
+        eventReasonCardUid: effect.sourceUid,
+        ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+      });
+    } catch {
+      // EDOPro-style delayed cleanup ignores targets that can no longer move.
     }
   };
 }
