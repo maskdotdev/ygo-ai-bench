@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 291;
+export const operationFixtureCount = 292;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -10,6 +10,7 @@ export const operationKindCounts = {
   announceHandDiscard: 1,
   announceLpStatResetSSet: 1,
   lpAnnounceOptionTripleBranchStatDestroyReturn: 1,
+  moveSelectEffectCostPlaceDestroyTypeChange: 1,
   announceTargetBanishProtection: 1,
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
@@ -240,6 +241,7 @@ export type OperationKind =
   | "announceHandDiscard"
   | "announceLpStatResetSSet"
   | "lpAnnounceOptionTripleBranchStatDestroyReturn"
+  | "moveSelectEffectCostPlaceDestroyTypeChange"
   | "announceTargetBanishProtection"
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
@@ -1800,6 +1802,35 @@ export function operationFixtureFiles(): Array<{
         'eventName: "sentToHand"',
         'eventName: "confirmed"',
         'eventName: "destroyed"',
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-vaylantz-wave-move-place-destroy-stat.test.ts",
+      kind: "moveSelectEffectCostPlaceDestroyTypeChange",
+      required: [
+        "restores delayed EVENT_MOVE SelectEffect branch into cost, target placement, column destroy, and type change",
+        "e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e2:SetProperty(EFFECT_FLAG_DELAY)",
+        "e2:SetCode(EVENT_MOVE)",
+        "return c:IsLocation(LOCATION_MZONE) and c:IsPreviousLocation(LOCATION_MZONE)",
+        "local op=Duel.SelectEffect(tp,",
+        "e:SetCategory(CATEGORY_DESTROY)",
+        "Duel.SendtoGrave(c,REASON_COST)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsType,TYPE_EFFECT),tp,0,LOCATION_MMZONE,1,1,nil,tp)",
+        "Duel.GetFieldCard(1-tp,LOCATION_SZONE,tc:GetSequence())",
+        "Duel.Destroy(dc,REASON_RULE)",
+        "Duel.CheckLocation(1-tp,LOCATION_SZONE,seq)",
+        "Duel.MoveToField(tc,tp,1-tp,LOCATION_SZONE,POS_FACEUP,tc:IsMonsterCard(),1<<seq)",
+        "e1:SetCode(EFFECT_CHANGE_TYPE)",
+        "e1:SetValue(TYPE_SPELL|TYPE_CONTINUOUS)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        'api: "SelectEffect"',
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "destroyed"',
+        'eventName: "moved"',
         "currentAttack",
       ],
     },
@@ -5341,6 +5372,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceHandDiscard: 0,
       announceLpStatResetSSet: 0,
       lpAnnounceOptionTripleBranchStatDestroyReturn: 0,
+      moveSelectEffectCostPlaceDestroyTypeChange: 0,
       announceTargetBanishProtection: 0,
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,

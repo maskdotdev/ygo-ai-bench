@@ -452,6 +452,7 @@ function pushMoveToField(L: unknown, session: DuelSession, hostState: LuaDuelMov
     applyFieldZoneSequence(session, moved, destination, requestedSequence, preservedSequences);
     assignReasonCard(moved, hostState);
     const changed = didMove(moved, before);
+    if (changed && before.location === moved.location) collectLuaMoveEvent(session, "moved", moved);
     if (changed && before.controller !== moved.controller) {
       pushDuelLog(session.state, "control", targetPlayer, moved.name, `Moved to player ${targetPlayer}'s field`);
       collectLuaMoveEvent(session, "controlChanged", moved);
