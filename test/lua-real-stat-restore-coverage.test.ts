@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 70;
+const statFixtureCount = 71;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -51,6 +51,7 @@ const statKindCounts = {
   setFinalAttackDefenseDirectLock: 1,
   setFinalAttackDefenseHalveProcedure: 1,
   setFinalAttackDefenseTargetDirectLock: 3,
+  specialSummonTriggerDestroyAttackUpdate: 1,
   selfFinalAttackEndDestroy: 1,
   swapBaseAttackDefense: 1,
   singleRangeSetcodeConditionAttackUpdate: 1,
@@ -78,6 +79,7 @@ const statSemanticVariantCounts = {
   royalRhinoChainDiceAttackUpdate: 1,
   catSharkDetachFinalStatIndestructible: 1,
   cherubiniDeckCostStat: 1,
+  clearWingFourHeavenlySummonDestroyStat: 1,
   clearWingRiderDiceToDeckDestroyStat: 1,
   dinoSewingBattleTargetStatReset: 1,
   evilTwinGgEzReleaseStatNegate: 1,
@@ -138,7 +140,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -152,6 +154,7 @@ type StatSemanticVariant =
   | "borreloadChainLimitAttackDefenseDrop"
   | "catSharkDetachFinalStatIndestructible"
   | "cherubiniDeckCostStat"
+  | "clearWingFourHeavenlySummonDestroyStat"
   | "clearWingRiderDiceToDeckDestroyStat"
   | "copycatSummonTargetFinalStat"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
@@ -1146,6 +1149,19 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-clear-wing-four-heavenly-step-synchro-stat.test.ts",
+      kind: "specialSummonTriggerDestroyAttackUpdate",
+      required: [
+        'const clearWingCode = "54603525"',
+        "restores delayed Special Summon trigger into opponent Effect Monster destroy and ATK gain",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectMatchingCard(tp,aux.FaceupFilter(Card.IsEffectMonster),tp,0,LOCATION_MZONE,1,1,nil)",
+        "c:UpdateAttack(atk)",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === clearWing.uid), restoredResolved.session.state)).toBe(5500)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-mild-turkey-dice-scale.test.ts",
       kind: "diceScaleUpdate",
       required: [
@@ -1320,6 +1336,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       selfFinalAttackEndDestroy: 0,
       selfTributeTargetRaceAttackDefenseUpdate: 0,
       singleRangeSetcodeConditionAttackUpdate: 0,
+      specialSummonTriggerDestroyAttackUpdate: 0,
       staticAttackAndExtraAttack: 0,
       swapBaseAttackDefense: 0,
       targetedDamageStepAttackUpdate: 0,
@@ -2147,6 +2164,21 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-clear-wing-four-heavenly-step-synchro-stat.test.ts",
+      kind: "clearWingFourHeavenlySummonDestroyStat",
+      required: [
+        'const clearWingCode = "54603525"',
+        "EFFECT_FLAG_DELAY",
+        "EVENT_SPSUMMON_SUCCESS",
+        "CATEGORY_DESTROY+CATEGORY_ATKCHANGE",
+        "c:UpdateAttack(atk)",
+        "EVENT_CHAINING",
+        "condition:event-player:opponent",
+        "Duel.SpecialSummonStep(sc,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.SpecialSummonComplete()",
+      ],
+    },
+    {
       file: "test/lua-real-script-royal-rhino-chain-dice-atk.test.ts",
       kind: "royalRhinoChainDiceAttackUpdate",
       required: [
@@ -2194,6 +2226,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       borreloadChainLimitAttackDefenseDrop: 0,
       catSharkDetachFinalStatIndestructible: 0,
       cherubiniDeckCostStat: 0,
+      clearWingFourHeavenlySummonDestroyStat: 0,
       clearWingRiderDiceToDeckDestroyStat: 0,
       copycatSummonTargetFinalStat: 0,
       cyberDragonSiegerCodeStatDamagePrevention: 0,

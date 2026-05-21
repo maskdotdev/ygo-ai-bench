@@ -17,6 +17,8 @@ export function knownLuaEffectConditionDescriptor(L: unknown, index: number, hos
   const customActivityChainAtLeast = snippet.match(/\breturn\s+Duel\s*\.\s*GetCustomActivityCount\s*\(\s*[^,]+,\s*\w+\s*:\s*GetHandlerPlayer\s*\(\s*\)\s*,\s*ACTIVITY_CHAIN\s*\)\s*>=\s*(\d+)/);
   if (customActivityChainAtLeast?.[1]) return `condition:custom-activity-chain-count-at-least:${customActivityChainAtLeast[1]}`;
   if (/\breturn\s+Duel\s*\.\s*GetCurrentPhase\s*\(\s*\)\s*~=\s*PHASE_DRAW\b/.test(snippet)) return "condition:not-draw-phase";
+  if (/\breturn\s+ep\s*==\s*1\s*-\s*tp\s*(?:end\b|$)/.test(snippet)) return "condition:event-player:opponent";
+  if (/\breturn\s+ep\s*==\s*tp\s*(?:end\b|$)/.test(snippet)) return "condition:event-player:self";
   const ownFaceupNormalSummonProcedure = ownFaceupNormalSummonProcedureDescriptor(L, index, snippet, hostState);
   if (ownFaceupNormalSummonProcedure !== undefined) return ownFaceupNormalSummonProcedure;
   const opponentMonsterCountNormalSummonProcedure = opponentMonsterCountNormalSummonProcedureDescriptor(snippet);
