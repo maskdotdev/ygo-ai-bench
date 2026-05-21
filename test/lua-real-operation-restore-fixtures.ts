@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 285;
+export const operationFixtureCount = 286;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -192,6 +192,7 @@ export const operationKindCounts = {
   specialSummonBaseStat: 1,
   stepSummonLevelFinalStat: 1,
   summonDelayedStatDestroy: 1,
+  synchroSummonTargetDestroyReviveGroup: 1,
   summonRaceStatTargetDestroy: 1,
   synchroMaterialCheckStatBurn: 1,
   summonFieldMillStat: 1,
@@ -416,6 +417,7 @@ export type OperationKind =
   | "specialSummonBaseStat"
   | "stepSummonLevelFinalStat"
   | "summonDelayedStatDestroy"
+  | "synchroSummonTargetDestroyReviveGroup"
   | "summonRaceStatTargetDestroy"
   | "synchroMaterialCheckStatBurn"
   | "summonFieldMillStat"
@@ -2587,6 +2589,30 @@ export function operationFixtureFiles(): Array<{
         "Duel.Release(c,REASON_COST)",
         "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
         "currentAttack(restoredTarget, restoredTrigger.session.state)).toBe(4000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-satellite-warrior-synchro-destroy-revive.test.ts",
+      kind: "synchroSummonTargetDestroyReviveGroup",
+      required: [
+        "restores Synchro non-Tuner procedure, summon-success target destroy ATK gain, and destroyed self revive group",
+        "Synchro.AddProcedure(c,nil,1,1,Synchro.NonTunerEx(Card.IsType,TYPE_SYNCHRO),1,99)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DELAY)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.GetMatchingGroupCount(Card.IsType,tp,LOCATION_GRAVE,0,nil,TYPE_SYNCHRO)",
+        "Duel.SelectTarget(tp,nil,tp,0,LOCATION_ONFIELD,1,ct,nil)",
+        "Duel.GetTargetCards(e)",
+        "Duel.Destroy(tg,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EVENT_DESTROYED)",
+        "Duel.IsPlayerAffectedByEffect(tp,CARD_BLUEEYES_SPIRIT)",
+        "aux.SelectUnselectGroup(g,e,tp,1,ft,aux.dncheck,1,tp,HINTMSG_SPSUMMON)",
+        "Duel.SpecialSummon(sg,0,tp,tp,false,false,POS_FACEUP)",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "specialSummoned"',
+        "currentAttack(",
       ],
     },
     {
@@ -5354,6 +5380,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       specialSummonBaseStat: 0,
       stepSummonLevelFinalStat: 0,
       summonDelayedStatDestroy: 0,
+      synchroSummonTargetDestroyReviveGroup: 0,
       summonRaceStatTargetDestroy: 0,
       synchroMaterialCheckStatBurn: 0,
       synchroSearchDestroyTypeStat: 0,
