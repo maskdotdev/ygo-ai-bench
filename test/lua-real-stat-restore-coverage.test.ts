@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 44;
+const statFixtureCount = 45;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -36,6 +36,7 @@ const statKindCounts = {
   swapBaseAttackDefense: 1,
   singleRangeSetcodeConditionAttackUpdate: 1,
   staticAttackAndExtraAttack: 1,
+  selfTributeTargetRaceAttackDefenseUpdate: 1,
   targetedDamageStepAttackUpdate: 1,
   targetedDamageStepDefenseUpdate: 1,
   preDamageSelfToGraveBattleMonsterStat: 1,
@@ -85,12 +86,13 @@ const statSemanticVariantCounts = {
   gracefulDiceDamageStepGroupStat: 1,
   trianglePowerBaseStatEndDestroy: 1,
   vylonChargerEquipCountAttributeStat: 1,
+  wingedMinionSelfTributeFiendStat: 1,
   wormDimiklesFlipSelfStat: 1,
   wormOperaFlipGroupStat: 1,
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -134,6 +136,7 @@ type StatSemanticVariant =
   | "steamroidDamageStepBattleSwingStat"
   | "trianglePowerBaseStatEndDestroy"
   | "vylonChargerEquipCountAttributeStat"
+  | "wingedMinionSelfTributeFiendStat"
   | "wormDimiklesFlipSelfStat"
   | "wormOperaFlipGroupStat";
 
@@ -579,6 +582,22 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-winged-minion-self-tribute-fiend-stat.test.ts",
+      kind: "selfTributeTargetRaceAttackDefenseUpdate",
+      required: [
+        'const wingedMinionCode = "89258225"',
+        "restores SelfTribute cost into targeted Fiend ATK/DEF boost after the source leaves field",
+        "e1:SetCost(Cost.SelfTribute)",
+        "return c:IsFaceup() and c:IsRace(RACE_FIEND)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "reason: duelReason.cost | duelReason.release",
+        "currentAttack(state.cards.find((card) => card.uid === fiendTarget.uid)!, state)).toBe(2200)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
       kind: "targetedDamageStepDefenseUpdate",
       required: [
@@ -806,6 +825,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setFinalAttackDefenseHalveProcedure: 0,
       setFinalAttackDefenseTargetDirectLock: 0,
       selfFinalAttackEndDestroy: 0,
+      selfTributeTargetRaceAttackDefenseUpdate: 0,
       singleRangeSetcodeConditionAttackUpdate: 0,
       staticAttackAndExtraAttack: 0,
       swapBaseAttackDefense: 0,
@@ -1062,6 +1082,19 @@ function statSemanticVariants(): Array<{
         "e1:SetTarget(aux.TargetBoolFunction(Card.IsAttribute,ATTRIBUTE_LIGHT))",
         "stat:handler-equip-count:x300",
         "currentAttack(restoredCharger, restored.session.state)).toBe(1600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-winged-minion-self-tribute-fiend-stat.test.ts",
+      kind: "wingedMinionSelfTributeFiendStat",
+      required: [
+        'const wingedMinionCode = "89258225"',
+        "restores SelfTribute cost into targeted Fiend ATK/DEF boost after the source leaves field",
+        "Cost.SelfTribute",
+        "RACE_FIEND",
+        'eventName: "released"',
+        'eventName: "becameTarget"',
+        "value: 700",
       ],
     },
     {
@@ -1354,6 +1387,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       steamroidDamageStepBattleSwingStat: 0,
       trianglePowerBaseStatEndDestroy: 0,
       vylonChargerEquipCountAttributeStat: 0,
+      wingedMinionSelfTributeFiendStat: 0,
       wormDimiklesFlipSelfStat: 0,
       wormOperaFlipGroupStat: 0,
     },
