@@ -70,6 +70,7 @@ const luaXxSaberDarksoulCode = "31383545";
 const luaFamiliarPossessedDharcCode = "21390858";
 const luaDarkMagicExpandedCode = "111280";
 const luaEbonArrowCode = "88341502";
+const luaDivineEvolutionCode = "7373632";
 const luaMiniGutsCode = "99004752";
 const luaTimeTearingMorganiteCode = "19403423";
 const luaMegalithUnformedCode = "69003792";
@@ -654,6 +655,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownSelfEndPhaseSendEffect(effect) ||
     isKnownEbonArrowBattleDestroyingDamageEffect(effect) ||
     isKnownMiniGutsBattleDestroyedDamageEffect(effect) ||
+    isKnownDivineEvolutionAttackAnnounceSendEffect(effect) ||
     isKnownTaiStrikeDamageStepEndEffect(effect) ||
     (effect.event === "continuous" &&
       (effect.code === 2 ||
@@ -693,6 +695,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownLifePointReasonPredicateEffect(effect) ||
         isKnownIndestructibleCountReasonPredicateEffect(effect) ||
         isKnownReinforceMonsterEffectImmunity(effect) ||
+        isKnownDivineEvolutionCannotNegateEffect(effect) ||
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownChangeBattleStatToDefenseEffect(effect) ||
         isKnownDharcProcedurePierceEffect(effect) ||
@@ -795,6 +798,25 @@ function isKnownMiniGutsBattleDestroyedDamageEffect(effect: SerializedDuelEffect
     effect.triggerEvent === "battleDestroyed" &&
     effect.sourceUid !== undefined &&
     effect.labelObjectUid !== undefined &&
+    effect.reset !== undefined;
+}
+function isKnownDivineEvolutionCannotNegateEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaDivineEvolutionCode}:`)) &&
+    effect.event === "continuous" &&
+    (effect.code === 12 || effect.code === 13) &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    effect.targetRange?.[0] === 1 &&
+    effect.targetRange?.[1] === 0 &&
+    effect.reset !== undefined;
+}
+function isKnownDivineEvolutionAttackAnnounceSendEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:21208154:") || effect.registryKey?.startsWith("lua:62180201:") || effect.registryKey?.startsWith("lua:57793869:")) &&
+    effect.event === "trigger" &&
+    effect.code === 1130 &&
+    effect.triggerEvent === "attackDeclared" &&
+    effect.sourceUid !== undefined &&
     effect.reset !== undefined;
 }
 function isKnownTaiStrikeDamageStepEndEffect(effect: SerializedDuelEffect): boolean {
@@ -1165,6 +1187,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownBorreloadExchargeEndPhaseBanishEffect(effect)) return luaLabelObjectBanishOperation(effect);
   if (isKnownEbonArrowBattleDestroyingDamageEffect(effect)) return ebonArrowBattleDestroyingDamageOperation(effect);
   if (isKnownMiniGutsBattleDestroyedDamageEffect(effect)) return miniGutsBattleDestroyedDamageOperation(effect);
+  if (isKnownDivineEvolutionAttackAnnounceSendEffect(effect)) return divineEvolutionAttackAnnounceSendOperation(effect);
   if (isKnownTaiStrikeDamageStepEndEffect(effect)) return taiStrikeDamageStepEndOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
@@ -1182,6 +1205,24 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {};
+}
+
+function divineEvolutionAttackAnnounceSendOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const sendPlayer = otherPlayer(effect.controller);
+    const target = ctx.duel.cards
+      .filter((card) => card.controller === sendPlayer && card.location === "monsterZone" && (cardTypeFlags(card, ctx.duel) & 0x4000) === 0)
+      .sort((a, b) => a.sequence - b.sequence)[0];
+    if (!target || !canMoveDuelCardToLocation(ctx.duel, target.uid, "graveyard", duelReason.rule)) return;
+    try {
+      moveDuelCardWithRedirects(ctx.duel, target.uid, "graveyard", target.controller, duelReason.rule, sendPlayer, {
+        eventReasonCardUid: effect.sourceUid,
+        ...effectReasonIdPayload(effect),
+      });
+    } catch {
+      // EDOPro-style restored trigger ignores a target that can no longer be sent.
+    }
+  };
 }
 
 function taiStrikeDamageStepEndOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {

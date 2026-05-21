@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 251;
+export const operationFixtureCount = 252;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -15,6 +15,7 @@ export const operationKindCounts = {
   battleDestroyingStepSummonStat: 1,
   battleFinalStatReviveLock: 1,
   tributeSearchSummonStatLock: 1,
+  unnegatableGrantAttackSend: 1,
   callCoinAtkChange: 1,
   coinNegateControl: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
@@ -206,6 +207,7 @@ export type OperationKind =
   | "battleDestroyingStepSummonStat"
   | "battleFinalStatReviveLock"
   | "tributeSearchSummonStatLock"
+  | "unnegatableGrantAttackSend"
   | "callCoinAtkChange"
   | "coinNegateControl"
   | "costBanishDraw" | "costDiscardDraw"
@@ -742,6 +744,32 @@ export function operationFixtureFiles(): Array<{
         'eventName: "sentToHandConfirmed"',
         'summonType: "tribute"',
         'summonType: "normal"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-divine-evolution-grant-attack-send.test.ts",
+      kind: "unnegatableGrantAttackSend",
+      required: [
+        "restores unnegatable Divine Evolution stat/type/flag grant into attack-announce opponent send",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_CANNOT_NEGATE+EFFECT_FLAG_CANNOT_INACTIVATE)",
+        "return c:IsFaceup() and (c:IsOriginalRace(RACE_DIVINE) or c:IsOriginalCodeRule(21208154,62180201,57793869))",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil):GetFirst()",
+        "e1:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e3:SetCode(EFFECT_CANNOT_INACTIVATE)",
+        "e4:SetCode(EFFECT_CANNOT_DISEFFECT)",
+        "e5:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e6:SetCode(EFFECT_ADD_TYPE)",
+        "tc:RegisterFlagEffect(id,RESET_EVENT|RESETS_STANDARD,0,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,1-tp,LOCATION_MZONE)",
+        "Duel.SendtoGrave(g,REASON_RULE,PLAYER_NONE,1-tp)",
+        "operationInfos",
+        'eventName: "attackDeclared"',
+        'eventName: "moved"',
+        "currentAttack",
+        "currentDefense",
+        "cardTypeFlags",
       ],
     },
     {
@@ -4358,6 +4386,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       battleDestroyingStepSummonStat: 0,
       battleFinalStatReviveLock: 0,
       tributeSearchSummonStatLock: 0,
+      unnegatableGrantAttackSend: 0,
       callCoinAtkChange: 0,
       coinNegateControl: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
