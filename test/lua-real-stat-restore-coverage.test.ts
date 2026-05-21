@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 49;
+const statFixtureCount = 50;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -27,6 +27,7 @@ const statKindCounts = {
   groupLevelOrRankLinkAndSelfBanishTargetStat: 1,
   overlayDetachSelfStatAttackLock: 1,
   overlayDetachSelfStatBattleProtection: 1,
+  overlayDetachTargetStatTriggerLock: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
   setAttack: 1,
   setBaseAttack: 1,
@@ -61,6 +62,7 @@ const statSemanticVariantCounts = {
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
   armoredKappaOptionBattleProtection: 1,
+  kingOverfiendDetachStatCannotTrigger: 1,
   cyberDragonSiegerCodeStatDamagePrevention: 1,
   fairyKingAlbverdichDetachAttributeExceptStat: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
@@ -100,7 +102,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -121,6 +123,7 @@ type StatSemanticVariant =
   | "gracefulDiceDamageStepGroupStat"
   | "jurassicWorldTargetBoolFunctionRaceStat"
   | "juggernautLiebeDetachStatAttackLock"
+  | "kingOverfiendDetachStatCannotTrigger"
   | "luminousSoldierDamageStepTargetAttributeStat"
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mildTurkeyDiceScaleUpdate"
@@ -862,6 +865,19 @@ function statFixtureFiles(): Array<{
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
+    {
+      file: "test/lua-real-script-king-overfiend-detach-stat-trigger-lock.test.ts",
+      kind: "overlayDetachTargetStatTriggerLock",
+      required: [
+        'const kingCode = "49195710"',
+        "restores detach target stat loss and overlay-gated opponent monster trigger lock",
+        "Cost.DetachFromSelf(1)",
+        "e2:SetCode(EFFECT_CANNOT_TRIGGER)",
+        "currentAttack(restoredTarget, restoredOpen.session.state)).toBe(800)",
+        "currentDefense(restoredTarget, restoredOpen.session.state)).toBe(500)",
+        "pendingTriggers).toEqual([])",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatKind;
@@ -897,6 +913,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       groupLevelOrRankLinkAndSelfBanishTargetStat: 0,
       overlayDetachSelfStatAttackLock: 0,
       overlayDetachSelfStatBattleProtection: 0,
+      overlayDetachTargetStatTriggerLock: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
       preDamageSelfToGraveBattleMonsterStat: 0,
       setAttack: 0,
@@ -1034,6 +1051,18 @@ function statSemanticVariants(): Array<{
         "code: 201",
         "code: 42",
         "reason: duelReason.cost | duelReason.discard",
+      ],
+    },
+    {
+      file: "test/lua-real-script-king-overfiend-detach-stat-trigger-lock.test.ts",
+      kind: "kingOverfiendDetachStatCannotTrigger",
+      required: [
+        'const kingCode = "49195710"',
+        "EFFECT_CANNOT_TRIGGER",
+        "targetRange: [0, 4]",
+        "GetOverlayGroup():IsExists(Card.IsCode,1,nil,3790062)",
+        "collectDuelTriggerEvent",
+        "activateTrigger",
       ],
     },
     {
@@ -1499,6 +1528,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       gracefulDiceDamageStepGroupStat: 0,
       jurassicWorldTargetBoolFunctionRaceStat: 0,
       juggernautLiebeDetachStatAttackLock: 0,
+      kingOverfiendDetachStatCannotTrigger: 0,
       luminousSoldierDamageStepTargetAttributeStat: 0,
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mildTurkeyDiceScaleUpdate: 0,
