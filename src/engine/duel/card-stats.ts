@@ -54,11 +54,13 @@ export function currentDefense(card: DuelCardInstance | undefined, state?: DuelS
 
 export function currentBaseAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (!card) return 0;
+  if (currentCardHasEffect(card, state, 110)) return setStatEffectValue(card, state, 107) ?? card.data.defense ?? 0;
   return setStatEffectValue(card, state, 103) ?? card.data.attack ?? 0;
 }
 
 export function currentBaseDefense(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (!card) return 0;
+  if (currentCardHasEffect(card, state, 110)) return setStatEffectValue(card, state, 103) ?? card.data.attack ?? 0;
   return setStatEffectValue(card, state, 107) ?? card.data.defense ?? 0;
 }
 

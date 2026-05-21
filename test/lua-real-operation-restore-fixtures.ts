@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 235;
+export const operationFixtureCount = 236;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -10,6 +10,7 @@ export const operationKindCounts = {
   announceTargetBanishProtection: 1,
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
+  attackAnnounceHandSummonSwapBaseStat: 1,
   attackAnnounceStatDeckdes: 1,
   battleFinalStatReviveLock: 1,
   tributeSearchSummonStatLock: 1,
@@ -185,6 +186,7 @@ export type OperationKind =
   | "announceTargetBanishProtection"
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
+  | "attackAnnounceHandSummonSwapBaseStat"
   | "attackAnnounceStatDeckdes"
   | "battleFinalStatReviveLock"
   | "tributeSearchSummonStatLock"
@@ -354,6 +356,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-blackwing-ghibli-direct-summon-swap.test.ts",
+      kind: "attackAnnounceHandSummonSwapBaseStat",
+      required: [
+        "restores direct-attack hand Special Summon and ignition base ATK/DEF swap",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "local at=Duel.GetAttacker()",
+        "return at:GetControler()~=tp and Duel.GetAttackTarget()==nil",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,0,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e2:SetType(EFFECT_TYPE_IGNITION)",
+        "e1:SetCode(EFFECT_SWAP_BASE_AD)",
+        "e1:SetReset(RESETS_STANDARD_DISABLE_PHASE_END)",
+        "operationInfos",
+        'eventName: "specialSummoned"',
+        "effect.code === 110",
+        "currentBaseAttack",
+        "currentBaseDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-aroma-garden-recover-stat-trigger.test.ts",
       kind: "fieldRecoverStatTrigger",
@@ -3909,6 +3932,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceTargetBanishProtection: 0,
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,
+      attackAnnounceHandSummonSwapBaseStat: 0,
       attackAnnounceStatDeckdes: 0,
       battleFinalStatReviveLock: 0,
       tributeSearchSummonStatLock: 0,

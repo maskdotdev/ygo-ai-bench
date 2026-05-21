@@ -666,6 +666,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownXyzMaterialEffectAddType(effect) ||
         isKnownChangeCodeEffect(effect) ||
         isKnownChangeTypeEffect(effect) ||
+        isKnownSwapBaseAdEffect(effect) ||
         isKnownGrantedSpiritEndPhaseReturnEffect(effect, snapshotEffects) ||
         isStaticNotSetcodeSummonRestriction(effect) ||
         isKnownSetcodeTypeExtraSummonRestriction(effect) ||
@@ -773,6 +774,7 @@ function effectReasonIdPayload(effect: SerializedDuelEffect): { eventReasonEffec
 }
 function isKnownChangeCodeEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 114 && effect.value !== undefined && effect.sourceUid !== undefined && effect.targetRange === undefined; }
 function isKnownChangeTypeEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 117 && effect.value !== undefined && effect.sourceUid !== undefined && effect.targetRange === undefined; }
+function isKnownSwapBaseAdEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 110 && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange === undefined && effect.reset !== undefined; }
 function isKnownDharcProcedurePierceEffect(effect: SerializedDuelEffect): boolean { return Boolean(effect.registryKey?.startsWith(`lua:${luaFamiliarPossessedDharcCode}:`)) && effect.event === "continuous" && effect.code === luaEffectPierce && effect.sourceUid !== undefined && hasDefaultLuaFieldRange(effect) && effect.reset?.flags === 0xff1000; }
 function isKnownTemporaryPierceEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === luaEffectPierce && effect.sourceUid !== undefined && effect.reset !== undefined; }
 function isKnownEbonArrowBattleDestroyingDamageEffect(effect: SerializedDuelEffect): boolean {
