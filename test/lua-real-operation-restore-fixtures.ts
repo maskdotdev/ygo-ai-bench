@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 264;
+export const operationFixtureCount = 265;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -97,6 +97,7 @@ export const operationKindCounts = {
   flipHandSummonGraveStat: 1,
   fieldRecoverStatTrigger: 1,
   fieldDestroyAttackLock: 1,
+  fieldDestroyPlantsPreviousAtkRevive: 1,
   flipTargetDestroy: 1,
   handSelfToGraveFusionStatSummonSearch: 1,
   fusionDeckMaterials: 1,
@@ -300,6 +301,7 @@ export type OperationKind =
   | "flipHandSummonGraveStat"
   | "fieldRecoverStatTrigger"
   | "fieldDestroyAttackLock"
+  | "fieldDestroyPlantsPreviousAtkRevive"
   | "flipTargetDestroy"
   | "handSelfToGraveFusionStatSummonSearch"
   | "fusionDeckMaterials"
@@ -732,6 +734,34 @@ export function operationFixtureFiles(): Array<{
         "targetRange: [4, 0]",
         "label: tyrant.fieldId",
         "declareAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-black-garden-destroy-plants-revive.test.ts",
+      kind: "fieldDestroyPlantsPreviousAtkRevive",
+      required: [
+        "restores Field ignition destroying all Plants and itself into previous-ATK matched Graveyard revive",
+        "aux.GlobalCheck(s,function()",
+        "Duel.RaiseEvent(eg,EVENT_CUSTOM+id,e,r,rp,ep,e:GetLabel())",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_SPECIAL_SUMMON)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e2:SetType(EFFECT_TYPE_IGNITION)",
+        "e2:SetRange(LOCATION_FZONE)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsRace,RACE_PLANT),tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "local atk=g:GetSum(Card.GetAttack)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,atk,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,tg,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        "local og=Duel.GetOperatedGroup()",
+        "Duel.BreakEffect()",
+        "local atk=og:GetSum(Card.GetPreviousAttackOnField)",
+        "Duel.SpecialSummon(tc,SUMMONED_BY_BLACK_GARDEN,tp,tp,false,false,POS_FACEUP)",
+        "effectLabel: 2500",
+        "summonTypeCode: 0x40000020",
+        'eventName: "destroyed"',
+        'eventName: "breakEffect"',
+        'eventName: "specialSummoned"',
       ],
     },
     {
@@ -4754,6 +4784,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       flipHandSummonGraveStat: 0,
       fieldRecoverStatTrigger: 0,
       fieldDestroyAttackLock: 0,
+      fieldDestroyPlantsPreviousAtkRevive: 0,
       flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
       handSelfToGraveFusionStatSummonSearch: 0,
