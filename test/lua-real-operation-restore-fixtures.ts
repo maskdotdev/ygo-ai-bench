@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 310;
+export const operationFixtureCount = 311;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -13,6 +13,7 @@ export const operationKindCounts = {
   persistentLinkCountStatBattledDestroy: 1,
   attackAnnounceStatExactSpendFieldDestroy: 1,
   linkAttributeCostDestroyFlag: 1,
+  linkGyAttackReleaseCountDestroy: 1,
   twoTargetLabelStatDestroy: 1,
   targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
@@ -262,6 +263,7 @@ export type OperationKind =
   | "persistentLinkCountStatBattledDestroy"
   | "attackAnnounceStatExactSpendFieldDestroy"
   | "linkAttributeCostDestroyFlag"
+  | "linkGyAttackReleaseCountDestroy"
   | "twoTargetLabelStatDestroy"
   | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
@@ -772,6 +774,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "banished"',
         'eventName: "destroyed"',
         "flagEffects",
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-rasterliger-link-gy-attack-release-destroy.test.ts",
+      kind: "linkGyAttackReleaseCountDestroy",
+      required: [
+        "restores GY Link-target ATK gain and linked-monster release-cost destruction",
+        "Link.AddProcedure(c,aux.NOT(aux.FilterBoolFunctionEx(Card.IsType,TYPE_TOKEN)),2)",
+        "Duel.SelectTarget(tp,aux.AND(Card.IsLinkMonster,Card.HasNonZeroAttack),tp,LOCATION_GRAVE,LOCATION_GRAVE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc:GetAttack())",
+        "local lg=e:GetHandler():GetLinkedGroup()",
+        "Duel.CheckReleaseGroupCost(tp,s.descostfilter,1,false,s.rescon,nil,lg)",
+        "Duel.SelectReleaseGroupCost(tp,s.descostfilter,1,#lg,false,s.rescon,nil,lg)",
+        "Duel.Release(g,REASON_COST)",
+        "Duel.GetFieldGroupCount(tp,LOCATION_ONFIELD,LOCATION_ONFIELD)<ct",
+        "Duel.SelectMatchingCard(tp,nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,ct,ct,nil)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "currentAttack(restoredAttack.session.state.cards.find((card) => card.uid === attackRasterliger.uid), restoredAttack.session.state)).toBe(4800)",
+        'eventName: "becameTarget"',
+        'eventName: "released"',
+        'eventName: "destroyed"',
         "operationInfos",
       ],
     },
@@ -5876,6 +5901,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       persistentLinkCountStatBattledDestroy: 0,
       attackAnnounceStatExactSpendFieldDestroy: 0,
       linkAttributeCostDestroyFlag: 0,
+      linkGyAttackReleaseCountDestroy: 0,
       twoTargetLabelStatDestroy: 0,
       targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
