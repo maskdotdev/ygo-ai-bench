@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 237;
+export const operationFixtureCount = 238;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -40,6 +40,7 @@ export const operationKindCounts = {
   battleTargetPositionDamageStat: 1,
   damageDeckdesAtk: 1,
   damageSynchroMillStat: 1,
+  damageStepSendStatAvoidSummon: 1,
   operatedDeckdesStat: 1,
   damageRecoverRaceCountStat: 1,
   chainNegateDiscardDestroy: 1,
@@ -217,6 +218,7 @@ export type OperationKind =
   | "battleTargetPositionDamageStat"
   | "damageDeckdesAtk"
   | "damageSynchroMillStat"
+  | "damageStepSendStatAvoidSummon"
   | "operatedDeckdesStat"
   | "damageRecoverRaceCountStat"
   | "chainNegateDiscardDestroy"
@@ -358,6 +360,30 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-deskbot-004-pre-damage-send-stat-summon.test.ts",
+      kind: "damageStepSendStatAvoidSummon",
+      required: [
+        "restores pre-damage Deck send stat boost, opponent battle-damage avoidance, and battle-destroying two-Deskbot summon",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.tgfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(tc,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e3:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)",
+        "e3:SetTargetRange(0,1)",
+        "e2:SetCode(EVENT_BATTLE_DESTROYING)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,2,tp,LOCATION_GRAVE|LOCATION_HAND)",
+        "Duel.SpecialSummon(g1,0,tp,tp,false,false,POS_FACEUP_DEFENSE)",
+        "operationInfos",
+        'eventName: "sentToGraveyard"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+        "code: 201",
+      ],
+    },
     {
       file: "test/lua-real-script-blackwing-ghibli-direct-summon-swap.test.ts",
       kind: "attackAnnounceHandSummonSwapBaseStat",
@@ -4007,6 +4033,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       groupBanishCountStat: 0,
       damageDeckdesAtk: 0,
       damageSynchroMillStat: 0,
+      damageStepSendStatAvoidSummon: 0,
       operatedDeckdesStat: 0,
       damageRecoverRaceCountStat: 0,
       discardCostSpecialSummonGroupDestroy: 0,

@@ -380,7 +380,7 @@ function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEff
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
     hasPlayerTargetFlag(effect) &&
-    targetRangeEquals(effect, 1, 0) &&
+    (targetRangeEquals(effect, 1, 0) || targetRangeEquals(effect, 0, 1)) &&
     hasDefaultLuaFieldRange(effect)
   );
 }
