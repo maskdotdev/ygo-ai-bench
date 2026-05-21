@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const releaseAndTributeFixtureCount = 11;
-const legalActionFixtureCount = 8;
+const releaseAndTributeFixtureCount = 12;
+const legalActionFixtureCount = 9;
 const releaseAndTributeKindCounts = {
   archetypeCannotRelease: 1,
   attributeTributeLimit: 1,
-  doubleTributeTargetPredicate: 2,
+  doubleTributeTargetPredicate: 3,
   extraDeckReleaseCost: 1,
   globalCannotRelease: 1,
   linkReleaseCost: 1,
@@ -29,6 +29,7 @@ const releaseAndTributeSemanticVariantCounts = {
   roseWitchPlantDoubleTribute: 1,
   sprightRedLinkReleaseCost: 1,
   troposphereRaceTributeLimit: 1,
+  whirlwindProdigyWindDoubleTribute: 1,
   yellowDustonUnreleasableTributeLock: 1,
 } satisfies Record<ReleaseAndTributeSemanticVariant, number>;
 
@@ -54,6 +55,7 @@ type ReleaseAndTributeSemanticVariant =
   | "roseWitchPlantDoubleTribute"
   | "sprightRedLinkReleaseCost"
   | "troposphereRaceTributeLimit"
+  | "whirlwindProdigyWindDoubleTribute"
   | "yellowDustonUnreleasableTributeLock";
 
 describe("Lua real release and tribute restore coverage", () => {
@@ -191,6 +193,18 @@ function releaseAndTributeFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-whirlwind-prodigy-double-tribute-summon.test.ts",
+      kind: "doubleTributeTargetPredicate",
+      required: [
+        "EFFECT_DOUBLE_TRIBUTE",
+        "WIND attribute predicates for the tribute summon target",
+        "return c:IsAttribute(ATTRIBUTE_WIND)",
+        "fireTributeTarget",
+        "duelReason.release | duelReason.summon",
+        'eventName: "released"',
+      ],
+    },
+    {
       file: "lua-real-script-mask-of-restrict-cannot-release.test.ts",
       kind: "globalCannotRelease",
       required: [
@@ -262,6 +276,7 @@ function legalActionFixtureFiles(): string[] {
     "lua-real-script-pollinosis-release-activation-negate.test.ts",
     "lua-real-script-spright-red-release-link2-negate.test.ts",
     "lua-real-script-troposphere-tribute-limit.test.ts",
+    "lua-real-script-whirlwind-prodigy-double-tribute-summon.test.ts",
     "lua-real-script-yellow-duston-unreleasable-tribute-lock.test.ts",
   ]
     .map((file) => path.join("test", file))
@@ -373,6 +388,17 @@ function releaseAndTributeSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-whirlwind-prodigy-double-tribute-summon.test.ts",
+      kind: "whirlwindProdigyWindDoubleTribute",
+      required: [
+        'const whirlwindProdigyCode = "15090429"',
+        "restores EFFECT_DOUBLE_TRIBUTE WIND attribute predicates for the tribute summon target",
+        "windTributeTarget",
+        "fireTributeTarget",
+        "summonMaterialUids: [prodigy!.uid]",
+      ],
+    },
+    {
       file: "lua-real-script-yellow-duston-unreleasable-tribute-lock.test.ts",
       kind: "yellowDustonUnreleasableTributeLock",
       required: [
@@ -432,6 +458,7 @@ function countReleaseAndTributeSemanticVariants(
       roseWitchPlantDoubleTribute: 0,
       sprightRedLinkReleaseCost: 0,
       troposphereRaceTributeLimit: 0,
+      whirlwindProdigyWindDoubleTribute: 0,
       yellowDustonUnreleasableTributeLock: 0,
     },
   );
