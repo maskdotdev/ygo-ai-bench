@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 215;
+export const operationFixtureCount = 216;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -88,6 +88,7 @@ export const operationKindCounts = {
   handToDeckDraw: 1,
   handSelfDiscardDestroyStat: 1,
   fiveGraveToDeckShuffleDraw: 2,
+  fieldExtraSummonSendStat: 1,
   quickPlayGraveToDeckDrawStat: 1,
   fiveGraveShuffleDrawAttackBurn: 1,
   ignitionSelfGraveDeckSummon: 1,
@@ -244,6 +245,7 @@ export type OperationKind =
   | "handToDeckDraw"
   | "handSelfDiscardDestroyStat"
   | "fiveGraveToDeckShuffleDraw"
+  | "fieldExtraSummonSendStat"
   | "quickPlayGraveToDeckDrawStat"
   | "fiveGraveShuffleDrawAttackBurn"
   | "ignitionSelfGraveDeckSummon"
@@ -2735,6 +2737,33 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mausoleum-white-send-stat.test.ts",
+      kind: "fieldExtraSummonSendStat",
+      required: [
+        "restores extra summon count metadata and Normal Monster send-to-grave stat gain",
+        "e1:SetCode(EFFECT_EXTRA_SUMMON_COUNT)",
+        "e1:SetTargetRange(LOCATION_HAND|LOCATION_MZONE,0)",
+        "return c:IsLevel(1) and c:IsAttribute(ATTRIBUTE_LIGHT) and c:IsType(TYPE_TUNER)",
+        "e2:SetCategory(CATEGORY_TOGRAVE+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_HAND|LOCATION_DECK)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,1,tp,100)",
+        "Duel.SetOperationInfo(0,CATEGORY_DEFCHANGE,g,1,tp,100)",
+        "Duel.SelectMatchingCard(tp,s.tgfilter,tp,LOCATION_HAND|LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(sc,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(sc:GetLevel()*100)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e3:SetCost(Cost.SelfBanish)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "operationInfos",
+        'eventName: "sentToGraveyard"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-radiant-typhoon-mandate-grave-draw-stat.test.ts",
       kind: "quickPlayGraveToDeckDrawStat",
       required: [
@@ -3436,6 +3465,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handToDeckDraw: 0,
       handSelfDiscardDestroyStat: 0,
       fiveGraveToDeckShuffleDraw: 0,
+      fieldExtraSummonSendStat: 0,
       quickPlayGraveToDeckDrawStat: 0,
       fiveGraveShuffleDrawAttackBurn: 0,
       ignitionSelfGraveDeckSummon: 0,
