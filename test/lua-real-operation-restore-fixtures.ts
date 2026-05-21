@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 275;
+export const operationFixtureCount = 276;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   announceChangeCode: 1,
@@ -14,6 +14,7 @@ export const operationKindCounts = {
   attackAnnounceHandSummonSwapBaseStat: 1,
   attackAnnounceStatDeckdes: 1,
   battleDestroyingStepSummonStat: 1,
+  battleDestroyingSetTargetReviveDisable: 1,
   battleFinalStatReviveLock: 1,
   quickTributeSummonOrSetDestroyStat: 1,
   templeSearchBattleDestroyStat: 1,
@@ -228,6 +229,7 @@ export type OperationKind =
   | "attackAnnounceHandSummonSwapBaseStat"
   | "attackAnnounceStatDeckdes"
   | "battleDestroyingStepSummonStat"
+  | "battleDestroyingSetTargetReviveDisable"
   | "battleFinalStatReviveLock"
   | "quickTributeSummonOrSetDestroyStat"
   | "templeSearchBattleDestroyStat"
@@ -703,6 +705,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "specialSummoned"',
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sunvine-thrasher-link-stat-battle-revive.test.ts",
+      kind: "battleDestroyingSetTargetReviveDisable",
+      required: [
+        "restores battle-destroying target card into pointed-zone revive and disable effects",
+        "Link.AddProcedure(c,s.matfilter,1,1)",
+        "e2:SetCategory(CATEGORY_ATKCHANGE)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DELAY)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetValue(tc:GetLink()*800)",
+        "e3:SetCode(EVENT_BATTLE_DESTROYING)",
+        "e3:SetCondition(aux.bdogcon)",
+        "Duel.SetTargetCard(bc)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,bc,1,0,0)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP,zone)",
+        "e1:SetCode(EFFECT_DISABLE)",
+        "e2:SetCode(EFFECT_DISABLE_EFFECT)",
+        "operationInfos",
+        'eventName: "battleDestroyed"',
+        'summonType: "special"',
+        "currentAttack",
       ],
     },
     {
@@ -4954,6 +4979,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       battleRevealHandStat: 0,
       battleStatBurn: 0,
       battleTargetPositionDamageStat: 0,
+      battleDestroyingSetTargetReviveDisable: 0,
       targetReviveDefense: 0,
       borreloadDetachReviveLock: 0,
       chainNegateDiscardDestroy: 0,
