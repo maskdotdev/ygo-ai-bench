@@ -156,9 +156,9 @@ export function isKnownCannotSelectBattleTargetNotHandlerEffect(effect: Serializ
   return (
     effect.event === "continuous" &&
     effect.code === 332 &&
-    effect.luaValueDescriptor === luaValueCardNotHandlerDescriptor &&
-    effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor &&
-    effect.reset?.flags === luaResetEventStandard &&
+    (effect.luaValueDescriptor === luaValueCardNotHandlerDescriptor || effect.value !== undefined) &&
+    (effect.luaConditionDescriptor === luaSourceControllerConditionDescriptor || effect.luaConditionDescriptor === undefined) &&
+    (effect.reset?.flags === luaResetEventStandard || effect.reset?.flags === luaResetsStandardPhaseEnd) &&
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone" &&
     effect.targetRange?.[0] === 0 &&

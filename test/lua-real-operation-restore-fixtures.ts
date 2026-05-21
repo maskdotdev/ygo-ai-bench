@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 242;
+export const operationFixtureCount = 243;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -22,6 +22,7 @@ export const operationKindCounts = {
   counterBoostBattleTargetLock: 1,
   counterDamageReplaceStatBurn: 1,
   counterLevelChange: 1,
+  customDirectSummonFinalStatLock: 1,
   customDestroyReplaceDamage: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
@@ -204,6 +205,7 @@ export type OperationKind =
   | "counterBoostBattleTargetLock"
   | "counterDamageReplaceStatBurn"
   | "counterLevelChange"
+  | "customDirectSummonFinalStatLock"
   | "customDestroyReplaceDamage"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
@@ -368,6 +370,31 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-ogre-scarlet-sorrow-custom-direct-summon.test.ts",
+      kind: "customDirectSummonFinalStatLock",
+      required: [
+        "restores two direct-attack global checks into custom hand summon, final copied stats, and battle target lock",
+        "e1:SetCode(EVENT_CUSTOM+id)",
+        "Duel.GetAttackTarget()==nil and s[tp]==2",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,0,0)",
+        "Duel.SpecialSummon(c,1,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():GetSummonType()==SUMMON_TYPE_SPECIAL+1",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e3:SetCode(EFFECT_CANNOT_SELECT_BATTLE_TARGET)",
+        "ge1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "ge2:SetCode(EVENT_ATTACK_DISABLED)",
+        "Duel.RaiseEvent(tc,EVENT_CUSTOM+id,e,0,0,0,0)",
+        "aux.AddValuesReset(function()",
+        "operationInfos",
+        'eventName: "customEvent"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-hieratic-gebeb-battle-step-summon.test.ts",
       kind: "battleDestroyingStepSummonStat",
@@ -4107,6 +4134,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       counterBoostBattleTargetLock: 0,
       counterDamageReplaceStatBurn: 0,
       counterLevelChange: 0,
+      customDirectSummonFinalStatLock: 0,
       crossPlayerGraveToDeckTrap: 0,
       controlReturn: 0,
       controlSwap: 0,
