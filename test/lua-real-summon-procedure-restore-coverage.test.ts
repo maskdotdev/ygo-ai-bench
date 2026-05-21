@@ -4,8 +4,8 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 16;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 14;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 17;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 15;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
   deckTwoMaterialShufflePierceProcedure: 2,
@@ -17,6 +17,7 @@ const summonProcedureKindCounts = {
   handOwnEmptyOpponentMonsterProcedure: 1,
   handOpponentCountProcedure: 1,
   handOwnFaceupLevelOrLinkOpenZoneProcedure: 2,
+  handOwnFaceupSetcodeOpenZoneProcedure: 1,
   handOpponentBackrowCountProcedure: 1,
   handOpponentSpellTrapOrMstProcedure: 1,
   handSendCostProcedure: 1,
@@ -25,6 +26,7 @@ const summonProcedureKindCounts = {
 const summonProcedureSemanticVariantCounts = {
   broadTypedExtraDeckSpiritGeminiProcedures: 1,
   caligoClawCrowDarkMonsterOpenZoneProcedure: 1,
+  blackwingGaleSetcodeOpenZoneProcedureFinalStat: 1,
   collapserpentLightBanishCostSearchProcedure: 1,
   familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure: 1,
   familiarPossessedDeckTwoMaterialShufflePierceProcedure: 1,
@@ -47,6 +49,7 @@ type SummonProcedureKind =
   | "graveBanishCostStatProcedure"
   | "handAttributeBanishCostSearchProcedure"
   | "handOwnFaceupAttributeOpenZoneProcedure"
+  | "handOwnFaceupSetcodeOpenZoneProcedure"
   | "handReleaseEquipTurnCounterProcedure"
   | "handBothFieldsGimmickOnlyProcedure"
   | "handOwnEmptyOpponentMonsterProcedure"
@@ -58,6 +61,7 @@ type SummonProcedureKind =
   | "noTributeOpponentMonsterCountProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
+  | "blackwingGaleSetcodeOpenZoneProcedureFinalStat"
   | "caligoClawCrowDarkMonsterOpenZoneProcedure"
   | "collapserpentLightBanishCostSearchProcedure"
   | "familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure"
@@ -177,6 +181,24 @@ const summonProcedureFixtures = [
       "return c:IsFaceup() and c:IsAttribute(ATTRIBUTE_DARK)",
       "expectRestoredActionSurfaces(restored, 0)",
       "applyLuaRestoreResponse(restored, procedure as DuelAction)",
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+    ],
+  },
+  {
+    file: "test/lua-real-script-blackwing-gale-procedure-final-stat.test.ts",
+    kind: "handOwnFaceupSetcodeOpenZoneProcedure",
+    required: [
+      "same-set hand Special Summon procedure and target final ATK/DEF halving",
+      'const galeCode = "2009101"',
+      'fieldCase: "noSetAlly"',
+      'fieldCase: "faceDownAlly"',
+      'action.type === "specialSummonProcedure"',
+      "Duel.GetLocationCount(c:GetControler(),LOCATION_MZONE)>0",
+      "Duel.IsExistingMatchingCard(s.filter,c:GetControler(),LOCATION_MZONE,0,1,nil)",
+      "return c:IsFaceup() and c:IsSetCard(SET_BLACKWING) and c:GetCode()~=id",
+      "expectRestoredLegalActions(restoredProcedure, 0)",
+      "applyRestoredActionAndAssert(restoredProcedure, procedure!)",
       'eventName: "specialSummoned"',
       "eventReason: duelReason.summon | duelReason.specialSummon",
     ],
@@ -419,6 +441,7 @@ function countSummonProcedureKinds(
       deckTwoMaterialShufflePierceProcedure: 0,
       handAttributeBanishCostSearchProcedure: 0,
       handOwnFaceupAttributeOpenZoneProcedure: 0,
+      handOwnFaceupSetcodeOpenZoneProcedure: 0,
       handOwnFaceupLevelOrLinkOpenZoneProcedure: 0,
       handOpponentBackrowCountProcedure: 0,
       handOpponentSpellTrapOrMstProcedure: 0,
@@ -458,6 +481,19 @@ function summonProcedureSemanticVariants(): Array<{
         'fieldCase: "faceDownDark"',
         'fieldCase: "fullMonsterZone"',
         "Duel.GetLocationCount(tp,LOCATION_MZONE)>0",
+      ],
+    },
+    {
+      file: "test/lua-real-script-blackwing-gale-procedure-final-stat.test.ts",
+      kind: "blackwingGaleSetcodeOpenZoneProcedureFinalStat",
+      required: [
+        'const galeCode = "2009101"',
+        "restores same-set hand Special Summon procedure and target final ATK/DEF halving",
+        'fieldCase: "noSetAlly"',
+        'fieldCase: "faceDownAlly"',
+        "return c:IsFaceup() and c:IsSetCard(SET_BLACKWING) and c:GetCode()~=id",
+        'eventName: "specialSummoned"',
+        "currentAttack(opponent, restoredIgnition.session.state)).toBe(1300)",
       ],
     },
     {
@@ -683,6 +719,7 @@ function countSummonProcedureSemanticVariants(
     },
     {
       broadTypedExtraDeckSpiritGeminiProcedures: 0,
+      blackwingGaleSetcodeOpenZoneProcedureFinalStat: 0,
       caligoClawCrowDarkMonsterOpenZoneProcedure: 0,
       collapserpentLightBanishCostSearchProcedure: 0,
       familiarPossessedDharcDeckTwoMaterialShufflePierceSearchProcedure: 0,

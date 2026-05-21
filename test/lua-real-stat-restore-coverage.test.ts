@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 33;
+const statFixtureCount = 34;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -24,6 +24,7 @@ const statKindCounts = {
   setBaseAttackDefenseEndDestroy: 1,
   setFinalAttackDefenseDiscardLock: 1,
   setFinalAttackDefenseDirectLock: 1,
+  setFinalAttackDefenseHalveProcedure: 1,
   selfFinalAttackEndDestroy: 1,
   swapBaseAttackDefense: 1,
   singleRangeSetcodeConditionAttackUpdate: 1,
@@ -40,6 +41,7 @@ const statSemanticVariantCounts = {
   bladeflyFieldAttributeAttackUpdate: 1,
   bootUpSoldierGadgetConditionAttackUpdate: 1,
   borreloadChainLimitAttackDefenseDrop: 1,
+  blackwingGaleProcedureFinalStatHalve: 1,
   royalRhinoChainDiceAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
@@ -69,12 +71,13 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
   | "bladeflyFieldAttributeAttackUpdate"
+  | "blackwingGaleProcedureFinalStatHalve"
   | "bootUpSoldierGadgetConditionAttackUpdate"
   | "borreloadChainLimitAttackDefenseDrop"
   | "dForcePlasmaGraveyardCountAtkExtraAttack"
@@ -416,6 +419,20 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-blackwing-gale-procedure-final-stat.test.ts",
+      kind: "setFinalAttackDefenseHalveProcedure",
+      required: [
+        "restores same-set hand Special Summon procedure and target final ATK/DEF halving",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(tc:GetAttack()/2)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetValue(tc:GetDefense()/2)",
+        "currentAttack(opponent, restoredIgnition.session.state)).toBe(1300)",
+        "currentDefense(opponent, restoredIgnition.session.state)).toBe(1000)",
+        "battleDamage[1]).toBe(400)",
+      ],
+    },
+    {
       file: "test/lua-real-script-rush-recklessly-stat-change-damage-step.test.ts",
       kind: "targetedDamageStepAttackUpdate",
       required: [
@@ -599,6 +616,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       setBaseAttackDefenseEndDestroy: 0,
       setFinalAttackDefenseDiscardLock: 0,
       setFinalAttackDefenseDirectLock: 0,
+      setFinalAttackDefenseHalveProcedure: 0,
       selfFinalAttackEndDestroy: 0,
       singleRangeSetcodeConditionAttackUpdate: 0,
       staticAttackAndExtraAttack: 0,
@@ -882,6 +900,18 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-blackwing-gale-procedure-final-stat.test.ts",
+      kind: "blackwingGaleProcedureFinalStatHalve",
+      required: [
+        'const galeCode = "2009101"',
+        "restores same-set hand Special Summon procedure and target final ATK/DEF halving",
+        "return c:IsFaceup() and c:IsSetCard(SET_BLACKWING) and c:GetCode()~=id",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "players[1].lifePoints).toBe(7600)",
+      ],
+    },
+    {
       file: "test/lua-real-script-unified-front-discard-final-stat-lock.test.ts",
       kind: "unifiedFrontDiscardFinalStatLock",
       required: [
@@ -997,6 +1027,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       royalRhinoChainDiceAttackUpdate: 0,
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
+      blackwingGaleProcedureFinalStatHalve: 0,
       shieldSwordSwapBaseAd: 0,
       steadyHandsFinalStatDirectLock: 0,
       unifiedFrontDiscardFinalStatLock: 0,
