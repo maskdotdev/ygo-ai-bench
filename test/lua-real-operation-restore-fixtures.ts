@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 299;
+export const operationFixtureCount = 300;
 export const operationKindCounts = {
+  linkAttributeCostDestroyFlag: 1,
   twoTargetLabelStatDestroy: 1,
   targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
@@ -240,6 +241,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "linkAttributeCostDestroyFlag"
   | "twoTargetLabelStatDestroy"
   | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
@@ -480,6 +482,36 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-accesscode-talker-link-cost-destroy.test.ts",
+      kind: "linkAttributeCostDestroyFlag",
+      required: [
+        "restores Link-attribute cost banish into opponent-card destruction and used-attribute flag",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsType,TYPE_EFFECT),2)",
+        "e0:SetCode(EFFECT_MATERIAL_CHECK)",
+        "e2:SetCategory(CATEGORY_DESTROY)",
+        "e2:SetType(EFFECT_TYPE_IGNITION)",
+        "e2:SetRange(LOCATION_MZONE)",
+        "s.attr_list[0]=0",
+        "s.attr_list[1]=0",
+        "return c:IsLinkMonster() and c:IsAbleToRemoveAsCost() and s.attr_list[tp]&attr==0",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "e:SetLabel(g:GetFirst():GetAttribute())",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.GetMatchingGroup(nil,tp,0,LOCATION_ONFIELD,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.SetChainLimit(s.chlimit)",
+        "Duel.SelectMatchingCard(tp,nil,tp,0,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.HintSelection(g,true)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "s.attr_list[tp]=s.attr_list[tp]|att",
+        "e:GetHandler():RegisterFlagEffect(0,RESETS_STANDARD_PHASE_END,EFFECT_FLAG_CLIENT_HINT,1,0,str)",
+        'eventName: "banished"',
+        'eventName: "destroyed"',
+        "flagEffects",
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-drytron-asterism-two-target-stat-destroy.test.ts",
       kind: "twoTargetLabelStatDestroy",
@@ -5570,6 +5602,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      linkAttributeCostDestroyFlag: 0,
       twoTargetLabelStatDestroy: 0,
       targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
