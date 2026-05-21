@@ -27,7 +27,7 @@ import { isKnownCannotActivateLocationMonsterEffect, isKnownCannotActivateNonSpi
 import { isKnownXyzMaterialAttackGainTriggerEffect, isKnownXyzMaterialEffectAddType, xyzMaterialAttackGainOperation } from "#lua/snapshot-xyz-material-gain.js";
 import { luaRegistryCardCodes } from "#lua/snapshot-registry-keys.js";
 import { restoredSpecialSummonConditionValueCallbacks } from "#lua/snapshot-special-summon-condition.js";
-import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision } from "#lua/host-types.js";
+import { isLuaOptionPromptDecision, isLuaYesNoPromptDecision, type LuaPromptOverride } from "#lua/host-types.js";
 import { ritualSummonSelectedMaterials, type LuaDuelSummonApiHostState } from "#lua/duel-api/summon.js";
 import { luaTemporaryControlReturnDescriptor, luaTemporaryControlReturnOperation } from "#lua/duel-api/move-control.js";
 import { createLuaScriptHost, type LuaScriptHost, type LuaScriptLoadResult, type LuaScriptSource } from "#lua/host.js";
@@ -111,11 +111,15 @@ export function restoreDuelWithLuaScripts(
   snapshot: SerializedDuel,
   source: LuaScriptSource,
   cardReader: DuelCardReader = fallbackCardReader,
+  options: { promptOverrides?: LuaPromptOverride[] } = {},
 ): LuaSnapshotRestoreResult {
   const chainLimitRegistryKeys = luaChainLimitRegistryKeys(snapshot);
   const session = restoreDuel(snapshot, cardReader, {}, luaDenyChainLimitRegistry(chainLimitRegistryKeys), { pruneUnrestoredPendingTriggers: false });
   session.state.actionWindowToken = createActionWindowToken();
-  const host = createLuaScriptHost(session, undefined, { reuseExistingLuaEffectIds: true });
+  const host = createLuaScriptHost(session, undefined, {
+    reuseExistingLuaEffectIds: true,
+    ...(options.promptOverrides === undefined ? {} : { promptOverrides: options.promptOverrides }),
+  });
   const registryKeys = luaRegistryKeys(snapshot);
   const scriptRegistryKeys = luaScriptRegistryKeys(registryKeys, snapshot.state.effects);
   const loadedScripts = [...luaRegistryCardCodes(scriptRegistryKeys, chainLimitRegistryKeys)].map((code) => host.loadCardScript(code, source));

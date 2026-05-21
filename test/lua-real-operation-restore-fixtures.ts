@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 290;
+export const operationFixtureCount = 291;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -9,6 +9,7 @@ export const operationKindCounts = {
   announceHandBanish: 1,
   announceHandDiscard: 1,
   announceLpStatResetSSet: 1,
+  lpAnnounceOptionTripleBranchStatDestroyReturn: 1,
   announceTargetBanishProtection: 1,
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
@@ -238,6 +239,7 @@ export type OperationKind =
   | "announceHandBanish"
   | "announceHandDiscard"
   | "announceLpStatResetSSet"
+  | "lpAnnounceOptionTripleBranchStatDestroyReturn"
   | "announceTargetBanishProtection"
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
@@ -1770,6 +1772,35 @@ export function operationFixtureFiles(): Array<{
         'api: "AnnounceNumber"',
         'eventName: "spellTrapSet"',
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-coordius-triple-branch-stat-destroy-return.test.ts",
+      kind: "lpAnnounceOptionTripleBranchStatDestroyReturn",
+      required: [
+        "restores AnnounceNumber LP cost into all option branches, ATK gain, and attack lock",
+        "Fusion.AddProcMix(c,true,true,s.fusfilter(TYPE_SYNCHRO),s.fusfilter(TYPE_XYZ),s.fusfilter(TYPE_LINK))",
+        "Duel.AnnounceNumber(tp,table.unpack(t))",
+        "Duel.PayLPCost(tp,cost)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_GRAVE)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,nil,3,1-tp,LOCATION_ONFIELD)",
+        "Duel.SelectOption(tp,table.unpack(desctable))",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.SelectMatchingCard(tp,nil,tp,0,LOCATION_ONFIELD,3,3,nil)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_CANNOT_ATTACK)",
+        "Duel.RegisterEffect(e2,tp)",
+        "aux.RegisterClientHint",
+        'api: "AnnounceNumber"',
+        'api: "SelectOption"',
+        'eventName: "lifePointCostPaid"',
+        'eventName: "sentToHand"',
+        'eventName: "confirmed"',
+        'eventName: "destroyed"',
+        "currentAttack",
       ],
     },
     {
@@ -5309,6 +5340,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceHandBanish: 0,
       announceHandDiscard: 0,
       announceLpStatResetSSet: 0,
+      lpAnnounceOptionTripleBranchStatDestroyReturn: 0,
       announceTargetBanishProtection: 0,
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,

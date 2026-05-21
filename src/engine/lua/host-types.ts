@@ -47,7 +47,7 @@ export type LuaPromptDecision =
   | { id: string; api: "SelectYesNo" | "SelectEffectYesNo"; player?: PlayerId; description?: number; returned: boolean };
 
 export type LuaPromptOverride =
-  | { api?: "SelectOption" | "SelectEffect"; player?: PlayerId; returned: number }
+  | { api?: Extract<LuaPromptDecision, { options: number[] }>["api"]; player?: PlayerId; returned: number }
   | { api?: Extract<LuaPromptDecision, { returned: boolean }>["api"]; player?: PlayerId; returned: boolean };
 
 export interface LuaScriptHostOptions {

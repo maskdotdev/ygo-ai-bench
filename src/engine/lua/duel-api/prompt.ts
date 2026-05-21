@@ -221,7 +221,7 @@ function readSelectEffectChoices(L: unknown, top: number): Array<{ option: numbe
 function pushAnnounceNumber(L: unknown, hostState: LuaDuelPromptApiHostState): number {
   const player = readPromptPlayer(L, 1);
   const options = readAnnouncementValues(L, 2);
-  const returned = options[0] ?? 0;
+  const returned = consumeOptionPromptOverride(hostState, "AnnounceNumber", player, options, options[0] ?? 0);
   if (options.length === 0) {
     lua.lua_pushinteger(L, returned);
     return 1;
