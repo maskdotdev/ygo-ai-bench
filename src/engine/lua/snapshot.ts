@@ -1163,7 +1163,7 @@ function hasDefaultLuaFieldRange(effect: SerializedDuelEffect): boolean {
 
 function isStaticSingleCardLuaRestriction(effect: SerializedDuelEffect): boolean {
   if (effect.targetRange !== undefined || effect.sourceUid === undefined || effect.range.length !== 1) return false;
-  if (effect.code === 14) return effect.reset?.flags === luaTemporaryPositionLockResetFlags;
+  if (effect.code === 14) return effect.reset?.flags === luaTemporaryPositionLockResetFlags || isTemporaryRestrictionReset(effect.reset?.flags);
   return effect.code !== undefined && luaStaticSingleCardRestrictionCodes.has(effect.code) && isTemporaryRestrictionReset(effect.reset?.flags);
 }
 
