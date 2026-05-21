@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 256;
+export const operationFixtureCount = 257;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -91,6 +91,7 @@ export const operationKindCounts = {
   flipDeckSpecialSummon: 1,
   flipHandSummonGraveStat: 1,
   fieldRecoverStatTrigger: 1,
+  fieldDestroyAttackLock: 1,
   flipTargetDestroy: 1,
   handSelfToGraveFusionStatSummonSearch: 1,
   fusionDeckMaterials: 1,
@@ -286,6 +287,7 @@ export type OperationKind =
   | "flipDeckSpecialSummon"
   | "flipHandSummonGraveStat"
   | "fieldRecoverStatTrigger"
+  | "fieldDestroyAttackLock"
   | "flipTargetDestroy"
   | "handSelfToGraveFusionStatSummonSearch"
   | "fusionDeckMaterials"
@@ -693,6 +695,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "recoveredLifePoints"',
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-tyrant-red-dragon-field-destroy-attack-lock.test.ts",
+      kind: "fieldDestroyAttackLock",
+      required: [
+        "restores Main Phase field-wide destruction into registered attack lock and client hint",
+        "Synchro.AddProcedure(c,nil,2,2,Synchro.NonTuner(nil),1,99)",
+        "e1:SetCondition(function() return Duel.IsPhase(PHASE_MAIN1) end)",
+        "Duel.GetMatchingGroup(nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,e:GetHandler())",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e1:SetTarget(s.ftarget)",
+        "e1:SetLabel(c:GetFieldID())",
+        "Duel.RegisterEffect(e1,tp)",
+        "aux.RegisterClientHint(c,nil,tp,1,0,aux.Stringid(id,2),nil)",
+        "operationInfos",
+        'eventName: "destroyed"',
+        "reasonEffectId: 4",
+        "targetRange: [4, 0]",
+        "label: tyrant.fieldId",
+        "declareAttack",
       ],
     },
     {
@@ -4542,6 +4567,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       flipDeckSpecialSummon: 0,
       flipHandSummonGraveStat: 0,
       fieldRecoverStatTrigger: 0,
+      fieldDestroyAttackLock: 0,
       flipDiscardBattleStat: 0,
       flipTargetDestroy: 0,
       handSelfToGraveFusionStatSummonSearch: 0,
