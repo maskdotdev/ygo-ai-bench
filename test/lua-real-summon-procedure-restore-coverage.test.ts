@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 20;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 21;
 const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 18;
 const summonProcedureKindCounts = {
   broadTypedProcedure: 1,
@@ -22,6 +22,7 @@ const summonProcedureKindCounts = {
   handOpponentSpellTrapOrMstProcedure: 1,
   handSendCostProcedure: 1,
   handZoneMaskProcedureDirectStat: 1,
+  noTributeOwnWarriorProcedure: 1,
   noTributeOpponentMonsterCountProcedure: 1,
 } satisfies Record<SummonProcedureKind, number>;
 const summonProcedureSemanticVariantCounts = {
@@ -45,6 +46,7 @@ const summonProcedureSemanticVariantCounts = {
   sprightRedLevelOrLinkOpenZoneProcedure: 1,
   powerInvaderOpponentTwoMonsterNormalSummonProcedure: 1,
   redHaredHastyHorseZoneMaskProcedureDirectStat: 1,
+  warRockMammudNoTributeBattledStat: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
 
 type SummonProcedureKind =
@@ -63,6 +65,7 @@ type SummonProcedureKind =
   | "handOpponentSpellTrapOrMstProcedure"
   | "handSendCostProcedure"
   | "handZoneMaskProcedureDirectStat"
+  | "noTributeOwnWarriorProcedure"
   | "noTributeOpponentMonsterCountProcedure";
 type SummonProcedureSemanticVariant =
   | "broadTypedExtraDeckSpiritGeminiProcedures"
@@ -84,9 +87,23 @@ type SummonProcedureSemanticVariant =
   | "sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat"
   | "sprightRedLevelOrLinkOpenZoneProcedure"
   | "powerInvaderOpponentTwoMonsterNormalSummonProcedure"
-  | "redHaredHastyHorseZoneMaskProcedureDirectStat";
+  | "redHaredHastyHorseZoneMaskProcedureDirectStat"
+  | "warRockMammudNoTributeBattledStat";
 
 const summonProcedureFixtures = [
+  {
+    file: "test/lua-real-script-war-rock-mammud-battled-backrow-stat.test.ts",
+    kind: "noTributeOwnWarriorProcedure",
+    required: [
+      "restores no-tribute summon procedure into battled backrow destroy and War Rock ATK gain",
+      "e1:SetCode(EFFECT_SUMMON_PROC)",
+      "Duel.GetFieldGroupCount(tp,LOCATION_MZONE,0)==0 or not Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_MZONE,0,1,nil)",
+      'action.type === "tributeSummon"',
+      "action.tributeUids.length === 0",
+      'eventName: "normalSummoned"',
+      "eventReason: duelReason.summon",
+    ],
+  },
   {
     file: "test/lua-real-script-red-hared-hasty-horse-procedure-direct-stat.test.ts",
     kind: "handZoneMaskProcedureDirectStat",
@@ -504,6 +521,7 @@ function countSummonProcedureKinds(
       handOpponentCountProcedure: 0,
       handSendCostProcedure: 0,
       handZoneMaskProcedureDirectStat: 0,
+      noTributeOwnWarriorProcedure: 0,
       noTributeOpponentMonsterCountProcedure: 0,
     },
   );
@@ -515,6 +533,20 @@ function summonProcedureSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-war-rock-mammud-battled-backrow-stat.test.ts",
+      kind: "warRockMammudNoTributeBattledStat",
+      required: [
+        'const mammudCode = "84903021"',
+        "restores no-tribute summon procedure into battled backrow destroy and War Rock ATK gain",
+        "e1:SetCode(EFFECT_SUMMON_PROC)",
+        "Duel.GetFieldGroupCount(tp,LOCATION_MZONE,0)==0 or not Duel.IsExistingMatchingCard(s.cfilter,tp,LOCATION_MZONE,0,1,nil)",
+        'action.type === "tributeSummon"',
+        "action.tributeUids.length === 0",
+        'eventName: "normalSummoned"',
+        'eventName: "afterDamageCalculation"',
+      ],
+    },
     {
       file: "test/lua-real-script-red-hared-hasty-horse-procedure-direct-stat.test.ts",
       kind: "redHaredHastyHorseZoneMaskProcedureDirectStat",
@@ -758,7 +790,7 @@ function eventRichSummonProcedureFixtures(): Array<{
   required: string[];
 }> {
   return summonProcedureFixtures
-    .filter(({ kind }) => kind !== "broadTypedProcedure" && kind !== "noTributeOpponentMonsterCountProcedure")
+    .filter(({ kind }) => kind !== "broadTypedProcedure" && kind !== "noTributeOpponentMonsterCountProcedure" && kind !== "noTributeOwnWarriorProcedure")
     .map(({ file, kind }) => ({
       file,
       kind,
@@ -834,6 +866,7 @@ function countSummonProcedureSemanticVariants(
       sprightRedLevelOrLinkOpenZoneProcedure: 0,
       powerInvaderOpponentTwoMonsterNormalSummonProcedure: 0,
       redHaredHastyHorseZoneMaskProcedureDirectStat: 0,
+      warRockMammudNoTributeBattledStat: 0,
     },
   );
 }

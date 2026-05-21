@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 308;
+export const operationFixtureCount = 309;
 export const operationKindCounts = {
+  battledBackrowDestroyGroupStat: 1,
   diceStatDrawDirect: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
@@ -249,6 +250,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "battledBackrowDestroyGroupStat"
   | "diceStatDrawDirect"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
@@ -498,6 +500,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-war-rock-mammud-battled-backrow-stat.test.ts",
+      kind: "battledBackrowDestroyGroupStat",
+      required: [
+        "restores no-tribute summon procedure into battled backrow destroy and War Rock ATK gain",
+        "e1:SetCode(EFFECT_SUMMON_PROC)",
+        "e2:SetCode(EVENT_BATTLED)",
+        "local bc=Duel.GetBattleMonster(tp)",
+        "Duel.SelectTarget(tp,Card.IsSpellTrap,tp,0,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "Duel.BreakEffect()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        'eventName: "normalSummoned"',
+        'eventName: "afterDamageCalculation"',
+        'eventName: "destroyed"',
+        'eventName: "breakEffect"',
+        "operationInfos",
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-orgoth-dice-draw-direct-stat.test.ts",
       kind: "diceStatDrawDirect",
@@ -5818,6 +5841,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      battledBackrowDestroyGroupStat: 0,
       diceStatDrawDirect: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
