@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 61;
+const statFixtureCount = 62;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -34,6 +34,7 @@ const statKindCounts = {
   overlayDetachTargetStatTriggerLock: 1,
   pzoneDiscardTargetAttackDefenseUpdate: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
+  primalDragonBanishAttackDefenseUpdate: 1,
   setAttack: 1,
   setBaseAttack: 1,
   setBaseAttackDefenseEndDestroy: 1,
@@ -97,6 +98,7 @@ const statSemanticVariantCounts = {
   neoFlamvellSabreGraveCountThresholdStat: 1,
   nordicRelicMegingjordFinalStatDirectLock: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
+  primalDragonBanishStatNoDamage: 1,
   mysticPlasmaZoneTargetBoolFunctionAttributeStat: 1,
   reliableGuardianTargetedDamageStepDefenseUpdate: 1,
   rushRecklesslyTargetedDamageStepAttackUpdate: 1,
@@ -120,7 +122,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "pzoneDiscardTargetAttackDefenseUpdate" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -159,6 +161,7 @@ type StatSemanticVariant =
   | "neoFlamvellSabreGraveCountThresholdStat"
   | "nordicRelicMegingjordFinalStatDirectLock"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
+  | "primalDragonBanishStatNoDamage"
   | "plagueWolfFinalAttackEndDestroy"
   | "mysticPlasmaZoneTargetBoolFunctionAttributeStat"
   | "reliableGuardianTargetedDamageStepDefenseUpdate"
@@ -782,6 +785,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-primal-dragon-banish-stat-no-damage.test.ts",
+      kind: "primalDragonBanishAttackDefenseUpdate",
+      required: [
+        'const primalCode = "64025981"',
+        "restores Dragon banish cost into two-turn stat gain and no battle damage",
+        "e1:SetCode(EFFECT_NO_BATTLE_DAMAGE)",
+        "return c:IsRace(RACE_DRAGON) and c:GetBaseAttack()>0 and c:IsAbleToRemoveAsCost() and aux.SpElimFilter(c,true)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "e:SetLabel(g:GetFirst():GetBaseAttack())",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === primal.uid), restoredResolved.session.state)).toBe(3200)",
+        "currentDefense(restoredResolved.session.state.cards.find((card) => card.uid === primal.uid), restoredResolved.session.state)).toBe(3200)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
       kind: "targetedDamageStepDefenseUpdate",
       required: [
@@ -1119,6 +1139,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       pzoneDiscardTargetAttackDefenseUpdate: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
       preDamageSelfToGraveBattleMonsterStat: 0,
+      primalDragonBanishAttackDefenseUpdate: 0,
       setAttack: 0,
       setBaseAttack: 0,
       setBaseAttackDefenseEndDestroy: 0,
@@ -1792,6 +1813,19 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-primal-dragon-banish-stat-no-damage.test.ts",
+      kind: "primalDragonBanishStatNoDamage",
+      required: [
+        'const primalCode = "64025981"',
+        "restores Dragon banish cost into two-turn stat gain and no battle damage",
+        "aux.SpElimFilter(c,true)",
+        "reason: duelReason.cost",
+        'eventName: "banished"',
+        "code: 200",
+        "value: 1200",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "skyscraperFieldDamageCalculationAttackBoost",
       required: [
@@ -1906,6 +1940,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       neoFlamvellSabreGraveCountThresholdStat: 0,
       nordicRelicMegingjordFinalStatDirectLock: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
+      primalDragonBanishStatNoDamage: 0,
       plagueWolfFinalAttackEndDestroy: 0,
       mysticPlasmaZoneTargetBoolFunctionAttributeStat: 0,
       reliableGuardianTargetedDamageStepDefenseUpdate: 0,
