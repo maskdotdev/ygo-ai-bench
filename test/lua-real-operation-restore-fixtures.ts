@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 277;
+export const operationFixtureCount = 278;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -13,6 +13,7 @@ export const operationKindCounts = {
   announceDecktopMutualLinkExcavate: 1,
   announceSearchSummonLock: 1,
   attackAnnounceHandSummonSwapBaseStat: 1,
+  battleStartHandSummonStatDestroyedTarget: 1,
   attackAnnounceStatDeckdes: 1,
   battleDestroyingStepSummonStat: 1,
   battleDestroyingSetTargetReviveDisable: 1,
@@ -229,6 +230,7 @@ export type OperationKind =
   | "announceDecktopMutualLinkExcavate"
   | "announceSearchSummonLock"
   | "attackAnnounceHandSummonSwapBaseStat"
+  | "battleStartHandSummonStatDestroyedTarget"
   | "attackAnnounceStatDeckdes"
   | "battleDestroyingStepSummonStat"
   | "battleDestroyingSetTargetReviveDisable"
@@ -436,6 +438,34 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-ancient-warriors-zhang-yuan-battle-summon-destroy.test.ts",
+      kind: "battleStartHandSummonStatDestroyedTarget",
+      required: [
+        "restores Battle Start hand trigger into self Special Summon and opponent battler ATK loss",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_ATKCHANGE)",
+        "e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e1:SetCode(EVENT_BATTLE_START)",
+        "local tc=Duel.GetAttacker()",
+        "local bc=Duel.GetAttackTarget()",
+        "e:SetLabelObject(bc)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,e:GetHandler(),1,0,0)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)>0",
+        "bc:IsRelateToBattle() and bc:IsFaceup() and bc:IsControler(1-tp)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-1000)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e3:SetCode(EVENT_DESTROYED)",
+        "e3:SetProperty(EFFECT_FLAG_DELAY+EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,aux.TRUE,tp,0,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "battleStarted"',
+        'eventName: "becameTarget"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-vouiburial-grave-trigger-branch-stat-destroy.test.ts",
       kind: "graveTriggerBranchSummonStatDestroy",
@@ -4972,6 +5002,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceDecktopMutualLinkExcavate: 0,
       announceSearchSummonLock: 0,
       attackAnnounceHandSummonSwapBaseStat: 0,
+      battleStartHandSummonStatDestroyedTarget: 0,
       attackAnnounceStatDeckdes: 0,
       battleDestroyingStepSummonStat: 0,
       battleFinalStatReviveLock: 0,
