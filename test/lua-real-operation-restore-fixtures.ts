@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 271;
+export const operationFixtureCount = 272;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   announceChangeCode: 1,
@@ -126,6 +126,7 @@ export const operationKindCounts = {
   handDiscardDraw: 1,
   handRevealShuffleFinalAttack: 1,
   handSummonDefenseTargetHeroStat: 1,
+  ignitionDestroyOwnFaceupFieldGolemStat: 1,
   handProcedureDestroyReleaseStat: 1,
   handToDeckDraw: 1,
   handSelfDiscardDestroyStat: 1,
@@ -336,6 +337,7 @@ export type OperationKind =
   | "handDiscardDraw"
   | "handRevealShuffleFinalAttack"
   | "handSummonDefenseTargetHeroStat"
+  | "ignitionDestroyOwnFaceupFieldGolemStat"
   | "handProcedureDestroyReleaseStat"
   | "handToDeckDraw"
   | "handSelfDiscardDestroyStat"
@@ -424,6 +426,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-ancient-gear-tanker-destroy-field-stat.test.ts",
+      kind: "ignitionDestroyOwnFaceupFieldGolemStat",
+      required: [
+        "restores self-field target destruction into Golem-family ATK boost until End Phase",
+        "e3:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e3:SetType(EFFECT_TYPE_IGNITION)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_ONFIELD,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "e1:SetType(EFFECT_TYPE_FIELD)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetTargetRange(LOCATION_MZONE,0)",
+        "c:IsCode(CARD_ANCIENT_GEAR_GOLEM) or c:ListsCode(CARD_ANCIENT_GEAR_GOLEM)",
+        "e1:SetValue(600)",
+        "e1:SetReset(RESET_PHASE|PHASE_END)",
+        "aux.RegisterClientHint(c,0,tp,1,0,aux.Stringid(id,2))",
+        "operationInfos",
+        'eventName: "destroyed"',
+        "currentAttack",
+        "listedNames: [golemCode]",
+      ],
+    },
     {
       file: "test/lua-real-script-vicious-claws-hand-summon-stat.test.ts",
       kind: "handSummonDefenseTargetHeroStat",
@@ -4932,6 +4957,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handDiscardDraw: 0,
       handRevealShuffleFinalAttack: 0,
       handSummonDefenseTargetHeroStat: 0,
+      ignitionDestroyOwnFaceupFieldGolemStat: 0,
       handProcedureDestroyReleaseStat: 0,
       handToDeckDraw: 0,
       handSelfDiscardDestroyStat: 0,
