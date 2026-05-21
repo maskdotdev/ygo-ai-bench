@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 255;
+export const operationFixtureCount = 256;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -19,6 +19,7 @@ export const operationKindCounts = {
   callCoinAtkChange: 1,
   coinNegateControl: 1,
   costBanishDraw: 2, costDiscardDraw: 1,
+  costStatToGraveTrigger: 1,
   copyNegateDamage: 1,
   counterBoostBattleTargetLock: 1,
   counterDamageReplaceStatBurn: 1,
@@ -213,6 +214,7 @@ export type OperationKind =
   | "callCoinAtkChange"
   | "coinNegateControl"
   | "costBanishDraw" | "costDiscardDraw"
+  | "costStatToGraveTrigger"
   | "copyNegateDamage"
   | "counterBoostBattleTargetLock"
   | "counterDamageReplaceStatBurn"
@@ -4410,6 +4412,26 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-malacoda-cost-stat-tograve.test.ts",
+      kind: "costStatToGraveTrigger",
+      required: [
+        "restores ritual revive limit, BA hand cost stat drop, and delayed previous-field SendtoGrave trigger",
+        "e1:SetValue(aux.ritlimit)",
+        "e2:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "local atk=cc:GetAttack()",
+        "local def=cc:GetDefense()",
+        "e3:SetCode(EVENT_TO_GRAVE)",
+        "return e:GetHandler():IsPreviousLocation(LOCATION_ONFIELD)",
+        "Duel.SelectTarget(tp,Card.IsAbleToGrave,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        'triggerBucket: "turnOptional"',
+        "currentAttack",
+        "currentDefense",
+        'location: "graveyard"',
+      ],
+    },
+    {
       file: "test/lua-real-script-reinforcement-of-the-army-search.test.ts",
       kind: "searchOrExcavate",
       required: [
@@ -4555,6 +4577,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       lpCostRandomHandDiscard: 0,
       lpCostStatReleaseRecover: 0,
       costBanishLevelStat: 0,
+      costStatToGraveTrigger: 0,
       linkClassCountDeckSummon: 0,
       monsterIgnitionSpellTrapDestroy: 0,
       mutualHandDiscardDraw: 0,
