@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 295;
+export const operationFixtureCount = 296;
 export const operationKindCounts = {
+  damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
   targetDestroyOptionalBreakAttackAnnounceStat: 1,
   activateDestroyPossibleSummonOptionalStat: 1,
@@ -236,6 +237,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
   | "targetDestroyOptionalBreakAttackAnnounceStat"
   | "activateDestroyPossibleSummonOptionalStat"
@@ -472,6 +474,33 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-tgx1-hl-damage-step-final-stat-spelltrap-destroy.test.ts",
+      kind: "damageStepTargetFinalStatSpellTrapDestroy",
+      required: [
+        "restores T.G. target final stat halving into selected Spell/Trap destruction",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetMatchingGroup(Card.IsSpellTrap,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,e:GetHandler())",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,dg,1,0,0)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(tc:GetAttack()/2)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetValue(tc:GetDefense()/2)",
+        "Duel.SelectMatchingCard(tp,Card.IsSpellTrap,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,e:GetHandler())",
+        "Duel.HintSelection(dg)",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        "currentAttack",
+        "currentDefense",
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-gingerbread-house-standby-stat-destroy-recover.test.ts",
       kind: "standbyStatDestroyRecover",
@@ -5460,6 +5489,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
       targetDestroyOptionalBreakAttackAnnounceStat: 0,
       activateDestroyPossibleSummonOptionalStat: 0,
