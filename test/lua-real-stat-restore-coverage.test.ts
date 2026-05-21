@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 39;
+const statFixtureCount = 40;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
+  battleDestroyedOpponentAttackDefenseDrop: 1,
   battleTargetAttackBoost: 3,
   damageStepBattleTargetAttributeAttackBoost: 2,
   diceChainAttackUpdate: 1,
@@ -67,6 +68,7 @@ const statSemanticVariantCounts = {
   rushRecklesslyTargetedDamageStepAttackUpdate: 1,
   sangaPreDamageFinalAttackZero: 1,
   shieldSwordSwapBaseAd: 1,
+  slateWarriorBattleDestroyedStatDrop: 1,
   steadyHandsFinalStatDirectLock: 1,
   unifiedFrontDiscardFinalStatLock: 1,
   shrinkTargetBaseAtkHalving: 1,
@@ -80,7 +82,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -112,6 +114,7 @@ type StatSemanticVariant =
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
   | "shieldSwordSwapBaseAd"
+  | "slateWarriorBattleDestroyedStatDrop"
   | "steadyHandsFinalStatDirectLock"
   | "unifiedFrontDiscardFinalStatLock"
   | "shrinkTargetBaseAtkHalving"
@@ -565,6 +568,21 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-slate-warrior-battle-destroyed-stat.test.ts",
+      kind: "battleDestroyedOpponentAttackDefenseDrop",
+      required: [
+        'const slateCode = "78636495"',
+        "restores battle-destroyed surviving opponent ATK/DEF loss from GetAttacker/GetAttackTarget",
+        "e2:SetCode(EVENT_BATTLE_DESTROYED)",
+        "local tc=Duel.GetAttacker()",
+        "if c==tc then tc=Duel.GetAttackTarget() end",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === attacker.uid), restoredTrigger.session.state)).toBe(1900)",
+        "battleDamage).toEqual({ 0: 500, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-plague-wolf-final-attack-end-destroy.test.ts",
       kind: "selfFinalAttackEndDestroy",
       required: [
@@ -691,6 +709,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
     },
     {
       battleAttackerTargetSwing: 0,
+      battleDestroyedOpponentAttackDefenseDrop: 0,
       battleTargetAttackBoost: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
       diceChainAttackUpdate: 0,
@@ -967,6 +986,18 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-slate-warrior-battle-destroyed-stat.test.ts",
+      kind: "slateWarriorBattleDestroyedStatDrop",
+      required: [
+        'const slateCode = "78636495"',
+        "restores battle-destroyed surviving opponent ATK/DEF loss from GetAttacker/GetAttackTarget",
+        "e2:SetCode(EVENT_BATTLE_DESTROYED)",
+        "eventName: \"battleDestroyed\"",
+        "triggerBucket: \"opponentMandatory\"",
+        "value: -500",
+      ],
+    },
+    {
       file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
       kind: "reliableGuardianTargetedDamageStepDefenseUpdate",
       required: [
@@ -1188,6 +1219,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       sangaPreDamageFinalAttackZero: 0,
       blackwingGaleProcedureFinalStatHalve: 0,
       shieldSwordSwapBaseAd: 0,
+      slateWarriorBattleDestroyedStatDrop: 0,
       steadyHandsFinalStatDirectLock: 0,
       unifiedFrontDiscardFinalStatLock: 0,
       shrinkTargetBaseAtkHalving: 0,
