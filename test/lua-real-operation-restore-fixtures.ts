@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 214;
+export const operationFixtureCount = 215;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -52,6 +52,7 @@ export const operationKindCounts = {
   deckSplit: 1,
   deckTopSort: 2,
   deckMoveToField: 1,
+  damageStepBanishStatProtect: 1,
   groupBanishCountStat: 1,
   handBanishDrawStat: 1,
   discardCostSpecialSummonGroupDestroy: 1,
@@ -207,6 +208,7 @@ export type OperationKind =
   | "deckSplit"
   | "deckTopSort"
   | "deckMoveToField"
+  | "damageStepBanishStatProtect"
   | "groupBanishCountStat"
   | "handBanishDrawStat"
   | "discardCostSpecialSummonGroupDestroy"
@@ -1146,6 +1148,33 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dragon.uid), restoredOpen.session.state)).toBe(2700)",
         'eventName: "banished"',
         "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-twilight-cloth-banish-stat.test.ts",
+      kind: "damageStepBanishStatProtect",
+      required: [
+        "restores target stat boost from selected Lightsworn field and grave banish count",
+        "e1:SetCategory(CATEGORY_REMOVE+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "return c:IsSetCard(SET_LIGHTSWORN) and c:IsMonster() and c:IsAbleToRemove() and aux.SpElimFilter(c,true)",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,nil)",
+        "Duel.SelectTarget(tp,s.filter2,tp,LOCATION_MZONE,0,1,1,nil,g)",
+        "Duel.GetFirstTarget()",
+        "local sg=g:Select(tp,1,#g,nil)",
+        "local rc=Duel.Remove(sg,POS_FACEUP,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(200*rc)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "e1:SetTarget(aux.TargetBoolFunction(Card.IsSetCard,SET_LIGHTSWORN))",
+        "operationInfos",
+        'eventName: "banished"',
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -3367,6 +3396,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckSplit: 0,
       deckTopSort: 0,
       deckMoveToField: 0,
+      damageStepBanishStatProtect: 0,
       groupBanishCountStat: 0,
       damageDeckdesAtk: 0,
       damageSynchroMillStat: 0,
