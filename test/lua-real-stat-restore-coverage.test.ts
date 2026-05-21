@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 85;
+const statFixtureCount = 86;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -42,6 +42,7 @@ const statKindCounts = {
   overlayDetachSelfStatAttackLock: 1,
   overlayDetachSelfStatBattleProtection: 1,
   overlayDetachTargetStatTriggerLock: 1,
+  operationInfoDestroyFinalAttackDefenseZero: 1,
   ouroborosSageSummonEquipStat: 1,
   pzoneContractNameCountAttackDestroy: 1,
   pzoneDiscardTargetAttackDefenseUpdate: 1,
@@ -84,6 +85,7 @@ const statSemanticVariantCounts = {
   aForcesMatchingRaceCountStat: 1,
   alLumirajLevelOrRankFieldStat: 1,
   antidoteNurseSummonTargetStat: 1,
+  ancientGearBallistaOperationInfoStat: 1,
   aromageBergamotRecoverPierceStat: 1,
   aojGaradholgDuelBattleTargetAttributeStat: 1,
   ashuraKingOverlayExtraAttackBattleStat: 1,
@@ -168,10 +170,11 @@ const statSemanticVariantCounts = {
   yamorimoriSelfBanishSelectEffectStat: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleStartOverlayExtraAttackUpdate" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleStartSelfDestroyBattlerAttackBoost" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "preDamageBattleTargetAttackGain" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "ouroborosSageSummonEquipStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishSelectEffectDestroyFinalAttack" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "trapChainNegateDestroySelfAttackUpdate" | "trapDetachOperatedDestroyAttackUpdate" | "xyzDetachAttributeExceptGroupStat" | "xyzDetachTargetFinalSelfUpdate";
+type StatKind = "banishDetachFinalAttackDefenseZero" | "battleAttackerTargetSwing" | "battleStartOverlayExtraAttackUpdate" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleStartSelfDestroyBattlerAttackBoost" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "preDamageBattleTargetAttackGain" | "damageStepCounterFinalGroupHalve" | "damageStepMachineStatDamagePrevention" | "deckCostAttackDefenseUpdate" | "diceChainAttackUpdate" | "diceGraveToDeckDestroyAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "fieldSetcodeTypeScaleAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "fusionSummonOpponentFinalAttackDefenseHalve" | "fusionTargetFinalAttackDisableReviveDestroy" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "majesticSynchroDisableReturnAttackUpdate" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "operationInfoDestroyFinalAttackDefenseZero" | "ouroborosSageSummonEquipStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "primalDragonBanishAttackDefenseUpdate" | "rankSumAttackUpdate" | "pzoneContractNameCountAttackDestroy" | "pzoneDiscardTargetAttackDefenseUpdate" | "releaseCostTargetAttackUpdateChainNegate" | "remainTrapEquipCostFinalAttackLock" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishSelectEffectDestroyFinalAttack" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "specialSummonTriggerDestroyAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "summonSuccessTargetAttackDisableChainPzone" | "summonSuccessTargetAttackUpdate" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedIgnitionDisable" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "toGraveTargetFinalAttackHalve" | "trapChainNegateDestroySelfAttackUpdate" | "trapDetachOperatedDestroyAttackUpdate" | "xyzDetachAttributeExceptGroupStat" | "xyzDetachTargetFinalSelfUpdate";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
+  | "ancientGearBallistaOperationInfoStat"
   | "antidoteNurseSummonTargetStat"
   | "aromageBergamotRecoverPierceStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
@@ -326,6 +329,20 @@ function statFixtureFiles(): Array<{
         "condition:damage-source-relate-battle-target-faceup-attribute:16",
         "currentAttack(restoredAttacking.session.state.cards.find((card) => card.uid === attacking.garadholg.uid), restoredAttacking.session.state)).toBe((attacking.garadholg.data.attack ?? 0) + 200)",
         "battleDamage).toEqual({ 0: 0, 1: 300 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ancient-gear-ballista-operation-info-stat.test.ts",
+      kind: "operationInfoDestroyFinalAttackDefenseZero",
+      required: [
+        'const ballistaCode = "10547580"',
+        "restores two target groups through GetOperationInfo into own S/T destroy and opponent ATK/DEF zero",
+        "Duel.GetOperationInfo(0,CATEGORY_DESTROY)",
+        "Duel.GetOperationInfo(0,CATEGORY_ATKCHANGE)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === opponentTarget.uid), restoredOpen.session.state)).toBe(0)",
+        "currentDefense(restoredOpen.session.state.cards.find((card) => card.uid === opponentTarget.uid), restoredOpen.session.state)).toBe(0)",
       ],
     },
     {
@@ -1561,6 +1578,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       overlayDetachSelfStatAttackLock: 0,
       overlayDetachSelfStatBattleProtection: 0,
       overlayDetachTargetStatTriggerLock: 0,
+      operationInfoDestroyFinalAttackDefenseZero: 0,
       ouroborosSageSummonEquipStat: 0,
       pzoneContractNameCountAttackDestroy: 0,
       pzoneDiscardTargetAttackDefenseUpdate: 0,
@@ -1626,6 +1644,18 @@ function statSemanticVariants(): Array<{
         "restores its damage-step ATK boost when battling a LIGHT monster as attacker or defender",
         "condition:damage-source-relate-battle-target-faceup-attribute:16",
         "players[1].lifePoints).toBe(7700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ancient-gear-ballista-operation-info-stat.test.ts",
+      kind: "ancientGearBallistaOperationInfoStat",
+      required: [
+        'const ballistaCode = "10547580"',
+        "Link.AddProcedure(c,s.matfilter,2,2)",
+        "Duel.SelectTarget(tp,Card.IsSpellTrap,tp,LOCATION_ONFIELD,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g1,1,0,0)",
+        "Duel.GetOperationInfo(0,CATEGORY_ATKCHANGE)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -2646,6 +2676,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
     {
       aForcesMatchingRaceCountStat: 0,
       alLumirajLevelOrRankFieldStat: 0,
+      ancientGearBallistaOperationInfoStat: 0,
       antidoteNurseSummonTargetStat: 0,
       aromageBergamotRecoverPierceStat: 0,
       aojGaradholgDuelBattleTargetAttributeStat: 0,
