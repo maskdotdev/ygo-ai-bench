@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 286;
+export const operationFixtureCount = 287;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -199,6 +199,7 @@ export const operationKindCounts = {
   targetRelationStatDestroyedBothDamage: 1,
   targetDestroyDamageBattleStartDelayedSelfDestroy: 1,
   targetDisableFinalImmunity: 1,
+  targetImmuneDelayedGraveDestroyStat: 1,
   spellDraw: 1,
   trapDraw: 1,
   trapReclamationReturn: 1,
@@ -424,6 +425,7 @@ export type OperationKind =
   | "targetRelationStatDestroyedBothDamage"
   | "targetDestroyDamageBattleStartDelayedSelfDestroy"
   | "targetDisableFinalImmunity"
+  | "targetImmuneDelayedGraveDestroyStat"
   | "targetSendStatDelayedSet"
   | "spellDraw"
   | "trapDraw"
@@ -1813,6 +1815,32 @@ export function operationFixtureFiles(): Array<{
         "currentAttack",
         "currentDefense",
         "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-rciela-target-immune-delayed-destroy.test.ts",
+      kind: "targetImmuneDelayedGraveDestroyStat",
+      required: [
+        "restores target immunity, delayed Standby GY send, opponent ATK reduction, and zero-ATK destruction",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_TOGRAVE+CATEGORY_DESTROY)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOGRAVE,g,1,tp,0)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DESTROY,nil,1,1-tp,LOCATION_MZONE)",
+        "EFFECT_IMMUNE_EFFECT",
+        "aux.DelayedOperation(tc,PHASE_STANDBY,id,e,tp,function(ag) Duel.SendtoGrave(ag,REASON_EFFECT) end",
+        "Duel.GetCurrentPhase()<=PHASE_STANDBY",
+        "Duel.GetTurnCount()~=prevturn",
+        "e2:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.BreakEffect()",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "breakEffect"',
+        'eventName: "destroyed"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack(",
       ],
     },
     {
@@ -5388,6 +5416,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetRelationStatDestroyedBothDamage: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,
       targetDisableFinalImmunity: 0,
+      targetImmuneDelayedGraveDestroyStat: 0,
       trapMonsterStatSummonRedirect: 0,
       spellDraw: 0,
       trapDraw: 0,
