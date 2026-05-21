@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 313;
+export const operationFixtureCount = 314;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -19,6 +19,7 @@ export const operationKindCounts = {
   twoTargetLabelStatDestroy: 1,
   targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
+  summonTargetGroupDestroyCountStat: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
   targetDestroyOptionalBreakAttackAnnounceStat: 1,
@@ -271,6 +272,7 @@ export type OperationKind =
   | "twoTargetLabelStatDestroy"
   | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
+  | "summonTargetGroupDestroyCountStat"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
   | "targetDestroyOptionalBreakAttackAnnounceStat"
@@ -926,6 +928,28 @@ export function operationFixtureFiles(): Array<{
         'eventName: "becameTarget"',
         'eventName: "destroyed"',
         "currentAttack",
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-grandtusk-summon-target-destroy-stat.test.ts",
+      kind: "summonTargetGroupDestroyCountStat",
+      required: [
+        "restores summon-success target-group destruction into destroyed-count ATK gain",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DELAY)",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,2,c)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "local ct=Duel.Destroy(g,REASON_EFFECT)",
+        "e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(ct*600)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === grandtusk.uid), restoredTrigger.session.state)).toBe(2600 + 1200)",
+        "battleDamage).toEqual({ 0: 0, 1: 3800 })",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
         "operationInfos",
       ],
     },
@@ -5961,6 +5985,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       twoTargetLabelStatDestroy: 0,
       targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
+      summonTargetGroupDestroyCountStat: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
       targetDestroyOptionalBreakAttackAnnounceStat: 0,
