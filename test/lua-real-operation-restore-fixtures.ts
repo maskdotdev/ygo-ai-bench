@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 227;
+export const operationFixtureCount = 228;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -118,6 +118,7 @@ export const operationKindCounts = {
   releaseDamage: 3,
   reviveStatBattleDamage: 1,
   ritualToGraveSearchSend: 1,
+  ritualSummonSearchReleaseStat: 1,
   rescueStatProtectGraveSet: 1,
   ritualDeckMaterials: 1,
   searchOrExcavate: 39,
@@ -286,6 +287,7 @@ export type OperationKind =
   | "releaseDamage"
   | "reviveStatBattleDamage"
   | "ritualToGraveSearchSend"
+  | "ritualSummonSearchReleaseStat"
   | "rescueStatProtectGraveSet"
   | "ritualDeckMaterials"
   | "searchOrExcavate"
@@ -3046,6 +3048,7 @@ export function operationFixtureFiles(): Array<{
     { file: "test/lua-real-script-collapserpent-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e2:SetCode(EFFECT_SPSUMMON_PROC)", "aux.SelectUnselectGroup(rg,e,tp,1,1,nil,1,tp,HINTMSG_REMOVE,nil,nil,true)", "Duel.Remove(g,POS_FACEUP,REASON_COST)", "return c:IsCode(99234526) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "sentToGraveyard"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-familiar-possessed-dharc-special-summon-procedure-search.test.ts", kind: "searchOrExcavate", required: ["e1:SetCode(EFFECT_SPSUMMON_PROC)", "aux.SelectUnselectGroup(g1,e,tp,2,2,s.rescon,1,tp,HINTMSG_TOGRAVE)", "Duel.SendtoGrave(g,REASON_COST)", "return (lv==3 or lv==4) and c:IsAttribute(ATTRIBUTE_LIGHT) and c:IsRace(RACE_SPELLCASTER) and c:IsAbleToHand()", "operationInfos: [{ category: 0x8", 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-megalith-ophiel-ritual-summon-search.test.ts", kind: "searchOrExcavate", required: ["e:GetHandler():IsRitualSummoned()", "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)", "return c:IsSetCard(SET_MEGALITH) and c:IsMonster() and not c:IsCode(id) and c:IsAbleToHand()", "summonType: \"ritual\"", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
+    { file: "test/lua-real-script-cyber-angel-idaten-ritual-search-release-stat.test.ts", kind: "ritualSummonSearchReleaseStat", required: ["restores ritual summon NecroValley search and release trigger Ritual Monster stat boost", "e1:SetCode(EVENT_SPSUMMON_SUCCESS)", "return e:GetHandler():IsRitualSummoned()", "return c:IsRitualSpell() and c:IsAbleToHand()", "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK|LOCATION_GRAVE)", "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(s.thfilter),tp,LOCATION_DECK|LOCATION_GRAVE,0,1,1,nil)", "Duel.SendtoHand(g,nil,REASON_EFFECT)", "Duel.ConfirmCards(1-tp,g)", "e2:SetCode(EVENT_RELEASE)", "Duel.GetMatchingGroup(s.adfilter,tp,LOCATION_MZONE,0,nil)", "for tc in aux.Next(g) do", "e1:SetCode(EFFECT_UPDATE_ATTACK)", "e2:SetCode(EFFECT_UPDATE_DEFENSE)", "operationInfos", 'eventName: "specialSummoned"', 'eventName: "released"', 'eventName: "sentToHandConfirmed"', "currentAttack", "currentDefense"] },
     { file: "test/lua-real-script-impcantation-candoll-hand-deck-summon-search.test.ts", kind: "searchOrExcavate", required: ["Duel.ShuffleHand(tp)", "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,2,tp,LOCATION_HAND|LOCATION_DECK)", "return c:IsRitualMonster() and c:IsAbleToHand()", "special-summon-limit:extra", 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-impcantation-bookstone-deck-summon-ritual-spell.test.ts", kind: "searchOrExcavate", required: ["restores Deck-summoned Bookstone trigger targeting a Ritual Spell in Graveyard", "return e:GetHandler():IsPreviousLocation(LOCATION_DECK)", "return c:IsRitualSpell() and c:IsAbleToHand()", "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)", "Duel.SendtoHand(tc,nil,REASON_EFFECT)", "special-summon-limit:extra", 'eventName: "sentToHand"', "host.messages).not.toContain"] },
     { file: "test/lua-real-script-millennium-shield-place-summon-search.test.ts", kind: "searchOrExcavate", required: ["restores hand placement as Continuous Spell, LP-cost summon, optional Cross search", "Duel.MoveToField(c,tp,tp,LOCATION_SZONE,POS_FACEUP,true)", "e1:SetCode(EFFECT_CHANGE_TYPE)", "e1:SetValue(TYPE_SPELL|TYPE_CONTINUOUS)", "Duel.PayLPCost(tp,2000)", "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)", "Duel.SelectYesNo(tp,aux.Stringid(id,4))", "Duel.BreakEffect()", "Duel.SendtoHand(g,tp,REASON_EFFECT)", 'eventName: "lifePointCostPaid"', 'eventName: "specialSummoned"', 'eventName: "sentToHandConfirmed"', "host.messages).not.toContain"] },
@@ -3807,6 +3810,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       releaseDamage: 0,
       reviveStatBattleDamage: 0,
       ritualToGraveSearchSend: 0,
+      ritualSummonSearchReleaseStat: 0,
       rescueStatProtectGraveSet: 0,
       ritualDeckMaterials: 0,
       searchOrExcavate: 0,
