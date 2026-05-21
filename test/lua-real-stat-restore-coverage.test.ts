@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 36;
+const statFixtureCount = 37;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -19,6 +19,7 @@ const statKindCounts = {
   fieldLinkSumAttackDefenseUpdate: 1,
   fieldRaceAttackDefenseUpdate: 2,
   fieldSetcodeAttackUpdate: 1,
+  groupLevelOrRankLinkAndSelfBanishTargetStat: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
   setAttack: 1,
   setBaseAttack: 1,
@@ -67,6 +68,7 @@ const statSemanticVariantCounts = {
   unifiedFrontDiscardFinalStatLock: 1,
   shrinkTargetBaseAtkHalving: 1,
   skyscraperFieldDamageCalculationAttackBoost: 1,
+  sprightGammaBurstGroupSelfBanishStat: 1,
   sprightPixiesProcedurePrecalcStat: 1,
   steamroidDamageStepBattleSwingStat: 1,
   gracefulDiceDamageStepGroupStat: 1,
@@ -75,7 +77,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -109,6 +111,7 @@ type StatSemanticVariant =
   | "unifiedFrontDiscardFinalStatLock"
   | "shrinkTargetBaseAtkHalving"
   | "skyscraperFieldDamageCalculationAttackBoost"
+  | "sprightGammaBurstGroupSelfBanishStat"
   | "sprightPixiesProcedurePrecalcStat"
   | "steamroidDamageStepBattleSwingStat"
   | "trianglePowerBaseStatEndDestroy"
@@ -467,6 +470,23 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-spright-gamma-burst-group-self-banish-stat.test.ts",
+      kind: "groupLevelOrRankLinkAndSelfBanishTargetStat",
+      required: [
+        'const gammaCode = "42431833"',
+        "restores group Level/Rank/Link 2 stat boost and grave self-banish target ATK boost",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "local tg=Duel.GetMatchingGroup(s.atkfilter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "currentAttack(ally, restoredGroup.session.state)).toBe(2400)",
+        "currentDefense(opponent, restoredGroup.session.state)).toBe(2400)",
+        "currentAttack(graveAlly, restoredSelfBanish.session.state)).toBe(2400)",
+      ],
+    },
+    {
       file: "test/lua-real-script-reliable-guardian-defense-damage-step.test.ts",
       kind: "targetedDamageStepDefenseUpdate",
       required: [
@@ -648,6 +668,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       fieldLinkSumAttackDefenseUpdate: 0,
       fieldRaceAttackDefenseUpdate: 0,
       fieldSetcodeAttackUpdate: 0,
+      groupLevelOrRankLinkAndSelfBanishTargetStat: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
       preDamageSelfToGraveBattleMonsterStat: 0,
       setAttack: 0,
@@ -987,6 +1008,18 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-spright-gamma-burst-group-self-banish-stat.test.ts",
+      kind: "sprightGammaBurstGroupSelfBanishStat",
+      required: [
+        'const gammaCode = "42431833"',
+        "restores group Level/Rank/Link 2 stat boost and grave self-banish target ATK boost",
+        "return c:IsFaceup() and (c:IsLevel(2) or c:IsRank(2) or c:IsLink(2))",
+        "e2:SetCost(Cost.SelfBanish)",
+        "reason: duelReason.cost",
+        "eventName === \"banished\" || event.eventName === \"becameTarget\"",
+      ],
+    },
+    {
       file: "test/lua-real-script-skyscraper-damage-calculation-stat.test.ts",
       kind: "skyscraperFieldDamageCalculationAttackBoost",
       required: [
@@ -1097,6 +1130,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       unifiedFrontDiscardFinalStatLock: 0,
       shrinkTargetBaseAtkHalving: 0,
       skyscraperFieldDamageCalculationAttackBoost: 0,
+      sprightGammaBurstGroupSelfBanishStat: 0,
       sprightPixiesProcedurePrecalcStat: 0,
       steamroidDamageStepBattleSwingStat: 0,
       trianglePowerBaseStatEndDestroy: 0,
