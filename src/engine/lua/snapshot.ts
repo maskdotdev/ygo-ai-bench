@@ -794,6 +794,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownDelayedBattleDestroyMarkerEffect(effect) ||
         isKnownDelayedBattleDestroyPhaseEffect(effect) ||
         isKnownBorreloadExchargeEndPhaseBanishEffect(effect) ||
+        isKnownVictoryViperOptionTokenEffect(effect) ||
         isKnownCelestialMagicianEndSearchEffect(effect) ||
         isKnownEndPhaseReviveDestroyEffect(effect) ||
         isKnownLeaveFieldLinkedDestroyEffect(effect) ||
@@ -816,6 +817,15 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
 }
 
 function isKnownChangeBattleStatToDefenseEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 198 && effect.luaValueDescriptor === "stat:current-defense" && effect.luaTargetDescriptor === "target:source-or-battle-target" && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange?.[0] === 4 && effect.targetRange?.[1] === 4 && effect.reset !== undefined; }
+function isKnownVictoryViperOptionTokenEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:93130021:")) &&
+    effect.event === "continuous" &&
+    [102, 106, 122, 127, 131, 141].includes(effect.code ?? 0) &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    effect.reset?.flags === 0xfe1000;
+}
 function isKnownTargetScopedHalfBattleDamageEffect(effect: SerializedDuelEffect): boolean {
   return effect.event === "continuous" &&
     effect.code === 208 &&

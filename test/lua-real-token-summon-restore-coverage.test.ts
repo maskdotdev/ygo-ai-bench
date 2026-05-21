@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const tokenSummonFixtureCount = 5;
+const tokenSummonFixtureCount = 6;
 const tokenSummonKindCounts = {
   battleDestroyedStepTokenSummon: 1,
   crossFieldDestroyDualTokenStat: 1,
   phaseEndTokenSelfDestroy: 1,
   previousOnFieldToGraveMandatoryTokenSummon: 1,
   spellStepTokenSummonOathLock: 1,
+  battleDestroyingOptionTokenRelationStat: 1,
 } satisfies Record<TokenSummonKind, number>;
 const tokenSummonSemanticVariantCounts = {
   demiurgeSpellTrapDestroyDualTokenStat: 1,
@@ -18,10 +19,11 @@ const tokenSummonSemanticVariantCounts = {
   jurracStaurikoBattleDestroyedStepTokenSummon: 1,
   oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 1,
   scapegoatStepSummonOathLock: 1,
+  victoryViperBattleOptionTokenRelationStat: 1,
 } satisfies Record<TokenSummonSemanticVariant, number>;
 
-type TokenSummonKind = "battleDestroyedStepTokenSummon" | "crossFieldDestroyDualTokenStat" | "phaseEndTokenSelfDestroy" | "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
-type TokenSummonSemanticVariant = "demiurgeSpellTrapDestroyDualTokenStat" | "fiendishEnginePhaseEndTokenSelfDestroy" | "jurracStaurikoBattleDestroyedStepTokenSummon" | "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock";
+type TokenSummonKind = "battleDestroyedStepTokenSummon" | "battleDestroyingOptionTokenRelationStat" | "crossFieldDestroyDualTokenStat" | "phaseEndTokenSelfDestroy" | "previousOnFieldToGraveMandatoryTokenSummon" | "spellStepTokenSummonOathLock";
+type TokenSummonSemanticVariant = "demiurgeSpellTrapDestroyDualTokenStat" | "fiendishEnginePhaseEndTokenSelfDestroy" | "jurracStaurikoBattleDestroyedStepTokenSummon" | "oysterMeisterPreviousOnFieldToGraveFishTokenSummon" | "scapegoatStepSummonOathLock" | "victoryViperBattleOptionTokenRelationStat";
 
 describe("Lua real token summon restore coverage", () => {
   it("requires token summon fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -100,6 +102,19 @@ describe("Lua real token summon restore coverage", () => {
 function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-victory-viper-battle-token-relation-stat.test.ts",
+      kind: "battleDestroyingOptionTokenRelationStat",
+      required: [
+        'const viperCode = "93130021"',
+        "restores battle-destroying SelectOption token branch with owner-derived final stats and self-destroy relation",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOKEN,nil,1,0,0)",
+        "Duel.CreateToken(tp,id+1)",
+        "Duel.SpecialSummonStep(token,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.SpecialSummonComplete()",
+      ],
+    },
+    {
       file: "test/lua-real-script-demiurge-ema-spelltrap-token-stat.test.ts",
       kind: "crossFieldDestroyDualTokenStat",
       required: [
@@ -177,6 +192,22 @@ function tokenSummonFixtureFiles(): Array<{ file: string; kind: TokenSummonKind;
 
 function tokenSummonSemanticVariants(): Array<{ file: string; kind: TokenSummonSemanticVariant; required: string[] }> {
   return [
+    {
+      file: "test/lua-real-script-victory-viper-battle-token-relation-stat.test.ts",
+      kind: "victoryViperBattleOptionTokenRelationStat",
+      required: [
+        "typesToken",
+        "raceMachine",
+        "attributeLight",
+        "{ category: 0x400, targetUids: [], count: 1, player: 0, parameter: 0 }",
+        "{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0 }",
+        'api: "SelectOption"',
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-demiurge-ema-spelltrap-token-stat.test.ts",
       kind: "demiurgeSpellTrapDestroyDualTokenStat",
@@ -260,6 +291,7 @@ function countTokenSummonKinds(fixtures: Array<{ kind: TokenSummonKind }>): Reco
     },
     {
       battleDestroyedStepTokenSummon: 0,
+      battleDestroyingOptionTokenRelationStat: 0,
       crossFieldDestroyDualTokenStat: 0,
       phaseEndTokenSelfDestroy: 0,
       previousOnFieldToGraveMandatoryTokenSummon: 0,
@@ -282,6 +314,7 @@ function countTokenSummonSemanticVariants(
       jurracStaurikoBattleDestroyedStepTokenSummon: 0,
       oysterMeisterPreviousOnFieldToGraveFishTokenSummon: 0,
       scapegoatStepSummonOathLock: 0,
+      victoryViperBattleOptionTokenRelationStat: 0,
     },
   );
 }
