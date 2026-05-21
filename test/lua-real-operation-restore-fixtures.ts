@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 252;
+export const operationFixtureCount = 253;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -94,7 +94,7 @@ export const operationKindCounts = {
   fusionDeckMaterials: 1,
   graveReviveEquipPositionStat: 1,
   flipDiscardBattleStat: 1,
-  groupDestroy: 11,
+  groupDestroy: 12,
   groupDestroyDamageStatLp: 1,
   groupToGraveFinalAttack: 1,
   handStatBoost: 1,
@@ -2852,6 +2852,25 @@ export function operationFixtureFiles(): Array<{
       required: [
         "category: 0x1",
         "sortedUids([ownMonster!.uid, opponentAttack!.uid, opponentDefense!.uid])",
+        'eventName: "destroyed"',
+        'location: "graveyard"',
+        "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-acid-rain-machine-group-destroy.test.ts",
+      kind: "groupDestroy",
+      required: [
+        "restores prompt-free face-up Machine group destruction across both monster zones",
+        "e1:SetCategory(CATEGORY_DESTROY)",
+        "e1:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e1:SetCode(EVENT_FREE_CHAIN)",
+        "return c:IsRace(RACE_MACHINE) and c:IsFaceup()",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,sg,#sg,0,0)",
+        "Duel.Destroy(sg,REASON_EFFECT)",
+        "operationInfos",
+        "category: 0x1",
         'eventName: "destroyed"',
         'location: "graveyard"',
         "host.messages).not.toContain",
