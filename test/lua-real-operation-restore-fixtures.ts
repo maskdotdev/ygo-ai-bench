@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 259;
+export const operationFixtureCount = 260;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -29,6 +29,7 @@ export const operationKindCounts = {
   deckGraveMonsterEffectSummonStatReplace: 1,
   destroyedOptionalSummonSearchTargetStat: 1,
   summonHandMachineSelfBanishStatAttackOath: 1,
+  synchroSearchDestroyTypeStat: 1,
   customDestroyReplaceDamage: 1,
   crossPlayerGraveToDeckTrap: 1,
   controlReturn: 1,
@@ -227,6 +228,7 @@ export type OperationKind =
   | "deckGraveMonsterEffectSummonStatReplace"
   | "destroyedOptionalSummonSearchTargetStat"
   | "summonHandMachineSelfBanishStatAttackOath"
+  | "synchroSearchDestroyTypeStat"
   | "customDestroyReplaceDamage"
   | "crossPlayerGraveToDeckTrap"
   | "controlReturn"
@@ -1638,6 +1640,31 @@ export function operationFixtureFiles(): Array<{
         'eventName: "specialSummoned"',
         "currentAttack",
         'eventName: "damageDealt"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-visas-amritara-synchro-search-destroy-stat.test.ts",
+      kind: "synchroSearchDestroyTypeStat",
+      required: [
+        "restores LIGHT Synchro procedure into search trigger, Visas code, and destroy-for-Synchro ATK field buff",
+        "Synchro.AddProcedure(c,nil,1,99,aux.FilterBoolFunctionEx(Card.IsAttribute,ATTRIBUTE_LIGHT),1,1)",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e2:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.GetFieldGroup(tp,LOCATION_MZONE,0)",
+        "Duel.SelectMatchingCard(tp,nil,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "e1:SetTarget(aux.TargetBoolFunction(Card.IsType,TYPE_SYNCHRO))",
+        "Duel.RegisterEffect(e1,tp)",
+        "operationInfos",
+        'eventName: "sentToHandConfirmed"',
+        'eventName: "destroyed"',
+        "currentCardCodes",
+        "currentFiniteEffectValues",
       ],
     },
     {
@@ -4702,6 +4729,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       summonDelayedStatDestroy: 0,
       summonRaceStatTargetDestroy: 0,
       synchroMaterialCheckStatBurn: 0,
+      synchroSearchDestroyTypeStat: 0,
       summonFieldMillStat: 0,
       targetRelationStatDestroyedBothDamage: 0,
       targetDestroyDamageBattleStartDelayedSelfDestroy: 0,

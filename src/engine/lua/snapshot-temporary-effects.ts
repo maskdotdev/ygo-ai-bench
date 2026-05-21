@@ -153,6 +153,21 @@ export function isKnownTemporaryCannotDirectAttackEffect(effect: SerializedDuelE
   );
 }
 
+export function isKnownTemporaryTypeTargetAttackUpdateEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 100 &&
+    effect.sourceUid !== undefined &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    effect.value !== undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor?.startsWith("target:type:") === true &&
+    !hasPlayerTargetFlag(effect) &&
+    targetRangeEquals(effect, luaLocationMonsterZone, 0) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
 export function isKnownPlayerDamageZeroEffect(effect: SerializedDuelEffect): boolean {
   return (
     (isPlainPhaseEndStaticValueEffect(effect, 82, 0) || isPlainPhaseEndStaticValueEffect(effect, 335, 0)) &&

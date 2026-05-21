@@ -2,6 +2,7 @@ import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
 import { createEffectContext } from "#duel/effect-context.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
+import { cardTypeFlags } from "#duel/card-stats.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
@@ -547,7 +548,7 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...(descriptorStatValue === undefined ? luaEffect.valueRef === undefined ? {} : { statValue: (ctx, targetCard) => callLuaEffectStatValue(L, hostState, luaEffect, ctx, targetCard, readLuaError) } : { statValue: descriptorStatValue }),
     ...(luaEffect.valueRef === undefined ? {} : { valueCardPredicate: (ctx, targetCard) => callLuaEffectValueCardPredicate(L, hostState, luaEffect, ctx, targetCard, readLuaError) }),
     ...(luaEffect.valueRef === undefined ? {} : { valuePredicate: (ctx, reasonPlayer) => callLuaEffectValuePredicate(L, hostState, luaEffect, card, ctx, reasonPlayer, readLuaError) }),
-    ...(luaEffect.targetRef === undefined ? {} : { targetCardPredicate: (ctx, targetCard) => callLuaEffectCardTargetPredicate(L, hostState, luaEffect, ctx, targetCard) }),
+    ...luaEffectTargetCardPredicate(luaEffect, L, hostState),
     canActivate: (ctx) => {
       syncLuaEffectMetadataFromRegisteredDuelEffect(hostState, luaEffect);
       const result =
@@ -1061,6 +1062,14 @@ function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, l
     if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
     const result = lua.lua_toboolean(L, -1); lua.lua_pop(L, 1); return Boolean(result);
   });
+}
+
+function luaEffectTargetCardPredicate(luaEffect: LuaEffectRecord, L: unknown, hostState: LuaHostState): Pick<DuelEffectDefinition, "targetCardPredicate"> {
+  const type = luaEffect.targetDescriptor?.startsWith("target:type:") ? Number(luaEffect.targetDescriptor.slice("target:type:".length)) : undefined;
+  if (type !== undefined && Number.isSafeInteger(type) && type > 0) {
+    return { targetCardPredicate: (ctx, targetCard) => (cardTypeFlags(targetCard, ctx.duel) & type) !== 0 };
+  }
+  return luaEffect.targetRef === undefined ? {} : { targetCardPredicate: (ctx, targetCard) => callLuaEffectCardTargetPredicate(L, hostState, luaEffect, ctx, targetCard) };
 }
 
 function applyLuaEffectContextLabelObject(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, ctx: DuelEffectContext | undefined): void {
