@@ -1,12 +1,13 @@
 import path from "node:path";
 
-export const operationFixtureCount = 319;
+export const operationFixtureCount = 320;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
   diceStatDrawDirect: 1,
   diceSelectEffectToGraveFinalStat: 1,
   diceFieldSearchBattleStartTwoPlayerStat: 1,
+  attackAnnounceSelectEffectStatImmune: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
@@ -265,6 +266,7 @@ export type OperationKind =
   | "diceStatDrawDirect"
   | "diceSelectEffectToGraveFinalStat"
   | "diceFieldSearchBattleStartTwoPlayerStat"
+  | "attackAnnounceSelectEffectStatImmune"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "battleDamageFlagDamageStepLowestDestroyStat"
@@ -634,6 +636,29 @@ export function operationFixtureFiles(): Array<{
         'eventName: "sentToHandConfirmed"',
         'eventName: "phaseBattle"',
         'eventName: "diceTossed"',
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-early-palm-attack-announce-select-stat-immune.test.ts",
+      kind: "attackAnnounceSelectEffectStatImmune",
+      required: [
+        "restores same-column attack announce SelectEffect into ATK loss and activated Spell/Trap immunity",
+        "e1:SetCategory(CATEGORY_DICE+CATEGORY_ATKCHANGE)",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetRange(LOCATION_SZONE)",
+        "Duel.GetBattleMonster(tp)",
+        "bc1:GetColumnGroup():IsContains(bc2)",
+        "bc1:CreateEffectRelation(e)",
+        "Duel.SetOperationInfo(0,CATEGORY_DICE,nil,0,tp,1)",
+        "op=Duel.SelectEffect(tp,",
+        "bc:UpdateAttack(-500,RESETS_STANDARD_PHASE_END,c)",
+        "e2:SetCode(EFFECT_IMMUNE_EFFECT)",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_COUNT)",
+        "e3:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
+        'api: "SelectEffect"',
+        'eventName: "attackDeclared"',
+        "operationInfos",
         "currentAttack",
       ],
     },
@@ -6107,6 +6132,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       diceStatDrawDirect: 0,
       diceSelectEffectToGraveFinalStat: 0,
       diceFieldSearchBattleStartTwoPlayerStat: 0,
+      attackAnnounceSelectEffectStatImmune: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
