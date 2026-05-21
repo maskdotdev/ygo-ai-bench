@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 219;
+export const operationFixtureCount = 220;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -126,6 +126,7 @@ export const operationKindCounts = {
   selectEffectStatDestroy: 1,
   selectUnselectTargetStat: 1,
   specialSearchMaterialDamage: 1,
+  specialSummonFusionBattleStatLock: 1,
   specialSummonBaseStat: 1,
   stepSummonLevelFinalStat: 1,
   summonDelayedStatDestroy: 1,
@@ -286,6 +287,7 @@ export type OperationKind =
   | "selectEffectStatDestroy"
   | "selectUnselectTargetStat"
   | "specialSearchMaterialDamage"
+  | "specialSummonFusionBattleStatLock"
   | "specialSummonBaseStat"
   | "stepSummonLevelFinalStat"
   | "summonDelayedStatDestroy"
@@ -2019,6 +2021,34 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-light-end-sublimation-special-battle-stat.test.ts",
+      kind: "specialSummonFusionBattleStatLock",
+      required: [
+        "restores hand Special Summon cost lock and attack-announcement ATK/DEF reductions",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON)",
+        "e1:SetRange(LOCATION_HAND)",
+        "return c:IsLevel(8) and c:IsRace(RACE_DRAGON) and c:IsAbleToRemoveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.hspcostfilter,tp,LOCATION_EXTRA,0,1,1,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)",
+        "e2:SetTarget(Fusion.SummonEffTG())",
+        "e2:SetOperation(Fusion.SummonEffOP())",
+        "e3:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "Duel.GetAttacker():IsControler(1-tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,#g,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_DEFCHANGE,c,1,tp,-500)",
+        "c:UpdateAttack(-500)",
+        "c:UpdateDefense(-500)",
+        "e1:SetValue(-1500)",
+        "operationInfos",
+        'eventName: "banished"',
+        'eventName: "specialSummoned"',
+        'eventName: "attackDeclared"',
+        "currentDefense",
+      ],
+    },
+    {
       file: "test/lua-real-script-reptilianne-lamia-hand-target-special-damage.test.ts",
       kind: "setAttackFinalSpecialDamage",
       required: [
@@ -3594,6 +3624,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectEffectStatDestroy: 0,
       selectUnselectTargetStat: 0,
       specialSearchMaterialDamage: 0,
+      specialSummonFusionBattleStatLock: 0,
       specialSummonBaseStat: 0,
       stepSummonLevelFinalStat: 0,
       summonDelayedStatDestroy: 0,
