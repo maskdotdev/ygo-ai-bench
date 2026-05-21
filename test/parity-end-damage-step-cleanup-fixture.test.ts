@@ -5,7 +5,7 @@ import type { DuelCardData, ScriptedDuelFixture } from "#duel/types.js";
 import { absentOpenAttackGroup, passBattleGroup, turnGroup } from "./parity-legal-action-group-helpers.js";
 
 describe("EDOPro parity end damage step cleanup fixtures", () => {
-  it("clears the battle window and applies direct battle damage after end damage step passes", () => {
+  it("clears the battle window after end damage step passes without replaying direct battle damage", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Battle Attacker", kind: "monster", attack: 1800, defense: 1200 },
       { code: "200", name: "Opponent Card", kind: "monster", attack: 1000, defense: 1000 },
@@ -118,11 +118,11 @@ describe("EDOPro parity end damage step cleanup fixtures", () => {
               { eventName: "battleConfirmed", eventCode: 1133 },
               { eventName: "beforeDamageCalculation", eventCode: 1134 },
               { eventName: "damageCalculating", eventCode: 1135 },
+              { eventName: "beforeBattleDamage", eventCode: 1136 },
+              { eventName: "battleDamageDealt", eventCode: 1143 },
               { eventName: "afterDamageCalculation", eventCode: 1138 },
               { eventName: "battleEnded", eventCode: 1137 },
               { eventName: "damageStepEnded", eventCode: 1141 },
-              { eventName: "beforeBattleDamage" },
-              { eventName: "battleDamageDealt" },
             ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 1, 1: 0 },

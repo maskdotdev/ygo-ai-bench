@@ -773,11 +773,10 @@ describe("Lua battle timing helpers", () => {
     expect(restored.session.state.chain).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.players[1].lifePoints).toBe(6200);
-    expect(queryPublicState(restored.session)).toMatchObject({ windowKind: "open", waitingFor: 0 });
-    expect(queryPublicState(restored.session)).not.toHaveProperty("battleWindow");
-    expect(getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "changePhase" && candidate.phase === "main2")).toMatchObject({
+    expect(queryPublicState(restored.session)).toMatchObject({ windowKind: "battle", waitingFor: 1, battleWindow: { kind: "afterDamageCalculation", responsePlayer: 1 } });
+    expect(getLuaRestoreLegalActions(restored, 1).find((candidate) => candidate.type === "passDamage")).toMatchObject({
       windowId: restored.session.state.actionWindowId,
-      windowKind: "open",
+      windowKind: "battle",
     });
   });
 

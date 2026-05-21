@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 304;
+export const operationFixtureCount = 305;
 export const operationKindCounts = {
+  battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
   persistentLinkCountStatBattledDestroy: 1,
@@ -245,6 +246,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
   | "persistentLinkCountStatBattledDestroy"
@@ -490,6 +492,30 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-zubaba-buster-battle-damage-lowest-destroy.test.ts",
+      kind: "battleDamageFlagDamageStepLowestDestroyStat",
+      required: [
+        "restores battle-damage flag into Damage Step End lowest-ATK destruction and self ATK loss",
+        "e1:SetCode(EVENT_BATTLE_DAMAGE)",
+        "e:GetHandler():RegisterFlagEffect(id,RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE,0,1)",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e2:SetCode(EVENT_DAMAGE_STEP_END)",
+        "return e:GetHandler():GetFlagEffect(id)~=0",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "local tg=g:GetMinGroup(Card.GetAttack)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,tg,1,0,0)",
+        "Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_DESTROY)",
+        "Duel.Destroy(sg,REASON_EFFECT)",
+        "Duel.Destroy(tg,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-800)",
+        'eventName: "battleDamageDealt"',
+        'eventName: "damageStepEnded"',
+        'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-timaeus-united-immunity-stat-destroy.test.ts",
       kind: "timaeusImmunityPreDamageSpellCountDestroy",
@@ -5717,6 +5743,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
       persistentLinkCountStatBattledDestroy: 0,

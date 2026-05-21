@@ -111,7 +111,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   const pending = state.pendingBattle;
   if (!pending) return false;
   if (pending.resultApplied) {
-    const appliedStoredDamage = callbacks.applyStoredBattleDamage?.(pendingBattleCards(state, pending)) ?? false;
+    const appliedStoredDamage = pending.damageApplied ? false : callbacks.applyStoredBattleDamage?.(pendingBattleCards(state, pending)) ?? false;
     const resolvedDeferredDestruction = resolveDeferredBattleDestroyed(state, pending, callbacks);
     clearPendingBattleState(state);
     return appliedStoredDamage || resolvedDeferredDestruction;
@@ -138,6 +138,13 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
     return false;
   }
   if (options.preserveBattleContext) {
+    if (!target) {
+      const damagedPlayer = otherPlayer(attacker.controller);
+      callbacks.damagePlayer(damagedPlayer, getBattleAttack(attacker, callbacks), [attacker]);
+      pending.damageApplied = true;
+      markBattleResultApplied(state, options);
+      return true;
+    }
     const resolved = resolveWithPreservedBattleContext(state, pending, attacker, target, callbacks, options);
     if (resolved !== undefined) return resolved;
     return false;

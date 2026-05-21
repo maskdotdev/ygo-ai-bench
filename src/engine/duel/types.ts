@@ -647,6 +647,7 @@ export interface DuelState {
     replayPending?: boolean;
     battleDamageOverrides?: Partial<Record<PlayerId, number>>;
     resultApplied?: boolean;
+    damageApplied?: boolean;
     deferredBattleDestroyed?: {
       uid: string;
       reasonPlayer: PlayerId;

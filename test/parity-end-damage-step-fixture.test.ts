@@ -116,6 +116,8 @@ describe("EDOPro parity end damage step fixtures", () => {
               { eventName: "battleConfirmed", eventCode: 1133 },
               { eventName: "beforeDamageCalculation", eventCode: 1134 },
               { eventName: "damageCalculating", eventCode: 1135 },
+              { eventName: "beforeBattleDamage", eventCode: 1136 },
+              { eventName: "battleDamageDealt", eventCode: 1143 },
               { eventName: "afterDamageCalculation", eventCode: 1138 },
               { eventName: "battleEnded", eventCode: 1137 },
               { eventName: "damageStepEnded", eventCode: 1141 },

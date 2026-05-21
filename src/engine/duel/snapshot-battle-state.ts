@@ -6,6 +6,7 @@ export function copyPendingBattle(pendingBattle: NonNullable<DuelState["pendingB
     ...(pendingBattle.replayPending === undefined ? {} : { replayPending: pendingBattle.replayPending }),
     ...(pendingBattle.battleDamageOverrides === undefined ? {} : { battleDamageOverrides: { ...pendingBattle.battleDamageOverrides } }),
     ...(pendingBattle.resultApplied === undefined ? {} : { resultApplied: pendingBattle.resultApplied }),
+    ...(pendingBattle.damageApplied === undefined ? {} : { damageApplied: pendingBattle.damageApplied }),
     ...(pendingBattle.deferredBattleDestroyed === undefined ? {} : { deferredBattleDestroyed: pendingBattle.deferredBattleDestroyed.map((record) => ({ ...record })) }),
   };
 }
