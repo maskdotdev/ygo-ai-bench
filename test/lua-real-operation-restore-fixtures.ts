@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 262;
+export const operationFixtureCount = 263;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -119,6 +119,7 @@ export const operationKindCounts = {
   graveToDeckBottomDraw: 1,
   groupLevelFinal: 1,
   handDiscardDraw: 1,
+  handRevealShuffleFinalAttack: 1,
   handToDeckDraw: 1,
   handSelfDiscardDestroyStat: 1,
   fiveGraveToDeckShuffleDraw: 2,
@@ -320,6 +321,7 @@ export type OperationKind =
   | "graveToDeckBottomDraw"
   | "groupLevelFinal"
   | "handDiscardDraw"
+  | "handRevealShuffleFinalAttack"
   | "handToDeckDraw"
   | "handSelfDiscardDestroyStat"
   | "fiveGraveToDeckShuffleDraw"
@@ -4019,6 +4021,24 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-black-rose-assault-reveal-shuffle-stat.test.ts",
+      kind: "handRevealShuffleFinalAttack",
+      required: [
+        "restores SelfReveal hand ignition into self Deck shuffle and nonzero ATK final zero",
+        "e2:SetCategory(CATEGORY_TODECK+CATEGORY_ATKCHANGE)",
+        "e2:SetCost(Cost.SelfReveal)",
+        "Card.HasNonZeroAttack",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,c,1,tp,0)",
+        "Duel.SendtoDeck(c,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)>0",
+        "Duel.SelectMatchingCard(tp,Card.HasNonZeroAttack,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil):GetFirst()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "operationInfos",
+        'eventName: "confirmed"',
+        'eventName: "sentToDeck"',
+        "currentAttack",
+      ],
+    },
+    {
       file: "test/lua-real-script-reckless-greed-draw-skip.test.ts",
       kind: "trapDrawSkipDraw",
       required: [
@@ -4734,6 +4754,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       graveTargetToHand: 0,
       graveToDeckBottomDraw: 0,
       handDiscardDraw: 0,
+      handRevealShuffleFinalAttack: 0,
       handToDeckDraw: 0,
       handSelfDiscardDestroyStat: 0,
       fiveGraveToDeckShuffleDraw: 0,

@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const TO_DECK_FIXTURE_COUNT = 8;
+const TO_DECK_FIXTURE_COUNT = 9;
 const toDeckKindCounts = {
   battleDamageGraveContinuousSpellToDeckTop: 1,
   battleDestroyingSetTargetCardToDeckTop: 1,
   freeChainReleaseTargetShuffleToDeck: 1,
   graveExtraToExtraDeckTop: 1,
+  handRevealSelfShuffleToDeck: 1,
   flipGraveTargetShuffleToDeck: 1,
   selfTributeCurrentTurnBattleGraveToDeckBottom: 1,
   toGraveSelfShuffleToDeck: 1,
@@ -22,6 +23,7 @@ const toDeckSemanticVariantCounts = {
   majespecterStormReleaseTargetShuffleToDeck: 1,
   nubianGuardBattleDamageGraveSpellDeckTop: 1,
   outstandingDogMarronToGraveSelfShuffleToDeck: 1,
+  blackRoseAssaultRevealSelfShuffleToDeck: 1,
   wingedSageFalcosBattleDestroyingDeckTop: 1,
   volcanicRechargeFreeChainGraveShuffleToDeck: 1,
 } satisfies Record<ToDeckSemanticVariant, number>;
@@ -31,6 +33,7 @@ type ToDeckKind =
   | "battleDestroyingSetTargetCardToDeckTop"
   | "freeChainReleaseTargetShuffleToDeck"
   | "graveExtraToExtraDeckTop"
+  | "handRevealSelfShuffleToDeck"
   | "flipGraveTargetShuffleToDeck"
   | "selfTributeCurrentTurnBattleGraveToDeckBottom"
   | "toGraveSelfShuffleToDeck"
@@ -43,6 +46,7 @@ type ToDeckSemanticVariant =
   | "majespecterStormReleaseTargetShuffleToDeck"
   | "nubianGuardBattleDamageGraveSpellDeckTop"
   | "outstandingDogMarronToGraveSelfShuffleToDeck"
+  | "blackRoseAssaultRevealSelfShuffleToDeck"
   | "wingedSageFalcosBattleDestroyingDeckTop"
   | "volcanicRechargeFreeChainGraveShuffleToDeck";
 
@@ -112,6 +116,21 @@ function toDeckFixtureFiles(): Array<{
         'eventName: "battleDestroyed"',
         'eventName: "sentToDeck"',
         "previousPosition: \"faceUpAttack\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-black-rose-assault-reveal-shuffle-stat.test.ts",
+      kind: "handRevealSelfShuffleToDeck",
+      required: [
+        'const assaultCode = "46985799"',
+        "restores SelfReveal hand ignition into self Deck shuffle and nonzero ATK final zero",
+        "e2:SetCategory(CATEGORY_TODECK+CATEGORY_ATKCHANGE)",
+        "e2:SetCost(Cost.SelfReveal)",
+        "Duel.SetOperationInfo(0,CATEGORY_TODECK,c,1,tp,0)",
+        "Duel.SendtoDeck(c,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)>0",
+        'eventName: "confirmed"',
+        'eventName: "sentToDeck"',
+        "location: \"deck\"",
       ],
     },
     {
@@ -254,6 +273,7 @@ function countToDeckKinds(fixtures: Array<{ kind: ToDeckKind }>): Record<ToDeckK
       battleDestroyingSetTargetCardToDeckTop: 0,
       freeChainReleaseTargetShuffleToDeck: 0,
       graveExtraToExtraDeckTop: 0,
+      handRevealSelfShuffleToDeck: 0,
       flipGraveTargetShuffleToDeck: 0,
       selfTributeCurrentTurnBattleGraveToDeckBottom: 0,
       toGraveSelfShuffleToDeck: 0,
@@ -350,6 +370,18 @@ function toDeckSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-black-rose-assault-reveal-shuffle-stat.test.ts",
+      kind: "blackRoseAssaultRevealSelfShuffleToDeck",
+      required: [
+        'const assaultCode = "46985799"',
+        "Cost.SelfReveal",
+        "Duel.SendtoDeck(c,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)>0",
+        'eventName: "confirmed"',
+        'eventName: "sentToDeck"',
+        "reasonEffectId: 4",
+      ],
+    },
+    {
       file: "test/lua-real-script-volcanic-recharge-grave-shuffle.test.ts",
       kind: "volcanicRechargeFreeChainGraveShuffleToDeck",
       required: [
@@ -393,6 +425,7 @@ function countToDeckSemanticVariants(fixtures: Array<{ kind: ToDeckSemanticVaria
       majespecterStormReleaseTargetShuffleToDeck: 0,
       nubianGuardBattleDamageGraveSpellDeckTop: 0,
       outstandingDogMarronToGraveSelfShuffleToDeck: 0,
+      blackRoseAssaultRevealSelfShuffleToDeck: 0,
       wingedSageFalcosBattleDestroyingDeckTop: 0,
       volcanicRechargeFreeChainGraveShuffleToDeck: 0,
     },
