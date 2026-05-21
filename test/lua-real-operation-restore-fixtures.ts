@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 334;
+export const operationFixtureCount = 335;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -83,6 +83,7 @@ export const operationKindCounts = {
   releaseTargetZeroBattleBurn: 1,
   detachBattleDestroyBurnAtkDestroyedBurn: 1,
   detachSpellTrapDestroySelfStat: 1,
+  banishCostStepSummonBaseDisable: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 2,
   banishedMachineDeckLinkedDisable: 1,
@@ -350,6 +351,7 @@ export type OperationKind =
   | "releaseTargetZeroBattleBurn"
   | "detachBattleDestroyBurnAtkDestroyedBurn"
   | "detachSpellTrapDestroySelfStat"
+  | "banishCostStepSummonBaseDisable"
   | "banishedToGraveReturn"
   | "banishedToHand"
   | "banishedMachineDeckLinkedDisable"
@@ -1308,6 +1310,34 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "customEvent",
         "pendingTriggers).toEqual([])",
+      ],
+    },
+    {
+      file: "test/lua-real-script-magistery-alchemist-banish-step-base-disable.test.ts",
+      kind: "banishCostStepSummonBaseDisable",
+      required: [
+        "restores four-attribute HERO banish cost into SpecialSummonStep base ATK double and opponent disable",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_ATKCHANGE+CATEGORY_DISABLE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return Duel.GetMZoneCount(tp,sg)>0 and Duel.IsExistingTarget(s.spfilter,tp,LOCATION_GRAVE,0,1,sg,e,tp)",
+        "aux.SelectUnselectGroup(rg,e,tp,4,4,s.spcheck,0)",
+        "aux.SelectUnselectGroup(rg,e,tp,4,4,s.spcheck,1,tp,HINTMSG_REMOVE)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,g,1,tp,LOCATION_GRAVE)",
+        "Duel.SpecialSummonStep(tc,0,tp,tp,true,false,POS_FACEUP)",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e1:SetValue(tc:GetBaseAttack()*2)",
+        "tcn:NegateEffects(c,nil,true)",
+        "Duel.SpecialSummonComplete()",
+        "operationInfos",
+        'eventName: "banished"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "code: 103",
+        "code: 2",
+        "code: 8",
       ],
     },
     {
@@ -6552,6 +6582,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       releaseTargetZeroBattleBurn: 0,
       detachBattleDestroyBurnAtkDestroyedBurn: 0,
       detachSpellTrapDestroySelfStat: 0,
+      banishCostStepSummonBaseDisable: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
       banishedMachineDeckLinkedDisable: 0,

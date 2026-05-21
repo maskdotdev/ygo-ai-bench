@@ -1028,25 +1028,56 @@ function chainLinkByLuaIndex(session: DuelSession, requestedIndex: number): Duel
 function callLuaEffectBoolean(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, card: DuelCardInstance, ref: number | undefined, fallback: boolean, kind: LuaEffectCallbackKind, ctx?: DuelEffectContext): boolean {
   if (ref === undefined) return fallback;
   syncLuaEffectPropertyFromRegisteredDuelEffect(hostState, luaEffect);
+  const preserveMetadata = ctx?.checkOnly === true && (kind === "cost" || kind === "target");
+  const metadata = preserveMetadata ? luaEffectMetadata(luaEffect) : undefined;
   return withLuaCallbackContext(hostState, ctx, luaEffect.id, kind, () => {
-    applyLuaEffectContextLabelObject(L, hostState, luaEffect, ctx);
-    lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
-    const legacyArgs = secondParameterName(L, -1) === "c";
-    if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target") && ![90, 91, 92, 93, 94, 95, 96].includes(luaEffect.code ?? -1)) {
+    try {
+      applyLuaEffectContextLabelObject(L, hostState, luaEffect, ctx);
+      lua.lua_rawgeti(L, lua.LUA_REGISTRYINDEX, ref);
+      const legacyArgs = secondParameterName(L, -1) === "c";
+      if (legacyArgs && ctx?.checkOnly && (kind === "cost" || kind === "target") && ![90, 91, 92, 93, 94, 95, 96].includes(luaEffect.code ?? -1)) {
+        lua.lua_pop(L, 1);
+        return fallback;
+      }
+      const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, kind, legacyArgs, ctx);
+      const status = lua.lua_pcall(L, argCount, 1, 0);
+      if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
+      if (kind === "cost" && !ctx?.checkOnly) {
+        lua.lua_pop(L, 1);
+        return true;
+      }
+      const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
       lua.lua_pop(L, 1);
-      return fallback;
+      return result;
+    } finally {
+      if (metadata) restoreLuaEffectMetadata(hostState, luaEffect, metadata);
     }
-    const argCount = pushLuaEffectCallbackArgs(L, hostState, luaEffect, card, kind, legacyArgs, ctx);
-    const status = lua.lua_pcall(L, argCount, 1, 0);
-    if (status !== lua.LUA_OK) throw new Error(readLuaError(L));
-    if (kind === "cost" && !ctx?.checkOnly) {
-      lua.lua_pop(L, 1);
-      return true;
-    }
-    const result = lua.lua_isnil(L, -1) ? fallback : Boolean(lua.lua_toboolean(L, -1));
-    lua.lua_pop(L, 1);
-    return result;
   });
+}
+
+function luaEffectMetadata(luaEffect: LuaEffectRecord): { label?: number; labels?: number[]; labelObjectId?: number; labelObjectUid?: string; labelObjectUids?: string[] } {
+  return {
+    ...(luaEffect.label === undefined ? {} : { label: luaEffect.label }),
+    ...(luaEffect.labels === undefined ? {} : { labels: [...luaEffect.labels] }),
+    ...(luaEffect.labelObjectId === undefined ? {} : { labelObjectId: luaEffect.labelObjectId }),
+    ...(luaEffect.labelObjectUid === undefined ? {} : { labelObjectUid: luaEffect.labelObjectUid }),
+    ...(luaEffect.labelObjectUids === undefined ? {} : { labelObjectUids: [...luaEffect.labelObjectUids] }),
+  };
+}
+
+function restoreLuaEffectMetadata(hostState: LuaHostState, luaEffect: LuaEffectRecord, metadata: ReturnType<typeof luaEffectMetadata>): void {
+  if (metadata.label === undefined) delete luaEffect.label;
+  else luaEffect.label = metadata.label;
+  if (metadata.labels === undefined) delete luaEffect.labels;
+  else luaEffect.labels = [...metadata.labels];
+  if (metadata.labelObjectId === undefined) delete luaEffect.labelObjectId;
+  else luaEffect.labelObjectId = metadata.labelObjectId;
+  if (metadata.labelObjectUid === undefined) delete luaEffect.labelObjectUid;
+  else luaEffect.labelObjectUid = metadata.labelObjectUid;
+  if (metadata.labelObjectUids === undefined) delete luaEffect.labelObjectUids;
+  else luaEffect.labelObjectUids = [...metadata.labelObjectUids];
+  syncRegisteredDuelEffectLabels(hostState, luaEffect);
+  syncRegisteredDuelEffectLabelObject(hostState, luaEffect);
 }
 
 function callLuaEffectCardTargetPredicate(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, ctx: DuelEffectContext, card: DuelCardInstance): boolean {
