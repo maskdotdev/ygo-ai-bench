@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 38;
+const statFixtureCount = 39;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
-  battleTargetAttackBoost: 2,
+  battleTargetAttackBoost: 3,
   damageStepBattleTargetAttributeAttackBoost: 2,
   diceChainAttackUpdate: 1,
   diceGroupAttackDefenseUpdate: 1,
@@ -41,6 +41,7 @@ const statKindCounts = {
 const statSemanticVariantCounts = {
   aForcesMatchingRaceCountStat: 1,
   alLumirajLevelOrRankFieldStat: 1,
+  aromageBergamotRecoverPierceStat: 1,
   aojGaradholgDuelBattleTargetAttributeStat: 1,
   bladeflyFieldAttributeAttackUpdate: 1,
   bootUpSoldierGadgetConditionAttackUpdate: 1,
@@ -83,6 +84,7 @@ type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damag
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
+  | "aromageBergamotRecoverPierceStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
   | "bladeflyFieldAttributeAttackUpdate"
   | "blackwingGaleProcedureFinalStatHalve"
@@ -338,6 +340,20 @@ function statFixtureFiles(): Array<{
         "expect(restoredDamageCalc.session.state.battleDamage).toEqual({ 0: 0, 1: 2800 })",
         'eventName: "battleDamageDealt"',
         'location: "banished"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-aromage-bergamot-recover-pierce-stat.test.ts",
+      kind: "battleTargetAttackBoost",
+      required: [
+        'const bergamotCode = "85967160"',
+        "restores EVENT_RECOVER ATK/DEF boost and LP-gated Plant piercing battle damage",
+        "e1:SetCode(EFFECT_PIERCE)",
+        "e2:SetCode(EVENT_RECOVER)",
+        "return Duel.GetLP(tp)>Duel.GetLP(1-tp)",
+        "eventName: \"recoveredLifePoints\"",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === bergamot.uid), restoredTrigger.session.state)).toBe(3400)",
+        "battleDamage[1]).toBe(1400)",
       ],
     },
     {
@@ -736,6 +752,19 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-aromage-bergamot-recover-pierce-stat.test.ts",
+      kind: "aromageBergamotRecoverPierceStat",
+      required: [
+        'const bergamotCode = "85967160"',
+        "restores EVENT_RECOVER ATK/DEF boost and LP-gated Plant piercing battle damage",
+        "e1:SetCode(EFFECT_PIERCE)",
+        "e2:SetCode(EVENT_RECOVER)",
+        'effectId: "lua-2-1112"',
+        "eventReasonEffectId: 3",
+        "players[1].lifePoints).toBe(6600)",
+      ],
+    },
+    {
       file: "test/lua-real-script-al-lumiraj-level-rank-field-stat.test.ts",
       kind: "alLumirajLevelOrRankFieldStat",
       required: [
@@ -1131,6 +1160,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
     {
       aForcesMatchingRaceCountStat: 0,
       alLumirajLevelOrRankFieldStat: 0,
+      aromageBergamotRecoverPierceStat: 0,
       aojGaradholgDuelBattleTargetAttributeStat: 0,
       bladeflyFieldAttributeAttackUpdate: 0,
       bootUpSoldierGadgetConditionAttackUpdate: 0,
