@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 250;
+export const operationFixtureCount = 251;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -101,6 +101,7 @@ export const operationKindCounts = {
   handCountReviveMaterialStatLock: 1,
   deckCostLabelStatDestroyedSummon: 1,
   changeCodeSummonSendFieldStat: 1,
+  linkChangeCodeGraveToHand: 1,
   equipGraveOptionToDeck: 1,
   pzoneAttackAnnounceStat: 1,
   twoTargetPositionCopyStat: 1,
@@ -291,6 +292,7 @@ export type OperationKind =
   | "handCountReviveMaterialStatLock"
   | "deckCostLabelStatDestroyedSummon"
   | "changeCodeSummonSendFieldStat"
+  | "linkChangeCodeGraveToHand"
   | "equipGraveOptionToDeck"
   | "pzoneAttackAnnounceStat"
   | "twoTargetPositionCopyStat"
@@ -1342,6 +1344,33 @@ export function operationFixtureFiles(): Array<{
         "confirmed 1:",
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-avendread-savior-code-tohand.test.ts",
+      kind: "linkChangeCodeGraveToHand",
+      required: [
+        "restores MZONE Revendread Slayer code and targeted Vendread grave-to-hand search",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsRace,RACE_ZOMBIE),2,2)",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e1:SetRange(LOCATION_MZONE)",
+        "e1:SetValue(4388680)",
+        "e2:SetCategory(CATEGORY_TOHAND)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return c:IsSetCard(SET_VENDREAD) and c:IsAbleToHand()",
+        "Duel.IsExistingTarget(s.thfilter,tp,LOCATION_GRAVE,0,1,nil)",
+        "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOHAND,sg,#sg,0,0)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "e3:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "Duel.SelectMatchingCard(tp,s.atkcfilter,tp,LOCATION_DECK,0,1,1,nil):GetFirst()",
+        "Duel.SendtoGrave(tc,REASON_COST)",
+        "e:SetLabel(tc:GetLevel())",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "operationInfos",
+        "currentCardCodes",
+        'eventName: "becameTarget"',
+        'eventName: "sentToHand"',
       ],
     },
     {
@@ -4414,6 +4443,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handCountReviveMaterialStatLock: 0,
       deckCostLabelStatDestroyedSummon: 0,
       changeCodeSummonSendFieldStat: 0,
+      linkChangeCodeGraveToHand: 0,
       equipGraveOptionToDeck: 0,
       pzoneAttackAnnounceStat: 0,
       twoTargetPositionCopyStat: 0,
