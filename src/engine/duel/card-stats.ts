@@ -35,7 +35,7 @@ export function cardLink(card: DuelCardInstance | undefined): number {
 
 export function currentAttack(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[7] !== undefined) return card.assumedProperties[7];
-  const finalAttack = currentOrderedStat(card, state, currentBaseAttack(card, state) + (card?.attackModifier ?? 0), { update: 100, set: 101, setFinal: 102 });
+  const finalAttack = currentOrderedStat(card, state, currentBaseAttack(card, state) + (card?.attackModifier ?? 0), { update: 100, set: 101, setFinal: [102, 111] });
   return battleStatEffectValue(card, state) ?? finalAttack;
 }
 
@@ -47,7 +47,7 @@ export function currentAttackWithoutEffect(card: DuelCardInstance | undefined, s
 
 export function currentDefense(card: DuelCardInstance | undefined, state?: DuelState): number {
   if (card?.assumedProperties?.[8] !== undefined) return card.assumedProperties[8];
-  return currentOrderedStat(card, state, currentBaseDefense(card, state) + (card?.defenseModifier ?? 0), { update: 104, set: 105, setFinal: 106 });
+  return currentOrderedStat(card, state, currentBaseDefense(card, state) + (card?.defenseModifier ?? 0), { update: 104, set: 105, setFinal: [106, 112] });
 }
 
 export function currentBaseAttack(card: DuelCardInstance | undefined, state?: DuelState, excludedEffectId?: string): number {
@@ -143,12 +143,13 @@ function currentOrderedStat(
   card: DuelCardInstance | undefined,
   state: DuelState | undefined,
   baseValue: number,
-  codes: { update: number; set: number; setFinal: number },
+  codes: { update: number; set: number; setFinal: number | number[] },
   excludedEffectId?: string,
 ): number {
   if (!card || !state) return baseValue;
   let value = baseValue;
-  for (const { effect, ctx } of matchingStatEffects(card, state, [codes.update, codes.set, codes.setFinal], excludedEffectId)) {
+  const setFinalCodes = Array.isArray(codes.setFinal) ? codes.setFinal : [codes.setFinal];
+  for (const { effect, ctx } of matchingStatEffects(card, state, [codes.update, codes.set, ...setFinalCodes], excludedEffectId)) {
     const effectValue = statEffectValue(card, state, effect, ctx);
     if (effectValue === undefined) continue;
     if (effect.code === codes.update) value += effectValue;

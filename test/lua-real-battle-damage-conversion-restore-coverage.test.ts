@@ -4,12 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDamageConversionFixtureCount = 7;
+const battleDamageConversionFixtureCount = 8;
 const battleDamageConversionKindCounts: Record<BattleDamageConversionKind, number> = {
   alsoBattleDamage: 1,
   battleDamageToEffect: 1,
   bothBattleDamage: 1,
-  changeBattleDamage: 3,
+  changeBattleDamage: 4,
   reflectBattleDamage: 1,
 };
 const battleDamageConversionSemanticVariantCounts: Record<BattleDamageConversionSemanticVariant, number> = {
@@ -17,6 +17,7 @@ const battleDamageConversionSemanticVariantCounts: Record<BattleDamageConversion
   gravekeepersVassalBattleDamageToEffect: 1,
   majespecterSonicsFinalStatHalfDamage: 1,
   numberC96AlsoBattleDamage: 1,
+  skullgiosBattleConfirmSwapPierceDamage: 1,
   smokeMosquitoPreDamageHalfBattleDamage: 1,
   speedroidHexasaucerBothBattleDamage: 1,
   susaSoldierHalfBattleDamage: 1,
@@ -87,6 +88,7 @@ type BattleDamageConversionSemanticVariant =
   | "gravekeepersVassalBattleDamageToEffect"
   | "majespecterSonicsFinalStatHalfDamage"
   | "numberC96AlsoBattleDamage"
+  | "skullgiosBattleConfirmSwapPierceDamage"
   | "smokeMosquitoPreDamageHalfBattleDamage"
   | "speedroidHexasaucerBothBattleDamage"
   | "susaSoldierHalfBattleDamage";
@@ -108,6 +110,7 @@ function countBattleDamageConversionSemanticVariants(
       gravekeepersVassalBattleDamageToEffect: 0,
       majespecterSonicsFinalStatHalfDamage: 0,
       numberC96AlsoBattleDamage: 0,
+      skullgiosBattleConfirmSwapPierceDamage: 0,
       smokeMosquitoPreDamageHalfBattleDamage: 0,
       speedroidHexasaucerBothBattleDamage: 0,
       susaSoldierHalfBattleDamage: 0,
@@ -222,6 +225,20 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; kind: Battl
         "eventValue: 750",
       ],
     },
+    {
+      file: "lua-real-script-skullgios-battle-confirm-swap-pierce.test.ts",
+      kind: "changeBattleDamage",
+      required: [
+        "Fossil Dragon Skullgios battle-confirm swap pierce",
+        "EFFECT_CHANGE_BATTLE_DAMAGE",
+        "DOUBLE_DAMAGE",
+        "code: 208",
+        "battleDamage).toEqual({ 0: 0, 1: 5000 })",
+        "players[1].lifePoints).toBe(3000)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 5000",
+      ],
+    },
   ] satisfies Array<{ file: string; kind: BattleDamageConversionKind; required: string[] }>)
     .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
@@ -268,6 +285,18 @@ function battleDamageConversionSemanticVariants(): Array<{
         "battleDamage).toEqual({ 0: 800, 1: 800 })",
         "eventCardUid: target!.uid",
         "eventCardUid: darkStorm!.uid",
+      ],
+    },
+    {
+      file: "lua-real-script-skullgios-battle-confirm-swap-pierce.test.ts",
+      kind: "skullgiosBattleConfirmSwapPierceDamage",
+      required: [
+        'const skullgiosCode = "21225115"',
+        "restores battle-confirm final ATK/DEF swap into piercing doubled battle damage",
+        "EFFECT_SWAP_ATTACK_FINAL",
+        "EFFECT_SWAP_DEFENSE_FINAL",
+        "EFFECT_CHANGE_BATTLE_DAMAGE",
+        "eventValue: 5000",
       ],
     },
     {

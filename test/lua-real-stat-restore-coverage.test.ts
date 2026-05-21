@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 57;
+const statFixtureCount = 58;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
   battleTargetAttackBoost: 3,
   battleTargetStatReset: 1,
+  battleConfirmFinalSwapPierceDamage: 1,
   battleStartFinalStatHalve: 1,
   damageStepBattleTargetAttributeAttackBoost: 2,
   damageStepMachineStatDamagePrevention: 1,
@@ -66,6 +67,7 @@ const statSemanticVariantCounts = {
   dinoSewingBattleTargetStatReset: 1,
   steelCavalryBattleStartFinalStat: 1,
   scoreMelodiousPrecalcFinalStat: 1,
+  skullgiosBattleConfirmSwapPierceDamage: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
   armoredKappaOptionBattleProtection: 1,
@@ -112,7 +114,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleStartFinalStatHalve" | "battleTargetAttackBoost" | "battleTargetStatReset" | "battleConfirmFinalSwapPierceDamage" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "overlayDetachTargetStatTriggerLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "summonBaseAttackDefenseFlaggedHalve" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -155,6 +157,7 @@ type StatSemanticVariant =
   | "rushRecklesslyTargetedDamageStepAttackUpdate"
   | "sangaPreDamageFinalAttackZero"
   | "scoreMelodiousPrecalcFinalStat"
+  | "skullgiosBattleConfirmSwapPierceDamage"
   | "shieldSwordSwapBaseAd"
   | "slateWarriorBattleDestroyedStatDrop"
   | "steadyHandsFinalStatDirectLock"
@@ -494,6 +497,21 @@ function statFixtureFiles(): Array<{
         "EFFECT_SET_DEFENSE_FINAL",
         "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === cavalry.uid), restoredTrigger.session.state)).toBe(800)",
         "battleDamage).toEqual({ 0: 400, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-skullgios-battle-confirm-swap-pierce.test.ts",
+      kind: "battleConfirmFinalSwapPierceDamage",
+      required: [
+        'const skullgiosCode = "21225115"',
+        "restores battle-confirm final ATK/DEF swap into piercing doubled battle damage",
+        "EVENT_BATTLE_CONFIRM",
+        "EFFECT_SWAP_ATTACK_FINAL",
+        "EFFECT_SWAP_DEFENSE_FINAL",
+        "EFFECT_CHANGE_BATTLE_DAMAGE",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === defender.uid), restoredTrigger.session.state)).toBe(2500)",
+        "currentDefense(restoredTrigger.session.state.cards.find((card) => card.uid === defender.uid), restoredTrigger.session.state)).toBe(1000)",
+        "battleDamage).toEqual({ 0: 0, 1: 5000 })",
       ],
     },
     {
@@ -1018,6 +1036,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       battleStartFinalStatHalve: 0,
       battleTargetAttackBoost: 0,
       battleTargetStatReset: 0,
+      battleConfirmFinalSwapPierceDamage: 0,
       damageStepBattleTargetAttributeAttackBoost: 0,
       damageStepMachineStatDamagePrevention: 0,
       diceChainAttackUpdate: 0,
@@ -1408,6 +1427,23 @@ function statSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-skullgios-battle-confirm-swap-pierce.test.ts",
+      kind: "skullgiosBattleConfirmSwapPierceDamage",
+      required: [
+        'const skullgiosCode = "21225115"',
+        "Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsRace,RACE_ROCK),s.matfilter)",
+        "EVENT_BATTLE_CONFIRM",
+        "bc:IsRelateToBattle() and bc:HasDefense()",
+        "EFFECT_SWAP_ATTACK_FINAL",
+        "EFFECT_SWAP_DEFENSE_FINAL",
+        "EFFECT_PIERCE",
+        "EFFECT_CHANGE_BATTLE_DAMAGE",
+        "value: 2500",
+        "value: 1000",
+        "eventValue: 5000",
+      ],
+    },
+    {
       file: "test/lua-real-script-worm-dimikles-flip-stat.test.ts",
       kind: "wormDimiklesFlipSelfStat",
       required: [
@@ -1774,6 +1810,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       rushRecklesslyTargetedDamageStepAttackUpdate: 0,
       sangaPreDamageFinalAttackZero: 0,
       scoreMelodiousPrecalcFinalStat: 0,
+      skullgiosBattleConfirmSwapPierceDamage: 0,
       blackwingGaleProcedureFinalStatHalve: 0,
       shieldSwordSwapBaseAd: 0,
       slateWarriorBattleDestroyedStatDrop: 0,
