@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 232;
+export const operationFixtureCount = 233;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -64,7 +64,7 @@ export const operationKindCounts = {
   discardCostGraveToDeckTop: 1,
   discardCostSpecialSearchReleaseStat: 1,
   targetStatImmuneSelfBanishSearch: 1,
-  trapMonsterStatSummonRedirect: 1,
+  trapMonsterStatSummonRedirect: 2,
   directDamage: 1,
   detachDirectDamage: 1,
   detachDisableFinalStat: 1,
@@ -897,6 +897,36 @@ export function operationFixtureFiles(): Array<{
         'eventName: "specialSummoned"',
         "currentAttack",
         "currentDefense",
+        "effect.code === 60",
+      ],
+    },
+    {
+      file: "test/lua-real-script-paleozoic-eldonia-update-trap-monster.test.ts",
+      kind: "trapMonsterStatSummonRedirect",
+      required: [
+        "restores target ATK/DEF update and graveyard Trap response into self trap-monster redirect",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetCode(EVENT_CHAINING)",
+        "return re:IsTrapEffect() and re:IsHasType(EFFECT_TYPE_ACTIVATE)",
+        "Duel.IsPlayerCanSpecialSummonMonster(tp,id,SET_PALEOZOIC,TYPE_MONSTER|TYPE_NORMAL,1200,0,2,RACE_AQUA,ATTRIBUTE_WATER)",
+        "c:AddMonsterAttribute(TYPE_NORMAL)",
+        "c:AssumeProperty(ASSUME_RACE,RACE_AQUA)",
+        "Duel.SpecialSummonStep(c,0,tp,tp,true,false,POS_FACEUP)",
+        "c:AddMonsterAttributeComplete()",
+        "EFFECT_IMMUNE_EFFECT",
+        "EFFECT_LEAVE_FIELD_REDIRECT",
+        "Duel.SpecialSummonComplete()",
+        "operationInfos",
+        'eventName: "becameTarget"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+        "immune-effect:monster-effects",
         "effect.code === 60",
       ],
     },
