@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 269;
+export const operationFixtureCount = 270;
 export const operationKindCounts = {
   activateDestroyPossibleSummonOptionalStat: 1,
   announceChangeCode: 1,
@@ -43,6 +43,7 @@ export const operationKindCounts = {
   crossFieldSpellTrapDestroyDualTokenStat: 1,
   releaseTargetZeroBattleBurn: 1,
   detachBattleDestroyBurnAtkDestroyedBurn: 1,
+  detachSpellTrapDestroySelfStat: 1,
   banishedToGraveReturn: 1,
   banishedToHand: 2,
   banishedMachineDeckLinkedDisable: 1,
@@ -251,6 +252,7 @@ export type OperationKind =
   | "crossFieldSpellTrapDestroyDualTokenStat"
   | "releaseTargetZeroBattleBurn"
   | "detachBattleDestroyBurnAtkDestroyedBurn"
+  | "detachSpellTrapDestroySelfStat"
   | "banishedToGraveReturn"
   | "banishedToHand"
   | "banishedMachineDeckLinkedDisable"
@@ -420,6 +422,26 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-garunix-eternity-detach-destroy-stat.test.ts",
+      kind: "detachSpellTrapDestroySelfStat",
+      required: [
+        "restores detach-cost Spell/Trap destruction into self ATK update",
+        "Xyz.AddProcedure(c,nil,8,2,nil,nil,Xyz.InfiniteMats)",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_ATKCHANGE)",
+        "e2:SetCost(Cost.DetachFromSelf(1,1,nil))",
+        "return chkc:IsOnField() and chkc:IsSpellTrap()",
+        "Duel.SelectTarget(tp,Card.IsSpellTrap,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,e:GetHandler(),1,tp,500)",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "c:UpdateAttack(500)",
+        "operationInfos",
+        'eventName: "detachedMaterial"',
+        'eventName: "destroyed"',
+        "currentAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-shattered-colorless-realm-destroy-stat.test.ts",
       kind: "activateDestroyPossibleSummonOptionalStat",
@@ -4804,6 +4826,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       crossFieldSpellTrapDestroyDualTokenStat: 0,
       releaseTargetZeroBattleBurn: 0,
       detachBattleDestroyBurnAtkDestroyedBurn: 0,
+      detachSpellTrapDestroySelfStat: 0,
       banishedToGraveReturn: 0,
       banishedToHand: 0,
       banishedMachineDeckLinkedDisable: 0,
