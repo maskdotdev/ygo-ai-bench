@@ -111,15 +111,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasGreatTornadoS
         reason: duelReason.material | duelReason.fusion,
       });
     }
-    expect(restoredTrigger.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
+    expect(restoredTrigger.session.state.pendingTriggers.map((trigger) => ({
+      sourceUid: trigger.sourceUid,
+      player: trigger.player,
+      triggerBucket: trigger.triggerBucket,
+      eventName: trigger.eventName,
+      eventCode: trigger.eventCode,
+      eventCardUid: trigger.eventCardUid,
+    }))).toEqual([
+      {
         sourceUid: greatTornado.uid,
         player: 0,
         triggerBucket: "turnMandatory",
         eventName: "specialSummoned",
         eventCode: 1102,
         eventCardUid: greatTornado.uid,
-      }),
+      },
     ]);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === greatTornado.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();

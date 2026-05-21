@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 23;
+const negationFixtureCount = 24;
 const chainResponseNegationFixtureCount = 19;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 27;
+const negationInventoryFixtureCount = 28;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 15,
+  chainNegateToGrave: 16,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -31,6 +31,7 @@ const negationSemanticVariantCounts = {
   effectVeilerHandQuickDisableChainLink: 1,
   faceOffDamagePhaseCurrentPhaseNegateDestroy: 1,
   ghostOgreDestroyOnlyNoNegation: 1,
+  gGolemDignifiedTargetedLinkNegateDestroy: 1,
   giltiGearfriedTargetedChainNegateDestroy: 1,
   heraldPerfectionDamageCalculationNegateDestroy: 1,
   ironCoreLusterConfirmCostNegateDestroy: 1,
@@ -72,6 +73,7 @@ type NegationSemanticVariant =
   | "effectVeilerHandQuickDisableChainLink"
   | "faceOffDamagePhaseCurrentPhaseNegateDestroy"
   | "ghostOgreDestroyOnlyNoNegation"
+  | "gGolemDignifiedTargetedLinkNegateDestroy"
   | "giltiGearfriedTargetedChainNegateDestroy"
   | "heraldPerfectionDamageCalculationNegateDestroy"
   | "ironCoreLusterConfirmCostNegateDestroy"
@@ -215,6 +217,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-divine-wrath-monster-negate.test.ts",
     "lua-real-script-effect-veiler-chain-disable.test.ts",
     "lua-real-script-face-off-damage-phase-negate.test.ts",
+    "lua-real-script-g-golem-dignified-trilithon-target-link-negate.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-gilti-gearfried-target-chain-negate.test.ts",
     "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
@@ -246,6 +249,7 @@ function realScriptNegationFixtureFiles(): string[] {
 function realScriptChainResponseNegationFixtureFiles(): string[] {
   return realScriptNegationFixtureFiles()
     .filter((file) => !file.endsWith("lua-real-script-ash-blossom-chain-negate.test.ts"))
+    .filter((file) => !file.endsWith("lua-real-script-g-golem-dignified-trilithon-target-link-negate.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-gilti-gearfried-target-chain-negate.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-pollinosis-release-activation-negate.test.ts"))
     .filter((file) => !file.endsWith("lua-real-script-spright-red-release-link2-negate.test.ts"));
@@ -287,6 +291,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-face-off-damage-phase-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-g-golem-dignified-trilithon-target-link-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -479,6 +487,21 @@ function negationSemanticVariants(): Array<{
         'const ghostOgreCode = "59438930"',
         "restores its hand response, destroys the related field source, and does not negate that chain link",
         '["chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([])',
+      ],
+    },
+    {
+      file: "lua-real-script-g-golem-dignified-trilithon-target-link-negate.test.ts",
+      kind: "gGolemDignifiedTargetedLinkNegateDestroy",
+      required: [
+        'const gGolemCode = "50546029"',
+        "restores targeted Link chain response negation, source destruction, and suppressed operation",
+        "tg and tg:IsExists(s.tfilter,1,nil,tp) and Duel.IsChainDisablable(ev)",
+        "return c:IsFaceup() and c:IsLocation(LOCATION_MZONE) and c:IsType(TYPE_LINK) and c:IsControler(tp)",
+        "Duel.NegateEffect(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        'eventName: "becameTarget"',
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("g golem targeting starter resolved")',
       ],
     },
     {
@@ -761,6 +784,7 @@ function countNegationSemanticVariants(
       effectVeilerHandQuickDisableChainLink: 0,
       faceOffDamagePhaseCurrentPhaseNegateDestroy: 0,
       ghostOgreDestroyOnlyNoNegation: 0,
+      gGolemDignifiedTargetedLinkNegateDestroy: 0,
       giltiGearfriedTargetedChainNegateDestroy: 0,
       heraldPerfectionDamageCalculationNegateDestroy: 0,
       ironCoreLusterConfirmCostNegateDestroy: 0,

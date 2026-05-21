@@ -108,8 +108,14 @@ describe.skipIf(!hasUpstreamScripts || !hasDivineEvolutionScript)("Lua real scri
       },
       { code: effectAddType, event: "continuous", range: ["monsterZone"], reset: { flags: 33427456 }, sourceUid: ra.uid, value: typeEffect },
     ]);
-    expect(restoredOpen.session.state.flagEffects.filter((flag) => flag.ownerType === "card" && flag.ownerId === ra.uid && flag.code === Number(divineEvolutionCode))).toEqual([
-      expect.objectContaining({ ownerType: "card", ownerId: ra.uid, code: Number(divineEvolutionCode), reset: 33427456, value: 0 }),
+    expect(restoredOpen.session.state.flagEffects.filter((flag) => flag.ownerType === "card" && flag.ownerId === ra.uid && flag.code === Number(divineEvolutionCode)).map((flag) => ({
+      ownerType: flag.ownerType,
+      ownerId: flag.ownerId,
+      code: flag.code,
+      reset: flag.reset,
+      value: flag.value,
+    }))).toEqual([
+      { ownerType: "card", ownerId: ra.uid, code: Number(divineEvolutionCode), reset: 33427456, value: 0 },
     ]);
 
     restoredOpen.session.state.phase = "battle";
@@ -120,14 +126,20 @@ describe.skipIf(!hasUpstreamScripts || !hasDivineEvolutionScript)("Lua real scri
     const attack = getLuaRestoreLegalActions(restoredBattle, 0).find((action) => action.type === "declareAttack" && action.attackerUid === ra.uid && action.targetUid === opponentMonster.uid);
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredBattle, attack!);
-    expect(restoredBattle.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
+    expect(restoredBattle.session.state.pendingTriggers.map((trigger) => ({
+      sourceUid: trigger.sourceUid,
+      player: trigger.player,
+      triggerBucket: trigger.triggerBucket,
+      eventName: trigger.eventName,
+      eventCardUid: trigger.eventCardUid,
+    }))).toEqual([
+      {
         sourceUid: ra.uid,
         player: 0,
         triggerBucket: "turnOptional",
         eventName: "attackDeclared",
         eventCardUid: ra.uid,
-      }),
+      },
     ]);
 
     const restoredAttack = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), workspace, reader);
@@ -143,15 +155,22 @@ describe.skipIf(!hasUpstreamScripts || !hasDivineEvolutionScript)("Lua real scri
       reasonPlayer: 1,
       reasonCardUid: ra.uid,
     });
-    expect(restoredAttack.session.state.eventHistory.filter((event) => event.eventName === "moved" && event.eventCardUid === opponentMonster.uid)).toEqual([
-      expect.objectContaining({
+    expect(restoredAttack.session.state.eventHistory.filter((event) => event.eventName === "moved" && event.eventCardUid === opponentMonster.uid).map((event) => ({
+      eventName: event.eventName,
+      eventCode: event.eventCode,
+      eventCardUid: event.eventCardUid,
+      eventReason: event.eventReason,
+      eventReasonPlayer: event.eventReasonPlayer,
+      eventReasonCardUid: event.eventReasonCardUid,
+    }))).toEqual([
+      {
         eventName: "moved",
         eventCode: 1030,
         eventCardUid: opponentMonster.uid,
         eventReason: duelReason.rule,
         eventReasonPlayer: 1,
         eventReasonCardUid: ra.uid,
-      }),
+      },
     ]);
   });
 });

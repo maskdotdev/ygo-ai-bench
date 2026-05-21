@@ -106,7 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ro
     const rhinoAction = getLuaRestoreLegalActions(restoredResponse, 1).find((action) => action.type === "activateEffect" && action.uid === rhino.uid);
     expect(rhinoAction, JSON.stringify(getLuaRestoreLegalActions(restoredResponse, 1), null, 2)).toBeDefined();
     applyRestoredAction(restoredResponse, rhinoAction!);
-    expect(restoredResponse.session.state.chain[1]).toMatchObject({
+    expect(restoredResponse.session.state.chain[1]).toEqual({
       id: "chain-3",
       chainIndex: 2,
       effectId: "lua-3-1027",
@@ -122,6 +122,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ro
       eventChainDepth: 1,
       eventChainLinkId: "chain-2",
       eventCardUid: starter.uid,
+      eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+      eventCurrentState: { controller: 0, faceUp: true, location: "spellTrapZone", position: "faceDown", sequence: 0 },
       operationInfos: [
         { category: 0x2000000, targetUids: [], count: 1, player: 1, parameter: 0 },
         { category: 0x200000, targetUids: [rhino.uid], count: 1, player: 1, parameter: 500 },

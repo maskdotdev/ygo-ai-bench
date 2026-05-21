@@ -102,8 +102,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasSkullgiosScri
     finishBattle(restoredDamage);
     expect(restoredDamage.session.state.battleDamage).toEqual({ 0: 0, 1: 5000 });
     expect(restoredDamage.session.state.players[1].lifePoints).toBe(3000);
-    expect(restoredDamage.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
-      expect.objectContaining({
+    expect(restoredDamage.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt").map((event) => ({
+      eventName: event.eventName,
+      eventCardUid: event.eventCardUid,
+      eventPlayer: event.eventPlayer,
+      eventValue: event.eventValue,
+      eventReason: event.eventReason,
+      eventReasonPlayer: event.eventReasonPlayer,
+      eventReasonCardUid: event.eventReasonCardUid,
+    }))).toEqual([
+      {
         eventName: "battleDamageDealt",
         eventCardUid: skullgios.uid,
         eventPlayer: 1,
@@ -111,7 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasSkullgiosScri
         eventReason: duelReason.battle,
         eventReasonPlayer: 0,
         eventReasonCardUid: skullgios.uid,
-      }),
+      },
     ]);
   });
 });
