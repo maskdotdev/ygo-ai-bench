@@ -1,7 +1,8 @@
 import path from "node:path";
 
-export const operationFixtureCount = 294;
+export const operationFixtureCount = 295;
 export const operationKindCounts = {
+  standbyStatDestroyRecover: 1,
   targetDestroyOptionalBreakAttackAnnounceStat: 1,
   activateDestroyPossibleSummonOptionalStat: 1,
   graveTriggerBranchSummonStatDestroy: 1,
@@ -235,6 +236,7 @@ export const operationKindCounts = {
   tossDiceHandDiscard: 1,
 } satisfies Record<OperationKind, number>;
 export type OperationKind =
+  | "standbyStatDestroyRecover"
   | "targetDestroyOptionalBreakAttackAnnounceStat"
   | "activateDestroyPossibleSummonOptionalStat"
   | "graveTriggerBranchSummonStatDestroy"
@@ -470,6 +472,33 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-gingerbread-house-standby-stat-destroy-recover.test.ts",
+      kind: "standbyStatDestroyRecover",
+      required: [
+        "restores opponent Standby ATK gain into BreakEffect destroy and recovery count",
+        "e1:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e2:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_DESTROY)",
+        "e2:SetCode(EVENT_PHASE|PHASE_STANDBY)",
+        "e2:SetRange(LOCATION_SZONE)",
+        "return Duel.IsTurnPlayer(1-tp)",
+        "return c:IsFaceup() and c:GetAttack()+600>=2500",
+        "Duel.GetMatchingGroup(s.desfilter,tp,0,LOCATION_MZONE,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "for tc in aux.Next(g) do",
+        "tc:UpdateAttack(600,nil,c)==600",
+        "local dg=g:Filter(Card.IsAttackAbove,nil,2500)",
+        "Duel.BreakEffect()",
+        "local ct=Duel.Destroy(dg,REASON_EFFECT)",
+        "Duel.Recover(tp,ct*500,REASON_EFFECT)",
+        'eventName: "phaseStandby"',
+        'eventName: "breakEffect"',
+        'eventName: "destroyed"',
+        'eventName: "recoveredLifePoints"',
+        "currentAttack",
+        "operationInfos",
+      ],
+    },
     {
       file: "test/lua-real-script-mementotlan-fracture-dance-destroy-attack-stat.test.ts",
       kind: "targetDestroyOptionalBreakAttackAnnounceStat",
@@ -5431,6 +5460,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       return counts;
     },
     {
+      standbyStatDestroyRecover: 0,
       targetDestroyOptionalBreakAttackAnnounceStat: 0,
       activateDestroyPossibleSummonOptionalStat: 0,
       graveTriggerBranchSummonStatDestroy: 0,

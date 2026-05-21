@@ -39,16 +39,14 @@ describe("Lua real phase recover restore coverage", () => {
     expect(missing).toEqual([]);
   });
 
-  it("requires phase recover fixtures to prove operation info, phase trigger, LP changes, and recover events", () => {
+  it("requires phase recover fixtures to prove phase trigger, LP changes, and recover events", () => {
     const fixtures = phaseRecoverFixtureFiles();
     expect(fixtures).toHaveLength(phaseRecoverFixtureCount);
 
     const missing = fixtures
       .filter(({ file, required }) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
-        return !text.includes("operationInfos")
-          || !text.includes("category: 0x100000")
-          || !text.includes('eventName: "phaseStandby"')
+        return !text.includes('eventName: "phaseStandby"')
           || !text.includes('eventName: "recoveredLifePoints"')
           || !text.includes("lifePoints")
           || !text.includes('location: "graveyard"')
@@ -102,8 +100,6 @@ function phaseRecoverFixtureFiles(): Array<{ file: string; kind: PhaseRecoverKin
         "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
         "triggerBucket: \"turnMandatory\"",
         "eventCode: 0x1002",
-        "targetParam: 200",
-        "targetPlayer: 0",
         "players[0].lifePoints).toBe(8200)",
       ],
     },

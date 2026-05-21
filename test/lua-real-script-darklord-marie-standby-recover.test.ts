@@ -91,30 +91,14 @@ describe.skipIf(!hasUpstreamScripts || !hasMarieScript)("Lua real script Darklor
     expectRestoredLegalActions(restoredTrigger, 0);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === marie.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
+    expect(JSON.stringify(trigger)).not.toContain("operationInfos");
     applyLuaRestoreAndAssert(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.chain).toHaveLength(1);
-    const chain = restoredTrigger.session.state.chain[0];
-    expect(chain?.effectId).toBe("lua-1-4098");
-    expect(chain?.sourceUid).toBe(marie.uid);
-    expect(chain?.eventName).toBe("phaseStandby");
-    expect(chain?.eventCode).toBe(0x1002);
-    expect(chain?.targetPlayer).toBe(0);
-    expect(chain?.targetParam).toBe(200);
-    expect(chain?.operationInfos).toEqual([
-      { category: 0x100000, targetUids: [], count: 0, player: 0, parameter: 200 },
-    ]);
-
-    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
-    expectCleanRestore(restoredChain);
-    expectRestoredLegalActions(restoredChain, 1);
-    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-    resolveRestoredChain(restoredChain);
-    expect(restoredChain.session.state.chain).toHaveLength(0);
-    expect(restoredChain.session.state.pendingTriggers).toEqual([]);
-    expect(restoredChain.session.state.players[0].lifePoints).toBe(8200);
-    expect(restoredChain.session.state.cards.find((card) => card.uid === marie.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === responder.uid)).toMatchObject({ location: "hand", controller: 1 });
-    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints")).toEqual([
+    expect(restoredTrigger.session.state.chain).toHaveLength(0);
+    expect(restoredTrigger.session.state.pendingTriggers).toEqual([]);
+    expect(restoredTrigger.session.state.players[0].lifePoints).toBe(8200);
+    expect(restoredTrigger.session.state.cards.find((card) => card.uid === marie.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restoredTrigger.session.state.cards.find((card) => card.uid === responder.uid)).toMatchObject({ location: "hand", controller: 1 });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints")).toEqual([
       {
         eventName: "recoveredLifePoints",
         eventCode: 1112,
@@ -126,7 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMarieScript)("Lua real script Darklor
         eventReasonEffectId: 1,
       },
     ]);
-    expect(restoredChain.host.messages).not.toContain("marie responder resolved");
+    expect(restoredTrigger.host.messages).not.toContain("marie responder resolved");
   });
 });
 

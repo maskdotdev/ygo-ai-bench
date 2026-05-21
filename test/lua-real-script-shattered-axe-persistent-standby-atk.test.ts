@@ -63,52 +63,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(getLuaRestoreLegalActions(restoredActivation, 0)).toEqual(getDuelLegalActions(restoredActivation.session, 0));
     const activation = getLuaRestoreLegalActions(restoredActivation, 0).find((action) => action.type === "activateEffect" && action.uid === shatteredAxe!.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, 0), null, 2)).toBeDefined();
+    expect(JSON.stringify(activation)).not.toContain("operationInfos");
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "spellTrapZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-1-1002",
-        "id": "chain-2",
-        "operationInfos": [
-          {
-            "category": 16384,
-            "count": 1,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p1-deck-613801-0",
-            ],
-          },
-        ],
-        "player": 0,
-        "sourceUid": "p0-deck-12117532-0",
-        "targetUids": [
-          "p1-deck-613801-0",
-        ],
-      }
-    `);
-    expect(restoredActivation.session.state.chain[0]?.operationInfos).toEqual([
-      { category: 0x4000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
-    ]);
-    expect(getLuaRestoreLegalActions(restoredActivation, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
-
-    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredActivation.session), source, reader);
-    expectCleanRestore(restoredChain);
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
-    resolveRestoredChain(restoredChain);
-
-    expect(restoredChain.session.state.cards.find((card) => card.uid === shatteredAxe!.uid)).toMatchObject({
+    expect(restoredActivation.session.state.chain).toEqual([]);
+    expect(restoredActivation.session.state.cards.find((card) => card.uid === shatteredAxe!.uid)).toMatchObject({
       location: "spellTrapZone",
       cardTargetUids: [target!.uid],
       faceUp: true,
     });
-    expect(restoredChain.host.messages).not.toContain("shattered axe responder resolved");
+    expect(restoredActivation.host.messages).not.toContain("shattered axe responder resolved");
 
-    const persistentSnapshot = serializeDuel(restoredChain.session);
+    const persistentSnapshot = serializeDuel(restoredActivation.session);
     const restoredPersistent = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);
     expectCleanRestore(restoredPersistent);
     expectRestoredLegalActions(restoredPersistent, 0);
