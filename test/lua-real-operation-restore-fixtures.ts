@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 229;
+export const operationFixtureCount = 230;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -125,6 +125,7 @@ export const operationKindCounts = {
   searchOrExcavate: 39,
   selfEquipFromHand: 1,
   selfBanishTargetStat: 1,
+  selfSummonBanishDeckGraveStat: 1,
   setAttackFinalSpecialDamage: 1,
   setFinalStatDisableFlag: 1,
   setFinalStatDestroyCost: 1,
@@ -295,6 +296,7 @@ export type OperationKind =
   | "searchOrExcavate"
   | "selfEquipFromHand"
   | "selfBanishTargetStat"
+  | "selfSummonBanishDeckGraveStat"
   | "setAttackFinalSpecialDamage"
   | "setFinalStatDisableFlag"
   | "setFinalStatDestroyCost"
@@ -2626,6 +2628,35 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gizmek-arakami-self-summon-banish-stat.test.ts",
+      kind: "selfSummonBanishDeckGraveStat",
+      required: [
+        "restores hand condition self summon and grave self-banish target Deck send ATK/DEF gain",
+        "e1:SetCategory(CATEGORY_SPECIAL_SUMMON)",
+        "e1:SetRange(LOCATION_HAND)",
+        "return c:IsFaceup() and c:IsRace(RACE_MACHINE) and c:IsDefense(c:GetAttack())",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,c,1,tp,LOCATION_HAND)",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        "e2:SetCategory(CATEGORY_TOGRAVE+CATEGORY_ATKCHANGE+CATEGORY_DEFCHANGE)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.SelectTarget(tp,s.tgfilter,tp,LOCATION_MZONE,0,1,1,nil,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_TOGRAVE,nil,1,tp,LOCATION_DECK)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,1,tp,LOCATION_MZONE)",
+        "Duel.SetOperationInfo(0,CATEGORY_DEFCHANGE,g,1,tp,LOCATION_MZONE)",
+        "Duel.GetFirstTarget()",
+        "Duel.GetOperatedGroup():GetFirst():IsLocation(LOCATION_GRAVE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        'eventName: "specialSummoned"',
+        'eventName: "banished"',
+        'eventName: "becameTarget"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack",
+        "currentDefense",
+        "operationInfos",
+      ],
+    },
+    {
       file: "test/lua-real-script-heavy-storm-group-destroy.test.ts",
       kind: "groupDestroy",
       required: [
@@ -3846,6 +3877,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       searchOrExcavate: 0,
       selfEquipFromHand: 0,
       selfBanishTargetStat: 0,
+      selfSummonBanishDeckGraveStat: 0,
       setAttackFinalSpecialDamage: 0,
       setFinalStatDisableFlag: 0,
       setFinalStatDestroyCost: 0,
