@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 212;
+export const operationFixtureCount = 213;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -31,6 +31,7 @@ export const operationKindCounts = {
   banishedToDeckSelfSummon: 1,
   banishedToSpecialSummon: 1,
   battleDestroyedDeckSummon: 1,
+  battleRevealHandStat: 1,
   battleStatBurn: 1,
   battleTargetPositionDamageStat: 1,
   damageDeckdesAtk: 1,
@@ -184,6 +185,7 @@ export type OperationKind =
   | "banishedToDeckSelfSummon"
   | "banishedToSpecialSummon"
   | "battleDestroyedDeckSummon"
+  | "battleRevealHandStat"
   | "battleStatBurn"
   | "battleTargetPositionDamageStat"
   | "damageDeckdesAtk"
@@ -852,6 +854,32 @@ export function operationFixtureFiles(): Array<{
         'eventName: "damageDealt"',
         "players[1].lifePoints).toBe(6600)",
         "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-witchcrafter-verre-battle-reveal-stat.test.ts",
+      kind: "battleRevealHandStat",
+      required: [
+        "restores battle monster lookup into hand Spell reveal count ATK/DEF boost",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "local tc,bc=Duel.GetBattleMonster(tp)",
+        "tc:IsRace(RACE_SPELLCASTER)",
+        "Duel.IsExistingMatchingCard(s.rvfilt,tp,LOCATION_HAND,0,1,nil)",
+        "Duel.GetMatchingGroup(s.rvfilt,tp,LOCATION_HAND,0,nil)",
+        "sg:GetClassCount(Card.GetCode)",
+        "aux.SelectUnselectGroup(sg,e,tp,1,ct,aux.dncheck,1,tp,HINTMSG_CONFIRM)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "Duel.ShuffleHand(tp)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(#g*1000)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "Duel.IsExistingMatchingCard(Card.IsNegatableMonster,tp,0,LOCATION_MZONE,1,nil)",
+        "Duel.GetMatchingGroup(Card.IsNegatableMonster,tp,0,LOCATION_MZONE,nil)",
+        "tc:NegateEffects(c,RESET_PHASE|PHASE_END)",
+        "operationInfos",
+        "confirmed 1:",
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -3291,6 +3319,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       banishedToDeckSelfSummon: 0,
       banishedToSpecialSummon: 0,
       battleDestroyedDeckSummon: 0,
+      battleRevealHandStat: 0,
       battleStatBurn: 0,
       battleTargetPositionDamageStat: 0,
       chainNegateDiscardDestroy: 0,
