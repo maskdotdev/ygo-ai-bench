@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 37;
+const statFixtureCount = 38;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetAttackBoost: 2,
@@ -12,6 +12,7 @@ const statKindCounts = {
   diceChainAttackUpdate: 1,
   diceGroupAttackDefenseUpdate: 1,
   diceScaleUpdate: 1,
+  eventChangePositionTargetAttackDefenseDrop: 1,
   fieldLevelOrRankAttackDefenseUpdate: 1,
   fieldGroupCountStat: 2,
   fieldMatchingFaceupRaceCountStat: 2,
@@ -56,6 +57,7 @@ const statSemanticVariantCounts = {
   mirageKnightBattleTargetAtkEndPhaseBanish: 1,
   mildTurkeyDiceScaleUpdate: 1,
   mountainMultiRaceTargetBoolFunctionRaceStat: 1,
+  morphoButterspyPositionChangeTargetStat: 1,
   mukaMukaHandCountAttackDefense: 1,
   neoFlamvellSabreGraveCountThresholdStat: 1,
   perfectMachineKingMatchingFaceupRaceCountStat: 1,
@@ -77,7 +79,7 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
+type StatKind = "battleAttackerTargetSwing" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "selfFinalAttackEndDestroy" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
@@ -97,6 +99,7 @@ type StatSemanticVariant =
   | "mirageKnightBattleTargetAtkEndPhaseBanish"
   | "mildTurkeyDiceScaleUpdate"
   | "mountainMultiRaceTargetBoolFunctionRaceStat"
+  | "morphoButterspyPositionChangeTargetStat"
   | "mukaMukaHandCountAttackDefense"
   | "neoFlamvellSabreGraveCountThresholdStat"
   | "perfectMachineKingMatchingFaceupRaceCountStat"
@@ -641,6 +644,22 @@ function statFixtureFiles(): Array<{
         "currentRightScale(restoredScale.session.state.cards.find((card) => card.uid === mildTurkey.uid), restoredScale.session.state)).toBe(7 - scaleReduction)",
       ],
     },
+    {
+      file: "test/lua-real-script-morpho-butterspy-position-trigger-stat.test.ts",
+      kind: "eventChangePositionTargetAttackDefenseDrop",
+      required: [
+        'const morphoCode = "43573231"',
+        "restores EVENT_CHANGE_POS event-group target selection into opponent ATK/DEF loss",
+        "e1:SetCode(EVENT_CHANGE_POS)",
+        "eg:FilterSelect(tp,s.cfilter,1,1,nil,e,1-tp)",
+        "Duel.SetTargetCard(g)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(restoredTarget, restoredResolved.session.state)).toBe(800)",
+        "currentDefense(restoredTarget, restoredResolved.session.state)).toBe(500)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: StatKind;
@@ -661,6 +680,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       diceChainAttackUpdate: 0,
       diceGroupAttackDefenseUpdate: 0,
       diceScaleUpdate: 0,
+      eventChangePositionTargetAttackDefenseDrop: 0,
       fieldAttributeAttackUpdate: 0,
       fieldGroupCountStat: 0,
       fieldMatchingFaceupRaceCountStat: 0,
@@ -841,6 +861,17 @@ function statSemanticVariants(): Array<{
         "restores GetFieldGroupCount hand-size ATK/DEF callbacks and recalculates battle damage",
         "stat:controller-field-group-count:2:0:x300",
         "currentAttack(restoredMuka, restored.session.state)).toBe((muka!.data.attack ?? 0) + 600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-morpho-butterspy-position-trigger-stat.test.ts",
+      kind: "morphoButterspyPositionChangeTargetStat",
+      required: [
+        'const morphoCode = "43573231"',
+        "restores EVENT_CHANGE_POS event-group target selection into opponent ATK/DEF loss",
+        'eventName: "positionChanged"',
+        "eventCode: 1016",
+        "value: -1000",
       ],
     },
     {
@@ -1115,6 +1146,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       mirageKnightBattleTargetAtkEndPhaseBanish: 0,
       mildTurkeyDiceScaleUpdate: 0,
       mountainMultiRaceTargetBoolFunctionRaceStat: 0,
+      morphoButterspyPositionChangeTargetStat: 0,
       mukaMukaHandCountAttackDefense: 0,
       neoFlamvellSabreGraveCountThresholdStat: 0,
       perfectMachineKingMatchingFaceupRaceCountStat: 0,
