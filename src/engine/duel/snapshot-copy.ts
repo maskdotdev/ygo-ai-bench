@@ -29,8 +29,9 @@ export function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]
 export function copyEventRecord(event: DuelState["eventHistory"][number]): DuelState["eventHistory"][number] { return copyEventPayload(event); }
 
 export function copyCard(card: DuelCardInstance): DuelCardInstance {
+  const copy = omitUndefinedCardProperties(card);
   return {
-    ...card,
+    ...copy,
     data: copyCardData(card.data),
     overlayUids: [...card.overlayUids],
     ...(card.counters ? { counters: { ...card.counters } } : {}),
@@ -80,4 +81,8 @@ function copyCardData(data: DuelCardData): DuelCardData {
     ...(data.listedNames ? { listedNames: [...data.listedNames] } : {}),
     ...(data.fitMonster ? { fitMonster: [...data.fitMonster] } : {}),
   };
+}
+
+function omitUndefinedCardProperties(card: DuelCardInstance): DuelCardInstance {
+  return Object.fromEntries(Object.entries(card).filter(([, entry]) => entry !== undefined)) as unknown as DuelCardInstance;
 }
