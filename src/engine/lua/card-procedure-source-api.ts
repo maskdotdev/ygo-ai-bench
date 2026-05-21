@@ -177,6 +177,7 @@ export const cardProcedureSource = `${fusionProcedureSource}
     function Synchro.AddProcedure(c,...)
       local mt=c:GetMetatable(false)
       if mt then mt.synchro_materials={...} end
+      return Effect.CreateEffect(c)
     end
     function Synchro.AddMajesticProcedure(c,...)
       local mt=c:GetMetatable(false)
