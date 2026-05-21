@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 311;
+export const operationFixtureCount = 312;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -14,6 +14,7 @@ export const operationKindCounts = {
   attackAnnounceStatExactSpendFieldDestroy: 1,
   linkAttributeCostDestroyFlag: 1,
   linkGyAttackReleaseCountDestroy: 1,
+  changeCodeQuickAttackSpendDestroyBattleStat: 1,
   twoTargetLabelStatDestroy: 1,
   targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
@@ -264,6 +265,7 @@ export type OperationKind =
   | "attackAnnounceStatExactSpendFieldDestroy"
   | "linkAttributeCostDestroyFlag"
   | "linkGyAttackReleaseCountDestroy"
+  | "changeCodeQuickAttackSpendDestroyBattleStat"
   | "twoTargetLabelStatDestroy"
   | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
@@ -797,6 +799,33 @@ export function operationFixtureFiles(): Array<{
         'eventName: "becameTarget"',
         'eventName: "released"',
         'eventName: "destroyed"',
+        "operationInfos",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gaia-magical-knight-code-quick-destroy-battle-stat.test.ts",
+      kind: "changeCodeQuickAttackSpendDestroyBattleStat",
+      required: [
+        "restores Gaia Champion code change, quick ATK-spend destruction, and battle-destroying ATK gain",
+        "Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_GAIA_THE_FIERCE_KNIGHT),s.matfilter)",
+        "return c:IsRace(RACE_DRAGON,fc,sumtype,tp) and c:IsLevel(5)",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e1:SetValue(CARD_GAIA_CHAMPION)",
+        "return Duel.IsMainPhase() and e:GetHandler():GetAttack()>=2600",
+        "Duel.SelectTarget(tp,aux.TRUE,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,c)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,0,0)",
+        "c:UpdateAttack(-2600,RESET_EVENT|RESETS_STANDARD,c)==-2600",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "e3:SetCode(EVENT_BATTLE_DESTROYING)",
+        "e3:SetCondition(aux.bdocon)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(2600)",
+        "currentCardMatchesCode(restoredQuickGaia, restoredQuick.session.state, gaiaChampionPasscode)).toBe(true)",
+        "currentAttack(restoredQuick.session.state.cards.find((card) => card.uid === quickGaia.uid), restoredQuick.session.state)).toBe(0)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === battleGaia.uid), restoredTrigger.session.state)).toBe(5200)",
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "battleDestroyed"',
         "operationInfos",
       ],
     },
@@ -5902,6 +5931,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackAnnounceStatExactSpendFieldDestroy: 0,
       linkAttributeCostDestroyFlag: 0,
       linkGyAttackReleaseCountDestroy: 0,
+      changeCodeQuickAttackSpendDestroyBattleStat: 0,
       twoTargetLabelStatDestroy: 0,
       targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
