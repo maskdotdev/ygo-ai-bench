@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 48;
+const statFixtureCount = 49;
 const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleDestroyedOpponentAttackDefenseDrop: 1,
@@ -26,6 +26,7 @@ const statKindCounts = {
   flipSelfAttackDefenseUpdate: 1,
   groupLevelOrRankLinkAndSelfBanishTargetStat: 1,
   overlayDetachSelfStatAttackLock: 1,
+  overlayDetachSelfStatBattleProtection: 1,
   preDamageFinalDigitStatDestroyedLingering: 1,
   setAttack: 1,
   setBaseAttack: 1,
@@ -59,6 +60,7 @@ const statSemanticVariantCounts = {
   royalRhinoChainDiceAttackUpdate: 1,
   dForcePlasmaGraveyardCountAtkExtraAttack: 1,
   digitJammingPrecalcDestroyedStat: 1,
+  armoredKappaOptionBattleProtection: 1,
   cyberDragonSiegerCodeStatDamagePrevention: 1,
   fairyKingAlbverdichDetachAttributeExceptStat: 1,
   fortuneLadyPastCallbackSetAtkDef: 1,
@@ -98,12 +100,13 @@ const statSemanticVariantCounts = {
   plagueWolfFinalAttackEndDestroy: 1,
 } satisfies Record<StatSemanticVariant, number>;
 
-type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
+type StatKind = "battleAttackerTargetSwing" | "battleDestroyedOpponentAttackDefenseDrop" | "battleTargetAttackBoost" | "damageStepBattleTargetAttributeAttackBoost" | "damageStepMachineStatDamagePrevention" | "diceChainAttackUpdate" | "diceGroupAttackDefenseUpdate" | "diceScaleUpdate" | "eventChangePositionTargetAttackDefenseDrop" | "fieldAttributeAttackUpdate" | "fieldGroupCountStat" | "fieldMatchingFaceupRaceCountStat" | "fieldLevelOrRankAttackDefenseUpdate" | "fieldLinkSumAttackDefenseUpdate" | "fieldRaceAttackDefenseUpdate" | "fieldSetcodeAttackUpdate" | "flipGroupAttackUpdate" | "flipSelfAttackDefenseUpdate" | "groupLevelOrRankLinkAndSelfBanishTargetStat" | "overlayDetachSelfStatAttackLock" | "overlayDetachSelfStatBattleProtection" | "preDamageFinalDigitStatDestroyedLingering" | "preDamageSelfToGraveBattleMonsterStat" | "setAttack" | "setBaseAttack" | "setBaseAttackDefenseEndDestroy" | "setFinalAttackDefenseDiscardLock" | "setFinalAttackDefenseDirectLock" | "setFinalAttackDefenseHalveProcedure" | "setFinalAttackDefenseTargetDirectLock" | "selfBanishTargetSetcodeAttackDefenseUpdate" | "selfFinalAttackEndDestroy" | "selfTributeTargetRaceAttackDefenseUpdate" | "singleRangeSetcodeConditionAttackUpdate" | "staticAttackAndExtraAttack" | "swapBaseAttackDefense" | "targetedDamageStepAttackUpdate" | "targetedDamageStepDefenseUpdate" | "targetedPreDamageFinalAttack" | "targetedQuickAttackDefenseUpdateChainLimit" | "xyzDetachAttributeExceptGroupStat";
 type StatSemanticVariant =
   | "aForcesMatchingRaceCountStat"
   | "alLumirajLevelOrRankFieldStat"
   | "aromageBergamotRecoverPierceStat"
   | "aojGaradholgDuelBattleTargetAttributeStat"
+  | "armoredKappaOptionBattleProtection"
   | "bladeflyFieldAttributeAttackUpdate"
   | "blackwingGaleProcedureFinalStatHalve"
   | "bootUpSoldierGadgetConditionAttackUpdate"
@@ -340,6 +343,22 @@ function statFixtureFiles(): Array<{
         "e3:SetCode(EFFECT_NO_BATTLE_DAMAGE)",
         "e4:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)",
         "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === target.uid)!, restoredOpen.session.state)).toBe(4300)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-armored-kappa-option-battle-protection.test.ts",
+      kind: "overlayDetachSelfStatBattleProtection",
+      required: [
+        'const kappaCode = "50789693"',
+        "restores detach SelectOption stat gain and battle quick discard protection",
+        "Xyz.AddProcedure(c,nil,2,2)",
+        "local opt=Duel.SelectOption(tp,aux.Stringid(id,2),aux.Stringid(id,3))",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)",
+        "e1:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === kappa.uid)!, restoredOpen.session.state)).toBe(1400)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -877,6 +896,7 @@ function countStatKinds(fixtures: Array<{ kind: StatKind }>): Record<StatKind, n
       flipSelfAttackDefenseUpdate: 0,
       groupLevelOrRankLinkAndSelfBanishTargetStat: 0,
       overlayDetachSelfStatAttackLock: 0,
+      overlayDetachSelfStatBattleProtection: 0,
       preDamageFinalDigitStatDestroyedLingering: 0,
       preDamageSelfToGraveBattleMonsterStat: 0,
       setAttack: 0,
@@ -1001,6 +1021,19 @@ function statSemanticVariants(): Array<{
         "value: 2100",
         "code: 200",
         "code: 201",
+      ],
+    },
+    {
+      file: "test/lua-real-script-armored-kappa-option-battle-protection.test.ts",
+      kind: "armoredKappaOptionBattleProtection",
+      required: [
+        'const kappaCode = "50789693"',
+        "Cost.DetachFromSelf(1)",
+        "Duel.SelectOption(tp,aux.Stringid(id,2),aux.Stringid(id,3))",
+        "code: 100",
+        "code: 201",
+        "code: 42",
+        "reason: duelReason.cost | duelReason.discard",
       ],
     },
     {
@@ -1452,6 +1485,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: StatSemanticVariant }
       alLumirajLevelOrRankFieldStat: 0,
       aromageBergamotRecoverPierceStat: 0,
       aojGaradholgDuelBattleTargetAttributeStat: 0,
+      armoredKappaOptionBattleProtection: 0,
       bladeflyFieldAttributeAttackUpdate: 0,
       bootUpSoldierGadgetConditionAttackUpdate: 0,
       borreloadChainLimitAttackDefenseDrop: 0,
