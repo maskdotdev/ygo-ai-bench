@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 239;
+export const operationFixtureCount = 240;
 export const operationKindCounts = {
   announceChangeCode: 1,
   announceDeckBanishDisable: 1,
@@ -12,6 +12,7 @@ export const operationKindCounts = {
   announceSearchSummonLock: 1,
   attackAnnounceHandSummonSwapBaseStat: 1,
   attackAnnounceStatDeckdes: 1,
+  battleDestroyingStepSummonStat: 1,
   battleFinalStatReviveLock: 1,
   tributeSearchSummonStatLock: 1,
   callCoinAtkChange: 1,
@@ -191,6 +192,7 @@ export type OperationKind =
   | "announceSearchSummonLock"
   | "attackAnnounceHandSummonSwapBaseStat"
   | "attackAnnounceStatDeckdes"
+  | "battleDestroyingStepSummonStat"
   | "battleFinalStatReviveLock"
   | "tributeSearchSummonStatLock"
   | "callCoinAtkChange"
@@ -362,6 +364,28 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-hieratic-gebeb-battle-step-summon.test.ts",
+      kind: "battleDestroyingStepSummonStat",
+      required: [
+        "restores battle-destroying mandatory trigger into Dragon Normal SpecialSummonStep with zero stats",
+        "e1:SetCode(EVENT_BATTLE_DESTROYING)",
+        "e1:SetCondition(aux.bdogcon)",
+        "e1:SetLabel(1)",
+        "e2:SetCode(EVENT_RELEASE)",
+        "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_DECK|LOCATION_GRAVE)",
+        "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(spfilter),tp,LOCATION_HAND|LOCATION_DECK|LOCATION_GRAVE,0,1,1,nil,e,tp)",
+        "Duel.SpecialSummonStep(sc,0,tp,tp,false,false,POS_FACEUP)",
+        "e1:SetCode(EFFECT_SET_ATTACK)",
+        "e2:SetCode(EFFECT_SET_DEFENSE)",
+        "Duel.SpecialSummonComplete()",
+        "operationInfos",
+        'eventName: "battleDestroyed"',
+        'eventName: "specialSummoned"',
+        "currentAttack",
+        "currentDefense",
+      ],
+    },
     {
       file: "test/lua-real-script-deskbot-004-pre-damage-send-stat-summon.test.ts",
       kind: "damageStepSendStatAvoidSummon",
@@ -4012,6 +4036,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       announceSearchSummonLock: 0,
       attackAnnounceHandSummonSwapBaseStat: 0,
       attackAnnounceStatDeckdes: 0,
+      battleDestroyingStepSummonStat: 0,
       battleFinalStatReviveLock: 0,
       tributeSearchSummonStatLock: 0,
       callCoinAtkChange: 0,
