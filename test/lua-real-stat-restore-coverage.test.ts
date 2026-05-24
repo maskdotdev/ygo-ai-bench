@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 476; const statKindCounts = {
+const statFixtureCount = 477; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -132,6 +132,7 @@ const statFixtureCount = 476; const statKindCounts = {
   rookieWarriorLadyAttackAnnounceGraveToHandStat: 1,
   envoyOfChaosDamageStepEndToHandStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
+  behemothHundredBattlesSummonToHandEndStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
   motorFrenzyTributeStatToken: 1,
   deskbot003SummonQuickStat: 1,
@@ -579,6 +580,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   rookieWarriorLadyAttackAnnounceGraveToHandStat: 1,
   envoyOfChaosDamageStepEndToHandStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
+  behemothHundredBattlesSummonToHandEndStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
   motorFrenzyTributeStatToken: 1,
   deskbot003SummonQuickStat: 1,
@@ -915,6 +917,7 @@ type ExtraStatKind =
   | "rookieWarriorLadyAttackAnnounceGraveToHandStat"
   | "envoyOfChaosDamageStepEndToHandStat"
   | "machinaResavengerSelfToGraveBattleToHandStat"
+  | "behemothHundredBattlesSummonToHandEndStat"
   | "worldLegacyLanceTokenBattleStat"
   | "motorFrenzyTributeStatToken"
   | "deskbot003SummonQuickStat"
@@ -1400,6 +1403,7 @@ type ExtraStatSemanticVariant =
   | "rookieWarriorLadyAttackAnnounceGraveToHandStat"
   | "envoyOfChaosDamageStepEndToHandStat"
   | "machinaResavengerSelfToGraveBattleToHandStat"
+  | "behemothHundredBattlesSummonToHandEndStat"
   | "worldLegacyLanceTokenBattleStat"
   | "motorFrenzyTributeStatToken"
   | "deskbot003SummonQuickStat"
@@ -4468,6 +4472,29 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-behemoth-hundred-battles-summon-tohand-end-stat.test.ts",
+      kind: "behemothHundredBattlesSummonToHandEndStat",
+      required: [
+        'const behemothCode = "13836592"',
+        "Behemoth the King of a Hundred Battles",
+        "restores one-tribute summon search ATK drop, Special Summon search, normal immunity, and End Phase ATK gain",
+        "aux.AddNormalSummonProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,aux.Stringid(id,0))",
+        "aux.AddNormalSetProcedure(c,true,true,1,1,SUMMON_TYPE_TRIBUTE,aux.Stringid(id,0))",
+        "e2:SetCategory(CATEGORY_TOHAND+CATEGORY_ATKCHANGE)",
+        "e2:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e4:SetCode(EFFECT_IMMUNE_EFFECT)",
+        "e4:SetCondition(function(e) return e:GetHandler():IsNormalSummoned() end)",
+        "e5:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "c:UpdateAttack(-700)",
+        "c:UpdateAttack(700)",
+        "currentAttack(endTriggerWindow.session.state.cards.find((card) => card.uid === normalBehemoth.uid), endTriggerWindow.session.state)).toBe(2700)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-world-legacy-lance-token-battle-stat.test.ts",
       kind: "worldLegacyLanceTokenBattleStat",
       required: [
@@ -6578,8 +6605,7 @@ function statFixtureFiles(): Array<{
         "e7:SetCode(EVENT_PHASE+PHASE_END)",
         "ge1:SetOperation(aux.sumreg)",
         "currentAttack(findCard(pzone.restored.session, pzone.ally.uid), pzone.restored.session.state)).toBe(2000)",
-        "effectUpdateAttack = 100",
-        "reasonEffectId: 6",
+                "reasonEffectId: 6",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10012,6 +10038,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       rookieWarriorLadyAttackAnnounceGraveToHandStat: 0,
       envoyOfChaosDamageStepEndToHandStat: 0,
       machinaResavengerSelfToGraveBattleToHandStat: 0,
+      behemothHundredBattlesSummonToHandEndStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
       motorFrenzyTributeStatToken: 0,
       deskbot003SummonQuickStat: 0,
@@ -12241,6 +12268,28 @@ function statSemanticVariants(): Array<{
         "value: 1200",
         "eventCode: 1140",
         "battleDamage).toEqual({ 0: 0, 1: 1300 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-behemoth-hundred-battles-summon-tohand-end-stat.test.ts",
+      kind: "behemothHundredBattlesSummonToHandEndStat",
+      required: [
+        'const behemothCode = "13836592"',
+        "effectImmuneEffect = 1",
+        "phaseEndCode = 0x1200",
+        "effectId === \"lua-3-1100\"",
+        "effectId === \"lua-4-1102\"",
+        "effectId === \"lua-6-4608\"",
+        "eventName: \"normalSummoned\"",
+        "eventName: \"specialSummoned\"",
+        "eventName: \"phaseEnd\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHandConfirmed\"",
+        "reason: duelReason.release | duelReason.material | duelReason.summon",
+        "reasonEffectId: 3",
+        "reasonEffectId: 4",
+        "attackModifier: -700",
+        "toBe(0)",
       ],
     },
     {
@@ -16155,6 +16204,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       rookieWarriorLadyAttackAnnounceGraveToHandStat: 0,
       envoyOfChaosDamageStepEndToHandStat: 0,
       machinaResavengerSelfToGraveBattleToHandStat: 0,
+      behemothHundredBattlesSummonToHandEndStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
       motorFrenzyTributeStatToken: 0,
       deskbot003SummonQuickStat: 0,
