@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 479; const statKindCounts = {
+const statFixtureCount = 480; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -133,6 +133,7 @@ const statFixtureCount = 479; const statKindCounts = {
   envoyOfChaosDamageStepEndToHandStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
   magistusChorozoAttackNegateBoostToHandStat: 1,
+  performapalClayBreakerTributePendulumStatToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -583,6 +584,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   envoyOfChaosDamageStepEndToHandStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
   magistusChorozoAttackNegateBoostToHandStat: 1,
+  performapalClayBreakerTributePendulumStatToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -922,6 +924,7 @@ type ExtraStatKind =
   | "envoyOfChaosDamageStepEndToHandStat"
   | "machinaResavengerSelfToGraveBattleToHandStat"
   | "magistusChorozoAttackNegateBoostToHandStat"
+  | "performapalClayBreakerTributePendulumStatToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -1410,6 +1413,7 @@ type ExtraStatSemanticVariant =
   | "envoyOfChaosDamageStepEndToHandStat"
   | "machinaResavengerSelfToGraveBattleToHandStat"
   | "magistusChorozoAttackNegateBoostToHandStat"
+  | "performapalClayBreakerTributePendulumStatToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -4496,6 +4500,28 @@ function statFixtureFiles(): Array<{
         "Duel.BreakEffect()",
         "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
         "currentAttack(restoredTriggerWindow.session.state.cards.find((card) => card.uid === chorozo.uid), restoredTriggerWindow.session.state)).toBe(3500)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-performapal-clay-breaker-tribute-pendulum-stat-tohand.test.ts",
+      kind: "performapalClayBreakerTributePendulumStatToHand",
+      required: [
+        'const clayCode = "8820526"',
+        "Performapal Clay Breaker",
+        "restores tribute battle ATK reduction and grave salvage after two Pendulum Summons",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "c:IsTributeSummoned()",
+        "Duel.GetMatchingGroupCount(s.filter,tp,LOCATION_EXTRA,0,nil)*500",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-ct)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e2:SetRange(LOCATION_GRAVE)",
+        "return eg:IsExists(s.cfilter,2,nil,tp)",
+        "return c:IsSummonPlayer(tp) and c:IsPendulumSummoned()",
+        "Duel.SendtoHand(c,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,c)",
+        "currentAttack(restoredBattleTrigger.session.state.cards.find((card) => card.uid === battleTarget.uid), restoredBattleTrigger.session.state)).toBe(1600)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10089,6 +10115,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       envoyOfChaosDamageStepEndToHandStat: 0,
       machinaResavengerSelfToGraveBattleToHandStat: 0,
       magistusChorozoAttackNegateBoostToHandStat: 0,
+      performapalClayBreakerTributePendulumStatToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
@@ -12336,6 +12363,26 @@ function statSemanticVariants(): Array<{
         "eventName: \"sentToHand\"",
         "reason: duelReason.effect",
         "value: 2500",
+        "location: \"hand\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-performapal-clay-breaker-tribute-pendulum-stat-tohand.test.ts",
+      kind: "performapalClayBreakerTributePendulumStatToHand",
+      required: [
+        'const clayCode = "8820526"',
+        "effectUpdateAttack = 100",
+        "effectId: \"lua-1-1134\"",
+        "effectId: \"lua-2-1102\"",
+        "eventName: \"beforeDamageCalculation\"",
+        "eventName: \"specialSummoned\"",
+        "eventName: \"sentToHand\"",
+        "eventName: \"confirmed\"",
+        "eventUids: [pendulumA.uid, pendulumB.uid]",
+        "reason: duelReason.effect",
+        "reasonEffectId: 2",
+        "value: -1000",
         "location: \"hand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
@@ -16296,6 +16343,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       envoyOfChaosDamageStepEndToHandStat: 0,
       machinaResavengerSelfToGraveBattleToHandStat: 0,
       magistusChorozoAttackNegateBoostToHandStat: 0,
+      performapalClayBreakerTributePendulumStatToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
