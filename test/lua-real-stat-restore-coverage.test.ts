@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 480; const statKindCounts = {
+const statFixtureCount = 481; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -134,6 +134,7 @@ const statFixtureCount = 480; const statKindCounts = {
   machinaResavengerSelfToGraveBattleToHandStat: 1,
   magistusChorozoAttackNegateBoostToHandStat: 1,
   performapalClayBreakerTributePendulumStatToHand: 1,
+  spyralGearDroneSummonSortTributeStatBanishToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -585,6 +586,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
   magistusChorozoAttackNegateBoostToHandStat: 1,
   performapalClayBreakerTributePendulumStatToHand: 1,
+  spyralGearDroneSummonSortTributeStatBanishToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -925,6 +927,7 @@ type ExtraStatKind =
   | "machinaResavengerSelfToGraveBattleToHandStat"
   | "magistusChorozoAttackNegateBoostToHandStat"
   | "performapalClayBreakerTributePendulumStatToHand"
+  | "spyralGearDroneSummonSortTributeStatBanishToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -1414,6 +1417,7 @@ type ExtraStatSemanticVariant =
   | "machinaResavengerSelfToGraveBattleToHandStat"
   | "magistusChorozoAttackNegateBoostToHandStat"
   | "performapalClayBreakerTributePendulumStatToHand"
+  | "spyralGearDroneSummonSortTributeStatBanishToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -4522,6 +4526,31 @@ function statFixtureFiles(): Array<{
         "Duel.SendtoHand(c,nil,REASON_EFFECT)",
         "Duel.ConfirmCards(1-tp,c)",
         "currentAttack(restoredBattleTrigger.session.state.cards.find((card) => card.uid === battleTarget.uid), restoredBattleTrigger.session.state)).toBe(1600)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-spyral-gear-drone-sort-tribute-stat-banish-tohand.test.ts",
+      kind: "spyralGearDroneSummonSortTributeStatBanishToHand",
+      required: [
+        'const droneCode = "4474060"',
+        "SPYRAL GEAR - Drone",
+        "restores summon deck sort, quick SelfTribute ATK boost, and grave banish Super Agent salvage",
+        "e1:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SortDecktop(tp,1-tp,3)",
+        "e3:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e3:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e3:SetCost(Cost.SelfTribute)",
+        "Duel.GetFieldGroupCount(tp,0,LOCATION_ONFIELD)*500",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e4:SetRange(LOCATION_GRAVE)",
+        "aux.bfgcost(e,tp,eg,ep,ev,re,r,rp,0)",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_GRAVE,0,1,1,c,tp)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "currentAttack(restoredBoost.session.state.cards.find((card) => card.uid === spyralTarget.uid), restoredBoost.session.state)).toBe(2500)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10116,6 +10145,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       machinaResavengerSelfToGraveBattleToHandStat: 0,
       magistusChorozoAttackNegateBoostToHandStat: 0,
       performapalClayBreakerTributePendulumStatToHand: 0,
+      spyralGearDroneSummonSortTributeStatBanishToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
@@ -12383,6 +12413,30 @@ function statSemanticVariants(): Array<{
         "reason: duelReason.effect",
         "reasonEffectId: 2",
         "value: -1000",
+        "location: \"hand\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-spyral-gear-drone-sort-tribute-stat-banish-tohand.test.ts",
+      kind: "spyralGearDroneSummonSortTributeStatBanishToHand",
+      required: [
+        'const droneCode = "4474060"',
+        "effectUpdateAttack = 100",
+        "effectId === \"lua-1-1100\"",
+        "effectId === \"lua-3-1002\"",
+        "effectId === \"lua-4\"",
+        "eventName: \"normalSummoned\"",
+        "eventName: \"released\"",
+        "eventName: \"banished\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHand\"",
+        "reason: duelReason.cost | duelReason.release",
+        "reason: duelReason.cost",
+        "reason: duelReason.effect",
+        "reasonEffectId: 3",
+        "reasonEffectId: 4",
+        "value: 1000",
         "location: \"hand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
@@ -16344,6 +16398,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       machinaResavengerSelfToGraveBattleToHandStat: 0,
       magistusChorozoAttackNegateBoostToHandStat: 0,
       performapalClayBreakerTributePendulumStatToHand: 0,
+      spyralGearDroneSummonSortTributeStatBanishToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
