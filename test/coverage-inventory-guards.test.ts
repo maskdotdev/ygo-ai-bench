@@ -57,7 +57,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(1083);
+    expect(exactCount).toBe(2047);
   });
 
   it("requires Lua registration proof counts to be exact", () => {
@@ -79,7 +79,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(1717);
+    expect(exactCount).toBe(2681);
   });
 
   it("requires non-coverage Lua restore tests to prove raw, grouped, and flattened restored actions", () => {
@@ -98,7 +98,7 @@ describe("coverage inventory guards", () => {
           || !hasFlattenedGroupedRestoreEvidence(text);
       });
 
-    expect(restoreFiles).toHaveLength(1125);
+    expect(restoreFiles).toHaveLength(1912);
     expect(missingRestoreEvidence).toEqual([]);
   });
 
@@ -126,8 +126,8 @@ describe("coverage inventory guards", () => {
       .filter((branch) => !hasNearbyRestoredActionEvidence(branch.text, branch.variable, readTestFile(branch.file)))
       .map((branch) => `${branch.file}:${branch.line}`);
 
-    expect(eventFiles).toHaveLength(40);
-    expect(restoreBranches).toHaveLength(58);
+    expect(eventFiles).toHaveLength(42);
+    expect(restoreBranches).toHaveLength(62);
     expect(missingRestoreEvidence).toEqual([]);
   });
 
@@ -137,7 +137,7 @@ describe("coverage inventory guards", () => {
       .filter((helper) => !hasStrongRestoreHelper(readTestFile(helper.file), helper.name))
       .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
 
-    expect(helpers).toHaveLength(524);
+    expect(helpers).toHaveLength(1294);
     expect(weak).toEqual([]);
   });
 
@@ -148,7 +148,7 @@ describe("coverage inventory guards", () => {
       .filter((helper) => !hasStrongLuaRestoreResponseHelper(helper, helpersByKey))
       .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
 
-    expect(helpers).toHaveLength(362);
+    expect(helpers).toHaveLength(517);
     expect(weak).toEqual([]);
   });
 
@@ -305,7 +305,7 @@ describe("coverage inventory guards", () => {
           .map((match) => `${file}:${lineNumber(text, match.index ?? 0)}`);
       });
 
-    expect(files).toHaveLength(2002);
+    expect(files).toHaveLength(2795);
     expect(weak).toEqual([]);
   });
 

@@ -5,11 +5,12 @@ describe("package scripts", () => {
   it("runs the Lua parity scanner in the default check gate", () => {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf8")) as { scripts?: Record<string, string> };
 
-    expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing --min-used-apis 898 --min-implemented-apis 1224 --min-upstream-constants 1777 --min-local-constants 1818");
-    expect(pkg.scripts?.["scan:lua-local-parity"]).toBe("node tools/scan-lua-api-usage.mjs --scripts local-card-scripts --fail-on-missing --min-used-apis 0 --min-implemented-apis 1224");
+    expect(pkg.scripts?.["scan:lua-parity"]).toContain("--fail-on-missing --min-used-apis 898 --min-implemented-apis 1231 --min-upstream-constants 1777 --min-local-constants 1818");
+    expect(pkg.scripts?.["scan:lua-local-parity"]).toBe("node tools/scan-lua-api-usage.mjs --scripts local-card-scripts --fail-on-missing --min-used-apis 0 --min-implemented-apis 1231");
     expect(pkg.scripts?.["scan:lua-chain-limits"]).toContain("tools/scan-lua-chain-limit-patterns.mjs");
     expect(pkg.scripts?.["scan:lua-prompts"]).toContain("tools/scan-lua-prompt-patterns.mjs");
     expect(pkg.scripts?.["scan:lua-clean-restore"]).toContain("tools/scan-lua-clean-restore.mjs");
+    expect(pkg.scripts?.["check:loc"]).toBe("node tools/check-file-loc.mjs --baseline tools/file-loc-baseline.json");
     expect(pkg.scripts?.["scan:legal-action-evidence"]).toContain("tools/scan-legal-action-evidence.mjs");
     expect(pkg.scripts?.["scan:parity-fixture-provenance"]).toContain("tools/scan-parity-fixture-provenance.mjs");
     expect(pkg.scripts?.["report:parity-progress"]).toBe("node tools/report-parity-progress.mjs");
@@ -54,16 +55,16 @@ describe("package scripts", () => {
       "bun run scan:lua-local-parity",
       "bun run scan:lua-chain-limits -- --min-files-with-calls 124 --min-calls 141 --fail-on-unclassified",
       "bun run scan:lua-prompts -- --min-files-with-calls 1957 --min-calls 2458 --min-select-option-calls 437 --min-select-yes-no-calls 1172 --min-select-effect-calls 352 --min-select-effect-yes-no-calls 250 --min-announcement-calls 247 --min-api-count AnnounceNumber 58 --min-api-count AnnounceNumberRange 24 --min-api-count AnnounceCard 33 --min-api-count AnnounceRace 24 --min-api-count AnnounceAttribute 33 --min-api-count AnnounceLevel 29 --min-api-count SelectCardsFromCodes 1 --min-api-count SelectDisableField 41 --min-api-count SelectFieldZone 4 --min-pattern-count SelectOption:leading-boolean-literals 1 --min-pattern-count SelectOption:leading-boolean-table-unpack 1 --min-pattern-count SelectOption:table-unpack 19 --min-pattern-count SelectEffect:dynamic-options 3 --min-pattern-count AnnounceNumber:table-unpack 39 --min-pattern-count AnnounceCard:table-unpack 18 --fail-on-unclassified",
-      "bun run scan:lua-clean-restore -- --min-percent 100 --min-fixtures 776 --min-coverage-files 68 --fail-on-missing --fail-on-missing-diagnostics --fail-on-missing-legal-actions --fail-on-unreferenced",
-      "bun run scan:lua-event-assertions -- --min-fixtures 776 --fail-on-broad-event-matchers --fail-on-partial-event-match-objects",
-      "bun run scan:lua-chain-assertions -- --min-fixtures 776 --max-partial-chain-match-objects 0 --max-broad-chain-object-containing 0",
-      "bun run scan:lua-effect-assertions -- --min-fixtures 776 --max-broad-effect-collection-assertions 0",
+      "bun run scan:lua-clean-restore -- --min-percent 100 --min-fixtures 1763 --min-coverage-files 100 --fail-on-missing --fail-on-missing-diagnostics --fail-on-missing-legal-actions --fail-on-unreferenced",
+      "bun run scan:lua-event-assertions -- --min-fixtures 1763 --fail-on-broad-event-matchers --fail-on-partial-event-match-objects",
+      "bun run scan:lua-chain-assertions -- --min-fixtures 1763 --max-partial-chain-match-objects 0 --max-broad-chain-object-containing 0",
+      "bun run scan:lua-effect-assertions -- --min-fixtures 1763 --max-broad-effect-collection-assertions 0",
       "bun run scan:parity-fixture-provenance -- --min-files 945 --min-expectation-blocks 4939 --min-edopro-blocks 4939 --min-restored-fixtures 938 --min-restored-before-blocks 2181 --min-restored-after-blocks 1817 --min-restored-window-blocks 3998 --min-final-expected-blocks 941 --max-unrestored-before-blocks 0 --max-unrestored-after-blocks 0 --max-after-only-restore-steps 0 --fail-on-missing-source --fail-on-invalid-source --fail-on-missing-note --fail-on-weak-note --fail-on-backlog --fail-on-missing-restore",
       "bun run scan:legal-action-evidence -- --min-files 945 --min-edopro-blocks 4939 --min-action-count-evidence-blocks 4939 --min-group-count-evidence-blocks 4939 --min-paired-count-evidence-blocks 4939 --min-action-evidence-blocks 4939 --min-group-evidence-blocks 4939 --min-group-action-evidence-blocks 4939 --min-window-evidence-blocks 4939 --min-top-level-window-evidence-blocks 4939 --min-action-window-evidence-blocks 4939 --min-group-window-evidence-blocks 4939 --min-absent-action-evidence-blocks 4175 --min-absent-group-evidence-blocks 4175 --min-paired-absent-evidence-blocks 4175 --min-absent-action-window-evidence-blocks 4175 --min-absent-group-window-evidence-blocks 4175 --min-action-evidence-percent 100 --min-group-evidence-percent 100 --fail-on-missing --fail-on-missing-counts --fail-on-empty --fail-on-zero-only --fail-on-zero-evidence --fail-on-missing-action-window-evidence --fail-on-missing-group-actions --fail-on-missing-group-window-evidence --fail-on-unpaired-absent --fail-on-empty-absent --fail-on-missing-absent-action-window-evidence --fail-on-missing-absent-group-window-evidence --fail-on-missing-window-evidence --fail-on-missing-top-level-window-evidence",
       "bun run probe:top-tier-deck",
       "bun run probe:competitive-decks",
       "bun run probe:fallback-decks",
-      "bun run check:browser-assets",
+      "bun run export:browser-data",
       "bun run typecheck",
       "bun run test",
       "bun run build",
