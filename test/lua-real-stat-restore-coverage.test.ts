@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 475; const statKindCounts = {
+const statFixtureCount = 476; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -131,6 +131,7 @@ const statFixtureCount = 475; const statKindCounts = {
   dddDestinyKingZeroLaplacePzoneReleaseBattleStat: 1,
   rookieWarriorLadyAttackAnnounceGraveToHandStat: 1,
   envoyOfChaosDamageStepEndToHandStat: 1,
+  machinaResavengerSelfToGraveBattleToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
   motorFrenzyTributeStatToken: 1,
   deskbot003SummonQuickStat: 1,
@@ -577,6 +578,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   dddDestinyKingZeroLaplacePzoneReleaseBattleStat: 1,
   rookieWarriorLadyAttackAnnounceGraveToHandStat: 1,
   envoyOfChaosDamageStepEndToHandStat: 1,
+  machinaResavengerSelfToGraveBattleToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
   motorFrenzyTributeStatToken: 1,
   deskbot003SummonQuickStat: 1,
@@ -912,6 +914,7 @@ type ExtraStatKind =
   | "dddDestinyKingZeroLaplacePzoneReleaseBattleStat"
   | "rookieWarriorLadyAttackAnnounceGraveToHandStat"
   | "envoyOfChaosDamageStepEndToHandStat"
+  | "machinaResavengerSelfToGraveBattleToHandStat"
   | "worldLegacyLanceTokenBattleStat"
   | "motorFrenzyTributeStatToken"
   | "deskbot003SummonQuickStat"
@@ -1396,6 +1399,7 @@ type ExtraStatSemanticVariant =
   | "dddDestinyKingZeroLaplacePzoneReleaseBattleStat"
   | "rookieWarriorLadyAttackAnnounceGraveToHandStat"
   | "envoyOfChaosDamageStepEndToHandStat"
+  | "machinaResavengerSelfToGraveBattleToHandStat"
   | "worldLegacyLanceTokenBattleStat"
   | "motorFrenzyTributeStatToken"
   | "deskbot003SummonQuickStat"
@@ -4440,6 +4444,27 @@ function statFixtureFiles(): Array<{
         "Duel.SendtoHand(c,nil,REASON_EFFECT)",
         "currentAttack(damage.session.state.cards.find((card) => card.uid === gaia.uid), damage.session.state)).toBe(3800)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-machina-resavenger-damage-step-battle-tohand-stat.test.ts",
+      kind: "machinaResavengerSelfToGraveBattleToHandStat",
+      required: [
+        'const resavengerCode = "54563536"',
+        "Machina Resavenger",
+        "restores SelfToGrave damage-step Machina ATK gain and grave battle-destroying return",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetRange(LOCATION_MZONE|LOCATION_HAND)",
+        "e1:SetCost(Cost.SelfToGrave)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(1200)",
+        "e2:SetCode(EVENT_BATTLE_DESTROYING)",
+        "e2:SetRange(LOCATION_GRAVE)",
+        "rc:IsRelateToBattle() and rc:IsStatus(STATUS_OPPO_BATTLE)",
+        "Duel.SendtoHand(e:GetHandler(),nil,REASON_EFFECT)",
+        "currentAttack(boost.session.state.cards.find((card) => card.uid === boostMachina.uid), boost.session.state)).toBe(3000)",
+        "battleDamage).toEqual({ 0: 0, 1: 1300 })",
       ],
     },
     {
@@ -8131,7 +8156,7 @@ function statFixtureFiles(): Array<{
         "Duel.NegateActivation(ev)",
         "Duel.Recover(tp,1000,REASON_EFFECT)",
         "currentAttack(restoredTrigger.session.state.cards.find",
-        "battleDamage).toEqual({ 0: 0, 1: 1800 })",
+        "battleDamage).toEqual({ 0: 0, 1: 1300 })",
       ],
     },
     {
@@ -9986,6 +10011,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       dddDestinyKingZeroLaplacePzoneReleaseBattleStat: 0,
       rookieWarriorLadyAttackAnnounceGraveToHandStat: 0,
       envoyOfChaosDamageStepEndToHandStat: 0,
+      machinaResavengerSelfToGraveBattleToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
       motorFrenzyTributeStatToken: 0,
       deskbot003SummonQuickStat: 0,
@@ -12195,6 +12221,26 @@ function statSemanticVariants(): Array<{
         "value: 1500",
         "targetRange: [0, 4]",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-machina-resavenger-damage-step-battle-tohand-stat.test.ts",
+      kind: "machinaResavengerSelfToGraveBattleToHandStat",
+      required: [
+        'const resavengerCode = "54563536"',
+        "effectUpdateAttack = 100",
+        "effectId === \"lua-1-1002\"",
+        "effectId === \"lua-2-1139\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToGraveyard\"",
+        "eventName: \"battleDestroyed\"",
+        "eventName: \"sentToHand\"",
+        "reason: duelReason.cost",
+        "reason: duelReason.effect",
+        "eventReason: duelReason.battle | duelReason.destroy",
+        "value: 1200",
+        "eventCode: 1140",
+        "battleDamage).toEqual({ 0: 0, 1: 1300 })",
       ],
     },
     {
@@ -16108,6 +16154,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       dddDestinyKingZeroLaplacePzoneReleaseBattleStat: 0,
       rookieWarriorLadyAttackAnnounceGraveToHandStat: 0,
       envoyOfChaosDamageStepEndToHandStat: 0,
+      machinaResavengerSelfToGraveBattleToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
       motorFrenzyTributeStatToken: 0,
       deskbot003SummonQuickStat: 0,
