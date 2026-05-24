@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 478; const statKindCounts = {
+const statFixtureCount = 479; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -132,6 +132,7 @@ const statFixtureCount = 478; const statKindCounts = {
   rookieWarriorLadyAttackAnnounceGraveToHandStat: 1,
   envoyOfChaosDamageStepEndToHandStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
+  magistusChorozoAttackNegateBoostToHandStat: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -581,6 +582,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   rookieWarriorLadyAttackAnnounceGraveToHandStat: 1,
   envoyOfChaosDamageStepEndToHandStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
+  magistusChorozoAttackNegateBoostToHandStat: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -919,6 +921,7 @@ type ExtraStatKind =
   | "rookieWarriorLadyAttackAnnounceGraveToHandStat"
   | "envoyOfChaosDamageStepEndToHandStat"
   | "machinaResavengerSelfToGraveBattleToHandStat"
+  | "magistusChorozoAttackNegateBoostToHandStat"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -1406,6 +1409,7 @@ type ExtraStatSemanticVariant =
   | "rookieWarriorLadyAttackAnnounceGraveToHandStat"
   | "envoyOfChaosDamageStepEndToHandStat"
   | "machinaResavengerSelfToGraveBattleToHandStat"
+  | "magistusChorozoAttackNegateBoostToHandStat"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -1695,7 +1699,7 @@ function statFixtureFiles(): Array<{
         "Duel.SelectTarget(tp,s.spfilter,tp,LOCATION_GRAVE,0,1,1,nil,e,tp)",
         "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
         "currentAttack(restoredSummonTrigger.session.state.cards.find",
-        "reasonEffectId: 3",
+        "reasonEffectId: 4",
         "reasonEffectId: 4",
         "eventName: \"banished\"",
         "eventName: \"specialSummoned\"",
@@ -4473,6 +4477,26 @@ function statFixtureFiles(): Array<{
         "Duel.SendtoHand(e:GetHandler(),nil,REASON_EFFECT)",
         "currentAttack(boost.session.state.cards.find((card) => card.uid === boostMachina.uid), boost.session.state)).toBe(3000)",
         "battleDamage).toEqual({ 0: 0, 1: 1300 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-magistus-chorozo-attack-negate-boost-tohand-stat.test.ts",
+      kind: "magistusChorozoAttackNegateBoostToHandStat",
+      required: [
+        'const chorozoCode = "66532962"',
+        "Magistus Chorozo",
+        "restores attack-announcement target, attack negation, ATK gain, and optional attacker return",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_TOHAND)",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "Duel.SetTargetCard(ac)",
+        "Duel.NegateAttack()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.AdjustInstantly(c)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.BreakEffect()",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "currentAttack(restoredTriggerWindow.session.state.cards.find((card) => card.uid === chorozo.uid), restoredTriggerWindow.session.state)).toBe(3500)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -10064,6 +10088,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       rookieWarriorLadyAttackAnnounceGraveToHandStat: 0,
       envoyOfChaosDamageStepEndToHandStat: 0,
       machinaResavengerSelfToGraveBattleToHandStat: 0,
+      magistusChorozoAttackNegateBoostToHandStat: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
@@ -12081,7 +12106,7 @@ function statSemanticVariants(): Array<{
         "EFFECT_UPDATE_ATTACK",
         "effectId: \"lua-1-1014\"",
         "effectId: \"lua-2-1102\"",
-        "effectId: \"lua-3-1130\"",
+        "id: \"lua-3-1130\"",
         "triggerBucket: \"opponentOptional\"",
         "eventName: \"sentToHand\"",
         "currentAttack(restoredAttackTrigger.session.state.cards.find((card) => card.uid === ally.uid), restoredAttackTrigger.session.state)).toBe(2300)",
@@ -12295,6 +12320,24 @@ function statSemanticVariants(): Array<{
         "value: 1200",
         "eventCode: 1140",
         "battleDamage).toEqual({ 0: 0, 1: 1300 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-magistus-chorozo-attack-negate-boost-tohand-stat.test.ts",
+      kind: "magistusChorozoAttackNegateBoostToHandStat",
+      required: [
+        'const chorozoCode = "66532962"',
+        "effectUpdateAttack = 100",
+        "effectId: \"lua-4-1130\"",
+        "reasonEffectId: 4",
+        "eventName: \"attackDeclared\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"breakEffect\"",
+        "eventName: \"sentToHand\"",
+        "reason: duelReason.effect",
+        "value: 2500",
+        "location: \"hand\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -16252,6 +16295,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       rookieWarriorLadyAttackAnnounceGraveToHandStat: 0,
       envoyOfChaosDamageStepEndToHandStat: 0,
       machinaResavengerSelfToGraveBattleToHandStat: 0,
+      magistusChorozoAttackNegateBoostToHandStat: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
