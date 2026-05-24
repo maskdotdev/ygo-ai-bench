@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 477; const statKindCounts = {
+const statFixtureCount = 478; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -133,6 +133,7 @@ const statFixtureCount = 477; const statKindCounts = {
   envoyOfChaosDamageStepEndToHandStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
+  mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
   motorFrenzyTributeStatToken: 1,
   deskbot003SummonQuickStat: 1,
@@ -581,6 +582,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   envoyOfChaosDamageStepEndToHandStat: 1,
   machinaResavengerSelfToGraveBattleToHandStat: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
+  mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
   motorFrenzyTributeStatToken: 1,
   deskbot003SummonQuickStat: 1,
@@ -918,6 +920,7 @@ type ExtraStatKind =
   | "envoyOfChaosDamageStepEndToHandStat"
   | "machinaResavengerSelfToGraveBattleToHandStat"
   | "behemothHundredBattlesSummonToHandEndStat"
+  | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
   | "motorFrenzyTributeStatToken"
   | "deskbot003SummonQuickStat"
@@ -1404,6 +1407,7 @@ type ExtraStatSemanticVariant =
   | "envoyOfChaosDamageStepEndToHandStat"
   | "machinaResavengerSelfToGraveBattleToHandStat"
   | "behemothHundredBattlesSummonToHandEndStat"
+  | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
   | "motorFrenzyTributeStatToken"
   | "deskbot003SummonQuickStat"
@@ -4491,6 +4495,28 @@ function statFixtureFiles(): Array<{
         "c:UpdateAttack(-700)",
         "c:UpdateAttack(700)",
         "currentAttack(endTriggerWindow.session.state.cards.find((card) => card.uid === normalBehemoth.uid), endTriggerWindow.session.state)).toBe(2700)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mathmech-billionblade-nayuta-equip-cost-tohand-stat.test.ts",
+      kind: "mathmechBillionbladeNayutaEquipCostToHandStat",
+      required: [
+        'const nayutaCode = "41410651"',
+        "Mathmech Billionblade Nayuta",
+        "restores Cyberse equip, pre-damage Mathmech Deck cost ATK gain, and previous-SZONE recovery",
+        "aux.AddEquipProcedure(c,nil,aux.FilterBoolFunction(Card.IsRace,RACE_CYBERSE))",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e1:SetRange(LOCATION_SZONE)",
+        "Duel.SelectMatchingCard(tp,s.atkcfilter,tp,LOCATION_DECK,0,1,1,nil):GetFirst()",
+        "Duel.SendtoGrave(tc,REASON_COST)",
+        "e:SetLabel(tc:GetAttack())",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "return e:GetHandler():IsPreviousLocation(LOCATION_SZONE)",
+        "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "currentAttack(restoredDamage.session.state.cards.find((card) => card.uid === cyberse.uid), restoredDamage.session.state)).toBe(3500)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10039,6 +10065,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       envoyOfChaosDamageStepEndToHandStat: 0,
       machinaResavengerSelfToGraveBattleToHandStat: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
+      mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
       motorFrenzyTributeStatToken: 0,
       deskbot003SummonQuickStat: 0,
@@ -12290,6 +12317,27 @@ function statSemanticVariants(): Array<{
         "reasonEffectId: 4",
         "attackModifier: -700",
         "toBe(0)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mathmech-billionblade-nayuta-equip-cost-tohand-stat.test.ts",
+      kind: "mathmechBillionbladeNayutaEquipCostToHandStat",
+      required: [
+        'const nayutaCode = "41410651"',
+        "effectUpdateAttack = 100",
+        "effectId === \"lua-3-1134\"",
+        "effectId === \"lua-4-1014\"",
+        "eventName: \"beforeDamageCalculation\"",
+        "eventName: \"sentToGraveyard\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHand\"",
+        "reason: duelReason.cost",
+        "reason: duelReason.effect",
+        "reasonEffectId: 3",
+        "reasonEffectId: 4",
+        "value: 1800",
+        "previous: \"spellTrapZone\"",
+        "location: \"hand\"",
       ],
     },
     {
@@ -16205,6 +16253,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       envoyOfChaosDamageStepEndToHandStat: 0,
       machinaResavengerSelfToGraveBattleToHandStat: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
+      mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
       motorFrenzyTributeStatToken: 0,
       deskbot003SummonQuickStat: 0,
