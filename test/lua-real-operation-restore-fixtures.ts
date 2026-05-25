@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 392;
+export const operationFixtureCount = 393;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -65,6 +65,7 @@ export const operationKindCounts = {
   raceCountGroupAttackBoost: 1,
   overlayCountGroupAttackBoost: 1,
   battleTargetMirrorAttackFinal: 1,
+  lightDragonBattleTargetAttackGain: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -390,6 +391,7 @@ export type OperationKind =
   | "raceCountGroupAttackBoost"
   | "overlayCountGroupAttackBoost"
   | "battleTargetMirrorAttackFinal"
+  | "lightDragonBattleTargetAttackGain"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1290,6 +1292,27 @@ export function operationFixtureFiles(): Array<{
         "effectSetAttackFinal",
         "currentAttack",
         'eventName: "battleTargeted"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-photon-current-light-dragon-battle-stat.test.ts",
+      kind: "lightDragonBattleTargetAttackGain",
+      required: [
+        "restores LIGHT Dragon battle-target trap into attacker ATK gain through damage phase",
+        "Photon Current",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetCode(EVENT_BE_BATTLE_TARGET)",
+        "d:IsFaceup() and d:IsControler(tp) and d:IsAttribute(ATTRIBUTE_LIGHT) and d:IsRace(RACE_DRAGON)",
+        "Duel.GetAttacker():CreateEffectRelation(e)",
+        "Duel.GetAttackTarget():CreateEffectRelation(e)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(a:GetAttack())",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE)",
+        "attributeLight",
+        "raceDragon",
+        "effectUpdateAttack",
+        "resetEventStandardDamagePhase",
+        "currentAttack",
       ],
     },
     {
@@ -7820,6 +7843,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       raceCountGroupAttackBoost: 0,
       overlayCountGroupAttackBoost: 0,
       battleTargetMirrorAttackFinal: 0,
+      lightDragonBattleTargetAttackGain: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
