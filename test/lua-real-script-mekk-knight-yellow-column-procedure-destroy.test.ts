@@ -132,6 +132,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
         activationSequence: 0,
         targetUids: [columnSpell.uid],
         operationInfos: [{ category: 0x1, targetUids: [columnSpell.uid], count: 1, player: 0, parameter: 0 }],
+        targetFieldIds: [8],
       },
     ]);
 

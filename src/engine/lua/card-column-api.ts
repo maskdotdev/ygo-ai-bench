@@ -84,6 +84,6 @@ function isFieldCard(card: DuelCardInstance): boolean {
 }
 
 function isColumnSequence(card: DuelCardInstance, sequence: number, player: number, locationMask: number): boolean {
-  if (!isFieldCard(card) || card.controller !== player || card.sequence !== sequence) return false;
+  if (!isFieldCard(card) || card.sequence !== sequence) return false;
   return locationMask === 0 || (locationMask & 0x0c) !== 0;
 }

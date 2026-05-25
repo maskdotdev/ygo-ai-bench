@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 501; const statKindCounts = {
+const statFixtureCount = 502; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -104,6 +104,7 @@ const statFixtureCount = 501; const statKindCounts = {
   overwindFinalStatEndToHand: 1,
   triBrigadeRendezvousLinkedStatReplace: 1,
   marincessCascadeHandTrapBanishReturnStat: 1,
+  worldLegacyWhispersColumnNegateStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -577,6 +578,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   overwindFinalStatEndToHand: 1,
   triBrigadeRendezvousLinkedStatReplace: 1,
   marincessCascadeHandTrapBanishReturnStat: 1,
+  worldLegacyWhispersColumnNegateStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -937,6 +939,7 @@ type ExtraStatKind =
   | "overwindFinalStatEndToHand"
   | "triBrigadeRendezvousLinkedStatReplace"
   | "marincessCascadeHandTrapBanishReturnStat"
+  | "worldLegacyWhispersColumnNegateStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1448,6 +1451,7 @@ type ExtraStatSemanticVariant =
   | "overwindFinalStatEndToHand"
   | "triBrigadeRendezvousLinkedStatReplace"
   | "marincessCascadeHandTrapBanishReturnStat"
+  | "worldLegacyWhispersColumnNegateStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1646,7 +1650,7 @@ function statFixtureFiles(): Array<{
         "eventName: \"specialSummoned\"",
         "eventName: \"banished\"",
         "eventName: \"sentToHandConfirmed\"",
-        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+        "battleDamage).toEqual({ 0: 0, 1: 600 })",
       ],
     },
     {
@@ -3850,6 +3854,29 @@ function statFixtureFiles(): Array<{
         "toBe(2700)",
         "eventName: \"banished\"",
         "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-world-legacy-whispers-column-stat-negate.test.ts",
+      kind: "worldLegacyWhispersColumnNegateStat",
+      required: [
+        'const whispersCode = "62530723"',
+        "World Legacy Whispers",
+        "restores optional activation stat target and same-column opponent Spell negation",
+        "EFFECT_FLAG_DAMAGE_STEP",
+        "aux.StatChangeDamageStepCondition",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,0))",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_UPDATE_DEFENSE",
+        "EVENT_CHAIN_SOLVING",
+        "re:IsSpellEffect()",
+        "Duel.GetChainInfo(ev,CHAININFO_TRIGGERING_CONTROLER,CHAININFO_TRIGGERING_LOCATION,CHAININFO_TRIGGERING_SEQUENCE)",
+        "Duel.NegateEffect(ev)",
+        "toBe(2800)",
+        "toBe(2200)",
+        "eventName: \"chainNegated\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10691,6 +10718,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       overwindFinalStatEndToHand: 0,
       triBrigadeRendezvousLinkedStatReplace: 0,
       marincessCascadeHandTrapBanishReturnStat: 0,
+      worldLegacyWhispersColumnNegateStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11227,6 +11255,26 @@ function statSemanticVariants(): Array<{
         "toBe(2700)",
         "eventName: \"banished\"",
         "eventName: \"becameTarget\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-world-legacy-whispers-column-stat-negate.test.ts",
+      kind: "worldLegacyWhispersColumnNegateStat",
+      required: [
+        'const whispersCode = "62530723"',
+        "World Legacy Whispers",
+        "EFFECT_FLAG_DAMAGE_STEP",
+        "aux.StatChangeDamageStepCondition",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,0))",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_UPDATE_DEFENSE",
+        "EVENT_CHAIN_SOLVING",
+        "re:IsSpellEffect()",
+        "Duel.NegateEffect(ev)",
+        "toBe(2800)",
+        "toBe(2200)",
+        "eventName: \"chainNegated\"",
+        "battleDamage).toEqual({ 0: 0, 1: 600 })",
       ],
     },
     {
@@ -17359,6 +17407,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       overwindFinalStatEndToHand: 0,
       triBrigadeRendezvousLinkedStatReplace: 0,
       marincessCascadeHandTrapBanishReturnStat: 0,
+      worldLegacyWhispersColumnNegateStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
