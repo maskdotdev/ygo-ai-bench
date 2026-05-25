@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 488; const statKindCounts = {
+const statFixtureCount = 489; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -91,6 +91,7 @@ const statFixtureCount = 488; const statKindCounts = {
   thunderDragonmatrixDiscardBanishSearchStat: 1,
   mistValleyThunderLordReturnStat: 1,
   hiSpeedroidChanbaraExtraBattleStatToHand: 1,
+  trickstarDelfiendiumAttackToHandStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -551,6 +552,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   thunderDragonmatrixDiscardBanishSearchStat: 1,
   mistValleyThunderLordReturnStat: 1,
   hiSpeedroidChanbaraExtraBattleStatToHand: 1,
+  trickstarDelfiendiumAttackToHandStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -898,6 +900,7 @@ type ExtraStatKind =
   | "thunderDragonmatrixDiscardBanishSearchStat"
   | "mistValleyThunderLordReturnStat"
   | "hiSpeedroidChanbaraExtraBattleStatToHand"
+  | "trickstarDelfiendiumAttackToHandStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1396,6 +1399,7 @@ type ExtraStatSemanticVariant =
   | "thunderDragonmatrixDiscardBanishSearchStat"
   | "mistValleyThunderLordReturnStat"
   | "hiSpeedroidChanbaraExtraBattleStatToHand"
+  | "trickstarDelfiendiumAttackToHandStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3472,6 +3476,27 @@ function statFixtureFiles(): Array<{
         "eventName: \"battleStarted\"",
         "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 1200 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-trickstar-delfiendium-attack-announce-tohand-stat.test.ts",
+      kind: "trickstarDelfiendiumAttackToHandStat",
+      required: [
+        'const delfiendiumCode = "3792766"',
+        "Trickstar Delfiendium",
+        "restores linked attack-announcement banished Trickstar recovery and ATK gain",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_TRICKSTAR),2)",
+        "EVENT_ATTACK_ANNOUNCE",
+        "Duel.GetMatchingGroupCount(Card.IsLinkMonster,tp,0,LOCATION_MZONE,nil)",
+        "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_REMOVED,0,1,ct,nil)",
+        "Duel.GetOperatedGroup():FilterCount(Card.IsLocation,nil,LOCATION_HAND)",
+        "EFFECT_UPDATE_ATTACK",
+        "RESETS_STANDARD_DISABLE_PHASE_END",
+        "effectId === \"lua-2-1130\"",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === delfiendium.uid), restoredTrigger.session.state)).toBe(4200)",
+        "eventName: \"attackDeclared\"",
+        "eventName: \"sentToHand\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -10299,6 +10324,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       thunderDragonmatrixDiscardBanishSearchStat: 0,
       mistValleyThunderLordReturnStat: 0,
       hiSpeedroidChanbaraExtraBattleStatToHand: 0,
+      trickstarDelfiendiumAttackToHandStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -10580,6 +10606,21 @@ function statSemanticVariants(): Array<{
         "effectId === \"lua-4-1132\"",
         "effectId === \"lua-5-1014\"",
         "eventName: \"battleStarted\"",
+        "eventName: \"sentToHand\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-trickstar-delfiendium-attack-announce-tohand-stat.test.ts",
+      kind: "trickstarDelfiendiumAttackToHandStat",
+      required: [
+        'const delfiendiumCode = "3792766"',
+        "Trickstar Delfiendium",
+        "restores linked attack-announcement banished Trickstar recovery and ATK gain",
+        "EVENT_ATTACK_ANNOUNCE",
+        "EFFECT_UPDATE_ATTACK",
+        "effectId === \"lua-2-1130\"",
+        "eventName: \"attackDeclared\"",
         "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
@@ -16701,6 +16742,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       thunderDragonmatrixDiscardBanishSearchStat: 0,
       mistValleyThunderLordReturnStat: 0,
       hiSpeedroidChanbaraExtraBattleStatToHand: 0,
+      trickstarDelfiendiumAttackToHandStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
