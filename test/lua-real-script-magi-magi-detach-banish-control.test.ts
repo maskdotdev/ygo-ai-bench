@@ -29,7 +29,7 @@ const attributeEarth = 0x1;
 describe.skipIf(!hasUpstreamScripts || !hasMagiScript)("Lua real script Magi Magi detach banish control", () => {
   it("restores AND cost into detach, hand banish, SelectEffect, and temporary control", () => {
     const { workspace, reader, session } = createFixture(10000030);
-    expectScriptShape(workspace.readScript(`official/c${magiCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${magiCode}.lua`) ?? "");
     const magi = requireCard(session, magiCode);
     const material = requireCard(session, materialCode);
     const handCost = requireCard(session, handCostCode);

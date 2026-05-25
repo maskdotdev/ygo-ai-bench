@@ -29,7 +29,7 @@ const eventSpecialSummonSuccess = 1102;
 describe.skipIf(!hasUpstreamScripts || !hasFascinatorScript)("Lua real script Vampire Fascinator release control", () => {
   it("restores Vampire release cost into targeted opponent monster control", () => {
     const { workspace, reader, session } = createFixture(72860663);
-    expectScriptShape(workspace.readScript(`official/c${fascinatorCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${fascinatorCode}.lua`) ?? "");
     const fascinator = requireCard(session, fascinatorCode);
     const releaseVampire = requireCard(session, releaseVampireCode);
     const opponentTarget = requireCard(session, opponentTargetCode);

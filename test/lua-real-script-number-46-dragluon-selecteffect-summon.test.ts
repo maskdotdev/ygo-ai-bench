@@ -26,7 +26,7 @@ const attributeLight = 0x10;
 describe.skipIf(!hasUpstreamScripts || !hasDragluonScript)("Lua real script Number 46 Dragluon SelectEffect summon", () => {
   it("restores DetachFromSelf cost into SelectEffect hand Dragon Special Summon", () => {
     const { workspace, reader, session } = createFixture(2978414);
-    expectScriptShape(workspace.readScript(`official/c${dragluonCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${dragluonCode}.lua`) ?? "");
     const dragluon = requireCard(session, dragluonCode);
     const handDragon = requireCard(session, handDragonCode);
     const material = requireCard(session, materialCode);

@@ -29,7 +29,7 @@ const eventPhaseBattle = 4224;
 describe.skipIf(!hasUpstreamScripts || !hasRedBaronScript)("Lua real script Vampire Red Baron swap revive", () => {
   it("restores LP-cost targeted SwapControl between a Vampire and opponent monster", () => {
     const { workspace, reader, session } = createFixture(6917479);
-    expectScriptShape(workspace.readScript(`official/c${redBaronCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${redBaronCode}.lua`) ?? "");
     const redBaron = requireCard(session, redBaronCode);
     const ownVampire = requireCard(session, ownVampireCode);
     const opponentTarget = requireCard(session, opponentTargetCode);

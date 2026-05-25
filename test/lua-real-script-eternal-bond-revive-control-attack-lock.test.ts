@@ -31,7 +31,7 @@ const effectSetAttackFinal = 102;
 describe.skipIf(!hasUpstreamScripts || !hasEternalBondScript)("Lua real script Eternal Bond revive control attack lock", () => {
   it("restores activation that targets and revives Photon monsters from the graveyard with disabled effects", () => {
     const { workspace, reader, session } = createFixture(45283341);
-    expectScriptShape(workspace.readScript(`official/c${eternalBondCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${eternalBondCode}.lua`) ?? "");
     const eternalBond = requireCard(session, eternalBondCode);
     const photonOne = requireCard(session, photonOneCode);
     const photonTwo = requireCard(session, photonTwoCode);

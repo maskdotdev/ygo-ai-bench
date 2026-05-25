@@ -31,7 +31,7 @@ const eventFreeChain = 1002;
 describe.skipIf(!hasUpstreamScripts || !hasServicePuppetScript)("Lua real script Service Puppet Play control grave summon", () => {
   it("restores activation that targets opponent monsters up to Gimmick Puppet Xyz count and takes control", () => {
     const { workspace, reader, session } = createFixture(36400569);
-    expectScriptShape(workspace.readScript(`official/c${servicePuppetCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${servicePuppetCode}.lua`) ?? "");
     const servicePuppet = requireCard(session, servicePuppetCode);
     const ownGimmickXyz = requireCard(session, ownGimmickXyzCode);
     const opponentTarget = requireCard(session, opponentTargetCode);

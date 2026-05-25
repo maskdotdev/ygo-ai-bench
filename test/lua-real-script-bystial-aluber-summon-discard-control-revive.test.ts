@@ -34,7 +34,7 @@ const reasonDiscardCost = duelReason.cost | duelReason.discard;
 describe.skipIf(!hasUpstreamScripts || !hasAluberScript)("Lua real script Bystial Aluber summon discard control revive", () => {
   it("restores normal-summon trigger discard cost, self-send, and Dragon control branch", () => {
     const fixture = setupFixture("field");
-    const script = fixture.workspace.readScript(`official/c${aluberCode}.lua`);
+    const script = fixture.workspace.readScript(`official/c${aluberCode}.lua`) ?? "";
     expectScriptShape(script);
     const { session, reader, workspace, aluber, discard, fieldDragon } = fixture;
     moveDuelCard(session.state, aluber.uid, "hand", 0);

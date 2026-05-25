@@ -29,7 +29,7 @@ const eventFreeChain = 1002;
 describe.skipIf(!hasUpstreamScripts || !hasXenoScript)("Lua real script Hecahands Xeno extra summon", () => {
   it("restores opponent Extra Deck confirmation into optional Special Summon and shuffle", () => {
     const { workspace, reader, session } = createFixture(94410955);
-    expectScriptShape(workspace.readScript(`official/c${xenoCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${xenoCode}.lua`) ?? "");
     const xeno = requireCard(session, xenoCode);
     const extraA = requireCard(session, opponentExtraACode);
     const extraB = requireCard(session, opponentExtraBCode);

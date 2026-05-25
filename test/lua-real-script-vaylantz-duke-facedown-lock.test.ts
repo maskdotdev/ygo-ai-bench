@@ -29,7 +29,7 @@ const resetStandardPhaseEnd = 1107169792;
 describe.skipIf(!hasUpstreamScripts || !hasDukeScript)("Lua real script Vaylantz Duke facedown lock", () => {
   it("restores MZONE ignition targeting a face-down Spell/Trap into EFFECT_CANNOT_TRIGGER", () => {
     const { workspace, reader, session } = createFixture(13291886);
-    expectScriptShape(workspace.readScript(`official/c${dukeCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${dukeCode}.lua`) ?? "");
     const duke = requireCard(session, dukeCode);
     const facedownSpell = requireCard(session, facedownSpellCode);
     moveFaceUpAttack(session, duke, 0);

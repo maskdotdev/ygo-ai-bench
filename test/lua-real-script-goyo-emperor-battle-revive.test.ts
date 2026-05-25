@@ -30,7 +30,7 @@ const eventLeaveField = 1015;
 describe.skipIf(!hasUpstreamScripts || !hasGoyoScript)("Lua real script Goyo Emperor battle revive", () => {
   it("restores battle-destroying SetTargetCard into Special Summoning the destroyed monster", () => {
     const { workspace, reader, session } = createFixture(59255742);
-    expectScriptShape(workspace.readScript(`official/c${goyoCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${goyoCode}.lua`) ?? "");
     const goyo = requireCard(session, goyoCode);
     const target = requireCard(session, battleTargetCode);
     moveMonster(session, goyo, 0, "faceUpAttack", 0).summonType = "fusion";

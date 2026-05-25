@@ -31,7 +31,7 @@ const eventFreeChain = 1002;
 describe.skipIf(!hasUpstreamScripts || !hasIllegalKnightScript)("Lua real script Illegal Knight quick summon control to-hand", () => {
   it("restores hand Quick Effect self Special Summon while the player's monster zone is empty", () => {
     const { workspace, reader, session } = createFixture(42198835);
-    expectScriptShape(workspace.readScript(`official/c${illegalKnightCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${illegalKnightCode}.lua`) ?? "");
     const illegalKnight = requireCard(session, illegalKnightCode);
     moveDuelCard(session.state, illegalKnight.uid, "hand", 0);
     prepareMainPhase(session);

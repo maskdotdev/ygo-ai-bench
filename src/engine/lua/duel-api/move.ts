@@ -1003,7 +1003,7 @@ function specialSummonExplicitExtraDeckCard(
     applyMonsterZoneMask(session, card, player, zoneMask);
     card.summonType = duelSummonTypeFromCode(summonType);
     card.summonTypeCode = summonType;
-    card.summonLocation = card.previousLocation;
+    if (card.previousLocation !== undefined) card.summonLocation = card.previousLocation;
     card.summonPlayer = player;
     card.summonPhase = session.state.phase;
     card.summonMaterialUids = card.summonMaterialUids ?? [];

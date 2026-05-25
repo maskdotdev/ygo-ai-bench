@@ -41,7 +41,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTrickBoxScript)("Lua real script Tric
       1: { main: [opponentTargetCode] },
     });
     startDuel(session);
-    expectScriptShape(workspace.readScript(`official/c${trickBoxCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${trickBoxCode}.lua`) ?? "");
 
     const trickBox = requireCard(session, trickBoxCode);
     const destroyedPerformage = requireCard(session, destroyedPerformageCode);

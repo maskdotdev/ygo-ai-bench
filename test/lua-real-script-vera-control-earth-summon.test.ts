@@ -28,7 +28,7 @@ const eventFreeChain = 1002;
 describe.skipIf(!hasUpstreamScripts || !hasVeraScript)("Lua real script Vera control earth summon", () => {
   it("restores targeted control and makes the received monster EARTH", () => {
     const { workspace, reader, session } = createFixture(55125728);
-    expectScriptShape(workspace.readScript(`official/c${veraCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${veraCode}.lua`) ?? "");
     const vera = requireCard(session, veraCode);
     const opponentTarget = requireCard(session, opponentTargetCode);
     moveFaceUpAttack(session, vera, 0);

@@ -32,7 +32,7 @@ const reasonDiscardCost = duelReason.cost | duelReason.discard;
 describe.skipIf(!hasUpstreamScripts || !hasCielaScript)("Lua real script Sage of Benevolence Ciela discard control revive to-hand", () => {
   it("restores hand ignition spell discard cost into self Special Summon", () => {
     const { workspace, reader, session } = createFixture(34456146);
-    expectScriptShape(workspace.readScript(`official/c${cielaCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${cielaCode}.lua`) ?? "");
     const ciela = requireCard(session, cielaCode);
     const discardSpell = requireCard(session, discardSpellCode);
     moveDuelCard(session.state, ciela.uid, "hand", 0);

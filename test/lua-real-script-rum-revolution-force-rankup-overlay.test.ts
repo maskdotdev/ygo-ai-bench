@@ -36,7 +36,7 @@ describe.skipIf(!hasUpstreamScripts || !hasRevolutionForceScript)("Lua real scri
       1: { main: [] },
     });
     startDuel(session);
-    expectScriptShape(workspace.readScript(`official/c${revolutionForceCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${revolutionForceCode}.lua`) ?? "");
 
     const revolutionForce = requireCard(session, revolutionForceCode);
     const raidraptorXyz = requireCard(session, raidraptorXyzCode);

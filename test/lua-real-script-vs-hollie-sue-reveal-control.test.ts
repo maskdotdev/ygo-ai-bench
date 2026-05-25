@@ -30,7 +30,7 @@ const eventFreeChain = 1002;
 describe.skipIf(!hasUpstreamScripts || !hasHollieScript)("Lua real script Vanquish Soul Hollie Sue reveal control", () => {
   it("restores EARTH and DARK reveal branch into lowest-ATK opponent control", () => {
     const { workspace, reader, session } = createFixture(93156774);
-    expectScriptShape(workspace.readScript(`official/c${hollieCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${hollieCode}.lua`) ?? "");
     const hollie = requireCard(session, hollieCode);
     const earthReveal = requireCard(session, earthRevealCode);
     const darkReveal = requireCard(session, darkRevealCode);

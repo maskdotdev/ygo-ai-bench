@@ -31,7 +31,7 @@ const effectChangeRace = 122;
 describe.skipIf(!hasUpstreamScripts || !hasBallgameScript)("Lua real script Giant Ballgame activate summon swap race", () => {
   it("restores activation flag into Level 6 or lower Insect graveyard Special Summon", () => {
     const { workspace, reader, session } = createFixture(60619435);
-    expectScriptShape(workspace.readScript(`official/c${ballgameCode}.lua`));
+    expectScriptShape(workspace.readScript(`official/c${ballgameCode}.lua`) ?? "");
     const ballgame = requireCard(session, ballgameCode);
     const graveInsect = requireCard(session, graveInsectCode);
     const setBallgame = moveDuelCard(session.state, ballgame.uid, "spellTrapZone", 0);
