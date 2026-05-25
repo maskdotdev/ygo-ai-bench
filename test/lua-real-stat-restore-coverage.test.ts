@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 487; const statKindCounts = {
+const statFixtureCount = 488; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -90,6 +90,7 @@ const statFixtureCount = 487; const statKindCounts = {
   thunderDragonduoProcedureChainBattleEndStat: 1,
   thunderDragonmatrixDiscardBanishSearchStat: 1,
   mistValleyThunderLordReturnStat: 1,
+  hiSpeedroidChanbaraExtraBattleStatToHand: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -549,6 +550,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   thunderDragonduoProcedureChainBattleEndStat: 1,
   thunderDragonmatrixDiscardBanishSearchStat: 1,
   mistValleyThunderLordReturnStat: 1,
+  hiSpeedroidChanbaraExtraBattleStatToHand: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -895,6 +897,7 @@ type ExtraStatKind =
   | "thunderDragonduoProcedureChainBattleEndStat"
   | "thunderDragonmatrixDiscardBanishSearchStat"
   | "mistValleyThunderLordReturnStat"
+  | "hiSpeedroidChanbaraExtraBattleStatToHand"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1392,6 +1395,7 @@ type ExtraStatSemanticVariant =
   | "thunderDragonduoProcedureChainBattleEndStat"
   | "thunderDragonmatrixDiscardBanishSearchStat"
   | "mistValleyThunderLordReturnStat"
+  | "hiSpeedroidChanbaraExtraBattleStatToHand"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3445,6 +3449,29 @@ function statFixtureFiles(): Array<{
         "eventName: \"becameTarget\"",
         "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hi-speedroid-chanbara-extra-battle-stat-tohand.test.ts",
+      kind: "hiSpeedroidChanbaraExtraBattleStatToHand",
+      required: [
+        'const chanbaraCode = "42110604"',
+        "Hi-Speedroid Chanbara",
+        "restores static extra attack, mandatory battle-start ATK gain, and delayed Speedroid banished recovery",
+        "Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(nil),1,99)",
+        "EFFECT_EXTRA_ATTACK",
+        "EVENT_BATTLE_START",
+        "EFFECT_UPDATE_ATTACK",
+        "RESET_EVENT|RESETS_STANDARD_DISABLE",
+        "EVENT_TO_GRAVE",
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DELAY",
+        "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_REMOVED,0,1,1,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "effectId === \"lua-4-1132\"",
+        "effectId === \"lua-5-1014\"",
+        "eventName: \"battleStarted\"",
+        "eventName: \"sentToHand\"",
+        "battleDamage).toEqual({ 0: 0, 1: 1200 })",
       ],
     },
     {
@@ -10271,6 +10298,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       thunderDragonduoProcedureChainBattleEndStat: 0,
       thunderDragonmatrixDiscardBanishSearchStat: 0,
       mistValleyThunderLordReturnStat: 0,
+      hiSpeedroidChanbaraExtraBattleStatToHand: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -10538,6 +10566,24 @@ function statSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-hi-speedroid-chanbara-extra-battle-stat-tohand.test.ts",
+      kind: "hiSpeedroidChanbaraExtraBattleStatToHand",
+      required: [
+        'const chanbaraCode = "42110604"',
+        "Hi-Speedroid Chanbara",
+        "restores static extra attack, mandatory battle-start ATK gain, and delayed Speedroid banished recovery",
+        "EFFECT_EXTRA_ATTACK",
+        "EVENT_BATTLE_START",
+        "EFFECT_UPDATE_ATTACK",
+        "EVENT_TO_GRAVE",
+        "effectId === \"lua-4-1132\"",
+        "effectId === \"lua-5-1014\"",
+        "eventName: \"battleStarted\"",
+        "eventName: \"sentToHand\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
     {
       file: "test/lua-real-script-salamangreat-revive-target-summon-grave-todeck-stat.test.ts",
       kind: "salamangreatReviveTargetSummonGraveToDeckStat",
@@ -16654,6 +16700,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       thunderDragonduoProcedureChainBattleEndStat: 0,
       thunderDragonmatrixDiscardBanishSearchStat: 0,
       mistValleyThunderLordReturnStat: 0,
+      hiSpeedroidChanbaraExtraBattleStatToHand: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
