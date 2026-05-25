@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 339;
+export const operationFixtureCount = 340;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -32,6 +32,7 @@ export const operationKindCounts = {
   summonTriggerPayLpLevelAttack: 1,
   fieldPreDamageCostLevelAttack: 1,
   groupFinalAttackTrapLock: 1,
+  targetLinkDynamicAttackPierceLock: 1,
   summonBackrowDestroyAttackDrop: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
@@ -304,6 +305,7 @@ export type OperationKind =
   | "summonTriggerPayLpLevelAttack"
   | "fieldPreDamageCostLevelAttack"
   | "groupFinalAttackTrapLock"
+  | "targetLinkDynamicAttackPierceLock"
   | "summonBackrowDestroyAttackDrop"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
@@ -548,6 +550,31 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-gouki-finishing-move-link-pierce-lock-stat.test.ts",
+      kind: "targetLinkDynamicAttackPierceLock",
+      required: [
+        "restores targeted Gouki Link activation into dynamic ATK, pierce, client hint, and non-Gouki attack lock",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return c:IsFaceup() and c:IsLinkMonster()",
+        "and c:IsSetCard(SET_GOUKI) and c:IsLinkAbove(1)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "ge1:SetCode(EFFECT_CANNOT_ATTACK_ANNOUNCE)",
+        "ge1:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)",
+        "Duel.RegisterEffect(ge1,tp)",
+        "aux.RegisterClientHint(c,nil,tp,1,0,aux.Stringid(id,1),nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)",
+        "e1:SetValue(function(e,c) return c:GetLink()*1000 end)",
+        "e2:SetCode(EFFECT_PIERCE)",
+        "e2:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
+        "currentAttack(findCard(restoredOpen.session, goukiLink.uid), restoredOpen.session.state)).toBe(4800)",
+        "effectCannotAttackAnnounce",
+        "effectPierce",
+      ],
+    },
     {
       file: "test/lua-real-script-triangle-ecstasy-spark-harpie-trap-lock-stat.test.ts",
       kind: "groupFinalAttackTrapLock",
@@ -6633,6 +6660,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       summonTriggerPayLpLevelAttack: 0,
       fieldPreDamageCostLevelAttack: 0,
       groupFinalAttackTrapLock: 0,
+      targetLinkDynamicAttackPierceLock: 0,
       summonBackrowDestroyAttackDrop: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
