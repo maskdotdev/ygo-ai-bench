@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 336;
+export const operationFixtureCount = 337;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -29,6 +29,7 @@ export const operationKindCounts = {
   targetGroupDestroyCountStat: 1,
   summonTargetGroupDestroyCountStat: 1,
   summonTriggerSetFinalAttack: 1,
+  summonTriggerPayLpLevelAttack: 1,
   summonBackrowDestroyAttackDrop: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
@@ -298,6 +299,7 @@ export type OperationKind =
   | "targetGroupDestroyCountStat"
   | "summonTargetGroupDestroyCountStat"
   | "summonTriggerSetFinalAttack"
+  | "summonTriggerPayLpLevelAttack"
   | "summonBackrowDestroyAttackDrop"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
@@ -542,6 +544,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-psi-station-summon-lp-level-attack.test.ts",
+      kind: "summonTriggerPayLpLevelAttack",
+      required: [
+        "restores PayLP normal-summon trigger targeting its event Psychic for Level and ATK gain",
+        "e2:SetCategory(CATEGORY_ATKCHANGE)",
+        "e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_O)",
+        "e2:SetRange(LOCATION_SZONE)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e2:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e2:SetCost(Cost.PayLP(500))",
+        "return c:IsOnField() and c:IsRace(RACE_PSYCHIC)",
+        "Duel.SetTargetCard(eg)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_LEVEL)",
+        "e2:SetCode(EFFECT_UPDATE_ATTACK)",
+        "operationInfos",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "becameTarget"',
+        "currentLevel(findCard(restoredTrigger.session, psychicSummon.uid), restoredTrigger.session.state)).toBe(5)",
+        "currentAttack(findCard(restoredTrigger.session, psychicSummon.uid), restoredTrigger.session.state)).toBe(1800)",
+      ],
+    },
     {
       file: "test/lua-real-script-armor-ninjitsu-rust-mist-special-summon-stat.test.ts",
       kind: "summonTriggerSetFinalAttack",
@@ -6552,6 +6577,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetGroupDestroyCountStat: 0,
       summonTargetGroupDestroyCountStat: 0,
       summonTriggerSetFinalAttack: 0,
+      summonTriggerPayLpLevelAttack: 0,
       summonBackrowDestroyAttackDrop: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
