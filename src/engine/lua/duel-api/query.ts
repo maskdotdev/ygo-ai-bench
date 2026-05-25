@@ -498,13 +498,13 @@ function pushSelectSubGroup(L: unknown, session: DuelSession): number {
 }
 
 function pushFirstTarget(L: unknown, session: DuelSession, hostState: LuaDuelQueryApiHostState): number {
-  const target = effectiveTargetUids(session, hostState)[0];
-  if (!target) {
+  const targets = effectiveTargetUids(session, hostState);
+  if (targets.length === 0) {
     lua.lua_pushnil(L);
     return 1;
   }
-  pushCardTable(L, target);
-  return 1;
+  for (const target of targets) pushCardTable(L, target);
+  return targets.length;
 }
 
 function readMatchingQuery(L: unknown, session: DuelSession, filterIndex: number, playerIndex: number, selfIndex: number, opponentIndex: number, excludedIndex: number, argsIndex: number): MatchingQuery {
