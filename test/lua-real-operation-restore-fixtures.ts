@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 400;
+export const operationFixtureCount = 401;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -33,6 +33,7 @@ export const operationKindCounts = {
   preDamageLpCostDifferencePlusAttackStat: 1,
   preDamageLinkedLevelStat: 1,
   pzoneExtraCountTargetAttackStat: 1,
+  battleFlagFusionStage2SelfTributeStat: 1,
   battleFlagWarRockExtraAttackStat: 1,
   deskbotGroupAttackOath: 1,
   fusionHeroBanishCopyAttack: 1,
@@ -366,6 +367,7 @@ export type OperationKind =
   | "preDamageLpCostDifferencePlusAttackStat"
   | "preDamageLinkedLevelStat"
   | "pzoneExtraCountTargetAttackStat"
+  | "battleFlagFusionStage2SelfTributeStat"
   | "battleFlagWarRockExtraAttackStat"
   | "deskbotGroupAttackOath"
   | "fusionHeroBanishCopyAttack"
@@ -868,6 +870,28 @@ export function operationFixtureFiles(): Array<{
         "Duel.CheckPendulumZones(tp)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1300)",
         'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-penetration-fusion-battle-flag-stage2-stat.test.ts",
+      kind: "battleFlagFusionStage2SelfTributeStat",
+      required: [
+        "restores battle-destroyed flag into Fusion Summon and stage2 self-tribute ATK grant",
+        "Penetration Fusion",
+        "Fusion.CreateSummonEff({handler=c,stage2=s.stage2})",
+        "e1:SetCondition(function() return Duel.HasFlagEffect(0,id) end)",
+        "ge1:SetCode(EVENT_BATTLE_DESTROYED)",
+        "Duel.RegisterFlagEffect(0,id,RESET_PHASE|PHASE_END,0,1)",
+        "fc:RegisterFlagEffect(id,RESET_EVENT|RESETS_STANDARD,EFFECT_FLAG_CLIENT_HINT,1,0,aux.Stringid(id,1))",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCost(Cost.SelfTribute)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e2:SetCode(EFFECT_ADD_TYPE)",
+        "e2:SetValue(TYPE_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(500)",
+        "currentAttack(restoredGranted.session.state.cards.find((card) => card.uid === ally.uid), restoredGranted.session.state)).toBe(2000)",
+        "battleDamage).toEqual({ 0: 0, 1: 400 })",
       ],
     },
     {
