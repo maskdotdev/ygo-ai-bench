@@ -982,6 +982,8 @@ function restoredLuaEffectReset(session: DuelSession, effect: SerializedDuelEffe
 function restoreKnownLuaChainOperations(session: DuelSession): void {
   for (const link of session.state.chain) {
     if (isKnownMegalithUnformedDeckRitualChainLink(session, link)) link.operationOverride = megalithUnformedDeckRitualOperation();
+    if (link.operationOverrideRegistryKey === "lua-chain-operation:42138622:heads") link.operationOverride = vortexOfTimeHeadsOperation();
+    if (link.operationOverrideRegistryKey === "lua-chain-operation:42138622:tails") link.operationOverride = vortexOfTimeTailsOperation();
   }
 }
 
@@ -991,6 +993,32 @@ function isKnownMegalithUnformedDeckRitualChainLink(session: DuelSession, link: 
     source?.code === luaMegalithUnformedCode &&
       link.operationInfos?.some((info) => info.category === luaCategorySpecialSummon && info.player === link.player && info.parameter === luaLocationDeck && info.count > 0),
   );
+}
+
+function vortexOfTimeHeadsOperation(): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const player = ctx.player === 0 ? 1 : 0;
+    const target = ctx.duel.cards.find((card) => card.controller === player && card.location === "monsterZone" && canMoveDuelCardToLocation(ctx.duel, card.uid, "banished", duelReason.rule, ctx.player));
+    if (!target) return;
+    banishDuelCard(ctx.duel, target.uid, target.controller, duelReason.rule, ctx.player, chainOperationReasonPayload(ctx));
+  };
+}
+
+function vortexOfTimeTailsOperation(): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const targets = ctx.duel.cards.filter((card) => card.controller === ctx.player && card.location === "monsterZone" && canMoveDuelCardToLocation(ctx.duel, card.uid, "banished", duelReason.rule, ctx.player));
+    for (const target of targets) {
+      banishDuelCard(ctx.duel, target.uid, target.controller, duelReason.rule, ctx.player, chainOperationReasonPayload(ctx));
+    }
+  };
+}
+
+function chainOperationReasonPayload(ctx: DuelEffectContext): Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> {
+  const effectId = Number(ctx.chainLink?.effectId.match(/^lua-(\d+)/)?.[1]);
+  return {
+    eventReasonCardUid: ctx.source.uid,
+    ...(Number.isSafeInteger(effectId) ? { eventReasonEffectId: effectId } : {}),
+  };
 }
 
 function megalithUnformedDeckRitualOperation(): DuelEffectDefinition["operation"] {

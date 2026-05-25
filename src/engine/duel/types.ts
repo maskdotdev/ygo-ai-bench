@@ -477,6 +477,7 @@ export interface ChainLink {
   negated?: boolean;
   disableReason?: number;
   disablePlayer?: PlayerId;
+  operationOverrideRegistryKey?: string;
   operationOverride?: (ctx: DuelEffectContext) => void;
 }
 

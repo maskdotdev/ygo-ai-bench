@@ -894,6 +894,12 @@ export function changeLuaChainOperation(L: unknown, hostState: LuaHostState, cha
       ctx.log("Lua chain operation changed");
     });
   };
+  const activeSource = hostState.activeContext?.source;
+  if (activeSource?.code === "42138622") {
+    const coin = hostState.session.state.lastCoinResults[0];
+    if (coin === 1) link.operationOverrideRegistryKey = "lua-chain-operation:42138622:heads";
+    else if (coin === 0) link.operationOverrideRegistryKey = "lua-chain-operation:42138622:tails";
+  }
   return true;
 }
 
