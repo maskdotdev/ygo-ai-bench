@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 367;
+export const operationFixtureCount = 368;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -40,6 +40,7 @@ export const operationKindCounts = {
   targetAttackNormalizeGroupFinal: 1,
   targetDefensePositionFinalDefense: 1,
   targetOpponentHandCountStat: 1,
+  crossFieldTargetUpdateStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -340,6 +341,7 @@ export type OperationKind =
   | "targetAttackNormalizeGroupFinal"
   | "targetDefensePositionFinalDefense"
   | "targetOpponentHandCountStat"
+  | "crossFieldTargetUpdateStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -954,6 +956,24 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1800)",
+        "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(1600)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-shield-spear-target-stat.test.ts",
+      kind: "crossFieldTargetUpdateStat",
+      required: [
+        "restores cross-field face-up target ATK/DEF gain until phase end",
+        "Shield Spear",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(400)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1900)",
         "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(1600)",
         'eventName: "becameTarget"',
       ],
@@ -7266,6 +7286,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetAttackNormalizeGroupFinal: 0,
       targetDefensePositionFinalDefense: 0,
       targetOpponentHandCountStat: 0,
+      crossFieldTargetUpdateStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
