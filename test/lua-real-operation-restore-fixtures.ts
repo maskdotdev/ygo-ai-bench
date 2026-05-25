@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 381;
+export const operationFixtureCount = 382;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -54,6 +54,7 @@ export const operationKindCounts = {
   namedGraveCountTargetLossStat: 1,
   graveMonsterCountTargetBoostStat: 1,
   deckSetcodeCostTargetBoostStat: 1,
+  twoTargetSetBaseAttackSwapStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -368,6 +369,7 @@ export type OperationKind =
   | "namedGraveCountTargetLossStat"
   | "graveMonsterCountTargetBoostStat"
   | "deckSetcodeCostTargetBoostStat"
+  | "twoTargetSetBaseAttackSwapStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1101,6 +1103,29 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc1:GetBaseAttack())",
         "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-amazoness-spellcaster-base-swap-stat.test.ts",
+      kind: "twoTargetSetBaseAttackSwapStat",
+      required: [
+        "restores Amazoness and opponent target base ATK swap",
+        "Amazoness Spellcaster",
+        "s.listed_series={SET_AMAZONESS}",
+        "Duel.IsExistingTarget(aux.FaceupFilter(Card.IsSetCard,SET_AMAZONESS),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,0,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsSetCard,SET_AMAZONESS),tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "local g=Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "local atk1=tc1:GetBaseAttack()",
+        "local atk2=tc2:GetBaseAttack()",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e1:SetValue(atk2)",
+        "e2:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e2:SetValue(atk1)",
+        "currentAttack(findCard(restored.session, amazoness.uid), restored.session.state)).toBe(2600)",
+        "currentAttack(findCard(restored.session, opponent.uid), restored.session.state)).toBe(1200)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7562,6 +7587,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       namedGraveCountTargetLossStat: 0,
       graveMonsterCountTargetBoostStat: 0,
       deckSetcodeCostTargetBoostStat: 0,
+      twoTargetSetBaseAttackSwapStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
