@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 399;
+export const operationFixtureCount = 400;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -33,6 +33,7 @@ export const operationKindCounts = {
   preDamageLpCostDifferencePlusAttackStat: 1,
   preDamageLinkedLevelStat: 1,
   pzoneExtraCountTargetAttackStat: 1,
+  battleFlagWarRockExtraAttackStat: 1,
   deskbotGroupAttackOath: 1,
   fusionHeroBanishCopyAttack: 1,
   normalSummonedGroupDisableImmunityStat: 1,
@@ -365,6 +366,7 @@ export type OperationKind =
   | "preDamageLpCostDifferencePlusAttackStat"
   | "preDamageLinkedLevelStat"
   | "pzoneExtraCountTargetAttackStat"
+  | "battleFlagWarRockExtraAttackStat"
   | "deskbotGroupAttackOath"
   | "fusionHeroBanishCopyAttack"
   | "normalSummonedGroupDisableImmunityStat"
@@ -866,6 +868,32 @@ export function operationFixtureFiles(): Array<{
         "Duel.CheckPendulumZones(tp)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1300)",
         'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-war-rock-meteoragon-battled-flag-extra-stat.test.ts",
+      kind: "battleFlagWarRockExtraAttackStat",
+      required: [
+        "restores battled Earth Warrior flag into extra monster attack and War Rock ATK boosts",
+        "War Rock Meteoragon",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "e1:SetValue(aux.indoval)",
+        "e2:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "Duel.SetTargetCard(e:GetHandler():GetBattleTarget())",
+        "Duel.AdjustInstantly(c)",
+        "e4:SetCode(EVENT_CHAIN_SOLVING)",
+        "aux.GlobalCheck(s,function()",
+        "ge1:SetCode(EVENT_BATTLED)",
+        "Duel.RegisterFlagEffect(bc0:GetControler(),id,RESET_PHASE|PHASE_END,0,1)",
+        "e3:SetCode(EVENT_FREE_CHAIN)",
+        "Duel.GetFlagEffect(tp,id)>0",
+        "e1:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
+        "e2:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "e2:SetValue(200)",
+        "effectExtraAttackMonster",
+        "currentAttack(restoredQuick.session.state.cards.find((card) => card.uid === meteoragon.uid), restoredQuick.session.state)).toBe(2800)",
+        "battleDamage).toEqual({ 0: 0, 1: 400 })",
       ],
     },
     {
