@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 394;
+export const operationFixtureCount = 395;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -67,6 +67,7 @@ export const operationKindCounts = {
   battleTargetMirrorAttackFinal: 1,
   lightDragonBattleTargetAttackGain: 1,
   allFaceupTotalMonsterCountAttackBoost: 1,
+  banishedMzoneGroupFinalAttackZero: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -394,6 +395,7 @@ export type OperationKind =
   | "battleTargetMirrorAttackFinal"
   | "lightDragonBattleTargetAttackGain"
   | "allFaceupTotalMonsterCountAttackBoost"
+  | "banishedMzoneGroupFinalAttackZero"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1333,6 +1335,26 @@ export function operationFixtureFiles(): Array<{
         "moveFaceDownDefense",
         "effectUpdateAttack",
         "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-zero-force-banished-mzone-group-zero-stat.test.ts",
+      kind: "banishedMzoneGroupFinalAttackZero",
+      required: [
+        "restores own face-up monster banish trigger into all-face-up final ATK zeroing",
+        "Zero Force",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetCode(EVENT_REMOVE)",
+        "c:IsPreviousControler(tp) and c:IsControler(tp) and c:IsPreviousLocation(LOCATION_MZONE) and c:IsPreviousPosition(POS_FACEUP)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(0)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
+        "eventName: "banished"",
+        "effectSetAttackFinal",
+        "resetEventStandard",
+        "currentAttack(findCard(restored.session, ally.uid), restored.session.state)).toBe(0)",
+        "currentAttack(findCard(restored.session, opponent.uid), restored.session.state)).toBe(0)",
       ],
     },
     {
