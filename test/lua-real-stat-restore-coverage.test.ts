@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 486; const statKindCounts = {
+const statFixtureCount = 487; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -89,6 +89,7 @@ const statFixtureCount = 486; const statKindCounts = {
   kuribehReleaseSearchSummonStat: 1,
   thunderDragonduoProcedureChainBattleEndStat: 1,
   thunderDragonmatrixDiscardBanishSearchStat: 1,
+  mistValleyThunderLordReturnStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -547,6 +548,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   kuribehReleaseSearchSummonStat: 1,
   thunderDragonduoProcedureChainBattleEndStat: 1,
   thunderDragonmatrixDiscardBanishSearchStat: 1,
+  mistValleyThunderLordReturnStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -892,6 +894,7 @@ type ExtraStatKind =
   | "kuribehReleaseSearchSummonStat"
   | "thunderDragonduoProcedureChainBattleEndStat"
   | "thunderDragonmatrixDiscardBanishSearchStat"
+  | "mistValleyThunderLordReturnStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1388,6 +1391,7 @@ type ExtraStatSemanticVariant =
   | "kuribehReleaseSearchSummonStat"
   | "thunderDragonduoProcedureChainBattleEndStat"
   | "thunderDragonmatrixDiscardBanishSearchStat"
+  | "mistValleyThunderLordReturnStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3415,6 +3419,31 @@ function statFixtureFiles(): Array<{
         "eventName: \"becameTarget\"",
         "eventName: \"banished\"",
         "eventName: \"sentToHandConfirmed\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mist-valley-thunder-lord-return-stat.test.ts",
+      kind: "mistValleyThunderLordReturnStat",
+      required: [
+        'const thunderLordCode = "89310929"',
+        "Mist Valley Thunder Lord",
+        "restores quick target return to hand into self ATK gain",
+        "Synchro.AddProcedure(c,nil,1,1,Synchro.NonTunerEx(Card.IsSetCard,SET_MIST_VALLEY),1,99)",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCode(EVENT_FREE_CHAIN)",
+        "e1:SetRange(LOCATION_MZONE)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.SelectTarget(tp,Card.IsAbleToHand,tp,LOCATION_ONFIELD,0,1,1,c)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(500)",
+        "e1:SetReset(RESETS_STANDARD_DISABLE_PHASE_END)",
+        "effectId === \"lua-3-1002\"",
+        "currentAttack(findCard(restored.session, thunderLord.uid), restored.session.state)).toBe(3100)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10241,6 +10270,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       kuribehReleaseSearchSummonStat: 0,
       thunderDragonduoProcedureChainBattleEndStat: 0,
       thunderDragonmatrixDiscardBanishSearchStat: 0,
+      mistValleyThunderLordReturnStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11714,6 +11744,22 @@ function statSemanticVariants(): Array<{
         "eventName: \"becameTarget\"",
         "eventName: \"banished\"",
         "eventName: \"sentToHandConfirmed\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mist-valley-thunder-lord-return-stat.test.ts",
+      kind: "mistValleyThunderLordReturnStat",
+      required: [
+        'const thunderLordCode = "89310929"',
+        "Mist Valley Thunder Lord",
+        "restores quick target return to hand into self ATK gain",
+        "Synchro.AddProcedure(c,nil,1,1,Synchro.NonTunerEx(Card.IsSetCard,SET_MIST_VALLEY),1,99)",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_ATKCHANGE)",
+        "EFFECT_UPDATE_ATTACK",
+        "RESETS_STANDARD_DISABLE_PHASE_END",
+        "effectId === \"lua-3-1002\"",
+        "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -16607,6 +16653,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       kuribehReleaseSearchSummonStat: 0,
       thunderDragonduoProcedureChainBattleEndStat: 0,
       thunderDragonmatrixDiscardBanishSearchStat: 0,
+      mistValleyThunderLordReturnStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
