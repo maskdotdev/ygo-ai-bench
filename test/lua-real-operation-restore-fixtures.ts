@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 398;
+export const operationFixtureCount = 399;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -34,6 +34,7 @@ export const operationKindCounts = {
   preDamageLinkedLevelStat: 1,
   pzoneExtraCountTargetAttackStat: 1,
   deskbotGroupAttackOath: 1,
+  fusionHeroBanishCopyAttack: 1,
   normalSummonedGroupDisableImmunityStat: 1,
   damageStepTargetAllyAttackStat: 1,
   targetBaseAttackBattleEffectProtectFlag: 1,
@@ -365,6 +366,7 @@ export type OperationKind =
   | "preDamageLinkedLevelStat"
   | "pzoneExtraCountTargetAttackStat"
   | "deskbotGroupAttackOath"
+  | "fusionHeroBanishCopyAttack"
   | "normalSummonedGroupDisableImmunityStat"
   | "damageStepTargetAllyAttackStat"
   | "targetBaseAttackBattleEffectProtectFlag"
@@ -885,6 +887,26 @@ export function operationFixtureFiles(): Array<{
         "Duel.SelectEffectYesNo(tp,c,96)",
         "currentAttack(findCard(restored.session, deskbot.uid), restored.session.state)).toBe(2000)",
         "effectCannotAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-divine-neos-banish-copy-attack.test.ts",
+      kind: "fusionHeroBanishCopyAttack",
+      required: [
+        "restores HERO grave banish cost into copy-inherit ATK gain and copy reset helper",
+        "Elemental HERO Divine Neos",
+        "Fusion.AddProcMixRep(c,true,true,s.ffilter,2,2",
+        "aux.FilterBoolFunctionEx(Card.IsSetCard,SET_NEOS)",
+        "aux.SpElimFilter(c,true)",
+        "Duel.Remove(tc,POS_FACEUP,REASON_COST)",
+        "Duel.SetTargetParam(tc:GetOriginalCode())",
+        "e1:SetProperty(EFFECT_FLAG_COPY_INHERIT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(500)",
+        "local cid=c:CopyEffect(code,RESETS_STANDARD_PHASE_END,1)",
+        "e2:SetCode(EVENT_PHASE+PHASE_END)",
+        "currentAttack(findCard(restored.session, divine.uid), restored.session.state)).toBe(3000)",
+        'eventName: "banished"',
       ],
     },
     {
