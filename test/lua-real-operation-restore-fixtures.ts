@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 387;
+export const operationFixtureCount = 388;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -60,6 +60,7 @@ export const operationKindCounts = {
   raceFilteredTargetAttackBoostStat: 1,
   globalEffectMonsterFinalStatSwap: 1,
   globalFaceupFinalAttackHalve: 1,
+  discardCostOpponentGroupAttackDefenseDrop: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -380,6 +381,7 @@ export type OperationKind =
   | "raceFilteredTargetAttackBoostStat"
   | "globalEffectMonsterFinalStatSwap"
   | "globalFaceupFinalAttackHalve"
+  | "discardCostOpponentGroupAttackDefenseDrop"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1175,6 +1177,29 @@ export function operationFixtureFiles(): Array<{
         "effectSetAttackFinal",
         "resetsStandardPhaseEnd",
         "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-curse-aging-discard-opponent-stat.test.ts",
+      kind: "discardCostOpponentGroupAttackDefenseDrop",
+      required: [
+        "restores discard cost into opponent face-up ATK and DEF drops",
+        "Curse of Aging",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.IsExistingMatchingCard(Card.IsDiscardable,tp,LOCATION_HAND,0,1,e:GetHandler())",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)",
+        "Duel.IsExistingMatchingCard(Card.IsFaceup,tp,0,LOCATION_MZONE,1,nil)",
+        "local g=Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-500)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "reasonDiscardCost",
+        "effectUpdateAttack",
+        "effectUpdateDefense",
+        "currentAttack",
+        "currentDefense",
+        'eventName: "discarded"',
       ],
     },
     {
@@ -7700,6 +7725,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       raceFilteredTargetAttackBoostStat: 0,
       globalEffectMonsterFinalStatSwap: 0,
       globalFaceupFinalAttackHalve: 0,
+      discardCostOpponentGroupAttackDefenseDrop: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
