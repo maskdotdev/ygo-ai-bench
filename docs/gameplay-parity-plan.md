@@ -2,7 +2,7 @@
 
 This plan turns the remaining gameplay work into sequenced implementation slices. The project is effectively an EDOPro-compatible engine reimplementation: it should execute real Project Ignis card scripts and reproduce EDOPro duel behavior for real sequences. The goal is not broad engine scaffolding; the goal is repeatable EDOPro parity, with fixture coverage that prevents timing regressions.
 
-See `docs/parity-completion-audit.md` for the current end-state audit, evidence, remaining gaps, and recommended next slice.
+See `docs/parity-completion-audit.md` for the current end-state audit, evidence, remaining gaps, and recommended next slice. See `docs/practical-parity-gate.md` for the playable milestone gate; full behavior-signature coverage is a map for fixture selection, not a release blocker.
 
 ## Parity Target
 

@@ -49,6 +49,8 @@ The engine is in a strong parity baseline, but the documented end-state requires
 
 ## Practical Next Goal
 
+Use `docs/practical-parity-gate.md` as the playable milestone definition. The direct real-script and behavior-signature counts are useful risk indicators, but the near-term gate is green guardrails, representative mechanic coverage, curated deck probes, and browser arena execution.
+
 Drive the active goal through concrete parity slices instead of count chasing:
 
 1. Pick one remaining family from this audit.
