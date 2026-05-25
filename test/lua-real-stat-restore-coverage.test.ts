@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 494; const statKindCounts = {
+const statFixtureCount = 495; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -97,6 +97,7 @@ const statFixtureCount = 494; const statKindCounts = {
   concentratingCurrentDefenseAttackOathStat: 1,
   lightWingShieldAttackDisabledUtopiaStat: 1,
   snowmanEffectDirectAttackSumLockStat: 1,
+  psychicFervorLpFinalAttackDirectLockStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -563,6 +564,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   concentratingCurrentDefenseAttackOathStat: 1,
   lightWingShieldAttackDisabledUtopiaStat: 1,
   snowmanEffectDirectAttackSumLockStat: 1,
+  psychicFervorLpFinalAttackDirectLockStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -916,6 +918,7 @@ type ExtraStatKind =
   | "concentratingCurrentDefenseAttackOathStat"
   | "lightWingShieldAttackDisabledUtopiaStat"
   | "snowmanEffectDirectAttackSumLockStat"
+  | "psychicFervorLpFinalAttackDirectLockStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1420,6 +1423,7 @@ type ExtraStatSemanticVariant =
   | "concentratingCurrentDefenseAttackOathStat"
   | "lightWingShieldAttackDisabledUtopiaStat"
   | "snowmanEffectDirectAttackSumLockStat"
+  | "psychicFervorLpFinalAttackDirectLockStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3630,6 +3634,33 @@ function statFixtureFiles(): Array<{
         "EFFECT_FLAG_CLIENT_HINT",
         "effectId === \"lua-1-1002\"",
         "toBe(2700)",
+        "eventName: \"attackDeclared\"",
+        "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-psychic-fervor-lp-final-attack-direct-lock-stat.test.ts",
+      kind: "psychicFervorLpFinalAttackDirectLockStat",
+      required: [
+        'const fervorCode = "26773909"',
+        "Psychic Fervor",
+        "restores direct-attack flag and LP filter into LP payment, final ATK doubling, and direct-attack lock",
+        "EFFECT_COUNT_CODE_OATH",
+        "aux.GlobalCheck(s,function()",
+        "EVENT_ATTACK_ANNOUNCE",
+        "Duel.GetAttackTarget()==nil",
+        "tc:RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,0,1)",
+        "Duel.IsBattlePhase()",
+        "aux.StatChangeDamageStepCondition()",
+        "c:GetAttack()<Duel.GetLP(tp)",
+        "tc:GetFlagEffect(id)==0",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil,tp)",
+        "Duel.SetLP(tp,Duel.GetLP(tp)-tc:GetAttack())",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        "lifePoints).toBe(3000)",
+        "toBe(4000)",
         "eventName: \"attackDeclared\"",
         "eventName: \"becameTarget\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
@@ -10466,6 +10497,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       concentratingCurrentDefenseAttackOathStat: 0,
       lightWingShieldAttackDisabledUtopiaStat: 0,
       snowmanEffectDirectAttackSumLockStat: 0,
+      psychicFervorLpFinalAttackDirectLockStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -10849,6 +10881,26 @@ function statSemanticVariants(): Array<{
         "EFFECT_CANNOT_DIRECT_ATTACK",
         "effectId === \"lua-1-1002\"",
         "toBe(2700)",
+        "eventName: \"attackDeclared\"",
+        "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-psychic-fervor-lp-final-attack-direct-lock-stat.test.ts",
+      kind: "psychicFervorLpFinalAttackDirectLockStat",
+      required: [
+        'const fervorCode = "26773909"',
+        "Psychic Fervor",
+        "EVENT_ATTACK_ANNOUNCE",
+        "Duel.GetAttackTarget()==nil",
+        "Duel.IsBattlePhase()",
+        "c:GetAttack()<Duel.GetLP(tp)",
+        "Duel.SetLP(tp,Duel.GetLP(tp)-tc:GetAttack())",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        "lifePoints).toBe(3000)",
+        "toBe(4000)",
         "eventName: \"attackDeclared\"",
         "eventName: \"becameTarget\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
@@ -16977,6 +17029,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       concentratingCurrentDefenseAttackOathStat: 0,
       lightWingShieldAttackDisabledUtopiaStat: 0,
       snowmanEffectDirectAttackSumLockStat: 0,
+      psychicFervorLpFinalAttackDirectLockStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
