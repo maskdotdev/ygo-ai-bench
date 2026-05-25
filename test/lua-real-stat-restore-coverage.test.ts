@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 498; const statKindCounts = {
+const statFixtureCount = 499; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -101,6 +101,7 @@ const statFixtureCount = 498; const statKindCounts = {
   berserkScalesDamageStepEndStatLock: 1,
   meklordDeflectionFinalNoDamageReplaceStat: 1,
   finalCrossSynchroGraveExtraAttackStat: 1,
+  overwindFinalStatEndToHand: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -571,6 +572,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   berserkScalesDamageStepEndStatLock: 1,
   meklordDeflectionFinalNoDamageReplaceStat: 1,
   finalCrossSynchroGraveExtraAttackStat: 1,
+  overwindFinalStatEndToHand: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -928,6 +930,7 @@ type ExtraStatKind =
   | "berserkScalesDamageStepEndStatLock"
   | "meklordDeflectionFinalNoDamageReplaceStat"
   | "finalCrossSynchroGraveExtraAttackStat"
+  | "overwindFinalStatEndToHand"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1436,6 +1439,7 @@ type ExtraStatSemanticVariant =
   | "berserkScalesDamageStepEndStatLock"
   | "meklordDeflectionFinalNoDamageReplaceStat"
   | "finalCrossSynchroGraveExtraAttackStat"
+  | "overwindFinalStatEndToHand"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3764,6 +3768,31 @@ function statFixtureFiles(): Array<{
         "toBe(4800)",
         "eventName: \"becameTarget\"",
         "eventName: \"breakEffect\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-overwind-damage-step-end-to-hand-stat.test.ts",
+      kind: "overwindFinalStatEndToHand",
+      required: [
+        'const overwindCode = "24920410"',
+        "Overwind",
+        "restores Damage Step Wind-Up targeting into final stat doubling and End Phase self-return",
+        "e1:SetHintTiming(TIMING_DAMAGE_STEP)",
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP",
+        "EFFECT_COUNT_CODE_OATH",
+        "aux.StatChangeDamageStepCondition",
+        "return c:IsFaceup() and c:IsSetCard(SET_WIND_UP)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.SendtoHand(e:GetHandler(),nil,REASON_EFFECT)",
+        "toBe(2400)",
+        "toBe(3200)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10602,6 +10631,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       berserkScalesDamageStepEndStatLock: 0,
       meklordDeflectionFinalNoDamageReplaceStat: 0,
       finalCrossSynchroGraveExtraAttackStat: 0,
+      overwindFinalStatEndToHand: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11074,6 +11104,26 @@ function statSemanticVariants(): Array<{
         "toBe(4800)",
         "eventName: \"becameTarget\"",
         "eventName: \"breakEffect\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-overwind-damage-step-end-to-hand-stat.test.ts",
+      kind: "overwindFinalStatEndToHand",
+      required: [
+        'const overwindCode = "24920410"',
+        "Overwind",
+        "EFFECT_FLAG_DAMAGE_STEP",
+        "aux.StatChangeDamageStepCondition",
+        "SET_WIND_UP",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_SET_DEFENSE_FINAL",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.SendtoHand(e:GetHandler(),nil,REASON_EFFECT)",
+        "toBe(2400)",
+        "toBe(3200)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -17204,6 +17254,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       berserkScalesDamageStepEndStatLock: 0,
       meklordDeflectionFinalNoDamageReplaceStat: 0,
       finalCrossSynchroGraveExtraAttackStat: 0,
+      overwindFinalStatEndToHand: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,

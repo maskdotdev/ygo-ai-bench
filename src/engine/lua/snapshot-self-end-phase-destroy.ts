@@ -9,6 +9,7 @@ const luaPhaseEndResetFlags = 0x40000200;
 const luaSelfEndPhaseDestroyCodes = new Set(["23289281", "55696885"]);
 const luaSelfDelayedEndPhaseDestroyCodes = new Set(["324483"]);
 const luaSelfEndPhaseSendCodes = new Set(["40971261", "71071546"]);
+const luaSelfEndPhaseReturnToHandCodes = new Set(["24920410"]);
 
 export function isKnownSelfEndPhaseDestroyEffect(effect: SerializedDuelEffect): boolean {
   const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
@@ -23,8 +24,8 @@ export function isKnownSelfEndPhaseDestroyEffect(effect: SerializedDuelEffect): 
   return (
     luaSelfDelayedEndPhaseDestroyCodes.has(registryCode) &&
     effect.event === "continuous" &&
-    effect.triggerEvent === "phaseEnd" &&
-    effect.triggerCode === luaPhaseEndEventCode &&
+    (effect.triggerEvent === undefined || effect.triggerEvent === "phaseEnd") &&
+    (effect.triggerCode === undefined || effect.triggerCode === luaPhaseEndEventCode) &&
     effect.reset?.flags === luaPhaseEndResetFlags
   );
 }
@@ -54,7 +55,25 @@ export function isKnownSelfEndPhaseSendEffect(effect: SerializedDuelEffect): boo
     effect.range.length === 1 &&
     (effect.range[0] === "monsterZone" || effect.range[0] === "spellTrapZone") &&
     effect.countLimit === 1 &&
-    effect.triggerEvent === "phaseEnd"
+    (effect.triggerEvent === undefined || effect.triggerEvent === "phaseEnd") &&
+    (effect.triggerCode === undefined || effect.triggerCode === luaPhaseEndEventCode)
+  );
+}
+
+export function isKnownSelfEndPhaseReturnToHandEffect(effect: SerializedDuelEffect): boolean {
+  const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
+  return (
+    registryCode !== undefined &&
+    luaSelfEndPhaseReturnToHandCodes.has(registryCode) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    effect.countLimit === 1 &&
+    (effect.triggerEvent === undefined || effect.triggerEvent === "phaseEnd") &&
+    (effect.triggerCode === undefined || effect.triggerCode === luaPhaseEndEventCode)
   );
 }
 
@@ -67,6 +86,19 @@ export function selfEndPhaseSendOperation(effect: SerializedDuelEffect): DuelEff
       });
     } catch {
       // EDOPro-style delayed operations ignore handlers that can no longer be sent.
+    }
+  };
+}
+
+export function selfEndPhaseReturnToHandOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    try {
+      moveDuelCardWithRedirects(ctx.duel, ctx.source.uid, "hand", ctx.source.controller, duelReason.effect, ctx.player, {
+        eventReasonCardUid: effect.sourceUid,
+        ...effectReasonIdPayload(effect),
+      });
+    } catch {
+      // EDOPro-style delayed operations ignore handlers that can no longer be returned.
     }
   };
 }

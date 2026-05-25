@@ -15,7 +15,7 @@ import { delayedFlaggedSendToHandOperation, delayedGroupSendToHandOperation, eng
 import { delayedBattleDestroyPhaseCanActivate, delayedBattleDestroyPhaseOperation, isKnownDelayedBattleDestroyMarkerEffect, isKnownDelayedBattleDestroyPhaseEffect } from "#lua/snapshot-delayed-battle-destroy.js";
 import { luaHandlerDestroyOperation, luaLinkedLeaveFieldDestroyOperation } from "#lua/snapshot-destroy-operations.js";
 import { isKnownLevelNormalEndPhaseDestroyEffect, levelNormalEndPhaseDestroyCanActivate, levelNormalEndPhaseDestroyOperation } from "#lua/snapshot-level-normal-end-phase-destroy.js";
-import { isKnownSelfEndPhaseDestroyEffect, isKnownSelfEndPhaseSendEffect, selfEndPhaseDestroyOperation, selfEndPhaseSendOperation } from "#lua/snapshot-self-end-phase-destroy.js";
+import { isKnownSelfEndPhaseDestroyEffect, isKnownSelfEndPhaseReturnToHandEffect, isKnownSelfEndPhaseSendEffect, selfEndPhaseDestroyOperation, selfEndPhaseReturnToHandOperation, selfEndPhaseSendOperation } from "#lua/snapshot-self-end-phase-destroy.js";
 import { isKnownSwordsOfRevealingLightPhaseEndEffect, isKnownSwordsOfRevealingLightResetEffect, swordsOfRevealingLightPhaseEndCanActivate, swordsOfRevealingLightPhaseEndOperation, swordsOfRevealingLightRestoredReset } from "#lua/snapshot-swords-of-revealing-light.js";
 import { isKnownPlayerDamageZeroEffect, isKnownStaticForbiddenCardEffect, isKnownTemporaryActivationLockEffect, isKnownTemporaryArtifactLanceaBanishLockEffect, isKnownTemporaryAttackAnnounceLabelObjectWatcherEffect, isKnownTemporaryAttackAnnounceNegateEffect, isKnownTemporaryBattleProtectionEffect, isKnownTemporaryBattledSetAttackFinalWatcherEffect, isKnownTemporaryCannotAttackAnnounceSelfEffect, isKnownTemporaryCannotAttackEffect, isKnownTemporaryCannotDirectAttackEffect, isKnownTemporaryDirectAttackEffect, isKnownTemporaryEarthshatteringDeckGraveLockEffect, isKnownTemporaryFieldIdAttackAnnounceLockEffect, isKnownTemporaryForbiddenCardEffect, isKnownTemporaryMonsterAttackAllEffect, isKnownTemporaryMonsterBattleDamageAvoidEffect, isKnownTemporaryMonsterExtraAttackEffect, isKnownTemporaryMonsterNoBattleDamageEffect, isKnownTemporaryOpponentCannotBattlePhaseEffect, isKnownTemporaryOpponentTurnSkipMain1Effect, isKnownTemporaryOpponentTurnSkipMain2Effect, isKnownTemporaryOpponentTurnSkipTurnEffect, isKnownTemporaryPlayerAttackAnnounceLockEffect, isKnownTemporaryPlayerHalfBattleDamageEffect, isKnownTemporarySameCodeActivationOathEffect, isKnownTemporarySelfTurnCannotEndPhaseEffect, isKnownTemporarySelfTurnSkipBattlePhaseEffect, isKnownTemporarySetcodeAttackAnnounceLockEffect, isKnownTemporarySummonSetLockEffect, isKnownTemporaryTypeTargetAttackUpdateEffect, temporaryAttackAnnounceLabelObjectWatcherOperation, temporaryAttackAnnounceNegateOperation, temporaryBattledSetAttackFinalWatcherOperation, temporaryOpponentTurnSkipMain1CanActivate, temporarySelfTurnSkipBattlePhaseCanActivate } from "#lua/snapshot-temporary-effects.js";
 import { isKnownMulcharmyDrawWatcherEffect, isKnownMulcharmyEndPhaseShuffleEffect, mulcharmyDrawWatcherOperation, mulcharmyEndPhaseShuffleOperation } from "#lua/snapshot-mulcharmy.js";
@@ -721,7 +721,7 @@ function restoredLuaTriggerMetadata(effect: SerializedDuelEffect): Partial<Pick<
   if (isKnownMetaphysRagnarokEndPhaseBanishEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
   if (isKnownCelestialMagicianEndSearchEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
   if (isKnownSpellbookPowerBattleDestroyingSearchEffect(effect)) return { triggerEvent: "battleDestroyed" as const, triggerCode: 1139, triggerTiming: "if" as const };
-  if (isKnownSelfEndPhaseSendEffect(effect) || isKnownDelayedGroupSendToHandEffect(effect) || isKnownWakeCupMochaDelayedSendToGraveEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownPurushaddollAeonDelayedFlipEffect(effect) || isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownDelayedBattleDestroyPhaseEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
+  if (isKnownSelfEndPhaseSendEffect(effect) || isKnownSelfEndPhaseReturnToHandEffect(effect) || isKnownDelayedGroupSendToHandEffect(effect) || isKnownWakeCupMochaDelayedSendToGraveEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownPurushaddollAeonDelayedFlipEffect(effect) || isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownDelayedBattleDestroyPhaseEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
   if (isKnownOuroborosSageAttackLimitWatcherEffect(effect) || isKnownOuroborosSageAttackDoubleEffect(effect)) return { triggerEvent: "attackDeclared" as const, triggerCode: 1130, triggerTiming: "when" as const };
   if (isKnownCarpedivemTurnEndHintResetEffect(effect)) return { triggerEvent: "turnEnded" as const, triggerCode: 1210, triggerTiming: "if" as const };
   if (isKnownMaharaghiPredrawEffect(effect) || isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return { triggerEvent: "preDraw" as const, triggerCode: 1113, triggerTiming: "if" as const };
@@ -730,7 +730,7 @@ function restoredLuaTriggerMetadata(effect: SerializedDuelEffect): Partial<Pick<
   return {}; }
 
 function refreshKnownRestoredLuaEffect(session: DuelSession, effect: SerializedDuelEffect): void {
-  if (!effect.registryKey || (!isKnownSelfEndPhaseDestroyEffect(effect) && !isKnownSelfEndPhaseSendEffect(effect) && !isKnownDelayedBattleDestroyPhaseEffect(effect) && !isKnownWakeCupMochaDelayedSendToGraveEffect(effect) && !isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) && !isKnownMetaphysRagnarokEndPhaseBanishEffect(effect) && !isKnownTemporaryBanishReturnToFieldEffect(effect))) return;
+  if (!effect.registryKey || (!isKnownSelfEndPhaseDestroyEffect(effect) && !isKnownSelfEndPhaseSendEffect(effect) && !isKnownSelfEndPhaseReturnToHandEffect(effect) && !isKnownDelayedBattleDestroyPhaseEffect(effect) && !isKnownWakeCupMochaDelayedSendToGraveEffect(effect) && !isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) && !isKnownMetaphysRagnarokEndPhaseBanishEffect(effect) && !isKnownTemporaryBanishReturnToFieldEffect(effect))) return;
   const restored = session.state.effects.find((candidate) => candidate.registryKey === effect.registryKey);
   if (!restored) return;
   Object.assign(restored, {
@@ -863,6 +863,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownSunlitSentinelDelayedStandbyEffect(effect) ||
     isKnownSelfEndPhaseDestroyEffect(effect) ||
     isKnownSelfEndPhaseSendEffect(effect) ||
+    isKnownSelfEndPhaseReturnToHandEffect(effect) ||
     isKnownEbonArrowBattleDestroyingDamageEffect(effect) ||
     isKnownMiniGutsBattleDestroyedDamageEffect(effect) ||
     isKnownSpellbookPowerBattleDestroyingSearchEffect(effect) ||
@@ -1679,6 +1680,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
   if (isKnownSelfEndPhaseSendEffect(effect)) return selfEndPhaseSendOperation(effect);
+  if (isKnownSelfEndPhaseReturnToHandEffect(effect)) return selfEndPhaseReturnToHandOperation(effect);
   if (isKnownLeaveFieldLinkedDestroyEffect(effect)) return luaLinkedLeaveFieldDestroyOperation(effect);
   if (isKnownEquipLeaveFieldBanishTargetEffect(effect)) return luaEquipLeaveFieldBanishTargetOperation(effect);
   if (isKnownEquipLeaveFieldDestroyTargetEffect(effect)) return luaEquipLeaveFieldDestroyTargetOperation(effect);
