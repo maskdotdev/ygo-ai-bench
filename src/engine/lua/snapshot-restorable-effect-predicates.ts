@@ -4,6 +4,7 @@ import type { SerializedDuelEffect } from "#duel/types.js";
 
 const luaEffectGeminiStatus = 75;
 const luaEffectAddType = 115;
+const luaEffectChangeRace = 122;
 const luaEffectRemainField = 17;
 const luaEffectCannotTrigger = 7;
 const luaEffectIndestructibleBattle = 42;
@@ -86,6 +87,19 @@ export function isKnownTemporaryTunerAddTypeEffect(effect: SerializedDuelEffect)
     effect.sourceUid !== undefined &&
     effect.targetRange === undefined &&
     effect.reset?.flags === luaResetEventStandard &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
+export function isKnownTemporaryChangeRaceEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === luaEffectChangeRace &&
+    effect.value !== undefined &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.reset?.flags !== undefined &&
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone"
   );
