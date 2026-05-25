@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 368;
+export const operationFixtureCount = 369;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -41,6 +41,7 @@ export const operationKindCounts = {
   targetDefensePositionFinalDefense: 1,
   targetOpponentHandCountStat: 1,
   crossFieldTargetUpdateStat: 1,
+  attackerSetTargetCardStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -342,6 +343,7 @@ export type OperationKind =
   | "targetDefensePositionFinalDefense"
   | "targetOpponentHandCountStat"
   | "crossFieldTargetUpdateStat"
+  | "attackerSetTargetCardStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -975,6 +977,23 @@ export function operationFixtureFiles(): Array<{
         "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1900)",
         "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(1600)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-mask-weakness-attacker-stat.test.ts",
+      kind: "attackerSetTargetCardStat",
+      required: [
+        "restores automatic attacker targeting into phase-end ATK loss",
+        "Mask of Weakness",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "local tc=Duel.GetAttacker()",
+        "Duel.SetTargetCard(tc)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-700)",
+        "currentAttack(findCard(restoredDamage.session, attacker.uid), restoredDamage.session.state)).toBe(1700)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7287,6 +7306,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDefensePositionFinalDefense: 0,
       targetOpponentHandCountStat: 0,
       crossFieldTargetUpdateStat: 0,
+      attackerSetTargetCardStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
