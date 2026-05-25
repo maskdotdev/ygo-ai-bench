@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 493; const statKindCounts = {
+const statFixtureCount = 494; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -96,6 +96,7 @@ const statFixtureCount = 493; const statKindCounts = {
   sonicBoomMpbFinalPierceEndDestroyStat: 1,
   concentratingCurrentDefenseAttackOathStat: 1,
   lightWingShieldAttackDisabledUtopiaStat: 1,
+  snowmanEffectDirectAttackSumLockStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -561,6 +562,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   sonicBoomMpbFinalPierceEndDestroyStat: 1,
   concentratingCurrentDefenseAttackOathStat: 1,
   lightWingShieldAttackDisabledUtopiaStat: 1,
+  snowmanEffectDirectAttackSumLockStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -913,6 +915,7 @@ type ExtraStatKind =
   | "sonicBoomMpbFinalPierceEndDestroyStat"
   | "concentratingCurrentDefenseAttackOathStat"
   | "lightWingShieldAttackDisabledUtopiaStat"
+  | "snowmanEffectDirectAttackSumLockStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1416,6 +1419,7 @@ type ExtraStatSemanticVariant =
   | "sonicBoomMpbFinalPierceEndDestroyStat"
   | "concentratingCurrentDefenseAttackOathStat"
   | "lightWingShieldAttackDisabledUtopiaStat"
+  | "snowmanEffectDirectAttackSumLockStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3600,6 +3604,33 @@ function statFixtureFiles(): Array<{
         "api: \"SelectOption\"",
         "toBe(5000)",
         "eventName: \"attackDisabled\"",
+        "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-snowman-effect-direct-attack-sum-lock-stat.test.ts",
+      kind: "snowmanEffectDirectAttackSumLockStat",
+      required: [
+        'const snowmanCode = "62370023"',
+        "Snowman Effect",
+        "restores direct-attack flag filtering into base-ATK sum boost and direct-attack lock",
+        "EFFECT_COUNT_CODE_OATH",
+        "aux.GlobalCheck(s,function()",
+        "EVENT_ATTACK_ANNOUNCE",
+        "Duel.GetAttackTarget()==nil",
+        "tc:RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,0,1)",
+        "Duel.IsExistingMatchingCard(s.filter2,tp,LOCATION_MZONE,0,1,c)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil,tp)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,0,tc)",
+        "for bc in aux.Next(g) do",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_FLAG_CANNOT_DISABLE",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        "EFFECT_FLAG_CLIENT_HINT",
+        "effectId === \"lua-1-1002\"",
+        "toBe(2700)",
+        "eventName: \"attackDeclared\"",
         "eventName: \"becameTarget\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
@@ -10434,6 +10465,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       sonicBoomMpbFinalPierceEndDestroyStat: 0,
       concentratingCurrentDefenseAttackOathStat: 0,
       lightWingShieldAttackDisabledUtopiaStat: 0,
+      snowmanEffectDirectAttackSumLockStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -10800,6 +10832,24 @@ function statSemanticVariants(): Array<{
         "api: \"SelectOption\"",
         "toBe(5000)",
         "eventName: \"attackDisabled\"",
+        "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-snowman-effect-direct-attack-sum-lock-stat.test.ts",
+      kind: "snowmanEffectDirectAttackSumLockStat",
+      required: [
+        'const snowmanCode = "62370023"',
+        "Snowman Effect",
+        "EVENT_ATTACK_ANNOUNCE",
+        "Duel.GetAttackTarget()==nil",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_FLAG_CANNOT_DISABLE",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        "effectId === \"lua-1-1002\"",
+        "toBe(2700)",
+        "eventName: \"attackDeclared\"",
         "eventName: \"becameTarget\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
@@ -16926,6 +16976,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       sonicBoomMpbFinalPierceEndDestroyStat: 0,
       concentratingCurrentDefenseAttackOathStat: 0,
       lightWingShieldAttackDisabledUtopiaStat: 0,
+      snowmanEffectDirectAttackSumLockStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
