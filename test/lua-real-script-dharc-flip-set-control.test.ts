@@ -79,6 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dh
         eventCode: 1101,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventPlayer: 0,
         eventCardUid: dharc.uid,
         eventTriggerTiming: "when",
         eventPreviousState: { controller: 0, location: "deck", sequence: 0, position: "faceDown", faceUp: false },
@@ -105,6 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dh
       eventCode: 1101,
       eventCurrentState: { controller: 0, location: "monsterZone", sequence: 0, position: "faceUpAttack", faceUp: true },
       eventName: "flipSummoned",
+      eventPlayer: 0,
       eventPreviousState: { controller: 0, location: "deck", sequence: 0, position: "faceDown", faceUp: false },
       eventReason: 0,
       eventReasonPlayer: 0,
@@ -113,6 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dh
       operationInfos: [{ category: 0x2000, targetUids: [darkTarget.uid], count: 1, player: 0, parameter: 0 }],
       player: 0,
       sourceUid: dharc.uid,
+      targetFieldIds: [darkTarget.fieldId],
       targetUids: [darkTarget.uid],
     });
 
