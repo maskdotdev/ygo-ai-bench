@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 483; const statKindCounts = {
+const statFixtureCount = 484; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -137,6 +137,7 @@ const statFixtureCount = 483; const statKindCounts = {
   spyralGearDroneSummonSortTributeStatBanishToHand: 1,
   archfiendsStaffEquipOpponentStatLeaveToHand: 1,
   dewlorenTargetReturnOperatedStat: 1,
+  maskedHeroBlastSummonFinalAttackPayToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -591,6 +592,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   spyralGearDroneSummonSortTributeStatBanishToHand: 1,
   archfiendsStaffEquipOpponentStatLeaveToHand: 1,
   dewlorenTargetReturnOperatedStat: 1,
+  maskedHeroBlastSummonFinalAttackPayToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -934,6 +936,7 @@ type ExtraStatKind =
   | "spyralGearDroneSummonSortTributeStatBanishToHand"
   | "archfiendsStaffEquipOpponentStatLeaveToHand"
   | "dewlorenTargetReturnOperatedStat"
+  | "maskedHeroBlastSummonFinalAttackPayToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -1426,6 +1429,7 @@ type ExtraStatSemanticVariant =
   | "spyralGearDroneSummonSortTributeStatBanishToHand"
   | "archfiendsStaffEquipOpponentStatLeaveToHand"
   | "dewlorenTargetReturnOperatedStat"
+  | "maskedHeroBlastSummonFinalAttackPayToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -4603,6 +4607,29 @@ function statFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "e1:SetValue(ct*500)",
         "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === dewloren.uid), restoredChain.session.state)).toBe(3000)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-masked-hero-blast-summon-final-attack-pay-tohand.test.ts",
+      kind: "maskedHeroBlastSummonFinalAttackPayToHand",
+      required: [
+        'const blastCode = "89870349"',
+        "Masked HERO Blast",
+        "restores summon target final ATK halving and LP-cost Quick Effect Spell/Trap return",
+        "e2:SetCategory(CATEGORY_ATKCHANGE)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DELAY)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(tc:GetAttack()/2)",
+        "e3:SetCategory(CATEGORY_TOHAND)",
+        "e3:SetType(EFFECT_TYPE_QUICK_O)",
+        "e3:SetCost(Cost.PayLP(500))",
+        "Duel.SelectTarget(tp,s.thfilter,tp,0,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "currentAttack(restoredSummon.session.state.cards.find((card) => card.uid === opponentMonster.uid), restoredSummon.session.state)).toBe(1200)",
+        "players[0].lifePoints).toBe(7500)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10200,6 +10227,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       spyralGearDroneSummonSortTributeStatBanishToHand: 0,
       archfiendsStaffEquipOpponentStatLeaveToHand: 0,
       dewlorenTargetReturnOperatedStat: 0,
+      maskedHeroBlastSummonFinalAttackPayToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
@@ -12529,6 +12557,27 @@ function statSemanticVariants(): Array<{
         "value: 1000",
         "location: \"hand\"",
         "toBe(3000)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-masked-hero-blast-summon-final-attack-pay-tohand.test.ts",
+      kind: "maskedHeroBlastSummonFinalAttackPayToHand",
+      required: [
+        'const blastCode = "89870349"',
+        "effectSetAttackFinal = 102",
+        "effectId: \"lua-3-1102\"",
+        "effectId === \"lua-4-1002\"",
+        "eventName: \"specialSummoned\"",
+        "eventName: \"lifePointCostPaid\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHand\"",
+        "relatedEffectId: 3",
+        "relatedEffectId: 4",
+        "reasonEffectId: 4",
+        "value: 1200",
+        "location: \"hand\"",
+        "lifePoints).toBe(7500)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -16492,6 +16541,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       spyralGearDroneSummonSortTributeStatBanishToHand: 0,
       archfiendsStaffEquipOpponentStatLeaveToHand: 0,
       dewlorenTargetReturnOperatedStat: 0,
+      maskedHeroBlastSummonFinalAttackPayToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
