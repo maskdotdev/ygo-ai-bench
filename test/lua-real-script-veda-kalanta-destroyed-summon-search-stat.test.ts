@@ -244,6 +244,7 @@ describe.skipIf(!hasUpstreamScripts || !hasVedaScript)("Lua real script Veda Kal
         eventTriggerTiming: "if",
         eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
+        targetFieldIds: [opponentTarget.fieldId],
         targetUids: [opponentTarget.uid],
         operationInfos: [{ category: 0x1, targetUids: [opponentTarget.uid], count: 1, player: 0, parameter: 0 }],
       },

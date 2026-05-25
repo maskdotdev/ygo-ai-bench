@@ -102,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
         activationLocation: "hand",
         activationSequence: 0,
         operationInfos: [{ category: 0x4, targetUids, count: 3, player: 0, parameter: 0 }],
+        targetFieldIds: [ownGrave.fieldId, opponentGraveA.fieldId, opponentGraveB.fieldId],
         targetUids,
       },
     ]);

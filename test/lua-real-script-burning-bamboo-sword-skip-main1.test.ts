@@ -54,7 +54,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
     const activateBroken = getDuelLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === broken.uid);
     expect(activateBroken, JSON.stringify(getDuelLegalActions(session, 0), null, 2)).toBeDefined();
     applyActionAndAssert(session, activateBroken);
-    passChainUntilOpen(session);
     expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
       [
         {
@@ -65,21 +64,21 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
           "eventCode": 1027,
           "eventCurrentState": {
             "controller": 0,
-            "faceUp": false,
-            "location": "hand",
+            "faceUp": true,
+            "location": "spellTrapZone",
             "position": "faceDown",
-            "sequence": 0,
+            "sequence": 1,
           },
           "eventName": "chaining",
           "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
-            "location": "deck",
+            "location": "hand",
             "position": "faceDown",
-            "sequence": 2,
+            "sequence": 0,
           },
-          "eventReason": 0,
+          "eventReason": 1024,
           "eventReasonPlayer": 0,
           "eventTriggerTiming": "if",
           "eventValue": 1,
@@ -109,7 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
         "controller": 0,
         "cost": [Function],
         "event": "continuous",
-        "id": "lua-7-182",
+        "id": "lua-6-182",
         "luaTypeFlags": 2,
         "oncePerTurn": false,
         "operation": [Function],
@@ -126,7 +125,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
           "extraDeck",
           "overlay",
         ],
-        "registryKey": "lua:55870497:lua-7-182",
+        "registryKey": "lua:55870497:lua-6-182",
         "reset": {
           "flags": 1610613248,
         },
@@ -170,7 +169,8 @@ function passChainUntilOpen(session: DuelSession): void {
   while (session.state.chain.length > 0) {
     expect(++guard).toBeLessThan(10);
     const player = session.state.waitingFor ?? session.state.turnPlayer;
-    applyActionAndAssert(session, getDuelLegalActions(session, player).find((action) => action.type === "passChain"));
+    const actions = getDuelLegalActions(session, player);
+    applyActionAndAssert(session, actions.find((action) => action.type === "passChain") ?? actions.find((action) => action.type === "declineTrigger"));
   }
 }
 

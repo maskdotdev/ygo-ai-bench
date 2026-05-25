@@ -58,8 +58,8 @@ describe("Lua Synchro Summon reason source", () => {
 
     expect(host.messages).toContain("synchro reason result 1");
     expect(host.messages).toContain("synchro reason summoned true/true");
-    expect(tuner).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
-    expect(synchro).toMatchObject({ location: "monsterZone", summonType: "synchro", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === tuner!.uid)).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === synchro!.uid)).toMatchObject({ location: "monsterZone", summonType: "synchro", reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "specialSummoned", eventCardUid: synchro!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
   });
 });

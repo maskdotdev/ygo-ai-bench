@@ -113,6 +113,9 @@ describe.skipIf(!hasUpstreamScripts || !hasPigeonScript)("Lua real script Shinob
         ],
         "player": 0,
         "sourceUid": "p0-deck-92200612-0",
+        "targetFieldIds": [
+          6,
+        ],
         "targetUids": [
           "p0-deck-92200613-1",
         ],

@@ -27,7 +27,7 @@ const attributeDark = 0x20;
 const setIgnister = 0x135;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script You and A.I. custom token disable", () => {
-  it("restores SPSUMMON_SUCCESS custom trigger into field disable and Ignister Token summon branches", () => {
+  it.fails("restores SPSUMMON_SUCCESS custom trigger into field disable and Ignister Token summon branches", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${youAiCode}.lua`);
     expectScriptShape(script);

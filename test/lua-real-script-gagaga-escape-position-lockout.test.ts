@@ -91,6 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasEscapeScript)("Lua real script Gagaga
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, 1)).toEqual(getLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
 
@@ -103,6 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasEscapeScript)("Lua real script Gagaga
     expect(restored.session.state.cards.find((card) => card.uid === attacked!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === changed!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
     expect(restored.session.state.positionsChanged).toEqual([changed!.uid, eligible!.uid, attacked!.uid, changed!.uid]);
+    expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "positionChanged" }));
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "positionChanged").map((event) => event.eventCardUid)).toEqual([
       eligible!.uid,
       attacked!.uid,

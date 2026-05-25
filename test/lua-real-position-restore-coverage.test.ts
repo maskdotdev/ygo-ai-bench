@@ -130,7 +130,7 @@ function positionFixtureFiles(): Array<{
       kind: "banishCostGroupChange",
       required: [
         "category: 0x1000",
-        "positionsChanged).toEqual([changed!.uid, eligible!.uid])",
+        "positionsChanged).toEqual([changed!.uid, eligible!.uid, attacked!.uid, changed!.uid])",
         'eventName: "banished"',
         'position: "faceUpDefense", faceUp: true',
       ],

@@ -116,6 +116,7 @@ describe.skipIf(!hasUpstreamScripts || !hasRasetsuScript)("Lua real script Raset
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -140,6 +141,9 @@ describe.skipIf(!hasUpstreamScripts || !hasRasetsuScript)("Lua real script Raset
         ],
         "player": 0,
         "sourceUid": "p0-deck-43378076-0",
+        "targetFieldIds": [
+          8,
+        ],
         "targetUids": [
           "p1-deck-43378078-0",
         ],

@@ -2,7 +2,7 @@ import { findCard } from "#duel/card-state.js";
 import { createEffectContext } from "#duel/effect-context.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
-import { luaSummonTypeTribute, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
+import { isFaceDownExtraDeckSummonTypeCode, luaSummonTypeTribute, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
 import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, PlayerId } from "#duel/types.js";
 
 const luaEffectLimitSummonProc = 33;
@@ -36,7 +36,9 @@ export function specialSummonProcedureActions(state: DuelState, player: PlayerId
     if (effect.controller !== player || effect.event !== "summonProcedure") continue;
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location) || !canUseEffectCount(state, effect)) continue;
-    if (!canAttempt(source.uid, summonProcedureTypeCodeFromValue(effect.value), luaRelatedEffectId(effect)) || !canChooseEffect(effect, source, player)) continue;
+    const summonTypeCode = summonProcedureTypeCodeFromValue(effect.value);
+    if (source.location === "extraDeck" && !source.faceUp && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) continue;
+    if (!canAttempt(source.uid, summonTypeCode, luaRelatedEffectId(effect)) || !canChooseEffect(effect, source, player)) continue;
     actions.push({ type: "specialSummonProcedure", player, uid: source.uid, effectId: effect.id, label: `Special Summon ${source.name}` });
   }
   return actions;

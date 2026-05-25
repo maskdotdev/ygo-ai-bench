@@ -95,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGardenScript)("Lua real script Black 
         player: 0,
         activationLocation: "spellTrapZone",
         activationSequence: 0,
+        targetFieldIds: [revive.fieldId],
         targetUids: [revive.uid],
         operationInfos: [
           { category: 0x200, targetUids: [revive.uid], count: 1, player: 0, parameter: 0 },

@@ -732,14 +732,18 @@ describe("Lua flag state helpers", () => {
     expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([927, 928]);
 
     enterFlagDamageStep(session, attacker!.uid);
-    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([928]);
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([927, 928]);
     passFlagDamageWindow(session);
     passFlagDamageWindow(session);
 
     expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
-    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([928]);
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([927, 928]);
     passFlagDamageWindow(session);
     expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([927]);
+    passFlagDamageWindow(session);
+    expect(session.state.flagEffects.map((flag) => flag.code)).toEqual([927]);
+    passFlagDamageWindow(session);
     expect(session.state.flagEffects).toHaveLength(0);
   });
 

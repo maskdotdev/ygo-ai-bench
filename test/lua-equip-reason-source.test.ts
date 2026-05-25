@@ -71,7 +71,7 @@ describe("Lua equip reason source", () => {
 
     expect(host.messages).toContain("equip control reason result true");
     expect(host.messages).toContain("equip control reason source true/true");
-    expect(target).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "controlChanged", eventCardUid: target!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
@@ -139,7 +139,7 @@ describe("Lua equip reason source", () => {
 
     expect(host.messages).toContain("duel equip reason result true");
     expect(host.messages).toContain("duel equip reason source true/true");
-    expect(equip).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === equip!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "equipped", eventCardUid: equip!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();
@@ -207,7 +207,7 @@ describe("Lua equip reason source", () => {
 
     expect(host.messages).toContain("card equip reason result true");
     expect(host.messages).toContain("card equip reason source true/true");
-    expect(equip).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === equip!.uid)).toMatchObject({ location: "spellTrapZone", equippedToUid: target!.uid, reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "equipped", eventCardUid: equip!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();

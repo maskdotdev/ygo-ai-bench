@@ -57,8 +57,9 @@ describe("Lua predraw events", () => {
     expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1113, eventPlayer: 1, eventValue: 1 });
     expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReason");
     expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonPlayer");
-    expect(session.state.eventHistory.slice(-4)).toEqual([
+    expect(session.state.eventHistory.slice(-5)).toEqual([
       expect.objectContaining({ eventName: "preDraw", eventCode: 1113, eventPlayer: 1, eventValue: 1 }),
+      expect.objectContaining({ eventName: "phaseDraw", eventCode: 0x1001, eventPlayer: 1 }),
       expect.objectContaining({ eventName: "phaseStartMain1", eventCode: 0x2004 }),
       expect.objectContaining({ eventName: "turnStarted" }),
       expect.objectContaining({ eventName: "phaseMain1", eventCode: 0x1004 }),

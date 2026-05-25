@@ -128,6 +128,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUnleashScript)("Lua real script Unlea
           "event": "continuous",
           "id": "lua-5-4608",
           "label": 1,
+          "labelObjectUids": [
+            "p0-deck-3918345-1",
+            "p0-deck-68366996-2",
+          ],
           "oncePerTurn": true,
           "operation": [Function],
           "ownerPlayer": 0,
@@ -150,7 +154,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUnleashScript)("Lua real script Unlea
           "sourceUid": "p0-deck-73567374-0",
           "triggerCode": 4608,
           "triggerEvent": "phaseEnd",
-          "triggerTiming": "when",
+          "triggerTiming": "if",
         },
       ]
     `);
