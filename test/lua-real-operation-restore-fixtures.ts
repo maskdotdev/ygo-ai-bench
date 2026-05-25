@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 353;
+export const operationFixtureCount = 354;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -26,6 +26,7 @@ export const operationKindCounts = {
   heroicFinalAttackDirectLock: 1,
   massivemorphFinalStatDirectLock: 1,
   attackAnnounceLpCostStat: 1,
+  darkMagicTwinBurstGirlCountStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -312,6 +313,7 @@ export type OperationKind =
   | "heroicFinalAttackDirectLock"
   | "massivemorphFinalStatDirectLock"
   | "attackAnnounceLpCostStat"
+  | "darkMagicTwinBurstGirlCountStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -659,6 +661,26 @@ export function operationFixtureFiles(): Array<{
         "e1:SetReset(RESETS_STANDARD_PHASE_END|RESET_OPPO_TURN)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(3500)",
         'eventName: "lifePointCostPaid"',
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-magic-twin-burst-girl-count-stat.test.ts",
+      kind: "darkMagicTwinBurstGirlCountStat",
+      required: [
+        "restores Dark Magician target boost from all matching Dark Magician Girl attack values",
+        "Dark Magic Twin Burst",
+        "s.listed_names={CARD_DARK_MAGICIAN_GIRL,CARD_DARK_MAGICIAN}",
+        "return (c:IsFaceup() or not c:IsOnField()) and c:IsCode(CARD_DARK_MAGICIAN_GIRL)",
+        "Duel.IsExistingTarget(aux.FaceupFilter(Card.IsCode,CARD_DARK_MAGICIAN),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.IsExistingMatchingCard(s.atkfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,LOCATION_MZONE|LOCATION_GRAVE,1,nil)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsCode,CARD_DARK_MAGICIAN),tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetMatchingGroup(s.atkfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,LOCATION_MZONE|LOCATION_GRAVE,nil)",
+        "atk=atk+bc:GetAttack()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(atk)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "currentAttack(findCard(restored.session, darkMagician.uid), restored.session.state)).toBe(6500)",
         'eventName: "becameTarget"',
       ],
     },
@@ -6956,6 +6978,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       heroicFinalAttackDirectLock: 0,
       massivemorphFinalStatDirectLock: 0,
       attackAnnounceLpCostStat: 0,
+      darkMagicTwinBurstGirlCountStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
