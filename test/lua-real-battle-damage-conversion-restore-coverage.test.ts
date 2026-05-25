@@ -4,16 +4,17 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDamageConversionFixtureCount = 8;
+const battleDamageConversionFixtureCount = 9;
 const battleDamageConversionKindCounts: Record<BattleDamageConversionKind, number> = {
   alsoBattleDamage: 1,
   battleDamageToEffect: 1,
   bothBattleDamage: 1,
   changeBattleDamage: 4,
-  reflectBattleDamage: 1,
+  reflectBattleDamage: 2,
 };
 const battleDamageConversionSemanticVariantCounts: Record<BattleDamageConversionSemanticVariant, number> = {
   amazonessSwordsWomanReflectBattleDamage: 1,
+  byeByeDamagePrecalcReflect: 1,
   gravekeepersVassalBattleDamageToEffect: 1,
   majespecterSonicsFinalStatHalfDamage: 1,
   numberC96AlsoBattleDamage: 1,
@@ -85,6 +86,7 @@ type BattleDamageConversionKind = "alsoBattleDamage" | "battleDamageToEffect" | 
 
 type BattleDamageConversionSemanticVariant =
   | "amazonessSwordsWomanReflectBattleDamage"
+  | "byeByeDamagePrecalcReflect"
   | "gravekeepersVassalBattleDamageToEffect"
   | "majespecterSonicsFinalStatHalfDamage"
   | "numberC96AlsoBattleDamage"
@@ -107,6 +109,7 @@ function countBattleDamageConversionSemanticVariants(
     (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
     {
       amazonessSwordsWomanReflectBattleDamage: 0,
+      byeByeDamagePrecalcReflect: 0,
       gravekeepersVassalBattleDamageToEffect: 0,
       majespecterSonicsFinalStatHalfDamage: 0,
       numberC96AlsoBattleDamage: 0,
@@ -132,6 +135,22 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; kind: Battl
         "eventName: \"battleDamageDealt\"",
         "eventPlayer: 0",
         "eventValue: 500",
+      ],
+    },
+    {
+      file: "lua-real-script-bye-bye-damage-precalc-reflect.test.ts",
+      kind: "reflectBattleDamage",
+      required: [
+        "Bye Bye Damage pre-calc reflect",
+        "EVENT_PRE_DAMAGE_CALCULATE",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        "EVENT_BATTLE_DAMAGE",
+        "Duel.Damage(1-tp,ev*2,REASON_EFFECT)",
+        "battleDamage).toEqual({ 0: 0, 1: 800 })",
+        "players[0].lifePoints).toBe(6400)",
+        "players[1].lifePoints).toBe(7200)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 800",
       ],
     },
     {
@@ -260,6 +279,21 @@ function battleDamageConversionSemanticVariants(): Array<{
         "battleDamage).toEqual({ 0: 500, 1: 0 })",
         "eventPlayer: 0",
         "location: \"graveyard\"",
+      ],
+    },
+    {
+      file: "lua-real-script-bye-bye-damage-precalc-reflect.test.ts",
+      kind: "byeByeDamagePrecalcReflect",
+      required: [
+        'const byeByeCode = "20735371"',
+        "restores attack-target battle indestructibility and battle-damage double reflect",
+        "Duel.GetFlagEffect(tp,id)==0",
+        "Duel.RegisterFlagEffect(tp,id,RESET_PHASE|PHASE_END,0,1)",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        "EVENT_BATTLE_DAMAGE",
+        "Duel.Damage(1-tp,ev*2,REASON_EFFECT)",
+        "players[0].lifePoints).toBe(6400)",
+        "eventValue: 800",
       ],
     },
     {
