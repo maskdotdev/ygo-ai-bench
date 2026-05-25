@@ -90,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGaiaScript)("Lua real script Lord Gai
       },
     ]);
     expect(restoredTrigger.session.state.pendingTriggers).toEqual([]);
+    expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
 
     const restoredStat = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expectCleanRestore(restoredStat);
