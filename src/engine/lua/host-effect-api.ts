@@ -91,6 +91,11 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 1;
   });
   pushEffectMethod(L, effects, "GetHandler", (state, effect) => {
+    if (effect.id === hostState.activeContext?.relatedEffectId || effect.id === hostState.activeContext?.chainLink?.relatedEffectId) {
+      if (effect.sourceUid) pushCardTable(state, effect.sourceUid);
+      else lua.lua_pushnil(state);
+      return 1;
+    }
     if (((effect.typeFlags & luaEffectTypeXMaterial) !== 0 || effect.sourceUid !== hostState.activeContext?.source.uid) && hostState.activeContext?.source !== undefined) {
       pushCardTable(state, hostState.activeContext.source.uid);
       return 1;

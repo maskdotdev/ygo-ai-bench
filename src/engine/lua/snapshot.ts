@@ -95,6 +95,7 @@ const luaMachineKing3000BcCode = "70406920";
 const luaArcanaForceHierophantCode = "3376703";
 const luaArcanaForceChariotCode = "34568403";
 const luaArcanaForceWorldCode = "23846921";
+const luaArcanaForceFoolCode = "62892347";
 const luaProtonBlastCode = "49511705";
 const luaArcanaForceMoonCode = "97452817";
 const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
@@ -470,6 +471,17 @@ function isKnownArcanaForceWorldRegisteredEffect(effect: SerializedDuelEffect): 
   );
 }
 
+function isKnownArcanaForceFoolRegisteredEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaArcanaForceFoolCode}:`)) &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    (effect.code === 2 || effect.code === 1020 || effect.code === 141 || effect.code === 3682106) &&
+    effect.reset?.flags === luaResetEventStandard
+  );
+}
+
 function isKnownProtonBlastRegisteredEffect(effect: DuelEffectDefinition | SerializedDuelEffect): boolean {
   return (
     Boolean(effect.registryKey?.startsWith(`lua:${luaProtonBlastCode}:`)) &&
@@ -536,6 +548,11 @@ function restoreKnownLuaStateEffects(
   const worldRegisteredSourceUids = new Set(
     snapshotEffects
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownArcanaForceWorldRegisteredEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
+  const foolRegisteredSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownArcanaForceFoolRegisteredEffect(effect))
       .map((effect) => effect.sourceUid),
   );
   const protonBlastRegisteredSourceUids = new Set(
@@ -797,6 +814,18 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-arcana-force-world-registered-${card.uid}.lua`));
+  }
+  for (const sourceUid of foolRegisteredSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card) continue;
+    const script = `
+      local s=c${luaArcanaForceFoolCode}
+      local c=Duel.GetFirstMatchingCard(function(tc) return tc:IsFieldID(${cardFieldId(card)}) end,${card.controller},${cardLocationMask(card.location)},0,nil)
+      if s and c then
+        s.arcanareg(c,c:GetFlagEffectLabel(36690018) or COIN_HEADS)
+      end
+    `;
+    results.push(host.loadScript(script, `restore-arcana-force-fool-registered-${card.uid}.lua`));
   }
   for (const sourceUid of protonBlastRegisteredSourceUids) {
     const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
