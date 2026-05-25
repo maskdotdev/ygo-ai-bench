@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 343;
+export const operationFixtureCount = 344;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -16,6 +16,7 @@ export const operationKindCounts = {
   releaseCostLabelPiercePhaseEndDestroy: 1,
   targetFlaggedBattlePierceDamageLockStat: 1,
   targetStatTransferDelayedContinuousPlace: 1,
+  activationDisableSweepLinkedPreDamageStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -292,6 +293,7 @@ export type OperationKind =
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "targetFlaggedBattlePierceDamageLockStat"
   | "targetStatTransferDelayedContinuousPlace"
+  | "activationDisableSweepLinkedPreDamageStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -556,6 +558,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-sunavalon-bloom-disable-linked-stat.test.ts",
+      kind: "activationDisableSweepLinkedPreDamageStat",
+      required: [
+        "restores activation disable sweep and linked-group pre-damage ATK gain",
+        "Sunavalon Bloom",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "e2:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "c:IsFaceup() and c:IsType(TYPE_LINK) and c:IsRace(RACE_PLANT) and c:IsLinkAbove(4)",
+        "local g=Duel.GetMatchingGroup(s.filter,tp,0,LOCATION_MZONE,nil)",
+        "for tc in aux.Next(g) do",
+        "e1:SetCode(EFFECT_DISABLE)",
+        "e2:SetCode(EFFECT_DISABLE_EFFECT)",
+        "Duel.GetAttackTarget()",
+        "Duel.GetAttacker()",
+        "c:GetLinkedGroup():Filter(Card.IsFaceup,nil):GetSum(Card.GetAttack)>0",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(lg:GetSum(Card.GetAttack))",
+        "currentAttack(findCard(restoredBattle.session, statLink.uid), restoredBattle.session.state)).toBe(2800)",
+        "effectDisableEffect",
+        "effectUpdateAttack",
+      ],
+    },
     {
       file: "test/lua-real-script-borrowing-arrows-target-stat-place.test.ts",
       kind: "targetStatTransferDelayedContinuousPlace",
@@ -6716,6 +6741,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       releaseCostLabelPiercePhaseEndDestroy: 0,
       targetFlaggedBattlePierceDamageLockStat: 0,
       targetStatTransferDelayedContinuousPlace: 0,
+      activationDisableSweepLinkedPreDamageStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
