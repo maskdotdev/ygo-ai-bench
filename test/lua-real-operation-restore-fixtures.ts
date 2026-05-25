@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 401;
+export const operationFixtureCount = 402;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -197,6 +197,7 @@ export const operationKindCounts = {
   detachDirectDamage: 1,
   detachDisableFinalStat: 1,
   detachReplaceDisableBurn: 1,
+  detachReplaceAttackGain: 1,
   detachDiffDamageStat: 1,
   detachStatBurn: 1,
   detachSearchXyzBattleDamage: 1,
@@ -531,6 +532,7 @@ export type OperationKind =
   | "detachDirectDamage"
   | "detachDisableFinalStat"
   | "detachReplaceDisableBurn"
+  | "detachReplaceAttackGain"
   | "detachDiffDamageStat"
   | "detachStatBurn"
   | "detachSearchXyzBattleDamage"
@@ -5409,6 +5411,23 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-battlin-boxer-lead-yoke-detach-replace-stat.test.ts",
+      kind: "detachReplaceAttackGain",
+      required: [
+        "restores destroy replacement into detach-material ATK gain",
+        "Duel.EnableGlobalFlag(GLOBALFLAG_DETACH_EVENT)",
+        "e1:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,e:GetHandler(),96)",
+        "e:GetHandler():RemoveOverlayCard(tp,1,1,REASON_EFFECT)",
+        "e2:SetCode(EVENT_DETACH_MATERIAL)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(800)",
+        "currentAttack(restoredAfterReplacement.session.state.cards.find((card) => card.uid === leadYoke.uid), restoredAfterReplacement.session.state)).toBe(3000)",
+        'eventName: "detachedMaterial"',
+        'eventName: "chainSolved"',
+      ],
+    },
+    {
       file: "test/lua-real-script-archfiend-seraph-detach-disable-burn.test.ts",
       kind: "detachReplaceDisableBurn",
       required: [
@@ -8146,6 +8165,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       detachDirectDamage: 0,
       detachDisableFinalStat: 0,
       detachReplaceDisableBurn: 0,
+      detachReplaceAttackGain: 0,
       detachDiffDamageStat: 0,
       detachStatBurn: 0,
       detachSearchXyzBattleDamage: 0,

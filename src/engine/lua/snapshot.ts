@@ -3,7 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, collectDuelTriggerEvent, damageDuelPlayer, destroyDuelCard, drawDuelCards, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState, recoverDuelPlayer, sendDuelCardToGraveyard } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
+import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, collectDuelTriggerEvent, damageDuelPlayer, destroyDuelCard, detachDuelOverlayMaterials, drawDuelCards, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState, recoverDuelPlayer, sendDuelCardToGraveyard } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
@@ -88,7 +88,7 @@ const luaCommonSoulCode = "14772491";
 const luaClashingSoulsCode = "57496978";
 const luaSagaDragonEmperorCode = "66156348";
 const luaMachineKing3000BcCode = "70406920";
-const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267";
+const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295";
 const luaMegalithUnformedCode = "69003792"; const luaDaiDanceCode = "50696588"; const luaExosisterCarpedivemCode = "30802207";
 const luaMetaphysRagnarokCode = "19476824";
 const luaEndPhaseReviveDestroyCodes = new Set(["32061744", "37745919", "46874015"]);
@@ -354,7 +354,7 @@ function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEf
   if (!snapshotEffect) return effect;
   return {
     ...effect, ...((isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || snapshotEffect.luaConditionDescriptor?.startsWith("condition:attack-target-controller:self-no-player-flag:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-battle-target") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-status-summon-type:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-relate-battle-target") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:normal-summon-proc-own-faceup:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:normal-summon-proc-opponent-mzone-count-at-least:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:controller-has-faceup-setcode:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:event-player:") === true || snapshotEffect.luaConditionDescriptor === "condition:event-group-opponent-extra-deck-special-summon" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:event-previous-controller-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor === "condition:damage-source-relate-battle-target" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason-all:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason-all-player:") === true || snapshotEffect.luaConditionDescriptor === "condition:source-previous-controller-reason-player:opponent" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-reason-player-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-side-previous-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location-reason-player:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-position-location-reason-player-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-position-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-position-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-position-position:") === true) ? restoredLuaConditionCallbacks(snapshotEffect) : {}),
-    ...(isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || isKnownByeByeDamagePreDamageEffect(snapshotEffect) || isKnownPenetrationFusionStage2QuickEffect(snapshotEffect) ? { operation: restoredLuaOperation(snapshotEffect) } : {}),
+    ...(isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || isKnownByeByeDamagePreDamageEffect(snapshotEffect) || isKnownPenetrationFusionStage2QuickEffect(snapshotEffect) || isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(snapshotEffect) ? { operation: restoredLuaOperation(snapshotEffect) } : {}),
     ...(snapshotEffect.property === undefined ? {} : { property: snapshotEffect.property }),
     ...(snapshotEffect.reset === undefined ? {} : { reset: { ...snapshotEffect.reset } }),
     ...(snapshotEffect.label === undefined ? {} : { label: snapshotEffect.label }),
@@ -1001,6 +1001,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         (effect.code === 102 && effect.value !== undefined && effect.targetRange === undefined) ||
         isKnownCommonSoulOwnerTargetAttackEffect(effect) ||
         isKnownPenetrationFusionStage2QuickEffect(effect) ||
+        isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(effect) ||
         isKnownEucalyptusMoleNonEffectBeastAttackBoost(effect) ||
         isKnownStatValueEffect(effect)))
   );
@@ -1017,6 +1018,15 @@ function isKnownPenetrationFusionStage2QuickEffect(effect: SerializedDuelEffect)
     effect.category === luaCategoryAtkChange &&
     effect.property === (0x10 | 0x4000) &&
     effect.reset?.flags === luaResetEventStandard &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone";
+}
+function isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaBattlinBoxerLeadYokeCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 50 &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone";
 }
@@ -1791,6 +1801,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownByeByeDamagePreDamageEffect(effect)) return byeByeDamagePreDamageOperation(effect);
   if (isKnownTaiStrikeDamageStepEndEffect(effect)) return taiStrikeDamageStepEndOperation(effect); if (isKnownAssaultSpiritsDamageStepEquipEffect(effect)) return assaultSpiritsDamageStepEquipOperation(effect);
   if (isKnownPenetrationFusionStage2QuickEffect(effect)) return penetrationFusionStage2AttackOperation(effect);
+  if (isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(effect)) return () => {};
   if (isKnownDinowrestlerMartialAnkyloEndPhaseSummonEffect(effect)) return dinowrestlerMartialAnkyloEndPhaseSummonOperation(effect);
   if (isKnownEndPhaseReviveDestroyEffect(effect)) return luaHandlerDestroyOperation(effect);
   if (isKnownSelfEndPhaseDestroyEffect(effect)) return selfEndPhaseDestroyOperation(effect);
@@ -1903,7 +1914,20 @@ function dinowrestlerMartialAnkyloEndPhaseSummonOperation(effect: SerializedDuel
     ctx.duel.effects.push({ id: `${effect.id}-redirect`, event: "continuous", code: 60, controller: effect.controller, sourceUid: summoned.uid, registryKey: `${effect.registryKey}:redirect`, property: 0x400, range: ["monsterZone"], reset: { flags: 0xc79000 }, value: 0x20, operation: () => {} });
   };
 }
-function restoredLuaActivationTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "target"> { if (isKnownGagagaGirlXyzAttackZeroTriggerEffect(effect)) return { target: gagagaGirlXyzAttackZeroTarget() }; if (isKnownPhotonTridentBattleDamageDestroyEffect(effect)) return { target: photonTridentBattleDamageDestroyTarget() }; if (isKnownUtopiaEnvoyBattleDestroyingReviveEffect(effect)) return { target: utopiaEnvoyBattleDestroyingReviveTarget(effect) }; if (isKnownLatinumOpponentDiscardReviveEffect(effect)) return { target: latinumOpponentDiscardReviveTarget(effect) }; if (isKnownPenetrationFusionStage2QuickEffect(effect)) return { target: penetrationFusionStage2AttackTarget(effect) }; return {}; }
+function restoredLuaActivationTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "target"> { if (isKnownGagagaGirlXyzAttackZeroTriggerEffect(effect)) return { target: gagagaGirlXyzAttackZeroTarget() }; if (isKnownPhotonTridentBattleDamageDestroyEffect(effect)) return { target: photonTridentBattleDamageDestroyTarget() }; if (isKnownUtopiaEnvoyBattleDestroyingReviveEffect(effect)) return { target: utopiaEnvoyBattleDestroyingReviveTarget(effect) }; if (isKnownLatinumOpponentDiscardReviveEffect(effect)) return { target: latinumOpponentDiscardReviveTarget(effect) }; if (isKnownPenetrationFusionStage2QuickEffect(effect)) return { target: penetrationFusionStage2AttackTarget(effect) }; if (isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(effect)) return { target: battlinBoxerLeadYokeDestroyReplacementTarget(effect) }; return {}; }
+
+function battlinBoxerLeadYokeDestroyReplacementTarget(effect: SerializedDuelEffect): NonNullable<DuelEffectDefinition["target"]> {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    if (ctx.source.location !== "monsterZone" || ctx.source.overlayUids.length < 1) return false;
+    if (ctx.checkOnly) return true;
+    const detached = detachDuelOverlayMaterials(ctx.duel, ctx.source.uid, 1, ctx.source.controller, duelReason.effect, ctx.player, {
+      eventReasonCardUid: effect.sourceUid,
+      ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+    });
+    return detached.length === 1;
+  };
+}
 
 function penetrationFusionStage2AttackTarget(effect: SerializedDuelEffect): NonNullable<DuelEffectDefinition["target"]> {
   return (ctx) => {
