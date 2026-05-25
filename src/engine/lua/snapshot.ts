@@ -95,6 +95,7 @@ const luaMachineKing3000BcCode = "70406920";
 const luaArcanaForceHierophantCode = "3376703";
 const luaArcanaForceChariotCode = "34568403";
 const luaArcanaForceWorldCode = "23846921";
+const luaProtonBlastCode = "49511705";
 const luaArcanaForceMoonCode = "97452817";
 const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
 const luaMegalithUnformedCode = "69003792"; const luaDaiDanceCode = "50696588"; const luaExosisterCarpedivemCode = "30802207";
@@ -395,14 +396,14 @@ function findRestoredLuaStateSnapshotEffect(
   snapshotEffects: SerializedDuelEffect[],
   restoredRegistryKeys: Set<string>,
 ): SerializedDuelEffect | undefined {
-  if (!isKnownLuaUnionStateEffect(session, effect) && !isKnownLuaGeminiStateEffect(effect) && !isKnownLuaMaterialSourceOnlyEventEffect(effect)) return undefined;
+  if (!isKnownLuaUnionStateEffect(session, effect) && !isKnownLuaGeminiStateEffect(effect) && !isKnownLuaMaterialSourceOnlyEventEffect(effect) && !isKnownProtonBlastRegisteredEffect(effect)) return undefined;
   return snapshotEffects.find((snapshotEffect) => {
     if (!snapshotEffect.registryKey || !registryKeys.has(snapshotEffect.registryKey) || restoredRegistryKeys.has(snapshotEffect.registryKey)) return false;
     return (
       snapshotEffect.sourceUid === effect.sourceUid &&
       snapshotEffect.event === effect.event &&
       snapshotEffect.code === effect.code &&
-      (isKnownLuaUnionStateEffect(session, snapshotEffect) || isKnownLuaGeminiStateEffect(snapshotEffect) || isKnownLuaMaterialSourceOnlyEventEffect(snapshotEffect))
+      (isKnownLuaUnionStateEffect(session, snapshotEffect) || isKnownLuaGeminiStateEffect(snapshotEffect) || isKnownLuaMaterialSourceOnlyEventEffect(snapshotEffect) || isKnownProtonBlastRegisteredEffect(snapshotEffect))
     );
   });
 }
@@ -469,6 +470,18 @@ function isKnownArcanaForceWorldRegisteredEffect(effect: SerializedDuelEffect): 
   );
 }
 
+function isKnownProtonBlastRegisteredEffect(effect: DuelEffectDefinition | SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaProtonBlastCode}:`)) &&
+    effect.sourceUid !== undefined &&
+    effect.event === "continuous" &&
+    (effect.code === 1151 || effect.code === 1022) &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone" &&
+    effect.reset?.flags === luaResetsStandardPhaseEnd
+  );
+}
+
 function restoreKnownLuaStateEffects(
   session: DuelSession,
   host: LuaScriptHost,
@@ -523,6 +536,11 @@ function restoreKnownLuaStateEffects(
   const worldRegisteredSourceUids = new Set(
     snapshotEffects
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownArcanaForceWorldRegisteredEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
+  const protonBlastRegisteredSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownProtonBlastRegisteredEffect(effect))
       .map((effect) => effect.sourceUid),
   );
   const restoreBlazeCannonRaEffects = snapshotEffects.some((effect) => effect.registryKey?.startsWith(`lua:${luaBlazeCannonCode}:lua-3-1130`) && registryKeys.has(effect.registryKey));
@@ -779,6 +797,36 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-arcana-force-world-registered-${card.uid}.lua`));
+  }
+  for (const sourceUid of protonBlastRegisteredSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card || card.location !== "spellTrapZone") continue;
+    const chainIndex = session.state.chain.find((link) => link.operationInfos?.some((info) => info.category === 0x1000000))?.chainIndex ?? 1;
+    const script = `
+      local s=c${luaProtonBlastCode}
+      local c=Duel.GetFirstMatchingCard(function(tc) return tc:IsFieldID(${cardFieldId(card)}) end,${card.controller},LOCATION_SZONE,0,nil)
+      if s and c then
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_DELAY)
+        e1:SetCode(EVENT_TOSS_COIN)
+        e1:SetRange(LOCATION_SZONE)
+        e1:SetOperation(s.coinregop)
+        e1:SetReset(RESETS_STANDARD_PHASE_END)
+        c:RegisterEffect(e1)
+        local e2=Effect.CreateEffect(c)
+        e2:SetDescription(aux.Stringid(${luaProtonBlastCode},0))
+        e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e2:SetCode(EVENT_CHAIN_SOLVED)
+        e2:SetRange(LOCATION_SZONE)
+        e2:SetCountLimit(1)
+        e2:SetCondition(function(e,tp,eg,ep,ev,re,r,rp) return ev==${chainIndex} end)
+        e2:SetOperation(s.effop)
+        e2:SetReset(RESETS_STANDARD_PHASE_END)
+        c:RegisterEffect(e2)
+      end
+    `;
+    results.push(host.loadScript(script, `restore-proton-blast-registered-${card.uid}.lua`));
   }
   return results;
 }
