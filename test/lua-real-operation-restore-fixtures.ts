@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 355;
+export const operationFixtureCount = 356;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -28,6 +28,7 @@ export const operationKindCounts = {
   attackAnnounceLpCostStat: 1,
   darkMagicTwinBurstGirlCountStat: 1,
   attackAnnounceFusionBattleStat: 1,
+  groupSetcodeCountStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -316,6 +317,7 @@ export type OperationKind =
   | "attackAnnounceLpCostStat"
   | "darkMagicTwinBurstGirlCountStat"
   | "attackAnnounceFusionBattleStat"
+  | "groupSetcodeCountStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -704,6 +706,24 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(at:GetAttack())",
         "currentAttack(findCard(restored.session, fusion.uid), restored.session.state)).toBe(4600)",
         'eventName: "attackDeclared"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-gagagatag-group-stat.test.ts",
+      kind: "groupSetcodeCountStat",
+      required: [
+        "restores all face-up Gagaga monsters receiving shared count-based ATK boosts",
+        "Gagagatag",
+        "s.listed_series={SET_GAGAGA}",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_GAGAGA),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsSetCard,SET_GAGAGA),tp,LOCATION_MZONE,0,nil)",
+        "local atk=#sg*500",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(atk)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_STANDBY,2)",
+        "currentAttack(findCard(restored.session, gagagaOne.uid), restored.session.state)).toBe(2500)",
+        "currentAttack(findCard(restored.session, gagagaTwo.uid), restored.session.state)).toBe(2200)",
+        "currentAttack(findCard(restored.session, nonGagaga.uid), restored.session.state)).toBe(1700)",
       ],
     },
     {
@@ -7002,6 +7022,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackAnnounceLpCostStat: 0,
       darkMagicTwinBurstGirlCountStat: 0,
       attackAnnounceFusionBattleStat: 0,
+      groupSetcodeCountStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
