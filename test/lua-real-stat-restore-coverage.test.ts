@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 504; const statKindCounts = {
+const statFixtureCount = 505; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -107,6 +107,7 @@ const statFixtureCount = 504; const statKindCounts = {
   worldLegacyWhispersColumnNegateStat: 1,
   wildNaturesReleaseDefenseAttackEndDestroyStat: 1,
   limiterRemovalMachineFinalAttackEndDestroyStat: 1,
+  espAmplifierBanishedPsychicStatEndBanish: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -583,6 +584,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   worldLegacyWhispersColumnNegateStat: 1,
   wildNaturesReleaseDefenseAttackEndDestroyStat: 1,
   limiterRemovalMachineFinalAttackEndDestroyStat: 1,
+  espAmplifierBanishedPsychicStatEndBanish: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -946,6 +948,7 @@ type ExtraStatKind =
   | "worldLegacyWhispersColumnNegateStat"
   | "wildNaturesReleaseDefenseAttackEndDestroyStat"
   | "limiterRemovalMachineFinalAttackEndDestroyStat"
+  | "espAmplifierBanishedPsychicStatEndBanish"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1460,6 +1463,7 @@ type ExtraStatSemanticVariant =
   | "worldLegacyWhispersColumnNegateStat"
   | "wildNaturesReleaseDefenseAttackEndDestroyStat"
   | "limiterRemovalMachineFinalAttackEndDestroyStat"
+  | "espAmplifierBanishedPsychicStatEndBanish"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3926,6 +3930,27 @@ function statFixtureFiles(): Array<{
         "toBe(2400)",
         "toBe(3200)",
         "eventName: \"destroyed\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-esp-amplifier-banished-psychic-stat-end-banish.test.ts",
+      kind: "espAmplifierBanishedPsychicStatEndBanish",
+      required: [
+        'const amplifierCode = "84653834"',
+        "ESP Amplifier",
+        "restores banished Psychic count ATK gain and End Phase self-banish for each boosted Psychic",
+        "Duel.IsPhase(PHASE_DAMAGE) and Duel.IsDamageCalculated()",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsRace,RACE_PSYCHIC),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsRace,RACE_PSYCHIC),tp,LOCATION_MZONE,0,nil)",
+        "Duel.GetMatchingGroupCount(aux.FaceupFilter(Card.IsRace,RACE_PSYCHIC),tp,LOCATION_REMOVED,0,nil)*300",
+        "EFFECT_UPDATE_ATTACK",
+        "e2:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        "toBe(1600)",
+        "toBe(2100)",
+        "eventName: \"banished\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10770,6 +10795,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       worldLegacyWhispersColumnNegateStat: 0,
       wildNaturesReleaseDefenseAttackEndDestroyStat: 0,
       limiterRemovalMachineFinalAttackEndDestroyStat: 0,
+      espAmplifierBanishedPsychicStatEndBanish: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11359,6 +11385,23 @@ function statSemanticVariants(): Array<{
         "toBe(2400)",
         "toBe(3200)",
         "eventName: \"destroyed\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-esp-amplifier-banished-psychic-stat-end-banish.test.ts",
+      kind: "espAmplifierBanishedPsychicStatEndBanish",
+      required: [
+        'const amplifierCode = "84653834"',
+        "ESP Amplifier",
+        "RACE_PSYCHIC",
+        "LOCATION_REMOVED",
+        "EFFECT_UPDATE_ATTACK",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        "toBe(1600)",
+        "toBe(2100)",
+        "eventName: \"banished\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -17495,6 +17538,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       worldLegacyWhispersColumnNegateStat: 0,
       wildNaturesReleaseDefenseAttackEndDestroyStat: 0,
       limiterRemovalMachineFinalAttackEndDestroyStat: 0,
+      espAmplifierBanishedPsychicStatEndBanish: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
