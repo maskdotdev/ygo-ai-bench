@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 348;
+export const operationFixtureCount = 349;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -21,6 +21,7 @@ export const operationKindCounts = {
   banishLinkCostLabelTargetStat: 1,
   banishRaceCostLabelTargetStat: 1,
   trapActivateGraveSelfBanishStat: 1,
+  targetAddTunerType: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -302,6 +303,7 @@ export type OperationKind =
   | "banishLinkCostLabelTargetStat"
   | "banishRaceCostLabelTargetStat"
   | "trapActivateGraveSelfBanishStat"
+  | "targetAddTunerType"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -587,6 +589,23 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restoredBattle.session, statLink.uid), restoredBattle.session.state)).toBe(2800)",
         "effectDisableEffect",
         "effectUpdateAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-lightwave-tuning-add-tuner-type.test.ts",
+      kind: "targetAddTunerType",
+      required: [
+        "restores targeted Level 4 LIGHT non-Tuner into added Tuner type",
+        "Lightwave Tuning",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return c:IsFaceup() and c:GetLevel()==4 and c:IsAttribute(ATTRIBUTE_LIGHT) and not c:IsType(TYPE_TUNER)",
+        "Duel.IsExistingTarget(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_ADD_TYPE)",
+        "e1:SetValue(TYPE_TUNER)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
+        "cardTypeFlags(findCard(restored.session, target.uid), restored.session.state) & typeTuner).toBe(typeTuner)",
       ],
     },
     {
@@ -6840,6 +6859,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       banishLinkCostLabelTargetStat: 0,
       banishRaceCostLabelTargetStat: 0,
       trapActivateGraveSelfBanishStat: 0,
+      targetAddTunerType: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
