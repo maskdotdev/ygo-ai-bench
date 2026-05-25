@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 502; const statKindCounts = {
+const statFixtureCount = 503; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -105,6 +105,7 @@ const statFixtureCount = 502; const statKindCounts = {
   triBrigadeRendezvousLinkedStatReplace: 1,
   marincessCascadeHandTrapBanishReturnStat: 1,
   worldLegacyWhispersColumnNegateStat: 1,
+  wildNaturesReleaseDefenseAttackEndDestroyStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -579,6 +580,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   triBrigadeRendezvousLinkedStatReplace: 1,
   marincessCascadeHandTrapBanishReturnStat: 1,
   worldLegacyWhispersColumnNegateStat: 1,
+  wildNaturesReleaseDefenseAttackEndDestroyStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -940,6 +942,7 @@ type ExtraStatKind =
   | "triBrigadeRendezvousLinkedStatReplace"
   | "marincessCascadeHandTrapBanishReturnStat"
   | "worldLegacyWhispersColumnNegateStat"
+  | "wildNaturesReleaseDefenseAttackEndDestroyStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1452,6 +1455,7 @@ type ExtraStatSemanticVariant =
   | "triBrigadeRendezvousLinkedStatReplace"
   | "marincessCascadeHandTrapBanishReturnStat"
   | "worldLegacyWhispersColumnNegateStat"
+  | "wildNaturesReleaseDefenseAttackEndDestroyStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3878,6 +3882,25 @@ function statFixtureFiles(): Array<{
         "toBe(2200)",
         "eventName: \"chainNegated\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wild-nature-release-defense-attack-end-destroy.test.ts",
+      kind: "wildNaturesReleaseDefenseAttackEndDestroyStat",
+      required: [
+        'const wildNatureCode = "61166988"',
+        "Wild Nature's Release",
+        "restores DEF-based ATK gain and delayed self-destroy on the targeted Beast",
+        "c:HasNonZeroDefense() and c:IsRace(RACE_BEAST|RACE_BEASTWARRIOR)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "EFFECT_UPDATE_ATTACK",
+        "e1:SetValue(tc:GetDefense())",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
+        "toBe(2700)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+        "eventName: \"destroyed\"",
       ],
     },
     {
@@ -10719,6 +10742,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       triBrigadeRendezvousLinkedStatReplace: 0,
       marincessCascadeHandTrapBanishReturnStat: 0,
       worldLegacyWhispersColumnNegateStat: 0,
+      wildNaturesReleaseDefenseAttackEndDestroyStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11275,6 +11299,22 @@ function statSemanticVariants(): Array<{
         "toBe(2200)",
         "eventName: \"chainNegated\"",
         "battleDamage).toEqual({ 0: 0, 1: 600 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wild-nature-release-defense-attack-end-destroy.test.ts",
+      kind: "wildNaturesReleaseDefenseAttackEndDestroyStat",
+      required: [
+        'const wildNatureCode = "61166988"',
+        "Wild Nature's Release",
+        "RACE_BEAST|RACE_BEASTWARRIOR",
+        "EFFECT_UPDATE_ATTACK",
+        "tc:GetDefense()",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
+        "toBe(2700)",
+        "eventName: \"destroyed\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -17408,6 +17448,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       triBrigadeRendezvousLinkedStatReplace: 0,
       marincessCascadeHandTrapBanishReturnStat: 0,
       worldLegacyWhispersColumnNegateStat: 0,
+      wildNaturesReleaseDefenseAttackEndDestroyStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
