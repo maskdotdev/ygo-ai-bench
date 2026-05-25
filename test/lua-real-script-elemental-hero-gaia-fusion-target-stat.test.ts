@@ -175,6 +175,8 @@ function expectScriptShape(script: string | undefined): void {
   expect(script).toContain("e2:SetCode(EVENT_SPSUMMON_SUCCESS)");
   expect(script).toContain("return e:GetHandler():IsFusionSummoned()");
   expect(script).toContain("Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)");
+  expect(script).toContain("Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,#g,0,0)");
+  expect(script).toContain("Duel.GetFirstTarget()");
   expect(script).toContain("e1:SetCode(EFFECT_SET_ATTACK_FINAL)");
   expect(script).toContain("e1:SetValue(atk/2)");
   expect(script).toContain("e2:SetCode(EFFECT_UPDATE_ATTACK)");
