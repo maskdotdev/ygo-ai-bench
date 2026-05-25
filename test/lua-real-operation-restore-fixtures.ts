@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 341;
+export const operationFixtureCount = 342;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -14,6 +14,7 @@ export const operationKindCounts = {
   fusionSummonTriggerAttributeNegateStat: 1,
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
+  targetFlaggedBattlePierceDamageLockStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -288,6 +289,7 @@ export type OperationKind =
   | "fusionSummonTriggerAttributeNegateStat"
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
+  | "targetFlaggedBattlePierceDamageLockStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -552,6 +554,28 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-absolute-powerforce-battle-buffs.test.ts",
+      kind: "targetFlaggedBattlePierceDamageLockStat",
+      required: [
+        "restores targeted Red Dragon Archfiend battle effects and flag label after activation",
+        "Absolute Powerforce",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.IsAbleToEnterBP() or (Duel.IsBattlePhase() and not Duel.IsPhase(PHASE_BATTLE))",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsCode,CARD_RED_DRAGON_ARCHFIEND),tp,LOCATION_MZONE,0,1,1,nil)",
+        "tc:RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,EFFECT_FLAG_CLIENT_HINT,1,fid,aux.Stringid(id,1))",
+        "return (Duel.GetAttacker()==tc or Duel.GetAttackTarget()==tc) and tc:GetBattleTarget() and tc:GetBattleTarget():IsControler(1-tp)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_CANNOT_ACTIVATE)",
+        "e3:SetCode(EFFECT_PIERCE)",
+        "e4:SetCode(EFFECT_CHANGE_BATTLE_DAMAGE)",
+        "e4:SetValue(aux.ChangeBattleDamage(1,DOUBLE_DAMAGE))",
+        "effectChangeBattleDamage",
+        "effectFlagPlayerTarget",
+        "flagEffects.filter((flag) => flag.ownerType === \"card\" && flag.ownerId === redDragon.uid)",
+        "eventName: \"becameTarget\"",
+      ],
+    },
     {
       file: "test/lua-real-script-magicians-unite-target-attack-lock-final-stat.test.ts",
       kind: "targetFinalAttackOathSpellcasterLock",
@@ -6665,6 +6689,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fusionSummonTriggerAttributeNegateStat: 0,
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
+      targetFlaggedBattlePierceDamageLockStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
