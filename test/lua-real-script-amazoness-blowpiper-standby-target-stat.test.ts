@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBlowpiperScript)("Lua real script Ama
         eventChainLinkId: "chain-3",
       },
     ]);
+    expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 
