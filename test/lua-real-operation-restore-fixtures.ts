@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 354;
+export const operationFixtureCount = 355;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -27,6 +27,7 @@ export const operationKindCounts = {
   massivemorphFinalStatDirectLock: 1,
   attackAnnounceLpCostStat: 1,
   darkMagicTwinBurstGirlCountStat: 1,
+  attackAnnounceFusionBattleStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -314,6 +315,7 @@ export type OperationKind =
   | "massivemorphFinalStatDirectLock"
   | "attackAnnounceLpCostStat"
   | "darkMagicTwinBurstGirlCountStat"
+  | "attackAnnounceFusionBattleStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -682,6 +684,26 @@ export function operationFixtureFiles(): Array<{
         "e1:SetReset(RESETS_STANDARD_PHASE_END)",
         "currentAttack(findCard(restored.session, darkMagician.uid), restored.session.state)).toBe(6500)",
         'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-battle-fusion-attack-announce-stat.test.ts",
+      kind: "attackAnnounceFusionBattleStat",
+      required: [
+        "restores attack-announcement activation into Fusion monster ATK gain from its battle opponent",
+        "Battle Fusion",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "a:IsControler(tp) and a:IsType(TYPE_FUSION)",
+        "at:IsControler(tp) and at:IsFaceup() and at:IsType(TYPE_FUSION)",
+        "if a:IsControler(1-tp) then a,at=at,a end",
+        "a:IsRelateToBattle()",
+        "at:IsRelateToBattle()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE)",
+        "e1:SetValue(at:GetAttack())",
+        "currentAttack(findCard(restored.session, fusion.uid), restored.session.state)).toBe(4600)",
+        'eventName: "attackDeclared"',
       ],
     },
     {
@@ -6979,6 +7001,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       massivemorphFinalStatDirectLock: 0,
       attackAnnounceLpCostStat: 0,
       darkMagicTwinBurstGirlCountStat: 0,
+      attackAnnounceFusionBattleStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
