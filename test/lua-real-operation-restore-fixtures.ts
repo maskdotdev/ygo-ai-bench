@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 393;
+export const operationFixtureCount = 394;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -66,6 +66,7 @@ export const operationKindCounts = {
   overlayCountGroupAttackBoost: 1,
   battleTargetMirrorAttackFinal: 1,
   lightDragonBattleTargetAttackGain: 1,
+  allFaceupTotalMonsterCountAttackBoost: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -392,6 +393,7 @@ export type OperationKind =
   | "overlayCountGroupAttackBoost"
   | "battleTargetMirrorAttackFinal"
   | "lightDragonBattleTargetAttackGain"
+  | "allFaceupTotalMonsterCountAttackBoost"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1312,6 +1314,24 @@ export function operationFixtureFiles(): Array<{
         "raceDragon",
         "effectUpdateAttack",
         "resetEventStandardDamagePhase",
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-smile-world-field-count-stat.test.ts",
+      kind: "allFaceupTotalMonsterCountAttackBoost",
+      required: [
+        "restores total monster-zone count into all face-up monster ATK boosts",
+        "Smile World",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "Duel.IsExistingMatchingCard(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "local g=Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "local ct=Duel.GetFieldGroupCount(tp,LOCATION_MZONE,LOCATION_MZONE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(ct*100)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "moveFaceDownDefense",
+        "effectUpdateAttack",
         "currentAttack",
       ],
     },
@@ -7844,6 +7864,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       overlayCountGroupAttackBoost: 0,
       battleTargetMirrorAttackFinal: 0,
       lightDragonBattleTargetAttackGain: 0,
+      allFaceupTotalMonsterCountAttackBoost: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
