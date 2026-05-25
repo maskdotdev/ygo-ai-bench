@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 363;
+export const operationFixtureCount = 364;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -36,6 +36,7 @@ export const operationKindCounts = {
   targetBaseAttackBattleEffectProtectFlag: 1,
   targetFinalAttackBattleProtect: 1,
   targetAttackPierceClientHint: 1,
+  twoTargetOpponentBaseAttackFinal: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -332,6 +333,7 @@ export type OperationKind =
   | "targetBaseAttackBattleEffectProtectFlag"
   | "targetFinalAttackBattleProtect"
   | "targetAttackPierceClientHint"
+  | "twoTargetOpponentBaseAttackFinal"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -872,6 +874,26 @@ export function operationFixtureFiles(): Array<{
         "e2:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
         "e2:SetCode(EFFECT_PIERCE)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(2300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-nordic-relic-brisingamen-two-target-final-attack.test.ts",
+      kind: "twoTargetOpponentBaseAttackFinal",
+      required: [
+        "restores own and opponent targets into own monster final ATK set to opponent base ATK",
+        "Nordic Relic Brisingamen",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,0,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "local atk=tc:GetBaseAttack()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(atk)",
+        "currentAttack(findCard(restored.session, ally.uid), restored.session.state)).toBe(2800)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7179,6 +7201,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetBaseAttackBattleEffectProtectFlag: 0,
       targetFinalAttackBattleProtect: 0,
       targetAttackPierceClientHint: 0,
+      twoTargetOpponentBaseAttackFinal: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
