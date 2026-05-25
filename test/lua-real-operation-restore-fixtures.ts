@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 338;
+export const operationFixtureCount = 339;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -31,6 +31,7 @@ export const operationKindCounts = {
   summonTriggerSetFinalAttack: 1,
   summonTriggerPayLpLevelAttack: 1,
   fieldPreDamageCostLevelAttack: 1,
+  groupFinalAttackTrapLock: 1,
   summonBackrowDestroyAttackDrop: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
@@ -302,6 +303,7 @@ export type OperationKind =
   | "summonTriggerSetFinalAttack"
   | "summonTriggerPayLpLevelAttack"
   | "fieldPreDamageCostLevelAttack"
+  | "groupFinalAttackTrapLock"
   | "summonBackrowDestroyAttackDrop"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
@@ -546,6 +548,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-triangle-ecstasy-spark-harpie-trap-lock-stat.test.ts",
+      kind: "groupFinalAttackTrapLock",
+      required: [
+        "restores activation into all Harpie Lady Sisters final ATK and opponent Trap lock effects",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsCode,CARD_HARPIE_LADY_SISTERS),tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsCode,CARD_HARPIE_LADY_SISTERS),tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(2700)",
+        "e1:SetCode(EFFECT_CANNOT_ACTIVATE)",
+        "Duel.RegisterEffect(e1,tp)",
+        "e2:SetCode(EFFECT_DISABLE)",
+        "Duel.RegisterEffect(e2,tp)",
+        "e3:SetCode(EFFECT_DISABLE_TRAPMONSTER)",
+        "Duel.RegisterEffect(e3,tp)",
+        "return re:IsHasType(EFFECT_TYPE_ACTIVATE) and re:IsTrapEffect()",
+        "return c:IsTrap()",
+        "currentAttack(findCard(restoredOpen.session, ownHarpie!.uid), restoredOpen.session.state)).toBe(2700)",
+        "currentAttack(findCard(restoredOpen.session, opponentHarpie!.uid), restoredOpen.session.state)).toBe(2700)",
+        "effectDisableTrapMonster",
+        "value: 2700",
+      ],
+    },
     {
       file: "test/lua-real-script-supreme-kings-castle-precalc-cost-stat.test.ts",
       kind: "fieldPreDamageCostLevelAttack",
@@ -6607,6 +6632,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       summonTriggerSetFinalAttack: 0,
       summonTriggerPayLpLevelAttack: 0,
       fieldPreDamageCostLevelAttack: 0,
+      groupFinalAttackTrapLock: 0,
       summonBackrowDestroyAttackDrop: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
