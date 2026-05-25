@@ -7,6 +7,7 @@ import type { DuelAction, DuelCardInstance, DuelEffectDefinition, DuelState, Pla
 
 const luaEffectLimitSummonProc = 33;
 const luaEffectSummonProc = 32;
+const luaEffectFlagUncopyable = 0x40000;
 
 type EffectChoicePredicate = (effect: DuelEffectDefinition, source: DuelCardInstance, player: PlayerId) => boolean;
 type NormalSummonPredicate = (player: PlayerId, card: DuelCardInstance) => boolean;
@@ -37,7 +38,7 @@ export function specialSummonProcedureActions(state: DuelState, player: PlayerId
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location) || !canUseEffectCount(state, effect)) continue;
     const summonTypeCode = summonProcedureTypeCodeFromValue(effect.value);
-    if (source.location === "extraDeck" && !source.faceUp && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) continue;
+    if (source.location === "extraDeck" && !source.faceUp && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode) && ((effect.property ?? 0) & luaEffectFlagUncopyable) === 0) continue;
     if (!canAttempt(source.uid, summonTypeCode, luaRelatedEffectId(effect)) || !canChooseEffect(effect, source, player)) continue;
     actions.push({ type: "specialSummonProcedure", player, uid: source.uid, effectId: effect.id, label: `Special Summon ${source.name}` });
   }
