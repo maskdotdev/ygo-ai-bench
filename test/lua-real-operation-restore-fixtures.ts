@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 342;
+export const operationFixtureCount = 343;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -15,6 +15,7 @@ export const operationKindCounts = {
   handProcedureBaseStatDirectAttack: 1,
   releaseCostLabelPiercePhaseEndDestroy: 1,
   targetFlaggedBattlePierceDamageLockStat: 1,
+  targetStatTransferDelayedContinuousPlace: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -290,6 +291,7 @@ export type OperationKind =
   | "handProcedureBaseStatDirectAttack"
   | "releaseCostLabelPiercePhaseEndDestroy"
   | "targetFlaggedBattlePierceDamageLockStat"
+  | "targetStatTransferDelayedContinuousPlace"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -554,6 +556,29 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-borrowing-arrows-target-stat-place.test.ts",
+      kind: "targetStatTransferDelayedContinuousPlace",
+      required: [
+        "restores targeted ATK transfer and delayed Ancient Warriors continuous placement",
+        "Ancient Warriors Saga - Borrowing of Arrows",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsSetCard,SET_ANCIENT_WARRIORS),tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "GetClassCount(Card.GetAttribute)>1",
+        "Duel.GetLocationCount(tp,LOCATION_SZONE)>0",
+        "Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_DECK|LOCATION_HAND,0,1,1,nil,tp)",
+        "Duel.MoveToField(tc,tp,tp,LOCATION_SZONE,POS_FACEUP,true)",
+        "currentAttack(findCard(restoredStat.session, opponent.uid), restoredStat.session.state)).toBe(1200)",
+        "effectFlagCannotDisable",
+        "eventName: \"moved\"",
+      ],
+    },
     {
       file: "test/lua-real-script-absolute-powerforce-battle-buffs.test.ts",
       kind: "targetFlaggedBattlePierceDamageLockStat",
@@ -6690,6 +6715,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       handProcedureBaseStatDirectAttack: 0,
       releaseCostLabelPiercePhaseEndDestroy: 0,
       targetFlaggedBattlePierceDamageLockStat: 0,
+      targetStatTransferDelayedContinuousPlace: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
