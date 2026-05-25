@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 349;
+export const operationFixtureCount = 350;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -22,6 +22,7 @@ export const operationKindCounts = {
   banishRaceCostLabelTargetStat: 1,
   trapActivateGraveSelfBanishStat: 1,
   targetAddTunerType: 1,
+  targetStatClientHintProtection: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -304,6 +305,7 @@ export type OperationKind =
   | "banishRaceCostLabelTargetStat"
   | "trapActivateGraveSelfBanishStat"
   | "targetAddTunerType"
+  | "targetStatClientHintProtection"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -589,6 +591,27 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restoredBattle.session, statLink.uid), restoredBattle.session.state)).toBe(2800)",
         "effectDisableEffect",
         "effectUpdateAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-forbidden-dress-stat-protect.test.ts",
+      kind: "targetStatClientHintProtection",
+      required: [
+        "restores targeted ATK loss, client-hint targeting protection, and effect destruction protection",
+        "Forbidden Dress",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-600)",
+        "e2:SetDescription(3009)",
+        "e2:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
+        "e2:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e3:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "effectFlagClientHint",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1400)",
       ],
     },
     {
@@ -6860,6 +6883,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       banishRaceCostLabelTargetStat: 0,
       trapActivateGraveSelfBanishStat: 0,
       targetAddTunerType: 0,
+      targetStatClientHintProtection: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
