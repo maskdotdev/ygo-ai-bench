@@ -53,6 +53,14 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const setcodeTypeSetcode = setcodeTypeSetcodeToken ? luaNumberExpressionValue(L, index, setcodeTypeSetcodeToken) : undefined;
   const setcodeTypeType = setcodeTypeTypeToken ? luaNumberExpressionValue(L, index, setcodeTypeTypeToken) : undefined;
   if (setcodeTypeSetcode !== undefined && setcodeTypeType !== undefined) return `target:setcode-type:${setcodeTypeSetcode}:${setcodeTypeType}`;
+  const setcodeTypeOrLevelAboveOriginalRace = snippet.match(new RegExp(`\\breturn\\s+\\(\\s*${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*\\)\\s+or\\s+\\(\\s*${card}\\s*:\\s*IsLevelAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsOriginalRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*\\)`));
+  const setcodeTypeOrLevelAboveOriginalRaceSetcode = setcodeTypeOrLevelAboveOriginalRace?.[1] ? luaNumberExpressionValue(L, index, setcodeTypeOrLevelAboveOriginalRace[1]) : undefined;
+  const setcodeTypeOrLevelAboveOriginalRaceType = setcodeTypeOrLevelAboveOriginalRace?.[2] ? luaNumberExpressionValue(L, index, setcodeTypeOrLevelAboveOriginalRace[2]) : undefined;
+  const setcodeTypeOrLevelAboveOriginalRaceLevel = setcodeTypeOrLevelAboveOriginalRace?.[3] ? luaNumberTokenValue(L, index, setcodeTypeOrLevelAboveOriginalRace[3]) : undefined;
+  const setcodeTypeOrLevelAboveOriginalRaceRace = setcodeTypeOrLevelAboveOriginalRace?.[4] ? luaNumberExpressionValue(L, index, setcodeTypeOrLevelAboveOriginalRace[4]) : undefined;
+  if (setcodeTypeOrLevelAboveOriginalRaceSetcode !== undefined && setcodeTypeOrLevelAboveOriginalRaceType !== undefined && setcodeTypeOrLevelAboveOriginalRaceLevel !== undefined && setcodeTypeOrLevelAboveOriginalRaceRace !== undefined) {
+    return `target:setcode-type-or-level-above-original-race:${setcodeTypeOrLevelAboveOriginalRaceSetcode}:${setcodeTypeOrLevelAboveOriginalRaceType}:${setcodeTypeOrLevelAboveOriginalRaceLevel}:${setcodeTypeOrLevelAboveOriginalRaceRace}`;
+  }
   const notLocationNotSpellTrap = snippet.match(new RegExp(`\\breturn\\s+(?:not\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsSpellTrap\\s*\\(\\s*\\)|not\\s+${card}\\s*:\\s*IsSpellTrap\\s*\\(\\s*\\)\\s+and\\s+not\\s+${card}\\s*:\\s*IsLocation\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))`));
   const notLocationNotSpellTrapToken = notLocationNotSpellTrap?.[1] ?? notLocationNotSpellTrap?.[2];
   const notLocationNotSpellTrapValue = notLocationNotSpellTrapToken ? luaNumberExpressionValue(L, index, notLocationNotSpellTrapToken) : undefined;

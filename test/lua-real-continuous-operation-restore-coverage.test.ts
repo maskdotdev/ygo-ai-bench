@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 12;
+const continuousOperationFixtureCount = 13;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
   chainSolvingDoubleSnareNegateDestroy: 1,
   chainSolvingDiceNegateDestroy: 1,
   chainSolvingEquipNegateSend: 1,
   chainSolvingCustomSearch: 1,
-  continuousRedirect: 3,
+  continuousRedirect: 4,
   endPhaseControlReturn: 1,
   originalCodeSummonLock: 1,
   persistentAttackAnnounceStatMaintenance: 1,
@@ -29,6 +29,7 @@ const continuousOperationSemanticVariantCounts = {
   magicalMusketeerCasparHandTrapSearch: 1,
   mirrorWallAttackAnnounceMaintenance: 1,
   missusRadiantAttributeStatDestroyedToHand: 1,
+  ryuGeRealmGrantRedirectStat: 1,
   skullArchfiendDiceTargetNegateDestroy: 1,
 } satisfies Record<ContinuousOperationSemanticVariant, number>;
 
@@ -56,6 +57,7 @@ type ContinuousOperationSemanticVariant =
   | "magicalMusketeerCasparHandTrapSearch"
   | "mirrorWallAttackAnnounceMaintenance"
   | "missusRadiantAttributeStatDestroyedToHand"
+  | "ryuGeRealmGrantRedirectStat"
   | "skullArchfiendDiceTargetNegateDestroy";
 
 describe("Lua real continuous operation restore coverage", () => {
@@ -259,6 +261,21 @@ function continuousOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ryu-ge-realm-wyrm-winds-grant-redirect-stat.test.ts",
+      kind: "continuousRedirect",
+      required: [
+        "Ryu-Ge Realm Wyrm Winds grant redirect stat",
+        "e1:SetCode(EFFECT_TO_GRAVE_REDIRECT)",
+        "e3:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_GRANT)",
+        "e4:SetCode(EFFECT_ADD_TYPE)",
+        "target:setcode-type-or-level-above-original-race",
+        "effectToGraveRedirect",
+        "effectAddType",
+        "effectSetAttackFinal",
+        "currentAttack(restoredResolved.session.state.cards.find",
+      ],
+    },
+    {
       file: "test/lua-real-script-dark-magician-destruction-original-code-lock.test.ts",
       kind: "originalCodeSummonLock",
       required: [
@@ -442,6 +459,20 @@ function continuousOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ryu-ge-realm-wyrm-winds-grant-redirect-stat.test.ts",
+      kind: "ryuGeRealmGrantRedirectStat",
+      required: [
+        'const realmCode = "55154344"',
+        "restores opponent-turn redirect and granted Quick Effect cost into final ATK zero",
+        "SetUniqueOnField(1,0,id)",
+        "Duel.IsTurnPlayer(1-e:GetHandlerPlayer())",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_ONFIELD,0,1,1,nil)",
+        "Duel.SelectTarget(tp,Card.HasNonZeroAttack,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "property: 0x180",
+        "value: typeEffect",
+      ],
+    },
+    {
       file: "test/lua-real-script-dark-magician-destruction-original-code-lock.test.ts",
       kind: "darkMagicianOriginalCodeSummonLock",
       required: [
@@ -492,6 +523,7 @@ function countContinuousOperationSemanticVariants(
       magicalMusketeerCasparHandTrapSearch: 0,
       mirrorWallAttackAnnounceMaintenance: 0,
       missusRadiantAttributeStatDestroyedToHand: 0,
+      ryuGeRealmGrantRedirectStat: 0,
       skullArchfiendDiceTargetNegateDestroy: 0,
     },
   );

@@ -2,7 +2,7 @@ import fengari from "fengari";
 import { registerEffect } from "#duel/core.js";
 import { createEffectContext } from "#duel/effect-context.js";
 import { cleanupRemovedDuelEffect } from "#duel/effect-reset.js";
-import { cardTypeFlags } from "#duel/card-stats.js";
+import { cardTypeFlags, currentLevel, printedCardTypeFlags } from "#duel/card-stats.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
 import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
@@ -22,6 +22,7 @@ import { applyLuaContinuousSetControlEffects } from "#lua/duel-api/move-control.
 import { pushGroupTable } from "#lua/group-api.js";
 import { triggerEventFromCode } from "#lua/event-code.js";
 import { readLuaError, runLuaPromptCoroutineFromStack } from "#lua/host-script-api.js";
+import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { normalizeLuaDamageModifier, normalizeLuaUnsignedInteger, toLuaSigned32 } from "#lua/numeric-utils.js";
 import { materializeSkipDrawPhaseEffect } from "#lua/phase-skip-effects.js";
 import { activeTypeFlags, canUseLuaEffectCount, clearLuaEffectCountUsage, effectController, firstFiniteNumber, markLuaEffectCountUsed, normalizeLuaPlayer, normalizePlayer, relatedEffectIdFromChainLink, relatedEffectIdFromEventHistory, sourceCard } from "#lua/host-effect-state-utils.js";
@@ -90,7 +91,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 1;
   });
   pushEffectMethod(L, effects, "GetHandler", (state, effect) => {
-    if ((effect.typeFlags & luaEffectTypeXMaterial) !== 0 && hostState.activeContext?.source !== undefined) {
+    if (((effect.typeFlags & luaEffectTypeXMaterial) !== 0 || effect.sourceUid !== hostState.activeContext?.source.uid) && hostState.activeContext?.source !== undefined) {
       pushCardTable(state, hostState.activeContext.source.uid);
       return 1;
     }
@@ -102,7 +103,7 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 1;
   });
   pushEffectMethod(L, effects, "GetHandlerPlayer", (state, effect) => {
-    if ((effect.typeFlags & luaEffectTypeXMaterial) !== 0 && hostState.activeContext?.source !== undefined) {
+    if (((effect.typeFlags & luaEffectTypeXMaterial) !== 0 || effect.sourceUid !== hostState.activeContext?.source.uid) && hostState.activeContext?.source !== undefined) {
       lua.lua_pushinteger(state, hostState.activeContext.source.controller);
       return 1;
     }
@@ -416,7 +417,17 @@ export function registerLuaEffect(L: unknown, hostState: LuaHostState, id: numbe
   if ((luaEffect.typeFlags & luaEffectTypeField) !== 0 && effect.reset) effect.reset = { ...effect.reset, flags: (effect.reset.flags & ~luaResetEvent) >>> 0 };
   if (materializeSkipDrawPhaseEffect(hostState.session, source, effect)) return true;
   registerEffect(hostState.session, effect);
+  registerGrantedLabelObjectEffect(hostState.session, hostState, source, luaEffect, L);
   return true;
+}
+
+function registerGrantedLabelObjectEffect(session: DuelSession, hostState: LuaHostState, source: DuelCardInstance, grantEffect: LuaEffectRecord, L: unknown): void {
+  if ((grantEffect.typeFlags & luaEffectTypeField) === 0 || (grantEffect.typeFlags & 0x2000) === 0 || grantEffect.labelObjectId === undefined) return;
+  const labelEffect = hostState.effects.get(grantEffect.labelObjectId);
+  if (!labelEffect) return;
+  if (grantEffect.ownerPlayer === undefined) delete labelEffect.ownerPlayer;
+  else labelEffect.ownerPlayer = grantEffect.ownerPlayer;
+  registerEffect(session, toDuelEffect(source, labelEffect, L, hostState));
 }
 
 function setEffectNumberField(field: "typeFlags" | "code" | "description" | "category" | "property") {
@@ -595,6 +606,7 @@ function luaEffectCallbackSource(
   event: DuelEffectDefinition["event"],
 ): DuelCardInstance {
   if ((event === "summonProcedure" || (luaEffect.typeFlags & luaEffectTypeXMaterial) !== 0) && ctx?.source !== undefined) return ctx.source;
+  if ((event === "ignition" || event === "quick") && ctx?.source !== undefined && ctx.source.uid !== card.uid) return ctx.source;
   return card;
 }
 
@@ -1100,7 +1112,22 @@ function luaEffectTargetCardPredicate(luaEffect: LuaEffectRecord, L: unknown, ho
   if (type !== undefined && Number.isSafeInteger(type) && type > 0) {
     return { targetCardPredicate: (ctx, targetCard) => (cardTypeFlags(targetCard, ctx.duel) & type) !== 0 };
   }
+  const ryuGeStyleTarget = setcodeTypeOrLevelAboveOriginalRaceDescriptor(luaEffect.targetDescriptor);
+  if (ryuGeStyleTarget) {
+    return {
+      targetCardPredicate: (ctx, targetCard) =>
+        (cardSetcodes(targetCard).some((setcode) => isSetcodeMatch(ryuGeStyleTarget.setcode, setcode)) && (printedCardTypeFlags(targetCard) & ryuGeStyleTarget.type) !== 0) ||
+        (currentLevel(targetCard, ctx.duel) >= ryuGeStyleTarget.level && ((targetCard.data.race ?? 0) & ryuGeStyleTarget.race) !== 0),
+    };
+  }
   return luaEffect.targetRef === undefined ? {} : { targetCardPredicate: (ctx, targetCard) => callLuaEffectCardTargetPredicate(L, hostState, luaEffect, ctx, targetCard) };
+}
+
+function setcodeTypeOrLevelAboveOriginalRaceDescriptor(descriptor: string | undefined): { setcode: number; type: number; level: number; race: number } | undefined {
+  if (!descriptor?.startsWith("target:setcode-type-or-level-above-original-race:")) return undefined;
+  const [setcode, type, level, race] = descriptor.slice("target:setcode-type-or-level-above-original-race:".length).split(":").map(Number);
+  if (setcode === undefined || type === undefined || level === undefined || race === undefined) return undefined;
+  return [setcode, type, level, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { setcode, type, level, race } : undefined;
 }
 
 function applyLuaEffectContextLabelObject(L: unknown, hostState: LuaHostState, luaEffect: LuaEffectRecord, ctx: DuelEffectContext | undefined): void {
