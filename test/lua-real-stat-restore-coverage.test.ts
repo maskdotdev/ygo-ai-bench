@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 495; const statKindCounts = {
+const statFixtureCount = 496; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -98,6 +98,7 @@ const statFixtureCount = 495; const statKindCounts = {
   lightWingShieldAttackDisabledUtopiaStat: 1,
   snowmanEffectDirectAttackSumLockStat: 1,
   psychicFervorLpFinalAttackDirectLockStat: 1,
+  berserkScalesDamageStepEndStatLock: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -565,6 +566,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   lightWingShieldAttackDisabledUtopiaStat: 1,
   snowmanEffectDirectAttackSumLockStat: 1,
   psychicFervorLpFinalAttackDirectLockStat: 1,
+  berserkScalesDamageStepEndStatLock: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -919,6 +921,7 @@ type ExtraStatKind =
   | "lightWingShieldAttackDisabledUtopiaStat"
   | "snowmanEffectDirectAttackSumLockStat"
   | "psychicFervorLpFinalAttackDirectLockStat"
+  | "berserkScalesDamageStepEndStatLock"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1424,6 +1427,7 @@ type ExtraStatSemanticVariant =
   | "lightWingShieldAttackDisabledUtopiaStat"
   | "snowmanEffectDirectAttackSumLockStat"
   | "psychicFervorLpFinalAttackDirectLockStat"
+  | "berserkScalesDamageStepEndStatLock"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3663,6 +3667,35 @@ function statFixtureFiles(): Array<{
         "toBe(4000)",
         "eventName: \"attackDeclared\"",
         "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-berserk-scales-damage-step-end-stat-lock.test.ts",
+      kind: "berserkScalesDamageStepEndStatLock",
+      required: [
+        'const berserkCode = "52497105"',
+        "Berserk Scales",
+        "restores target ATK boost, direct-attack lock, and End Phase net ATK loss",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.GetCurrentPhase()~=PHASE_DAMAGE",
+        "c~=Duel.GetAttacker()",
+        "Duel.GetAttackTarget()",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "EFFECT_UPDATE_ATTACK",
+        "e1:SetValue(1000)",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        "EFFECT_FLAG_CLIENT_HINT",
+        "EVENT_PHASE+PHASE_END",
+        "e3:SetOperation(s.atkdown)",
+        "e1:SetValue(-1000)",
+        "effectId === \"lua-1-1002\"",
+        "toBe(2500)",
+        "toBe(500)",
+        "eventName: \"becameTarget\"",
+        "eventName === \"phaseEnd\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10498,6 +10531,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       lightWingShieldAttackDisabledUtopiaStat: 0,
       snowmanEffectDirectAttackSumLockStat: 0,
       psychicFervorLpFinalAttackDirectLockStat: 0,
+      berserkScalesDamageStepEndStatLock: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -10903,6 +10937,27 @@ function statSemanticVariants(): Array<{
         "toBe(4000)",
         "eventName: \"attackDeclared\"",
         "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-berserk-scales-damage-step-end-stat-lock.test.ts",
+      kind: "berserkScalesDamageStepEndStatLock",
+      required: [
+        'const berserkCode = "52497105"',
+        "Berserk Scales",
+        "Duel.GetCurrentPhase()~=PHASE_DAMAGE",
+        "c~=Duel.GetAttacker()",
+        "Duel.GetAttackTarget()",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_CANNOT_DIRECT_ATTACK",
+        "EVENT_PHASE+PHASE_END",
+        "e1:SetValue(-1000)",
+        "effectId === \"lua-1-1002\"",
+        "toBe(2500)",
+        "toBe(500)",
+        "eventName: \"becameTarget\"",
+        "eventName === \"phaseEnd\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -17030,6 +17085,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       lightWingShieldAttackDisabledUtopiaStat: 0,
       snowmanEffectDirectAttackSumLockStat: 0,
       psychicFervorLpFinalAttackDirectLockStat: 0,
+      berserkScalesDamageStepEndStatLock: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
