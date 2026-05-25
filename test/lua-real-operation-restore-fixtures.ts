@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 384;
+export const operationFixtureCount = 385;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -57,6 +57,7 @@ export const operationKindCounts = {
   twoTargetSetBaseAttackSwapStat: 1,
   attackAnnounceTargetBoostStat: 1,
   freeChainTargetAttackBoostStat: 1,
+  raceFilteredTargetAttackBoostStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -374,6 +375,7 @@ export type OperationKind =
   | "twoTargetSetBaseAttackSwapStat"
   | "attackAnnounceTargetBoostStat"
   | "freeChainTargetAttackBoostStat"
+  | "raceFilteredTargetAttackBoostStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1107,6 +1109,26 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc1:GetBaseAttack())",
         "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-aqua-jet-race-target-stat.test.ts",
+      kind: "raceFilteredTargetAttackBoostStat",
+      required: [
+        "restores Fish Sea Serpent or Aqua target attack boost",
+        "Aqua Jet",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return c:IsFaceup() and c:IsRace(RACE_FISH|RACE_SEASERPENT|RACE_AQUA)",
+        "Duel.IsExistingTarget(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
+        "e1:SetValue(1000)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(2400)",
+        "currentAttack(findCard(restored.session, decoy.uid), restored.session.state)).toBe(2000)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7630,6 +7652,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       twoTargetSetBaseAttackSwapStat: 0,
       attackAnnounceTargetBoostStat: 0,
       freeChainTargetAttackBoostStat: 0,
+      raceFilteredTargetAttackBoostStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
