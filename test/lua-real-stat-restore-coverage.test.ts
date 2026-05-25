@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 497; const statKindCounts = {
+const statFixtureCount = 498; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -100,6 +100,7 @@ const statFixtureCount = 497; const statKindCounts = {
   psychicFervorLpFinalAttackDirectLockStat: 1,
   berserkScalesDamageStepEndStatLock: 1,
   meklordDeflectionFinalNoDamageReplaceStat: 1,
+  finalCrossSynchroGraveExtraAttackStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -569,6 +570,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   psychicFervorLpFinalAttackDirectLockStat: 1,
   berserkScalesDamageStepEndStatLock: 1,
   meklordDeflectionFinalNoDamageReplaceStat: 1,
+  finalCrossSynchroGraveExtraAttackStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -925,6 +927,7 @@ type ExtraStatKind =
   | "psychicFervorLpFinalAttackDirectLockStat"
   | "berserkScalesDamageStepEndStatLock"
   | "meklordDeflectionFinalNoDamageReplaceStat"
+  | "finalCrossSynchroGraveExtraAttackStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1432,6 +1435,7 @@ type ExtraStatSemanticVariant =
   | "psychicFervorLpFinalAttackDirectLockStat"
   | "berserkScalesDamageStepEndStatLock"
   | "meklordDeflectionFinalNoDamageReplaceStat"
+  | "finalCrossSynchroGraveExtraAttackStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3728,6 +3732,38 @@ function statFixtureFiles(): Array<{
         "api: \"SelectEffectYesNo\"",
         "eventName: \"becameTarget\"",
         "eventName: \"banished\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-final-cross-synchro-grave-extra-attack-stat.test.ts",
+      kind: "finalCrossSynchroGraveExtraAttackStat",
+      required: [
+        'const finalCrossCode = "35756798"',
+        "Final Cross",
+        "restores Synchro-to-Grave flag gating into extra attack and optional grave-Synchro ATK gain",
+        "EFFECT_COUNT_CODE_OATH",
+        "aux.GlobalCheck(s,function()",
+        "ge1:SetCode(EVENT_TO_GRAVE)",
+        "Duel.RegisterFlagEffect(tc:GetControler(),id,RESET_PHASE|PHASE_END,0,1)",
+        "Duel.GetFlagEffect(tp,id)>0",
+        "Duel.IsAbleToEnterBP() or Duel.IsBattlePhase()",
+        "c:IsFaceup() and c:IsType(TYPE_SYNCHRO) and c:CanAttack()",
+        "not c:IsHasEffect(EFFECT_EXTRA_ATTACK)",
+        "Duel.SelectTarget(tp,s.tgfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "EFFECT_EXTRA_ATTACK",
+        "EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_CLIENT_HINT",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.SelectMatchingCard(tp,s.atkfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.HintSelection(atkc,true)",
+        "Duel.BreakEffect()",
+        "tc:UpdateAttack(atkc:GetAttack(),RESET_EVENT|RESETS_STANDARD,c)",
+        "effectId === \"lua-1-1002\"",
+        "api: \"SelectYesNo\"",
+        "attackModifier: 2300",
+        "toBe(4800)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"breakEffect\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10565,6 +10601,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       psychicFervorLpFinalAttackDirectLockStat: 0,
       berserkScalesDamageStepEndStatLock: 0,
       meklordDeflectionFinalNoDamageReplaceStat: 0,
+      finalCrossSynchroGraveExtraAttackStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11011,6 +11048,32 @@ function statSemanticVariants(): Array<{
         "api: \"SelectEffectYesNo\"",
         "eventName: \"becameTarget\"",
         "eventName: \"banished\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-final-cross-synchro-grave-extra-attack-stat.test.ts",
+      kind: "finalCrossSynchroGraveExtraAttackStat",
+      required: [
+        'const finalCrossCode = "35756798"',
+        "Final Cross",
+        "EVENT_TO_GRAVE",
+        "Duel.RegisterFlagEffect(tc:GetControler(),id,RESET_PHASE|PHASE_END,0,1)",
+        "Duel.GetFlagEffect(tp,id)>0",
+        "Duel.IsAbleToEnterBP() or Duel.IsBattlePhase()",
+        "c:CanAttack()",
+        "EFFECT_EXTRA_ATTACK",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.SelectMatchingCard(tp,s.atkfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.HintSelection(atkc,true)",
+        "Duel.BreakEffect()",
+        "tc:UpdateAttack(atkc:GetAttack(),RESET_EVENT|RESETS_STANDARD,c)",
+        "effectId === \"lua-1-1002\"",
+        "api: \"SelectYesNo\"",
+        "attackModifier: 2300",
+        "toBe(4800)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"breakEffect\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -17140,6 +17203,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       psychicFervorLpFinalAttackDirectLockStat: 0,
       berserkScalesDamageStepEndStatLock: 0,
       meklordDeflectionFinalNoDamageReplaceStat: 0,
+      finalCrossSynchroGraveExtraAttackStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
