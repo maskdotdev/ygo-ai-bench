@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 372;
+export const operationFixtureCount = 373;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -45,6 +45,7 @@ export const operationKindCounts = {
   twoPositionTargetDefenseAttackStat: 1,
   ownSingleTargetOpponentMinAttackStat: 1,
   targetDefenseValueAttackDrop: 1,
+  synchroSummonedMaterialCountAttackStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -350,6 +351,7 @@ export type OperationKind =
   | "twoPositionTargetDefenseAttackStat"
   | "ownSingleTargetOpponentMinAttackStat"
   | "targetDefenseValueAttackDrop"
+  | "synchroSummonedMaterialCountAttackStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1049,6 +1051,22 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "e1:SetValue(tc:GetDefense()*-1)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(600)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-synchro-strike-material-count-stat.test.ts",
+      kind: "synchroSummonedMaterialCountAttackStat",
+      required: [
+        "restores Synchro Summoned target ATK gain from material count",
+        "Synchro Strike",
+        "c:IsFaceup() and c:IsSynchroSummoned() and c:GetMaterialCount()~=0",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc:GetMaterialCount()*500)",
+        "summonType = "synchro"",
+        "summonMaterialUids = [materialOne.uid, materialTwo.uid]",
+        "currentAttack(findCard(restored.session, synchro.uid), restored.session.state)).toBe(2800)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7365,6 +7383,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       twoPositionTargetDefenseAttackStat: 0,
       ownSingleTargetOpponentMinAttackStat: 0,
       targetDefenseValueAttackDrop: 0,
+      synchroSummonedMaterialCountAttackStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
