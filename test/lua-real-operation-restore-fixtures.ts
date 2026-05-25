@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 358;
+export const operationFixtureCount = 359;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -31,6 +31,7 @@ export const operationKindCounts = {
   groupSetcodeCountStat: 1,
   preDamageLpDifferenceAttackStat: 1,
   preDamageLinkedLevelStat: 1,
+  normalSummonedGroupDisableImmunityStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -322,6 +323,7 @@ export type OperationKind =
   | "groupSetcodeCountStat"
   | "preDamageLpDifferenceAttackStat"
   | "preDamageLinkedLevelStat"
+  | "normalSummonedGroupDisableImmunityStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -764,6 +766,27 @@ export function operationFixtureFiles(): Array<{
         "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE_CAL)",
         "currentAttack(findCard(restoredPreDamage.session, link.uid), restoredPreDamage.session.state)).toBe(3700)",
         'eventName: "beforeDamageCalculation"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-qlipper-launch-normal-summoned-bundle.test.ts",
+      kind: "normalSummonedGroupDisableImmunityStat",
+      required: [
+        "restores normal-summoned Qli group ATK, disable, disable-effect, and spell/trap immunity",
+        "Qlipper Launch",
+        "s.listed_series={SET_QLI}",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "return c:IsFaceup() and c:IsSetCard(SET_QLI) and c:IsNormalSummoned()",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(300)",
+        "e2:SetCode(EFFECT_DISABLE)",
+        "e3:SetCode(EFFECT_DISABLE_EFFECT)",
+        "e4:SetCode(EFFECT_IMMUNE_EFFECT)",
+        "currentAttack(findCard(restored.session, normalQli.uid), restored.session.state)).toBe(2100)",
+        "effectFlagSingleRangeClientHint",
       ],
     },
     {
@@ -7065,6 +7088,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       groupSetcodeCountStat: 0,
       preDamageLpDifferenceAttackStat: 0,
       preDamageLinkedLevelStat: 0,
+      normalSummonedGroupDisableImmunityStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
