@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 391;
+export const operationFixtureCount = 392;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -64,6 +64,7 @@ export const operationKindCounts = {
   selectOptionGroupDefenseBoost: 1,
   raceCountGroupAttackBoost: 1,
   overlayCountGroupAttackBoost: 1,
+  battleTargetMirrorAttackFinal: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -388,6 +389,7 @@ export type OperationKind =
   | "selectOptionGroupDefenseBoost"
   | "raceCountGroupAttackBoost"
   | "overlayCountGroupAttackBoost"
+  | "battleTargetMirrorAttackFinal"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1267,6 +1269,27 @@ export function operationFixtureFiles(): Array<{
         "attachOverlay",
         "effectUpdateAttack",
         "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mirror-mail-battle-target-final-attack.test.ts",
+      kind: "battleTargetMirrorAttackFinal",
+      required: [
+        "restores battle-target trap activation into attacked monster final ATK",
+        "Mirror Mail",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetCode(EVENT_BE_BATTLE_TARGET)",
+        "local a=Duel.GetAttacker()",
+        "at:CreateEffectRelation(e)",
+        "a:CreateEffectRelation(e)",
+        "if not a:IsRelateToEffect(e) or not at:IsRelateToEffect(e) or a:IsFacedown() or at:IsFacedown() then return end",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(a:GetAttack())",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
+        "type === "activateTrigger"",
+        "effectSetAttackFinal",
+        "currentAttack",
+        'eventName: "battleTargeted"',
       ],
     },
     {
@@ -7796,6 +7819,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       selectOptionGroupDefenseBoost: 0,
       raceCountGroupAttackBoost: 0,
       overlayCountGroupAttackBoost: 0,
+      battleTargetMirrorAttackFinal: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
