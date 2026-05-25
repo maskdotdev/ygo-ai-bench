@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 496; const statKindCounts = {
+const statFixtureCount = 497; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -99,6 +99,7 @@ const statFixtureCount = 496; const statKindCounts = {
   snowmanEffectDirectAttackSumLockStat: 1,
   psychicFervorLpFinalAttackDirectLockStat: 1,
   berserkScalesDamageStepEndStatLock: 1,
+  meklordDeflectionFinalNoDamageReplaceStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -567,6 +568,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   snowmanEffectDirectAttackSumLockStat: 1,
   psychicFervorLpFinalAttackDirectLockStat: 1,
   berserkScalesDamageStepEndStatLock: 1,
+  meklordDeflectionFinalNoDamageReplaceStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -922,6 +924,7 @@ type ExtraStatKind =
   | "snowmanEffectDirectAttackSumLockStat"
   | "psychicFervorLpFinalAttackDirectLockStat"
   | "berserkScalesDamageStepEndStatLock"
+  | "meklordDeflectionFinalNoDamageReplaceStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1428,6 +1431,7 @@ type ExtraStatSemanticVariant =
   | "snowmanEffectDirectAttackSumLockStat"
   | "psychicFervorLpFinalAttackDirectLockStat"
   | "berserkScalesDamageStepEndStatLock"
+  | "meklordDeflectionFinalNoDamageReplaceStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3696,6 +3700,34 @@ function statFixtureFiles(): Array<{
         "toBe(500)",
         "eventName: \"becameTarget\"",
         "eventName === \"phaseEnd\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-meklord-deflection-final-no-damage-replace-stat.test.ts",
+      kind: "meklordDeflectionFinalNoDamageReplaceStat",
+      required: [
+        'const deflectionCode = "66594927"',
+        "Meklord Deflection",
+        "restores Meklord base-ATK final stat, no-battle-damage lock, and grave destroy replacement",
+        "EFFECT_COUNT_CODE_OATH",
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP",
+        "c:IsFaceup() and c:IsSetCard(SET_MEKLORD)",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_MEKLORD),tp,LOCATION_MZONE,0,1,c)",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil,tp)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsSetCard,SET_MEKLORD),tp,LOCATION_MZONE,0,nil)",
+        "for bc in aux.Next(g) do",
+        "atk=atk+bc:GetBaseAttack()",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_NO_BATTLE_DAMAGE",
+        "EFFECT_DESTROY_REPLACE",
+        "Duel.SelectEffectYesNo(tp,e:GetHandler(),96)",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        "effectId === \"lua-1-1002\"",
+        "toBe(3000)",
+        "api: \"SelectEffectYesNo\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"banished\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10532,6 +10564,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       snowmanEffectDirectAttackSumLockStat: 0,
       psychicFervorLpFinalAttackDirectLockStat: 0,
       berserkScalesDamageStepEndStatLock: 0,
+      meklordDeflectionFinalNoDamageReplaceStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -10958,6 +10991,26 @@ function statSemanticVariants(): Array<{
         "toBe(500)",
         "eventName: \"becameTarget\"",
         "eventName === \"phaseEnd\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-meklord-deflection-final-no-damage-replace-stat.test.ts",
+      kind: "meklordDeflectionFinalNoDamageReplaceStat",
+      required: [
+        'const deflectionCode = "66594927"',
+        "Meklord Deflection",
+        "EFFECT_COUNT_CODE_OATH",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_NO_BATTLE_DAMAGE",
+        "EFFECT_DESTROY_REPLACE",
+        "Duel.SelectEffectYesNo(tp,e:GetHandler(),96)",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        "effectId === \"lua-1-1002\"",
+        "toBe(3000)",
+        "api: \"SelectEffectYesNo\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"banished\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -17086,6 +17139,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       snowmanEffectDirectAttackSumLockStat: 0,
       psychicFervorLpFinalAttackDirectLockStat: 0,
       berserkScalesDamageStepEndStatLock: 0,
+      meklordDeflectionFinalNoDamageReplaceStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
