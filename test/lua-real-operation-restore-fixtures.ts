@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 395;
+export const operationFixtureCount = 396;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -30,6 +30,7 @@ export const operationKindCounts = {
   attackAnnounceFusionBattleStat: 1,
   groupSetcodeCountStat: 1,
   preDamageLpDifferenceAttackStat: 1,
+  preDamageLpCostDifferencePlusAttackStat: 1,
   preDamageLinkedLevelStat: 1,
   normalSummonedGroupDisableImmunityStat: 1,
   damageStepTargetAllyAttackStat: 1,
@@ -358,6 +359,7 @@ export type OperationKind =
   | "attackAnnounceFusionBattleStat"
   | "groupSetcodeCountStat"
   | "preDamageLpDifferenceAttackStat"
+  | "preDamageLpCostDifferencePlusAttackStat"
   | "preDamageLinkedLevelStat"
   | "normalSummonedGroupDisableImmunityStat"
   | "damageStepTargetAllyAttackStat"
@@ -818,6 +820,25 @@ export function operationFixtureFiles(): Array<{
         "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE_CAL)",
         "e1:SetValue(atk)",
         "currentAttack(findCard(restoredPreDamage.session, attacker.uid), restoredPreDamage.session.state)).toBe(4500)",
+        'eventName: "beforeDamageCalculation"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-prideful-roar-pre-damage-lp-cost-stat.test.ts",
+      kind: "preDamageLpCostDifferencePlusAttackStat",
+      required: [
+        "restores pre-damage LP-cost activation into difference-plus-300 ATK gain",
+        "Prideful Roar",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "Duel.CheckLPCost(tp,e:GetLabel())",
+        "Duel.PayLPCost(tp,e:GetLabel())",
+        "local dif=bc:GetAttack()-tc:GetAttack()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE_CAL)",
+        "e1:SetValue(dif+300)",
+        "lifePoints).toBe(7100)",
+        "currentAttack(findCard(restoredPreDamage.session, defender.uid), restoredPreDamage.session.state)).toBe(2700)",
         'eventName: "beforeDamageCalculation"',
       ],
     },
