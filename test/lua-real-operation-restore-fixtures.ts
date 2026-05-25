@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 378;
+export const operationFixtureCount = 379;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -51,6 +51,7 @@ export const operationKindCounts = {
   sameCodeGroupFinalAttackStat: 1,
   twoTargetHalveTransferFinalStat: 1,
   discardAttackTargetLossStat: 1,
+  namedGraveCountTargetLossStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -362,6 +363,7 @@ export type OperationKind =
   | "sameCodeGroupFinalAttackStat"
   | "twoTargetHalveTransferFinalStat"
   | "discardAttackTargetLossStat"
+  | "namedGraveCountTargetLossStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1095,6 +1097,25 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc1:GetBaseAttack())",
         "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-miracle-kids-grave-count-stat.test.ts",
+      kind: "namedGraveCountTargetLossStat",
+      required: [
+        "restores Hero Kid grave count into opponent target attack loss",
+        "Miracle Kids",
+        "s.listed_names={32679370}",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingMatchingCard(Card.IsCode,tp,LOCATION_GRAVE,0,1,nil,32679370)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "local val=Duel.GetMatchingGroupCount(Card.IsCode,tp,LOCATION_GRAVE,0,nil,32679370)*400",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "e1:SetValue(-val)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1400)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7494,6 +7515,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       sameCodeGroupFinalAttackStat: 0,
       twoTargetHalveTransferFinalStat: 0,
       discardAttackTargetLossStat: 0,
+      namedGraveCountTargetLossStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
