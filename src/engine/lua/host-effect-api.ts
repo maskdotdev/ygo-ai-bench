@@ -757,6 +757,7 @@ function luaEffectIsSourceOnlyTrigger(typeFlags: number, triggerEvent: DuelEvent
       triggerEvent === "controlChanged" ||
       triggerEvent === "counterAdded" ||
       triggerEvent === "counterRemoved" ||
+      triggerEvent === "customEvent" ||
       triggerEvent === "destroyed" ||
       triggerEvent === "destroying" ||
       triggerEvent === "damageCalculating" ||
