@@ -46,7 +46,7 @@ export interface DuelResponseHandlers {
 export function applyDuelResponse(session: DuelSession, response: unknown, handlers: DuelResponseHandlers): ApplyDuelResponseResult {
   const player = responsePlayer(response);
   if (player === undefined) return result(session, handlers, false, "Response is not currently legal");
-  const legal = handlers.getLegalActions(session, player);
+  const legal = getLegalActionsWithoutProbeMutations(session, handlers, player);
   const canonicalResponse = legal.find((action) => sameAction(action, response));
   if (!canonicalResponse) return result(session, handlers, false, "Response is not currently legal");
   const dispatchResponse = responseForDispatch(canonicalResponse, response);
@@ -109,7 +109,7 @@ function dispatchDuelResponse(session: DuelSession, response: DuelResponse, hand
 }
 
 function result(session: DuelSession, handlers: DuelResponseHandlers, ok: boolean, error?: string): ApplyDuelResponseResult {
-  const legalActions = handlers.getLegalActions(session, session.state.waitingFor ?? session.state.turnPlayer);
+  const legalActions = getLegalActionsWithoutProbeMutations(session, handlers, session.state.waitingFor ?? session.state.turnPlayer);
   return {
     ok,
     ...(error === undefined ? {} : { error }),
@@ -117,4 +117,13 @@ function result(session: DuelSession, handlers: DuelResponseHandlers, ok: boolea
     legalActions,
     legalActionGroups: groupDuelLegalActions(legalActions),
   };
+}
+
+function getLegalActionsWithoutProbeMutations(session: DuelSession, handlers: DuelResponseHandlers, player: PlayerId): DuelAction[] {
+  const rollback = captureDuelState(session.state);
+  try {
+    return handlers.getLegalActions(session, player);
+  } finally {
+    restoreDuelState(session.state, rollback);
+  }
 }

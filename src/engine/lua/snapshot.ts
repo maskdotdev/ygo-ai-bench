@@ -7,6 +7,7 @@ import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLoca
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
+import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { effectiveSpecialSummonTypeCode, isSummonTypeMaskMatch, luaSummonTypeRitual, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import { prunePendingTriggersWithoutEffects, restoreDuel } from "#duel/snapshot.js";
 import { cardFieldId } from "#duel/card-field-id.js";
@@ -210,11 +211,21 @@ function restoreLuaHostEffectMetadata(host: LuaScriptHost, snapshotEffects: Seri
 }
 export function getLuaRestoreLegalActions(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelAction[] {
   if (!restored.restoreComplete) return [];
-  return getLegalActions(restored.session, player);
+  const rollback = captureDuelState(restored.session.state);
+  try {
+    return getLegalActions(restored.session, player);
+  } finally {
+    restoreDuelState(restored.session.state, rollback);
+  }
 }
 export function getLuaRestoreLegalActionGroups(restored: LuaSnapshotRestoreResult, player: PlayerId): DuelLegalActionGroup[] {
   if (!restored.restoreComplete) return [];
-  return getGroupedDuelLegalActions(restored.session, player);
+  const rollback = captureDuelState(restored.session.state);
+  try {
+    return getGroupedDuelLegalActions(restored.session, player);
+  } finally {
+    restoreDuelState(restored.session.state, rollback);
+  }
 }
 export function applyLuaRestoreResponse(restored: LuaSnapshotRestoreResult, response: DuelResponse): ApplyDuelResponseResult {
   if (!restored.restoreComplete) {
@@ -244,7 +255,7 @@ function restoreMaterialCheckTriggers(restored: LuaSnapshotRestoreResult, respon
   if (response.type !== "fusionSummon" && response.type !== "synchroSummon" && response.type !== "xyzSummon" && response.type !== "tributeSummon") return;
   const source = restored.session.state.cards.find((card) => card.uid === response.uid);
   if (!source) return;
-  const materialCheckEffects = restored.session.state.effects.filter((effect) => effect.sourceUid === source.uid && effect.code === 251);
+  const materialCheckEffects = restored.session.state.effects.filter((effect) => isMaterialCheckForSummon(effect, source.uid));
   if (materialCheckEffects.length === 0) return;
   const before = new Set(restored.session.state.pendingTriggers.map(pendingTriggerKey));
   for (const effect of materialCheckEffects) {
@@ -260,6 +271,12 @@ function restoreMaterialCheckTriggers(restored: LuaSnapshotRestoreResult, respon
     const key = pendingTriggerKey(trigger);
     return !before.has(key) || triggers.findIndex((candidate) => pendingTriggerKey(candidate) === key) === index;
   });
+}
+
+function isMaterialCheckForSummon(effect: DuelSession["state"]["effects"][number], sourceUid: string): boolean {
+  if (effect.code !== 251) return false;
+  if (effect.sourceUid === sourceUid) return true;
+  return (effect.property ?? 0) & 0x20 ? true : false;
 }
 
 function pendingTriggerKey(trigger: PendingTrigger): string {

@@ -453,7 +453,16 @@ function takePendingTrigger(state: DuelState, player: PlayerId, triggerId: strin
 }
 
 function nextChainResponsePlayer(state: DuelState, activatingPlayer: PlayerId, firstResponder: PlayerId, handlers: DuelActivationHandlers): PlayerId | undefined {
-  if (handlers.hasChainResponses(state, firstResponder)) return firstResponder;
-  if (handlers.hasChainResponses(state, activatingPlayer)) return activatingPlayer;
+  if (hasChainResponsesWithoutProbeMutations(state, firstResponder, handlers)) return firstResponder;
+  if (hasChainResponsesWithoutProbeMutations(state, activatingPlayer, handlers)) return activatingPlayer;
   return undefined;
+}
+
+function hasChainResponsesWithoutProbeMutations(state: DuelState, player: PlayerId, handlers: DuelActivationHandlers): boolean {
+  const rollback = captureDuelState(state);
+  try {
+    return handlers.hasChainResponses(state, player);
+  } finally {
+    restoreDuelState(state, rollback);
+  }
 }

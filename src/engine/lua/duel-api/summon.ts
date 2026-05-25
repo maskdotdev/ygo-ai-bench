@@ -193,7 +193,11 @@ function summonOrSetWithTributes(L: unknown, session: DuelSession, hostState: Lu
 }
 
 function runLuaMaterialCheckEffectsForSummon(L: unknown, session: DuelSession, hostState: LuaDuelSummonApiHostState, player: PlayerId, source: DuelCardInstance): void {
-  const materialCheckEffects = session.state.effects.filter((effect) => effect.sourceUid === source.uid && effect.code === 251);
+  const materialCheckEffects = session.state.effects.filter((effect) => {
+    if (effect.code !== 251) return false;
+    if (effect.sourceUid === source.uid) return true;
+    return ((effect.property ?? 0) & 0x20) !== 0;
+  });
   for (const effect of materialCheckEffects) runLuaEffectMaterialCheck(L, hostState as LuaHostState, effect.id, source.uid, player);
 }
 
