@@ -9,14 +9,14 @@ const testRoot = path.join(root, "test");
 const scannerPath = path.join(root, "tools/scan-lua-chain-limit-patterns.mjs");
 const upstreamOfficialScriptRoot = path.join(root, ".upstream/ignis/script/official");
 const noActiveRestoreWindowGroups = new Set(["SetChainLimit:aux.FALSE"]);
-const realScriptChainLimitFixtureCount = 18;
+const realScriptChainLimitFixtureCount = 20;
 const realScriptOwnedScannerGroupCount = 15;
 const realScriptChainLimitKindCounts = {
   activationDenyAll: 2,
   activeTypeBlock: 5,
   effectTypeBlock: 4,
   handlerExclusion: 4,
-  responseMatchesChainPlayer: 3,
+  responseMatchesChainPlayer: 5,
 } satisfies Record<RealScriptChainLimitKind, number>;
 const realScriptChainLimitSemanticVariantCounts = {
   antiMagicArrowsAuxFalseActivationBlock: 1,
@@ -588,7 +588,9 @@ function classifyRealScriptChainLimitKind(file: string): RealScriptChainLimitKin
     return "handlerExclusion";
   }
   if (
+    basename === "lua-real-script-arcana-force-hierophant-coin-chain-limit.test.ts" ||
     basename === "lua-real-script-borrelend-chain-limit.test.ts" ||
+    basename === "lua-real-script-borreload-chain-limit-atk-def.test.ts" ||
     basename === "lua-real-script-bucephalus-chain-limit.test.ts" ||
     basename === "lua-real-script-dark-magic-expanded-chain-limit.test.ts"
   ) {

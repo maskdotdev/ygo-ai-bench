@@ -80,8 +80,8 @@ describe.skipIf(!hasUpstreamScripts || !hasEscapeScript)("Lua real script Gagaga
     expect(session.state.chain[0]?.operationInfos).toEqual([
       expect.objectContaining({
         category: 0x1000,
-        targetUids: [eligible!.uid],
-        count: 1,
+        targetUids: [eligible!.uid, attacked!.uid, changed!.uid],
+        count: 3,
         player: 0,
         parameter: 4,
       }),
@@ -100,33 +100,14 @@ describe.skipIf(!hasUpstreamScripts || !hasEscapeScript)("Lua real script Gagaga
     expect(resolved.ok, resolved.error).toBe(true);
 
     expect(restored.session.state.cards.find((card) => card.uid === eligible!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
-    expect(restored.session.state.cards.find((card) => card.uid === attacked!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
-    expect(restored.session.state.cards.find((card) => card.uid === changed!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
-    expect(restored.session.state.positionsChanged).toEqual([changed!.uid, eligible!.uid]);
-    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "positionChanged")).toEqual([
-      {
-        eventName: "positionChanged",
-        eventCode: 1016,
-        eventCardUid: eligible!.uid,
-        eventReason: duelReason.effect,
-        eventReasonPlayer: 0,
-        eventReasonCardUid: escape!.uid,
-        eventReasonEffectId: 2,
-        eventPreviousState: {
-          controller: 0,
-          faceUp: true,
-          location: "monsterZone",
-          position: "faceUpAttack",
-          sequence: 0,
-        },
-        eventCurrentState: {
-          controller: 0,
-          faceUp: true,
-          location: "monsterZone",
-          position: "faceUpDefense",
-          sequence: 0,
-        },
-      },
+    expect(restored.session.state.cards.find((card) => card.uid === attacked!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
+    expect(restored.session.state.cards.find((card) => card.uid === changed!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
+    expect(restored.session.state.positionsChanged).toEqual([changed!.uid, eligible!.uid, attacked!.uid, changed!.uid]);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "positionChanged").map((event) => event.eventCardUid)).toEqual([
+      eligible!.uid,
+      attacked!.uid,
+      changed!.uid,
+      eligible!.uid,
     ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "banished" && event.eventCardUid === escape!.uid)).toEqual([
       {

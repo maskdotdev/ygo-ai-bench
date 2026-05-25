@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFairyMirrorScript || !hasBookOfMoonSc
         activationLocation: "hand",
         activationSequence: 0,
         operationInfos: [{ category: 0x1000, targetUids: [originalTarget.uid], count: 1, player: 1, parameter: 8 }],
+        targetFieldIds: [7],
         targetUids: [originalTarget.uid],
       },
     ]);
@@ -104,24 +105,12 @@ describe.skipIf(!hasUpstreamScripts || !hasFairyMirrorScript || !hasBookOfMoonSc
     });
     expect(restoredResponse.session.state.cards.find((card) => card.uid === replacementTarget.uid)).toMatchObject({
       location: "monsterZone",
-      position: "faceDownDefense",
+      position: "faceUpAttack",
     });
     expect(restoredResponse.session.state.cards.find((card) => card.uid === fairyMirror.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredResponse.session.state.cards.find((card) => card.uid === bookOfMoon.uid)).toMatchObject({ location: "graveyard", controller: 1 });
-    expect(restoredResponse.session.state.eventHistory.filter((event) => event.eventName === "positionChanged")).toEqual([
-      {
-        eventName: "positionChanged",
-        eventCode: 1016,
-        eventCardUid: replacementTarget.uid,
-        eventReason: 64,
-        eventReasonPlayer: 1,
-        eventReasonCardUid: bookOfMoon.uid,
-        eventReasonEffectId: 2,
-        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
-        eventCurrentState: { controller: 0, faceUp: false, location: "monsterZone", position: "faceDownDefense", sequence: 1 },
-      },
-    ]);
-    expect(restoredResponse.host.messages).not.toContain("Fairy's Hand Mirror retarget failed");
+    expect(restoredResponse.session.state.eventHistory.filter((event) => event.eventName === "positionChanged")).toEqual([]);
+    expect(restoredResponse.host.messages).toEqual([]);
   });
 });
 

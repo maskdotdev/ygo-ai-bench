@@ -96,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasOtohimeScript)("Lua real script Otohi
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -120,6 +121,9 @@ describe.skipIf(!hasUpstreamScripts || !hasOtohimeScript)("Lua real script Otohi
         ],
         "player": 0,
         "sourceUid": "p0-deck-39751093-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p1-deck-39751094-0",
         ],

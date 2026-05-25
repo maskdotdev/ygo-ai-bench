@@ -97,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasWorldTreeScript)("Lua real script Wor
         player: 0,
         activationLocation: "spellTrapZone",
         activationSequence: 0,
+        targetFieldIds: [6],
         targetUids: [plant.uid],
         operationInfos: [{ category: 0x200000, targetUids: [plant.uid], count: 1, player: 0, parameter: 500 }],
       },

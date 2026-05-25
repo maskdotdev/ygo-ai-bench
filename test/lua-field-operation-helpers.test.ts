@@ -325,8 +325,8 @@ describe("Lua field operation helpers", () => {
 
     expect(result.ok, result.error).toBe(true);
     expect(host.messages).toEqual(["change reset summoned 1", "change reset set 1", "change reset operated 1"]);
-    expect(summoned).toMatchObject({ position: "faceUpDefense", faceUp: true });
-    expect(set).toMatchObject({ position: "faceUpAttack", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ position: "faceUpDefense", faceUp: true });
+    expect(session.state.cards.find((card) => card.uid === set!.uid)).toMatchObject({ position: "faceUpAttack", faceUp: true });
   });
 
   it("lets Lua scripts toggle Rush face-up attack or face-down defense", () => {

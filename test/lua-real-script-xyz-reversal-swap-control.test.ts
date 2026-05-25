@@ -79,6 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
         effectId: "lua-1-1002",
         activationLocation: "spellTrapZone",
         activationSequence: 0,
+        targetFieldIds: [7, 6],
         operationInfos: [
           {
             category: 0x2000,
@@ -104,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Xy
         effectId: "lua-1-1002",
         activationLocation: "spellTrapZone",
         activationSequence: 0,
+        targetFieldIds: [7, 6],
         operationInfos: [
           {
             category: 0x2000,

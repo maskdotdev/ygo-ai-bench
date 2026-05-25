@@ -184,6 +184,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCallReaperScript)("Lua real script Ca
         operationInfos: [{ category: 0x200, targetUids: [listedTarget.uid], count: 1, player: 0, parameter: 0 }],
         player: 0,
         sourceUid: callReaper.uid,
+        targetFieldIds: [9],
         targetUids: [listedTarget.uid],
       },
     ]);

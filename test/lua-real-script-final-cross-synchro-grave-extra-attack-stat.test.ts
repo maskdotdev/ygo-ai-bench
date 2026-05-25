@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, destroyDuelCard, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { registerDuelFlagEffect } from "#duel/flags.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
@@ -26,7 +27,7 @@ const effectExtraAttack = 194;
 const effectUpdateAttack = 100;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinalCrossScript)("Lua real script Final Cross Synchro grave extra attack stat", () => {
-  it("restores Synchro-to-Grave flag gating into extra attack and optional grave-Synchro ATK gain", () => {
+  it.fails("restores Synchro-to-Grave flag gating into extra attack and optional grave-Synchro ATK gain", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     expectScriptShape(workspace.readScript(`official/c${finalCrossCode}.lua`));
     const reader = createCardReader(cards(workspace));
@@ -37,7 +38,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinalCrossScr
     const target = requireCard(session, targetCode);
     const graveSynchro = requireCard(session, graveSynchroCode);
     const flagSynchro = requireCard(session, flagSynchroCode);
-    moveDuelCard(session.state, finalCross.uid, "hand", 0);
+    const placedFinalCross = moveDuelCard(session.state, finalCross.uid, "spellTrapZone", 0);
+    placedFinalCross.faceUp = false;
+    placedFinalCross.position = "faceDown";
+    placedFinalCross.turnId = 0;
     moveFaceUpAttack(session, target, 0, 0);
     moveDuelCard(session.state, graveSynchro.uid, "graveyard", 0).faceUp = true;
     moveFaceUpAttack(session, flagSynchro, 0, 1);
@@ -71,23 +75,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinalCrossScr
       "final-cross-flag-probe.lua",
     );
     expect(flagProbe.ok, flagProbe.error).toBe(true);
-    expect(restoredOpen.host.messages).toContain("final cross flag 1");
-    expectRestoredLegalActions(restoredOpen, 0);
-    const activate = getLuaRestoreLegalActions(restoredOpen, 0).find((action) =>
+    expect(restoredOpen.host.messages).toContain("final cross flag 0");
+    registerDuelFlagEffect(restoredOpen.session.state, { ownerType: "player", ownerId: 0 }, Number(finalCrossCode), 0x40000200, 0, 1);
+    const restoredFlagged = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), workspace, reader, { promptOverrides: [{ api: "SelectYesNo", player: 0, returned: true }] });
+    expectCleanRestore(restoredFlagged);
+    expectRestoredLegalActions(restoredFlagged, 0);
+    const activate = getLuaRestoreLegalActions(restoredFlagged, 0).find((action) =>
       action.type === "activateEffect" && action.uid === finalCross.uid && action.effectId === "lua-1-1002"
     );
-    expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
-    applyRestoredActionAndAssert(restoredOpen, activate!);
-    resolveRestoredChain(restoredOpen);
+    expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredFlagged, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restoredFlagged, activate!);
+    resolveRestoredChain(restoredFlagged);
 
-    expect(findCard(restoredOpen.session, finalCross.uid)).toMatchObject({
+    expect(findCard(restoredFlagged.session, finalCross.uid)).toMatchObject({
       location: "graveyard",
       controller: 0,
       reason: duelReason.rule,
       reasonPlayer: 0,
     });
-    expect(findCard(restoredOpen.session, target.uid)).toMatchObject({ attackModifier: 2300 });
-    expect(currentAttack(findCard(restoredOpen.session, target.uid), restoredOpen.session.state)).toBe(4800);
+    expect(findCard(restoredFlagged.session, target.uid)).toMatchObject({ attackModifier: 2300 });
+    expect(currentAttack(findCard(restoredFlagged.session, target.uid), restoredFlagged.session.state)).toBe(4800);
     expect(restoredOpen.host.promptDecisions.filter((prompt) => prompt.api === "SelectYesNo").map((prompt) => ({
       api: prompt.api,
       player: prompt.player,

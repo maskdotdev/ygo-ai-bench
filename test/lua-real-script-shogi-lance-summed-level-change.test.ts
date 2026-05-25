@@ -91,6 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasShogiLanceScript)("Lua real script Sh
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [6],
         targetUids: [target.uid],
       },
     ]);

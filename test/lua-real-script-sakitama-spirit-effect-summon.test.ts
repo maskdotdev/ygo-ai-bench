@@ -74,7 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     expect(restoredOpenWindow.session.state.chain[0]).toMatchInlineSnapshot(`
       {
         "activationLocation": "hand",
-        "activationSequence": 2,
+        "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-7",
         "id": "chain-2",
@@ -235,6 +235,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
           "sequence": 1,
         },
         "eventName": "released",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": true,
@@ -261,6 +262,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
         ],
         "player": 0,
         "sourceUid": "p0-deck-67972302-0",
+        "targetFieldIds": [
+          6,
+        ],
         "targetUids": [
           "p0-deck-94972305-1",
         ],

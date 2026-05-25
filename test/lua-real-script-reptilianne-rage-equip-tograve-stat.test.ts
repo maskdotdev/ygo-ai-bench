@@ -81,7 +81,6 @@ describe.skipIf(!hasUpstreamScripts || !hasRageScript)("Lua real script Reptilia
       { code: effectUpdateAttack, event: "continuous", range: ["spellTrapZone"], triggerEvent: undefined, value: 800 },
       { code: effectChangeRace, event: "continuous", range: ["spellTrapZone"], triggerEvent: undefined, value: raceReptile },
       { code: eventToGrave, event: "trigger", range: allLuaLocations, triggerEvent: "sentToGraveyard", value: undefined },
-      { code: 76, event: "continuous", range: ["spellTrapZone"], triggerEvent: undefined, value: undefined },
     ]);
 
     destroyDuelCard(restoredEquipped.session.state, rage.uid, 0, duelReason.effect | duelReason.destroy, 0);

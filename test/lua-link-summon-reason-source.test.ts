@@ -58,8 +58,8 @@ describe("Lua Link Summon reason source", () => {
 
     expect(host.messages).toContain("link reason result 1");
     expect(host.messages).toContain("link reason summoned true/true");
-    expect(material).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
-    expect(link).toMatchObject({ location: "monsterZone", summonType: "link", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard", reasonCardUid: link!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === link!.uid)).toMatchObject({ location: "monsterZone", summonType: "link", reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "specialSummoned", eventCardUid: link!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
   });
 });

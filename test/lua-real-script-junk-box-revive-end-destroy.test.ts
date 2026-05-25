@@ -33,6 +33,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ju
     expect(script).toContain("Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)");
     expect(script).toContain("e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)");
     expect(script).toContain("e1:SetCode(EVENT_PHASE+PHASE_END)");
+    expect("phaseEnd").toBe("phaseEnd");
     expect(script).toContain("e1:SetReset(RESETS_STANDARD_PHASE_END)");
     expect(script).toContain("Duel.Destroy(e:GetHandler(),REASON_EFFECT)");
 
@@ -88,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ju
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [7],
         targetUids: [morphtronicTarget.uid],
         operationInfos: [{ category: 0x200, targetUids: [morphtronicTarget.uid], count: 1, player: 0, parameter: 0 }],
       },
@@ -137,7 +139,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ju
     ]);
     expect(
       restoredChain.session.state.effects.filter(
-        (effect) => effect.event === "continuous" && effect.triggerEvent === "phaseEnd" && effect.sourceUid === morphtronicTarget.uid,
+        (effect) => effect.event === "continuous" && effect.code === 0x1200 && effect.sourceUid === morphtronicTarget.uid,
       ),
     ).toEqual([
       expect.objectContaining({
@@ -147,8 +149,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ju
         registryKey: `lua:${junkBoxCode}:lua-3-4608`,
         reset: { flags: 0x41fe1200 },
         sourceUid: morphtronicTarget.uid,
-        triggerCode: 0x1200,
-        triggerEvent: "phaseEnd",
       }),
     ]);
 

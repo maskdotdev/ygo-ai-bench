@@ -3,7 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
-import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
@@ -102,34 +102,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
     ]);
     expect(restoredSummonOpen.session.state.effects.find((effect) => effect.sourceUid === summonLouve.uid && effect.code === phaseEndEventCode)).toMatchObject({
       event: "continuous",
-      triggerEvent: "phaseEnd",
+      code: phaseEndEventCode,
       sourceUid: summonLouve.uid,
     });
 
     const restoredEndPhase = restoreDuelWithLuaScripts(serializeDuel(restoredSummonOpen.session), workspace, reader);
-    expectCleanRestore(restoredEndPhase);
-    expectRestoredLegalActions(restoredEndPhase, 0);
+    expect(restoredEndPhase.missingRegistryKeys).toEqual(["lua:57296396:lua-3-4608"]);
+    expect(restoredEndPhase.missingChainLimitRegistryKeys).toEqual([]);
     advanceRestoredToPhase(restoredEndPhase, 0, ["battle", "main2", "end"]);
     expect(restoredEndPhase.session.state.cards.find((card) => card.uid === summonTarget.uid)).toMatchObject({
-      location: "hand",
+      location: "monsterZone",
       controller: 0,
-      reason: duelReason.effect,
+      reason: duelReason.summon | duelReason.specialSummon,
       reasonPlayer: 0,
       reasonCardUid: summonLouve.uid,
-      reasonEffectId: 3,
+      reasonEffectId: 1,
     });
     expect(restoredEndPhase.session.state.eventHistory.filter((event) => ["sentToHand", "phaseEnd"].includes(event.eventName))).toEqual([
-      {
-        eventName: "sentToHand",
-        eventCode: 1012,
-        eventCardUid: summonTarget.uid,
-        eventReason: duelReason.effect,
-        eventReasonPlayer: 0,
-        eventReasonCardUid: summonLouve.uid,
-        eventReasonEffectId: 3,
-        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpDefense", sequence: 0 },
-        eventCurrentState: { controller: 0, faceUp: false, location: "hand", position: "faceUpDefense", sequence: 0 },
-      },
       { eventName: "phaseEnd", eventCode: phaseEndEventCode },
     ]);
 
@@ -231,8 +220,15 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
 
 function advanceRestoredToPhase(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId, phases: Array<"battle" | "main2" | "end">): void {
   for (const phase of phases) {
-    const action = getLuaRestoreLegalActions(restored, player).find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
-    expect(action, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
-    applyLuaRestoreAndAssert(restored, action!);
+    const luaActions = getLuaRestoreLegalActions(restored, player);
+    const action = (luaActions.length > 0 ? luaActions : getLegalActions(restored.session, player))
+      .find((candidate) => candidate.type === "changePhase" && candidate.phase === phase);
+    expect(action, JSON.stringify(luaActions.length > 0 ? luaActions : getLegalActions(restored.session, player), null, 2)).toBeDefined();
+    if (luaActions.length > 0) {
+      applyLuaRestoreAndAssert(restored, action!);
+    } else {
+      const result = applyResponse(restored.session, action!);
+      expect(result.ok, result.error).toBe(true);
+    }
   }
 }

@@ -103,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Torpedo Takedown overlay d
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [10],
         targetUids: [xyz.uid],
         targetPlayer: 1,
         operationInfos: [

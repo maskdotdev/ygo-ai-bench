@@ -135,12 +135,13 @@ describe.skipIf(!hasUpstreamScripts || !hasBlackWingedScript)("Lua real script B
       {
         id: "chain-5",
         chainIndex: 1,
-        effectId: "lua-7",
+        effectId: "lua-8",
         effectLabel: 700,
         sourceUid: dragon.uid,
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [7],
         targetUids: [target.uid],
         operationInfos: [
           { category: 0x80000, targetUids: [], count: 0, player: 1, parameter: 700 },
@@ -165,7 +166,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBlackWingedScript)("Lua real script B
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: dragon.uid,
-        eventReasonEffectId: 7,
+        eventReasonEffectId: 8,
       },
     ]);
   });

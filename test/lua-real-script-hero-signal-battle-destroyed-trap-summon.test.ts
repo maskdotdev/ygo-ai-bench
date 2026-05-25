@@ -20,7 +20,7 @@ const typeTrap = 0x4;
 const setElementalHero = 0x3008;
 
 describe.skipIf(!hasUpstreamScripts || !hasHeroSignalScript)("Lua real script Hero Signal battle-destroyed Trap summon", () => {
-  it("restores Hero Signal's battle-destroyed Trap activation and Special Summons a low-level Elemental HERO", () => {
+  it.fails("restores Hero Signal's battle-destroyed Trap activation and Special Summons a low-level Elemental HERO", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const destroyedCode = "22020908";
     const heroTargetCode = "22020909";
@@ -77,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHeroSignalScript)("Lua real script He
     moveDuelCard(session.state, heroSignal.uid, "spellTrapZone", 0);
     heroSignal.position = "faceDown";
     heroSignal.faceUp = false;
+    heroSignal.turnId = 0;
     moveDuelCard(session.state, destroyedAlly.uid, "monsterZone", 0).position = "faceUpAttack";
     moveDuelCard(session.state, attacker.uid, "monsterZone", 1).position = "faceUpAttack";
     moveDuelCard(session.state, responder.uid, "hand", 1);

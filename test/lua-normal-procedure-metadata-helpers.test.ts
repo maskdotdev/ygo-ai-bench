@@ -117,8 +117,9 @@ describe("Lua normal procedure metadata helpers", () => {
 
     const response = applyResponse(session, summon!);
     expect(response.ok, response.error).toBe(true);
-    expect(target!.location).toBe("monsterZone");
-    expect(target!.summonTypeCode).toBe(0x11000001);
+    const summoned = session.state.cards.find((card) => card.uid === target!.uid);
+    expect(summoned?.location).toBe("monsterZone");
+    expect(summoned?.summonTypeCode).toBe(0x11000001);
     expect(host.loadScript(`Debug.Message("three tribute summon type " .. Duel.GetFieldCard(0,LOCATION_MZONE,0):GetSummonType())`, "three-tribute-summon-type.lua").ok).toBe(true);
     expect(host.messages).toContain("three tribute summon type 285212673");
     if (!summon || summon.type !== "tributeSummon") throw new Error("Expected three-tribute summon action");

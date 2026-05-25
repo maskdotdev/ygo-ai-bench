@@ -60,7 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
         return workspace.readScript(name);
       },
     };
-    const host = createLuaScriptHost(session, workspace);
+    const host = createLuaScriptHost(session, workspace, { promptOverrides: [{ api: "SelectEffect", player: 0, returned: 2 }] });
     expect(host.loadCardScript(Number(enemyControllerCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(2);
@@ -91,6 +91,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
         ],
         "player": 0,
         "sourceUid": "p0-deck-98045062-0",
+        "targetFieldIds": [
+          7,
+        ],
         "targetUids": [
           "p1-deck-612302-0",
         ],
@@ -158,6 +161,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
         ],
         "player": 0,
         "sourceUid": "p0-deck-98045062-0",
+        "targetFieldIds": [
+          7,
+        ],
         "targetUids": [
           "p1-deck-612302-0",
         ],

@@ -93,6 +93,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
         ],
         "player": 0,
         "sourceUid": "p0-deck-95750695-0",
+        "targetFieldIds": [
+          6,
+        ],
         "targetUids": [
           "p0-deck-3918345-1",
         ],
@@ -164,32 +167,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
           "sourceUid": "p0-deck-95750695-0",
           "target": [Function],
         },
-        {
-          "battleDamageValue": [Function],
-          "canActivate": [Function],
-          "code": 76,
-          "controller": 0,
-          "cost": [Function],
-          "event": "continuous",
-          "id": "lua-6-76",
-          "lifePointValue": [Function],
-          "luaTypeFlags": 1,
-          "oncePerTurn": false,
-          "operation": [Function],
-          "property": 1024,
-          "range": [
-            "spellTrapZone",
-          ],
-          "registryKey": "lua:95750695:lua-6-76",
-          "reset": {
-            "flags": 33427456,
-          },
-          "sourceUid": "p0-deck-95750695-0",
-          "statValue": [Function],
-          "target": [Function],
-          "valueCardPredicate": [Function],
-          "valuePredicate": [Function],
-        },
       ]
     `);
     assertGeminiStatus(restoredEquipped, geminiCode, true);
@@ -223,6 +200,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
             "sequence": 1,
           },
           "eventName": "sentToGraveyard",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": true,
@@ -267,6 +245,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
           "sequence": 1,
         },
         "eventName": "sentToGraveyard",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": true,
@@ -293,6 +272,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
         ],
         "player": 0,
         "sourceUid": "p0-deck-95750695-0",
+        "targetFieldIds": [
+          7,
+        ],
         "targetUids": [
           "p0-deck-95750696-2",
         ],

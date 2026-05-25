@@ -98,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Reptilianne Lamia hand tar
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [8],
         targetUids: [opponent.uid],
         operationInfos: [
           { category: 0x200, targetUids: [lamia.uid], count: 1, player: 0, parameter: 0 },
