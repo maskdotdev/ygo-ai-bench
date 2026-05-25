@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 388;
+export const operationFixtureCount = 389;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -61,6 +61,7 @@ export const operationKindCounts = {
   globalEffectMonsterFinalStatSwap: 1,
   globalFaceupFinalAttackHalve: 1,
   discardCostOpponentGroupAttackDefenseDrop: 1,
+  selectOptionGroupDefenseBoost: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -382,6 +383,7 @@ export type OperationKind =
   | "globalEffectMonsterFinalStatSwap"
   | "globalFaceupFinalAttackHalve"
   | "discardCostOpponentGroupAttackDefenseDrop"
+  | "selectOptionGroupDefenseBoost"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1200,6 +1202,29 @@ export function operationFixtureFiles(): Array<{
         "currentAttack",
         "currentDefense",
         'eventName: "discarded"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-pyramid-energy-select-option-stat.test.ts",
+      kind: "selectOptionGroupDefenseBoost",
+      required: [
+        "restores SelectOption label into own face-up DEF group boost",
+        "Pyramid Energy",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.IsExistingMatchingCard(Card.IsFaceup,tp,LOCATION_MZONE,0,1,nil)",
+        "local op=Duel.SelectOption(tp,aux.Stringid(id,0),aux.Stringid(id,1))",
+        "e:SetLabel(op)",
+        "local g=Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,0,nil)",
+        "if e:GetLabel()==0 then",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(200)",
+        "e1:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e1:SetValue(500)",
+        'api: "SelectOption"',
+        "descriptions: [1228073904, 1228073905]",
+        "effectUpdateDefense",
+        "currentDefense",
       ],
     },
     {
@@ -7726,6 +7751,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       globalEffectMonsterFinalStatSwap: 0,
       globalFaceupFinalAttackHalve: 0,
       discardCostOpponentGroupAttackDefenseDrop: 0,
+      selectOptionGroupDefenseBoost: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
