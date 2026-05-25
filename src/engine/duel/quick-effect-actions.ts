@@ -119,7 +119,7 @@ function battleWindowEventMatchesEffect(kind: NonNullable<ReturnType<typeof curr
     (kind === "startDamageStep" && effect.triggerEvent === "battleConfirmed") ||
     (kind === "beforeDamageCalculation" && effect.triggerEvent === "beforeDamageCalculation") ||
     (kind === "duringDamageCalculation" && effect.triggerEvent === "damageCalculating") ||
-    (kind === "afterDamageCalculation" && effect.triggerEvent === "afterDamageCalculation") ||
+    (kind === "afterDamageCalculation" && (effect.triggerEvent === "afterDamageCalculation" || effect.triggerEvent === "battleDamageDealt")) ||
     (kind === "endDamageStep" && (effect.triggerEvent === "battleDestroyed" || effect.triggerEvent === "damageStepEnded"))
   );
 }
@@ -168,6 +168,7 @@ function battleOpenTimingMask(state: DuelState): number {
 
 function shouldRequireMatchingFirstChainEvent(state: DuelState, effect: DuelEffectDefinition): boolean {
   if (effect.triggerEvent === undefined || isChainEvent(effect.triggerEvent)) return false;
+  if (effect.triggerEvent === "battleDamageDealt") return true;
   return state.chain.length > 0;
 }
 
