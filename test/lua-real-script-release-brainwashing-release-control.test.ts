@@ -150,10 +150,13 @@ describe.skipIf(!hasUpstreamScripts || !hasBrainwashingScript)("Lua real script 
     );
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.chain[0]).toMatchObject({
+    expect(restoredTrigger.session.state.chain.map((link) => ({
+      operationInfos: link.operationInfos,
+      targetUids: link.targetUids,
+    }))).toEqual([{
       operationInfos: [{ category: categoryDisable, targetUids: [opponentTarget.uid], count: 1, player: 0, parameter: 0 }],
       targetUids: [opponentTarget.uid],
-    });
+    }]);
     expect(restoredTrigger.session.state.chain[0]!.possibleOperationInfos ?? []).toEqual([]);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);

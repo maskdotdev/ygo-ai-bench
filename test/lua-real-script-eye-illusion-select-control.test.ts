@@ -72,12 +72,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ey
     expect(host.promptDecisions).toEqual([
       { id: "lua-prompt-1", api: "SelectEffect", player: 0, options: [1, 2], descriptions: [375141905, 375141906], returned: 2 },
     ]);
-    expect(session.state.chain[0]).toMatchObject({
+    expect(session.state.chain.map((link) => ({
+      sourceUid: link.sourceUid,
+      player: link.player,
+      targetUids: link.targetUids,
+      operationInfos: link.operationInfos,
+    }))).toEqual([{
       sourceUid: eye.uid,
       player: 0,
       targetUids: [target.uid],
       operationInfos: [{ category: 0x2000, targetUids: [target.uid], count: 1, player: 0, parameter: 0 }],
-    });
+    }]);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader, { promptOverrides: [{ api: "SelectEffect", player: 0, returned: 2 }] });
     expectCleanRestore(restoredChain);

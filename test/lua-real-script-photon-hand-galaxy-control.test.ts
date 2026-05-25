@@ -80,13 +80,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, activation!);
     expect(restoredOpen.session.state.players[0].lifePoints).toBe(7000);
-    expect(restoredOpen.session.state.chain).toEqual([
-      expect.objectContaining({
+    expect(restoredOpen.session.state.chain.map((link) => ({
+      player: link.player,
+      sourceUid: link.sourceUid,
+      operationInfos: link.operationInfos,
+      targetUids: link.targetUids,
+    }))).toEqual([
+      {
         player: 0,
         sourceUid: photonHand.uid,
         operationInfos: [{ category: categoryControl, targetUids: [opponentNonXyz.uid], count: 1, player: 0, parameter: 0 }],
         targetUids: [opponentNonXyz.uid],
-      }),
+      },
     ]);
     resolveRestoredChain(restoredOpen);
 

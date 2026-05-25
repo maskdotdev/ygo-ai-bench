@@ -112,15 +112,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
     const negate = getLuaRestoreLegalActions(restoredResponse, 0).find((action) => action.type === "activateEffect" && action.uid === draco.uid);
     expect(negate, JSON.stringify(getLuaRestoreLegalActions(restoredResponse, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredResponse, negate!);
-    expect(restoredResponse.session.state.chain).toEqual([
-      expect.objectContaining({
+    expect(restoredResponse.session.state.chain.map((link) => ({
+      activationLocation: link.activationLocation,
+      chainIndex: link.chainIndex,
+      effectId: link.effectId,
+      operationInfos: link.operationInfos,
+      player: link.player,
+      sourceUid: link.sourceUid,
+    }))).toEqual([
+      {
         activationLocation: "monsterZone",
         chainIndex: 1,
         effectId: "lua-5-1002",
+        operationInfos: [{ category: 0x10000, count: 0, parameter: 1, player: 1, targetUids: [] }],
         player: 1,
         sourceUid: starter.uid,
-      }),
-      expect.objectContaining({
+      },
+      {
         activationLocation: "monsterZone",
         chainIndex: 2,
         effectId: "lua-4-1027",
@@ -130,7 +138,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
         ],
         player: 0,
         sourceUid: draco.uid,
-      }),
+      },
     ]);
     expect(restoredResponse.session.state.cards.find((card) => card.uid === material.uid)).toMatchObject({
       location: "graveyard",

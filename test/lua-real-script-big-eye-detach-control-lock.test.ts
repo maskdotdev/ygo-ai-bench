@@ -76,13 +76,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
     const activation = getLuaRestoreLegalActions(restoredOpen, 0).find((action) => action.type === "activateEffect" && action.uid === bigEye.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, activation!);
-    expect(restoredOpen.session.state.chain).toEqual([
-      expect.objectContaining({
+    expect(restoredOpen.session.state.chain.map((link) => ({
+      player: link.player,
+      sourceUid: link.sourceUid,
+      targetUids: link.targetUids,
+      operationInfos: link.operationInfos,
+    }))).toEqual([
+      {
         player: 0,
         sourceUid: bigEye.uid,
         targetUids: [target.uid],
         operationInfos: [{ category: categoryControl, targetUids: [target.uid], count: 1, player: 0, parameter: 0 }],
-      }),
+      },
     ]);
     expect(restoredOpen.session.state.cards.find((card) => card.uid === material.uid)).toMatchObject({
       location: "graveyard",

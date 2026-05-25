@@ -69,12 +69,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Du
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === dummyGolem.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.chain).toEqual([
-      expect.objectContaining({
+    expect(restoredTrigger.session.state.chain.map((link) => ({
+      player: link.player,
+      sourceUid: link.sourceUid,
+      operationInfos: link.operationInfos,
+    }))).toEqual([
+      {
         player: 0,
         sourceUid: dummyGolem.uid,
         operationInfos: [{ category: categoryControl, targetUids: [], count: 0, player: 0, parameter: 0 }],
-      }),
+      },
     ]);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);

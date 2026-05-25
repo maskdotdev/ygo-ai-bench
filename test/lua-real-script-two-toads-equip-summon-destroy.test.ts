@@ -71,7 +71,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tw
     const activation = getLuaRestoreLegalActions(restoredOpen, 0).find((action) => action.type === "activateEffect" && action.uid === twoToads.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredOpen, activation!);
-    expect(restoredOpen.session.state.chain[0]).toMatchObject({
+    expect(restoredOpen.session.state.chain.map((link) => ({
+      activationLocation: link.activationLocation,
+      effectId: link.effectId,
+      operationInfos: link.operationInfos,
+      targetFieldIds: link.targetFieldIds,
+      targetUids: link.targetUids,
+    }))).toEqual([{
       activationLocation: "hand",
       effectId: "lua-1-1002",
       operationInfos: [
@@ -80,7 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tw
       ],
       targetFieldIds: [target.fieldId],
       targetUids: [target.uid],
-    });
+    }]);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
     expectCleanRestore(restoredChain);

@@ -79,8 +79,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
     const activation = getLuaRestoreLegalActions(restoredOpen, 0).find((action) => action.type === "activateEffect" && action.uid === comicHand.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, activation!);
-    expect(restoredOpen.session.state.chain).toEqual([
-      expect.objectContaining({
+    expect(restoredOpen.session.state.chain.map((link) => ({
+      player: link.player,
+      sourceUid: link.sourceUid,
+      operationInfos: link.operationInfos,
+      targetUids: link.targetUids,
+    }))).toEqual([
+      {
         player: 0,
         sourceUid: comicHand.uid,
         operationInfos: [
@@ -88,7 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
           { category: categoryEquip, targetUids: [comicHand.uid], count: 1, player: 0, parameter: 0 },
         ],
         targetUids: [target.uid],
-      }),
+      },
     ]);
     resolveRestoredChain(restoredOpen);
 

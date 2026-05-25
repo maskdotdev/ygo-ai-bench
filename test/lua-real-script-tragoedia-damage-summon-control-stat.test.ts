@@ -158,14 +158,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     );
     expect(control, JSON.stringify(getLuaRestoreLegalActions(restoredMain, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredMain, control!);
-    expect(restoredMain.session.state.chain).toEqual([
-      expect.objectContaining({
+    expect(restoredMain.session.state.chain.map((link) => ({
+      effectId: link.effectId,
+      player: link.player,
+      sourceUid: link.sourceUid,
+      targetUids: link.targetUids,
+      operationInfos: link.operationInfos,
+    }))).toEqual([
+      {
         effectId: "lua-4",
         player: 0,
         sourceUid: tragedy.uid,
         targetUids: [attacker.uid],
         operationInfos: [{ category: 0x2000, targetUids: [attacker.uid], count: 1, player: 0, parameter: 0 }],
-      }),
+      },
     ]);
     expect(restoredMain.session.state.cards.find((card) => card.uid === controlCost.uid)).toMatchObject({
       location: "graveyard",

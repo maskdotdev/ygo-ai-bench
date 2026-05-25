@@ -104,9 +104,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Em
       p1Actions: getLuaRestoreLegalActions(restoredResponse, 1),
     }, null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredResponse, setResponse!);
-    expect(restoredResponse.session.state.chain).toEqual([
-      expect.objectContaining({ chainIndex: 1, effectId: "lua-4-1002", player: 1, sourceUid: starter.uid }),
-      expect.objectContaining({
+    expect(restoredResponse.session.state.chain.map((link) => ({
+      activationLocation: link.activationLocation,
+      chainIndex: link.chainIndex,
+      effectId: link.effectId,
+      operationInfos: link.operationInfos,
+      player: link.player,
+      sourceUid: link.sourceUid,
+      targetUids: link.targetUids,
+    }))).toEqual([
+      { activationLocation: "monsterZone", chainIndex: 1, effectId: "lua-4-1002", operationInfos: [{ category: 0x10000, count: 0, parameter: 1, player: 1, targetUids: [] }], player: 1, sourceUid: starter.uid, targetUids: undefined },
+      {
         activationLocation: "spellTrapZone",
         chainIndex: 2,
         effectId: "lua-2-1027",
@@ -114,7 +122,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Em
         player: 0,
         sourceUid: embrace.uid,
         targetUids: [starter.uid],
-      }),
+      },
     ]);
 
     const restoredSetChain = restoreDuelWithLuaScripts(serializeDuel(restoredResponse.session), source, reader);

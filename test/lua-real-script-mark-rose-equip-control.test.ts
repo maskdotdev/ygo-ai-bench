@@ -77,18 +77,24 @@ describe.skipIf(!hasUpstreamScripts || !hasMarkScript)("Lua real script Mark of 
       reasonCardUid: mark.uid,
       reasonEffectId: 1,
     });
-    expect(restoredOpen.session.state.chain).toHaveLength(1);
-    expect(restoredOpen.session.state.chain[0]).toMatchObject({
+    expect(restoredOpen.session.state.chain.map((link) => ({
+      activationLocation: link.activationLocation,
+      effectId: link.effectId,
+      player: link.player,
+      sourceUid: link.sourceUid,
+      targetUids: link.targetUids,
+      operationInfos: link.operationInfos,
+    }))).toEqual([{
       activationLocation: "hand",
       effectId: "lua-1-1002",
       player: 0,
       sourceUid: mark.uid,
       targetUids: [stealTarget.uid],
-    });
-    expect(restoredOpen.session.state.chain[0]!.operationInfos).toEqual([
-      { category: categoryControl, targetUids: [stealTarget.uid], count: 1, player: 0, parameter: 0 },
-      { category: categoryEquip, targetUids: [mark.uid], count: 1, player: 0, parameter: 0 },
-    ]);
+      operationInfos: [
+        { category: categoryControl, targetUids: [stealTarget.uid], count: 1, player: 0, parameter: 0 },
+        { category: categoryEquip, targetUids: [mark.uid], count: 1, player: 0, parameter: 0 },
+      ],
+    }]);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
     expectCleanRestore(restoredChain);

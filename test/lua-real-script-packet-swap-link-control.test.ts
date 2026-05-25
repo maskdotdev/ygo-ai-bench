@@ -77,13 +77,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pa
     const activation = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === packetSwap.uid);
     expect(activation, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, activation!);
-    expect(session.state.chain).toEqual([
-      expect.objectContaining({
+    expect(session.state.chain.map((link) => ({
+      player: link.player,
+      sourceUid: link.sourceUid,
+      operationInfos: link.operationInfos,
+      targetUids: link.targetUids,
+    }))).toEqual([
+      {
         player: 0,
         sourceUid: packetSwap.uid,
         operationInfos: [{ category: categoryControl, targetUids: [ownNonLink.uid, opponentLink.uid], count: 2, player: 0, parameter: 0 }],
         targetUids: [ownNonLink.uid, opponentLink.uid],
-      }),
+      },
     ]);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
