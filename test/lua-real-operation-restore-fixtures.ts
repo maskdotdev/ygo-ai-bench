@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 340;
+export const operationFixtureCount = 341;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -33,6 +33,7 @@ export const operationKindCounts = {
   fieldPreDamageCostLevelAttack: 1,
   groupFinalAttackTrapLock: 1,
   targetLinkDynamicAttackPierceLock: 1,
+  targetFinalAttackOathSpellcasterLock: 1,
   summonBackrowDestroyAttackDrop: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
@@ -306,6 +307,7 @@ export type OperationKind =
   | "fieldPreDamageCostLevelAttack"
   | "groupFinalAttackTrapLock"
   | "targetLinkDynamicAttackPierceLock"
+  | "targetFinalAttackOathSpellcasterLock"
   | "summonBackrowDestroyAttackDrop"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
@@ -550,6 +552,27 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-magicians-unite-target-attack-lock-final-stat.test.ts",
+      kind: "targetFinalAttackOathSpellcasterLock",
+      required: [
+        "restores targeted Spellcaster final ATK and same-turn OATH attack lock for the other Spellcasters",
+        "return c:IsPosition(POS_FACEUP_ATTACK) and c:IsRace(RACE_SPELLCASTER)",
+        "return Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,2,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e1:SetProperty(EFFECT_FLAG_OATH+EFFECT_FLAG_IGNORE_IMMUNE)",
+        "e1:SetLabel(g:GetFirst():GetFieldID())",
+        "Duel.RegisterEffect(e1,tp)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(3000)",
+        "return e:GetLabel()~=c:GetFieldID() and c:IsRace(RACE_SPELLCASTER)",
+        "currentAttack(findCard(restoredOpen.session, targetSpellcaster.uid), restoredOpen.session.state)).toBe(3000)",
+        "effectCannotAttack",
+        "value: 3000",
+      ],
+    },
     {
       file: "test/lua-real-script-gouki-finishing-move-link-pierce-lock-stat.test.ts",
       kind: "targetLinkDynamicAttackPierceLock",
@@ -6661,6 +6684,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       fieldPreDamageCostLevelAttack: 0,
       groupFinalAttackTrapLock: 0,
       targetLinkDynamicAttackPierceLock: 0,
+      targetFinalAttackOathSpellcasterLock: 0,
       summonBackrowDestroyAttackDrop: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
