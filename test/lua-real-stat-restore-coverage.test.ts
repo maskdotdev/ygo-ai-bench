@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 482; const statKindCounts = {
+const statFixtureCount = 483; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -136,6 +136,7 @@ const statFixtureCount = 482; const statKindCounts = {
   performapalClayBreakerTributePendulumStatToHand: 1,
   spyralGearDroneSummonSortTributeStatBanishToHand: 1,
   archfiendsStaffEquipOpponentStatLeaveToHand: 1,
+  dewlorenTargetReturnOperatedStat: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -589,6 +590,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   performapalClayBreakerTributePendulumStatToHand: 1,
   spyralGearDroneSummonSortTributeStatBanishToHand: 1,
   archfiendsStaffEquipOpponentStatLeaveToHand: 1,
+  dewlorenTargetReturnOperatedStat: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -931,6 +933,7 @@ type ExtraStatKind =
   | "performapalClayBreakerTributePendulumStatToHand"
   | "spyralGearDroneSummonSortTributeStatBanishToHand"
   | "archfiendsStaffEquipOpponentStatLeaveToHand"
+  | "dewlorenTargetReturnOperatedStat"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -1422,6 +1425,7 @@ type ExtraStatSemanticVariant =
   | "performapalClayBreakerTributePendulumStatToHand"
   | "spyralGearDroneSummonSortTributeStatBanishToHand"
   | "archfiendsStaffEquipOpponentStatLeaveToHand"
+  | "dewlorenTargetReturnOperatedStat"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -4577,6 +4581,28 @@ function statFixtureFiles(): Array<{
         "Duel.SendtoHand(c,nil,REASON_EFFECT)",
         "Duel.ConfirmCards(1-tp,c)",
         "currentAttack(restoredDrop.session.state.cards.find((card) => card.uid === opponentA.uid), restoredDrop.session.state)).toBe(600)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dewloren-target-return-operated-stat.test.ts",
+      kind: "dewlorenTargetReturnOperatedStat",
+      required: [
+        'const dewlorenCode = "70583986"',
+        "Dewloren, Tiger King of the Ice Barrier",
+        "restores targeted own-card return to hand into operated-count ATK gain after BreakEffect",
+        "Synchro.AddProcedure(c,nil,1,1,Synchro.NonTunerEx(Card.IsAttribute,ATTRIBUTE_WATER),1,99)",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_ONFIELD,0,1,12,e:GetHandler())",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "Duel.SendtoHand(rg,nil,REASON_EFFECT)",
+        "Duel.BreakEffect()",
+        "Duel.GetOperatedGroup()",
+        "og:FilterCount(Card.IsLocation,nil,LOCATION_HAND)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(ct*500)",
+        "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === dewloren.uid), restoredChain.session.state)).toBe(3000)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10173,6 +10199,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       performapalClayBreakerTributePendulumStatToHand: 0,
       spyralGearDroneSummonSortTributeStatBanishToHand: 0,
       archfiendsStaffEquipOpponentStatLeaveToHand: 0,
+      dewlorenTargetReturnOperatedStat: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
@@ -12485,6 +12512,24 @@ function statSemanticVariants(): Array<{
         "location: \"hand\"",
         "lifePoints).toBe(7000)",
         "eventReason: duelReason.effect | duelReason.destroy",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dewloren-target-return-operated-stat.test.ts",
+      kind: "dewlorenTargetReturnOperatedStat",
+      required: [
+        'const dewlorenCode = "70583986"',
+        "effectUpdateAttack = 100",
+        "effectId === \"lua-3\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHand\"",
+        "eventName: \"breakEffect\"",
+        "eventUids: [ownSpell.uid, ownMonster.uid]",
+        "eventReasonEffectId: 3",
+        "value: 1000",
+        "location: \"hand\"",
+        "toBe(3000)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -16446,6 +16491,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       performapalClayBreakerTributePendulumStatToHand: 0,
       spyralGearDroneSummonSortTributeStatBanishToHand: 0,
       archfiendsStaffEquipOpponentStatLeaveToHand: 0,
+      dewlorenTargetReturnOperatedStat: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
