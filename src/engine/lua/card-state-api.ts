@@ -13,7 +13,7 @@ export function installCardStateApi(L: unknown, session: DuelSession): void {
   pushPlayerMatcher(L, "IsOwner", session, (card, requested) => requested.includes(card.owner));
   pushNumberGetter(L, "GetControler", session, (card) => card?.controller ?? 0);
   pushNumberGetter(L, "GetSummonPlayer", session, (card) => card?.summonPlayer ?? card?.controller ?? 0);
-  pushNumberGetter(L, "GetSummonLocation", session, (card) => (card?.summonType ? locationMaskFromLocation(card.previousLocation) : 0));
+  pushNumberGetter(L, "GetSummonLocation", session, (card) => (card?.summonType ? locationMaskFromLocation(card.summonLocation ?? card.previousLocation) : 0));
   pushNumberGetter(L, "GetLocation", session, (card) => locationMaskFromLocation(card?.location));
   pushNumberGetter(L, "GetSequence", session, (card) => card?.sequence ?? 0);
   pushNumberGetter(L, "GetFieldID", session, (card) => cardFieldId(card));

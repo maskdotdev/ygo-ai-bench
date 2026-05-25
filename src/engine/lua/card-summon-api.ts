@@ -15,7 +15,7 @@ export function installCardSummonApi(L: unknown, session: DuelSession): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card?.summonType && requested.some((value) => locationMatchesCardMask(card, value, card.previousLocation, card.previousSequence))));
+    lua.lua_pushboolean(state, Boolean(card?.summonType && requested.some((value) => locationMatchesCardMask(card, value, card.summonLocation ?? card.previousLocation, card.previousSequence))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsSummonLocation"));

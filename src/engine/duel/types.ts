@@ -239,6 +239,7 @@ export interface DuelCardInstance {
   turnCounter?: number;
   summonType?: DuelSummonType;
   summonTypeCode?: number;
+  summonLocation?: DuelLocation;
   summonPlayer?: PlayerId;
   summonPhase?: DuelPhase;
   summonMaterialUids?: string[];

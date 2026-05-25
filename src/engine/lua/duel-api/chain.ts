@@ -130,7 +130,7 @@ function pushChainInfoValue(L: unknown, session: DuelSession, hostState: LuaDuel
   else if (info === 24) lua.lua_pushinteger(L, currentAttack(source, session.state));
   else if (info === 25) lua.lua_pushinteger(L, currentDefense(source, session.state));
   else if (info === 26) lua.lua_pushinteger(L, 0);
-  else if (info === 27) lua.lua_pushinteger(L, source?.summonType ? locationMaskFromLocation(source.previousLocation) : 0);
+  else if (info === 27) lua.lua_pushinteger(L, source?.summonType ? locationMaskFromLocation(source.summonLocation ?? source.previousLocation) : 0);
   else if (info === 28) lua.lua_pushinteger(L, summonTypeMask(source));
   else if (info === 29) lua.lua_pushboolean(L, Boolean(source?.summonType));
   else if (info === 30) pushNumberArrayTable(L, source ? effectiveCardSetcodes(session.state, source, hostState) : []);
