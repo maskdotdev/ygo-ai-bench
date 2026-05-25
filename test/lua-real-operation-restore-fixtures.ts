@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 360;
+export const operationFixtureCount = 361;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -33,6 +33,7 @@ export const operationKindCounts = {
   preDamageLinkedLevelStat: 1,
   normalSummonedGroupDisableImmunityStat: 1,
   damageStepTargetAllyAttackStat: 1,
+  targetBaseAttackBattleEffectProtectFlag: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -326,6 +327,7 @@ export type OperationKind =
   | "preDamageLinkedLevelStat"
   | "normalSummonedGroupDisableImmunityStat"
   | "damageStepTargetAllyAttackStat"
+  | "targetBaseAttackBattleEffectProtectFlag"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -809,6 +811,26 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc:GetAttack())",
         "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE_CAL)",
         "currentAttack(findCard(restoredDamage.session, defender.uid), restoredDamage.session.state)).toBe(3400)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-pianissimo-base-protect-flag.test.ts",
+      kind: "targetBaseAttackBattleEffectProtectFlag",
+      required: [
+        "restores target flag, base ATK set, and battle/effect destruction protection",
+        "Pianissimo",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "return c:IsFaceup() and c:GetFlagEffect(id)==0",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "tc:RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,0,1)",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e1:SetValue(100)",
+        "e2:SetDescription(3008)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e3:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(100)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7113,6 +7135,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       preDamageLinkedLevelStat: 0,
       normalSummonedGroupDisableImmunityStat: 0,
       damageStepTargetAllyAttackStat: 0,
+      targetBaseAttackBattleEffectProtectFlag: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
