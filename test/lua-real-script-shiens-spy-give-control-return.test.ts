@@ -94,17 +94,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     });
     expect(restoredOpen.session.state.cards.find((card) => card.uid === opponentDecoy.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restoredOpen.host.messages).not.toContain("shien spy responder resolved");
-    expect(restoredOpen.session.state.effects).toEqual(expect.arrayContaining([
-      expect.objectContaining({
-        code: 0x1200,
-        event: "continuous",
-        luaValueDescriptor: "temporary-control-return",
-        ownerPlayer: 0,
-        sourceUid: controlled.uid,
-        value: 0,
-        reset: { flags: 0x40801200, count: 1 },
-      }),
-    ]));
+    expect(restoredOpen.session.state.effects.filter((effect) => effect.luaValueDescriptor === "temporary-control-return").map((effect) => ({
+      code: effect.code,
+      event: effect.event,
+      luaValueDescriptor: effect.luaValueDescriptor,
+      ownerPlayer: effect.ownerPlayer,
+      sourceUid: effect.sourceUid,
+      value: effect.value,
+      reset: effect.reset,
+    }))).toEqual([{
+      code: 0x1200,
+      event: "continuous",
+      luaValueDescriptor: "temporary-control-return",
+      ownerPlayer: 0,
+      sourceUid: controlled.uid,
+      value: 0,
+      reset: { flags: 0x40801200, count: 1 },
+    }]);
 
     const restoredControl = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
     expectCleanRestore(restoredControl);
