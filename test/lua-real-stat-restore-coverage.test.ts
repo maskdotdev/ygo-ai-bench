@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 481; const statKindCounts = {
+const statFixtureCount = 482; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -135,6 +135,7 @@ const statFixtureCount = 481; const statKindCounts = {
   magistusChorozoAttackNegateBoostToHandStat: 1,
   performapalClayBreakerTributePendulumStatToHand: 1,
   spyralGearDroneSummonSortTributeStatBanishToHand: 1,
+  archfiendsStaffEquipOpponentStatLeaveToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -587,6 +588,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   magistusChorozoAttackNegateBoostToHandStat: 1,
   performapalClayBreakerTributePendulumStatToHand: 1,
   spyralGearDroneSummonSortTributeStatBanishToHand: 1,
+  archfiendsStaffEquipOpponentStatLeaveToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -928,6 +930,7 @@ type ExtraStatKind =
   | "magistusChorozoAttackNegateBoostToHandStat"
   | "performapalClayBreakerTributePendulumStatToHand"
   | "spyralGearDroneSummonSortTributeStatBanishToHand"
+  | "archfiendsStaffEquipOpponentStatLeaveToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -1418,6 +1421,7 @@ type ExtraStatSemanticVariant =
   | "magistusChorozoAttackNegateBoostToHandStat"
   | "performapalClayBreakerTributePendulumStatToHand"
   | "spyralGearDroneSummonSortTributeStatBanishToHand"
+  | "archfiendsStaffEquipOpponentStatLeaveToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -4551,6 +4555,28 @@ function statFixtureFiles(): Array<{
         "Duel.SelectTarget(tp,s.thfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
         "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
         "currentAttack(restoredBoost.session.state.cards.find((card) => card.uid === spyralTarget.uid), restoredBoost.session.state)).toBe(2500)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-archfiends-staff-despair-equip-drop-leave-tohand.test.ts",
+      kind: "archfiendsStaffEquipOpponentStatLeaveToHand",
+      required: [
+        'const staffCode = "21438286"',
+        "Archfiend's Staff of Despair",
+        "restores equipped monster half-ATK opponent drop and leave-field LP-cost self return",
+        "aux.AddEquipProcedure(c,0)",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetRange(LOCATION_SZONE)",
+        "local v=(ec:GetAttack()//2)*-1",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "e:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EVENT_LEAVE_FIELD)",
+        "e2:SetCost(Cost.PayLP(1000))",
+        "c:CreateEffectRelation(e)",
+        "Duel.SendtoHand(c,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,c)",
+        "currentAttack(restoredDrop.session.state.cards.find((card) => card.uid === opponentA.uid), restoredDrop.session.state)).toBe(600)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10146,6 +10172,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       magistusChorozoAttackNegateBoostToHandStat: 0,
       performapalClayBreakerTributePendulumStatToHand: 0,
       spyralGearDroneSummonSortTributeStatBanishToHand: 0,
+      archfiendsStaffEquipOpponentStatLeaveToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
@@ -12439,6 +12466,25 @@ function statSemanticVariants(): Array<{
         "value: 1000",
         "location: \"hand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-archfiends-staff-despair-equip-drop-leave-tohand.test.ts",
+      kind: "archfiendsStaffEquipOpponentStatLeaveToHand",
+      required: [
+        'const staffCode = "21438286"',
+        "effectUpdateAttack = 100",
+        "effectId === \"lua-3\"",
+        "effectId === \"lua-4-1015\"",
+        "eventName: \"leftField\"",
+        "eventName: \"lifePointCostPaid\"",
+        "eventName: \"sentToHand\"",
+        "eventName: \"confirmed\"",
+        "reasonEffectId: 4",
+        "value: -1200",
+        "location: \"hand\"",
+        "lifePoints).toBe(7000)",
+        "eventReason: duelReason.effect | duelReason.destroy",
       ],
     },
     {
@@ -16399,6 +16445,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       magistusChorozoAttackNegateBoostToHandStat: 0,
       performapalClayBreakerTributePendulumStatToHand: 0,
       spyralGearDroneSummonSortTributeStatBanishToHand: 0,
+      archfiendsStaffEquipOpponentStatLeaveToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
