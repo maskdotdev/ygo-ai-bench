@@ -88,7 +88,7 @@ const luaCommonSoulCode = "14772491";
 const luaClashingSoulsCode = "57496978";
 const luaSagaDragonEmperorCode = "66156348";
 const luaMachineKing3000BcCode = "70406920";
-const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576";
+const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
 const luaMegalithUnformedCode = "69003792"; const luaDaiDanceCode = "50696588"; const luaExosisterCarpedivemCode = "30802207";
 const luaMetaphysRagnarokCode = "19476824";
 const luaEndPhaseReviveDestroyCodes = new Set(["32061744", "37745919", "46874015"]);
@@ -677,7 +677,7 @@ function restoreKnownLuaEffects(
   for (const effect of snapshotEffects) {
     if (!effect.registryKey) continue;
     const knownRestorable = isKnownRestorableLuaEffect(effect, snapshotEffects);
-    if (!registryKeys.has(effect.registryKey) && !(knownRestorable && (isKnownSelfEndPhaseDestroyEffect(effect) || isKnownSelfEndPhaseBanishEffect(effect) || isKnownLimiterRemovalDelayedDestroyEffect(effect) || isKnownRagingMadPlantsDelayedDestroyEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownEvolsaurCeratoBattleDestroyingSearchEffect(effect) || isKnownUtopiaEnvoyBattleDestroyingReviveEffect(effect) || isKnownByeByeDamageSyntheticBattleIndestructibleEffect(effect) || isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect)))) continue;
+    if (!registryKeys.has(effect.registryKey) && !(knownRestorable && (isKnownSelfEndPhaseDestroyEffect(effect) || isKnownSelfEndPhaseBanishEffect(effect) || isKnownLimiterRemovalDelayedDestroyEffect(effect) || isKnownRagingMadPlantsDelayedDestroyEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownEvolsaurCeratoBattleDestroyingSearchEffect(effect) || isKnownUtopiaEnvoyBattleDestroyingReviveEffect(effect) || isKnownByeByeDamageSyntheticBattleIndestructibleEffect(effect) || isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect) || isKnownGauntletWarriorDamageStepResetEffect(effect)))) continue;
     refreshKnownRestoredLuaEffect(session, effect);
     if (restored.has(effect.registryKey)) continue;
     if (!knownRestorable) continue;
@@ -900,6 +900,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownPrimePhotonDragonStandbyReviveEffect(effect) ||
     isKnownDinowrestlerMartialAnkyloEndPhaseSummonEffect(effect) ||
     isKnownTaiStrikeDamageStepEndEffect(effect) || isKnownAssaultSpiritsDamageStepEquipEffect(effect) ||
+    isKnownGauntletWarriorDamageStepResetEffect(effect) ||
     isKnownPenetrationFusionStage2QuickEffect(effect) ||
     isKnownParticleFusionCustomAttackEffect(effect) ||
     (effect.event === "continuous" &&
@@ -1364,6 +1365,15 @@ function isKnownTaiStrikeDamageStepEndEffect(effect: SerializedDuelEffect): bool
     effect.sourceUid !== undefined &&
     effect.reset !== undefined;
 }
+function isKnownGauntletWarriorDamageStepResetEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaGauntletWarriorCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 1141 &&
+    effect.triggerEvent === "damageStepEnded" &&
+    effect.sourceUid !== undefined &&
+    effect.labelObjectId !== undefined &&
+    effect.reset !== undefined;
+}
 function isKnownTemporaryMustAttackEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && (effect.code === 191 || (effect.code === 344 && effect.label !== undefined)) && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.reset !== undefined; }
 
 function isKnownEucalyptusMoleNonEffectBeastAttackBoost(effect: SerializedDuelEffect): boolean {
@@ -1812,6 +1822,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownHunterSevenWeaponsPreDamageEffect(effect)) return hunterSevenWeaponsPreDamageOperation(effect);
   if (isKnownByeByeDamagePreDamageEffect(effect)) return byeByeDamagePreDamageOperation(effect);
   if (isKnownTaiStrikeDamageStepEndEffect(effect)) return taiStrikeDamageStepEndOperation(effect); if (isKnownAssaultSpiritsDamageStepEquipEffect(effect)) return assaultSpiritsDamageStepEquipOperation(effect);
+  if (isKnownGauntletWarriorDamageStepResetEffect(effect)) return gauntletWarriorDamageStepResetOperation(effect, snapshotEffects);
   if (isKnownPenetrationFusionStage2QuickEffect(effect)) return penetrationFusionStage2AttackOperation(effect);
   if (isKnownParticleFusionCustomAttackEffect(effect)) return particleFusionCustomAttackOperation(effect);
   if (isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(effect)) return () => {};
@@ -2027,6 +2038,15 @@ function particleFusionCustomAttackOperation(effect: SerializedDuelEffect): Duel
       value: currentAttack(material, ctx.duel),
       operation: () => {},
     });
+  };
+}
+
+function gauntletWarriorDamageStepResetOperation(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[]): DuelEffectDefinition["operation"] {
+  const defenseBoost = snapshotEffects.find((candidate) => candidate.id.startsWith(`lua-${effect.labelObjectId}-`));
+  const attackBoost = snapshotEffects.find((candidate) => candidate.id.startsWith(`lua-${defenseBoost?.labelObjectId}-`));
+  const resetIds = new Set([effect.id, defenseBoost?.id, attackBoost?.id].filter((id): id is string => id !== undefined));
+  return (ctx) => {
+    ctx.duel.effects = ctx.duel.effects.filter((candidate) => !resetIds.has(candidate.id));
   };
 }
 
