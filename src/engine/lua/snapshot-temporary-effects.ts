@@ -503,7 +503,8 @@ export function isKnownTemporaryMonsterAttackAllEffect(effect: SerializedDuelEff
     effect.code === 193 &&
     effect.sourceUid !== undefined &&
     effect.reset?.flags === luaResetsStandardPhaseEnd &&
-    effect.value === 1 &&
+    effect.value !== undefined &&
+    effect.value >= 1 &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
     !hasPlayerTargetFlag(effect) &&

@@ -200,7 +200,7 @@ function assertRestorableSnapshot(snapshot: unknown): asserts snapshot is Serial
   for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
     assertSnapshotStringArray(state[field], `state.${field}`);
   }
-  for (const field of ["usedCountKeys", "attacksDeclared", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
+  for (const field of ["usedCountKeys", "attackCanceledUids", "attackedTargetUids", "positionsChanged"] as const) {
     assertSnapshotUniqueStringArray(state[field], `state.${field}`);
   }
   assertSnapshotChainLimits(state.chainLimits);

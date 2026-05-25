@@ -828,7 +828,7 @@ function reasonMaskPredicateDescriptor(snippet: string, params: string[] | undef
   const returnMatch = snippet.match(returnPredicate);
   const returnMask = reasonMaskFromMatch(returnMatch);
   if (returnMask !== undefined) return reasonMaskDescriptor(returnMask);
-  const ifPredicate = new RegExp(`\\bif\\s+\\(?\\s*${condition}\\s*\\)?\\s+then\\b.*\\breturn\\s+(?:1|true)\\s*(?:end\\b|$)`);
+  const ifPredicate = new RegExp(`\\bif\\s+\\(?\\s*${condition}\\s*\\)?\\s+then\\b.*\\breturn\\s+(?:1|true)\\b(?:.*\\belse\\s+return\\s+(?:0|false)\\b)?\\s*(?:end\\b|$)`);
   const ifMatch = snippet.match(ifPredicate);
   const ifMask = reasonMaskFromMatch(ifMatch);
   return ifMask === undefined ? undefined : reasonMaskDescriptor(ifMask);

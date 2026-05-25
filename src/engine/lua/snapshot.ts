@@ -1733,7 +1733,7 @@ function isKnownIndestructibleCountReasonPredicateEffect(effect: SerializedDuelE
     effect.code === 47 &&
     luaReasonPredicateMask(effect.luaValueDescriptor) !== undefined &&
     effect.reset !== undefined &&
-    effect.targetRange === undefined &&
+    (effect.targetRange === undefined || hasDefaultLuaFieldRange(effect)) &&
     effect.luaTargetDescriptor === undefined
   );
 }
