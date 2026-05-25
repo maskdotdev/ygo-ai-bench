@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 499; const statKindCounts = {
+const statFixtureCount = 500; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -102,6 +102,7 @@ const statFixtureCount = 499; const statKindCounts = {
   meklordDeflectionFinalNoDamageReplaceStat: 1,
   finalCrossSynchroGraveExtraAttackStat: 1,
   overwindFinalStatEndToHand: 1,
+  triBrigadeRendezvousLinkedStatReplace: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -573,6 +574,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   meklordDeflectionFinalNoDamageReplaceStat: 1,
   finalCrossSynchroGraveExtraAttackStat: 1,
   overwindFinalStatEndToHand: 1,
+  triBrigadeRendezvousLinkedStatReplace: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -931,6 +933,7 @@ type ExtraStatKind =
   | "meklordDeflectionFinalNoDamageReplaceStat"
   | "finalCrossSynchroGraveExtraAttackStat"
   | "overwindFinalStatEndToHand"
+  | "triBrigadeRendezvousLinkedStatReplace"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1440,6 +1443,7 @@ type ExtraStatSemanticVariant =
   | "meklordDeflectionFinalNoDamageReplaceStat"
   | "finalCrossSynchroGraveExtraAttackStat"
   | "overwindFinalStatEndToHand"
+  | "triBrigadeRendezvousLinkedStatReplace"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3797,6 +3801,31 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-tri-brigade-rendezvous-linked-stat-replace.test.ts",
+      kind: "triBrigadeRendezvousLinkedStatReplace",
+      required: [
+        'const rendezvousCode = "96378317"',
+        "Tri-Brigade Rendezvous",
+        "restores linked Beast-family ATK gain and Graveyard destroy replacement",
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP",
+        "aux.StatChangeDamageStepCondition",
+        "c:IsRace(RACES_BEAST_BWARRIOR_WINGB)",
+        "c:IsLinked()",
+        "Duel.GetMatchingGroupCount(s.filter,tp,LOCATION_MZONE,0,nil,e)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,n,nil,e)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS):Filter(Card.IsRelateToEffect,nil,e)",
+        "EFFECT_UPDATE_ATTACK",
+        "e1:SetValue(700)",
+        "EFFECT_DESTROY_REPLACE",
+        "Duel.SelectEffectYesNo(tp,e:GetHandler(),96)",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        "toBe(2200)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"banished\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-cubic-karma-activate-trigger-search-stat.test.ts",
       kind: "cubicKarmaActivateTriggerSearchStat",
       required: [
@@ -5976,7 +6005,7 @@ function statFixtureFiles(): Array<{
       file: "test/lua-real-script-dogmatika-theo-extra-summon-target-stat.test.ts",
       kind: "dogmatikaTheoExtraSummonTargetStat",
       required: [
-        'const theoCode = "96891787"',
+        'const theoCode = "96891788"',
         "Dogmatika Theo, the Iron Punch",
         "restores Extra Deck summon-location hand summon and targeted ATK shift",
         "e1:SetRange(LOCATION_HAND)",
@@ -10632,6 +10661,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       meklordDeflectionFinalNoDamageReplaceStat: 0,
       finalCrossSynchroGraveExtraAttackStat: 0,
       overwindFinalStatEndToHand: 0,
+      triBrigadeRendezvousLinkedStatReplace: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11124,6 +11154,28 @@ function statSemanticVariants(): Array<{
         "toBe(3200)",
         "eventName: \"becameTarget\"",
         "eventName: \"sentToHand\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-tri-brigade-rendezvous-linked-stat-replace.test.ts",
+      kind: "triBrigadeRendezvousLinkedStatReplace",
+      required: [
+        'const rendezvousCode = "96378317"',
+        "Tri-Brigade Rendezvous",
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP",
+        "aux.StatChangeDamageStepCondition",
+        "RACES_BEAST_BWARRIOR_WINGB",
+        "c:IsLinked()",
+        "Duel.GetMatchingGroupCount(s.filter,tp,LOCATION_MZONE,0,nil,e)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS):Filter(Card.IsRelateToEffect,nil,e)",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_DESTROY_REPLACE",
+        "Duel.SelectEffectYesNo(tp,e:GetHandler(),96)",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        "toBe(2200)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"banished\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -17255,6 +17307,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       meklordDeflectionFinalNoDamageReplaceStat: 0,
       finalCrossSynchroGraveExtraAttackStat: 0,
       overwindFinalStatEndToHand: 0,
+      triBrigadeRendezvousLinkedStatReplace: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,

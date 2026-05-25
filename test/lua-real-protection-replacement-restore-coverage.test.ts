@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 23;
+const protectionReplacementFixtureCount = 24;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
@@ -17,7 +17,7 @@ const protectionReplacementKindCounts = {
   equipDestroySubstitute: 1,
   handGrantedIndestructible: 1,
   linkedTargetProtection: 1,
-  persistentDestroyReplace: 5,
+  persistentDestroyReplace: 6,
   positionConditionProtection: 1,
   temporaryBattleProtection: 1,
   trapImmunity: 1,
@@ -44,6 +44,7 @@ const protectionReplacementSemanticVariantCounts = {
   runickSlumberCountLimitedProtection: 1,
   safeZoneLinkedTargetProtection: 1,
   sixSamuraiKamonDestroyReplace: 1,
+  triBrigadeRendezvousGraveDestroyReplace: 1,
   wabokuTemporaryBattleProtection: 1,
   wildheartTrapImmunity: 1,
 } satisfies Record<ProtectionReplacementSemanticVariant, number>;
@@ -143,6 +144,7 @@ type ProtectionReplacementSemanticVariant =
   | "runickSlumberCountLimitedProtection"
   | "safeZoneLinkedTargetProtection"
   | "sixSamuraiKamonDestroyReplace"
+  | "triBrigadeRendezvousGraveDestroyReplace"
   | "wabokuTemporaryBattleProtection"
   | "wildheartTrapImmunity";
 
@@ -218,6 +220,19 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
         "phantom sword persistent true/true/1/2600",
         "destroyDuelCard(restoredPersistent.session.state, target!.uid, 1, duelReason.effect | duelReason.destroy, 0)",
         "reason: duelReason.effect | duelReason.destroy | duelReason.replace",
+        'action: "destroyReplace"',
+      ],
+    },
+    {
+      file: "lua-real-script-tri-brigade-rendezvous-linked-stat-replace.test.ts",
+      kind: "persistentDestroyReplace",
+      required: [
+        'const rendezvousCode = "96378317"',
+        "restores linked Beast-family ATK gain and Graveyard destroy replacement",
+        "e2:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,e:GetHandler(),96)",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        'api: "SelectEffectYesNo"',
         'action: "destroyReplace"',
       ],
     },
@@ -624,6 +639,18 @@ function protectionReplacementSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-tri-brigade-rendezvous-linked-stat-replace.test.ts",
+      kind: "triBrigadeRendezvousGraveDestroyReplace",
+      requiredSnippets: [
+        'const rendezvousCode = "96378317"',
+        "Tri-Brigade Rendezvous",
+        "linked Beast-family ATK gain and Graveyard destroy replacement",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
+        'api: "SelectEffectYesNo"',
+        'action: "destroyReplace"',
+      ],
+    },
+    {
       file: "test/lua-real-script-wildheart-trap-immunity.test.ts",
       kind: "wildheartTrapImmunity",
       requiredSnippets: [
@@ -701,6 +728,7 @@ function countProtectionReplacementSemanticVariants(
       runickSlumberCountLimitedProtection: 0,
       safeZoneLinkedTargetProtection: 0,
       sixSamuraiKamonDestroyReplace: 0,
+      triBrigadeRendezvousGraveDestroyReplace: 0,
       wabokuTemporaryBattleProtection: 0,
       wildheartTrapImmunity: 0,
     },
