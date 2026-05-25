@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 359;
+export const operationFixtureCount = 360;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -32,6 +32,7 @@ export const operationKindCounts = {
   preDamageLpDifferenceAttackStat: 1,
   preDamageLinkedLevelStat: 1,
   normalSummonedGroupDisableImmunityStat: 1,
+  damageStepTargetAllyAttackStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -324,6 +325,7 @@ export type OperationKind =
   | "preDamageLpDifferenceAttackStat"
   | "preDamageLinkedLevelStat"
   | "normalSummonedGroupDisableImmunityStat"
+  | "damageStepTargetAllyAttackStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -787,6 +789,27 @@ export function operationFixtureFiles(): Array<{
         "e4:SetCode(EFFECT_IMMUNE_EFFECT)",
         "currentAttack(findCard(restored.session, normalQli.uid), restored.session.state)).toBe(2100)",
         "effectFlagSingleRangeClientHint",
+      ],
+    },
+    {
+      file: "test/lua-real-script-covering-fire-damage-step-target-stat.test.ts",
+      kind: "damageStepTargetAllyAttackStat",
+      required: [
+        "restores Damage Step target selection into attacked monster ATK gain from another ally",
+        "Covering Fire",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "return Duel.IsPhase(PHASE_DAMAGE) and not Duel.IsDamageCalculated()",
+        "chkc:HasNonZeroAttack() and chkc~=bc",
+        "Duel.IsExistingTarget(Card.HasNonZeroAttack,tp,LOCATION_MZONE,0,1,bc)",
+        "Duel.SelectTarget(tp,Card.HasNonZeroAttack,tp,LOCATION_MZONE,0,1,1,bc)",
+        "Duel.GetFirstTarget()",
+        "local bc=Duel.GetAttackTarget()",
+        "e1:SetProperty(EFFECT_FLAG_CANNOT_DISABLE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc:GetAttack())",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE_CAL)",
+        "currentAttack(findCard(restoredDamage.session, defender.uid), restoredDamage.session.state)).toBe(3400)",
+        'eventName: "becameTarget"',
       ],
     },
     {
@@ -7089,6 +7112,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       preDamageLpDifferenceAttackStat: 0,
       preDamageLinkedLevelStat: 0,
       normalSummonedGroupDisableImmunityStat: 0,
+      damageStepTargetAllyAttackStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
