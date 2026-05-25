@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 337;
+export const operationFixtureCount = 338;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -30,6 +30,7 @@ export const operationKindCounts = {
   summonTargetGroupDestroyCountStat: 1,
   summonTriggerSetFinalAttack: 1,
   summonTriggerPayLpLevelAttack: 1,
+  fieldPreDamageCostLevelAttack: 1,
   summonBackrowDestroyAttackDrop: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
@@ -300,6 +301,7 @@ export type OperationKind =
   | "summonTargetGroupDestroyCountStat"
   | "summonTriggerSetFinalAttack"
   | "summonTriggerPayLpLevelAttack"
+  | "fieldPreDamageCostLevelAttack"
   | "summonBackrowDestroyAttackDrop"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
@@ -544,6 +546,32 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-supreme-kings-castle-precalc-cost-stat.test.ts",
+      kind: "fieldPreDamageCostLevelAttack",
+      required: [
+        "restores Field Spell pre-damage trigger sending Evil HERO cost into Level-scaled Fiend ATK gain",
+        "e2:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_CLIENT_HINT)",
+        "e2:SetRange(LOCATION_FZONE)",
+        "e3:SetCategory(CATEGORY_ATKCHANGE)",
+        "e3:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e3:SetCountLimit(1)",
+        "local tc=Duel.GetAttacker()",
+        "local bc=Duel.GetAttackTarget()",
+        "e:SetLabelObject(bc)",
+        "return bc:IsFaceup() and bc:IsRace(RACE_FIEND)",
+        "c:IsSetCard(SET_EVIL_HERO)",
+        "Duel.SelectMatchingCard(tp,s.atkcfilter,tp,LOCATION_DECK|LOCATION_EXTRA,0,1,1,nil):GetFirst()",
+        "Duel.SendtoGrave(tc,REASON_COST)",
+        "e:SetLabel(tc:GetLevel())",
+        "local ct=e:GetLabel()*200",
+        "effectLabelObjectUid: attacker.uid",
+        'eventName: "beforeDamageCalculation"',
+        'eventName: "sentToGraveyard"',
+        "currentAttack(findCard(restoredPreDamage.session, attacker.uid), restoredPreDamage.session.state)).toBe(2900)",
+        "value: 1400",
+      ],
+    },
     {
       file: "test/lua-real-script-psi-station-summon-lp-level-attack.test.ts",
       kind: "summonTriggerPayLpLevelAttack",
@@ -6578,6 +6606,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       summonTargetGroupDestroyCountStat: 0,
       summonTriggerSetFinalAttack: 0,
       summonTriggerPayLpLevelAttack: 0,
+      fieldPreDamageCostLevelAttack: 0,
       summonBackrowDestroyAttackDrop: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
