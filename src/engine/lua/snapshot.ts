@@ -1305,6 +1305,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         (effect.code === 1 && (effect.luaValueDescriptor === "immune-effect:opponent-card-effects" || effect.luaValueDescriptor === "immune-effect:monster-effects")) ||
         (effect.code === 73 && effect.sourceUid !== undefined && effect.reset !== undefined) ||
         isKnownIndestructibleValueEffect(effect) ||
+        isKnownSetcodeBattleIndestructibleEffect(effect) ||
         effect.luaValueDescriptor === "change-damage:effect-double" || (effect.luaValueDescriptor === "change-damage:effect-zero" && effect.reset !== undefined) ||
         effect.luaValueDescriptor === "reflect-damage:opponent-non-continuous" ||
         isKnownLifePointReasonPredicateEffect(effect) ||
@@ -2221,6 +2222,17 @@ function isKnownIndestructibleValueEffect(effect: SerializedDuelEffect): boolean
     luaIndestructibleValueDescriptors.has(effect.luaValueDescriptor) &&
     effect.reset !== undefined &&
     (effect.targetRange === undefined || hasDefaultLuaFieldRange(effect))
+  );
+}
+function isKnownSetcodeBattleIndestructibleEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === luaEffectIndestructibleBattle &&
+    effect.value === 1 &&
+    effect.reset !== undefined &&
+    effect.targetRange?.[0] === luaLocationMonsterZone &&
+    effect.targetRange?.[1] === luaLocationMonsterZone &&
+    effect.luaTargetDescriptor?.startsWith("target:setcode:") === true
   );
 }
 
