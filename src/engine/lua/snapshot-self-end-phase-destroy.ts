@@ -10,7 +10,7 @@ const luaSelfEndPhaseDestroyCodes = new Set(["23289281", "55696885"]);
 const luaSelfDelayedEndPhaseDestroyCodes = new Set(["324483"]);
 const luaSelfEndPhaseSendCodes = new Set(["40971261", "71071546"]);
 const luaSelfEndPhaseReturnToHandCodes = new Set(["24920410"]);
-const luaSelfEndPhaseBanishCodes = new Set(["84653834"]);
+const luaSelfEndPhaseBanishCodes = new Set(["84653834", "40348946"]);
 
 export function isKnownSelfEndPhaseDestroyEffect(effect: SerializedDuelEffect): boolean {
   const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
