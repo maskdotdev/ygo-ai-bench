@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 503; const statKindCounts = {
+const statFixtureCount = 504; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -106,6 +106,7 @@ const statFixtureCount = 503; const statKindCounts = {
   marincessCascadeHandTrapBanishReturnStat: 1,
   worldLegacyWhispersColumnNegateStat: 1,
   wildNaturesReleaseDefenseAttackEndDestroyStat: 1,
+  limiterRemovalMachineFinalAttackEndDestroyStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -581,6 +582,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   marincessCascadeHandTrapBanishReturnStat: 1,
   worldLegacyWhispersColumnNegateStat: 1,
   wildNaturesReleaseDefenseAttackEndDestroyStat: 1,
+  limiterRemovalMachineFinalAttackEndDestroyStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -943,6 +945,7 @@ type ExtraStatKind =
   | "marincessCascadeHandTrapBanishReturnStat"
   | "worldLegacyWhispersColumnNegateStat"
   | "wildNaturesReleaseDefenseAttackEndDestroyStat"
+  | "limiterRemovalMachineFinalAttackEndDestroyStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1456,6 +1459,7 @@ type ExtraStatSemanticVariant =
   | "marincessCascadeHandTrapBanishReturnStat"
   | "worldLegacyWhispersColumnNegateStat"
   | "wildNaturesReleaseDefenseAttackEndDestroyStat"
+  | "limiterRemovalMachineFinalAttackEndDestroyStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3901,6 +3905,28 @@ function statFixtureFiles(): Array<{
         "toBe(2700)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
         "eventName: \"destroyed\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-limiter-removal-machine-final-attack-end-destroy.test.ts",
+      kind: "limiterRemovalMachineFinalAttackEndDestroyStat",
+      required: [
+        'const limiterCode = "23171610"',
+        "Limiter Removal",
+        "restores Machine-wide final ATK doubling and delayed flagged End Phase destruction",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "aux.StatChangeDamageStepCondition",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsRace,RACE_MACHINE),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.GetMatchingGroup(s.filter2,tp,LOCATION_MZONE,0,nil,e)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "e1:SetValue(tc:GetAttack()*2)",
+        "tc:RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,0,1,fid)",
+        "e2:SetLabelObject(sg)",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        "toBe(2400)",
+        "toBe(3200)",
+        "eventName: \"destroyed\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -10743,6 +10769,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       marincessCascadeHandTrapBanishReturnStat: 0,
       worldLegacyWhispersColumnNegateStat: 0,
       wildNaturesReleaseDefenseAttackEndDestroyStat: 0,
+      limiterRemovalMachineFinalAttackEndDestroyStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11313,6 +11340,24 @@ function statSemanticVariants(): Array<{
         "EVENT_PHASE+PHASE_END",
         "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
         "toBe(2700)",
+        "eventName: \"destroyed\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-limiter-removal-machine-final-attack-end-destroy.test.ts",
+      kind: "limiterRemovalMachineFinalAttackEndDestroyStat",
+      required: [
+        'const limiterCode = "23171610"',
+        "Limiter Removal",
+        "RACE_MACHINE",
+        "EFFECT_SET_ATTACK_FINAL",
+        "tc:GetAttack()*2",
+        "RESETS_STANDARD_PHASE_END",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        "toBe(2400)",
+        "toBe(3200)",
         "eventName: \"destroyed\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
@@ -17449,6 +17494,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       marincessCascadeHandTrapBanishReturnStat: 0,
       worldLegacyWhispersColumnNegateStat: 0,
       wildNaturesReleaseDefenseAttackEndDestroyStat: 0,
+      limiterRemovalMachineFinalAttackEndDestroyStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,

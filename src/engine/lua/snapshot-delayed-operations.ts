@@ -12,6 +12,7 @@ const luaYellowAlertCode = "59277750";
 const luaUnleashYourPowerCode = "73567374";
 const luaTsumuhaKutsunagiCode = "78098950";
 const luaEngraverOfTheMarkCode = "50078320";
+const luaLimiterRemovalCode = "23171610";
 const luaPurushaddollAeonCode = "78942513";
 
 export function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
@@ -108,6 +109,41 @@ export function isKnownEngraverOfTheMarkDelayedDestroyEffect(effect: SerializedD
     (effect.reset.count ?? 0) >= 1 &&
     hasDefaultLuaFieldRange(effect)
   );
+}
+
+export function isKnownLimiterRemovalDelayedDestroyEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaLimiterRemovalCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    (effect.triggerEvent === undefined || effect.triggerEvent === "phaseEnd") &&
+    (effect.triggerCode === undefined || effect.triggerCode === luaPhaseEndEventCode) &&
+    effect.sourceUid !== undefined &&
+    effect.label !== undefined &&
+    (effect.labelObjectUids?.length ?? 0) > 0 &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function limiterRemovalDelayedDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    for (const uid of limiterRemovalDelayedDestroyTargetUids(ctx.duel, effect)) {
+      const target = ctx.duel.cards.find((card) => card.uid === uid);
+      if (!target) continue;
+      try {
+        destroyDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect | duelReason.destroy, effect.controller, "graveyard", {
+          eventReasonCardUid: effect.sourceUid,
+          ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+        });
+      } catch {
+        // EDOPro-style delayed operations ignore targets that can no longer be destroyed.
+      }
+    }
+  };
 }
 
 export function isKnownPurushaddollAeonDelayedFlipEffect(effect: SerializedDuelEffect): boolean {
@@ -263,6 +299,16 @@ function engraverOfTheMarkDelayedDestroyTargetUids(duel: Parameters<NonNullable<
     .map((flag) => flag.ownerId);
   const fallbackUid = effect.sourceUid === undefined || targetUids.length > 0 ? [] : [effect.sourceUid];
   return [...new Set([...targetUids, ...fallbackUid])].filter((uid) => duel.cards.some((card) => card.uid === uid && (card.location === "monsterZone" || card.location === "spellTrapZone")));
+}
+
+function limiterRemovalDelayedDestroyTargetUids(duel: Parameters<NonNullable<DuelEffectDefinition["operation"]>>[0]["duel"], effect: SerializedDuelEffect): string[] {
+  const fieldId = effect.label;
+  if (fieldId === undefined) return [];
+  const flagged = duel.flagEffects
+    .filter((flag) => flag.ownerType === "card" && flag.code === Number(luaLimiterRemovalCode) && flag.value === fieldId)
+    .map((flag) => flag.ownerId);
+  const fallback = effect.labelObjectUids ?? [];
+  return [...new Set([...flagged, ...fallback])].filter((uid) => duel.cards.some((card) => card.uid === uid && card.location === "monsterZone"));
 }
 
 function hasPurushaddollAeonFlag(duel: Parameters<NonNullable<DuelEffectDefinition["operation"]>>[0]["duel"], effect: SerializedDuelEffect, ownerId: string): boolean {
