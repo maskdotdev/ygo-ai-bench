@@ -1,6 +1,6 @@
 {
   "test/lua-real-operation-restore-fixtures.ts": 6926,
-  "test/lua-real-stat-restore-coverage.test.ts": 16776,
+  "test/lua-real-stat-restore-coverage.test.ts": 16831,
   "src/engine/lua/snapshot.ts": 2523,
   "test/lua-real-battle-restore-fixtures.ts": 1547,
   "src/engine/lua/host-effect-api.ts": 1221,

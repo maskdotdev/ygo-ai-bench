@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 484; const statKindCounts = {
+const statFixtureCount = 485; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -138,6 +138,7 @@ const statFixtureCount = 484; const statKindCounts = {
   archfiendsStaffEquipOpponentStatLeaveToHand: 1,
   dewlorenTargetReturnOperatedStat: 1,
   maskedHeroBlastSummonFinalAttackPayToHand: 1,
+  ghostrickDullahanDetachFinalStatToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -593,6 +594,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   archfiendsStaffEquipOpponentStatLeaveToHand: 1,
   dewlorenTargetReturnOperatedStat: 1,
   maskedHeroBlastSummonFinalAttackPayToHand: 1,
+  ghostrickDullahanDetachFinalStatToHand: 1,
   behemothHundredBattlesSummonToHandEndStat: 1,
   mathmechBillionbladeNayutaEquipCostToHandStat: 1,
   worldLegacyLanceTokenBattleStat: 1,
@@ -937,6 +939,7 @@ type ExtraStatKind =
   | "archfiendsStaffEquipOpponentStatLeaveToHand"
   | "dewlorenTargetReturnOperatedStat"
   | "maskedHeroBlastSummonFinalAttackPayToHand"
+  | "ghostrickDullahanDetachFinalStatToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -1430,6 +1433,7 @@ type ExtraStatSemanticVariant =
   | "archfiendsStaffEquipOpponentStatLeaveToHand"
   | "dewlorenTargetReturnOperatedStat"
   | "maskedHeroBlastSummonFinalAttackPayToHand"
+  | "ghostrickDullahanDetachFinalStatToHand"
   | "behemothHundredBattlesSummonToHandEndStat"
   | "mathmechBillionbladeNayutaEquipCostToHandStat"
   | "worldLegacyLanceTokenBattleStat"
@@ -4630,6 +4634,33 @@ function statFixtureFiles(): Array<{
         "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
         "currentAttack(restoredSummon.session.state.cards.find((card) => card.uid === opponentMonster.uid), restoredSummon.session.state)).toBe(1200)",
         "players[0].lifePoints).toBe(7500)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ghostrick-dullahan-dynamic-stat-detach-tohand.test.ts",
+      kind: "ghostrickDullahanDetachFinalStatToHand",
+      required: [
+        'const dullahanCode = "46895036"',
+        "Ghostrick Dullahan",
+        "restores field-count ATK, detach target halving, and delayed Ghostrick grave return confirmation",
+        "Xyz.AddProcedure(c,nil,1,2)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Duel.GetMatchingGroupCount(s.atkfilter,c:GetControler(),LOCATION_ONFIELD,0,nil)*200",
+        "e2:SetCategory(CATEGORY_ATKCHANGE)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e2:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e2:SetCost(Cost.DetachFromSelf(1))",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(tc:GetAttack()/2)",
+        "e3:SetCategory(CATEGORY_TOHAND)",
+        "e3:SetCode(EVENT_TO_GRAVE)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,e:GetHandler())",
+        "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,tc)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dullahan.uid), restoredOpen.session.state)).toBe(1400)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dullahan.uid), restoredOpen.session.state)).toBe(700)",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10228,6 +10259,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       archfiendsStaffEquipOpponentStatLeaveToHand: 0,
       dewlorenTargetReturnOperatedStat: 0,
       maskedHeroBlastSummonFinalAttackPayToHand: 0,
+      ghostrickDullahanDetachFinalStatToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
@@ -12578,6 +12610,28 @@ function statSemanticVariants(): Array<{
         "value: 1200",
         "location: \"hand\"",
         "lifePoints).toBe(7500)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ghostrick-dullahan-dynamic-stat-detach-tohand.test.ts",
+      kind: "ghostrickDullahanDetachFinalStatToHand",
+      required: [
+        'const dullahanCode = "46895036"',
+        "effectUpdateAttack = 100",
+        "effectSetAttackFinal = 102",
+        "effectId: \"lua-4-1014\"",
+        "effectId === \"lua-4-1014\"",
+        "eventName: \"detachedMaterial\"",
+        "eventName: \"becameTarget\"",
+        "eventName: \"sentToHand\"",
+        "eventName: \"confirmed\"",
+        "eventName: \"sentToHandConfirmed\"",
+        "relatedEffectId: 3",
+        "reasonEffectId: 3",
+        "reasonEffectId: 4",
+        "value: 700",
+        "location: \"hand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -16542,6 +16596,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       archfiendsStaffEquipOpponentStatLeaveToHand: 0,
       dewlorenTargetReturnOperatedStat: 0,
       maskedHeroBlastSummonFinalAttackPayToHand: 0,
+      ghostrickDullahanDetachFinalStatToHand: 0,
       behemothHundredBattlesSummonToHandEndStat: 0,
       mathmechBillionbladeNayutaEquipCostToHandStat: 0,
       worldLegacyLanceTokenBattleStat: 0,
