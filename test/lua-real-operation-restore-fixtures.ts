@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 362;
+export const operationFixtureCount = 363;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -35,6 +35,7 @@ export const operationKindCounts = {
   damageStepTargetAllyAttackStat: 1,
   targetBaseAttackBattleEffectProtectFlag: 1,
   targetFinalAttackBattleProtect: 1,
+  targetAttackPierceClientHint: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -330,6 +331,7 @@ export type OperationKind =
   | "damageStepTargetAllyAttackStat"
   | "targetBaseAttackBattleEffectProtectFlag"
   | "targetFinalAttackBattleProtect"
+  | "targetAttackPierceClientHint"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -852,6 +854,24 @@ export function operationFixtureFiles(): Array<{
         "e2:SetDescription(3000)",
         "e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-heated-heart-attack-pierce.test.ts",
+      kind: "targetAttackPierceClientHint",
+      required: [
+        "restores own face-up target ATK gain and client-hint piercing damage",
+        "H - Heated Heart",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(500)",
+        "e2:SetDescription(3208)",
+        "e2:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
+        "e2:SetCode(EFFECT_PIERCE)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(2300)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7158,6 +7178,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       damageStepTargetAllyAttackStat: 0,
       targetBaseAttackBattleEffectProtectFlag: 0,
       targetFinalAttackBattleProtect: 0,
+      targetAttackPierceClientHint: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,

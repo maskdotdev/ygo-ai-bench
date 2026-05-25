@@ -1,0 +1,180 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { currentAttack } from "#duel/card-stats.js";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const heatedHeartCode = "74825788";
+const targetCode = "748257880";
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasHeatedHeartScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${heatedHeartCode}.lua`));
+const typeMonster = 0x1;
+const typeSpell = 0x2;
+const typeEffect = 0x20;
+const raceWarrior = 0x1;
+const attributeEarth = 0x10;
+const effectUpdateAttack = 100;
+const effectPierce = 203;
+const effectFlagClientHint = 0x4000000;
+const resetStandardPhaseEnd = 1107169792;
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasHeatedHeartScript)("Lua real script H - Heated Heart attack pierce", () => {
+  it("restores own face-up target ATK gain and client-hint piercing damage", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const script = workspace.readScript(`official/c${heatedHeartCode}.lua`);
+    expectScriptShape(script);
+    const reader = createCardReader(cards(workspace));
+
+    const restored = createRestoredField({ reader, workspace });
+    expectCleanRestore(restored);
+    expectRestoredLegalActions(restored, 0);
+    const heatedHeart = requireCard(restored.session, heatedHeartCode);
+    const target = requireCard(restored.session, targetCode);
+    const activate = getLuaRestoreLegalActions(restored, 0).find((action) =>
+      action.type === "activateEffect" && action.uid === heatedHeart.uid && action.effectId === "lua-1-1002"
+    );
+    expect(activate, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, activate!);
+    resolveRestoredChain(restored);
+
+    expect(currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(2300);
+    expect(restored.session.state.effects.filter((effect) =>
+      effect.sourceUid === target.uid && [effectUpdateAttack, effectPierce].includes(effect.code ?? -1)
+    ).map((effect) => ({
+      code: effect.code,
+      description: effect.description,
+      property: effect.property,
+      reset: effect.reset,
+      sourceUid: effect.sourceUid,
+      value: effect.value,
+    }))).toEqual([
+      { code: effectUpdateAttack, description: undefined, property: undefined, reset: { flags: resetStandardPhaseEnd }, sourceUid: target.uid, value: 500 },
+      { code: effectPierce, description: 3208, property: effectFlagClientHint, reset: { flags: resetStandardPhaseEnd }, sourceUid: target.uid, value: undefined },
+    ]);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "becameTarget").map((event) => ({
+      eventName: event.eventName,
+      eventCardUid: event.eventCardUid,
+      eventReason: event.eventReason,
+      eventReasonPlayer: event.eventReasonPlayer,
+      relatedEffectId: event.relatedEffectId,
+      previous: event.eventPreviousState?.location,
+      current: event.eventCurrentState?.location,
+    }))).toEqual([
+      { eventName: "becameTarget", eventCardUid: target.uid, eventReason: 0, eventReasonPlayer: 0, relatedEffectId: 1, previous: "deck", current: "monsterZone" },
+    ]);
+    expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
+  });
+});
+
+function cards(workspace: ReturnType<typeof createUpstreamNodeWorkspace>): DuelCardData[] {
+  const heatedHeart = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === heatedHeartCode);
+  expect(heatedHeart).toBeDefined();
+  return [
+    { ...heatedHeart!, kind: "spell", typeFlags: typeSpell },
+    { code: targetCode, name: "Heated Heart Target", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceWarrior, attribute: attributeEarth, level: 4, attack: 1800, defense: 1000 },
+  ];
+}
+
+function createRestoredField({
+  reader,
+  workspace,
+}: {
+  reader: ReturnType<typeof createCardReader>;
+  workspace: ReturnType<typeof createUpstreamNodeWorkspace>;
+}): ReturnType<typeof restoreDuelWithLuaScripts> {
+  const session = createDuel({ seed: 74825788, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+  loadDecks(session, { 0: { main: [heatedHeartCode, targetCode] }, 1: { main: [] } });
+  startDuel(session);
+  moveFaceDownSpellTrap(session, requireCard(session, heatedHeartCode), 0, 0);
+  moveFaceUpAttack(session, requireCard(session, targetCode), 0, 0);
+  session.state.phase = "main1";
+  session.state.turnPlayer = 0;
+  session.state.waitingFor = 0;
+  const host = createLuaScriptHost(session, workspace);
+  expect(host.loadCardScript(Number(heatedHeartCode), workspace).ok).toBe(true);
+  expect(host.registerInitialEffects()).toBe(1);
+  return restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+}
+
+function expectScriptShape(script: string | undefined): void {
+  expect(script).toBeDefined();
+  if (!script) return;
+  expect(script).toContain("H - Heated Heart");
+  expect(script).toContain("e1:SetProperty(EFFECT_FLAG_CARD_TARGET)");
+  expect(script).toContain("Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,0,1,nil)");
+  expect(script).toContain("Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)");
+  expect(script).toContain("e1:SetCode(EFFECT_UPDATE_ATTACK)");
+  expect(script).toContain("e1:SetValue(500)");
+  expect(script).toContain("e2:SetDescription(3208)");
+  expect(script).toContain("e2:SetProperty(EFFECT_FLAG_CLIENT_HINT)");
+  expect(script).toContain("e2:SetCode(EFFECT_PIERCE)");
+  expect(script).toContain("e2:SetReset(RESETS_STANDARD_PHASE_END)");
+}
+
+function requireCard(session: DuelSession, code: string): DuelCardInstance {
+  const card = session.state.cards.find((candidate) => candidate.code === code);
+  expect(card).toBeDefined();
+  return card!;
+}
+
+function findCard(session: DuelSession, uid: string): DuelCardInstance {
+  const card = session.state.cards.find((candidate) => candidate.uid === uid);
+  expect(card).toBeDefined();
+  return card!;
+}
+
+function moveFaceUpAttack(session: DuelSession, card: DuelCardInstance, player: PlayerId, sequence: number): DuelCardInstance {
+  const moved = moveDuelCard(session.state, card.uid, "monsterZone", player);
+  moved.faceUp = true;
+  moved.position = "faceUpAttack";
+  moved.sequence = sequence;
+  return moved;
+}
+
+function moveFaceDownSpellTrap(session: DuelSession, card: DuelCardInstance, player: PlayerId, sequence: number): DuelCardInstance {
+  const moved = moveDuelCard(session.state, card.uid, "spellTrapZone", player);
+  moved.faceUp = false;
+  moved.sequence = sequence;
+  return moved;
+}
+
+function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
+  expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
+function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  const waitingFor = response.state.waitingFor;
+  if (waitingFor === undefined) return;
+  expect(response.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+}
+
+function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.chain.length > 0) {
+    expect(++guard).toBeLessThan(10);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, pass!);
+  }
+}
