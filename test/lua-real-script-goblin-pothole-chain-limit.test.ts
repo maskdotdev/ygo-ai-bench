@@ -260,7 +260,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(applyResponse(session, specialSummonChain!).ok).toBe(true);
     passChain(session, 1);
     passChain(session, 0);
-    expect(specialTarget!.location).toBe("monsterZone");
+    expect(session.state.cards.find((card) => card.uid === specialTarget!.uid)?.location).toBe("monsterZone");
 
     const registryKey = `lua-chain-limit:${sourceCode}:0:chain:known:closure:not-source-type-effect-type-setcode:4:16:76`;
     expect(serializeDuel(session).state.chainLimits[0]).toMatchObject({ registryKey, untilChainEnd: true });

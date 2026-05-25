@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 334;
+export const realScriptSummonFixtureCount = 652;
 export const summonProcedureFixtureCount = 39;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -27,13 +27,13 @@ export const selfTributeZoneSpecialSummonFixtureCount = 3;
 export const tributeMaterialFixtureCount = 1;
 export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
-  fusion: 51,
-  link: 21,
-  pendulum: 21,
-  ritual: 27,
-  summon: 175,
-  synchro: 23,
-  xyz: 16,
+  fusion: 74,
+  link: 59,
+  pendulum: 24,
+  ritual: 34,
+  summon: 383,
+  synchro: 48,
+  xyz: 30,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
@@ -197,6 +197,7 @@ export type PendulumGrantKind =
 
 export function realScriptSummonFixtureFiles(): string[] {
   // Restore ownership: "test/lua-real-script-de-synchro-extra-return-material-revive.test.ts"
+  // Restore ownership: "test/lua-real-script-mimighoul-archfiend-hand-set-summon.test.ts"
   return fs.readdirSync(testRoot)
     .filter((file) => file.startsWith("lua-real-script-") && file.endsWith(".test.ts"))
     .filter((file) => !nonSummonKeywordFixtures.has(file))
