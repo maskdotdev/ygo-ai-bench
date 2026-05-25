@@ -79,6 +79,7 @@ const luaMagnificentMachineAngelCode = "27331568";
 const luaFamiliarPossessedDharcCode = "21390858"; const luaDarkMagicExpandedCode = "111280";
 const luaEucalyptusMoleCode = "71228611";
 const luaWattcubeCode = "65612454";
+const luaBattleguardRageCode = "42233477";
 const luaEbonArrowCode = "88341502"; const luaDivineEvolutionCode = "7373632";
 const luaMiniGutsCode = "99004752"; const luaUradoraOfFateCode = "27753563";
 const luaMermailAbyssbalaenCode = "75180828"; const luaTimeTearingMorganiteCode = "19403423";
@@ -930,6 +931,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownEquipLeaveFieldPrecheckEffect(effect) ||
         isKnownEquipLeaveFieldBanishTargetEffect(effect) ||
         isKnownEquipLeaveFieldDestroyTargetEffect(effect) ||
+        isKnownBattleguardRageTargetLeaveSelfDestroyEffect(effect) ||
         effect.code === 25 ||
         (effect.code === 60 && effect.value !== undefined) ||
         (effect.code === 92 && (specialSummonTypeNotCostDescriptor(effect.luaCostDescriptor) !== undefined || specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor) !== undefined)) ||
@@ -1445,6 +1447,14 @@ function isKnownEquipLeaveFieldBanishTargetEffect(effect: SerializedDuelEffect):
 function isKnownEquipLeaveFieldDestroyTargetEffect(effect: SerializedDuelEffect): boolean {
   return effect.event === "continuous" && effect.code === 1015 && effect.sourceUid !== undefined && effect.reset !== undefined;
 }
+function isKnownBattleguardRageTargetLeaveSelfDestroyEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaBattleguardRageCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 1015 &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone";
+}
 function isKnownEndPhaseReviveDestroyEffect(effect: SerializedDuelEffect): boolean {
   const registryCode = effect.registryKey?.match(/^lua:(\d+):/)?.[1];
   return (
@@ -1850,6 +1860,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownLeaveFieldLinkedDestroyEffect(effect)) return luaLinkedLeaveFieldDestroyOperation(effect);
   if (isKnownEquipLeaveFieldBanishTargetEffect(effect)) return luaEquipLeaveFieldBanishTargetOperation(effect);
   if (isKnownEquipLeaveFieldDestroyTargetEffect(effect)) return luaEquipLeaveFieldDestroyTargetOperation(effect);
+  if (isKnownBattleguardRageTargetLeaveSelfDestroyEffect(effect)) return battleguardRageTargetLeaveSelfDestroyOperation(effect);
   if (isKnownDarkMagicExpandedChainingLimitEffect(effect)) return darkMagicExpandedChainingLimitOperation(effect);
   if (isKnownTimeTearingMorganiteSummonLimitEffect(effect)) return timeTearingMorganiteSummonLimitOperation(effect);
   if (isKnownDaiDanceAdjustEffect(effect)) return daiDanceAdjustOperation(effect);
