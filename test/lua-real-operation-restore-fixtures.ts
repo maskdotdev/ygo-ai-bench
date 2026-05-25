@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 396;
+export const operationFixtureCount = 397;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -32,6 +32,7 @@ export const operationKindCounts = {
   preDamageLpDifferenceAttackStat: 1,
   preDamageLpCostDifferencePlusAttackStat: 1,
   preDamageLinkedLevelStat: 1,
+  pzoneExtraCountTargetAttackStat: 1,
   normalSummonedGroupDisableImmunityStat: 1,
   damageStepTargetAllyAttackStat: 1,
   targetBaseAttackBattleEffectProtectFlag: 1,
@@ -361,6 +362,7 @@ export type OperationKind =
   | "preDamageLpDifferenceAttackStat"
   | "preDamageLpCostDifferencePlusAttackStat"
   | "preDamageLinkedLevelStat"
+  | "pzoneExtraCountTargetAttackStat"
   | "normalSummonedGroupDisableImmunityStat"
   | "damageStepTargetAllyAttackStat"
   | "targetBaseAttackBattleEffectProtectFlag"
@@ -840,6 +842,26 @@ export function operationFixtureFiles(): Array<{
         "lifePoints).toBe(7100)",
         "currentAttack(findCard(restoredPreDamage.session, defender.uid), restoredPreDamage.session.state)).toBe(2700)",
         'eventName: "beforeDamageCalculation"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-rain-bozu-pzone-extra-count-stat.test.ts",
+      kind: "pzoneExtraCountTargetAttackStat",
+      required: [
+        "restores PZone target ATK gain from extra-deck count difference",
+        "Rain Bozu",
+        "Pendulum.AddProcedure(c)",
+        "e1:SetRange(LOCATION_PZONE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFieldGroupCount(tp,LOCATION_EXTRA,0)-Duel.GetFieldGroupCount(tp,0,LOCATION_EXTRA)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(atk*100)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "e5:SetCode(EVENT_DESTROYED)",
+        "Duel.CheckPendulumZones(tp)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1300)",
+        'eventName: "becameTarget"',
       ],
     },
     {
