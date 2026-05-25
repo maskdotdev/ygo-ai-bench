@@ -20,6 +20,7 @@ const luaResetEventStandard = luaResetEvent | 0x1fe0000;
 const luaResetChain = 0x80000000;
 const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
 const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:special-summoned-monster-on-field";
+const luaCannotActivateSpecialSummonedHandPreviousControllerDescriptor = "cannot-activate:special-summoned-hand-monster-previous-controller";
 const luaCannotActivateNonSpiritMonsterDescriptor = "cannot-activate:non-spirit-monster-effect";
 const luaCannotActivateLocationMonsterPrefix = "cannot-activate:location-monster-effect:";
 const luaSourceControllerConditionDescriptor = "condition:source-controller";
@@ -120,7 +121,7 @@ export function isKnownCannotActivateSpecialSummonedMonsterEffect(effect: Serial
   return (
     effect.event === "continuous" &&
     effect.code === 6 &&
-    effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor &&
+    (effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor || effect.luaValueDescriptor === luaCannotActivateSpecialSummonedHandPreviousControllerDescriptor) &&
     effect.reset?.flags === luaPhaseEndResetFlags &&
     effect.targetRange?.[0] === 1 &&
     effect.targetRange?.[1] === 0 &&

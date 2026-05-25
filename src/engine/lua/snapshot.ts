@@ -69,6 +69,7 @@ const luaEffectReasonPredicateDescriptor = "value-predicate:effect-reason";
 const luaReasonMaskPredicateDescriptorPrefix = "value-predicate:reason-mask:";
 const luaValueCardNotHandlerDescriptor = "value-card:not-handler";
 const luaCannotActivateSpecialSummonedMonsterDescriptor = "cannot-activate:special-summoned-monster-on-field";
+const luaCannotActivateSpecialSummonedHandPreviousControllerDescriptor = "cannot-activate:special-summoned-hand-monster-previous-controller";
 const luaCannotActivateNonSpiritMonsterDescriptor = "cannot-activate:non-spirit-monster-effect";
 const luaSourceControllerConditionDescriptor = "condition:source-controller"; const luaNotDrawPhaseConditionDescriptor = "condition:not-draw-phase"; const luaSourceEquippedConditionDescriptor = "condition:source-equipped";
 const luaMaharaghiCode = "40695128"; const luaHinoKaguTsuchiCode = "75745607"; const luaGreatLongNoseCode = "2356994";
@@ -3608,6 +3609,9 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor === luaCannotActivateSpecialSummonedMonsterDescriptor) {
     return { valuePredicate: (ctx) => relatedEffectIsSpecialSummonedMonsterOnField(ctx) };
   }
+  if (effect.luaValueDescriptor === luaCannotActivateSpecialSummonedHandPreviousControllerDescriptor) {
+    return { valuePredicate: (ctx) => relatedEffectIsSpecialSummonedHandMonsterFromPreviousController(ctx, effect.controller) };
+  }
   if (effect.luaValueDescriptor === luaCannotActivateNonSpiritMonsterDescriptor) return { valuePredicate: (ctx) => relatedEffectIsNonSpiritMonsterEffect(ctx) };
   if (isKnownCelestialMagicianTypeBranchEffect(effect) && effect.code === 6) return { valuePredicate: (ctx) => Boolean(relatedEffectFromContext(ctx)?.luaTypeFlags !== undefined && ((relatedEffectFromContext(ctx)?.luaTypeFlags ?? 0) & luaTypeMonster) !== 0) };
   if (effect.luaValueDescriptor === "cannot-activate:card-activation") return { valuePredicate: (ctx) => ((relatedEffectFromContext(ctx)?.luaTypeFlags ?? 0) & 0x10) !== 0 };
@@ -3875,6 +3879,16 @@ function relatedEffectIsSpecialSummonedMonsterOnField(ctx: Parameters<NonNullabl
       handler.summonType !== "normal" &&
       handler.summonType !== "tribute" &&
       handler.summonType !== "flip",
+  );
+}
+function relatedEffectIsSpecialSummonedHandMonsterFromPreviousController(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0], player: PlayerId): boolean {
+  const relatedEffect = relatedEffectFromContext(ctx);
+  const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid);
+  return Boolean(
+    handler &&
+      relatedEffectIsSpecialSummonedMonsterOnField(ctx) &&
+      handler.previousLocation === "hand" &&
+      handler.previousController === player,
   );
 }
 function relatedEffectIsNonSpiritMonsterEffect(ctx: Parameters<NonNullable<DuelEffectDefinition["valuePredicate"]>>[0]): boolean {

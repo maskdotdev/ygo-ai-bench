@@ -676,9 +676,16 @@ function specialSummonedMonsterActivationPredicateDescriptor(snippet: string, pa
   if (!relatedEffectParam) return undefined;
   const relatedEffect = escapeRegExp(relatedEffectParam);
   const handler = `${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)`;
+  const localHandlerName = snippet.match(new RegExp(`\\blocal\\s+(\\w+)\\s*=\\s*${handler}`))?.[1];
+  const handlerRef = localHandlerName ? escapeRegExp(localHandlerName) : handler;
   const monsterEffect = `${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
-  const specialSummoned = `${handler}\\s*:\\s*IsSpecialSummoned\\s*\\(\\s*\\)`;
-  const monsterZone = `${handler}\\s*:\\s*IsLocation\\s*\\(\\s*${locationMonsterZonePattern}\\s*\\)`;
+  const onField = `${handlerRef}\\s*:\\s*IsOnField\\s*\\(\\s*\\)`;
+  const specialSummoned = `${handlerRef}\\s*:\\s*IsSpecialSummoned\\s*\\(\\s*\\)`;
+  const summonLocationHand = `${handlerRef}\\s*:\\s*IsSummonLocation\\s*\\(\\s*LOCATION_HAND\\s*\\)`;
+  const previousController = `${handlerRef}\\s*:\\s*IsPreviousControler\\s*\\(\\s*${escapeRegExp(params?.[2] ?? "tp")}\\s*\\)`;
+  const monsterZone = `${handlerRef}\\s*:\\s*IsLocation\\s*\\(\\s*${locationMonsterZonePattern}\\s*\\)`;
+  const handPreviousControllerPredicate = new RegExp(`\\breturn\\s+${monsterEffect}\\s+and\\s+(?:${monsterZone}|${onField})\\s+and\\s+${specialSummoned}\\s+and\\s+${summonLocationHand}\\s+and\\s+${previousController}\\s*(?:end\\b|$)`);
+  if (handPreviousControllerPredicate.test(snippet)) return "cannot-activate:special-summoned-hand-monster-previous-controller";
   const predicate = new RegExp(`\\breturn\\s+${monsterEffect}\\s+and\\s+${specialSummoned}\\s+and\\s+${monsterZone}\\s*(?:end\\b|$)`);
   return predicate.test(snippet) ? "cannot-activate:special-summoned-monster-on-field" : undefined;
 }
