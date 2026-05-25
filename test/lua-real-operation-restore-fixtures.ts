@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 386;
+export const operationFixtureCount = 387;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -59,6 +59,7 @@ export const operationKindCounts = {
   freeChainTargetAttackBoostStat: 1,
   raceFilteredTargetAttackBoostStat: 1,
   globalEffectMonsterFinalStatSwap: 1,
+  globalFaceupFinalAttackHalve: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -378,6 +379,7 @@ export type OperationKind =
   | "freeChainTargetAttackBoostStat"
   | "raceFilteredTargetAttackBoostStat"
   | "globalEffectMonsterFinalStatSwap"
+  | "globalFaceupFinalAttackHalve"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1155,6 +1157,24 @@ export function operationFixtureFiles(): Array<{
         "effectSetDefenseFinal",
         "currentAttack",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-reverse-glasses-global-attack-halve.test.ts",
+      kind: "globalFaceupFinalAttackHalve",
+      required: [
+        "restores both-field face-up final ATK halve until phase end",
+        "Reverse Glasses",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.IsExistingMatchingCard(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "local g=Duel.GetMatchingGroup(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(tc:GetAttack()/2)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "effectSetAttackFinal",
+        "resetsStandardPhaseEnd",
+        "currentAttack",
       ],
     },
     {
@@ -7679,6 +7699,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       freeChainTargetAttackBoostStat: 0,
       raceFilteredTargetAttackBoostStat: 0,
       globalEffectMonsterFinalStatSwap: 0,
+      globalFaceupFinalAttackHalve: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
