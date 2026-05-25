@@ -19,6 +19,7 @@ const luaPhaseDamageResetFlags = 0x40000020;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetsStandardPhaseDamage = 0x41fe1020;
 const luaResetsStandardControl = 0x03fe1000;
+const luaResetEventStandard = 0x01fe1000;
 
 export function isKnownTemporaryPlayerAttackAnnounceLockEffect(effect: SerializedDuelEffect): boolean {
   return (
@@ -555,7 +556,7 @@ function isKnownTemporarySelfIndestructibleEffect(effect: SerializedDuelEffect):
     effect.event === "continuous" &&
     (effect.code === 41 || effect.code === 42) &&
     effect.sourceUid !== undefined &&
-    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaPhaseDamageResetFlags || effect.reset?.flags === luaResetsStandardPhaseDamage) &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaPhaseDamageResetFlags || effect.reset?.flags === luaResetsStandardPhaseDamage || effect.reset?.flags === luaResetEventStandard) &&
     effect.value === 1 &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
