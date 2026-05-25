@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 352;
+export const operationFixtureCount = 353;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -25,6 +25,7 @@ export const operationKindCounts = {
   targetStatClientHintProtection: 1,
   heroicFinalAttackDirectLock: 1,
   massivemorphFinalStatDirectLock: 1,
+  attackAnnounceLpCostStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -310,6 +311,7 @@ export type OperationKind =
   | "targetStatClientHintProtection"
   | "heroicFinalAttackDirectLock"
   | "massivemorphFinalStatDirectLock"
+  | "attackAnnounceLpCostStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -636,6 +638,28 @@ export function operationFixtureFiles(): Array<{
         "e3:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(3200)",
         "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(2400)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-soul-strike-attack-lp-cost-stat.test.ts",
+      kind: "attackAnnounceLpCostStat",
+      required: [
+        "restores attack-announcement trap activation into half-LP cost and LP-derived ATK boost",
+        "Soul Strike",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return Duel.GetLP(tp)<=4000 and Duel.GetAttackTarget()~=nil",
+        "Duel.PayLPCost(tp,math.floor(Duel.GetLP(tp)/2))",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(4000-Duel.GetLP(tp))",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END|RESET_OPPO_TURN)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(3500)",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "becameTarget"',
       ],
     },
     {
@@ -6931,6 +6955,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetStatClientHintProtection: 0,
       heroicFinalAttackDirectLock: 0,
       massivemorphFinalStatDirectLock: 0,
+      attackAnnounceLpCostStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
