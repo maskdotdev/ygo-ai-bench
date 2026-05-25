@@ -77,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasNecrossScript)("Lua real script Exodi
       controller: card.controller,
       location: card.location,
     }))).toEqual(exodiaPartCodes.map((code) => ({ code, controller: 0, location: "graveyard" })));
+    expect(restoredPersistent.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 
