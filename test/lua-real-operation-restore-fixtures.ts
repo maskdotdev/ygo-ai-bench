@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 345;
+export const operationFixtureCount = 346;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -18,6 +18,7 @@ export const operationKindCounts = {
   targetStatTransferDelayedContinuousPlace: 1,
   activationDisableSweepLinkedPreDamageStat: 1,
   damageStepLpCostTargetAttackDrop: 1,
+  banishLinkCostLabelTargetStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -296,6 +297,7 @@ export type OperationKind =
   | "targetStatTransferDelayedContinuousPlace"
   | "activationDisableSweepLinkedPreDamageStat"
   | "damageStepLpCostTargetAttackDrop"
+  | "banishLinkCostLabelTargetStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -581,6 +583,28 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restoredBattle.session, statLink.uid), restoredBattle.session.state)).toBe(2800)",
         "effectDisableEffect",
         "effectUpdateAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-execute-protocols-banish-link-target-stat.test.ts",
+      kind: "banishLinkCostLabelTargetStat",
+      required: [
+        "restores Battle Phase Link banish cost label into targeted Borrel ATK gain",
+        "Execute Protocols",
+        "s.listed_series={SET_BORREL}",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "return Duel.IsBattlePhase()",
+        "return c:IsLinkMonster() and c:IsAttribute(ATTRIBUTE_DARK) and c:GetBaseAttack()>0",
+        "and c:IsAbleToRemoveAsCost() and aux.SpElimFilter(c,true,false)",
+        "Duel.SelectMatchingCard(tp,s.atkcfilter,tp,LOCATION_MZONE|LOCATION_HAND|LOCATION_GRAVE,0,1,1,nil):GetFirst()",
+        "Duel.Remove(tc,POS_FACEUP,REASON_COST)",
+        "e:SetLabel(tc:GetBaseAttack())",
+        "return c:IsFaceup() and c:IsSetCard(SET_BORREL) and c:IsMonster()",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(e:GetLabel())",
+        "currentAttack(findCard(restored.session, borrelTarget.uid), restored.session.state)).toBe(3800)",
       ],
     },
     {
@@ -6768,6 +6792,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetStatTransferDelayedContinuousPlace: 0,
       activationDisableSweepLinkedPreDamageStat: 0,
       damageStepLpCostTargetAttackDrop: 0,
+      banishLinkCostLabelTargetStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
