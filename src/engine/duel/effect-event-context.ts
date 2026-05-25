@@ -116,7 +116,7 @@ function canUseLiveEventHistoryForQuickEffect(state: DuelState, eventName: DuelE
 }
 
 function isGenericLatestEventQuickContext(eventName: DuelEventName | undefined): boolean {
-  return eventName === "destroyed" || eventName === "specialSummoned";
+  return eventName === "destroyed" || eventName === "released" || eventName === "specialSummoned";
 }
 
 function latestNonChainLifecycleEvent(state: DuelState): DuelEventRecord | undefined {
