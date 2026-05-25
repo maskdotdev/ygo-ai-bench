@@ -124,7 +124,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ce
 
 function requireCards(session: DuelSession, code: string): DuelCardInstance[] {
   const cards = session.state.cards.filter((candidate) => candidate.code === code);
-  expect(cards.length).toBeGreaterThan(0);
+  expect(cards).toEqual(expect.arrayContaining([expect.objectContaining({ code })]));
   return cards;
 }
 

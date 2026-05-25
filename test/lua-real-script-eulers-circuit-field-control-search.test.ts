@@ -133,7 +133,7 @@ function createRestoredFieldWindow({ reader, workspace }: { reader: ReturnType<t
   moveFaceUpAttack(session, requireCard(session, tindangleOneCode), 0);
   moveFaceUpAttack(session, requireCard(session, tindangleTwoCode), 0);
   moveFaceUpAttack(session, requireCard(session, tindangleThreeCode), 0);
-  return registerAndRestore(session, workspace, reader);
+  return registerAndRestore(session, workspace, reader, 1);
 }
 
 function createRestoredGraveSearchWindow({ reader, workspace }: { reader: ReturnType<typeof createCardReader>; workspace: ReturnType<typeof createUpstreamNodeWorkspace> }): ReturnType<typeof restoreDuelWithLuaScripts> {
@@ -142,7 +142,7 @@ function createRestoredGraveSearchWindow({ reader, workspace }: { reader: Return
   expect(circuits).toHaveLength(2);
   moveDuelCard(session.state, circuits[0]!.uid, "graveyard", 0);
   moveDuelCard(session.state, requireCard(session, discardCode).uid, "hand", 0);
-  return registerAndRestore(session, workspace, reader);
+  return registerAndRestore(session, workspace, reader, 2);
 }
 
 function baseSession(reader: ReturnType<typeof createCardReader>, seed: number, decks: Parameters<typeof loadDecks>[1]): DuelSession {
@@ -155,10 +155,10 @@ function baseSession(reader: ReturnType<typeof createCardReader>, seed: number, 
   return session;
 }
 
-function registerAndRestore(session: DuelSession, workspace: ReturnType<typeof createUpstreamNodeWorkspace>, reader: ReturnType<typeof createCardReader>): ReturnType<typeof restoreDuelWithLuaScripts> {
+function registerAndRestore(session: DuelSession, workspace: ReturnType<typeof createUpstreamNodeWorkspace>, reader: ReturnType<typeof createCardReader>, effectCount: number): ReturnType<typeof restoreDuelWithLuaScripts> {
   const host = createLuaScriptHost(session, workspace);
   expect(host.loadCardScript(Number(circuitCode), workspace).ok).toBe(true);
-  expect(host.registerInitialEffects()).toBeGreaterThan(0);
+  expect(host.registerInitialEffects()).toBe(effectCount);
   return restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
 }
 

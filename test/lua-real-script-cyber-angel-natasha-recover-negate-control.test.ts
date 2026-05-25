@@ -245,7 +245,7 @@ function registerAndRestore(
 ): ReturnType<typeof restoreDuelWithLuaScripts> {
   const host = createLuaScriptHost(session, workspace);
   expect(host.loadCardScript(Number(natashaCode), workspace).ok).toBe(true);
-  expect(host.registerInitialEffects()).toBeGreaterThan(0);
+  expect(host.registerInitialEffects()).toBe(1);
   return restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
 }
 

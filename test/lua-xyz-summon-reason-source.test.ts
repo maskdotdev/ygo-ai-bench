@@ -58,9 +58,11 @@ describe("Lua Xyz Summon reason source", () => {
 
     expect(host.messages).toContain("xyz reason result 1");
     expect(host.messages).toContain("xyz reason summoned true/true");
-    expect(material).toMatchObject({ location: "overlay", reasonCardUid: source!.uid, reasonEffectId: 1 });
-    expect(xyz).toMatchObject({ location: "monsterZone", summonType: "xyz", reasonCardUid: source!.uid, reasonEffectId: 1 });
-    expect(xyz!.overlayUids).toContain(material!.uid);
+    const movedMaterial = session.state.cards.find((card) => card.uid === material!.uid);
+    const summonedXyz = session.state.cards.find((card) => card.uid === xyz!.uid);
+    expect(movedMaterial).toMatchObject({ location: "overlay", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(summonedXyz).toMatchObject({ location: "monsterZone", summonType: "xyz", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(summonedXyz!.overlayUids).toContain(material!.uid);
     expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "specialSummoned", eventCardUid: xyz!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
   });
 });

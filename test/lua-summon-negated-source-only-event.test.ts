@@ -60,7 +60,7 @@ describe("Lua source-only summon-negated events", () => {
     drainChain(session);
 
     expect(host.messages).toContain("reason negated 1");
-    expect(source).toMatchObject({ location: "graveyard", reasonCardUid: negator!.uid, reasonEffectId: 2 });
+    expect(session.state.cards.find((card) => card.uid === source!.uid)).toMatchObject({ location: "graveyard", reasonCardUid: negator!.uid, reasonEffectId: 2 });
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "normalSummonNegated", eventCardUid: source!.uid, eventReasonCardUid: negator!.uid, eventReasonEffectId: 2 }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger" && candidate.uid === source!.uid);
     expect(trigger).toBeDefined();

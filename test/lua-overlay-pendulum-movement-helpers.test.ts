@@ -529,7 +529,7 @@ describe("Lua overlay and pendulum movement helpers", () => {
     applyAndAssert(session, action!);
 
     expect(host.messages).toContain("overlay reason source true/true");
-    expect(material).toMatchObject({ location: "overlay", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "overlay", reasonCardUid: source!.uid, reasonEffectId: 1 });
   });
 
   it("keeps overlay helpers from mutating ended duels", () => {

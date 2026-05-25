@@ -56,7 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasEnlilgirsuScript)("Lua real script En
     const source = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const host = createLuaScriptHost(session, workspace, { promptOverrides: [{ api: "SelectYesNo", player: 0, returned: true }] });
     expect(host.loadCardScript(Number(enlilgirsuCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThan(0);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader, { promptOverrides: [{ api: "SelectYesNo", player: 0, returned: true }] });
     expectCleanRestore(restored);
