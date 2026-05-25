@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 371;
+export const operationFixtureCount = 372;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -44,6 +44,7 @@ export const operationKindCounts = {
   attackerSetTargetCardStat: 1,
   twoPositionTargetDefenseAttackStat: 1,
   ownSingleTargetOpponentMinAttackStat: 1,
+  targetDefenseValueAttackDrop: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -348,6 +349,7 @@ export type OperationKind =
   | "attackerSetTargetCardStat"
   | "twoPositionTargetDefenseAttackStat"
   | "ownSingleTargetOpponentMinAttackStat"
+  | "targetDefenseValueAttackDrop"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1031,6 +1033,22 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "e1:SetValue(atk)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(2600)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-gravity-lash-defense-attack-drop.test.ts",
+      kind: "targetDefenseValueAttackDrop",
+      required: [
+        "restores nonzero-DEF target ATK loss equal to its current DEF",
+        "Gravity Lash",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(Card.HasNonZeroDefense,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,Card.HasNonZeroDefense,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc:GetDefense()*-1)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(600)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7346,6 +7364,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackerSetTargetCardStat: 0,
       twoPositionTargetDefenseAttackStat: 0,
       ownSingleTargetOpponentMinAttackStat: 0,
+      targetDefenseValueAttackDrop: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
