@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 375;
+export const operationFixtureCount = 376;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -48,6 +48,7 @@ export const operationKindCounts = {
   synchroSummonedMaterialCountAttackStat: 1,
   synchroGiftAttackTransferFinalStat: 1,
   targetAttackDefenseStandbyBoost: 1,
+  sameCodeGroupFinalAttackStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -356,6 +357,7 @@ export type OperationKind =
   | "synchroSummonedMaterialCountAttackStat"
   | "synchroGiftAttackTransferFinalStat"
   | "targetAttackDefenseStandbyBoost"
+  | "sameCodeGroupFinalAttackStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1089,6 +1091,23 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc1:GetBaseAttack())",
         "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-photon-booster-same-code-final-stat.test.ts",
+      kind: "sameCodeGroupFinalAttackStat",
+      required: [
+        "restores same-code LIGHT low-level group final ATK to 2000",
+        "Photon Booster",
+        "not c:IsType(TYPE_TOKEN) and c:IsLevelBelow(4) and c:IsAttribute(ATTRIBUTE_LIGHT)",
+        "Duel.IsExistingTarget(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetMatchingGroup(s.afilter,tp,LOCATION_MZONE,LOCATION_MZONE,nil,tc:GetCode())",
+        "for tc in aux.Next(g) do",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(2000)",
+        "currentAttack(findCard(restored.session, card.uid), restored.session.state))).toEqual([2000, 2000])",
         'eventName: "becameTarget"',
       ],
     },
@@ -7425,6 +7444,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       synchroSummonedMaterialCountAttackStat: 0,
       synchroGiftAttackTransferFinalStat: 0,
       targetAttackDefenseStandbyBoost: 0,
+      sameCodeGroupFinalAttackStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
