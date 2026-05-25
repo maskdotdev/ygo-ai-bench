@@ -763,6 +763,10 @@ function setcodeMonsterActivationPredicateDescriptor(L: unknown, index: number, 
   const relatedEffect = escapeRegExp(relatedEffectParam);
   const handlerSetcode = `${relatedEffect}\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)`;
   const monsterEffect = `${relatedEffect}\\s*:\\s*IsMonsterEffect\\s*\\(\\s*\\)`;
+  const notSetcodeMatch = snippet.match(new RegExp(`\\breturn\\s+(?:${monsterEffect}\\s+and\\s+not\\s+${handlerSetcode}|not\\s+${handlerSetcode}\\s+and\\s+${monsterEffect})\\s*(?:end\\b|$)`));
+  const notSetcode = notSetcodeMatch?.[1] ?? notSetcodeMatch?.[2];
+  const notSetcodeValue = notSetcode ? luaNumberTokenValue(L, index, notSetcode) : undefined;
+  if (notSetcodeValue !== undefined) return `cannot-activate:not-setcode-monster-effect:${notSetcodeValue}`;
   const match = snippet.match(new RegExp(`\\breturn\\s+(?:${handlerSetcode}\\s+and\\s+${monsterEffect}|${monsterEffect}\\s+and\\s+${handlerSetcode})\\s*(?:end\\b|$)`));
   const setcode = match?.[1] ?? match?.[2];
   const setcodeValue = setcode ? luaNumberTokenValue(L, index, setcode) : undefined;
