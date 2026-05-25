@@ -176,6 +176,7 @@ function expectScriptShape(script: string | undefined): void {
   if (!script) return;
   expect(script).toContain("--Celestial Wolf Lord, Blue Sirius");
   expect(script).toContain("Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(nil),1,99)");
+  expect(script).toContain("e1:SetProperty(EFFECT_FLAG_CARD_TARGET)");
   expect(script).toContain("e1:SetCode(EVENT_TO_GRAVE)");
   expect(script).toContain("return e:GetHandler():IsPreviousLocation(LOCATION_ONFIELD) and e:GetHandler():IsReason(REASON_DESTROY)");
   expect(script).toContain("Duel.IsExistingTarget(Card.IsFaceup,tp,0,LOCATION_MZONE,1,nil)");
