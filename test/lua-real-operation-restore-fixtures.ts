@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 346;
+export const operationFixtureCount = 347;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -19,6 +19,7 @@ export const operationKindCounts = {
   activationDisableSweepLinkedPreDamageStat: 1,
   damageStepLpCostTargetAttackDrop: 1,
   banishLinkCostLabelTargetStat: 1,
+  banishRaceCostLabelTargetStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -298,6 +299,7 @@ export type OperationKind =
   | "activationDisableSweepLinkedPreDamageStat"
   | "damageStepLpCostTargetAttackDrop"
   | "banishLinkCostLabelTargetStat"
+  | "banishRaceCostLabelTargetStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -583,6 +585,27 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restoredBattle.session, statLink.uid), restoredBattle.session.state)).toBe(2800)",
         "effectDisableEffect",
         "effectUpdateAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-beast-rising-banish-race-target-stat.test.ts",
+      kind: "banishRaceCostLabelTargetStat",
+      required: [
+        "restores face-up Beast banish cost label into targeted Beast-Warrior ATK gain",
+        "Beast Rising",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.IsPhase(PHASE_DAMAGE) and Duel.IsDamageCalculated()",
+        "c:IsRace(RACE_BEAST|RACE_BEASTWARRIOR) and c:IsFaceup() and c:IsAbleToRemoveAsCost() and c:GetTextAttack()>0",
+        "Duel.IsExistingTarget(aux.FaceupFilter(Card.IsRace,RACE_BEAST|RACE_BEASTWARRIOR),tp,LOCATION_MZONE,0,1,c)",
+        "Duel.SelectMatchingCard(tp,s.atkcostfilter,tp,LOCATION_MZONE,0,1,1,nil,tp)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "e:SetLabel(g:GetFirst():GetTextAttack())",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsRace,RACE_BEAST|RACE_BEASTWARRIOR),tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "tc:IsRace(RACE_BEAST|RACE_BEASTWARRIOR)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(e:GetLabel())",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(3000)",
       ],
     },
     {
@@ -6793,6 +6816,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       activationDisableSweepLinkedPreDamageStat: 0,
       damageStepLpCostTargetAttackDrop: 0,
       banishLinkCostLabelTargetStat: 0,
+      banishRaceCostLabelTargetStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
