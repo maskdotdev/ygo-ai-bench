@@ -104,7 +104,8 @@ describe("Lua operation immunity overlay", () => {
     expect(applyResponse(session, ignoreAction!).ok).toBe(true);
 
     expect(host.messages).toContain("ignore overlay protected count 2");
-    expect(holderCard?.overlayUids).toEqual(expect.arrayContaining([session.state.cards.find((card) => card.code === "280")!.uid]));
+    const updatedHolderCard = session.state.cards.find((card) => card.uid === holderCard!.uid);
+    expect(updatedHolderCard?.overlayUids).toEqual(expect.arrayContaining([session.state.cards.find((card) => card.code === "280")!.uid]));
     expect(session.state.cards.find((card) => card.code === "280")).toMatchObject({ location: "overlay" });
   });
 });

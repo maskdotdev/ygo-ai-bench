@@ -52,8 +52,8 @@ describe("Lua Ritual Summon reason source", () => {
 
     expect(host.messages).toContain("ritual reason result 1");
     expect(host.messages).toContain("ritual reason summoned true/true");
-    expect(material).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
-    expect(ritual).toMatchObject({ location: "monsterZone", summonType: "ritual", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(session.state.cards.find((card) => card.uid === ritual!.uid)).toMatchObject({ location: "monsterZone", summonType: "ritual", reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "specialSummoned", eventCardUid: ritual!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
   });
 });

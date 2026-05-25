@@ -1,7 +1,7 @@
 import fs from "node:fs"; import path from "node:path";
 export const root = process.cwd(); export const testRoot = path.join(root, "test"); export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 303; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 7;
-export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 16; export const battleTriggerSemanticFixtureCount = 49;
+export const realScriptBattleFixtureCount = 657; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 7;
+export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 17; export const battleTriggerSemanticFixtureCount = 49;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
   attackDestroy: 1,
@@ -35,7 +35,7 @@ export const battleDamageSemanticKindCounts = {
   doubleBattleDamage: 2,
   halfBattleDamage: 2,
   pierceBattleDamage: 2,
-  reflectBattleDamage: 2,
+  reflectBattleDamage: 3,
   temporaryDamageCalcBoost: 1,
 } satisfies Record<BattleDamageSemanticKind, number>;
 export const battleTriggerSemanticKindCounts = {
@@ -413,6 +413,17 @@ export function realScriptBattleDamageSemanticFixtureFiles(): Array<RequiredFixt
       ],
     },
     {
+      file: "lua-real-script-bye-bye-damage-precalc-reflect.test.ts",
+      kind: "reflectBattleDamage",
+      required: [
+        "Bye Bye Damage",
+        "eventName: \"battleDamageDealt\"",
+        "eventName: \"damageDealt\"",
+        "battleDamage).toEqual({ 0: 0, 1: 800 })",
+        "players[0].lifePoints).toBe(6400)",
+      ],
+    },
+    {
       file: "lua-real-script-battle-damage-prevention.test.ts",
       kind: "battleDamagePrevention",
       required: [
@@ -580,7 +591,15 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
     {
       file: "lua-real-script-nitro-warrior-chain-attack-target.test.ts",
       kind: "battledChainAttackTarget",
-      required: ["restores its battled trigger and chain-attacks the selected position-changed monster", 'eventName: "afterDamageCalculation"', "eventCode: 1138", "currentAttack).toMatchObject({ attackerUid: nitro!.uid, targetUid: followupTarget!.uid })", "battleDamage).toMatchObject({ 1: 1800 })"],
+      required: [
+        "restores its battled trigger and chain-attacks the selected position-changed monster",
+        'eventName: "afterDamageCalculation"',
+        "eventCode: 1138",
+        "currentAttack).toMatchObject({ attackerUid: nitro!.uid, targetUid: followupTarget!.uid })",
+        "battleDamage).toMatchObject({ 1: 1800 })",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: nitro!.uid",
+      ],
     },
     {
       file: "lua-real-script-wall-of-illusion-battled.test.ts",
@@ -644,12 +663,27 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
         "pendingBattle).toBeUndefined()",
       ],
     },
-    { file: "lua-real-script-ehren-battle-confirm-to-deck.test.ts", kind: "battleConfirmToDeck", required: ["restores battle-confirm target shuffling and ends the pending battle when the target leaves", "e1:SetCode(EVENT_BATTLE_CONFIRM)", "Duel.SendtoDeck(t,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)", 'eventName: "sentToDeck"', "pendingBattle).toBeUndefined()"] },
-    { file: "lua-real-script-skullgios-battle-confirm-swap-pierce.test.ts", kind: "battleConfirmStatSwap", required: ["restores battle-confirm final ATK/DEF swap into piercing doubled battle damage", 'eventName: "battleConfirmed"', "EVENT_BATTLE_CONFIRM", "EFFECT_SWAP_ATTACK_FINAL", "EFFECT_SWAP_DEFENSE_FINAL", "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === defender.uid), restoredTrigger.session.state)).toBe(2500)"] },
-    { file: "lua-real-script-airbellum-direct-damage-hand-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its direct battle-damage trigger into random opponent hand discard", 'eventName: "battleDamageDealt"', "Duel.SetOperationInfo(0,CATEGORY_HANDES,0,0,1-tp,1)", 'eventName: "discarded"'] },
-    { file: "lua-real-script-great-phantom-thief-announce-hand-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores battle-damage AnnounceCard into opponent hand confirmation and named discard", 'eventName: "battleDamageDealt"', "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", 'api: "AnnounceCard"', 'eventName: "confirmed"', 'eventName: "discarded"'] },
+    {
+      file: "lua-real-script-ehren-battle-confirm-to-deck.test.ts",
+      kind: "battleConfirmToDeck",
+      required: [
+        "restores battle-confirm target shuffling and ends the pending battle when the target leaves",
+        "e1:SetCode(EVENT_BATTLE_CONFIRM)",
+        'eventName: "battleConfirmed"',
+        "eventCode: 1133",
+        "eventPlayer: 0",
+        'eventTriggerTiming: "when"',
+        'eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }',
+        "Duel.SendtoDeck(t,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        'eventName: "sentToDeck"',
+        "pendingBattle).toBeUndefined()",
+      ],
+    },
+    { file: "lua-real-script-skullgios-battle-confirm-swap-pierce.test.ts", kind: "battleConfirmStatSwap", required: ["restores battle-confirm final ATK/DEF swap into piercing doubled battle damage", "expect(restoredBattle.session.state.pendingTriggers).toEqual", 'effectId: "lua-4-1133"', 'eventName: "battleConfirmed"', "eventCode: 1133", 'eventTriggerTiming: "when"', "EVENT_BATTLE_CONFIRM", "EFFECT_SWAP_ATTACK_FINAL", "EFFECT_SWAP_DEFENSE_FINAL", "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === defender.uid), restoredTrigger.session.state)).toBe(2500)"] },
+    { file: "lua-real-script-airbellum-direct-damage-hand-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its direct battle-damage trigger into random opponent hand discard", 'eventName: "battleDamageDealt"', 'eventTriggerTiming: "when"', 'eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }', "Duel.SetOperationInfo(0,CATEGORY_HANDES,0,0,1-tp,1)", 'eventName: "discarded"'] },
+    { file: "lua-real-script-great-phantom-thief-announce-hand-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores battle-damage AnnounceCard into opponent hand confirmation and named discard", 'eventName: "battleDamageDealt"', 'eventTriggerTiming: "when"', 'eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }', "Duel.AnnounceCard(tp,table.unpack(s.announce_filter))", 'api: "AnnounceCard"', 'eventName: "confirmed"', 'eventName: "discarded"'] },
     { file: "lua-real-script-fushi-no-tori-battle-recover.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into CHAININFO target-param LP recovery", 'eventName: "battleDamageDealt"', 'eventName: "recoveredLifePoints"', "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)"] },
-    { file: "lua-real-script-battlewasp-hama-global-battle-damage-stat.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores GlobalCheck battle-damage gating into non-destroyed stat loss and Battle Phase burn", "aux.GlobalCheck(s,function()", "Card.IsStatus,STATUS_BATTLE_DESTROYED", 'eventName: "battleDamageDealt"', 'eventName: "damageDealt"', "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER)"] },
+    { file: "lua-real-script-battlewasp-hama-global-battle-damage-stat.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores GlobalCheck battle-damage gating into non-destroyed stat loss and Battle Phase burn", "aux.GlobalCheck(s,function()", "Card.IsStatus,STATUS_BATTLE_DESTROYED", 'eventName: "battleDamageDealt"', 'eventTriggerTiming: "when"', 'eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 }', 'eventName: "phaseBattle"', 'id: "trigger-9-1"', 'eventName: "damageDealt"', "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER)"] },
     { file: "lua-real-script-great-long-nose-skip-battle.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into an opponent Battle Phase skip", 'eventName: "battleDamageDealt"', "EFFECT_SKIP_BP", "phase: \"battle\", remaining: 1"] },
     { file: "lua-real-script-hino-kagu-tsuchi-predraw-discard.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger into the opponent's next Draw Phase hand discard", 'eventName: "battleDamageDealt"', 'eventName: "preDraw"', 'eventName: "discarded"'] },
     { file: "lua-real-script-yamata-dragon-battle-damage-draw.test.ts", kind: "battleDamageTriggeredDelayedEffect", required: ["restores its battle-damage trigger and draws until 5 from CHAININFO_TARGET_PLAYER", 'eventName: "battleDamageDealt"', '"eventName": "cardsDrawn"', "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER)"] },
@@ -657,7 +691,7 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
     {
       file: "lua-real-script-sasuke-samurai-battle-start-destroy.test.ts",
       kind: "battleStartDestroy",
-      required: ['eventName: "battleStarted"', "eventCode: 1132", 'triggerBucket: "turnMandatory"', 'eventName: "destroyed"', 'location: "graveyard"', "eventReasonEffectId: 1"],
+      required: ['eventName: "battleStarted"', "eventCode: 1132", 'eventTriggerTiming: "when"', 'eventPreviousState: {', 'triggerBucket: "turnMandatory"', 'eventName: "destroyed"', 'location: "graveyard"', "eventReasonEffectId: 1"],
     },
     {
       file: "lua-real-script-aoj-core-destroyer-battle-start-destroy.test.ts",
@@ -668,6 +702,9 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
         'triggerBucket: "opponentMandatory"',
         'eventName: "battleStarted"',
         "eventCode: 1132",
+        "eventPlayer: 1",
+        "eventCardUid: coreDestroyer.uid",
+        'eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }',
         'eventName: "destroyed"',
         "reasonCardUid: coreDestroyer.uid",
       ],
@@ -695,7 +732,12 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
         "Duel.GetFieldGroup(tp,0,LOCATION_ONFIELD)",
         "Duel.Destroy(g,REASON_EFFECT)",
         'eventName: "battleStarted"',
+        "eventCode: 1132",
+        'eventTriggerTiming: "when"',
+        'eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 }',
         'eventName: "destroyed"',
+        "eventCode: 1029",
+        'eventTriggerTiming: "if"',
         "currentAttack",
         "currentDefense",
       ],
@@ -708,7 +750,16 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
     {
       file: "lua-real-script-winged-sage-falcos-battle-destroying-decktop.test.ts",
       kind: "battleDestroyingDecktopConfirm",
-      required: ["restores GetBattleTarget SetTargetCard into destroyed monster sent to Deck top", "Duel.SetTargetCard(bc)", "Duel.GetFirstTarget()", 'eventName: "sentToDeck"'],
+      required: [
+        "restores GetBattleTarget SetTargetCard into destroyed monster sent to Deck top",
+        "Duel.SetTargetCard(bc)",
+        "Duel.GetFirstTarget()",
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        'eventTriggerTiming: "when"',
+        'eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }',
+        'eventName: "sentToDeck"',
+      ],
     },
     {
       file: "lua-real-script-insect-princess-battled-flag-atk.test.ts",
@@ -738,7 +789,11 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
         "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
         'api: "SelectOption"',
         'eventName: "attackDeclared"',
+        "eventCode: 1130",
+        'eventTriggerTiming: "when"',
         'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        'eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }',
         'eventName: "specialSummoned"',
       ],
     },
@@ -875,6 +930,10 @@ export function realScriptBattleTriggerSemanticFixtureFiles(): Array<RequiredFix
         "Duel.SetTargetCard(at)",
         "EFFECT_SET_DEFENSE_FINAL",
         "EFFECT_SET_ATTACK_FINAL",
+        "expect(session.state.pendingTriggers).toEqual",
+        'effectId: "lua-2-1131"',
+        "eventCode: 1131",
+        'eventTriggerTiming: "when"',
         'api: "SelectYesNo"',
         'eventName: "battleTargeted"',
         'eventName: "positionChanged"',
@@ -925,6 +984,8 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
         "restores defender-side EVENT_BATTLE_START and destroys the attacking LIGHT monster",
         "local tc=Duel.GetAttacker()",
         "if tc==c then tc=Duel.GetAttackTarget() end",
+        "eventCardUid: coreDestroyer.uid",
+        'eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }',
         "eventReasonPlayer: 1",
       ],
     },
@@ -1053,7 +1114,16 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
     {
       file: "lua-real-script-winged-sage-falcos-battle-destroying-decktop.test.ts",
       kind: "wingedSageFalcosBattleDestroyingDeckTop",
-      required: ["restores GetBattleTarget SetTargetCard into destroyed monster sent to Deck top", "bc:IsPreviousPosition(POS_FACEUP_ATTACK)", "Duel.SetTargetCard(bc)", "eventName: \"sentToDeck\""],
+      required: [
+        "restores GetBattleTarget SetTargetCard into destroyed monster sent to Deck top",
+        "bc:IsPreviousPosition(POS_FACEUP_ATTACK)",
+        "Duel.SetTargetCard(bc)",
+        "eventName: \"battleDestroyed\"",
+        "eventCode: 1140",
+        "eventTriggerTiming: \"when\"",
+        "eventPreviousState: { controller: 0, faceUp: false, location: \"deck\", position: \"faceDown\", sequence: 0 }",
+        "eventName: \"sentToDeck\"",
+      ],
     },
     {
       file: "lua-real-script-bls-soldier-chaos-battle-destroying-select-effect.test.ts",
@@ -1081,7 +1151,21 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
       required: ["restores Draining Shield's attack-declaration target and recovers LP after negating the attack", "attackCanceledUids).toEqual([attacker!.uid])", "players[1].lifePoints).toBe(9800)"],
     },
     { file: "lua-real-script-dracoon-lamp-change-battle-stat.test.ts", kind: "dracoonLampChangeBattleStat", required: ["restores its pre-damage EFFECT_CHANGE_BATTLE_STAT callback into damage calculation", "EFFECT_CHANGE_BATTLE_STAT", "stat:current-defense", "target:source-or-battle-target", "battleDamage).toEqual({ 0: 0, 1: 1600 })"] },
-    { file: "lua-real-script-ehren-battle-confirm-to-deck.test.ts", kind: "ehrenBattleConfirmToDeck", required: ["restores battle-confirm target shuffling and ends the pending battle when the target leaves", "e1:SetCode(EVENT_BATTLE_CONFIRM)", "Duel.GetAttackTarget()", "eventName: \"sentToDeck\""] },
+    {
+      file: "lua-real-script-ehren-battle-confirm-to-deck.test.ts",
+      kind: "ehrenBattleConfirmToDeck",
+      required: [
+        "restores battle-confirm target shuffling and ends the pending battle when the target leaves",
+        "e1:SetCode(EVENT_BATTLE_CONFIRM)",
+        "Duel.GetAttackTarget()",
+        "eventName: \"battleConfirmed\"",
+        "eventCode: 1133",
+        "eventPlayer: 0",
+        "eventTriggerTiming: \"when\"",
+        "eventPreviousState: { controller: 0, faceUp: false, location: \"deck\", position: \"faceDown\", sequence: 0 }",
+        "eventName: \"sentToDeck\"",
+      ],
+    },
     {
       file: "lua-real-script-element-doom-chain-attack.test.ts",
       kind: "elementDoomAttributeChainAttack",
@@ -1123,6 +1207,10 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
         "Duel.SetTargetCard(bc)",
         "currentAttack(restoredAttack.session.state.cards.find((card) => card.uid === goyoKing.uid)!, restoredAttack.session.state)).toBe(baseAttack + 800)",
         "value: 800",
+        "eventCode: 1130",
+        "eventCode: 1140",
+        "eventTriggerTiming: \"when\"",
+        "eventPreviousState: { controller: 0, faceUp: false, location: \"deck\", position: \"faceDown\", sequence: 0 }",
         "reasonEffectId: 3",
       ],
     },
@@ -1168,7 +1256,17 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
     {
       file: "lua-real-script-honest-damage-step.test.ts",
       kind: "honestDamageStepBoost",
-      required: ["restores Honest's damage-step hand effect and battle ATK update", "chainResponderScript", "host.messages).not.toContain"],
+      required: [
+        "restores Honest's damage-step hand effect and battle ATK update",
+        "chainResponderScript",
+        "battleDamage[1]).toBe(1000)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 1000",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: attacker!.uid",
+        "eventReasonPlayer: 0",
+        "host.messages).not.toContain",
+      ],
     },
     {
       file: "lua-real-script-injection-fairy-lily-pre-damage-lp-boost.test.ts",
@@ -1254,7 +1352,12 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
     {
       file: "lua-real-script-nitro-warrior-chain-attack-target.test.ts",
       kind: "nitroWarriorBattledChainAttackTarget",
-      required: ["restores its battled trigger and chain-attacks the selected position-changed monster", "eventCode: 1138", "currentAttack).toMatchObject({ attackerUid: nitro!.uid, targetUid: followupTarget!.uid })"],
+      required: [
+        "restores its battled trigger and chain-attacks the selected position-changed monster",
+        "eventCode: 1138",
+        "currentAttack).toMatchObject({ attackerUid: nitro!.uid, targetUid: followupTarget!.uid })",
+        'eventName: "battleDamageDealt"',
+      ],
     },
     {
       file: "lua-real-script-number-13-must-attack-reflect.test.ts",
@@ -1332,7 +1435,7 @@ export function realScriptBattleSemanticVariants(): Array<RequiredFixture<Battle
     {
       file: "lua-real-script-sasuke-samurai-battle-start-destroy.test.ts",
       kind: "sasukeSamuraiBattleStartDestroy",
-      required: ["restores its EVENT_BATTLE_START mandatory trigger and destroys the face-down Defense target", "eventCode: 1132", "eventReasonEffectId: 1"],
+      required: ["restores its EVENT_BATTLE_START mandatory trigger and destroys the face-down Defense target", "eventCode: 1132", 'eventTriggerTiming: "when"', 'eventPreviousState: {', "eventReasonEffectId: 1"],
     },
     {
       file: "lua-real-script-scrap-iron-scarecrow-battle-window.test.ts",

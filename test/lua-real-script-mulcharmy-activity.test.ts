@@ -64,7 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFuwalosScript || !hasPuruliaScript ||
       expect(action).toBeDefined();
       const result = applyResponse(session, action!);
       expect(result.ok, result.error).toBe(true);
-      return card;
+      return session.state.cards.find((candidate) => candidate.uid === card!.uid);
     };
 
     const fuwalos = activateByCode(fuwalosCode);
@@ -83,7 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFuwalosScript || !hasPuruliaScript ||
     expect(puruliaAction).toBeDefined();
     const puruliaResult = applyLuaRestoreResponse(restoredAfterFuwalos, puruliaAction!);
     expect(puruliaResult.ok, puruliaResult.error).toBe(true);
-    expect(purulia).toMatchObject({ location: "graveyard" });
+    expect(restoredAfterFuwalos.session.state.cards.find((card) => card.uid === purulia!.uid)).toMatchObject({ location: "graveyard" });
 
     const meowls = restoredAfterFuwalos.session.state.cards.find((card) => card.code === meowlsCode);
     expect(getLuaRestoreLegalActions(restoredAfterFuwalos, 0).some((action) => action.type === "activateEffect" && action.uid === meowls?.uid)).toBe(false);
