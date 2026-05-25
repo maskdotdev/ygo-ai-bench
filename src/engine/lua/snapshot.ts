@@ -95,6 +95,7 @@ const luaMachineKing3000BcCode = "70406920";
 const luaArcanaForceHierophantCode = "3376703";
 const luaArcanaForceChariotCode = "34568403";
 const luaArcanaForceWorldCode = "23846921";
+const luaArcanaForceDarkRulerCode = "69831560";
 const luaArcanaForceFoolCode = "62892347";
 const luaProtonBlastCode = "49511705";
 const luaArcanaForceMoonCode = "97452817";
@@ -471,6 +472,17 @@ function isKnownArcanaForceWorldRegisteredEffect(effect: SerializedDuelEffect): 
   );
 }
 
+function isKnownArcanaForceDarkRulerRegisteredEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaArcanaForceDarkRulerCode}:`)) &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone" &&
+    (effect.code === 194 || effect.code === 4224 || effect.code === 1019 || effect.code === 1020) &&
+    effect.reset?.flags !== undefined
+  );
+}
+
 function isKnownArcanaForceFoolRegisteredEffect(effect: SerializedDuelEffect): boolean {
   return (
     Boolean(effect.registryKey?.startsWith(`lua:${luaArcanaForceFoolCode}:`)) &&
@@ -548,6 +560,11 @@ function restoreKnownLuaStateEffects(
   const worldRegisteredSourceUids = new Set(
     snapshotEffects
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownArcanaForceWorldRegisteredEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
+  const darkRulerRegisteredSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownArcanaForceDarkRulerRegisteredEffect(effect))
       .map((effect) => effect.sourceUid),
   );
   const foolRegisteredSourceUids = new Set(
@@ -814,6 +831,18 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-arcana-force-world-registered-${card.uid}.lua`));
+  }
+  for (const sourceUid of darkRulerRegisteredSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card) continue;
+    const script = `
+      local s=c${luaArcanaForceDarkRulerCode}
+      local c=Duel.GetFirstMatchingCard(function(tc) return tc:IsFieldID(${cardFieldId(card)}) end,${card.controller},${cardLocationMask(card.location)},0,nil)
+      if s and c then
+        s.arcanareg(c,Arcana.GetCoinResult(c))
+      end
+    `;
+    results.push(host.loadScript(script, `restore-arcana-force-dark-ruler-registered-${card.uid}.lua`));
   }
   for (const sourceUid of foolRegisteredSourceUids) {
     const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
