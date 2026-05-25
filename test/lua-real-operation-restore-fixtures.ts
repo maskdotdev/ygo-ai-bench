@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 356;
+export const operationFixtureCount = 357;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -29,6 +29,7 @@ export const operationKindCounts = {
   darkMagicTwinBurstGirlCountStat: 1,
   attackAnnounceFusionBattleStat: 1,
   groupSetcodeCountStat: 1,
+  preDamageLpDifferenceAttackStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -318,6 +319,7 @@ export type OperationKind =
   | "darkMagicTwinBurstGirlCountStat"
   | "attackAnnounceFusionBattleStat"
   | "groupSetcodeCountStat"
+  | "preDamageLpDifferenceAttackStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -724,6 +726,23 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restored.session, gagagaOne.uid), restored.session.state)).toBe(2500)",
         "currentAttack(findCard(restored.session, gagagaTwo.uid), restored.session.state)).toBe(2200)",
         "currentAttack(findCard(restored.session, nonGagaga.uid), restored.session.state)).toBe(1700)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-tsukumo-slash-pre-damage-lp-stat.test.ts",
+      kind: "preDamageLpDifferenceAttackStat",
+      required: [
+        "restores pre-damage activation into attacker ATK boost by absolute LP difference",
+        "Tsukumo Slash",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "a:IsControler(tp) and a:GetAttack()<d:GetAttack() and Duel.GetLP(tp)~=Duel.GetLP(1-tp)",
+        "local atk=math.abs(Duel.GetLP(tp)-Duel.GetLP(1-tp))",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE_CAL)",
+        "e1:SetValue(atk)",
+        "currentAttack(findCard(restoredPreDamage.session, attacker.uid), restoredPreDamage.session.state)).toBe(4500)",
+        'eventName: "beforeDamageCalculation"',
       ],
     },
     {
@@ -7023,6 +7042,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       darkMagicTwinBurstGirlCountStat: 0,
       attackAnnounceFusionBattleStat: 0,
       groupSetcodeCountStat: 0,
+      preDamageLpDifferenceAttackStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
