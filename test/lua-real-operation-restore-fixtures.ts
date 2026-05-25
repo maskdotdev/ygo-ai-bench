@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 385;
+export const operationFixtureCount = 386;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -58,6 +58,7 @@ export const operationKindCounts = {
   attackAnnounceTargetBoostStat: 1,
   freeChainTargetAttackBoostStat: 1,
   raceFilteredTargetAttackBoostStat: 1,
+  globalEffectMonsterFinalStatSwap: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -376,6 +377,7 @@ export type OperationKind =
   | "attackAnnounceTargetBoostStat"
   | "freeChainTargetAttackBoostStat"
   | "raceFilteredTargetAttackBoostStat"
+  | "globalEffectMonsterFinalStatSwap"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1130,6 +1132,29 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(2400)",
         "currentAttack(findCard(restored.session, decoy.uid), restored.session.state)).toBe(2000)",
         'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-inverse-universe-global-stat-swap.test.ts",
+      kind: "globalEffectMonsterFinalStatSwap",
+      required: [
+        "restores both-field Effect Monster ATK and DEF final stat swap",
+        "Inverse Universe",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "return c:IsFaceup() and c:IsType(TYPE_EFFECT) and c:IsDefenseAbove(0)",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "local sg=Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "local atk=tc:GetAttack()",
+        "local def=tc:GetDefense()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(def)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetValue(atk)",
+        "effectSetAttackFinal",
+        "effectSetDefenseFinal",
+        "currentAttack",
+        "currentDefense",
       ],
     },
     {
@@ -7653,6 +7678,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackAnnounceTargetBoostStat: 0,
       freeChainTargetAttackBoostStat: 0,
       raceFilteredTargetAttackBoostStat: 0,
+      globalEffectMonsterFinalStatSwap: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
