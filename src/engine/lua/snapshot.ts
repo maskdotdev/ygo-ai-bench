@@ -1,4 +1,4 @@
-import { findCard, hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
+import { findCard, hasZoneSpace, moveDuelCard, pushDuelLog, resequence } from "#duel/card-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
@@ -100,6 +100,7 @@ const luaArcanaForceFoolCode = "62892347";
 const luaProtonBlastCode = "49511705";
 const luaOldEntityHastorrCode = "70913714";
 const luaArcanaForceMoonCode = "97452817";
+const luaCenterfrogCode = "47346782";
 const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
 const luaMegalithUnformedCode = "69003792"; const luaDaiDanceCode = "50696588"; const luaExosisterCarpedivemCode = "30802207";
 const luaMetaphysRagnarokCode = "19476824";
@@ -375,7 +376,7 @@ function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEf
   if (!snapshotEffect) return effect;
   return {
     ...effect, ...((isKnownOverdoomLineAttackBoostEffect(snapshotEffect) || isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || snapshotEffect.luaConditionDescriptor?.startsWith("condition:attack-target-controller:self-no-player-flag:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:battle-phase-own-code-battler:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-battle-target") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-status-summon-type:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-relate-battle-target") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:normal-summon-proc-own-faceup:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:normal-summon-proc-opponent-mzone-count-at-least:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:controller-has-faceup-setcode:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:event-player:") === true || snapshotEffect.luaConditionDescriptor === "condition:event-group-opponent-extra-deck-special-summon" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:event-previous-controller-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor === "condition:damage-source-relate-battle-target" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason-all:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason-all-player:") === true || snapshotEffect.luaConditionDescriptor === "condition:source-previous-controller-reason-player:opponent" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-reason-player-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-side-previous-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location-reason-player:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-position-location-reason-player-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-position-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-position-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-position-position:") === true) ? restoredLuaConditionCallbacks(snapshotEffect) : {}),
-    ...(isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || isKnownByeByeDamagePreDamageEffect(snapshotEffect) || isKnownWattcubeIgnitionAttackBoostEffect(snapshotEffect) || isKnownPenetrationFusionStage2QuickEffect(snapshotEffect) || isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(snapshotEffect) || isKnownParticleFusionCustomAttackEffect(snapshotEffect) ? { operation: restoredLuaOperation(snapshotEffect) } : {}),
+    ...(isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || isKnownByeByeDamagePreDamageEffect(snapshotEffect) || isKnownWattcubeIgnitionAttackBoostEffect(snapshotEffect) || isKnownPenetrationFusionStage2QuickEffect(snapshotEffect) || isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(snapshotEffect) || isKnownParticleFusionCustomAttackEffect(snapshotEffect) || isKnownCenterfrogControlEffect(snapshotEffect) ? { operation: restoredLuaOperation(snapshotEffect) } : {}),
     ...(snapshotEffect.property === undefined ? {} : { property: snapshotEffect.property }),
     ...(snapshotEffect.reset === undefined ? {} : { reset: { ...snapshotEffect.reset } }),
     ...(snapshotEffect.label === undefined ? {} : { label: snapshotEffect.label }),
@@ -1248,6 +1249,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownDoubleOrNothingBattleStartDoubleEffect(effect) ||
     isKnownMagnificentMachineAngelBattleStartDisableEffect(effect) ||
     isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect) ||
+    isKnownCenterfrogControlEffect(effect) ||
     isKnownDivineEvolutionAttackAnnounceSendEffect(effect) ||
     isKnownOuroborosSageAttackLimitWatcherEffect(effect) ||
     isKnownOuroborosSageAttackDoubleEffect(effect) ||
@@ -1447,6 +1449,15 @@ function isKnownArcanaForceMoonEndControlEffect(effect: SerializedDuelEffect): b
     effect.sourceUid !== undefined &&
     effect.controller !== undefined &&
     effect.category === luaCategoryControl;
+}
+function isKnownCenterfrogControlEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaCenterfrogCode}:`)) &&
+    effect.event === "ignition" &&
+    effect.sourceUid !== undefined &&
+    effect.category === luaCategoryControl &&
+    effect.property === 0x10 &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone";
 }
 function isKnownHunterSevenWeaponsPreDamageEffect(effect: SerializedDuelEffect): boolean { return Boolean(effect.registryKey?.startsWith("lua:1525329:")) && effect.event === "trigger" && effect.code === 1134 && effect.triggerEvent === "beforeDamageCalculation" && effect.label !== undefined && effect.sourceUid !== undefined; }
 function isKnownPrimePhotonDragonStandbyReviveEffect(effect: SerializedDuelEffect): boolean {
@@ -2323,6 +2334,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownMachineKing3000BcAttackBoostEffect(effect)) return machineKing3000BcAttackBoostOperation(effect);
   if (isKnownArcanaForceMoonStandbyTokenEffect(effect)) return arcanaForceMoonStandbyTokenOperation(effect);
   if (isKnownArcanaForceMoonEndControlEffect(effect)) return arcanaForceMoonEndControlOperation(effect);
+  if (isKnownCenterfrogControlEffect(effect)) return centerfrogControlOperation(effect);
   if (isKnownWattcubeIgnitionAttackBoostEffect(effect)) return wattcubeIgnitionAttackBoostOperation(effect);
   if (isKnownClashingSoulsBattledFieldSendEffect(effect)) return clashingSoulsBattledFieldSendOperation(effect);
   if (isKnownPrimePhotonDragonStandbyReviveEffect(effect)) return primePhotonDragonStandbyReviveOperation(effect);
@@ -3327,6 +3339,85 @@ function arcanaForceMoonEndControlOperation(effect: SerializedDuelEffect): DuelE
       eventReasonCardUid: effect.sourceUid,
       eventReasonEffectId: reasonEffectId,
     });
+  };
+}
+
+function centerfrogControlOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    if (!source || source.controller !== ctx.player || source.location !== "monsterZone" || source.position !== "faceUpDefense") return;
+    const targetUid = ctx.targetUids[0];
+    const target = targetUid ? ctx.duel.cards.find((card) => card.uid === targetUid) : undefined;
+    const opponent = otherPlayer(ctx.player);
+    if (!target || target.controller !== opponent || target.location !== "monsterZone" || target.sequence > 4) return;
+    if (!canCenterfrogMoveNextToTarget(ctx.duel, source, opponent, target.sequence)) return;
+
+    const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+    const movedSource = moveCenterfrogControlCard(ctx.duel, source, opponent, ctx.player, effect.sourceUid, reasonEffectId);
+    if (!movedSource) return;
+    moveCenterfrogNextToTarget(ctx.duel, movedSource, opponent, target.sequence);
+    collectDuelTriggerEffects(ctx.duel, "controlChanged", movedSource, centerfrogControlPayload(ctx.player, effect.sourceUid, reasonEffectId));
+
+    const centerfrogs = ctx.duel.cards
+      .filter((card) => card.controller === opponent && card.location === "monsterZone" && card.faceUp && card.sequence < 5 && currentCardMatchesCode(card, ctx.duel, luaCenterfrogCode))
+      .sort((a, b) => a.sequence - b.sequence);
+    if (centerfrogs.length !== 2) return;
+    const [left, right] = centerfrogs;
+    if (!left || !right) return;
+    const between = ctx.duel.cards
+      .filter((card) => card.controller === opponent && card.location === "monsterZone" && card.sequence > left.sequence && card.sequence < right.sequence)
+      .sort((a, b) => a.sequence - b.sequence);
+    for (const card of between) {
+      if (!canCenterfrogChangeControl(ctx.duel, card, ctx.player)) continue;
+      const moved = moveCenterfrogControlCard(ctx.duel, card, ctx.player, ctx.player, effect.sourceUid, reasonEffectId);
+      if (moved) collectDuelTriggerEffects(ctx.duel, "controlChanged", moved, centerfrogControlPayload(ctx.player, effect.sourceUid, reasonEffectId));
+    }
+  };
+}
+
+function canCenterfrogMoveNextToTarget(state: DuelSession["state"], source: DuelCardInstance, targetPlayer: PlayerId, targetSequence: number): boolean {
+  if (!canCenterfrogChangeControl(state, source, targetPlayer)) return false;
+  return centerfrogAdjacentOpenSequences(state, targetPlayer, targetSequence, source.uid).length > 0;
+}
+
+function moveCenterfrogNextToTarget(state: DuelSession["state"], source: DuelCardInstance, targetPlayer: PlayerId, targetSequence: number): void {
+  const sequence = centerfrogAdjacentOpenSequences(state, targetPlayer, targetSequence, source.uid)[0] ?? firstOpenMonsterZoneSequence(state, targetPlayer);
+  if (sequence !== undefined) source.sequence = sequence;
+}
+
+function centerfrogAdjacentOpenSequences(state: DuelSession["state"], player: PlayerId, targetSequence: number, sourceUid: string): number[] {
+  const used = new Set(state.cards.filter((card) => card.controller === player && card.location === "monsterZone" && card.uid !== sourceUid).map((card) => card.sequence));
+  return [targetSequence - 1, targetSequence + 1].filter((sequence) => sequence >= 0 && sequence < 5 && !used.has(sequence));
+}
+
+function moveCenterfrogControlCard(
+  state: DuelSession["state"],
+  card: DuelCardInstance,
+  targetPlayer: PlayerId,
+  reasonPlayer: PlayerId,
+  reasonCardUid: string | undefined,
+  reasonEffectId: number,
+): DuelCardInstance | undefined {
+  if (!canCenterfrogChangeControl(state, card, targetPlayer)) return undefined;
+  const previousController = card.controller;
+  const moved = moveDuelCard(state, card.uid, "monsterZone", targetPlayer, duelReason.effect, reasonPlayer);
+  if (reasonCardUid !== undefined) moved.reasonCardUid = reasonCardUid;
+  if (Number.isSafeInteger(reasonEffectId)) moved.reasonEffectId = reasonEffectId;
+  resequence(state, previousController, "monsterZone");
+  pushDuelLog(state, "control", targetPlayer, moved.name, `Took control from player ${previousController}`);
+  return moved;
+}
+
+function canCenterfrogChangeControl(state: DuelSession["state"], card: DuelCardInstance, targetPlayer: PlayerId): boolean {
+  return card.location === "monsterZone" && card.controller !== targetPlayer && hasZoneSpace(state, targetPlayer, "monsterZone");
+}
+
+function centerfrogControlPayload(player: PlayerId, sourceUid: string | undefined, reasonEffectId: number): Pick<DuelEventPayload, "eventReason" | "eventReasonPlayer" | "eventReasonCardUid" | "eventReasonEffectId"> {
+  return {
+    eventReason: duelReason.effect,
+    eventReasonPlayer: player,
+    ...(sourceUid === undefined ? {} : { eventReasonCardUid: sourceUid }),
+    ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
   };
 }
 
