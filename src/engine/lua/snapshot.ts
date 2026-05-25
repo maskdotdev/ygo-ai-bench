@@ -2,7 +2,7 @@ import { findCard, hasZoneSpace, pushDuelLog } from "#duel/card-state.js";
 import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags, currentAttack, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
 import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, collectDuelTriggerEvent, damageDuelPlayer, destroyDuelCard, drawDuelCards, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState, recoverDuelPlayer, sendDuelCardToGraveyard } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelLocations } from "#duel/location-kinds.js";
@@ -74,6 +74,7 @@ const luaSourceControllerConditionDescriptor = "condition:source-controller"; co
 const luaMaharaghiCode = "40695128"; const luaHinoKaguTsuchiCode = "75745607"; const luaGreatLongNoseCode = "2356994";
 const luaXxSaberDarksoulCode = "31383545"; const luaDragodiesCode = "65472618"; const luaPerformapalCelestialMagicianCode = "58092907";
 const luaByeByeDamageCode = "20735371";
+const luaMirrorWallCode = "22359980";
 const luaFamiliarPossessedDharcCode = "21390858"; const luaDarkMagicExpandedCode = "111280";
 const luaEucalyptusMoleCode = "71228611";
 const luaEbonArrowCode = "88341502"; const luaDivineEvolutionCode = "7373632";
@@ -363,6 +364,7 @@ function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEf
     ...restoredLuaTriggerMetadata(snapshotEffect),
     ...restoredLuaCostCallbacks(snapshotEffect),
     ...restoredLuaValueCallbacks(snapshotEffect),
+    ...(isKnownMirrorWallAttackHalveEffect(snapshotEffect) ? mirrorWallAttackHalveCallbacks(snapshotEffect) : {}),
     ...restoredLuaTargetCallbacks(snapshotEffect),
   };
 }
@@ -689,6 +691,7 @@ function restoreKnownLuaEffects(
       ...restoredLuaTriggerMetadata(restoredEffect),
       ...restoredLuaTypeFlagMetadata(session, restoredEffect),
       ...restoredLuaValueCallbacks(restoredEffect),
+      ...(isKnownMirrorWallAttackHalveEffect(restoredEffect) ? mirrorWallAttackHalveCallbacks(restoredEffect) : {}),
       ...restoredLuaConditionCallbacks(restoredEffect), ...restoredLuaCostCallbacks(restoredEffect),
       ...restoredLuaTargetCallbacks(restoredEffect),
       ...restoredLuaActivationTargetCallbacks(restoredEffect),
@@ -1156,6 +1159,15 @@ function isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect: Serialize
     effect.code === luaEventBattleDamage &&
     effect.sourceUid !== undefined &&
     effect.reset !== undefined;
+}
+function isKnownMirrorWallAttackHalveEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaMirrorWallCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 102 &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone" &&
+    (effect.labelObjectUids?.length ?? 0) > 0;
 }
 function isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith(`lua:${luaMermailAbyssbalaenCode}:`)) &&
@@ -2576,6 +2588,13 @@ function commonSoulOwnerTargetAttackCanActivate(effect: SerializedDuelEffect): N
       card.cardTargetUids?.includes(effect.sourceUid!) === true &&
       card.cardTargetUids.includes(effect.labelObjectUid!),
     );
+  };
+}
+
+function mirrorWallAttackHalveCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "statValue" | "targetCardPredicate"> {
+  return {
+    targetCardPredicate: (ctx, card) => Boolean(effect.labelObjectUids?.includes(card.uid) && ctx.duel.flagEffects.some((flag) => flag.ownerType === "card" && flag.ownerId === card.uid && flag.code === Number(luaMirrorWallCode))),
+    statValue: (ctx, card) => Math.floor(currentAttackWithoutEffect(card, ctx.duel, effect.id) / 2),
   };
 }
 

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 11;
+const continuousOperationFixtureCount = 12;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
   chainSolvingDoubleSnareNegateDestroy: 1,
@@ -14,6 +14,7 @@ const continuousOperationKindCounts = {
   continuousRedirect: 3,
   endPhaseControlReturn: 1,
   originalCodeSummonLock: 1,
+  persistentAttackAnnounceStatMaintenance: 1,
   summonTriggerBackrowDestroy: 1,
 } satisfies Record<ContinuousOperationKind, number>;
 const continuousOperationSemanticVariantCounts = {
@@ -26,6 +27,7 @@ const continuousOperationSemanticVariantCounts = {
   fenghuangSetBackrowDestroy: 1,
   goraTurtleTargetedSpellNegateDestroy: 1,
   magicalMusketeerCasparHandTrapSearch: 1,
+  mirrorWallAttackAnnounceMaintenance: 1,
   missusRadiantAttributeStatDestroyedToHand: 1,
   skullArchfiendDiceTargetNegateDestroy: 1,
 } satisfies Record<ContinuousOperationSemanticVariant, number>;
@@ -39,6 +41,7 @@ type ContinuousOperationKind =
   | "continuousRedirect"
   | "endPhaseControlReturn"
   | "originalCodeSummonLock"
+  | "persistentAttackAnnounceStatMaintenance"
   | "summonTriggerBackrowDestroy";
 
 type ContinuousOperationSemanticVariant =
@@ -51,6 +54,7 @@ type ContinuousOperationSemanticVariant =
   | "fenghuangSetBackrowDestroy"
   | "goraTurtleTargetedSpellNegateDestroy"
   | "magicalMusketeerCasparHandTrapSearch"
+  | "mirrorWallAttackAnnounceMaintenance"
   | "missusRadiantAttributeStatDestroyedToHand"
   | "skullArchfiendDiceTargetNegateDestroy";
 
@@ -102,6 +106,26 @@ function continuousOperationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-mirror-wall-attack-announce-maintenance.test.ts",
+      kind: "persistentAttackAnnounceStatMaintenance",
+      required: [
+        "Mirror Wall attack announce maintenance",
+        "aux.StatChangeDamageStepCondition",
+        "EVENT_ATTACK_ANNOUNCE",
+        "e:GetLabelObject():AddCard(a)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "return c:GetAttack()/2",
+        "EVENT_PHASE|PHASE_STANDBY",
+        "Duel.CheckLPCost(tp,2000)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,0))",
+        "Duel.PayLPCost(tp,2000)",
+        "Duel.Destroy(e:GetHandler(),REASON_COST)",
+        "currentAttack(restoredAttack",
+        "battleDamage).toEqual({ 0: 0, 1: 100 })",
+        "eventName: \"lifePointCostPaid\"",
+      ],
+    },
     {
       file: "test/lua-real-script-skull-archfiend-dice-target-negate.test.ts",
       kind: "chainSolvingDiceNegateDestroy",
@@ -284,6 +308,7 @@ function countContinuousOperationKinds(
       continuousRedirect: 0,
       endPhaseControlReturn: 0,
       originalCodeSummonLock: 0,
+      persistentAttackAnnounceStatMaintenance: 0,
       summonTriggerBackrowDestroy: 0,
     },
   );
@@ -295,6 +320,19 @@ function continuousOperationSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-mirror-wall-attack-announce-maintenance.test.ts",
+      kind: "mirrorWallAttackAnnounceMaintenance",
+      required: [
+        'const mirrorWallCode = "22359980"',
+        "restores tracked attacking monsters, final ATK halving, and Standby LP upkeep",
+        "e:GetLabelObject():IsContains(c)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,0))",
+        "currentAttack(restoredAttack",
+        "players[0].lifePoints).toBe(6000)",
+        "eventValue: 2000",
+      ],
+    },
     {
       file: "test/lua-real-script-banisher-light-to-grave-redirect.test.ts",
       kind: "banisherLightGlobalToGraveRedirect",
@@ -452,6 +490,7 @@ function countContinuousOperationSemanticVariants(
       fenghuangSetBackrowDestroy: 0,
       goraTurtleTargetedSpellNegateDestroy: 0,
       magicalMusketeerCasparHandTrapSearch: 0,
+      mirrorWallAttackAnnounceMaintenance: 0,
       missusRadiantAttributeStatDestroyedToHand: 0,
       skullArchfiendDiceTargetNegateDestroy: 0,
     },
