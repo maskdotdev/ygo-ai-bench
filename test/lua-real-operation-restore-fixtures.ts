@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 350;
+export const operationFixtureCount = 351;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -23,6 +23,7 @@ export const operationKindCounts = {
   trapActivateGraveSelfBanishStat: 1,
   targetAddTunerType: 1,
   targetStatClientHintProtection: 1,
+  heroicFinalAttackDirectLock: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -306,6 +307,7 @@ export type OperationKind =
   | "trapActivateGraveSelfBanishStat"
   | "targetAddTunerType"
   | "targetStatClientHintProtection"
+  | "heroicFinalAttackDirectLock"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -591,6 +593,25 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restoredBattle.session, statLink.uid), restoredBattle.session.state)).toBe(2800)",
         "effectDisableEffect",
         "effectUpdateAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-heroic-chance-final-attack-direct-lock.test.ts",
+      kind: "heroicFinalAttackDirectLock",
+      required: [
+        "restores targeted Heroic final ATK double and client-hint direct attack lock",
+        "Heroic Chance",
+        "s.listed_series={SET_HEROIC}",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return c:IsFaceup() and c:IsSetCard(SET_HEROIC)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(tc:GetAttack()*2)",
+        "e2:SetDescription(3206)",
+        "e2:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
+        "e2:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "currentAttack(findCard(restored.session, heroic.uid), restored.session.state)).toBe(3600)",
       ],
     },
     {
@@ -6884,6 +6905,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       trapActivateGraveSelfBanishStat: 0,
       targetAddTunerType: 0,
       targetStatClientHintProtection: 0,
+      heroicFinalAttackDirectLock: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
