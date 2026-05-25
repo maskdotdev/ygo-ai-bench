@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 505; const statKindCounts = {
+const statFixtureCount = 506; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -108,6 +108,7 @@ const statFixtureCount = 505; const statKindCounts = {
   wildNaturesReleaseDefenseAttackEndDestroyStat: 1,
   limiterRemovalMachineFinalAttackEndDestroyStat: 1,
   espAmplifierBanishedPsychicStatEndBanish: 1,
+  ragingMadPlantsGraveCountStatEndDestroy: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -585,6 +586,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   wildNaturesReleaseDefenseAttackEndDestroyStat: 1,
   limiterRemovalMachineFinalAttackEndDestroyStat: 1,
   espAmplifierBanishedPsychicStatEndBanish: 1,
+  ragingMadPlantsGraveCountStatEndDestroy: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -949,6 +951,7 @@ type ExtraStatKind =
   | "wildNaturesReleaseDefenseAttackEndDestroyStat"
   | "limiterRemovalMachineFinalAttackEndDestroyStat"
   | "espAmplifierBanishedPsychicStatEndBanish"
+  | "ragingMadPlantsGraveCountStatEndDestroy"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1464,6 +1467,7 @@ type ExtraStatSemanticVariant =
   | "wildNaturesReleaseDefenseAttackEndDestroyStat"
   | "limiterRemovalMachineFinalAttackEndDestroyStat"
   | "espAmplifierBanishedPsychicStatEndBanish"
+  | "ragingMadPlantsGraveCountStatEndDestroy"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3951,6 +3955,27 @@ function statFixtureFiles(): Array<{
         "toBe(1600)",
         "toBe(2100)",
         "eventName: \"banished\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-raging-mad-plants-grave-count-stat-end-destroy.test.ts",
+      kind: "ragingMadPlantsGraveCountStatEndDestroy",
+      required: [
+        'const ragingCode = "95507060"',
+        "Raging Mad Plants",
+        "restores grave Plant count ATK gain and End Phase destruction of remaining face-up Plants",
+        "aux.StatChangeDamageStepCondition",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsRace,RACE_PLANT),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.IsExistingMatchingCard(Card.IsRace,tp,LOCATION_GRAVE,0,1,nil,RACE_PLANT)",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsRace,RACE_PLANT),tp,LOCATION_MZONE,0,nil)",
+        "Duel.GetMatchingGroupCount(Card.IsRace,tp,LOCATION_GRAVE,0,nil,RACE_PLANT)*300",
+        "EFFECT_UPDATE_ATTACK",
+        "Duel.RegisterEffect(e2,tp)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "toBe(1600)",
+        "toBe(2100)",
+        "eventName: \"destroyed\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10796,6 +10821,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       wildNaturesReleaseDefenseAttackEndDestroyStat: 0,
       limiterRemovalMachineFinalAttackEndDestroyStat: 0,
       espAmplifierBanishedPsychicStatEndBanish: 0,
+      ragingMadPlantsGraveCountStatEndDestroy: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11402,6 +11428,23 @@ function statSemanticVariants(): Array<{
         "toBe(1600)",
         "toBe(2100)",
         "eventName: \"banished\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-raging-mad-plants-grave-count-stat-end-destroy.test.ts",
+      kind: "ragingMadPlantsGraveCountStatEndDestroy",
+      required: [
+        'const ragingCode = "95507060"',
+        "Raging Mad Plants",
+        "RACE_PLANT",
+        "LOCATION_GRAVE",
+        "EFFECT_UPDATE_ATTACK",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "toBe(1600)",
+        "toBe(2100)",
+        "eventName: \"destroyed\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -17539,6 +17582,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       wildNaturesReleaseDefenseAttackEndDestroyStat: 0,
       limiterRemovalMachineFinalAttackEndDestroyStat: 0,
       espAmplifierBanishedPsychicStatEndBanish: 0,
+      ragingMadPlantsGraveCountStatEndDestroy: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,

@@ -2,6 +2,7 @@ import { changeDuelCardPosition, destroyDuelCard, moveDuelCardWithRedirects } fr
 import { resetDuelCardEffects } from "#duel/effect-reset.js";
 import { duelLocations } from "#duel/location-kinds.js";
 import { duelReason } from "#duel/reasons.js";
+import { currentRace } from "#duel/card-stats.js";
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaEffectGeminiStatus = 75;
@@ -13,6 +14,7 @@ const luaUnleashYourPowerCode = "73567374";
 const luaTsumuhaKutsunagiCode = "78098950";
 const luaEngraverOfTheMarkCode = "50078320";
 const luaLimiterRemovalCode = "23171610";
+const luaRagingMadPlantsCode = "95507060";
 const luaPurushaddollAeonCode = "78942513";
 
 export function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
@@ -132,6 +134,43 @@ export function limiterRemovalDelayedDestroyOperation(effect: SerializedDuelEffe
   const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
   return (ctx) => {
     for (const uid of limiterRemovalDelayedDestroyTargetUids(ctx.duel, effect)) {
+      const target = ctx.duel.cards.find((card) => card.uid === uid);
+      if (!target) continue;
+      try {
+        destroyDuelCard(ctx.duel, target.uid, target.controller, duelReason.effect | duelReason.destroy, effect.controller, "graveyard", {
+          eventReasonCardUid: effect.sourceUid,
+          ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+        });
+      } catch {
+        // EDOPro-style delayed operations ignore targets that can no longer be destroyed.
+      }
+    }
+  };
+}
+
+export function isKnownRagingMadPlantsDelayedDestroyEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaRagingMadPlantsCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    (effect.triggerEvent === undefined || effect.triggerEvent === "phaseEnd") &&
+    (effect.triggerCode === undefined || effect.triggerCode === luaPhaseEndEventCode) &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.countLimit === 1 &&
+    effect.reset?.flags === luaPhaseEndResetFlags &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function ragingMadPlantsDelayedDestroyOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  return (ctx) => {
+    const targetUids = ctx.duel.cards
+      .filter((card) => card.controller === effect.controller && card.location === "monsterZone" && card.faceUp && (currentRace(card, ctx.duel) & 0x400) !== 0)
+      .sort((left, right) => left.sequence - right.sequence || left.uid.localeCompare(right.uid))
+      .map((card) => card.uid);
+    for (const uid of targetUids) {
       const target = ctx.duel.cards.find((card) => card.uid === uid);
       if (!target) continue;
       try {
