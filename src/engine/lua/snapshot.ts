@@ -2980,6 +2980,7 @@ function restoredLuaCostCallbacks(effect: SerializedDuelEffect): Pick<DuelEffect
   const summonTypeIs = specialSummonTypeIsCostDescriptor(effect.luaCostDescriptor);
   if (summonTypeNot !== undefined) return { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) !== summonTypeNot };
   if (summonTypeIs !== undefined) return { cost: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === summonTypeIs };
+  if (isKnownGaapRevealFiendAttackBoostEffect(effect)) return { cost: (ctx) => revealHandRaceCost(ctx, luaRaceFiend, 1, 63) };
   if (effect.luaCostDescriptor === "cost:self-to-grave" || isKnownWattcubeIgnitionAttackBoostEffect(effect)) return { cost: (ctx) => luaSelfToGraveCost(ctx, effect) };
   if (effect.luaCostDescriptor === "cost:self-tribute") return { cost: (ctx) => luaSelfTributeCost(ctx, effect) };
   if (isKnownMachineKing3000BcAttackBoostEffect(effect)) return { cost: (ctx) => machineKing3000BcReleaseCost(ctx, effect) };
@@ -2987,6 +2988,22 @@ function restoredLuaCostCallbacks(effect: SerializedDuelEffect): Pick<DuelEffect
   return {};
 }
 
+function isKnownGaapRevealFiendAttackBoostEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:37955049:") && effect.event === "ignition" && effect.sourceUid !== undefined);
+}
+
+function revealHandRaceCost(ctx: DuelEffectContext, race: number, min: number, max: number): boolean {
+  const selectable = ctx.duel.cards.filter((card) =>
+    card.controller === ctx.player &&
+    card.location === "hand" &&
+    !card.faceUp &&
+    (currentRace(card, ctx.duel) & race) !== 0
+  );
+  if (selectable.length < min) return false;
+  if (ctx.checkOnly) return true;
+  ctx.effectLabel = selectable.slice(0, max).length;
+  return true;
+}
 
 function luaSelfToGraveCost(ctx: DuelEffectContext, effect: SerializedDuelEffect): boolean {
   if (!canMoveDuelCardToLocation(ctx.duel, ctx.source.uid, "graveyard", duelReason.cost)) return false;
