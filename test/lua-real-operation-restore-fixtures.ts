@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 369;
+export const operationFixtureCount = 370;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -42,6 +42,7 @@ export const operationKindCounts = {
   targetOpponentHandCountStat: 1,
   crossFieldTargetUpdateStat: 1,
   attackerSetTargetCardStat: 1,
+  twoPositionTargetDefenseAttackStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -344,6 +345,7 @@ export type OperationKind =
   | "targetOpponentHandCountStat"
   | "crossFieldTargetUpdateStat"
   | "attackerSetTargetCardStat"
+  | "twoPositionTargetDefenseAttackStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -994,6 +996,23 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "e1:SetValue(-700)",
         "currentAttack(findCard(restoredDamage.session, attacker.uid), restoredDamage.session.state)).toBe(1700)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-blind-spot-strike-position-stat.test.ts",
+      kind: "twoPositionTargetDefenseAttackStat",
+      required: [
+        "restores two position targets into attacker ATK gain from opponent DEF",
+        "Blind Spot Strike",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(Card.IsPosition,tp,0,LOCATION_MZONE,1,nil,POS_FACEUP_DEFENSE)",
+        "Duel.SelectTarget(tp,Card.IsPosition,tp,LOCATION_MZONE,0,1,1,nil,POS_FACEUP_ATTACK)",
+        "local g=Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc1:GetDefense())",
+        "currentAttack(findCard(restored.session, attacker.uid), restored.session.state)).toBe(2800)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7307,6 +7326,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetOpponentHandCountStat: 0,
       crossFieldTargetUpdateStat: 0,
       attackerSetTargetCardStat: 0,
+      twoPositionTargetDefenseAttackStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
