@@ -277,6 +277,7 @@ export const cardFieldNames = [
   "IsBattlePosition",
   "IsBattleDestroyed",
   "GetBattleTarget",
+  "IsDirectAttacked",
   "IsCanBeBattleTarget",
   "GetBattledGroup",
   "GetBattledGroupCount",

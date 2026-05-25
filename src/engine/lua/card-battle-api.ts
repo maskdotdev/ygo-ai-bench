@@ -24,6 +24,7 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
   lua.lua_pushcfunction(L, (state: unknown) => pushCanChainAttack(state, session));
   lua.lua_setfield(L, -2, to_luastring("CanChainAttack"));
   pushNumberGetter(L, "GetAttackAnnouncedCount", session, (card) => (card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0));
+  pushBooleanGetter(L, "IsDirectAttacked", session, (card) => Boolean(card && isDirectAttacked(session.state, card)));
   pushBooleanGetter(L, "CanGetPiercingRush", session, (card) => Boolean(card && canGetPiercingRush(session.state, card, hostState)));
   pushNumberGetter(L, "GetBattlePosition", session, (card) => positionMaskFromPosition(card?.battlePosition ?? card?.position));
   lua.lua_pushcfunction(L, (state: unknown) => {
@@ -51,6 +52,12 @@ function canLuaCardAttack(state: DuelState, card: DuelCardInstance): boolean {
   const attack = state.currentAttack ?? state.pendingBattle;
   if (state.status === "resolving" && attack?.attackerUid === card.uid && card.location === "monsterZone" && !state.attackCanceledUids.includes(card.uid)) return true;
   return canDuelCardAttack(state, card.uid);
+}
+
+function isDirectAttacked(state: DuelState, card: DuelCardInstance): boolean {
+  const activeAttack = state.currentAttack ?? state.pendingBattle;
+  if (activeAttack?.attackerUid === card.uid && activeAttack.targetUid === undefined) return true;
+  return state.attacksDeclared.includes(card.uid) && !state.battlePairs.some((pair) => pair.attackerUid === card.uid);
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {
