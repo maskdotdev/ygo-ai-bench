@@ -92,6 +92,7 @@ const luaCommonSoulCode = "14772491";
 const luaClashingSoulsCode = "57496978";
 const luaSagaDragonEmperorCode = "66156348";
 const luaMachineKing3000BcCode = "70406920";
+const luaArcanaForceHierophantCode = "3376703";
 const luaArcanaForceMoonCode = "97452817";
 const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
 const luaMegalithUnformedCode = "69003792"; const luaDaiDanceCode = "50696588"; const luaExosisterCarpedivemCode = "30802207";
@@ -432,6 +433,18 @@ function isKnownLuaMaterialSourceOnlyEventEffect(effect: DuelEffectDefinition | 
   );
 }
 
+function isKnownArcanaForceHierophantLimiterEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaArcanaForceHierophantCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.sourceUid !== undefined &&
+    (effect.code === 1100 || effect.code === 1102 || effect.code === 1101 || effect.code === 1026) &&
+    effect.range.length === duelLocations.length &&
+    duelLocations.every((location) => effect.range.includes(location)) &&
+    effect.reset?.flags === (luaResetPhase | luaPhaseEnd)
+  );
+}
+
 function restoreKnownLuaStateEffects(
   session: DuelSession,
   host: LuaScriptHost,
@@ -471,6 +484,11 @@ function restoreKnownLuaStateEffects(
   const dragodiesEndSearchSourceUids = new Set(
     snapshotEffects
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownDragodiesEndSearchEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
+  const hierophantLimiterSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownArcanaForceHierophantLimiterEffect(effect))
       .map((effect) => effect.sourceUid),
   );
   const restoreBlazeCannonRaEffects = snapshotEffects.some((effect) => effect.registryKey?.startsWith(`lua:${luaBlazeCannonCode}:lua-3-1130`) && registryKeys.has(effect.registryKey));
@@ -676,6 +694,33 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-dragodies-end-search-${card.uid}.lua`));
+  }
+  for (const sourceUid of hierophantLimiterSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card) continue;
+    const script = `
+      local s=c${luaArcanaForceHierophantCode}
+      local c=Duel.GetFirstMatchingCard(function(tc) return tc:IsFieldID(${cardFieldId(card)}) end,${card.controller},${cardLocationMask(card.location)},0,nil)
+      if s and c then
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_CONTINUOUS)
+        e1:SetCode(EVENT_SUMMON_SUCCESS)
+        e1:SetOperation(s.limop1)
+        e1:SetReset(RESET_PHASE|PHASE_END)
+        Duel.RegisterEffect(e1,${card.controller})
+        local e2=e1:Clone()
+        e2:SetCode(EVENT_SPSUMMON_SUCCESS)
+        Duel.RegisterEffect(e2,${card.controller})
+        local e3=e1:Clone()
+        e3:SetCode(EVENT_FLIP_SUMMON_SUCCESS)
+        Duel.RegisterEffect(e3,${card.controller})
+        local e4=e1:Clone()
+        e4:SetCode(EVENT_CHAIN_END)
+        e4:SetOperation(s.limop2)
+        Duel.RegisterEffect(e4,${card.controller})
+      end
+    `;
+    results.push(host.loadScript(script, `restore-arcana-force-hierophant-limiter-${card.uid}.lua`));
   }
   return results;
 }
