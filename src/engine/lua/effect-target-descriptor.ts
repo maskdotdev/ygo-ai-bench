@@ -20,6 +20,7 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const cardParam = params?.[1] ?? (params?.length === 1 ? params[0] : undefined);
   if (!cardParam) return undefined;
   const card = escapeRegExp(cardParam);
+  if (new RegExp(`\\breturn\\s+${card}\\s*~=\\s*e\\s*:\\s*GetOwner\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet)) return "target:not-effect-owner";
   const battleTargetType = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*==\\s*e\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*(?:end\\b|$)`));
   const battleTargetTypeValue = battleTargetType?.[1] ? luaNumberExpressionValue(L, index, battleTargetType[1]) : undefined;
   if (battleTargetTypeValue !== undefined) return `target:source-battle-target-type:${battleTargetTypeValue}`;

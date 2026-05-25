@@ -90,7 +90,7 @@ export function isKnownTemporaryCannotAttackEffect(effect: SerializedDuelEffect)
     effect.reset?.flags === luaPhaseEndResetFlags &&
     effect.value === undefined &&
     effect.luaValueDescriptor === undefined &&
-    effect.luaTargetDescriptor === undefined &&
+    (effect.luaTargetDescriptor === undefined || effect.luaTargetDescriptor === "target:not-effect-owner") &&
     !hasPlayerTargetFlag(effect) &&
     targetRangeEquals(effect, luaLocationMonsterZone, 0) &&
     hasDefaultLuaFieldRange(effect)
