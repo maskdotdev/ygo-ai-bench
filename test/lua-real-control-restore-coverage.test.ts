@@ -4,20 +4,114 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const controlFixtureCount = 15;
+// Restore ownership: "test/lua-real-script-evilswarm-bahamut-detach-discard-control.test.ts"
+// Restore ownership: "test/lua-real-script-metaphys-horus-synchro-material-control.test.ts"
+// Restore ownership: "test/lua-real-script-zombie-necronize-control-grave-set.test.ts"
+// Restore ownership: "test/lua-real-script-abduction-banish-control.test.ts"
+// Restore ownership: "test/lua-real-script-altergeist-adminia-cost-control-setcode.test.ts"
+// Restore ownership: "test/lua-real-script-amanokujaki-quick-control-attribute.test.ts"
+// Restore ownership: "test/lua-real-script-amaze-attraction-viking-vortex-attack-control.test.ts"
+// Restore ownership: "test/lua-real-script-armityle-phantom-fury-control-end-summon.test.ts"
+// Restore ownership: "test/lua-real-script-baytal-hecahands-release-control-end-send.test.ts"
+// Restore ownership: "test/lua-real-script-big-eye-detach-control-lock.test.ts"
+// Restore ownership: "test/lua-real-script-brain-jacker-flip-equip-recover.test.ts"
+// Restore ownership: "test/lua-real-script-brainwashing-beam-counter-control.test.ts"
+// Restore ownership: "test/lua-real-script-bystial-aluber-summon-discard-control-revive.test.ts"
+// Restore ownership: "test/lua-real-script-centerfrog-position-control.test.ts"
+// Restore ownership: "test/lua-real-script-comic-hand-toon-control.test.ts"
+// Restore ownership: "test/lua-real-script-crackdown-persistent-control-lock.test.ts"
+// Restore ownership: "test/lua-real-script-creature-seizure-normal-swap.test.ts"
+// Restore ownership: "test/lua-real-script-cyber-angel-natasha-recover-negate-control.test.ts"
+// Restore ownership: "test/lua-real-script-dark-necrofear-procedure-equip.test.ts"
+// Restore ownership: "test/lua-real-script-dd-guide-summon-control-end-banish.test.ts"
+// Restore ownership: "test/lua-real-script-ddd-headhunt-control-disable-setcode.test.ts"
+// Restore ownership: "test/lua-real-script-dummy-golem-flip-opponent-swap.test.ts"
+// Restore ownership: "test/lua-real-script-embrace-tistina-chain-set-control.test.ts"
+// Restore ownership: "test/lua-real-script-enlilgirsu-banished-return-deck-control.test.ts"
+// Restore ownership: "test/lua-real-script-eternal-bond-revive-control-attack-lock.test.ts"
+// Restore ownership: "test/lua-real-script-eulers-circuit-field-control-search.test.ts"
+// Restore ownership: "test/lua-real-script-evil-eye-mesmerism-persistent-control.test.ts"
+// Restore ownership: "test/lua-real-script-evil-twin-present-swap-todeck.test.ts"
+// Restore ownership: "test/lua-real-script-eye-illusion-select-control.test.ts"
+// Restore ownership: "test/lua-real-script-giant-ballgame-activate-summon-swap-race.test.ts"
+// Restore ownership: "test/lua-real-script-gladiator-taming-select-position-control.test.ts"
+// Restore ownership: "test/lua-real-script-gotterdammerung-control-end-banish.test.ts"
+// Restore ownership: "test/lua-real-script-goyo-emperor-battle-revive.test.ts"
+// Restore ownership: "test/lua-real-script-heartfelt-appeal-direct-damage-control.test.ts"
+// Restore ownership: "test/lua-real-script-hecahands-dandalos-control-direct.test.ts"
+// Restore ownership: "test/lua-real-script-hecahands-xeno-extra-summon.test.ts"
+// Restore ownership: "test/lua-real-script-illegal-knight-quick-summon-control-tohand.test.ts"
+// Restore ownership: "test/lua-real-script-intercept-tribute-material-control.test.ts"
+// Restore ownership: "test/lua-real-script-invader-throne-flip-swap-control.test.ts"
+// Restore ownership: "test/lua-real-script-jowls-flip-control-direct.test.ts"
+// Restore ownership: "test/lua-real-script-libromancer-displaced-control-return.test.ts"
+// Restore ownership: "test/lua-real-script-magi-magi-detach-banish-control.test.ts"
+// Restore ownership: "test/lua-real-script-magic-gate-miracles-position-control-protect.test.ts"
+// Restore ownership: "test/lua-real-script-mark-rose-equip-control.test.ts"
+// Restore ownership: "test/lua-real-script-mimighoul-armor-battle-protect-control-summon.test.ts"
+// Restore ownership: "test/lua-real-script-mimighoul-cerberus-flip-control.test.ts"
+// Restore ownership: "test/lua-real-script-mimighoul-fairy-lock-control-summon.test.ts"
+// Restore ownership: "test/lua-real-script-mimighoul-flower-flip-select-summon.test.ts"
+// Restore ownership: "test/lua-real-script-mimighoul-slime-flip-deck-summon-control.test.ts"
+// Restore ownership: "test/lua-real-script-musical-sumo-dice-games-battle-move.test.ts"
+// Restore ownership: "test/lua-real-script-naturia-fruitfly-defense-control.test.ts"
+// Restore ownership: "test/lua-real-script-number-46-dragluon-selecteffect-summon.test.ts"
+// Restore ownership: "test/lua-real-script-oath-companionship-extra-control-special-lock.test.ts"
+// Restore ownership: "test/lua-real-script-old-entity-hastorr-grave-equip-control.test.ts"
+// Restore ownership: "test/lua-real-script-owners-seal-field-control-return.test.ts"
+// Restore ownership: "test/lua-real-script-packet-swap-link-control.test.ts"
+// Restore ownership: "test/lua-real-script-photon-hand-galaxy-control.test.ts"
+// Restore ownership: "test/lua-real-script-possessed-resonance-wynn-control-todeck.test.ts"
+// Restore ownership: "test/lua-real-script-rebellion-battle-control-attack-lock.test.ts"
+// Restore ownership: "test/lua-real-script-release-brainwashing-release-control.test.ts"
+// Restore ownership: "test/lua-real-script-rikka-sheet-release-control-race.test.ts"
+// Restore ownership: "test/lua-real-script-rum-revolution-force-rankup-overlay.test.ts"
+// Restore ownership: "test/lua-real-script-sage-ciela-discard-control-revive-tohand.test.ts"
+// Restore ownership: "test/lua-real-script-seleglare-no-tribute-control.test.ts"
+// Restore ownership: "test/lua-real-script-service-puppet-play-control-grave-summon.test.ts"
+// Restore ownership: "test/lua-real-script-shiens-spy-give-control-return.test.ts"
+// Restore ownership: "test/lua-real-script-spright-double-cross-overlay.test.ts"
+// Restore ownership: "test/lua-real-script-spyral-mission-recapture-activate-control-replace.test.ts"
+// Restore ownership: "test/lua-real-script-subterror-voltelluric-position-summon.test.ts"
+// Restore ownership: "test/lua-real-script-synchro-control-opponent-turn-return.test.ts"
+// Restore ownership: "test/lua-real-script-tragoedia-damage-summon-control-stat.test.ts"
+// Restore ownership: "test/lua-real-script-trick-box-destroyed-control-summon-return.test.ts"
+// Restore ownership: "test/lua-real-script-tuners-scheme-synchro-control-redirect.test.ts"
+// Restore ownership: "test/lua-real-script-two-toads-equip-summon-destroy.test.ts"
+// Restore ownership: "test/lua-real-script-ursarctic-big-dipper-counter-control.test.ts"
+// Restore ownership: "test/lua-real-script-utopic-draco-future-negate-control.test.ts"
+// Restore ownership: "test/lua-real-script-vampire-fascinator-release-control.test.ts"
+// Restore ownership: "test/lua-real-script-vampire-red-baron-swap-revive.test.ts"
+// Restore ownership: "test/lua-real-script-vaylantz-duke-facedown-lock.test.ts"
+// Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
+// Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
+const controlFixtureCount = 36;
 const controlKindCounts = {
+  battleCounterControl: 2,
+  chainControlSummon: 1,
+  chainControlToken: 1,
   cannotChangeControl: 1,
+  confirmDamageGroupControl: 1,
+  detachControlReleaseDestroy: 1,
   discardCostTemporaryControl: 1,
   equipControl: 1,
+  flipDestroyControlSearch: 1,
   flipGetControl: 2,
   flipSetControl: 1,
+  linkedZoneControlRevive: 1,
   ownedControlAttackDrain: 1,
+  phaseEndSelfControl: 5,
+  pzoneDestroyControlDamage: 1,
   releaseCostControl: 1,
   restrictedTemporaryControl: 2,
+  searchDestroyGraveControl: 1,
   selectedPermanentControl: 1,
+  selfDiscardTemporaryControl: 1,
+  selfToGraveAttributeControl: 1,
   summonTriggerTemporaryControl: 1,
+  linkedLpCostControlDelayedDestroy: 1,
   swapControlLock: 1,
-  targetedSwapControl: 1,
+  targetedSwapControl: 4,
   temporaryControl: 1,
 } satisfies Record<ControlKind, number>;
 const controlSemanticVariantCounts = {
@@ -36,19 +130,33 @@ const controlSemanticVariantCounts = {
   snatchStealEquipControl: 1,
   suppressionPlutoAnnounceControl: 1,
   xyzReversalTargetedSwapControl: 1,
+  yummyRedemptionGraveSwapControl: 1,
 } satisfies Record<ControlSemanticVariant, number>;
 
 type ControlKind =
+  | "battleCounterControl"
+  | "chainControlSummon"
+  | "chainControlToken"
   | "cannotChangeControl"
+  | "confirmDamageGroupControl"
+  | "detachControlReleaseDestroy"
   | "discardCostTemporaryControl"
   | "equipControl"
+  | "flipDestroyControlSearch"
   | "flipGetControl"
   | "flipSetControl"
+  | "linkedZoneControlRevive"
   | "ownedControlAttackDrain"
+  | "phaseEndSelfControl"
+  | "pzoneDestroyControlDamage"
   | "releaseCostControl"
   | "restrictedTemporaryControl"
+  | "searchDestroyGraveControl"
   | "selectedPermanentControl"
+  | "selfDiscardTemporaryControl"
+  | "selfToGraveAttributeControl"
   | "summonTriggerTemporaryControl"
+  | "linkedLpCostControlDelayedDestroy"
   | "swapControlLock"
   | "targetedSwapControl"
   | "temporaryControl";
@@ -68,7 +176,8 @@ type ControlSemanticVariant =
   | "rafflesiaFlipGetControl"
   | "snatchStealEquipControl"
   | "suppressionPlutoAnnounceControl"
-  | "xyzReversalTargetedSwapControl";
+  | "xyzReversalTargetedSwapControl"
+  | "yummyRedemptionGraveSwapControl";
 
 describe("Lua real control restore coverage", () => {
   it("requires representative control-change fixtures to prove clean Lua restore and replayed legal actions", () => {
@@ -122,6 +231,255 @@ function realScriptControlFixtureFiles(): Array<{
 }> {
   return ([
     {
+      file: "lua-real-script-borreload-liberator-linked-control-revive.test.ts",
+      kind: "linkedZoneControlRevive",
+      required: [
+        "restores battle-phase linked-zone control and GY destroy-then-self-summon",
+        "Duel.GetControl(g,tp,0,0,zones)",
+        "Duel.SetChainLimit(function(e,ep,tp) return tp==ep end)",
+        "Duel.Destroy(tc,REASON_EFFECT)>0",
+        "Duel.SpecialSummon(c,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "controlChanged"',
+        'eventName: "specialSummoned"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-bot-herder-confirm-damage-control.test.ts",
+      kind: "confirmDamageGroupControl",
+      required: [
+        "restores face-down confirmation into opponent damage and group control transfer",
+        "--Bot Herder",
+        "e1:SetCategory(CATEGORY_DAMAGE+CATEGORY_CONTROL)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return (c:IsOwner(tp) and c:IsFaceup()) or c:IsPosition(POS_FACEDOWN_DEFENSE)",
+        "Duel.SelectTarget(tp,s.efftgfilter,tp,0,LOCATION_MZONE,1,1,nil,tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,200)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_CONTROL,nil,1,1-tp,LOCATION_MZONE)",
+        "if tc:IsFacedown() then Duel.ConfirmCards(tp,tc) end",
+        "Duel.Damage(1-tp,200,REASON_EFFECT)",
+        "Duel.GetControl(g,tp)",
+        "confirmed 0:",
+        'eventName: "confirmed"',
+        'eventName: "damageDealt"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-chaotic-elements-search-destroy-control.test.ts",
+      kind: "searchDestroyGraveControl",
+      required: [
+        "restores search plus optional destruction and grave SelfBanish temporary control",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH+CATEGORY_DESTROY)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "e2:SetCategory(CATEGORY_CONTROL)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'eventName: "banished"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-jinzo-layered-detach-control-release-destroy.test.ts",
+      kind: "detachControlReleaseDestroy",
+      required: [
+        "restores Xyz detach control locks and Trap-gated release destruction",
+        "--Jinzo - Layered",
+        "Xyz.AddProcedure(c,nil,6,2)",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetCost(Cost.DetachFromSelf(1))",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsControlerCanBeChanged),tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "e1:SetCode(EFFECT_CANNOT_TRIGGER)",
+        "e2:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e2:SetCategory(CATEGORY_RELEASE+CATEGORY_DESTROY)",
+        "Duel.Release(rg,REASON_EFFECT)",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        'eventName: "detachedMaterial"',
+        'eventName: "controlChanged"',
+        'eventName: "released"',
+        'eventName: "destroyed"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-maiden-in-love-battle-counter-control.test.ts",
+      kind: "battleCounterControl",
+      required: [
+        "restores Damage Step End SelectEffect branches into counter placement and control take",
+        "--Maiden in Love",
+        "e1:SetCode(EFFECT_MUST_ATTACK)",
+        "e2:SetCode(EFFECT_MUST_ATTACK_MONSTER)",
+        "e3:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e4:SetCode(EVENT_DAMAGE_STEP_END)",
+        "return c:GetBattleTarget() and c:IsStatus(STATUS_OPPO_BATTLE)",
+        "Duel.SelectEffect(tp,",
+        "Duel.IsExistingMatchingCard(Card.IsCanAddCounter,tp,0,LOCATION_MZONE,1,nil,COUNTER_MAIDEN,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_COUNTER,nil,1,tp,COUNTER_MAIDEN)",
+        "Duel.GetMatchingGroup(s.controlfilter,tp,0,LOCATION_MZONE,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g,1,tp,0)",
+        "Duel.SelectMatchingCard(tp,Card.IsCanAddCounter,tp,0,LOCATION_MZONE,1,1,nil,COUNTER_MAIDEN,1)",
+        "sc:AddCounter(COUNTER_MAIDEN,1)",
+        "Duel.SelectMatchingCard(tp,s.controlfilter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(sc,tp)",
+        'eventName: "counterAdded"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-predaplant-pterapenthes-battle-counter-control.test.ts",
+      kind: "battleCounterControl",
+      required: [
+        "restores battle-damage target counter into level change and temporary control",
+        "--Predaplant Pterapenthes",
+        "e1:SetCode(EVENT_BATTLE_DAMAGE)",
+        "return ep~=tp",
+        "Duel.SelectTarget(tp,Card.IsCanAddCounter,tp,0,LOCATION_MZONE,1,1,nil,COUNTER_PREDATOR,1)",
+        "local tc=Duel.GetFirstTarget()",
+        "tc:AddCounter(COUNTER_PREDATOR,1)",
+        "e1:SetCode(EFFECT_CHANGE_LEVEL)",
+        "return e:GetHandler():GetCounter(COUNTER_PREDATOR)>0",
+        "return c:IsFaceup() and c:IsLevelBelow(mc:GetLevel()) and c:IsControlerCanBeChanged()",
+        "Duel.SelectTarget(tp,s.ctfilter2,tp,0,LOCATION_MZONE,1,1,nil,c)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'eventName: "battleDamageDealt"',
+        'eventName: "counterAdded"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-mementotlan-mace-control-search.test.ts",
+      kind: "selfDiscardTemporaryControl",
+      required: [
+        "restores opponent-turn SelfDiscard control and Memento destroy-to-search ignition",
+        "return Duel.IsMainPhase() and Duel.IsTurnPlayer(1-tp)",
+        "e1:SetCost(Cost.SelfDiscard)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "e2:SetCategory(CATEGORY_DESTROY+CATEGORY_TOHAND+CATEGORY_SEARCH)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-mimighoul-dragon-flip-summon-search.test.ts",
+      kind: "flipDestroyControlSearch",
+      required: [
+        "restores face-down opponent summon, Main Phase FLIP destroy-control, and summon search",
+        "e1:SetCategory(CATEGORY_DESTROY+CATEGORY_CONTROL)",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_FLIP+EFFECT_TYPE_TRIGGER_F)",
+        "Duel.GetControl(c,1-tp)",
+        "e2:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_POSITION)",
+        'eventName: "controlChanged"',
+        'eventName: "sentToHandConfirmed"',
+        "previousController: 0",
+      ],
+    },
+    {
+      file: "lua-real-script-mushroom-man-2-standby-end-control.test.ts",
+      kind: "phaseEndSelfControl",
+      required: [
+        "restores turn-player Standby damage and LP-cost End Phase control transfer",
+        "--Mushroom Man #2",
+        "e2:SetCategory(CATEGORY_CONTROL)",
+        "e2:SetCode(EVENT_PHASE+PHASE_END)",
+        "e2:SetCost(Cost.PayLP(500))",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,e:GetHandler(),1,0,0)",
+        "Duel.GetControl(c,1-tp)",
+        'eventName: "phaseEnd"',
+        'eventName: "lifePointCostPaid"',
+        'eventName: "controlChanged"',
+        "previousController: 0",
+      ],
+    },
+    {
+      file: "lua-real-script-putrid-pudding-body-buddies-pzone-control-damage.test.ts",
+      kind: "pzoneDestroyControlDamage",
+      required: [
+        "restores release/material locks plus End Phase PZone destroy-control and Standby damage",
+        "--Putrid Pudding Body Buddies",
+        "e1:SetCode(EFFECT_UNRELEASABLE_SUM)",
+        "e2:SetCode(EFFECT_UNRELEASABLE_NONSUM)",
+        "e3:SetCode(EFFECT_CANNOT_BE_FUSION_MATERIAL)",
+        "e4:SetCode(EFFECT_CANNOT_BE_SYNCHRO_MATERIAL)",
+        "e5:SetCode(EFFECT_CANNOT_BE_XYZ_MATERIAL)",
+        "e6:SetCategory(CATEGORY_DESTROY+CATEGORY_CONTROL)",
+        "e6:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.SelectTarget(tp,nil,tp,LOCATION_PZONE,0,1,1,nil)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "Duel.GetControl(c,1-tp)",
+        "e7:SetCategory(CATEGORY_DAMAGE)",
+        "e7:SetCode(EVENT_PHASE|PHASE_STANDBY)",
+        "Duel.Damage(tp,300,REASON_EFFECT)",
+        'eventName: "phaseEnd"',
+        'eventName: "becameTarget"',
+        'eventName: "destroyed"',
+        'eventName: "controlChanged"',
+        'eventName: "damageDealt"',
+        "previousController: 0",
+      ],
+    },
+    {
+      file: "lua-real-script-rb-lambda-blade-send-control-delayed-destroy.test.ts",
+      kind: "linkedLpCostControlDelayedDestroy",
+      required: [
+        "restores summon send-to-GY trigger and LP-cost linked control with delayed End Phase destroy",
+        "e1a:SetCategory(CATEGORY_TOGRAVE)",
+        "Duel.SendtoGrave(g,REASON_EFFECT)",
+        "e2:SetCost(Cost.PayLP(1400))",
+        "Duel.GetMZoneCount(tp,c,tp,LOCATION_REASON_CONTROL)>0",
+        "Duel.Destroy(c,REASON_EFFECT)>0",
+        "Duel.GetControl(tc,tp)",
+        "aux.DelayedOperation(tc,PHASE_END,id,e,tp,function(ag) Duel.Destroy(ag,REASON_EFFECT) end,nil,0,0,aux.Stringid(id,2))",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "controlChanged"',
+        "effect.code === 0x1200",
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-reptilianne-recoil-destroy-summon-chain-token.test.ts",
+      kind: "chainControlToken",
+      required: [
+        "restores field destroy-summon and opponent monster-chain control plus token summon",
+        "e3:SetCode(EVENT_CHAINING)",
+        "return rp==1-tp and re:IsMonsterEffect()",
+        "Duel.GetControl(tc,tp)",
+        "Duel.BreakEffect()",
+        "Duel.SpecialSummon(token,0,tp,1-tp,false,false,POS_FACEUP)",
+        'eventName: "controlChanged"',
+        'eventName: "specialSummoned"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-ancient-warriors-deception-summon-attribute-control.test.ts",
+      kind: "selfToGraveAttributeControl",
+      required: [
+        "restores SZone Ancient Warriors summon-burn and self-to-Grave attribute-control branch",
+        "--Ancient Warriors Saga - Deception and Betrayal",
+        "e2:SetCategory(CATEGORY_SPECIAL_SUMMON+CATEGORY_DAMAGE)",
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.Damage(tp,tc:GetLevel()*100,REASON_EFFECT)",
+        "e3:SetCost(Cost.SelfToGrave)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsSetCard,SET_ANCIENT_WARRIORS),tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "local att=tc:AnnounceAnotherAttribute(tp)",
+        "e1:SetCode(EFFECT_CHANGE_ATTRIBUTE)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "Duel.GetControl(tc,tp)",
+        'api: "SelectYesNo"',
+        'eventName: "specialSummoned"',
+        'eventName: "damageDealt"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-ashened-eternity-owned-control-atk-drain.test.ts",
       kind: "ownedControlAttackDrain",
       required: [
@@ -134,6 +492,21 @@ function realScriptControlFixtureFiles(): Array<{
         "api: \"SelectYesNo\"",
         "previousController: 1",
         "eventName: \"controlChanged\"",
+      ],
+    },
+    {
+      file: "lua-real-script-tellusion-magna-warrior-chain-control-summon.test.ts",
+      kind: "chainControlSummon",
+      required: [
+        "restores procedure metadata, opponent-chain EARTH control, and opponent-turn SelfTribute banished Sigma summon",
+        "e1:SetCode(EVENT_CHAINING)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_CONTROL,tc,1,tp,0)",
+        "Duel.GetControl(tc,tp)",
+        "e2:SetCost(Cost.SelfTribute)",
+        "Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)",
+        'eventName: "controlChanged"',
+        'eventName: "specialSummoned"',
+        "previousController: 1",
       ],
     },
     {
@@ -252,6 +625,86 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-comic-relief-swap-control-destroy.test.ts",
+      kind: "targetedSwapControl",
+      required: [
+        "restores Pendulum-zone SwapControl into self-destroy and control-changed script destruction prompt",
+        "Duel.SwapControl(a,b)",
+        "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
+        "Duel.GetControl(c,1-tp)",
+        "previousController: 0",
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-mystic-box-destroy-control-operation-info.test.ts",
+      kind: "targetedSwapControl",
+      required: [
+        "restores separate destroy/control targets through GetOperationInfo into BreakEffect control transfer",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g1,1,0,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g2,1,0,0)",
+        "Duel.Destroy(dc,REASON_EFFECT)>0",
+        "Duel.GetControl(cc,1-tp)",
+        "previousController: 0",
+      ],
+    },
+    {
+      file: "lua-real-script-yummy-redemption-grave-swap-control.test.ts",
+      kind: "targetedSwapControl",
+      required: [
+        "restores grave SelfBanish SelectUnselectGroup targets into SwapControl and field ATK reduction",
+        "aux.SelectUnselectGroup(g1,e,tp,2,2,aux.dpcheck(Card.GetControler),1,tp,HINTMSG_CONTROL)",
+        "Duel.SwapControl(tg:GetFirst(),tg:GetNext())",
+        'eventName: "banished"',
+        'eventName: "controlChanged"',
+        "previousController: 0",
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-full-armor-master-counter-control-end-destroy.test.ts",
+      kind: "phaseEndSelfControl",
+      required: [
+        "restores immunity, chain watchers, Wedge Counter control, and turn-player End Phase destruction",
+        "Duel.GetControl(tc,tp)",
+        "e5:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-lu-feng-quick-destroy-end-control.test.ts",
+      kind: "phaseEndSelfControl",
+      required: [
+        "restores custom chain activity cost into highest-ATK destroy and End Phase opponent control",
+        "Duel.Destroy(dg,REASON_EFFECT)",
+        "e4:SetCode(EVENT_PHASE+PHASE_END)",
+        "Duel.GetControl(c,1-tp)",
+        "previousController: 0",
+      ],
+    },
+    {
+      file: "lua-real-script-mass-hypnosis-counter-control-end-destroy.test.ts",
+      kind: "phaseEndSelfControl",
+      required: [
+        "restores A-counter targeting into persistent control and End Phase self-destroy",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,ft,nil)",
+        "c:RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,0,1)",
+        "Duel.Destroy(e:GetHandler(),REASON_EFFECT)",
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-penguin-torpedo-direct-control-destroy.test.ts",
+      kind: "phaseEndSelfControl",
+      required: [
+        "restores direct battle-damage control into temporary negation, cannot attack, and self-destroy",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "Duel.Destroy(c,REASON_EFFECT)",
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-mataza-control-extra-attack.test.ts",
       kind: "cannotChangeControl",
       required: [
@@ -298,16 +751,29 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       return counts;
     },
     {
+      battleCounterControl: 0,
+      chainControlSummon: 0,
+      chainControlToken: 0,
       cannotChangeControl: 0,
+      confirmDamageGroupControl: 0,
+      detachControlReleaseDestroy: 0,
       discardCostTemporaryControl: 0,
       equipControl: 0,
+      flipDestroyControlSearch: 0,
       flipGetControl: 0,
       flipSetControl: 0,
+      linkedZoneControlRevive: 0,
       ownedControlAttackDrain: 0,
+      phaseEndSelfControl: 0,
+      pzoneDestroyControlDamage: 0,
       releaseCostControl: 0,
       restrictedTemporaryControl: 0,
+      searchDestroyGraveControl: 0,
       selectedPermanentControl: 0,
+      selfDiscardTemporaryControl: 0,
+      selfToGraveAttributeControl: 0,
       summonTriggerTemporaryControl: 0,
+      linkedLpCostControlDelayedDestroy: 0,
       swapControlLock: 0,
       targetedSwapControl: 0,
       temporaryControl: 0,
@@ -489,6 +955,18 @@ function realScriptControlSemanticVariants(): Array<{
         "previousController: 1",
       ],
     },
+    {
+      file: "lua-real-script-yummy-redemption-grave-swap-control.test.ts",
+      kind: "yummyRedemptionGraveSwapControl",
+      required: [
+        'const redemptionCode = "65853758"',
+        "Cost.SelfBanish",
+        "Duel.SetTargetCard(tg)",
+        "Duel.GetTargetCards(e)",
+        "Duel.SwapControl(tg:GetFirst(),tg:GetNext())",
+        'eventName: "controlChanged"',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: ControlSemanticVariant;
@@ -518,6 +996,7 @@ function countControlSemanticVariants(fixtures: Array<{ kind: ControlSemanticVar
       snatchStealEquipControl: 0,
       suppressionPlutoAnnounceControl: 0,
       xyzReversalTargetedSwapControl: 0,
+      yummyRedemptionGraveSwapControl: 0,
     },
   );
 }

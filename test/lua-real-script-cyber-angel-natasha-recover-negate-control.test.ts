@@ -66,19 +66,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     applyRestoredActionAndAssert(restoredRecover, recover!);
     resolveRestoredChain(restoredRecover);
     expect(restoredRecover.session.state.players[0].lifePoints).toBe(8500);
-    expect(restoredRecover.session.state.eventHistory).toContainEqual(expect.objectContaining({
+    expect(restoredRecover.session.state.eventHistory.map((event) => ({
+      eventName: event.eventName,
+      eventCardUid: event.eventCardUid,
+      relatedEffectId: event.relatedEffectId,
+    }))).toContainEqual({
       eventName: "becameTarget",
       eventCardUid: recoverNatasha.uid,
       relatedEffectId: 2,
-    }));
-    expect(restoredRecover.session.state.eventHistory).toContainEqual(expect.objectContaining({
+    });
+    expect(restoredRecover.session.state.eventHistory.map((event) => ({
+      eventName: event.eventName,
+      eventPlayer: event.eventPlayer,
+      eventValue: event.eventValue,
+      eventReason: event.eventReason,
+      eventReasonCardUid: event.eventReasonCardUid,
+      eventReasonEffectId: event.eventReasonEffectId,
+    }))).toContainEqual({
       eventName: "recoveredLifePoints",
       eventPlayer: 0,
       eventValue: 500,
       eventReason: duelReason.effect,
       eventReasonCardUid: recoverNatasha.uid,
       eventReasonEffectId: 2,
-    }));
+    });
 
     const restoredNegate = createRestoredBattleTargetWindow({ reader, workspace });
     const negateNatasha = requireCard(restoredNegate.session, natashaCode);
@@ -99,13 +110,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
     applyRestoredActionAndAssert(restoredTrigger, negate!);
     resolveRestoredChain(restoredTrigger);
     expect(restoredTrigger.session.state.pendingBattle).toBeUndefined();
-    expect(restoredTrigger.session.state.eventHistory).toContainEqual(expect.objectContaining({
+    expect(restoredTrigger.session.state.eventHistory.map((event) => ({
+      eventName: event.eventName,
+      eventCardUid: event.eventCardUid,
+      eventReason: event.eventReason,
+      eventReasonCardUid: event.eventReasonCardUid,
+      eventReasonEffectId: event.eventReasonEffectId,
+    }))).toContainEqual({
       eventName: "attackDisabled",
       eventCardUid: attacker.uid,
       eventReason: duelReason.effect,
       eventReasonCardUid: negateNatasha.uid,
       eventReasonEffectId: 3,
-    }));
+    });
 
     const restoredControl = createRestoredGraveControlWindow({ reader, workspace });
     const graveNatasha = requireCard(restoredControl.session, natashaCode);
@@ -144,13 +161,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
       reasonCardUid: graveNatasha.uid,
       reasonEffectId: 4,
     });
-    expect(restoredControl.session.state.eventHistory).toContainEqual(expect.objectContaining({
+    expect(restoredControl.session.state.eventHistory.map((event) => ({
+      eventName: event.eventName,
+      eventCardUid: event.eventCardUid,
+      eventReason: event.eventReason,
+      eventReasonCardUid: event.eventReasonCardUid,
+      eventReasonEffectId: event.eventReasonEffectId,
+    }))).toContainEqual({
       eventName: "controlChanged",
       eventCardUid: controlTarget.uid,
       eventReason: duelReason.effect,
       eventReasonCardUid: graveNatasha.uid,
       eventReasonEffectId: 4,
-    }));
+    });
   });
 });
 

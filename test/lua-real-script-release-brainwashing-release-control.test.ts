@@ -74,7 +74,15 @@ describe.skipIf(!hasUpstreamScripts || !hasBrainwashingScript)("Lua real script 
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
     expect(restoredTrigger.session.state.chain).toHaveLength(1);
-    expect(restoredTrigger.session.state.chain[0]).toMatchObject({
+    expect(restoredTrigger.session.state.chain.map((link) => ({
+      activationLocation: link.activationLocation,
+      effectId: link.effectId,
+      eventName: link.eventName,
+      operationInfos: link.operationInfos,
+      player: link.player,
+      sourceUid: link.sourceUid,
+      targetUids: link.targetUids,
+    }))).toEqual([{
       activationLocation: "spellTrapZone",
       effectId: "lua-1-1017",
       eventName: "released",
@@ -82,7 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBrainwashingScript)("Lua real script 
       player: 0,
       sourceUid: brainwashing.uid,
       targetUids: [ownedTarget.uid],
-    });
+    }]);
     expect(restoredTrigger.session.state.chain[0]!.possibleOperationInfos).toEqual([
       { category: categoryToHand, targetUids: [ownedTarget.uid], count: 1, player: 0, parameter: 0 },
     ]);

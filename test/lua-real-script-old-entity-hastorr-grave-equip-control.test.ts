@@ -166,7 +166,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ol
       previousEquippedToUid: target.uid,
     });
     expect(restoredEquipped.session.state.pendingTriggers).toHaveLength(1);
-    expect(restoredEquipped.session.state.pendingTriggers[0]).toMatchObject({
+    expect(restoredEquipped.session.state.pendingTriggers.map((trigger) => ({
+      effectId: trigger.effectId,
+      eventCardUid: trigger.eventCardUid,
+      eventCode: trigger.eventCode,
+      eventCurrentState: trigger.eventCurrentState,
+      eventName: trigger.eventName,
+      eventPlayer: trigger.eventPlayer,
+      eventPreviousState: trigger.eventPreviousState,
+      eventReason: trigger.eventReason,
+      eventReasonPlayer: trigger.eventReasonPlayer,
+      eventReasonCardUid: trigger.eventReasonCardUid,
+      eventReasonEffectId: trigger.eventReasonEffectId,
+      eventTriggerTiming: trigger.eventTriggerTiming,
+      player: trigger.player,
+      sourceUid: trigger.sourceUid,
+      triggerBucket: trigger.triggerBucket,
+    }))).toEqual([{
         effectId: "lua-8-1015",
         eventCardUid: hastorr.uid,
         eventCode: eventLeaveField,
@@ -182,7 +198,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ol
         player: 0,
         sourceUid: hastorr.uid,
         triggerBucket: "turnMandatory",
-    });
+    }]);
 
     const restoredLeave = restoreDuelWithLuaScripts(serializeDuel(restoredEquipped.session), source, reader);
     expectCleanRestore(restoredLeave);
@@ -190,13 +206,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ol
     const leaveTrigger = getLuaRestoreLegalActions(restoredLeave, 0).find((action) => action.type === "activateTrigger" && action.uid === hastorr.uid);
     expect(leaveTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredLeave, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredLeave, leaveTrigger!);
-    expect(restoredLeave.session.state.chain[0]).toMatchObject({
+    expect(restoredLeave.session.state.chain.map((link) => ({
+      effectId: link.effectId,
+      eventName: link.eventName,
+      eventCode: link.eventCode,
+      operationInfos: link.operationInfos,
+      targetUids: link.targetUids,
+    }))).toEqual([{
       effectId: "lua-8-1015",
       eventName: "leftField",
       eventCode: eventLeaveField,
       operationInfos: [{ category: categoryControl, targetUids: [target.uid], count: 1, player: 0, parameter: 0 }],
       targetUids: [target.uid],
-    });
+    }]);
     resolveRestoredChain(restoredLeave);
     expect(restoredLeave.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({
       controller: 0,

@@ -70,11 +70,15 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Mimighoul Cerberus flip co
       reasonCardUid: handCerberus.uid,
       reasonEffectId: 2,
     });
-    expect(restoredSelfSummon.session.state.eventHistory).toContainEqual(expect.objectContaining({
+    expect(restoredSelfSummon.session.state.eventHistory.map((event) => ({
+      eventName: event.eventName,
+      eventCardUid: event.eventCardUid,
+      eventPlayer: event.eventPlayer,
+    }))).toContainEqual({
       eventName: "confirmed",
       eventCardUid: handCerberus.uid,
       eventPlayer: 0,
-    }));
+    });
 
     const restoredFlipOpen = createRestoredFlipWindow({ reader, workspace });
     const fieldCerberus = requireCard(restoredFlipOpen.session, cerberusCode);
@@ -117,10 +121,10 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Mimighoul Cerberus flip co
       eventReasonPlayer: event.eventReasonPlayer,
     }));
     for (const card of banishedTopCards) {
-      expect(movementEvents).toContainEqual(expect.objectContaining({ eventName: "banished", eventCardUid: card.uid, eventReason: duelReason.effect, eventReasonCardUid: fieldCerberus.uid, eventReasonEffectId: 1, eventReasonPlayer: 0 }));
+      expect(movementEvents).toContainEqual({ eventName: "banished", eventCardUid: card.uid, eventReason: duelReason.effect, eventReasonCardUid: fieldCerberus.uid, eventReasonEffectId: 1, eventReasonPlayer: 0 });
     }
-    expect(movementEvents).toContainEqual(expect.objectContaining({ eventName: "specialSummoned", eventReason: duelReason.summon | duelReason.specialSummon, eventReasonCardUid: fieldCerberus.uid, eventReasonEffectId: 1, eventReasonPlayer: 0 }));
-    expect(movementEvents).toContainEqual(expect.objectContaining({ eventName: "controlChanged", eventCardUid: fieldCerberus.uid, eventReason: duelReason.effect, eventReasonCardUid: fieldCerberus.uid, eventReasonEffectId: 1, eventReasonPlayer: 0 }));
+    expect(movementEvents).toContainEqual({ eventName: "specialSummoned", eventCardUid: expect.any(String), eventReason: duelReason.summon | duelReason.specialSummon, eventReasonCardUid: fieldCerberus.uid, eventReasonEffectId: 1, eventReasonPlayer: 0 });
+    expect(movementEvents).toContainEqual({ eventName: "controlChanged", eventCardUid: fieldCerberus.uid, eventReason: duelReason.effect, eventReasonCardUid: fieldCerberus.uid, eventReasonEffectId: 1, eventReasonPlayer: 0 });
   });
 });
 

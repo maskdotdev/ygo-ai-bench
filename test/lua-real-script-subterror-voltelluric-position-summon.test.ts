@@ -101,8 +101,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
       reasonCardUid: setter.uid,
       reasonEffectId: 4,
     });
-    expect(restoredChain.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
+    expect(restoredChain.session.state.pendingTriggers.map((trigger) => ({
+      effectId: trigger.effectId,
+      eventCardUid: trigger.eventCardUid,
+      eventName: trigger.eventName,
+      eventReason: trigger.eventReason,
+      eventReasonCardUid: trigger.eventReasonCardUid,
+      eventReasonEffectId: trigger.eventReasonEffectId,
+      eventReasonPlayer: trigger.eventReasonPlayer,
+      player: trigger.player,
+      sourceUid: trigger.sourceUid,
+    }))).toEqual([
+      {
         effectId: "lua-2-1016",
         eventCardUid: setter.uid,
         eventName: "positionChanged",
@@ -112,7 +122,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
         eventReasonPlayer: 0,
         player: 0,
         sourceUid: voltelluricCard.uid,
-      }),
+      },
     ]);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);

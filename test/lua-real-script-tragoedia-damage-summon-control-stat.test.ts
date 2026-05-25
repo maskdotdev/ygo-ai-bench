@@ -99,8 +99,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     applyLuaRestoreAndAssert(restoredBattle, attack!);
     passBattleUntilTrigger(restoredBattle);
     expect(restoredBattle.session.state.players[0]!.lifePoints).toBe(7000);
-    expect(restoredBattle.session.state.pendingTriggers).toEqual([
-      expect.objectContaining({
+    expect(restoredBattle.session.state.pendingTriggers.map((trigger) => ({
+      effectId: trigger.effectId,
+      eventCardUid: trigger.eventCardUid,
+      eventName: trigger.eventName,
+      eventPlayer: trigger.eventPlayer,
+      eventReason: trigger.eventReason,
+      eventReasonCardUid: trigger.eventReasonCardUid,
+      eventReasonPlayer: trigger.eventReasonPlayer,
+      eventValue: trigger.eventValue,
+      player: trigger.player,
+      sourceUid: trigger.sourceUid,
+    }))).toEqual([
+      {
         effectId: "lua-1-1143",
         eventCardUid: attacker.uid,
         eventName: "battleDamageDealt",
@@ -111,7 +122,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
         eventValue: 1000,
         player: 0,
         sourceUid: tragedy.uid,
-      }),
+      },
     ]);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), source, reader);

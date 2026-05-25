@@ -1,17 +1,19 @@
 {
-  "test/lua-real-operation-restore-fixtures.ts": 6926,
-  "test/lua-real-stat-restore-coverage.test.ts": 17853,
-  "src/engine/lua/snapshot.ts": 2595,
-  "test/lua-real-battle-restore-fixtures.ts": 1547,
-  "src/engine/lua/host-effect-api.ts": 1221,
+  "test/lua-real-operation-restore-fixtures.ts": 7022,
+  "test/lua-real-stat-restore-coverage.test.ts": 20196,
+  "src/engine/lua/snapshot.ts": 3842,
+  "test/lua-real-battle-restore-fixtures.ts": 1558,
+  "src/engine/lua/host-effect-api.ts": 1276,
+  "test/lua-real-coin-restore-coverage.test.ts": 1500,
+  "test/lua-real-recent-stat-restore-coverage.test.ts": 1201,
   "test/lua-real-summon-trigger-operation-restore-coverage.test.ts": 1347,
   "test/lua-real-ritual-fusion-helper-restore-coverage.test.ts": 1131,
   "test/lua-real-battle-timing-restore-coverage.test.ts": 1280,
-  "test/lua-real-summon-restore-fixtures.ts": 1064,
-  "test/lua-real-summon-procedure-restore-coverage.test.ts": 1078,
+  "test/lua-real-summon-restore-fixtures.ts": 1065,
+  "test/lua-real-summon-procedure-restore-coverage.test.ts": 1256,
   "src/engine/duel/summon.ts": 1026,
   "src/engine/lua/card-procedure-source-api.ts": 1017,
   "src/engine/duel/core.ts": 1020,
-  "src/engine/lua/duel-api/summon.ts": 1010,
-  "src/engine/lua/duel-api/move.ts": 1010
+  "src/engine/lua/duel-api/summon.ts": 1014,
+  "src/engine/lua/duel-api/move.ts": 1011
 }
