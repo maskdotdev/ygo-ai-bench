@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 366;
+export const operationFixtureCount = 367;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -39,6 +39,7 @@ export const operationKindCounts = {
   twoTargetOpponentBaseAttackFinal: 1,
   targetAttackNormalizeGroupFinal: 1,
   targetDefensePositionFinalDefense: 1,
+  targetOpponentHandCountStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -338,6 +339,7 @@ export type OperationKind =
   | "twoTargetOpponentBaseAttackFinal"
   | "targetAttackNormalizeGroupFinal"
   | "targetDefensePositionFinalDefense"
+  | "targetOpponentHandCountStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -935,6 +937,24 @@ export function operationFixtureFiles(): Array<{
         "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
         "e1:SetValue(def*2)",
         "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(3600)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-energy-drain-hand-count-stat.test.ts",
+      kind: "targetOpponentHandCountStat",
+      required: [
+        "restores own face-up target ATK/DEF gain from opponent hand count",
+        "Energy Drain",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "local val=Duel.GetFieldGroupCount(1-tp,LOCATION_HAND,0)*200",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1800)",
+        "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(1600)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7245,6 +7265,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       twoTargetOpponentBaseAttackFinal: 0,
       targetAttackNormalizeGroupFinal: 0,
       targetDefensePositionFinalDefense: 0,
+      targetOpponentHandCountStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
