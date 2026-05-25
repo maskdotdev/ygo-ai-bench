@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 397;
+export const operationFixtureCount = 398;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -33,6 +33,7 @@ export const operationKindCounts = {
   preDamageLpCostDifferencePlusAttackStat: 1,
   preDamageLinkedLevelStat: 1,
   pzoneExtraCountTargetAttackStat: 1,
+  deskbotGroupAttackOath: 1,
   normalSummonedGroupDisableImmunityStat: 1,
   damageStepTargetAllyAttackStat: 1,
   targetBaseAttackBattleEffectProtectFlag: 1,
@@ -363,6 +364,7 @@ export type OperationKind =
   | "preDamageLpCostDifferencePlusAttackStat"
   | "preDamageLinkedLevelStat"
   | "pzoneExtraCountTargetAttackStat"
+  | "deskbotGroupAttackOath"
   | "normalSummonedGroupDisableImmunityStat"
   | "damageStepTargetAllyAttackStat"
   | "targetBaseAttackBattleEffectProtectFlag"
@@ -862,6 +864,27 @@ export function operationFixtureFiles(): Array<{
         "Duel.CheckPendulumZones(tp)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1300)",
         'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-deskbot-009-group-attack-oath.test.ts",
+      kind: "deskbotGroupAttackOath",
+      required: [
+        "restores Main Phase Deskbot ATK sum and only-self attack oath",
+        "Deskbot 009",
+        "e1:SetCondition(function() return Duel.IsPhase(PHASE_MAIN1) end)",
+        "Duel.IsExistingMatchingCard(s.atkfilter,tp,LOCATION_MZONE,0,1,nil)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e1:SetProperty(EFFECT_FLAG_OATH)",
+        "Duel.RegisterEffect(e1,tp)",
+        "local atk=g:GetSum(Card.GetAttack)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END|RESET_OPPO_TURN)",
+        "e2:SetCode(EFFECT_CANNOT_ACTIVATE)",
+        "e3:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,c,96)",
+        "currentAttack(findCard(restored.session, deskbot.uid), restored.session.state)).toBe(2000)",
+        "effectCannotAttack",
       ],
     },
     {
