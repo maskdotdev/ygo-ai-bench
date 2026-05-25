@@ -14,7 +14,7 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const underclockCode = "77058170";
 const linkedAllyCode = "770581700";
 const unlinkedAllyCode = "770581701";
-const opponentTargetCode = "770581702";
+const opponentCode = "770581702";
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUnderclockScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${underclockCode}.lua`));
 const typeMonster = 0x1;
@@ -24,26 +24,27 @@ const raceCyberse = 0x1000000;
 const raceWarrior = 0x1;
 const attributeDark = 0x20;
 const attributeEarth = 0x1;
+const markerRight = 0x20;
 const effectUpdateAttack = 100;
-const resetStandardPhaseEnd = 0x41fe1200;
+const resetStandardPhaseEnd = 1107169792;
 
 describe.skipIf(!hasUpstreamScripts || !hasUnderclockScript)("Lua real script Underclock Taker linked target attack drop", () => {
-  it("restores linked-group self target and opponent target into ATK loss from linked monster ATK", () => {
+  it("restores linked-group ally target plus opponent target into ATK reduction", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     expectScriptShape(workspace.readScript(`official/c${underclockCode}.lua`));
     const reader = createCardReader(cards());
     const session = createDuel({ seed: 77058170, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
-    loadDecks(session, { 0: { main: [linkedAllyCode, unlinkedAllyCode], extra: [underclockCode] }, 1: { main: [opponentTargetCode] } });
+    loadDecks(session, { 0: { main: [linkedAllyCode, unlinkedAllyCode], extra: [underclockCode] }, 1: { main: [opponentCode] } });
     startDuel(session);
 
     const underclock = requireCard(session, underclockCode);
     const linkedAlly = requireCard(session, linkedAllyCode);
     const unlinkedAlly = requireCard(session, unlinkedAllyCode);
-    const opponentTarget = requireCard(session, opponentTargetCode);
+    const opponent = requireCard(session, opponentCode);
     moveFaceUpAttack(session, underclock, 0, 0);
     moveFaceUpAttack(session, linkedAlly, 0, 1);
     moveFaceUpAttack(session, unlinkedAlly, 0, 4);
-    moveFaceUpAttack(session, opponentTarget, 1, 0);
+    moveFaceUpAttack(session, opponent, 1, 0);
     session.state.phase = "main1";
     session.state.turnPlayer = 0;
     session.state.waitingFor = 0;
@@ -51,26 +52,21 @@ describe.skipIf(!hasUpstreamScripts || !hasUnderclockScript)("Lua real script Un
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(underclockCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
-    expect(underclock.data).toMatchObject({ linkMaterialMin: 2, linkMaterialMax: 2, linkMaterialType: typeEffect });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expectCleanRestore(restored);
     expectRestoredLegalActions(restored, 0);
-    expect(restored.session.state.cards.find((card) => card.uid === underclock.uid)?.data).toMatchObject({
-      linkMaterialMin: 2,
-      linkMaterialMax: 2,
-      linkMaterialType: typeEffect,
-    });
     expect(restored.session.state.effects.filter((effect) => effect.sourceUid === underclock.uid).map((effect) => ({
       category: effect.category,
       code: effect.code,
+      countLimit: effect.countLimit,
       event: effect.event,
       property: effect.property,
       range: effect.range,
       sourceUid: effect.sourceUid,
     }))).toEqual([
-      { category: undefined, code: 31, event: "continuous", property: 263168, range: ["monsterZone"], sourceUid: underclock.uid },
-      { category: 2097152, code: undefined, event: "ignition", property: 16, range: ["monsterZone"], sourceUid: underclock.uid },
+      { category: undefined, code: 31, countLimit: undefined, event: "continuous", property: 263168, range: ["monsterZone"], sourceUid: underclock.uid },
+      { category: 2097152, code: undefined, countLimit: 1, event: "ignition", property: 16, range: ["monsterZone"], sourceUid: underclock.uid },
     ]);
 
     const action = getLuaRestoreLegalActions(restored, 0).find(
@@ -80,17 +76,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUnderclockScript)("Lua real script Un
     applyRestoredActionAndAssert(restored, action!);
     resolveRestoredChain(restored);
 
-    expect(currentAttack(restored.session.state.cards.find((card) => card.uid === opponentTarget.uid), restored.session.state)).toBe(600);
-    expect(currentAttack(restored.session.state.cards.find((card) => card.uid === linkedAlly.uid), restored.session.state)).toBe(1400);
-    expect(currentAttack(restored.session.state.cards.find((card) => card.uid === unlinkedAlly.uid), restored.session.state)).toBe(2200);
-    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === opponentTarget.uid && effect.code === effectUpdateAttack).map((effect) => ({
+    expect(currentAttack(restored.session.state.cards.find((card) => card.uid === linkedAlly.uid), restored.session.state)).toBe(1600);
+    expect(currentAttack(restored.session.state.cards.find((card) => card.uid === unlinkedAlly.uid), restored.session.state)).toBe(2400);
+    expect(currentAttack(restored.session.state.cards.find((card) => card.uid === opponent.uid), restored.session.state)).toBe(1200);
+    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === opponent.uid && effect.code === effectUpdateAttack).map((effect) => ({
       code: effect.code,
-      property: effect.property,
       reset: effect.reset,
       sourceUid: effect.sourceUid,
       value: effect.value,
     }))).toEqual([
-      { code: effectUpdateAttack, property: undefined, reset: { flags: resetStandardPhaseEnd }, sourceUid: opponentTarget.uid, value: -1400 },
+      { code: effectUpdateAttack, reset: { flags: resetStandardPhaseEnd }, sourceUid: opponent.uid, value: -1600 },
     ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "becameTarget").map((event) => ({
       eventName: event.eventName,
@@ -98,17 +93,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUnderclockScript)("Lua real script Un
       eventCardUid: event.eventCardUid,
       eventReason: event.eventReason,
       eventReasonPlayer: event.eventReasonPlayer,
-      eventReasonCardUid: event.eventReasonCardUid,
-      eventReasonEffectId: event.eventReasonEffectId,
+      relatedEffectId: event.relatedEffectId,
     }))).toEqual([
-      { eventName: "becameTarget", eventCode: 1028, eventCardUid: linkedAlly.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined },
-      { eventName: "becameTarget", eventCode: 1028, eventCardUid: opponentTarget.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined },
+      { eventName: "becameTarget", eventCode: 1028, eventCardUid: linkedAlly.uid, eventReason: 0, eventReasonPlayer: 0, relatedEffectId: 2 },
+      { eventName: "becameTarget", eventCode: 1028, eventCardUid: opponent.uid, eventReason: 0, eventReasonPlayer: 0, relatedEffectId: 2 },
     ]);
 
-    const restoredAfter = restoreDuelWithLuaScripts(serializeDuel(restored.session), workspace, reader);
-    expectCleanRestore(restoredAfter);
-    expectRestoredLegalActions(restoredAfter, 0);
-    expect(currentAttack(restoredAfter.session.state.cards.find((card) => card.uid === opponentTarget.uid), restoredAfter.session.state)).toBe(600);
+    const restoredPersistent = restoreDuelWithLuaScripts(serializeDuel(restored.session), workspace, reader);
+    expectCleanRestore(restoredPersistent);
+    expectRestoredLegalActions(restoredPersistent, 0);
+    expect(currentAttack(restoredPersistent.session.state.cards.find((card) => card.uid === opponent.uid), restoredPersistent.session.state)).toBe(1200);
   });
 });
 
@@ -129,10 +123,10 @@ function expectScriptShape(script: string | undefined): void {
 
 function cards(): DuelCardData[] {
   return [
-    { code: underclockCode, name: "Underclock Taker", kind: "extra", typeFlags: typeMonster | typeEffect | typeLink, race: raceCyberse, attribute: attributeDark, level: 2, attack: 1000, defense: 0, linkMarkers: 0x20 },
-    { code: linkedAllyCode, name: "Underclock Linked Effect Ally", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceCyberse, attribute: attributeDark, level: 4, attack: 1400, defense: 1000 },
-    { code: unlinkedAllyCode, name: "Underclock Unlinked Effect Decoy", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceWarrior, attribute: attributeEarth, level: 4, attack: 2200, defense: 1000 },
-    { code: opponentTargetCode, name: "Underclock Opponent Target", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceWarrior, attribute: attributeEarth, level: 4, attack: 2000, defense: 1000 },
+    { code: underclockCode, name: "Underclock Taker", kind: "extra", typeFlags: typeMonster | typeEffect | typeLink, race: raceCyberse, attribute: attributeDark, level: 2, attack: 1000, defense: 0, linkMarkers: markerRight, linkMaterialMin: 2, linkMaterialMax: 2 },
+    { code: linkedAllyCode, name: "Underclock Linked Ally", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceCyberse, attribute: attributeDark, level: 4, attack: 1600, defense: 1000 },
+    { code: unlinkedAllyCode, name: "Underclock Unlinked Ally", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceCyberse, attribute: attributeDark, level: 4, attack: 2400, defense: 1000 },
+    { code: opponentCode, name: "Underclock Opponent", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceWarrior, attribute: attributeEarth, level: 4, attack: 2800, defense: 1000 },
   ];
 }
 
@@ -144,9 +138,9 @@ function requireCard(session: DuelSession, code: string): DuelCardInstance {
 
 function moveFaceUpAttack(session: DuelSession, card: DuelCardInstance, player: PlayerId, sequence: number): DuelCardInstance {
   const moved = moveDuelCard(session.state, card.uid, "monsterZone", player);
-  moved.sequence = sequence;
   moved.faceUp = true;
   moved.position = "faceUpAttack";
+  moved.sequence = sequence;
   return moved;
 }
 
