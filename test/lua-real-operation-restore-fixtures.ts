@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 370;
+export const operationFixtureCount = 371;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -43,6 +43,7 @@ export const operationKindCounts = {
   crossFieldTargetUpdateStat: 1,
   attackerSetTargetCardStat: 1,
   twoPositionTargetDefenseAttackStat: 1,
+  ownSingleTargetOpponentMinAttackStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -346,6 +347,7 @@ export type OperationKind =
   | "crossFieldTargetUpdateStat"
   | "attackerSetTargetCardStat"
   | "twoPositionTargetDefenseAttackStat"
+  | "ownSingleTargetOpponentMinAttackStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1013,6 +1015,22 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "e1:SetValue(tc1:GetDefense())",
         "currentAttack(findCard(restored.session, attacker.uid), restored.session.state)).toBe(2800)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-unbreakable-spirit-min-opponent-attack-stat.test.ts",
+      kind: "ownSingleTargetOpponentMinAttackStat",
+      required: [
+        "restores one-own-monster target ATK gain from opponent minimum face-up ATK",
+        "Unbreakable Spirit",
+        "and Duel.GetMatchingGroupCount(Card.IsFaceup,tp,LOCATION_MZONE,0,nil)==1",
+        "local g=Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "local mg,atk=g:GetMinGroup(Card.GetAttack)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(atk)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(2600)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7327,6 +7345,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       crossFieldTargetUpdateStat: 0,
       attackerSetTargetCardStat: 0,
       twoPositionTargetDefenseAttackStat: 0,
+      ownSingleTargetOpponentMinAttackStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
