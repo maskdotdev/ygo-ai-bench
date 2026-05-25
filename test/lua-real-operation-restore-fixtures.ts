@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 351;
+export const operationFixtureCount = 352;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -24,6 +24,7 @@ export const operationKindCounts = {
   targetAddTunerType: 1,
   targetStatClientHintProtection: 1,
   heroicFinalAttackDirectLock: 1,
+  massivemorphFinalStatDirectLock: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -308,6 +309,7 @@ export type OperationKind =
   | "targetAddTunerType"
   | "targetStatClientHintProtection"
   | "heroicFinalAttackDirectLock"
+  | "massivemorphFinalStatDirectLock"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -612,6 +614,28 @@ export function operationFixtureFiles(): Array<{
         "e2:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
         "e2:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
         "currentAttack(findCard(restored.session, heroic.uid), restored.session.state)).toBe(3600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-massivemorph-final-stat-direct-lock.test.ts",
+      kind: "massivemorphFinalStatDirectLock",
+      required: [
+        "restores opponent target final ATK/DEF doubles and client-hint direct attack lock",
+        "Massivemorph",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,0,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(tc:GetAttack()*2)",
+        "e2:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e2:SetValue(tc:GetDefense()*2)",
+        "e3:SetDescription(3207)",
+        "e3:SetProperty(EFFECT_FLAG_CLIENT_HINT)",
+        "e3:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(3200)",
+        "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(2400)",
       ],
     },
     {
@@ -6906,6 +6930,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetAddTunerType: 0,
       targetStatClientHintProtection: 0,
       heroicFinalAttackDirectLock: 0,
+      massivemorphFinalStatDirectLock: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
