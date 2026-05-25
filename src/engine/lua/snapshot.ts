@@ -942,6 +942,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
         isKnownCannotSelectBattleTargetNotHandlerEffect(effect) ||
         isKnownChangeBattleStatToDefenseEffect(effect) ||
         isKnownTargetScopedHalfBattleDamageEffect(effect) ||
+        isKnownLifeHackOpponentHalfBattleDamageEffect(effect) ||
         isKnownDharcProcedurePierceEffect(effect) ||
         isKnownTemporaryPierceEffect(effect) ||
         isKnownYellowAlertDelayedReturnEffect(effect) ||
@@ -1033,6 +1034,17 @@ function isKnownTargetScopedHalfBattleDamageEffect(effect: SerializedDuelEffect)
     effect.range[0] === "monsterZone" &&
     effect.reset !== undefined &&
     effect.targetRange === undefined;
+}
+
+function isKnownLifeHackOpponentHalfBattleDamageEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:83589191:")) &&
+    effect.event === "continuous" &&
+    effect.code === 82 &&
+    effect.value === undefined &&
+    effect.sourceUid !== undefined &&
+    effect.targetRange?.[0] === 0 &&
+    effect.targetRange?.[1] === 1 &&
+    effect.reset !== undefined;
 }
 function isKnownZeroParadoxDelayedScaleDestroyEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith("lua:97417863:")) &&
@@ -2619,6 +2631,7 @@ function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffec
   if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-setcode:")) return { valuePredicate: (ctx) => !ctx.eventCard || !currentCardMatchesSetcode(ctx.eventCard, ctx.duel, Number(effect.luaValueDescriptor?.split(":").pop())) }; if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-race:")) return { valuePredicate: (ctx) => !ctx.eventCard || (currentRace(ctx.eventCard, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) === 0 }; if (effect.luaValueDescriptor?.startsWith("cannot-material:target-not-attribute:")) return { valuePredicate: (ctx) => !ctx.eventCard || (currentAttribute(ctx.eventCard, ctx.duel) & Number(effect.luaValueDescriptor?.split(":").pop())) === 0 };
   if (effect.code === 344 && effect.label !== undefined) return { valueCardPredicate: (_ctx, card) => cardFieldId(card) === effect.label };
   if (isKnownTargetScopedHalfBattleDamageEffect(effect)) return { battleDamageValue: (_ctx, player) => player !== effect.controller ? luaHalfDamage : undefined };
+  if (isKnownLifeHackOpponentHalfBattleDamageEffect(effect)) return { battleDamageValue: (_ctx, player) => player !== effect.controller ? luaHalfDamage : undefined };
   if (effect.luaValueDescriptor !== "change-damage:effect-double" && effect.luaValueDescriptor !== "change-damage:effect-zero") return {};
   const applyValue = (ctx: Parameters<NonNullable<DuelEffectDefinition["lifePointValue"]>>[0], _player: PlayerId, amount: number): number => ((ctx.eventReason ?? 0) & duelReason.effect) !== 0 ? (effect.luaValueDescriptor === "change-damage:effect-double" ? amount * 2 : 0) : amount;
   return { battleDamageValue: applyValue, lifePointValue: applyValue };

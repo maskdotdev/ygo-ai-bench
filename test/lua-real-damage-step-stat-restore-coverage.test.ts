@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 8;
+const damageStepStatFixtureCount = 9;
 const damageStepStatKindCounts = {
   activatedDamageStepBoost: 5,
+  activatedDamageStepLpFinalAttackDamageHalf: 1,
   labelObjectCostBoost: 1,
   mandatoryPreDamageBoost: 1,
   persistentDamageStepDebuff: 1,
@@ -16,6 +17,7 @@ const damageStepStatSemanticVariantCounts = {
   fabledAshenveilDamageStepHandCostBoost: 1,
   gamilDefenderBranchSelfToGraveBoost: 1,
   injectionFairyLilyPreDamageLpBoost: 1,
+  lifeHackLpFinalAttackDamageHalf: 1,
   miniaturizePersistentDamageStepDebuff: 1,
   reliableGuardianTargetedDamageStepDefenseUpdate: 1,
   rushRecklesslyTargetedDamageStepBoost: 1,
@@ -24,6 +26,7 @@ const damageStepStatSemanticVariantCounts = {
 
 type DamageStepStatKind =
   | "activatedDamageStepBoost"
+  | "activatedDamageStepLpFinalAttackDamageHalf"
   | "labelObjectCostBoost"
   | "mandatoryPreDamageBoost"
   | "persistentDamageStepDebuff";
@@ -32,6 +35,7 @@ type DamageStepStatSemanticVariant =
   | "fabledAshenveilDamageStepHandCostBoost"
   | "gamilDefenderBranchSelfToGraveBoost"
   | "injectionFairyLilyPreDamageLpBoost"
+  | "lifeHackLpFinalAttackDamageHalf"
   | "miniaturizePersistentDamageStepDebuff"
   | "reliableGuardianTargetedDamageStepDefenseUpdate"
   | "rushRecklesslyTargetedDamageStepBoost"
@@ -203,6 +207,21 @@ function damageStepStatFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-life-hack-lp-attack-damage-half.test.ts",
+      kind: "activatedDamageStepLpFinalAttackDamageHalf",
+      required: [
+        "expectCleanRestore(restoredOpen)",
+        "expectCleanRestore(restoredBattle)",
+        "expectCleanRestore(restoredResolved)",
+        "aux.StatChangeDamageStepCondition",
+        "Duel.GetLP(p)",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_CHANGE_DAMAGE",
+        "battleDamage).toEqual({ 0: 0, 1: 3000 })",
+        "eventHistory.filter((event) => event.eventName === \"battleDamageDealt\")",
+      ],
+    },
+    {
       file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
       kind: "mandatoryPreDamageBoost",
       required: [
@@ -231,6 +250,7 @@ function countDamageStepStatKinds(
     },
     {
       activatedDamageStepBoost: 0,
+      activatedDamageStepLpFinalAttackDamageHalf: 0,
       labelObjectCostBoost: 0,
       mandatoryPreDamageBoost: 0,
       persistentDamageStepDebuff: 0,
@@ -268,6 +288,21 @@ function damageStepStatSemanticVariants(): Array<{
         'eventName: "lifePointCostPaid"',
         "currentAttack(boostedLily",
         "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-life-hack-lp-attack-damage-half.test.ts",
+      kind: "lifeHackLpFinalAttackDamageHalf",
+      required: [
+        'const lifeHackCode = "83589191"',
+        "restores hand activation into opponent-LP final ATK and halved battle damage",
+        "restores grave SelfBanish ignition into own-LP final ATK",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "e2:SetValue(function(e,re,val,r,rp,rc) return val//2 end)",
+        "valueKind: \"battleDamageValue\"",
+        "battleDamage).toEqual({ 0: 0, 1: 3000 })",
+        'eventName: "battleDamageDealt"',
       ],
     },
     {
@@ -365,6 +400,7 @@ function countDamageStepStatSemanticVariants(
       fabledAshenveilDamageStepHandCostBoost: 0,
       gamilDefenderBranchSelfToGraveBoost: 0,
       injectionFairyLilyPreDamageLpBoost: 0,
+      lifeHackLpFinalAttackDamageHalf: 0,
       miniaturizePersistentDamageStepDebuff: 0,
       reliableGuardianTargetedDamageStepDefenseUpdate: 0,
       rushRecklesslyTargetedDamageStepBoost: 0,
