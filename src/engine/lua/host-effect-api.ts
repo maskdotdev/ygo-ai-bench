@@ -126,11 +126,15 @@ export function pushLuaEffectTable(L: unknown, id: number, hostState: LuaHostSta
     return 1;
   });
   pushEffectMethod(L, effects, "GetActivateLocation", (state, effect) => {
-    lua.lua_pushinteger(state, locationMaskFromLocation(hostState.activeContext?.activationLocation ?? sourceCard(session, effect)?.location));
+    const pendingChainLink = session.state.chain[session.state.chain.length - 1];
+    const relatedChainLink = effect.id === relatedEffectIdFromChainLink(pendingChainLink) ? pendingChainLink : undefined;
+    lua.lua_pushinteger(state, locationMaskFromLocation(relatedChainLink?.activationLocation ?? hostState.activeContext?.activationLocation ?? sourceCard(session, effect)?.location));
     return 1;
   });
   pushEffectMethod(L, effects, "GetActivateSequence", (state, effect) => {
-    lua.lua_pushinteger(state, hostState.activeContext?.activationSequence ?? sourceCard(session, effect)?.sequence ?? 0);
+    const pendingChainLink = session.state.chain[session.state.chain.length - 1];
+    const relatedChainLink = effect.id === relatedEffectIdFromChainLink(pendingChainLink) ? pendingChainLink : undefined;
+    lua.lua_pushinteger(state, relatedChainLink?.activationSequence ?? hostState.activeContext?.activationSequence ?? sourceCard(session, effect)?.sequence ?? 0);
     return 1;
   });
   pushEffectMethod(L, effects, "SetOwnerPlayer", (state, effect) => {
