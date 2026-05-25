@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 373;
+export const operationFixtureCount = 374;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -46,6 +46,7 @@ export const operationKindCounts = {
   ownSingleTargetOpponentMinAttackStat: 1,
   targetDefenseValueAttackDrop: 1,
   synchroSummonedMaterialCountAttackStat: 1,
+  synchroGiftAttackTransferFinalStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -352,6 +353,7 @@ export type OperationKind =
   | "ownSingleTargetOpponentMinAttackStat"
   | "targetDefenseValueAttackDrop"
   | "synchroSummonedMaterialCountAttackStat"
+  | "synchroGiftAttackTransferFinalStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1064,9 +1066,27 @@ export function operationFixtureFiles(): Array<{
         "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
         "e1:SetCode(EFFECT_UPDATE_ATTACK)",
         "e1:SetValue(tc:GetMaterialCount()*500)",
-        "summonType = "synchro"",
+        "summonType = \"synchro\"",
         "summonMaterialUids = [materialOne.uid, materialTwo.uid]",
         "currentAttack(findCard(restored.session, synchro.uid), restored.session.state)).toBe(2800)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-synchro-gift-two-target-stat.test.ts",
+      kind: "synchroGiftAttackTransferFinalStat",
+      required: [
+        "restores Synchro ATK transfer into receiver boost and final zero",
+        "Synchro Gift",
+        "return c:IsFaceup() and c:IsType(TYPE_SYNCHRO)",
+        "return c:IsFaceup() and not c:IsType(TYPE_SYNCHRO)",
+        "Duel.SelectTarget(tp,s.filter1,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SelectTarget(tp,s.filter2,tp,LOCATION_MZONE,0,1,1,nil)",
+        "local g=Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc1:GetBaseAttack())",
+        "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7384,6 +7404,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       ownSingleTargetOpponentMinAttackStat: 0,
       targetDefenseValueAttackDrop: 0,
       synchroSummonedMaterialCountAttackStat: 0,
+      synchroGiftAttackTransferFinalStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
