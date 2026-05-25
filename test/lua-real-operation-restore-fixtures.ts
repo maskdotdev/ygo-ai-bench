@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 390;
+export const operationFixtureCount = 391;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -63,6 +63,7 @@ export const operationKindCounts = {
   discardCostOpponentGroupAttackDefenseDrop: 1,
   selectOptionGroupDefenseBoost: 1,
   raceCountGroupAttackBoost: 1,
+  overlayCountGroupAttackBoost: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -386,6 +387,7 @@ export type OperationKind =
   | "discardCostOpponentGroupAttackDefenseDrop"
   | "selectOptionGroupDefenseBoost"
   | "raceCountGroupAttackBoost"
+  | "overlayCountGroupAttackBoost"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1244,6 +1246,25 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(atk)",
         "e1:SetReset(RESETS_STANDARD_PHASE_END)",
         "raceBeast",
+        "effectUpdateAttack",
+        "currentAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-reinforced-space-overlay-count-stat.test.ts",
+      kind: "overlayCountGroupAttackBoost",
+      required: [
+        "restores own face-up overlay count into per-monster ATK boosts",
+        "Reinforced Space",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "return c:IsFaceup() and c:GetOverlayCount()~=0",
+        "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,1,nil)",
+        "local g=Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tc:GetOverlayCount()*300)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "attachOverlay",
         "effectUpdateAttack",
         "currentAttack",
       ],
@@ -7774,6 +7795,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardCostOpponentGroupAttackDefenseDrop: 0,
       selectOptionGroupDefenseBoost: 0,
       raceCountGroupAttackBoost: 0,
+      overlayCountGroupAttackBoost: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
