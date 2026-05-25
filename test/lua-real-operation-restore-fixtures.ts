@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 347;
+export const operationFixtureCount = 348;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -20,6 +20,7 @@ export const operationKindCounts = {
   damageStepLpCostTargetAttackDrop: 1,
   banishLinkCostLabelTargetStat: 1,
   banishRaceCostLabelTargetStat: 1,
+  trapActivateGraveSelfBanishStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -300,6 +301,7 @@ export type OperationKind =
   | "damageStepLpCostTargetAttackDrop"
   | "banishLinkCostLabelTargetStat"
   | "banishRaceCostLabelTargetStat"
+  | "trapActivateGraveSelfBanishStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -585,6 +587,26 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restoredBattle.session, statLink.uid), restoredBattle.session.state)).toBe(2800)",
         "effectDisableEffect",
         "effectUpdateAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-skill-successor-activate-grave-selfbanish-stat.test.ts",
+      kind: "trapActivateGraveSelfBanishStat",
+      required: [
+        "restores Trap activation ATK gain and later grave SelfBanish ATK gain",
+        "Skill Successor",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e1:SetLabel(400)",
+        "e2:SetRange(LOCATION_GRAVE)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "return aux.exccon(e) and Duel.IsTurnPlayer(tp) and aux.StatChangeDamageStepCondition()",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(e:GetLabel())",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "currentAttack(findCard(restoredGrave.session, graveTarget.uid), restoredGrave.session.state)).toBe(1800)",
       ],
     },
     {
@@ -6817,6 +6839,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       damageStepLpCostTargetAttackDrop: 0,
       banishLinkCostLabelTargetStat: 0,
       banishRaceCostLabelTargetStat: 0,
+      trapActivateGraveSelfBanishStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
