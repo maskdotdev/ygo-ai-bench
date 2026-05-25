@@ -26,6 +26,7 @@ export function quickEffectActions(state: DuelState, player: PlayerId, canChoose
     const registeredSource = findCard(state, effect.sourceUid);
     const source = registeredSource ? activationSourceForEffect(state, effect, registeredSource, player) : undefined;
     if (!source || !activationEffectInUsableRange(state, effect, source, player)) continue;
+    if (!chainSpeedAllowsResponse(state, effect, source)) continue;
     if (!quickEffectTimingAllows(state, effect, source)) continue;
     if (shouldRequireMatchingFirstChainEvent(state, effect) && quickEffectEventContext(state, effect) === undefined) continue;
     if (!chainLimitsAllow(state, effect, player)) continue;
@@ -52,8 +53,13 @@ export function activationSourceForEffect(
   registeredSource: DuelCardInstance,
   player: PlayerId,
 ): DuelCardInstance | undefined {
-  if (!isXMaterialEffect(effect)) return registeredSource;
-  return xMaterialEffectHolder(state, effect, registeredSource, player) ?? registeredSource;
+  if (isXMaterialEffect(effect)) return xMaterialEffectHolder(state, effect, registeredSource, player) ?? registeredSource;
+  if (effect.range.includes(registeredSource.location)) return registeredSource;
+  return grantedActivationSourceForEffect(state, effect, registeredSource, player) ?? registeredSource;
+}
+
+interface ActivationEffectLookupOptions {
+  activationLocation?: DuelCardInstance["location"];
 }
 
 export function findActivationEffectForSource(
@@ -61,6 +67,7 @@ export function findActivationEffectForSource(
   player: PlayerId,
   uid: string,
   effectId: string,
+  options: ActivationEffectLookupOptions = {},
 ): { effect: DuelEffectDefinition; source: DuelCardInstance } | undefined {
   for (const effect of state.effects) {
     if (effect.id !== effectId) continue;
@@ -68,6 +75,9 @@ export function findActivationEffectForSource(
     if (!registeredSource) continue;
     const source = activationSourceForEffect(state, effect, registeredSource, player);
     if (source?.uid === uid) return { effect, source };
+    const requestedSource = findCard(state, uid);
+    if (requestedSource && grantedActivationAppliesToCard(state, effect, registeredSource, requestedSource, player)) return { effect, source: requestedSource };
+    if (requestedSource && expiredGrantedActivationMatches(effect, registeredSource, requestedSource, player, options)) return { effect, source: requestedSource };
   }
   return undefined;
 }
@@ -91,6 +101,19 @@ function isCounterTrapActivation(effect: DuelEffectDefinition, source: DuelCardI
   return ((effect.luaTypeFlags ?? 0) & luaEffectTypeActivate) !== 0 && ((source.data.typeFlags ?? 0) & typeCounter) !== 0;
 }
 
+function chainSpeedAllowsResponse(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  const lastLink = state.chain.at(-1);
+  if (!lastLink) return true;
+  const lastSource = findCard(state, lastLink.sourceUid);
+  if (!lastSource) return true;
+  if (!isCounterTrapActivationLink(lastSource)) return true;
+  return isCounterTrapActivation(effect, source);
+}
+
+function isCounterTrapActivationLink(source: DuelCardInstance): boolean {
+  return source.kind === "trap" && ((source.data.typeFlags ?? 0) & typeCounter) !== 0;
+}
+
 function battleWindowEventMatchesEffect(kind: NonNullable<ReturnType<typeof currentBattleWindowKind>>, effect: DuelEffectDefinition): boolean {
   return (
     (kind === "startDamageStep" && effect.triggerEvent === "battleConfirmed") ||
@@ -111,11 +134,30 @@ function isBattleWindowTriggerEvent(triggerEvent: DuelEffectDefinition["triggerE
 }
 
 function battleOpenQuickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  if (isBattleWindowTriggerEvent(effect.triggerEvent)) return false;
   if (source.kind !== "monster" && ((effect.luaTypeFlags ?? 0) & luaEffectTypeActivate) !== 0) return true;
+  if (hasBattlePhaseLuaCondition(effect)) return true;
   const timing = effect.hintTiming;
   if (timing === undefined) return false;
   const activeMask = battleOpenTimingMask(state) | timingBattlePhase;
   return (((timing[0] ?? 0) | (timing[1] ?? 0)) & activeMask) !== 0;
+}
+
+function hasBattlePhaseLuaCondition(effect: DuelEffectDefinition): boolean {
+  const descriptor = effect.luaConditionDescriptor;
+  if (descriptor === undefined) return false;
+  if (
+    descriptor === "condition:battle-phase" ||
+    descriptor === "condition:main-or-battle-phase" ||
+    descriptor === "condition:turn-player:self-battle-phase" ||
+    descriptor === "condition:turn-player:opponent-battle-phase" ||
+    descriptor === `condition:phase:${0x80}`
+  ) {
+    return true;
+  }
+  if (!descriptor.startsWith("condition:turn-player-phase:")) return false;
+  const phaseMask = Number(descriptor.split(":").pop());
+  return phaseMask === 0x80;
 }
 
 function battleOpenTimingMask(state: DuelState): number {
@@ -152,6 +194,7 @@ function hasHandActivationGrant(state: DuelState, effect: DuelEffectDefinition, 
     if (!continuousEffectAppliesToCard(grant, source, card, createEffectContext(state, card, player))) continue;
     if (grant.canActivate && !grant.canActivate(createEffectContext(state, source, grant.controller))) continue;
     if (effect.canActivate && !effect.canActivate(createEffectContext(state, card, player))) continue;
+    if (grant.code === luaEffectTrapActInHand && grant.valuePredicate && !grant.valuePredicate(createEffectContext(state, source, grant.controller, undefined, card), player)) continue;
     return true;
   }
   return false;
@@ -179,4 +222,48 @@ function xMaterialEffectHolder(
     card.overlayUids.includes(material.uid) &&
     effect.range.includes(card.location)
   );
+}
+
+function grantedActivationSourceForEffect(
+  state: DuelState,
+  effect: DuelEffectDefinition,
+  registeredSource: DuelCardInstance,
+  player: PlayerId,
+): DuelCardInstance | undefined {
+  return state.cards.find((card) => grantedActivationAppliesToCard(state, effect, registeredSource, card, player));
+}
+
+function grantedActivationAppliesToCard(
+  state: DuelState,
+  effect: DuelEffectDefinition,
+  grantSource: DuelCardInstance,
+  card: DuelCardInstance,
+  player: PlayerId,
+): boolean {
+  if (card.controller !== player || !effect.range.includes(card.location)) return false;
+  const effectNumber = luaEffectNumber(effect);
+  if (effectNumber === undefined) return false;
+  for (const grant of state.effects) {
+    if (grant.event !== "continuous" || grant.sourceUid !== grantSource.uid || grant.labelObjectId !== effectNumber) continue;
+    if (!grant.range.includes(grantSource.location)) continue;
+    if (continuousEffectAppliesToCard(grant, grantSource, card, createEffectContext(state, grantSource, grant.controller, undefined, card))) return true;
+  }
+  return false;
+}
+
+function luaEffectNumber(effect: DuelEffectDefinition): number | undefined {
+  const match = /^lua-(\d+)/.exec(effect.id);
+  return match ? Number(match[1]) : undefined;
+}
+
+function expiredGrantedActivationMatches(
+  effect: DuelEffectDefinition,
+  grantSource: DuelCardInstance,
+  card: DuelCardInstance,
+  player: PlayerId,
+  options: ActivationEffectLookupOptions,
+): boolean {
+  if (options.activationLocation === undefined || card.controller !== player || !effect.range.includes(options.activationLocation)) return false;
+  const effectNumber = luaEffectNumber(effect);
+  return effectNumber !== undefined && effect.sourceUid === grantSource.uid;
 }

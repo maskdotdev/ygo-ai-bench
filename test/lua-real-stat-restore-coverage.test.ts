@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 489; const statKindCounts = {
+const statFixtureCount = 491; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -92,6 +92,8 @@ const statFixtureCount = 489; const statKindCounts = {
   mistValleyThunderLordReturnStat: 1,
   hiSpeedroidChanbaraExtraBattleStatToHand: 1,
   trickstarDelfiendiumAttackToHandStat: 1,
+  clashingSoulsPreDamageLpBattleWipeStat: 1,
+  sonicBoomMpbFinalPierceEndDestroyStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -553,6 +555,8 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   mistValleyThunderLordReturnStat: 1,
   hiSpeedroidChanbaraExtraBattleStatToHand: 1,
   trickstarDelfiendiumAttackToHandStat: 1,
+  clashingSoulsPreDamageLpBattleWipeStat: 1,
+  sonicBoomMpbFinalPierceEndDestroyStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -901,6 +905,8 @@ type ExtraStatKind =
   | "mistValleyThunderLordReturnStat"
   | "hiSpeedroidChanbaraExtraBattleStatToHand"
   | "trickstarDelfiendiumAttackToHandStat"
+  | "clashingSoulsPreDamageLpBattleWipeStat"
+  | "sonicBoomMpbFinalPierceEndDestroyStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1400,6 +1406,8 @@ type ExtraStatSemanticVariant =
   | "mistValleyThunderLordReturnStat"
   | "hiSpeedroidChanbaraExtraBattleStatToHand"
   | "trickstarDelfiendiumAttackToHandStat"
+  | "clashingSoulsPreDamageLpBattleWipeStat"
+  | "sonicBoomMpbFinalPierceEndDestroyStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3497,6 +3505,48 @@ function statFixtureFiles(): Array<{
         "eventName: \"attackDeclared\"",
         "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-clashing-souls-pre-damage-lp-field-grave.test.ts",
+      kind: "clashingSoulsPreDamageLpBattleWipeStat",
+      required: [
+        'const clashingSoulsCode = "57496978"',
+        "Clashing Souls",
+        "restores repeated LP-cost ATK boosts, battle damage prevention, and battled field send",
+        "EVENT_PRE_DAMAGE_CALCULATE",
+        "Duel.CheckLPCost(tc:GetControler(),500)",
+        "Duel.SelectYesNo(tc:GetControler(),aux.Stringid(id,0))",
+        "Duel.PayLPCost(tc:GetControler(),500)",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_AVOID_BATTLE_DAMAGE",
+        "EVENT_BATTLED",
+        "Duel.GetFieldGroup(tp,LOCATION_ONFIELD,0)",
+        "Duel.SendtoGrave(tg,REASON_EFFECT)",
+        "eventName: \"lifePointCostPaid\"",
+        "eventName: \"sentToGrave\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sonic-boom-mpb-final-pierce-end-destroy-stat.test.ts",
+      kind: "sonicBoomMpbFinalPierceEndDestroyStat",
+      required: [
+        'const sonicBoomCode = "93211810"',
+        "Sonic Boom",
+        "restores Mecha Phantom Beast final ATK, pierce and immunity grants, attack oath, and End Phase Machine destruction",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_PIERCE",
+        "EFFECT_IMMUNE_EFFECT",
+        "EFFECT_CANNOT_ATTACK",
+        "EVENT_PHASE+PHASE_END",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "toBe(3000)",
+        "expect(restoredBattle.session.state.pendingTriggers).toEqual([])",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+        "eventName: \"phaseEnd\"",
+        "eventName: \"destroyed\"",
+        "eventName: \"sentToGraveyard\"",
       ],
     },
     {
@@ -10325,6 +10375,8 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       mistValleyThunderLordReturnStat: 0,
       hiSpeedroidChanbaraExtraBattleStatToHand: 0,
       trickstarDelfiendiumAttackToHandStat: 0,
+      clashingSoulsPreDamageLpBattleWipeStat: 0,
+      sonicBoomMpbFinalPierceEndDestroyStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -10623,6 +10675,41 @@ function statSemanticVariants(): Array<{
         "eventName: \"attackDeclared\"",
         "eventName: \"sentToHand\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-clashing-souls-pre-damage-lp-field-grave.test.ts",
+      kind: "clashingSoulsPreDamageLpBattleWipeStat",
+      required: [
+        'const clashingSoulsCode = "57496978"',
+        "Clashing Souls",
+        "restores repeated LP-cost ATK boosts, battle damage prevention, and battled field send",
+        "EVENT_PRE_DAMAGE_CALCULATE",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_AVOID_BATTLE_DAMAGE",
+        "EVENT_BATTLED",
+        "api: \"SelectYesNo\"",
+        "returned: true",
+        "eventName: \"sentToGrave\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-sonic-boom-mpb-final-pierce-end-destroy-stat.test.ts",
+      kind: "sonicBoomMpbFinalPierceEndDestroyStat",
+      required: [
+        'const sonicBoomCode = "93211810"',
+        "Sonic Boom",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_PIERCE",
+        "EFFECT_IMMUNE_EFFECT",
+        "EFFECT_CANNOT_ATTACK",
+        "EVENT_PHASE+PHASE_END",
+        "expect(restoredBattle.session.state.pendingTriggers).toEqual([])",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+        "eventName: \"phaseEnd\"",
+        "eventName: \"destroyed\"",
+        "eventName: \"sentToGraveyard\"",
       ],
     },
     {
@@ -16743,6 +16830,8 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       mistValleyThunderLordReturnStat: 0,
       hiSpeedroidChanbaraExtraBattleStatToHand: 0,
       trickstarDelfiendiumAttackToHandStat: 0,
+      clashingSoulsPreDamageLpBattleWipeStat: 0,
+      sonicBoomMpbFinalPierceEndDestroyStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,

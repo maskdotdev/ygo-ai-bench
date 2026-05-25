@@ -1,5 +1,7 @@
 import { duelLocations } from "#duel/location-kinds.js";
 import { negateDuelAttack } from "#duel/core.js";
+import { cardFieldId } from "#duel/card-field-id.js";
+import { currentAttack } from "#duel/card-stats.js";
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaEffectFlagPlayerTarget = 0x800;
@@ -7,6 +9,7 @@ const luaEffectFlagClientHint = 0x4000000;
 const luaLocationMonsterZone = 0x04;
 const luaPhaseEndResetFlags = 0x40000200;
 const luaPhaseBattleEndResetFlags = 0x40000280;
+const luaBattlePhaseResetFlags = 0x41fe1080;
 const luaSelfTurnPhaseEndResetFlags = 0x50000200;
 const luaSelfTurnBattleResetFlags = 0x50000080;
 const luaSelfTurnMain1ResetFlags = 0x50000004;
@@ -14,6 +17,7 @@ const luaOpponentTurnPhaseEndResetFlags = 0x60000200;
 const luaOpponentTurnMain1ResetFlags = 0x60000004;
 const luaPhaseDamageResetFlags = 0x40000020;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
+const luaResetsStandardPhaseDamage = 0x41fe1020;
 
 export function isKnownTemporaryPlayerAttackAnnounceLockEffect(effect: SerializedDuelEffect): boolean {
   return (
@@ -125,6 +129,69 @@ export function isKnownTemporaryAttackAnnounceNegateEffect(effect: SerializedDue
   );
 }
 
+export function isKnownTemporaryAttackAnnounceLabelObjectWatcherEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 1130 &&
+    effect.sourceUid !== undefined &&
+    effect.labelObjectId !== undefined &&
+    effect.targetRange === undefined &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardPhaseEnd) &&
+    hasDefaultLuaFieldRange(effect)
+  );
+}
+
+export function isKnownTemporaryBattledSetAttackFinalWatcherEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    effect.event === "continuous" &&
+    effect.code === 1138 &&
+    effect.sourceUid !== undefined &&
+    effect.labelObjectUid !== undefined &&
+    effect.targetRange === undefined &&
+    effect.value === undefined &&
+    effect.luaValueDescriptor === undefined &&
+    effect.luaTargetDescriptor === undefined &&
+    !hasPlayerTargetFlag(effect) &&
+    effect.reset?.flags === luaResetsStandardPhaseDamage &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone"
+  );
+}
+
+export function temporaryBattledSetAttackFinalWatcherOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const targetUid = effect.labelObjectUid;
+    const target = targetUid ? ctx.duel.cards.find((card) => card.uid === targetUid) : undefined;
+    if (!target || !target.faceUp) return;
+    ctx.duel.effects.push({
+      id: `${effect.id}-set-attack-final`,
+      event: "continuous",
+      code: 101,
+      controller: effect.controller,
+      sourceUid: target.uid,
+      registryKey: `${effect.registryKey}:set-attack-final`,
+      range: ["monsterZone"],
+      reset: { flags: 0x1fe1000 },
+      value: Math.floor(currentAttack(target, ctx.duel) / 2),
+      operation: () => {},
+    });
+  };
+}
+
+export function temporaryAttackAnnounceLabelObjectWatcherOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const labelObjectId = effect.labelObjectId;
+    if (labelObjectId === undefined || !ctx.eventCard) return;
+    const labelObject = ctx.duel.effects.find((candidate) => candidate.id === `lua-${labelObjectId}` && candidate.sourceUid === effect.sourceUid);
+    if (!labelObject) return;
+    labelObject.label = cardFieldId(ctx.eventCard);
+  };
+}
+
 export function temporaryAttackAnnounceNegateOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
   const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
   return (ctx) => {
@@ -140,7 +207,7 @@ export function isKnownTemporaryDirectAttackEffect(effect: SerializedDuelEffect)
     effect.event === "continuous" &&
     effect.code === 74 &&
     effect.sourceUid !== undefined &&
-    effect.reset?.flags === luaResetsStandardPhaseEnd &&
+    (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaBattlePhaseResetFlags) &&
     effect.value === undefined &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
@@ -417,9 +484,9 @@ export function isKnownTemporaryMonsterBattleDamageAvoidEffect(effect: Serialize
 export function isKnownTemporaryMonsterExtraAttackEffect(effect: SerializedDuelEffect): boolean {
   return (
     effect.event === "continuous" &&
-    effect.code === 346 &&
+    (effect.code === 194 || effect.code === 346) &&
     effect.sourceUid !== undefined &&
-    effect.reset?.flags === luaResetsStandardPhaseEnd &&
+    (effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaBattlePhaseResetFlags) &&
     effect.value === 1 &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
@@ -456,7 +523,7 @@ function isKnownTemporaryPlayerBattleDamageAvoidEffect(effect: SerializedDuelEff
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
     hasPlayerTargetFlag(effect) &&
-    (targetRangeEquals(effect, 1, 0) || targetRangeEquals(effect, 0, 1)) &&
+    (targetRangeEquals(effect, 1, 0) || targetRangeEquals(effect, 0, 1) || targetRangeEquals(effect, 1, 1)) &&
     hasDefaultLuaFieldRange(effect)
   );
 }
@@ -484,7 +551,7 @@ function isKnownTemporarySelfIndestructibleEffect(effect: SerializedDuelEffect):
     effect.event === "continuous" &&
     (effect.code === 41 || effect.code === 42) &&
     effect.sourceUid !== undefined &&
-    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardPhaseEnd) &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardPhaseEnd || effect.reset?.flags === luaPhaseDamageResetFlags || effect.reset?.flags === luaResetsStandardPhaseDamage) &&
     effect.value === 1 &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined &&
