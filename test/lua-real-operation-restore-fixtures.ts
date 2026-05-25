@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 389;
+export const operationFixtureCount = 390;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -62,6 +62,7 @@ export const operationKindCounts = {
   globalFaceupFinalAttackHalve: 1,
   discardCostOpponentGroupAttackDefenseDrop: 1,
   selectOptionGroupDefenseBoost: 1,
+  raceCountGroupAttackBoost: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -384,6 +385,7 @@ export type OperationKind =
   | "globalFaceupFinalAttackHalve"
   | "discardCostOpponentGroupAttackDefenseDrop"
   | "selectOptionGroupDefenseBoost"
+  | "raceCountGroupAttackBoost"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1225,6 +1227,25 @@ export function operationFixtureFiles(): Array<{
         "descriptions: [1228073904, 1228073905]",
         "effectUpdateDefense",
         "currentDefense",
+      ],
+    },
+    {
+      file: "test/lua-real-script-big-march-animals-beast-count-stat.test.ts",
+      kind: "raceCountGroupAttackBoost",
+      required: [
+        "restores own face-up Beast count into equal group ATK boosts",
+        "The Big March of Animals",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsRace,RACE_BEAST),tp,LOCATION_MZONE,0,1,nil)",
+        "local g=Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsRace,RACE_BEAST),tp,LOCATION_MZONE,0,nil)",
+        "local atk=#g*200",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(atk)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "raceBeast",
+        "effectUpdateAttack",
+        "currentAttack",
       ],
     },
     {
@@ -7752,6 +7773,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       globalFaceupFinalAttackHalve: 0,
       discardCostOpponentGroupAttackDefenseDrop: 0,
       selectOptionGroupDefenseBoost: 0,
+      raceCountGroupAttackBoost: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
