@@ -18,6 +18,7 @@ const luaOpponentTurnMain1ResetFlags = 0x60000004;
 const luaPhaseDamageResetFlags = 0x40000020;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetsStandardPhaseDamage = 0x41fe1020;
+const luaResetsStandardControl = 0x03fe1000;
 
 export function isKnownTemporaryPlayerAttackAnnounceLockEffect(effect: SerializedDuelEffect): boolean {
   return (
@@ -87,13 +88,15 @@ export function isKnownTemporaryCannotAttackEffect(effect: SerializedDuelEffect)
     effect.event === "continuous" &&
     effect.code === 85 &&
     effect.sourceUid !== undefined &&
-    effect.reset?.flags === luaPhaseEndResetFlags &&
+    (effect.reset?.flags === luaPhaseEndResetFlags || effect.reset?.flags === luaResetsStandardControl) &&
     effect.value === undefined &&
     effect.luaValueDescriptor === undefined &&
     (effect.luaTargetDescriptor === undefined || effect.luaTargetDescriptor === "target:not-effect-owner") &&
     !hasPlayerTargetFlag(effect) &&
-    targetRangeEquals(effect, luaLocationMonsterZone, 0) &&
-    hasDefaultLuaFieldRange(effect)
+    (
+      (targetRangeEquals(effect, luaLocationMonsterZone, 0) && hasDefaultLuaFieldRange(effect)) ||
+      (effect.targetRange === undefined && effect.range.length === 1 && effect.range[0] === "monsterZone")
+    )
   );
 }
 
