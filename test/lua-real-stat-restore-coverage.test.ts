@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 500; const statKindCounts = {
+const statFixtureCount = 501; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -103,6 +103,7 @@ const statFixtureCount = 500; const statKindCounts = {
   finalCrossSynchroGraveExtraAttackStat: 1,
   overwindFinalStatEndToHand: 1,
   triBrigadeRendezvousLinkedStatReplace: 1,
+  marincessCascadeHandTrapBanishReturnStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -575,6 +576,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   finalCrossSynchroGraveExtraAttackStat: 1,
   overwindFinalStatEndToHand: 1,
   triBrigadeRendezvousLinkedStatReplace: 1,
+  marincessCascadeHandTrapBanishReturnStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -934,6 +936,7 @@ type ExtraStatKind =
   | "finalCrossSynchroGraveExtraAttackStat"
   | "overwindFinalStatEndToHand"
   | "triBrigadeRendezvousLinkedStatReplace"
+  | "marincessCascadeHandTrapBanishReturnStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1444,6 +1447,7 @@ type ExtraStatSemanticVariant =
   | "finalCrossSynchroGraveExtraAttackStat"
   | "overwindFinalStatEndToHand"
   | "triBrigadeRendezvousLinkedStatReplace"
+  | "marincessCascadeHandTrapBanishReturnStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3826,6 +3830,30 @@ function statFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-marincess-cascade-hand-trap-banish-return-stat.test.ts",
+      kind: "marincessCascadeHandTrapBanishReturnStat",
+      required: [
+        'const cascadeCode = "27012990"',
+        "Marincess Cascade",
+        "restores hand Trap activation, temporary Marincess Link banish cost, ATK gain, and Standby return",
+        "EFFECT_TRAP_ACT_IN_HAND",
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP",
+        "aux.StatChangeDamageStepCondition",
+        "c:IsFaceup() and c:IsLinkMonster() and c:IsSetCard(SET_MARINCESS)",
+        "Duel.GetTargetCount(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,nil)",
+        "aux.SelectUnselectGroup(mg,e,tp,1,ct,s.rescon,1,tp,HINTMSG_REMOVE,nil,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST|REASON_TEMPORARY)",
+        "Duel.RegisterEffect(e1,tp)",
+        "Duel.ReturnToField(c)",
+        "e:GetLabelObject():GetSum(Card.GetLink)*300",
+        "EFFECT_UPDATE_ATTACK",
+        "toBe(2700)",
+        "eventName: \"banished\"",
+        "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-cubic-karma-activate-trigger-search-stat.test.ts",
       kind: "cubicKarmaActivateTriggerSearchStat",
       required: [
@@ -6005,7 +6033,7 @@ function statFixtureFiles(): Array<{
       file: "test/lua-real-script-dogmatika-theo-extra-summon-target-stat.test.ts",
       kind: "dogmatikaTheoExtraSummonTargetStat",
       required: [
-        'const theoCode = "96891788"',
+        'const theoCode = "96891787"',
         "Dogmatika Theo, the Iron Punch",
         "restores Extra Deck summon-location hand summon and targeted ATK shift",
         "e1:SetRange(LOCATION_HAND)",
@@ -10662,6 +10690,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       finalCrossSynchroGraveExtraAttackStat: 0,
       overwindFinalStatEndToHand: 0,
       triBrigadeRendezvousLinkedStatReplace: 0,
+      marincessCascadeHandTrapBanishReturnStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11177,6 +11206,27 @@ function statSemanticVariants(): Array<{
         "eventName: \"becameTarget\"",
         "eventName: \"banished\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-marincess-cascade-hand-trap-banish-return-stat.test.ts",
+      kind: "marincessCascadeHandTrapBanishReturnStat",
+      required: [
+        'const cascadeCode = "27012990"',
+        "Marincess Cascade",
+        "EFFECT_TRAP_ACT_IN_HAND",
+        "EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP",
+        "aux.StatChangeDamageStepCondition",
+        "SET_MARINCESS",
+        "aux.SelectUnselectGroup(mg,e,tp,1,ct,s.rescon,1,tp,HINTMSG_REMOVE,nil,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST|REASON_TEMPORARY)",
+        "Duel.RegisterEffect(e1,tp)",
+        "Duel.ReturnToField(c)",
+        "e:GetLabelObject():GetSum(Card.GetLink)*300",
+        "EFFECT_UPDATE_ATTACK",
+        "toBe(2700)",
+        "eventName: \"banished\"",
+        "eventName: \"becameTarget\"",
       ],
     },
     {
@@ -17308,6 +17358,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       finalCrossSynchroGraveExtraAttackStat: 0,
       overwindFinalStatEndToHand: 0,
       triBrigadeRendezvousLinkedStatReplace: 0,
+      marincessCascadeHandTrapBanishReturnStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
