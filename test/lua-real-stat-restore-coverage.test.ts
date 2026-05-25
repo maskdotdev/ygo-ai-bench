@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 485; const statKindCounts = {
+const statFixtureCount = 486; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -88,6 +88,7 @@ const statFixtureCount = 485; const statKindCounts = {
   reaperProphecySummonSpellbookStat: 1,
   kuribehReleaseSearchSummonStat: 1,
   thunderDragonduoProcedureChainBattleEndStat: 1,
+  thunderDragonmatrixDiscardBanishSearchStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -545,6 +546,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   reaperProphecySummonSpellbookStat: 1,
   kuribehReleaseSearchSummonStat: 1,
   thunderDragonduoProcedureChainBattleEndStat: 1,
+  thunderDragonmatrixDiscardBanishSearchStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -889,6 +891,7 @@ type ExtraStatKind =
   | "reaperProphecySummonSpellbookStat"
   | "kuribehReleaseSearchSummonStat"
   | "thunderDragonduoProcedureChainBattleEndStat"
+  | "thunderDragonmatrixDiscardBanishSearchStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1384,6 +1387,7 @@ type ExtraStatSemanticVariant =
   | "reaperProphecySummonSpellbookStat"
   | "kuribehReleaseSearchSummonStat"
   | "thunderDragonduoProcedureChainBattleEndStat"
+  | "thunderDragonmatrixDiscardBanishSearchStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3384,6 +3388,33 @@ function statFixtureFiles(): Array<{
         "reasonEffectId: 5",
         "eventName: \"battleDestroyed\"",
         "eventName: \"sentToDeck\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-thunder-dragonmatrix-discard-banish-search-stat.test.ts",
+      kind: "thunderDragonmatrixDiscardBanishSearchStat",
+      required: [
+        'const dragonmatrixCode = "20318029"',
+        "Thunder Dragonmatrix",
+        "restores hand self-discard Thunder ATK gain and banished Deck search confirmation",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetRange(LOCATION_HAND)",
+        "e1:SetCost(Cost.SelfDiscard)",
+        "Duel.IsExistingTarget(aux.FaceupFilter(Card.IsRace,RACE_THUNDER),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsRace,RACE_THUNDER),tp,LOCATION_MZONE,0,1,1,nil)",
+        "tc:UpdateAttack(500,nil,e:GetHandler())",
+        "e2:SetCategory(CATEGORY_TOHAND)",
+        "e2:SetCode(EVENT_REMOVE)",
+        "e3:SetCode(EVENT_TO_GRAVE)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === thunderTarget.uid), restoredOpen.session.state)).toBe(2100)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === nonThunder.uid), restoredOpen.session.state)).toBe(1600)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"banished\"",
+        "eventName: \"sentToHandConfirmed\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -10209,6 +10240,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       reaperProphecySummonSpellbookStat: 0,
       kuribehReleaseSearchSummonStat: 0,
       thunderDragonduoProcedureChainBattleEndStat: 0,
+      thunderDragonmatrixDiscardBanishSearchStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -11655,6 +11687,33 @@ function statSemanticVariants(): Array<{
         "api: \"SelectOption\"",
         "eventName: \"battleDestroyed\"",
         "eventName: \"sentToDeck\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-thunder-dragonmatrix-discard-banish-search-stat.test.ts",
+      kind: "thunderDragonmatrixDiscardBanishSearchStat",
+      required: [
+        'const dragonmatrixCode = "20318029"',
+        "Thunder Dragonmatrix",
+        "restores hand self-discard Thunder ATK gain and banished Deck search confirmation",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetRange(LOCATION_HAND)",
+        "e1:SetCost(Cost.SelfDiscard)",
+        "Duel.IsExistingTarget(aux.FaceupFilter(Card.IsRace,RACE_THUNDER),tp,LOCATION_MZONE,0,1,nil)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsRace,RACE_THUNDER),tp,LOCATION_MZONE,0,1,1,nil)",
+        "tc:UpdateAttack(500,nil,e:GetHandler())",
+        "e2:SetCategory(CATEGORY_TOHAND)",
+        "e2:SetCode(EVENT_REMOVE)",
+        "e3:SetCode(EVENT_TO_GRAVE)",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === thunderTarget.uid), restoredOpen.session.state)).toBe(2100)",
+        "currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === nonThunder.uid), restoredOpen.session.state)).toBe(1600)",
+        "eventName: \"becameTarget\"",
+        "eventName: \"banished\"",
+        "eventName: \"sentToHandConfirmed\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -16547,6 +16606,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       reaperProphecySummonSpellbookStat: 0,
       kuribehReleaseSearchSummonStat: 0,
       thunderDragonduoProcedureChainBattleEndStat: 0,
+      thunderDragonmatrixDiscardBanishSearchStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
