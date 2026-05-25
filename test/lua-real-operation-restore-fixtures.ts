@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 364;
+export const operationFixtureCount = 365;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -37,6 +37,7 @@ export const operationKindCounts = {
   targetFinalAttackBattleProtect: 1,
   targetAttackPierceClientHint: 1,
   twoTargetOpponentBaseAttackFinal: 1,
+  targetAttackNormalizeGroupFinal: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -334,6 +335,7 @@ export type OperationKind =
   | "targetFinalAttackBattleProtect"
   | "targetAttackPierceClientHint"
   | "twoTargetOpponentBaseAttackFinal"
+  | "targetAttackNormalizeGroupFinal"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -894,6 +896,25 @@ export function operationFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "e1:SetValue(atk)",
         "currentAttack(findCard(restored.session, ally.uid), restored.session.state)).toBe(2800)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-universal-adapter-group-final-attack.test.ts",
+      kind: "targetAttackNormalizeGroupFinal",
+      required: [
+        "restores opponent target choice into all other different-ATK monsters matching its ATK",
+        "Universal Adapter",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(s.filter,tp,0,LOCATION_MZONE,1,nil,tp)",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil,tp)",
+        "Duel.GetMatchingGroup(s.filter2,tp,LOCATION_MZONE,LOCATION_MZONE,tc,atk)",
+        "for sc in aux.Next(g) do",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(atk)",
+        "currentAttack(findCard(restored.session, ownDifferent.uid), restored.session.state)).toBe(2100)",
+        "currentAttack(findCard(restored.session, opponentDifferent.uid), restored.session.state)).toBe(2100)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7202,6 +7223,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetFinalAttackBattleProtect: 0,
       targetAttackPierceClientHint: 0,
       twoTargetOpponentBaseAttackFinal: 0,
+      targetAttackNormalizeGroupFinal: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
