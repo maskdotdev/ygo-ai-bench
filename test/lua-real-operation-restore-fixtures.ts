@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 377;
+export const operationFixtureCount = 378;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -50,6 +50,7 @@ export const operationKindCounts = {
   targetAttackDefenseStandbyBoost: 1,
   sameCodeGroupFinalAttackStat: 1,
   twoTargetHalveTransferFinalStat: 1,
+  discardAttackTargetLossStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -360,6 +361,7 @@ export type OperationKind =
   | "targetAttackDefenseStandbyBoost"
   | "sameCodeGroupFinalAttackStat"
   | "twoTargetHalveTransferFinalStat"
+  | "discardAttackTargetLossStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1093,6 +1095,28 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc1:GetBaseAttack())",
         "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-nitwit-outwit-discard-target-stat.test.ts",
+      kind: "discardAttackTargetLossStat",
+      required: [
+        "restores discarded monster ATK as target attack loss",
+        "Nitwit Outwit",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "return c:GetAttack()>0 and c:IsDiscardable()",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST|REASON_DISCARD)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetTargetParam(atk)",
+        "local atk=Duel.GetChainInfo(0,CHAININFO_TARGET_PARAM)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-atk)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1100)",
+        'eventName: "discarded"',
         'eventName: "becameTarget"',
       ],
     },
@@ -7469,6 +7493,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetAttackDefenseStandbyBoost: 0,
       sameCodeGroupFinalAttackStat: 0,
       twoTargetHalveTransferFinalStat: 0,
+      discardAttackTargetLossStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
