@@ -652,6 +652,15 @@ function restoreKnownLuaStateEffects(
   for (const sourceUid of equipLimitSourceUids) {
     const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
     if (!card || card.location !== "spellTrapZone" || card.equippedToUid === undefined) continue;
+    const existingKeys = new Set(session.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key)));
+    const needsEquipLimitRestore = snapshotEffects.some((effect) =>
+      effect.sourceUid === sourceUid &&
+      effect.registryKey !== undefined &&
+      registryKeys.has(effect.registryKey) &&
+      effect.code === luaEffectEquipLimit &&
+      !existingKeys.has(effect.registryKey)
+    );
+    if (!needsEquipLimitRestore) continue;
     const script = `
       local c=Duel.GetFieldCard(${card.controller},LOCATION_SZONE,${card.sequence})
       if c and c:IsFieldID(${cardFieldId(card)}) then
