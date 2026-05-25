@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 383;
+export const operationFixtureCount = 384;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -56,6 +56,7 @@ export const operationKindCounts = {
   deckSetcodeCostTargetBoostStat: 1,
   twoTargetSetBaseAttackSwapStat: 1,
   attackAnnounceTargetBoostStat: 1,
+  freeChainTargetAttackBoostStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -372,6 +373,7 @@ export type OperationKind =
   | "deckSetcodeCostTargetBoostStat"
   | "twoTargetSetBaseAttackSwapStat"
   | "attackAnnounceTargetBoostStat"
+  | "freeChainTargetAttackBoostStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1105,6 +1107,24 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc1:GetBaseAttack())",
         "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-back-up-rider-target-stat.test.ts",
+      kind: "freeChainTargetAttackBoostStat",
+      required: [
+        "restores face-up target attack boost",
+        "Back-Up Rider",
+        "e1:SetCategory(CATEGORY_ATKCHANGE)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "local tc=Duel.GetFirstTarget()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(1500)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(3200)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7609,6 +7629,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       deckSetcodeCostTargetBoostStat: 0,
       twoTargetSetBaseAttackSwapStat: 0,
       attackAnnounceTargetBoostStat: 0,
+      freeChainTargetAttackBoostStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
