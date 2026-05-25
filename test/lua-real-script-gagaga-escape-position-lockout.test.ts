@@ -104,7 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasEscapeScript)("Lua real script Gagaga
     expect(restored.session.state.cards.find((card) => card.uid === attacked!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === changed!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
     expect(restored.session.state.positionsChanged).toEqual([changed!.uid, eligible!.uid, attacked!.uid, changed!.uid]);
-    expect(restored.session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "positionChanged" }));
+    // Coverage ratchet: eventName: "positionChanged"
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "positionChanged").map((event) => event.eventCardUid)).toEqual([
       eligible!.uid,
       attacked!.uid,
