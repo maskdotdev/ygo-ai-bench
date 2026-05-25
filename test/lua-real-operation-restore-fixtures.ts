@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 365;
+export const operationFixtureCount = 366;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -38,6 +38,7 @@ export const operationKindCounts = {
   targetAttackPierceClientHint: 1,
   twoTargetOpponentBaseAttackFinal: 1,
   targetAttackNormalizeGroupFinal: 1,
+  targetDefensePositionFinalDefense: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -336,6 +337,7 @@ export type OperationKind =
   | "targetAttackPierceClientHint"
   | "twoTargetOpponentBaseAttackFinal"
   | "targetAttackNormalizeGroupFinal"
+  | "targetDefensePositionFinalDefense"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -915,6 +917,24 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(atk)",
         "currentAttack(findCard(restored.session, ownDifferent.uid), restored.session.state)).toBe(2100)",
         "currentAttack(findCard(restored.session, opponentDifferent.uid), restored.session.state)).toBe(2100)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-d2-shield-final-defense.test.ts",
+      kind: "targetDefensePositionFinalDefense",
+      required: [
+        "restores face-up defense target final DEF doubled from base DEF",
+        "D2 Shield",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "Duel.IsExistingTarget(Card.IsPosition,tp,LOCATION_MZONE,0,1,nil,POS_FACEUP_DEFENSE)",
+        "Duel.SelectTarget(tp,Card.IsPosition,tp,LOCATION_MZONE,0,1,1,nil,POS_FACEUP_DEFENSE)",
+        "local def=tc:GetBaseDefense()",
+        "e1:SetCode(EFFECT_SET_DEFENSE_FINAL)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
+        "e1:SetValue(def*2)",
+        "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(3600)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7224,6 +7244,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetAttackPierceClientHint: 0,
       twoTargetOpponentBaseAttackFinal: 0,
       targetAttackNormalizeGroupFinal: 0,
+      targetDefensePositionFinalDefense: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
