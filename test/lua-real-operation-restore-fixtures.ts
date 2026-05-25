@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 380;
+export const operationFixtureCount = 381;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -53,6 +53,7 @@ export const operationKindCounts = {
   discardAttackTargetLossStat: 1,
   namedGraveCountTargetLossStat: 1,
   graveMonsterCountTargetBoostStat: 1,
+  deckSetcodeCostTargetBoostStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -366,6 +367,7 @@ export type OperationKind =
   | "discardAttackTargetLossStat"
   | "namedGraveCountTargetLossStat"
   | "graveMonsterCountTargetBoostStat"
+  | "deckSetcodeCostTargetBoostStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1099,6 +1101,28 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc1:GetBaseAttack())",
         "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-infestation-tool-deck-cost-stat.test.ts",
+      kind: "deckSetcodeCostTargetBoostStat",
+      required: [
+        "restores Steelswarm deck cost into targeted attack boost",
+        "Infestation Tool",
+        "s.listed_series={SET_STEELSWARM}",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "return c:IsSetCard(SET_STEELSWARM) and c:IsMonster() and c:IsAbleToGraveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "return c:IsFaceup() and c:IsSetCard(SET_STEELSWARM)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetReset(RESETS_STANDARD_PHASE_END)",
+        "e1:SetValue(800)",
+        "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(2600)",
+        'eventName: "sentToGraveyard"',
         'eventName: "becameTarget"',
       ],
     },
@@ -7537,6 +7561,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       discardAttackTargetLossStat: 0,
       namedGraveCountTargetLossStat: 0,
       graveMonsterCountTargetBoostStat: 0,
+      deckSetcodeCostTargetBoostStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
