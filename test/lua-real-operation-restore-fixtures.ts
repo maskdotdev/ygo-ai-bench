@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 402;
+export const operationFixtureCount = 403;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -26,6 +26,7 @@ export const operationKindCounts = {
   heroicFinalAttackDirectLock: 1,
   massivemorphFinalStatDirectLock: 1,
   attackAnnounceLpCostStat: 1,
+  standbyCostTargetStat: 1,
   darkMagicTwinBurstGirlCountStat: 1,
   attackAnnounceFusionBattleStat: 1,
   groupSetcodeCountStat: 1,
@@ -361,6 +362,7 @@ export type OperationKind =
   | "heroicFinalAttackDirectLock"
   | "massivemorphFinalStatDirectLock"
   | "attackAnnounceLpCostStat"
+  | "standbyCostTargetStat"
   | "darkMagicTwinBurstGirlCountStat"
   | "attackAnnounceFusionBattleStat"
   | "groupSetcodeCountStat"
@@ -736,6 +738,29 @@ export function operationFixtureFiles(): Array<{
         "e3:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
         "currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(3200)",
         "currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(2400)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-infernalqueen-archfiend-standby-cost-stat.test.ts",
+      kind: "standbyCostTargetStat",
+      required: [
+        "restores mandatory Standby LP upkeep into targeted Archfiend ATK gain",
+        "Infernalqueen Archfiend",
+        "e1:SetCode(EVENT_PHASE|PHASE_STANDBY)",
+        "Duel.CheckLPCost(tp,500)",
+        "Duel.PayLPCost(tp,500)",
+        "Duel.Destroy(e:GetHandler(),REASON_COST)",
+        "e2:SetCode(EVENT_CHAIN_SOLVING)",
+        "Duel.TossDice(tp,1)",
+        "Duel.NegateEffect(ev)",
+        "e3:SetCode(EVENT_PHASE|PHASE_STANDBY)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(1000)",
+        "lifePoints).toBe(7500)",
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === queen.uid), restoredTrigger.session.state)).toBe(1900)",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "becameTarget"',
       ],
     },
     {
@@ -8005,6 +8030,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       heroicFinalAttackDirectLock: 0,
       massivemorphFinalStatDirectLock: 0,
       attackAnnounceLpCostStat: 0,
+      standbyCostTargetStat: 0,
       darkMagicTwinBurstGirlCountStat: 0,
       attackAnnounceFusionBattleStat: 0,
       groupSetcodeCountStat: 0,
