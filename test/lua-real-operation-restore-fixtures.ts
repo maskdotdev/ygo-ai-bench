@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 376;
+export const operationFixtureCount = 377;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -49,6 +49,7 @@ export const operationKindCounts = {
   synchroGiftAttackTransferFinalStat: 1,
   targetAttackDefenseStandbyBoost: 1,
   sameCodeGroupFinalAttackStat: 1,
+  twoTargetHalveTransferFinalStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -358,6 +359,7 @@ export type OperationKind =
   | "synchroGiftAttackTransferFinalStat"
   | "targetAttackDefenseStandbyBoost"
   | "sameCodeGroupFinalAttackStat"
+  | "twoTargetHalveTransferFinalStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -1091,6 +1093,27 @@ export function operationFixtureFiles(): Array<{
         "e1:SetValue(tc1:GetBaseAttack())",
         "e2:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300)",
+        'eventName: "becameTarget"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-riryoku-target-pair-stat.test.ts",
+      kind: "twoTargetHalveTransferFinalStat",
+      required: [
+        "restores two-target final halve and paired attack gain",
+        "Riryoku",
+        "Duel.IsExistingTarget(Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,2,nil)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,2,2,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,g,#g,tp,0)",
+        "local g=Duel.GetTargetCards(e):Filter(Card.IsFaceup,nil)",
+        "hc=g:Select(tp,1,1,nil):GetFirst()",
+        "g:RemoveCard(hc)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(atk/2)",
+        "e2:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetValue(atk/2)",
+        "currentAttack(findCard(restored.session, high.uid), restored.session.state)).toBe(1500)",
+        "currentAttack(findCard(restored.session, low.uid), restored.session.state)).toBe(2500)",
         'eventName: "becameTarget"',
       ],
     },
@@ -7445,6 +7468,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       synchroGiftAttackTransferFinalStat: 0,
       targetAttackDefenseStandbyBoost: 0,
       sameCodeGroupFinalAttackStat: 0,
+      twoTargetHalveTransferFinalStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
