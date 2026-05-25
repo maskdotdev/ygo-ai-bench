@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 335;
+export const operationFixtureCount = 336;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -28,6 +28,7 @@ export const operationKindCounts = {
   targetDestroyRemainingGroupStat: 1,
   targetGroupDestroyCountStat: 1,
   summonTargetGroupDestroyCountStat: 1,
+  summonTriggerSetFinalAttack: 1,
   summonBackrowDestroyAttackDrop: 1,
   damageStepTargetFinalStatSpellTrapDestroy: 1,
   standbyStatDestroyRecover: 1,
@@ -296,6 +297,7 @@ export type OperationKind =
   | "targetDestroyRemainingGroupStat"
   | "targetGroupDestroyCountStat"
   | "summonTargetGroupDestroyCountStat"
+  | "summonTriggerSetFinalAttack"
   | "summonBackrowDestroyAttackDrop"
   | "damageStepTargetFinalStatSpellTrapDestroy"
   | "standbyStatDestroyRecover"
@@ -540,6 +542,24 @@ export function operationFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-armor-ninjitsu-rust-mist-special-summon-stat.test.ts",
+      kind: "summonTriggerSetFinalAttack",
+      required: [
+        "restores its face-up summon trigger into final ATK half for all opponent summons in the event group",
+        "Duel.CheckEvent(EVENT_SPSUMMON_SUCCESS,true)",
+        "Duel.SelectYesNo(tp,94)",
+        "e2:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_F)",
+        "e2:SetRange(LOCATION_SZONE)",
+        "e2:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SetTargetCard(eg)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(tc:GetAttack()/2)",
+        'eventName: "specialSummoned"',
+        "currentAttack(findCard(restoredTrigger.session, opponentFirst.uid), restoredTrigger.session.state)).toBe(1400)",
+        "value: 1400",
+      ],
+    },
     {
       file: "test/lua-real-script-cooky-yummy-procedure-synchro-branch.test.ts",
       kind: "handProcedureSynchroSummonSelectDestroy",
@@ -6531,6 +6551,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetDestroyRemainingGroupStat: 0,
       targetGroupDestroyCountStat: 0,
       summonTargetGroupDestroyCountStat: 0,
+      summonTriggerSetFinalAttack: 0,
       summonBackrowDestroyAttackDrop: 0,
       damageStepTargetFinalStatSpellTrapDestroy: 0,
       standbyStatDestroyRecover: 0,
