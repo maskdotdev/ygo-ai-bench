@@ -75,6 +75,7 @@ const luaMaharaghiCode = "40695128"; const luaHinoKaguTsuchiCode = "75745607"; c
 const luaXxSaberDarksoulCode = "31383545"; const luaDragodiesCode = "65472618"; const luaPerformapalCelestialMagicianCode = "58092907";
 const luaByeByeDamageCode = "20735371";
 const luaMirrorWallCode = "22359980";
+const luaMagnificentMachineAngelCode = "27331568";
 const luaFamiliarPossessedDharcCode = "21390858"; const luaDarkMagicExpandedCode = "111280";
 const luaEucalyptusMoleCode = "71228611";
 const luaEbonArrowCode = "88341502"; const luaDivineEvolutionCode = "7373632";
@@ -96,7 +97,7 @@ const luaLeaveFieldLinkedDestroyCodes = new Set(["29013526", "29139104", "565248
 const luaSetMegalith = 0x138;
 const luaSetSpellbook = 0x106e; const luaSetEvoltile = 0x304e;
 const luaCategorySpecialSummon = 0x200; const luaLocationDeck = 0x1;
-const luaSummonTypeGemini = 0x12000000; const luaLocationMonsterZone = 0x4;
+const luaSummonTypeGemini = 0x12000000; const luaLocationMonsterZone = 0x4; const luaLocationExtraDeck = 0x40;
 const luaTypeMonster = 0x1; const luaTypeSpell = 0x2; const luaTypeRitual = 0x80; const luaTypeSpirit = 0x200; const luaTypeTuner = 0x1000;
 const luaRaceFiend = 0x8; const luaRaceMachine = 0x200;
 const luaCategoryAtkChange = 0x200000;
@@ -704,6 +705,7 @@ function restoreKnownLuaEffects(
 
 function restoredLuaSemanticMetadata(effect: SerializedDuelEffect): Partial<Pick<SerializedDuelEffect, "event" | "luaTargetDescriptor" | "luaValueDescriptor">> {
   if (isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect)) return { event: "trigger" };
+  if (isKnownMagnificentMachineAngelBattleStartDisableEffect(effect)) return { event: "trigger" };
   if (isKnownEucalyptusMoleNonEffectBeastAttackBoost(effect)) {
     return {
       luaTargetDescriptor: "target:non-effect-race:16384",
@@ -729,6 +731,7 @@ function restoredLuaTriggerMetadata(effect: SerializedDuelEffect): Partial<Pick<
   if (isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect)) return { triggerEvent: "battleDamageDealt" as const, triggerCode: luaEventBattleDamage, triggerTiming: "when" as const };
   if (isKnownSelfEndPhaseDestroyEffect(effect) || isKnownSelfEndPhaseSendEffect(effect) || isKnownSelfEndPhaseReturnToHandEffect(effect) || isKnownSelfEndPhaseBanishEffect(effect) || isKnownDelayedGroupSendToHandEffect(effect) || isKnownWakeCupMochaDelayedSendToGraveEffect(effect) || isKnownLimiterRemovalDelayedDestroyEffect(effect) || isKnownRagingMadPlantsDelayedDestroyEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownPurushaddollAeonDelayedFlipEffect(effect) || isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownDelayedBattleDestroyPhaseEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
   if (isKnownOuroborosSageAttackLimitWatcherEffect(effect) || isKnownOuroborosSageAttackDoubleEffect(effect)) return { triggerEvent: "attackDeclared" as const, triggerCode: 1130, triggerTiming: "when" as const };
+  if (isKnownMagnificentMachineAngelBattleStartDisableEffect(effect)) return { triggerEvent: "battleStarted" as const, triggerCode: 1132, triggerTiming: "when" as const };
   if (isKnownCarpedivemTurnEndHintResetEffect(effect)) return { triggerEvent: "turnEnded" as const, triggerCode: 1210, triggerTiming: "if" as const };
   if (isKnownMaharaghiPredrawEffect(effect) || isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return { triggerEvent: "preDraw" as const, triggerCode: 1113, triggerTiming: "if" as const };
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return { triggerEvent: "phaseBattle" as const, triggerCode: 0x1080, triggerTiming: "if" as const };
@@ -884,6 +887,7 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownPhotonTridentBattleDamageDestroyEffect(effect) ||
     isKnownByeByeDamageSyntheticBattleIndestructibleEffect(effect) ||
     isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect) ||
+    isKnownMagnificentMachineAngelBattleStartDisableEffect(effect) ||
     isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect) ||
     isKnownDivineEvolutionAttackAnnounceSendEffect(effect) ||
     isKnownOuroborosSageAttackLimitWatcherEffect(effect) ||
@@ -1168,6 +1172,47 @@ function isKnownMirrorWallAttackHalveEffect(effect: SerializedDuelEffect): boole
     effect.range.length === 1 &&
     effect.range[0] === "spellTrapZone" &&
     (effect.labelObjectUids?.length ?? 0) > 0;
+}
+function isKnownMagnificentMachineAngelBattleStartDisableEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaMagnificentMachineAngelCode}:`)) &&
+    (effect.event === "continuous" || effect.event === "trigger") &&
+    effect.code === 1132 &&
+    (effect.triggerEvent === undefined || effect.triggerEvent === "battleStarted") &&
+    effect.sourceUid !== undefined &&
+    effect.reset !== undefined;
+}
+function magnificentMachineAngelBattleStartDisableOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle;
+    if (!battle || (battle.attackerUid !== effect.sourceUid && battle.targetUid !== effect.sourceUid)) return;
+    const battleTargetUid = battle.attackerUid === effect.sourceUid ? battle.targetUid : battle.attackerUid;
+    const battleTarget = battleTargetUid ? ctx.duel.cards.find((card) => card.uid === battleTargetUid) : undefined;
+    if (!battleTarget || !isSpecialSummonedFromExtraDeck(battleTarget)) return;
+    ctx.duel.effects.push({
+      id: `${effect.id}-disable`,
+      event: "continuous",
+      code: 2,
+      controller: effect.controller,
+      sourceUid: battleTarget.uid,
+      range: ["monsterZone"],
+      reset: { flags: luaResetEventStandard | luaResetPhase | luaPhaseBattle },
+      operation: () => {},
+    });
+    ctx.duel.effects.push({
+      id: `${effect.id}-disable-effect`,
+      event: "continuous",
+      code: 8,
+      controller: effect.controller,
+      sourceUid: battleTarget.uid,
+      range: ["monsterZone"],
+      reset: { flags: luaResetEventStandard | luaResetPhase | luaPhaseBattle },
+      operation: () => {},
+    });
+  };
+}
+function isSpecialSummonedFromExtraDeck(card: DuelCardInstance): boolean {
+  if (card.summonType === undefined || card.summonType === "normal" || card.summonType === "tribute" || card.summonType === "flip") return false;
+  return card.kind === "extra" || locationMatchesCardMask(card, luaLocationExtraDeck, card.previousLocation, card.previousSequence);
 }
 function isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith(`lua:${luaMermailAbyssbalaenCode}:`)) &&
@@ -1706,6 +1751,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownUradoraBattleDestroyingDrawRecoverEffect(effect)) return uradoraBattleDestroyingDrawRecoverOperation(effect);
   if (isKnownPhotonTridentBattleDamageDestroyEffect(effect)) return photonTridentBattleDamageDestroyOperation(effect);
   if (isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect)) return byeByeDamageSyntheticBattleDamageReflectOperation(effect);
+  if (isKnownMagnificentMachineAngelBattleStartDisableEffect(effect)) return magnificentMachineAngelBattleStartDisableOperation(effect);
   if (isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect)) return mermailAbyssbalaenBattleStartDestroyOperation(effect);
   if (isKnownDivineEvolutionAttackAnnounceSendEffect(effect)) return divineEvolutionAttackAnnounceSendOperation(effect);
   if (isKnownOuroborosSageAttackLimitWatcherEffect(effect)) return ouroborosSageAttackLimitWatcherOperation(effect);

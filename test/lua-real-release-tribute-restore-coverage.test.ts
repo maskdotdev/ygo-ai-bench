@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const releaseAndTributeFixtureCount = 12;
+const releaseAndTributeFixtureCount = 13;
 const legalActionFixtureCount = 9;
 const releaseAndTributeKindCounts = {
   archetypeCannotRelease: 1,
@@ -14,6 +14,7 @@ const releaseAndTributeKindCounts = {
   globalCannotRelease: 1,
   linkReleaseCost: 1,
   plantReleaseCost: 1,
+  ritualReleaseCostStatDisable: 1,
   raceTributeLimit: 1,
   setcodeTributeLimit: 1,
   unreleasableTributeLock: 1,
@@ -22,6 +23,7 @@ const releaseAndTributeSemanticVariantCounts = {
   amorphageWrathConditionalCannotRelease: 1,
   apoqliphortSetcodeTributeLimit: 1,
   assaultZoneExtraDeckReleaseCost: 1,
+  cyberAngelRitualReleaseStatDisable: 1,
   diabolosAttributeTributeLimit: 1,
   kaiserSeaHorseLightDoubleTribute: 1,
   maskOfRestrictGlobalCannotRelease: 1,
@@ -41,6 +43,7 @@ type ReleaseAndTributeKind =
   | "globalCannotRelease"
   | "linkReleaseCost"
   | "plantReleaseCost"
+  | "ritualReleaseCostStatDisable"
   | "raceTributeLimit"
   | "setcodeTributeLimit"
   | "unreleasableTributeLock";
@@ -48,6 +51,7 @@ type ReleaseAndTributeSemanticVariant =
   | "amorphageWrathConditionalCannotRelease"
   | "apoqliphortSetcodeTributeLimit"
   | "assaultZoneExtraDeckReleaseCost"
+  | "cyberAngelRitualReleaseStatDisable"
   | "diabolosAttributeTributeLimit"
   | "kaiserSeaHorseLightDoubleTribute"
   | "maskOfRestrictGlobalCannotRelease"
@@ -226,6 +230,22 @@ function releaseAndTributeFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-magnificent-machine-angel-release-stat-disable.test.ts",
+      kind: "ritualReleaseCostStatDisable",
+      required: [
+        "Magnificent Machine Angel",
+        "Duel.CheckReleaseGroupCost(tp,s.costfilter,1,true,nil,nil,tp)",
+        "Duel.SelectReleaseGroupCost(tp,s.costfilter,1,1,true,nil,nil,tp)",
+        "e:SetLabel(g:GetFirst():GetLevel())",
+        "Duel.Release(g,REASON_COST)",
+        "EFFECT_UPDATE_ATTACK",
+        "EFFECT_UPDATE_DEFENSE",
+        "EVENT_BATTLE_START",
+        "EFFECT_DISABLE_EFFECT",
+        "duelReason.cost | duelReason.release",
+      ],
+    },
+    {
       file: "lua-real-script-spright-red-release-link2-negate.test.ts",
       kind: "linkReleaseCost",
       required: [
@@ -314,6 +334,18 @@ function releaseAndTributeSemanticVariants(): Array<{
         'const assaultZoneCode = "91002901"',
         "activates Assault Mode Activate by releasing a Synchro Monster from the Extra Deck after restore",
         "effectExtraReleaseNonsum",
+      ],
+    },
+    {
+      file: "lua-real-script-magnificent-machine-angel-release-stat-disable.test.ts",
+      kind: "cyberAngelRitualReleaseStatDisable",
+      required: [
+        "setCyberAngel",
+        "typeRitual",
+        "Duel.CheckReleaseGroupCost(tp,s.costfilter,1,true,nil,nil,tp)",
+        "Duel.Release(g,REASON_COST)",
+        "effectUpdateDefense",
+        "effectDisableEffect",
       ],
     },
     {
@@ -432,6 +464,7 @@ function countReleaseAndTributeKinds(
       globalCannotRelease: 0,
       linkReleaseCost: 0,
       plantReleaseCost: 0,
+      ritualReleaseCostStatDisable: 0,
       raceTributeLimit: 0,
       setcodeTributeLimit: 0,
       unreleasableTributeLock: 0,
@@ -451,6 +484,7 @@ function countReleaseAndTributeSemanticVariants(
       amorphageWrathConditionalCannotRelease: 0,
       apoqliphortSetcodeTributeLimit: 0,
       assaultZoneExtraDeckReleaseCost: 0,
+      cyberAngelRitualReleaseStatDisable: 0,
       diabolosAttributeTributeLimit: 0,
       kaiserSeaHorseLightDoubleTribute: 0,
       maskOfRestrictGlobalCannotRelease: 0,
