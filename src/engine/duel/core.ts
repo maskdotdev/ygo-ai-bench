@@ -424,7 +424,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     }));
     actions.push(...corePositionChangeActions(state, player, coreBattleHandlers));
   }
-  else if (!currentPhaseSkipped) {
+  else if (!currentPhaseSkipped || hasSkippedBattleAttackDisabledWindow(state)) {
     actions.push(...quickEffectActions(state, player));
   }
   if (!currentPhaseSkipped) appendBattleActions(actions, state, player, coreBattleHandlers);
@@ -433,6 +433,15 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
   if (!mustAttack && nextPhase) actions.push({ type: "changePhase", player, phase: nextPhase, label: `Go to ${nextPhase}` });
   if (!mustAttack) actions.push({ type: "endTurn", player, label: "End turn" });
   return stampDuelActions(actions, state.actionWindowId, "open", state.actionWindowToken);
+}
+
+function hasSkippedBattleAttackDisabledWindow(state: DuelState): boolean {
+  return state.phase === "battle" &&
+    state.chain.length === 0 &&
+    state.pendingTriggers.length === 0 &&
+    state.pendingBattle === undefined &&
+    state.currentAttack === undefined &&
+    state.eventHistory.some((event) => event.eventName === "attackDisabled");
 }
 
 export function getGroupedDuelLegalActions(session: DuelSession, player: PlayerId): ReturnType<typeof groupDuelLegalActions> {

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 491; const statKindCounts = {
+const statFixtureCount = 493; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -94,6 +94,8 @@ const statFixtureCount = 491; const statKindCounts = {
   trickstarDelfiendiumAttackToHandStat: 1,
   clashingSoulsPreDamageLpBattleWipeStat: 1,
   sonicBoomMpbFinalPierceEndDestroyStat: 1,
+  concentratingCurrentDefenseAttackOathStat: 1,
+  lightWingShieldAttackDisabledUtopiaStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -557,6 +559,8 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   trickstarDelfiendiumAttackToHandStat: 1,
   clashingSoulsPreDamageLpBattleWipeStat: 1,
   sonicBoomMpbFinalPierceEndDestroyStat: 1,
+  concentratingCurrentDefenseAttackOathStat: 1,
+  lightWingShieldAttackDisabledUtopiaStat: 1,
   cubicKarmaActivateTriggerSearchStat: 1,
   refrainMelodiousPzoneSummonSearchStat: 1,
   yosenTrainingGroundsCounterSearchStat: 1,
@@ -907,6 +911,8 @@ type ExtraStatKind =
   | "trickstarDelfiendiumAttackToHandStat"
   | "clashingSoulsPreDamageLpBattleWipeStat"
   | "sonicBoomMpbFinalPierceEndDestroyStat"
+  | "concentratingCurrentDefenseAttackOathStat"
+  | "lightWingShieldAttackDisabledUtopiaStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -1408,6 +1414,8 @@ type ExtraStatSemanticVariant =
   | "trickstarDelfiendiumAttackToHandStat"
   | "clashingSoulsPreDamageLpBattleWipeStat"
   | "sonicBoomMpbFinalPierceEndDestroyStat"
+  | "concentratingCurrentDefenseAttackOathStat"
+  | "lightWingShieldAttackDisabledUtopiaStat"
   | "cubicKarmaActivateTriggerSearchStat"
   | "refrainMelodiousPzoneSummonSearchStat"
   | "yosenTrainingGroundsCounterSearchStat"
@@ -3547,6 +3555,53 @@ function statFixtureFiles(): Array<{
         "eventName: \"phaseEnd\"",
         "eventName: \"destroyed\"",
         "eventName: \"sentToGraveyard\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-concentrating-current-defense-attack-oath-stat.test.ts",
+      kind: "concentratingCurrentDefenseAttackOathStat",
+      required: [
+        'const currentCode = "20501450"',
+        "Concentrating Current",
+        "restores attacked-monster-only quick activation into DEF-based ATK gain and attack oath",
+        "aux.GlobalCheck(s,function()",
+        "EVENT_ATTACK_ANNOUNCE",
+        "EVENT_ADJUST",
+        "aux.StatChangeDamageStepCondition",
+        "c:HasNonZeroDefense()",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil,tp,costchk)",
+        "EFFECT_CANNOT_ATTACK",
+        "aux.RegisterClientHint(e:GetHandler(),nil,tp,0,1,aux.Stringid(id,1),nil)",
+        "EFFECT_UPDATE_ATTACK",
+        "e1:SetValue(tc:GetDefense())",
+        "effectId === \"lua-1-1002\"",
+        "toBe(2600)",
+        "eventName: \"attackDeclared\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-light-wing-shield-attack-disabled-utopia-stat.test.ts",
+      kind: "lightWingShieldAttackDisabledUtopiaStat",
+      required: [
+        'const lightWingShieldCode = "83880087"',
+        "Light Wing Shield",
+        "restores attack-disabled SelectOption target branch into Utopia final ATK doubling",
+        "EVENT_ATTACK_DISABLED",
+        "Duel.SelectOption(tp,aux.Stringid(id,0),aux.Stringid(id,1))",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SkipPhase(turnp,PHASE_BATTLE,RESET_PHASE|PHASE_END,1,1)",
+        "EFFECT_CANNOT_BP",
+        "EFFECT_SET_ATTACK_FINAL",
+        "e1:SetValue(tc:GetBaseAttack()*2)",
+        "EFFECT_OVERLAY_REMOVE_REPLACE",
+        "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_COST)",
+        "effectId === \"lua-1-1142\"",
+        "api: \"SelectOption\"",
+        "toBe(5000)",
+        "eventName: \"attackDisabled\"",
+        "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -10377,6 +10432,8 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       trickstarDelfiendiumAttackToHandStat: 0,
       clashingSoulsPreDamageLpBattleWipeStat: 0,
       sonicBoomMpbFinalPierceEndDestroyStat: 0,
+      concentratingCurrentDefenseAttackOathStat: 0,
+      lightWingShieldAttackDisabledUtopiaStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
@@ -10710,6 +10767,41 @@ function statSemanticVariants(): Array<{
         "eventName: \"phaseEnd\"",
         "eventName: \"destroyed\"",
         "eventName: \"sentToGraveyard\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-concentrating-current-defense-attack-oath-stat.test.ts",
+      kind: "concentratingCurrentDefenseAttackOathStat",
+      required: [
+        'const currentCode = "20501450"',
+        "Concentrating Current",
+        "EVENT_ATTACK_ANNOUNCE",
+        "EVENT_ADJUST",
+        "EFFECT_CANNOT_ATTACK",
+        "EFFECT_UPDATE_ATTACK",
+        "effectId === \"lua-1-1002\"",
+        "toBe(2600)",
+        "eventName: \"attackDeclared\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-light-wing-shield-attack-disabled-utopia-stat.test.ts",
+      kind: "lightWingShieldAttackDisabledUtopiaStat",
+      required: [
+        'const lightWingShieldCode = "83880087"',
+        "Light Wing Shield",
+        "EVENT_ATTACK_DISABLED",
+        "Duel.SelectOption(tp,aux.Stringid(id,0),aux.Stringid(id,1))",
+        "EFFECT_CANNOT_BP",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_OVERLAY_REMOVE_REPLACE",
+        "effectId === \"lua-1-1142\"",
+        "api: \"SelectOption\"",
+        "toBe(5000)",
+        "eventName: \"attackDisabled\"",
+        "eventName: \"becameTarget\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -16832,6 +16924,8 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       trickstarDelfiendiumAttackToHandStat: 0,
       clashingSoulsPreDamageLpBattleWipeStat: 0,
       sonicBoomMpbFinalPierceEndDestroyStat: 0,
+      concentratingCurrentDefenseAttackOathStat: 0,
+      lightWingShieldAttackDisabledUtopiaStat: 0,
       cubicKarmaActivateTriggerSearchStat: 0,
       refrainMelodiousPzoneSummonSearchStat: 0,
       yosenTrainingGroundsCounterSearchStat: 0,
