@@ -413,8 +413,9 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       const registeredSource = findCard(state, effect.sourceUid);
       const source = registeredSource ? activationSourceForEffect(state, effect, registeredSource, player) : undefined;
       if (!source || !activationEffectInUsableRange(state, effect, source, player)) continue;
+      if (effect.event === "quick" && effect.triggerEvent !== undefined && quickEffectEventContext(state, effect) === undefined) continue;
       if (!canUseEffectCount(state, effect)) continue;
-      if (!canChooseEffect(state, effect, source, player)) continue;
+      if (!canChooseEffect(state, effect, source, player) && !isRestoredEquippedIgnitionAction(effect, source)) continue;
       actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
     }
     actions.push(...flipSummonActions(state, player).filter((action) => {
@@ -837,6 +838,10 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
   if (effect.cost && !effect.cost(ctx)) return false;
   if (effect.target && !effect.target(ctx)) return false;
   return true;
+}
+
+function isRestoredEquippedIgnitionAction(effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  return effect.event === "ignition" && (effect.luaConditionDescriptor === undefined || effect.luaConditionDescriptor === "condition:source-equipped") && effect.range.includes("spellTrapZone") && source.location === "spellTrapZone" && source.equippedToUid !== undefined;
 }
 
 function hasChainResponses(state: DuelState, player: PlayerId): boolean {
