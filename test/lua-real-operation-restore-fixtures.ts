@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 357;
+export const operationFixtureCount = 358;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -30,6 +30,7 @@ export const operationKindCounts = {
   attackAnnounceFusionBattleStat: 1,
   groupSetcodeCountStat: 1,
   preDamageLpDifferenceAttackStat: 1,
+  preDamageLinkedLevelStat: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -320,6 +321,7 @@ export type OperationKind =
   | "attackAnnounceFusionBattleStat"
   | "groupSetcodeCountStat"
   | "preDamageLpDifferenceAttackStat"
+  | "preDamageLinkedLevelStat"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -742,6 +744,25 @@ export function operationFixtureFiles(): Array<{
         "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE_CAL)",
         "e1:SetValue(atk)",
         "currentAttack(findCard(restoredPreDamage.session, attacker.uid), restoredPreDamage.session.state)).toBe(4500)",
+        'eventName: "beforeDamageCalculation"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-star-power-linked-level-stat.test.ts",
+      kind: "preDamageLinkedLevelStat",
+      required: [
+        "restores pre-damage Link ATK boost from pointed-to monster levels only",
+        "Star Power!!",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "return c:IsFaceup() and (c:IsLevelAbove(1) or c:IsRankAbove(1))",
+        "a:IsLinkMonster() and a:GetLinkedGroup():IsExists(s.filter,1,nil)",
+        "local g=a:GetLinkedGroup():Filter(s.filter,nil)",
+        "for tc in aux.Next(g) do tot=tot+math.max(tc:GetLevel(),tc:GetRank()) end",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(tot*400)",
+        "e1:SetReset(RESET_EVENT|RESETS_STANDARD|RESET_PHASE|PHASE_DAMAGE_CAL)",
+        "currentAttack(findCard(restoredPreDamage.session, link.uid), restoredPreDamage.session.state)).toBe(3700)",
         'eventName: "beforeDamageCalculation"',
       ],
     },
@@ -7043,6 +7064,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackAnnounceFusionBattleStat: 0,
       groupSetcodeCountStat: 0,
       preDamageLpDifferenceAttackStat: 0,
+      preDamageLinkedLevelStat: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
