@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 344;
+export const operationFixtureCount = 345;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -17,6 +17,7 @@ export const operationKindCounts = {
   targetFlaggedBattlePierceDamageLockStat: 1,
   targetStatTransferDelayedContinuousPlace: 1,
   activationDisableSweepLinkedPreDamageStat: 1,
+  damageStepLpCostTargetAttackDrop: 1,
   battleDamageFlagDamageStepLowestDestroyStat: 1,
   timaeusImmunityPreDamageSpellCountDestroy: 1,
   armedDragonThresholdQuickWipe: 1,
@@ -294,6 +295,7 @@ export type OperationKind =
   | "targetFlaggedBattlePierceDamageLockStat"
   | "targetStatTransferDelayedContinuousPlace"
   | "activationDisableSweepLinkedPreDamageStat"
+  | "damageStepLpCostTargetAttackDrop"
   | "battleDamageFlagDamageStepLowestDestroyStat"
   | "timaeusImmunityPreDamageSpellCountDestroy"
   | "armedDragonThresholdQuickWipe"
@@ -579,6 +581,29 @@ export function operationFixtureFiles(): Array<{
         "currentAttack(findCard(restoredBattle.session, statLink.uid), restoredBattle.session.state)).toBe(2800)",
         "effectDisableEffect",
         "effectUpdateAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cornered-rat-lp-cost-damage-step-stat.test.ts",
+      kind: "damageStepLpCostTargetAttackDrop",
+      required: [
+        "restores Damage Step AnnounceNumber LP payment into opponent ATK loss",
+        "Attack of the Cornered Rat",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)",
+        "Duel.GetCurrentPhase()",
+        "Duel.IsDamageCalculated()",
+        "Duel.GetAttacker()",
+        "Duel.GetAttackTarget()",
+        "Duel.IsPlayerAffectedByEffect(tp,EFFECT_LPCOST_CHANGE)",
+        "Duel.CheckLPCost(tp,100)",
+        "Duel.AnnounceNumber(tp,table.unpack(t))",
+        "Duel.PayLPCost(tp,pay)",
+        "Duel.SetTargetCard(tc)",
+        "e1:SetOwnerPlayer(tp)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(e:GetLabel())",
+        "api: \"AnnounceNumber\"",
+        "currentAttack(findCard(restoredBattle.session, defender.uid), restoredBattle.session.state)).toBe(600)",
       ],
     },
     {
@@ -6742,6 +6767,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       targetFlaggedBattlePierceDamageLockStat: 0,
       targetStatTransferDelayedContinuousPlace: 0,
       activationDisableSweepLinkedPreDamageStat: 0,
+      damageStepLpCostTargetAttackDrop: 0,
       battleDamageFlagDamageStepLowestDestroyStat: 0,
       timaeusImmunityPreDamageSpellCountDestroy: 0,
       armedDragonThresholdQuickWipe: 0,
