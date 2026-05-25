@@ -98,6 +98,7 @@ const luaArcanaForceWorldCode = "23846921";
 const luaArcanaForceDarkRulerCode = "69831560";
 const luaArcanaForceFoolCode = "62892347";
 const luaProtonBlastCode = "49511705";
+const luaOldEntityHastorrCode = "70913714";
 const luaArcanaForceMoonCode = "97452817";
 const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
 const luaMegalithUnformedCode = "69003792"; const luaDaiDanceCode = "50696588"; const luaExosisterCarpedivemCode = "30802207";
@@ -322,9 +323,11 @@ function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string
       return true;
     })
     .map((effect) => {
-      const snapshotEffect = snapshotEffectsByKey.get(effect.registryKey ?? "") ?? semanticSnapshotEffectsByLiveKey.get(effect.registryKey ?? "");
+      const semanticSnapshotEffect = semanticSnapshotEffectsByLiveKey.get(effect.registryKey ?? "");
+      const snapshotEffect = snapshotEffectsByKey.get(effect.registryKey ?? "") ?? semanticSnapshotEffect;
       const rebound = rebindRestoredLuaEffectCallbacks(effect, liveLuaEffectsByKey.get(effect.registryKey ?? ""));
-      return mergeRestoredLuaEffectMetadata(rebound, snapshotEffect);
+      const restored = mergeRestoredLuaEffectMetadata(rebound, snapshotEffect);
+      return semanticSnapshotEffect ? { ...restored, id: semanticSnapshotEffect.id, registryKey: semanticSnapshotEffect.registryKey } : restored;
     });
   const exactRegistryKeys = session.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:") && registryKeys.has(key)));
   return [...new Set([...exactRegistryKeys, ...semanticRegistryKeys])];
@@ -398,14 +401,14 @@ function findRestoredLuaStateSnapshotEffect(
   snapshotEffects: SerializedDuelEffect[],
   restoredRegistryKeys: Set<string>,
 ): SerializedDuelEffect | undefined {
-  if (!isKnownLuaUnionStateEffect(session, effect) && !isKnownLuaGeminiStateEffect(effect) && !isKnownLuaMaterialSourceOnlyEventEffect(effect) && !isKnownProtonBlastRegisteredEffect(effect)) return undefined;
+  if (!isKnownLuaUnionStateEffect(session, effect) && !isKnownLuaGeminiStateEffect(effect) && !isKnownLuaMaterialSourceOnlyEventEffect(effect) && !isKnownProtonBlastRegisteredEffect(effect) && !isKnownOldEntityHastorrLeaveControlEffect(effect)) return undefined;
   return snapshotEffects.find((snapshotEffect) => {
     if (!snapshotEffect.registryKey || !registryKeys.has(snapshotEffect.registryKey) || restoredRegistryKeys.has(snapshotEffect.registryKey)) return false;
     return (
       snapshotEffect.sourceUid === effect.sourceUid &&
       snapshotEffect.event === effect.event &&
       snapshotEffect.code === effect.code &&
-      (isKnownLuaUnionStateEffect(session, snapshotEffect) || isKnownLuaGeminiStateEffect(snapshotEffect) || isKnownLuaMaterialSourceOnlyEventEffect(snapshotEffect) || isKnownProtonBlastRegisteredEffect(snapshotEffect))
+      (isKnownLuaUnionStateEffect(session, snapshotEffect) || isKnownLuaGeminiStateEffect(snapshotEffect) || isKnownLuaMaterialSourceOnlyEventEffect(snapshotEffect) || isKnownProtonBlastRegisteredEffect(snapshotEffect) || isKnownOldEntityHastorrLeaveControlEffect(snapshotEffect))
     );
   });
 }
@@ -506,6 +509,17 @@ function isKnownProtonBlastRegisteredEffect(effect: DuelEffectDefinition | Seria
   );
 }
 
+function isKnownOldEntityHastorrLeaveControlEffect(effect: DuelEffectDefinition | SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaOldEntityHastorrCode}:`)) &&
+    effect.sourceUid !== undefined &&
+    effect.event === "trigger" &&
+    effect.code === 1015 &&
+    effect.triggerEvent === "leftField" &&
+    effect.reset !== undefined
+  );
+}
+
 function restoreKnownLuaStateEffects(
   session: DuelSession,
   host: LuaScriptHost,
@@ -575,6 +589,11 @@ function restoreKnownLuaStateEffects(
   const protonBlastRegisteredSourceUids = new Set(
     snapshotEffects
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownProtonBlastRegisteredEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
+  const oldEntityHastorrLeaveControlSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownOldEntityHastorrLeaveControlEffect(effect))
       .map((effect) => effect.sourceUid),
   );
   const restoreBlazeCannonRaEffects = snapshotEffects.some((effect) => effect.registryKey?.startsWith(`lua:${luaBlazeCannonCode}:lua-3-1130`) && registryKeys.has(effect.registryKey));
@@ -650,6 +669,28 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-equip-limit-${card.uid}.lua`));
+  }
+  for (const sourceUid of oldEntityHastorrLeaveControlSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card || (card.location !== "spellTrapZone" && card.location !== "graveyard") || (card.equippedToUid === undefined && card.previousEquippedToUid === undefined)) continue;
+    const script = `
+      local s=c${luaOldEntityHastorrCode}
+      local c=Duel.GetFieldCard(${card.controller},LOCATION_SZONE,${card.sequence})
+      if not c then c=Duel.GetFirstMatchingCard(function(tc) return tc:IsFieldID(${cardFieldId(card)}) end,${card.controller},LOCATION_GRAVE,0,nil) end
+      if s and c and c:IsFieldID(${cardFieldId(card)}) then
+        local e1=Effect.CreateEffect(c)
+        e1:SetDescription(aux.Stringid(${luaOldEntityHastorrCode},1))
+        e1:SetCategory(CATEGORY_CONTROL)
+        e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)
+        e1:SetCode(EVENT_LEAVE_FIELD)
+        e1:SetCondition(s.ctcon)
+        e1:SetTarget(s.cttg)
+        e1:SetOperation(s.ctop)
+        e1:SetReset(RESET_EVENT|RESET_TURN_SET|RESET_TOFIELD)
+        c:RegisterEffect(e1)
+      end
+    `;
+    results.push(host.loadScript(script, `restore-old-entity-hastorr-leave-control-${card.uid}.lua`));
   }
   for (const sourceUid of new Set([...geminiStatusSourceUids, ...geminiReturnSourceUids])) {
     const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
