@@ -98,7 +98,7 @@ export function isKnownTemporaryCannotTriggerEffect(effect: SerializedDuelEffect
     effect.targetRange === undefined &&
     effect.reset?.flags !== undefined &&
     effect.range.length === 1 &&
-    effect.range[0] === "monsterZone"
+    (effect.range[0] === "monsterZone" || effect.range[0] === "spellTrapZone")
   );
 }
 
