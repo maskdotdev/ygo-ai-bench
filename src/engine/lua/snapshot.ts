@@ -93,6 +93,7 @@ const luaClashingSoulsCode = "57496978";
 const luaSagaDragonEmperorCode = "66156348";
 const luaMachineKing3000BcCode = "70406920";
 const luaArcanaForceHierophantCode = "3376703";
+const luaArcanaForceChariotCode = "34568403";
 const luaArcanaForceMoonCode = "97452817";
 const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
 const luaMegalithUnformedCode = "69003792"; const luaDaiDanceCode = "50696588"; const luaExosisterCarpedivemCode = "30802207";
@@ -445,6 +446,16 @@ function isKnownArcanaForceHierophantLimiterEffect(effect: SerializedDuelEffect)
   );
 }
 
+function isKnownArcanaForceChariotRegisteredEffect(effect: SerializedDuelEffect): boolean {
+  return (
+    Boolean(effect.registryKey?.startsWith(`lua:${luaArcanaForceChariotCode}:`)) &&
+    effect.sourceUid !== undefined &&
+    ((effect.event === "trigger" && effect.code === 1139 && effect.range.length === 1 && effect.range[0] === "monsterZone") ||
+      (effect.event === "continuous" && effect.code === luaEventAdjust && effect.range.length === 1 && effect.range[0] === "monsterZone")) &&
+    effect.reset?.flags === luaResetEventStandard
+  );
+}
+
 function restoreKnownLuaStateEffects(
   session: DuelSession,
   host: LuaScriptHost,
@@ -489,6 +500,11 @@ function restoreKnownLuaStateEffects(
   const hierophantLimiterSourceUids = new Set(
     snapshotEffects
       .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownArcanaForceHierophantLimiterEffect(effect))
+      .map((effect) => effect.sourceUid),
+  );
+  const chariotRegisteredSourceUids = new Set(
+    snapshotEffects
+      .filter((effect) => effect.registryKey && registryKeys.has(effect.registryKey) && isKnownArcanaForceChariotRegisteredEffect(effect))
       .map((effect) => effect.sourceUid),
   );
   const restoreBlazeCannonRaEffects = snapshotEffects.some((effect) => effect.registryKey?.startsWith(`lua:${luaBlazeCannonCode}:lua-3-1130`) && registryKeys.has(effect.registryKey));
@@ -721,6 +737,18 @@ function restoreKnownLuaStateEffects(
       end
     `;
     results.push(host.loadScript(script, `restore-arcana-force-hierophant-limiter-${card.uid}.lua`));
+  }
+  for (const sourceUid of chariotRegisteredSourceUids) {
+    const card = session.state.cards.find((candidate) => candidate.uid === sourceUid);
+    if (!card) continue;
+    const script = `
+      local s=c${luaArcanaForceChariotCode}
+      local c=Duel.GetFirstMatchingCard(function(tc) return tc:IsFieldID(${cardFieldId(card)}) end,${card.controller},${cardLocationMask(card.location)},0,nil)
+      if s and c then
+        s.arcanareg(c,c:GetFlagEffectLabel(${luaArcanaForceChariotCode}) or COIN_HEADS)
+      end
+    `;
+    results.push(host.loadScript(script, `restore-arcana-force-chariot-registered-${card.uid}.lua`));
   }
   return results;
 }
