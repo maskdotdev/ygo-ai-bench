@@ -2533,7 +2533,25 @@ function dinowrestlerMartialAnkyloEndPhaseSummonOperation(effect: SerializedDuel
     ctx.duel.effects.push({ id: `${effect.id}-redirect`, event: "continuous", code: 60, controller: effect.controller, sourceUid: summoned.uid, registryKey: `${effect.registryKey}:redirect`, property: 0x400, range: ["monsterZone"], reset: { flags: 0xc79000 }, value: 0x20, operation: () => {} });
   };
 }
-function restoredLuaActivationTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "target"> { if (isKnownGagagaGirlXyzAttackZeroTriggerEffect(effect)) return { target: gagagaGirlXyzAttackZeroTarget() }; if (isKnownPhotonTridentBattleDamageDestroyEffect(effect)) return { target: photonTridentBattleDamageDestroyTarget() }; if (isKnownUtopiaEnvoyBattleDestroyingReviveEffect(effect)) return { target: utopiaEnvoyBattleDestroyingReviveTarget(effect) }; if (isKnownLatinumOpponentDiscardReviveEffect(effect)) return { target: latinumOpponentDiscardReviveTarget(effect) }; if (isKnownWattcubeIgnitionAttackBoostEffect(effect)) return { target: wattcubeIgnitionAttackBoostTarget() }; if (isKnownPenetrationFusionStage2QuickEffect(effect)) return { target: penetrationFusionStage2AttackTarget(effect) }; if (isKnownParticleFusionCustomAttackEffect(effect)) return { target: particleFusionCustomAttackTarget(effect) }; if (isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(effect)) return { target: battlinBoxerLeadYokeDestroyReplacementTarget(effect) }; return {}; }
+function restoredLuaActivationTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "target"> {
+  if (effect.luaCostDescriptor === "cost:release-linked-group-not-battle-destroyed") return { target: releaseLinkedGroupNotBattleDestroyedTarget() };
+  if (isKnownGagagaGirlXyzAttackZeroTriggerEffect(effect)) return { target: gagagaGirlXyzAttackZeroTarget() };
+  if (isKnownPhotonTridentBattleDamageDestroyEffect(effect)) return { target: photonTridentBattleDamageDestroyTarget() };
+  if (isKnownUtopiaEnvoyBattleDestroyingReviveEffect(effect)) return { target: utopiaEnvoyBattleDestroyingReviveTarget(effect) };
+  if (isKnownLatinumOpponentDiscardReviveEffect(effect)) return { target: latinumOpponentDiscardReviveTarget(effect) };
+  if (isKnownWattcubeIgnitionAttackBoostEffect(effect)) return { target: wattcubeIgnitionAttackBoostTarget() };
+  if (isKnownPenetrationFusionStage2QuickEffect(effect)) return { target: penetrationFusionStage2AttackTarget(effect) };
+  if (isKnownParticleFusionCustomAttackEffect(effect)) return { target: particleFusionCustomAttackTarget(effect) };
+  if (isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(effect)) return { target: battlinBoxerLeadYokeDestroyReplacementTarget(effect) };
+  return {};
+}
+
+function releaseLinkedGroupNotBattleDestroyedTarget(): NonNullable<DuelEffectDefinition["target"]> {
+  return (ctx) => {
+    if (ctx.checkOnly) return ctx.effectLabel === -100;
+    return true;
+  };
+}
 
 function wattcubeIgnitionAttackBoostTarget(): NonNullable<DuelEffectDefinition["target"]> {
   return (ctx) => {
@@ -3872,8 +3890,12 @@ function releaseLinkedGroupNotBattleDestroyedCost(ctx: DuelEffectContext, effect
     .filter((card): card is DuelCardInstance => Boolean(card && card.controller === ctx.player && card.location === "monsterZone" && ((card.customStatusMask ?? 0) & 0x4000) === 0));
   const release = linked[0];
   if (!release) return false;
-  if (ctx.checkOnly) return true;
+  if (ctx.checkOnly) {
+    ctx.effectLabel = -100;
+    return true;
+  }
   const reasonEffectId = Number((ctx.chainLink?.effectId ?? effect.id).match(/^lua-(\d+)/)?.[1]);
+  ctx.effectLabel = linked.length;
   sendDuelCardToGraveyard(ctx.duel, release.uid, release.controller, duelReason.release | duelReason.cost, ctx.player, {
     eventReasonCardUid: ctx.source.uid,
     ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
