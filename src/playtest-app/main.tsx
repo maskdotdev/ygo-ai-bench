@@ -23,6 +23,7 @@ import {
   starterYdk,
 } from "./ui.js";
 import type { CardImageInfo, PileView, ToastMessage, ZoomCard } from "./ui.js";
+import { hydrateCardImagesByPasscode } from "./card-images.js";
 import "./styles.css";
 
 const PvpArena = lazy(async () => {
@@ -71,24 +72,13 @@ function PlaytestArena() {
   const hydrateImagesForIds = useCallback(async (ids: string[]) => {
     const missing = [...new Set(ids.map(String).filter((id) => !cardImages.current.has(id)))];
     if (!missing.length) return;
-    try {
-      const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${missing.join(",")}`);
-      if (!response.ok) throw new Error(`YGOPRODeck returned ${response.status}`);
-      const payload = await response.json() as {
-        data?: Array<{ id: number | string; card_images?: Array<{ image_url?: string; image_url_small?: string }> }>;
-      };
-      for (const card of payload.data ?? []) {
-        const image = card.card_images?.[0];
-        if (!image) continue;
-        cardImages.current.set(String(card.id), {
-          small: image.image_url_small || image.image_url || "",
-          large: image.image_url || image.image_url_small || "",
-        });
-      }
+    const result = await hydrateCardImagesByPasscode(missing, cardImages.current);
+    if (result.loaded.length > 0) {
       setImageRevision((current) => current + 1);
-    } catch (error) {
-      console.warn("Could not hydrate card images", error);
-      notify("Card images unavailable", error instanceof Error ? error.message : "Could not fetch card scans.", "warning");
+    }
+    if (result.failed.length > 0) {
+      console.warn("Could not hydrate some card images", result.failed);
+      notify("Card images unavailable", `${result.failed.length} card scan${result.failed.length === 1 ? "" : "s"} could not be fetched.`, "warning");
     }
   }, [notify]);
 

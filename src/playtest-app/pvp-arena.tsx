@@ -11,6 +11,7 @@ import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
 import { runDuelBattlefieldScript, runDuelBattlefieldScriptStep, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult, type DuelBattlefieldScriptStepResult } from "./duel-battlefield-script.js";
 import { CardZoom, ToastStack, readBuilderDeck, starterYdk } from "./ui.js";
 import type { CardImageInfo, ToastMessage } from "./ui.js";
+import { hydrateCardImagesByPasscode } from "./card-images.js";
 
 const NO_LEGAL_ACTIONS: DuelAction[] = [];
 
@@ -325,24 +326,13 @@ export function PvpArena() {
   const hydrateImages = useCallback(async (codes: string[]) => {
     const missing = [...new Set(codes.filter((code) => !cardImages.current.has(code)))];
     if (!missing.length) return;
-    try {
-      const response = await fetch(`https://db.ygoprodeck.com/api/v7/cardinfo.php?id=${missing.join(",")}`);
-      if (!response.ok) throw new Error(`YGOPRODeck ${response.status}`);
-      const payload = (await response.json()) as {
-        data?: Array<{ id: number | string; card_images?: Array<{ image_url?: string; image_url_small?: string }> }>;
-      };
-      for (const card of payload.data ?? []) {
-        const image = card.card_images?.[0];
-        if (!image) continue;
-        cardImages.current.set(String(card.id), {
-          small: image.image_url_small || image.image_url || "",
-          large: image.image_url || image.image_url_small || "",
-        });
-      }
+    const result = await hydrateCardImagesByPasscode(missing, cardImages.current);
+    if (result.loaded.length > 0) {
       setImageRevision((current) => current + 1);
-    } catch (error) {
-      console.warn(error);
-      notify("Card images", error instanceof Error ? error.message : "Fetch failed", "warning");
+    }
+    if (result.failed.length > 0) {
+      console.warn("Could not hydrate some card images", result.failed);
+      notify("Card images", `${result.failed.length} card scan${result.failed.length === 1 ? "" : "s"} could not be fetched.`, "warning");
     }
   }, [notify]);
 
