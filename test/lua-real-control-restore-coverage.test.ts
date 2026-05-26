@@ -105,7 +105,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 57;
+const controlFixtureCount = 58;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -134,6 +134,7 @@ const controlKindCounts = {
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
+  discardCostGroupControlLock: 1,
   releaseCostControl: 3,
   releaseCostControlLockProtectCode: 1,
   releaseCostControlDirectSelfDestroy: 1,
@@ -199,6 +200,7 @@ type ControlKind =
   | "ownedControlAttackDrain"
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
+  | "discardCostGroupControlLock"
   | "releaseCostControl"
   | "releaseCostControlLockProtectCode"
   | "releaseCostControlDirectSelfDestroy"
@@ -832,6 +834,26 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-perditious-puppeteer-discard-group-control-lock.test.ts",
+      kind: "discardCostGroupControlLock",
+      required: [
+        "restores discard-cost group control and operated-group release/trigger/synchro locks",
+        "--Perditious Puppeteer",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)",
+        "return c:IsFaceup() and c:IsLevelBelow(3) and c:IsControlerCanBeChanged()",
+        "Duel.GetControl(g,tp,PHASE_END,1)",
+        "local og=Duel.GetOperatedGroup()",
+        "e1:SetCode(EFFECT_UNRELEASABLE_SUM)",
+        "e2:SetCode(EFFECT_UNRELEASABLE_NONSUM)",
+        "e3:SetCode(EFFECT_CANNOT_TRIGGER)",
+        "e4:SetCode(EFFECT_CANNOT_BE_SYNCHRO_MATERIAL)",
+        'eventName: "discarded"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-rb-lambda-blade-send-control-delayed-destroy.test.ts",
       kind: "linkedLpCostControlDelayedDestroy",
       required: [
@@ -1256,6 +1278,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       ownedControlAttackDrain: 0,
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
+      discardCostGroupControlLock: 0,
       releaseCostControl: 0,
       releaseCostControlLockProtectCode: 0,
       releaseCostControlDirectSelfDestroy: 0,
