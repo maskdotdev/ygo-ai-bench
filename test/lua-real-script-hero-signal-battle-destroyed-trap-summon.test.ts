@@ -20,7 +20,7 @@ const typeTrap = 0x4;
 const setElementalHero = 0x3008;
 
 describe.skipIf(!hasUpstreamScripts || !hasHeroSignalScript)("Lua real script Hero Signal battle-destroyed Trap summon", () => {
-  it.fails("restores Hero Signal's battle-destroyed Trap activation and Special Summons a low-level Elemental HERO", () => {
+  it("restores Hero Signal's battle-destroyed Trap activation and Special Summons a low-level Elemental HERO", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const destroyedCode = "22020908";
     const heroTargetCode = "22020909";

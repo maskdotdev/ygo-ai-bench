@@ -134,6 +134,7 @@ function isBattleWindowTriggerEvent(triggerEvent: DuelEffectDefinition["triggerE
 }
 
 function battleOpenQuickEffectTimingAllows(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  if (effect.triggerEvent === "battleDestroyed") return true;
   if (isBattleWindowTriggerEvent(effect.triggerEvent)) return false;
   if (source.kind !== "monster" && ((effect.luaTypeFlags ?? 0) & luaEffectTypeActivate) !== 0) return true;
   if (hasBattlePhaseLuaCondition(effect)) return true;
