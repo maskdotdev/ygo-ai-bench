@@ -86,7 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
       {
         effectId: "lua-1",
         eventCardUid: princess.uid,
-        eventCode: 1101,
+        eventCode: 1001,
         eventCurrentState: {
           controller: 0,
           faceUp: true,
@@ -95,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
           sequence: 0,
         },
         eventName: "flipSummoned",
+        eventPlayer: 0,
         eventPreviousState: {
           controller: 0,
           faceUp: false,
@@ -125,7 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
         chainIndex: 1,
         effectId: "lua-1",
         eventCardUid: princess.uid,
-        eventCode: 1101,
+        eventCode: 1001,
         eventCurrentState: {
           controller: 0,
           faceUp: true,
@@ -134,6 +135,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
           sequence: 0,
         },
         eventName: "flipSummoned",
+        eventPlayer: 0,
         eventPreviousState: {
           controller: 0,
           faceUp: false,

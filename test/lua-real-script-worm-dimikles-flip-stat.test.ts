@@ -61,7 +61,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDimiklesScript)("Lua real script Worm
         sourceUid: dimikles.uid,
         triggerBucket: "turnMandatory",
         eventName: "flipSummoned",
-        eventCode: 1101,
+        eventCode: 1001,
         eventCardUid: dimikles.uid,
         eventPlayer: 0,
         eventReason: 0,

@@ -51,6 +51,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSpartanScript)("Lua real script Heroi
         eventReason: 0,
         eventReasonPlayer: 1,
         eventTriggerTiming: "when",
+        eventUids: [attacker.uid, spartan.uid],
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
@@ -82,11 +83,13 @@ describe.skipIf(!hasUpstreamScripts || !hasSpartanScript)("Lua real script Heroi
         eventCardUid: attacker.uid,
         eventReason: 0,
         eventReasonPlayer: 1,
+        eventUids: [attacker.uid, spartan.uid],
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
     ]);
     expect(restoredAttack.session.state.pendingTriggers).toEqual([]);
+    expect(restoredAttack.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
 
     const restoredStats = restoreDuelWithLuaScripts(serializeDuel(restoredAttack.session), workspace, reader);
     expectCleanRestore(restoredStats);

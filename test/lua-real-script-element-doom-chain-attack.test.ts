@@ -143,7 +143,7 @@ describe.skipIf(!hasUpstreamScripts || !hasElementDoomScript)("Lua real script E
         {
           "effectId": "lua-2-1139",
           "eventCardUid": "p0-deck-23118924-0",
-          "eventCode": 1140,
+          "eventCode": 1139,
           "eventCurrentState": {
             "controller": 0,
             "faceUp": true,

@@ -59,7 +59,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
       {
         effectId: "lua-1-1139",
         eventCardUid: blizzardWarrior!.uid,
-        eventCode: 1140,
+        eventCode: 1139,
         eventCurrentState: {
           controller: 0,
           faceUp: true,

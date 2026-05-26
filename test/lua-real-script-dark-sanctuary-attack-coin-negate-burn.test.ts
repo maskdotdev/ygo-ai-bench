@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDarkSanctuaryScript)("Lua real script
         eventReason: 0,
         eventReasonPlayer: 1,
         eventTriggerTiming: "when",
+        eventUids: [attacker.uid, target.uid],
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
@@ -93,13 +94,14 @@ describe.skipIf(!hasUpstreamScripts || !hasDarkSanctuaryScript)("Lua real script
     expect(restoredTrigger.session.state.currentAttack).toBeUndefined();
     expect(restoredTrigger.session.state.attackCanceledUids).toEqual([attacker.uid]);
     expect(restoredTrigger.session.state.players[1].lifePoints).toBe(7000);
-    expect(restoredTrigger.session.state.eventHistory.filter((event) => ["attackDeclared", "coinTossed", "attackDisabled"].includes(event.eventName))).toMatchObject([
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => ["attackDeclared", "coinTossed", "attackDisabled"].includes(event.eventName))).toEqual([
       {
         eventName: "attackDeclared",
         eventCode: 1130,
         eventCardUid: attacker.uid,
         eventReason: 0,
         eventReasonPlayer: 1,
+        eventUids: [attacker.uid, target.uid],
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
@@ -122,6 +124,8 @@ describe.skipIf(!hasUpstreamScripts || !hasDarkSanctuaryScript)("Lua real script
         eventReasonPlayer: 0,
         eventReasonCardUid: darkSanctuary.uid,
         eventReasonEffectId: 3,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
     ]);
   });
