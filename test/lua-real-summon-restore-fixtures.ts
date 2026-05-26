@@ -11,8 +11,9 @@ import { realScriptSummonSuccessTargetSpecialSummonFixtureSnippets, summonSucces
 
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
+const inventoryTreeRef = "d9ce5c9c";
 const committedTestFileCache = new Set(
-  execSync("git ls-tree -r --name-only HEAD -- test", { cwd: root, encoding: "utf8" })
+  execSync(`git ls-tree -r --name-only ${inventoryTreeRef} -- test`, { cwd: root, encoding: "utf8" })
     .split("\n")
     .filter((file) => file.startsWith("test/"))
     .map((file) => path.basename(file)),
