@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 31;
-const chainResponseNegationFixtureCount = 26;
+const negationFixtureCount = 32;
+const chainResponseNegationFixtureCount = 27;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 35;
+const negationInventoryFixtureCount = 36;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 22,
+  chainNegateToGrave: 23,
   handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -56,6 +56,7 @@ const negationSemanticVariantCounts = {
   twinTwistersMultiDestroyOnlyNoNegation: 1,
   tutanMaskTargetedZombieNegateDestroy: 1,
   vanquishSoulCalamityCaesarTargetNegateBurn: 1,
+  verdictAnubisTempleDestroyBurn: 1,
   wiretapTrapNegateReturnToDeck: 1,
   xyzReflectTargetedXyzNegateBurn: 1,
 } satisfies Record<NegationSemanticVariant, number>;
@@ -105,6 +106,7 @@ type NegationSemanticVariant =
   | "twinTwistersMultiDestroyOnlyNoNegation"
   | "tutanMaskTargetedZombieNegateDestroy"
   | "vanquishSoulCalamityCaesarTargetNegateBurn"
+  | "verdictAnubisTempleDestroyBurn"
   | "wiretapTrapNegateReturnToDeck"
   | "xyzReflectTargetedXyzNegateBurn";
 
@@ -256,6 +258,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-tutan-mask-targeted-zombie-negate.test.ts",
     "lua-real-script-vanquish-soul-calamity-caesar-negate-burn.test.ts",
+    "lua-real-script-verdict-anubis-temple-negate-destroy-burn.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
     "lua-real-script-xyz-reflect-target-negate-burn.test.ts",
   ]
@@ -376,6 +379,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-vanquish-soul-calamity-caesar-negate-burn.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-verdict-anubis-temple-negate-destroy-burn.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -885,6 +892,25 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-verdict-anubis-temple-negate-destroy-burn.test.ts",
+      kind: "verdictAnubisTempleDestroyBurn",
+      required: [
+        'const verdictCode = "59576447"',
+        "restores Temple-gated activation negation into opponent monster destruction, operated-group base ATK damage, and suppressed Spell",
+        "--Verdict of Anubis",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "Duel.IsExistingMatchingCard(Card.IsSpellTrap,tp,LOCATION_ONFIELD,0,3,e:GetHandler())",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsCode,CARD_TEMPLE_OF_THE_KINGS),tp,LOCATION_ONFIELD,0,1,nil)",
+        "Duel.GetMatchingGroup(Card.IsMonster,tp,0,LOCATION_MZONE,nil)",
+        "Duel.GetOperatedGroup():GetSum(Card.GetBaseAttack)/2",
+        "Duel.Damage(1-tp,dam,REASON_EFFECT)",
+        'api: "SelectYesNo"',
+        'eventName: "chainNegated"',
+        'eventName: "damageDealt"',
+        'host.messages).not.toContain("verdict starter spell resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
       kind: "wiretapTrapNegateReturnToDeck",
       required: [
@@ -999,6 +1025,7 @@ function countNegationSemanticVariants(
       twinTwistersMultiDestroyOnlyNoNegation: 0,
       tutanMaskTargetedZombieNegateDestroy: 0,
       vanquishSoulCalamityCaesarTargetNegateBurn: 0,
+      verdictAnubisTempleDestroyBurn: 0,
       wiretapTrapNegateReturnToDeck: 0,
       xyzReflectTargetedXyzNegateBurn: 0,
     },
