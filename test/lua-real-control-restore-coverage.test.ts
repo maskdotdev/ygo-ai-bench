@@ -108,7 +108,8 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-reeze-gusto-deck-cost-swap-control.test.ts"
 // Restore ownership: "test/lua-real-script-terror-byte-detach-level-control.test.ts"
 // Restore ownership: "test/lua-real-script-possessed-dark-soul-self-tribute-group-control.test.ts"
-const controlFixtureCount = 65;
+// Restore ownership: "test/lua-real-script-ni-ni-mikanko-equipped-control.test.ts"
+const controlFixtureCount = 66;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -142,6 +143,7 @@ const controlKindCounts = {
   spellDiscardCostControl: 1,
   deckCostTargetedSwapControl: 1,
   selfTributeGroupControl: 1,
+  equippedQuickControlBattleReflect: 1,
   handMonsterCostDefenseControlPositionLock: 1,
   discardCostGroupControlLock: 1,
   releaseCostControl: 3,
@@ -215,6 +217,7 @@ type ControlKind =
   | "spellDiscardCostControl"
   | "deckCostTargetedSwapControl"
   | "selfTributeGroupControl"
+  | "equippedQuickControlBattleReflect"
   | "handMonsterCostDefenseControlPositionLock"
   | "discardCostGroupControlLock"
   | "releaseCostControl"
@@ -1123,6 +1126,31 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-ni-ni-mikanko-equipped-control.test.ts",
+      kind: "equippedQuickControlBattleReflect",
+      required: [
+        "restores equipped battle modifiers and opponent-turn quick control",
+        "--Ni-Ni the Mirror Mikanko",
+        "e1:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)",
+        "e1:SetCondition(aux.NOT(s.eqcon))",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2:SetCondition(s.eqcon)",
+        "e3:SetCode(EFFECT_REFLECT_BATTLE_DAMAGE)",
+        "e4:SetCategory(CATEGORY_CONTROL)",
+        "e4:SetType(EFFECT_TYPE_QUICK_O)",
+        "e4:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e4:SetCode(EVENT_FREE_CHAIN)",
+        "e4:SetCondition(function(e,tp) return Duel.IsTurnPlayer(1-tp) and s.eqcon(e) end)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsControlerCanBeChanged),tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g,1,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "equippedToUid: niNi.uid",
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-brain-control-cost-return.test.ts",
       kind: "restrictedTemporaryControl",
       required: [
@@ -1440,6 +1468,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       spellDiscardCostControl: 0,
       deckCostTargetedSwapControl: 0,
       selfTributeGroupControl: 0,
+      equippedQuickControlBattleReflect: 0,
       handMonsterCostDefenseControlPositionLock: 0,
       discardCostGroupControlLock: 0,
       releaseCostControl: 0,
