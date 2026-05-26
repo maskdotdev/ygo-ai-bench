@@ -1,6 +1,6 @@
 {
   "test/lua-real-operation-restore-fixtures.ts": 7022,
-  "test/lua-real-stat-restore-coverage.test.ts": 20356,
+  "test/lua-real-stat-restore-coverage.test.ts": 20404,
   "test/lua-real-draw-recover-restore-coverage.test.ts": 1005,
   "src/engine/lua/snapshot.ts": 3984,
   "test/lua-real-battle-restore-fixtures.ts": 1558,
@@ -11,6 +11,7 @@
   "test/lua-real-control-restore-coverage.test.ts": 1807,
   "test/lua-real-ritual-fusion-helper-restore-coverage.test.ts": 1131,
   "test/lua-real-battle-timing-restore-coverage.test.ts": 1280,
+  "test/lua-real-battle-restore-fixtures.ts": 1564,
   "test/lua-real-summon-restore-fixtures.ts": 1065,
   "test/lua-real-summon-procedure-restore-coverage.test.ts": 1256,
   "src/engine/duel/summon.ts": 1026,
