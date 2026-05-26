@@ -92,17 +92,19 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-ursarctic-big-dipper-counter-control.test.ts"
 // Restore ownership: "test/lua-real-script-utopic-draco-future-negate-control.test.ts"
 // Restore ownership: "test/lua-real-script-utopic-future-damage-step-control-replace.test.ts"
+// Restore ownership: "test/lua-real-script-utopic-future-zexal-chain-control-protect-stat.test.ts"
 // Restore ownership: "test/lua-real-script-vampire-fascinator-release-control.test.ts"
 // Restore ownership: "test/lua-real-script-vampire-red-baron-swap-revive.test.ts"
 // Restore ownership: "test/lua-real-script-vaylantz-duke-facedown-lock.test.ts"
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 50;
+const controlFixtureCount = 51;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
   damageStepBattleControlReplace: 1,
+  chainDetachControlProtectStat: 1,
   battleCounterControl: 2,
   chainControlSummon: 1,
   chainControlToken: 1,
@@ -161,6 +163,7 @@ type ControlKind =
   | "battleDestroyedTrapControlRace"
   | "battleStartPhaseControl"
   | "damageStepBattleControlReplace"
+  | "chainDetachControlProtectStat"
   | "battleCounterControl"
   | "chainControlSummon"
   | "chainControlToken"
@@ -574,6 +577,31 @@ function realScriptControlFixtureFiles(): Array<{
         'eventName: "damageStepEnded"',
         'eventName: "controlChanged"',
         'eventName: "detachedMaterial"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-utopic-future-zexal-chain-control-protect-stat.test.ts",
+      kind: "chainDetachControlProtectStat",
+      required: [
+        'const zexalCode = "41522092"',
+        "--Number F0: Utopic Future Zexal",
+        "restores Rank-sum stats, field targeting protections, and EVENT_CHAINING detach control",
+        "Duel.GetMatchingGroup(aux.FaceupFilter(Card.IsType,TYPE_XYZ),e:GetHandlerPlayer(),LOCATION_MZONE,LOCATION_GRAVE,nil):GetSum(Card.GetRank)*500",
+        "e3:SetCode(EFFECT_CANNOT_SELECT_BATTLE_TARGET)",
+        "e4:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e4:SetValue(aux.tgoval)",
+        "e5:SetCode(EVENT_CHAINING)",
+        "Duel.GetChainInfo(0,CHAININFO_TRIGGERING_LOCATION,CHAININFO_TRIGGERING_PLAYER)",
+        "e5:SetCost(Cost.DetachFromSelf(1))",
+        "Duel.SelectMatchingCard(tp,Card.IsControlerCanBeChanged,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(g,tp)",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "currentAttack(restoredZexal, restoredOpen.session.state)).toBe(4500)",
+        "currentDefense(restoredZexal, restoredOpen.session.state)).toBe(4500)",
+        'eventName: "detachedMaterial"',
+        'eventName: "controlChanged"',
         "previousController: 1",
       ],
     },
@@ -1048,6 +1076,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       battleStartPhaseControl: 0,
       battleDestroyedTrapControlRace: 0,
       damageStepBattleControlReplace: 0,
+      chainDetachControlProtectStat: 0,
       battleCounterControl: 0,
       chainControlSummon: 0,
       chainControlToken: 0,
