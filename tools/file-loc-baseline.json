@@ -2,7 +2,7 @@
   "test/lua-real-operation-restore-fixtures.ts": 7022,
   "test/lua-real-stat-restore-coverage.test.ts": 20471,
   "test/lua-real-draw-recover-restore-coverage.test.ts": 1005,
-  "src/engine/lua/snapshot.ts": 3984,
+  "src/engine/lua/snapshot.ts": 4009,
   "src/engine/lua/host-effect-api.ts": 1290,
   "test/lua-real-coin-restore-coverage.test.ts": 1500,
   "test/lua-real-recent-stat-restore-coverage.test.ts": 1201,
@@ -17,5 +17,5 @@
   "src/engine/lua/card-procedure-source-api.ts": 1017,
   "src/engine/duel/core.ts": 1026,
   "src/engine/lua/duel-api/summon.ts": 1014,
-  "src/engine/lua/duel-api/move.ts": 1011
+  "src/engine/lua/duel-api/move.ts": 1012
 }
