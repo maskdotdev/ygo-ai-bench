@@ -141,6 +141,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMissingForceScript)("Lua real script 
           },
           "eventReason": 0,
           "eventReasonPlayer": 0,
+          "eventValue": 1,
           "relatedEffectId": 1,
         },
         {

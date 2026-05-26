@@ -100,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMagnenBarScri
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 2 },
@@ -112,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMagnenBarScri
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
@@ -132,6 +134,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMagnenBarScri
     expect(battleActions.some((action) => action.type === "declareAttack" && action.attackerUid === magnenBar.uid && action.targetUid === defender.uid)).toBe(true);
     expect(battleActions.some((action) => action.type === "declareAttack" && action.attackerUid === allyOne.uid)).toBe(false);
     expect(battleActions.some((action) => action.type === "declareAttack" && action.attackerUid === allyTwo.uid)).toBe(false);
+    expect(battleProbe.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 
   it("restores defense-position continuous lock on all own monsters", () => {
@@ -166,6 +169,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMagnenBarScri
     expectRestoredLegalActions(restoredBattle, 0);
     const battleActions = getLuaRestoreLegalActions(restoredBattle, 0);
     expect(battleActions.filter((action) => action.type === "declareAttack")).toEqual([]);
+    expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

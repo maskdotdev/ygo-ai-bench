@@ -111,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasYukiOnnaScript)("Lua real script Yuki
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: yukiOnna.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

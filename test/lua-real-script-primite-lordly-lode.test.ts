@@ -203,6 +203,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
         "description": 904107842,
         "event": "continuous",
         "id": "lua-6-6",
+        "luaTypeFlags": 2,
         "luaValueDescriptor": "cannot-activate:special-summoned-monster-on-field",
         "oncePerTurn": false,
         "operation": [Function],

@@ -121,9 +121,6 @@ describe.skipIf(!hasUpstreamScripts || !hasYellowAlertScript)("Lua real script I
           },
           "sourceUid": "p1-deck-59277750-0",
           "target": [Function],
-          "triggerCode": 4224,
-          "triggerEvent": "phaseBattle",
-          "triggerTiming": "when",
         },
         {
           "battleDamageValue": [Function],
@@ -185,6 +182,7 @@ describe.skipIf(!hasUpstreamScripts || !hasYellowAlertScript)("Lua real script I
           "labelObjectUids": [
             "p1-deck-300-2",
           ],
+          "luaTypeFlags": 2050,
           "oncePerTurn": true,
           "operation": [Function],
           "ownerPlayer": 1,
@@ -207,7 +205,7 @@ describe.skipIf(!hasUpstreamScripts || !hasYellowAlertScript)("Lua real script I
           "sourceUid": "p1-deck-59277750-0",
           "triggerCode": 4224,
           "triggerEvent": "phaseBattle",
-          "triggerTiming": "when",
+          "triggerTiming": "if",
         },
       ]
     `);

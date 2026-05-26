@@ -5,6 +5,7 @@ import { currentCardMatchesCode } from "#duel/card-code-state.js";
 import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -104,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSiegerScript)("Lua real script Cyber 
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -124,6 +126,20 @@ describe.skipIf(!hasUpstreamScripts || !hasSiegerScript)("Lua real script Cyber 
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 1800 });
     expect(restoredBattle.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(6200);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: target.uid,
+        eventPlayer: 1,
+        eventValue: 1800,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: target.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredBattle.session.state.cards.find((card) => card.uid === sieger.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredBattle.session.state.cards.find((card) => card.uid === defender.uid)).toMatchObject({ location: "graveyard", controller: 1, reason: 0x21 });
   });
