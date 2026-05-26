@@ -162,6 +162,7 @@ function becameTargetEvent(cardUid: string, sourceUid: string) {
   return {
     eventName: "becameTarget",
     eventCode: 1028,
+        eventValue: 1,
     eventCardUid: cardUid,
     eventChainDepth: 1,
     eventChainLinkId: "chain-2",

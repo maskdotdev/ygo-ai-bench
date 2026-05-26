@@ -130,7 +130,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSanctuaryScript)("Lua real script Sal
       current: event.eventCurrentState?.location,
     }))).toEqual([
       { eventName: "lifePointCostPaid", eventCode: eventLifePointCostPaid, eventCardUid: undefined, eventPlayer: 0, eventValue: 1000, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: sanctuary.uid, eventReasonEffectId: 4, relatedEffectId: undefined, previous: undefined, current: undefined },
-      { eventName: "becameTarget", eventCode: 1028, eventCardUid: link.uid, eventPlayer: undefined, eventValue: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 4, previous: "extraDeck", current: "monsterZone" },
+      { eventName: "becameTarget", eventCode: 1028, eventCardUid: link.uid, eventPlayer: undefined, eventValue:  1, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 4, previous: "extraDeck", current: "monsterZone" },
       { eventName: "recoveredLifePoints", eventCode: eventRecover, eventCardUid: undefined, eventPlayer: 0, eventValue: 1800, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: sanctuary.uid, eventReasonEffectId: 4, relatedEffectId: undefined, previous: undefined, current: undefined },
     ]);
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });

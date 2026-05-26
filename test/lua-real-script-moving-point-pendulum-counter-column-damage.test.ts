@@ -89,7 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMovingPointScript)("Lua real script M
       previous: event.eventPreviousState?.location,
       current: event.eventCurrentState?.location,
     }))).toEqual([
-      { eventName: "becameTarget", eventCardUid: pendulum.uid, eventPlayer: undefined, eventValue: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 4, previous: "deck", current: "monsterZone" },
+      { eventName: "becameTarget", eventCardUid: pendulum.uid, eventPlayer: undefined, eventValue:  1, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 4, previous: "deck", current: "monsterZone" },
       { eventName: "breakEffect", eventCardUid: undefined, eventPlayer: undefined, eventValue: undefined, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: movingPoint.uid, eventReasonEffectId: 4, relatedEffectId: undefined, previous: undefined, current: undefined },
       { eventName: "destroyed", eventCardUid: fusion.uid, eventPlayer: undefined, eventValue: undefined, eventReason: duelReason.destroy | duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: movingPoint.uid, eventReasonEffectId: 4, relatedEffectId: undefined, previous: "monsterZone", current: "graveyard" },
       { eventName: "damageDealt", eventCardUid: undefined, eventPlayer: 1, eventValue: 2300, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: movingPoint.uid, eventReasonEffectId: 4, relatedEffectId: undefined, previous: undefined, current: undefined },

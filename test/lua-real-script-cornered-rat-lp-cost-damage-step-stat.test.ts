@@ -109,7 +109,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasCorneredScrip
       relatedEffectId: event.relatedEffectId,
     }))).toEqual([
       { eventName: "lifePointCostPaid", eventCardUid: undefined, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: rat.uid, eventReasonEffectId: 2, eventValue: 300, relatedEffectId: undefined },
-      { eventName: "becameTarget", eventCardUid: defender.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventValue: undefined, relatedEffectId: 2 },
+      { eventName: "becameTarget", eventCardUid: defender.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventValue:  1, relatedEffectId: 2 },
     ]);
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });

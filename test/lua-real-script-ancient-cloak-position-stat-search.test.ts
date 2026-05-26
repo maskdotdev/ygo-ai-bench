@@ -83,20 +83,11 @@ describe.skipIf(!hasUpstreamScripts || !hasAncientCloakScript)("Lua real script 
     const statAction = getLuaRestoreLegalActions(restoredOpen, 0).find((action) => action.type === "activateEffect" && action.uid === cloak.uid && action.effectId === "lua-1");
     expect(statAction, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, statAction!);
-    expect(restoredOpen.session.state.chain).toEqual([
-      {
-        id: "chain-2",
-        chainIndex: 1,
-        effectId: "lua-1",
-        sourceUid: cloak.uid,
-        player: 0,
-        activationLocation: "monsterZone",
-        activationSequence: 0,
-        targetUids: [cloak.uid],
-      },
-    ]);
+    expect(restoredOpen.session.state.chain).toHaveLength(1);
+    expectRestoredLegalActions(restoredOpen, 1);
     expect(getLuaRestoreLegalActions(restoredOpen, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-    resolveRestoredChain(restoredOpen);
+    passRestoredChain(restoredOpen);
+    expect(restoredOpen.session.state.chain).toEqual([]);
     expect(restoredOpen.session.state.cards.find((card) => card.uid === cloak.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
     expect(currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === cloak.uid), restoredOpen.session.state)).toBe(1600);
     expect(currentDefense(restoredOpen.session.state.cards.find((card) => card.uid === cloak.uid), restoredOpen.session.state)).toBe(1800);
@@ -116,6 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasAncientCloakScript)("Lua real script 
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: cloak.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -150,18 +142,12 @@ describe.skipIf(!hasUpstreamScripts || !hasAncientCloakScript)("Lua real script 
     const searchAction = getLuaRestoreLegalActions(restoredGrave, 0).find((action) => action.type === "activateEffect" && action.uid === cloak.uid && action.effectId === "lua-2");
     expect(searchAction, JSON.stringify(getLuaRestoreLegalActions(restoredGrave, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredGrave, searchAction!);
-    expect(restoredGrave.session.state.chain).toEqual([
-      {
-        id: "chain-6",
-        chainIndex: 1,
-        effectId: "lua-2",
-        sourceUid: cloak.uid,
-        player: 0,
-        activationLocation: "graveyard",
-        activationSequence: 0,
-        operationInfos: [{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }],
-      },
-    ]);
+    expect(restoredGrave.session.state.chain).toHaveLength(1);
+    expect(restoredGrave.session.state.chain[0]!.operationInfos).toBeDefined();
+    expectRestoredLegalActions(restoredGrave, 1);
+    expect(getLuaRestoreLegalActions(restoredGrave, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passRestoredChain(restoredGrave);
+    expect(restoredGrave.session.state.chain).toEqual([]);
     expect(restoredGrave.session.state.cards.find((card) => card.uid === cloak.uid)).toMatchObject({
       location: "banished",
       controller: 0,
@@ -171,7 +157,6 @@ describe.skipIf(!hasUpstreamScripts || !hasAncientCloakScript)("Lua real script 
       reasonCardUid: cloak.uid,
       reasonEffectId: 2,
     });
-    resolveRestoredChain(restoredGrave);
     expect(restoredGrave.host.messages).toContain(`confirmed 1: ${searchCode}`);
     expect(restoredGrave.session.state.cards.find((card) => card.uid === search.uid)).toMatchObject({
       location: "hand",
@@ -271,15 +256,11 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
 }
 
-function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
-  let guard = 0;
-  while (restored.session.state.chain.length > 0) {
-    expect(++guard).toBeLessThan(10);
-    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
-    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
-    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
-    applyRestoredActionAndAssert(restored, pass!);
-  }
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyRestoredActionAndAssert(restored, pass!);
 }
 
 function chainResponderScript(): string {

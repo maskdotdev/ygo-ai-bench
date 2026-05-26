@@ -74,10 +74,21 @@ describe.skipIf(!hasUpstreamScripts || !hasSabersaurusScript)("Lua real script S
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, attack!);
     passUntilBattleStarted(restoredOpen);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-3-1132",
         eventCardUid: dinosaurAttacker.uid,
+        eventCode: 1132,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
         eventName: "battleStarted",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [dinosaurAttacker.uid, opponentTarget.uid],
+        player: 0,
         sourceUid: sabersaurus.uid,
         triggerBucket: "turnOptional",
       },
@@ -113,6 +124,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSabersaurusScript)("Lua real script S
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: dinosaurAttacker.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -139,6 +151,32 @@ describe.skipIf(!hasUpstreamScripts || !hasSabersaurusScript)("Lua real script S
     expectCleanRestore(restoredDamage);
     finishBattle(restoredDamage);
     expect(restoredDamage.session.state.battleDamage).toEqual({ 0: 0, 1: 1300 });
+    expect(restoredDamage.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: dinosaurAttacker.uid,
+        eventPlayer: 1,
+        eventValue: 1300,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: dinosaurAttacker.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
   });
 });
 

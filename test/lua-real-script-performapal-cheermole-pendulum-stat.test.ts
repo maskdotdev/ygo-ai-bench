@@ -48,7 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasCheermoleScri
     loadDecks(session, { 0: { main: [cheermoleCode, cheermoleCode, pendulumTargetCode, regularTargetCode] }, 1: { main: [] } });
     startDuel(session);
 
-    const [scaleCheermole, monsterCheermole] = requireCards(session, cheermoleCode, 2);
+    const [scaleCheermole, monsterCheermole] = requireTwoCards(session, cheermoleCode);
     const pendulumTarget = requireCard(session, pendulumTargetCode);
     const regularTarget = requireCard(session, regularTargetCode);
     moveFaceUpPzone(session, scaleCheermole, 0, 0);
@@ -97,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasCheermoleScri
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
@@ -117,10 +118,10 @@ function requireCard(session: DuelSession, code: string): DuelCardInstance {
   return card!;
 }
 
-function requireCards(session: DuelSession, code: string, count: number): DuelCardInstance[] {
+function requireTwoCards(session: DuelSession, code: string): [DuelCardInstance, DuelCardInstance] {
   const cards = session.state.cards.filter((candidate) => candidate.code === code);
-  expect(cards).toHaveLength(count);
-  return cards;
+  expect(cards).toHaveLength(2);
+  return [cards[0]!, cards[1]!];
 }
 
 function find(session: DuelSession, uid: string): DuelCardInstance {
