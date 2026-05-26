@@ -26,6 +26,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-darklord-enchantment-cost-control.test.ts"
 // Restore ownership: "test/lua-real-script-dd-guide-summon-control-end-banish.test.ts"
 // Restore ownership: "test/lua-real-script-ddd-headhunt-control-disable-setcode.test.ts"
+// Restore ownership: "test/lua-real-script-double-magical-arm-bind-release-control.test.ts"
 // Restore ownership: "test/lua-real-script-dummy-golem-flip-opponent-swap.test.ts"
 // Restore ownership: "test/lua-real-script-embrace-tistina-chain-set-control.test.ts"
 // Restore ownership: "test/lua-real-script-enlilgirsu-banished-return-deck-control.test.ts"
@@ -87,7 +88,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 39;
+const controlFixtureCount = 40;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleCounterControl: 2,
@@ -106,7 +107,7 @@ const controlKindCounts = {
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
-  releaseCostControl: 2,
+  releaseCostControl: 3,
   restrictedTemporaryControl: 2,
   searchDestroyGraveControl: 1,
   selectedPermanentControl: 1,
@@ -624,6 +625,18 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.GetMZoneCount(tp,c,tp,LOCATION_REASON_CONTROL)>0",
         "Duel.SendtoGrave(g,REASON_COST)",
         "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'eventName: "controlChanged"',
+      ],
+    },
+    {
+      file: "lua-real-script-double-magical-arm-bind-release-control.test.ts",
+      kind: "releaseCostControl",
+      required: [
+        'const armBindCode = "72621670"',
+        "Duel.SelectReleaseGroupCost(tp,nil,2,2,false,s.chk,nil,dg)",
+        "Duel.Release(g,REASON_COST)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS):Filter(s.tfilter,nil,e)",
+        "Duel.GetControl(g,tp,PHASE_END,rct)",
         'eventName: "controlChanged"',
       ],
     },
