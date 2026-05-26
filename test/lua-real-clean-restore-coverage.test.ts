@@ -6,7 +6,8 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
-const realScriptFixtureCount = 1954;
+const realScriptFixtureCount = 1984;
+const unreferencedRestoreCoverageFixtureCount = 143;
 const restoreCoverageKindRatchetFileCount = 82;
 const inventoryTreeRef = "HEAD";
 const committedTestFileCache = new Set(
@@ -56,7 +57,7 @@ describe("Lua real-script clean restore coverage", () => {
       .filter((file) => readTestFile(file).includes("missingRegistryKeys).toEqual([])"))
       .filter((file) => !referenced.has(file));
 
-    expect(unreferenced.length).toBeGreaterThanOrEqual(0);
+    expect(unreferenced).toHaveLength(unreferencedRestoreCoverageFixtureCount);
   });
 
   it("requires every non-aggregate restore coverage guard to ratchet fixture kinds", () => {
