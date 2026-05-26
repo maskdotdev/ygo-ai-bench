@@ -100,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMiniGutsScript)("Lua real script Mini
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [9],
         targetUids: [target.uid],
       },
     ]);
@@ -147,6 +148,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMiniGutsScript)("Lua real script Mini
         effectLabelObjectUid: target.uid,
         eventName: "battleDestroyed",
         eventCode: 1140,
+        eventPlayer: 1,
         eventCardUid: target.uid,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 0,

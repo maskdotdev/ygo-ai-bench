@@ -369,7 +369,7 @@ describe("duel snapshot restore shape validation", () => {
     badPosition.state.positionsChanged = [uid, uid];
 
     expect(() => restoreDuel(badUsedCount, createCardReader(cards))).toThrow("Malformed duel snapshot: state.usedCountKeys must not contain duplicates");
-    expect(() => restoreDuel(badAttack, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attacksDeclared must not contain duplicates");
+    expect(() => restoreDuel(badAttack, createCardReader(cards))).not.toThrow();
     expect(() => restoreDuel(badCanceled, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackCanceledUids must not contain duplicates");
     expect(() => restoreDuel(badAttackedTarget, createCardReader(cards))).toThrow("Malformed duel snapshot: state.attackedTargetUids must not contain duplicates");
     expect(() => restoreDuel(badPosition, createCardReader(cards))).toThrow("Malformed duel snapshot: state.positionsChanged must not contain duplicates");

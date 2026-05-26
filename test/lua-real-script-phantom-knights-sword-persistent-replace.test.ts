@@ -75,6 +75,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ph
         "id": "chain-2",
         "player": 0,
         "sourceUid": "p0-deck-61936647-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p1-deck-613301-0",
         ],

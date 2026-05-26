@@ -106,6 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [8],
         targetUids: [destroyTarget.uid],
         operationInfos: [{ category: 0x1, targetUids: [destroyTarget.uid], count: 1, player: 0, parameter: 0 }],
       },

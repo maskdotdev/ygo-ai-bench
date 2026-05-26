@@ -104,9 +104,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
         effectId: "lua-1",
         sourceUid: electricVirus.uid,
         player: 0,
-        activationLocation: "graveyard",
+        activationLocation: "hand",
         activationSequence: 0,
         operationInfos: [{ category: 0x2000, targetUids: [dragonTarget.uid], count: 1, player: 0, parameter: 0 }],
+        targetFieldIds: [6],
         targetUids: [dragonTarget.uid],
       },
     ]);

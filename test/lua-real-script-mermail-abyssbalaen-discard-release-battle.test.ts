@@ -127,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasAbyssbalaenScript)("Lua real script M
         eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventTriggerTiming: "when",
+        targetFieldIds: [15],
         targetUids: [opponentDestroy.uid],
         operationInfos: [{ category: 0x1, targetUids: [opponentDestroy.uid], count: 1, player: 0, parameter: 0 }],
       },

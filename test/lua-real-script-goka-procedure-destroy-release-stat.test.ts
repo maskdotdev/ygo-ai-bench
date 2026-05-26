@@ -120,6 +120,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGokaScript)("Lua real script Goka pro
         eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
         eventTriggerTiming: "when",
+        targetFieldIds: [6],
         targetUids: [fireDestroy.uid],
         operationInfos: [{ category: 0x1, targetUids: [fireDestroy.uid], count: 1, player: 0, parameter: 0 }],
       },

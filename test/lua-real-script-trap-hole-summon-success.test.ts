@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTrapHoleScript)("Lua real script Trap
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -129,6 +130,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTrapHoleScript)("Lua real script Trap
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -153,6 +155,9 @@ describe.skipIf(!hasUpstreamScripts || !hasTrapHoleScript)("Lua real script Trap
         ],
         "player": 1,
         "sourceUid": "p1-deck-4206964-0",
+        "targetFieldIds": [
+          9,
+        ],
         "targetUids": [
           "p0-deck-100-0",
         ],
@@ -182,6 +187,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTrapHoleScript)("Lua real script Trap
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -206,6 +212,9 @@ describe.skipIf(!hasUpstreamScripts || !hasTrapHoleScript)("Lua real script Trap
         ],
         "player": 1,
         "sourceUid": "p1-deck-4206964-0",
+        "targetFieldIds": [
+          9,
+        ],
         "targetUids": [
           "p0-deck-100-0",
         ],

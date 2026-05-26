@@ -88,7 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sk
     applyRestoredActionAndAssert(restoredOpen, summonEffect!);
     expect(restoredOpen.session.state.chain).toHaveLength(1);
     expect(restoredOpen.session.state.chain[0]).toEqual({
-      activationLocation: "graveyard",
+      activationLocation: "monsterZone",
       activationSequence: 0,
       chainIndex: 1,
       effectId: "lua-5",
@@ -152,7 +152,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sk
     applyRestoredActionAndAssert(restoredGrave, counterEffect!);
     expect(restoredGrave.session.state.chain).toHaveLength(1);
     expect(restoredGrave.session.state.chain[0]).toEqual({
-      activationLocation: "banished",
+      activationLocation: "graveyard",
       activationSequence: 0,
       chainIndex: 1,
       effectId: "lua-6",
@@ -160,6 +160,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sk
       operationInfos: [{ category: categoryCounter, count: 1, player: 0, parameter: counterSpell, targetUids: [] }],
       player: 0,
       sourceUid: fieldBlue.uid,
+      targetFieldIds: [6],
       targetUids: [targetBlue.uid],
     });
     expectRestoredLegalActions(restoredGrave, 1);

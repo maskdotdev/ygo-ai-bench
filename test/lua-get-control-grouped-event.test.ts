@@ -71,8 +71,10 @@ describe("Lua GetControl grouped events", () => {
     applyAndAssert(session, action!);
 
     expect(host.messages).toEqual(expect.arrayContaining(["control reason result 2", "control reason first true/true", "control reason second true/true"]));
-    expect(first).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
-    expect(second).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    const movedFirst = session.state.cards.find((card) => card.uid === first!.uid);
+    const movedSecond = session.state.cards.find((card) => card.uid === second!.uid);
+    expect(movedFirst).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(movedSecond).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "controlChanged", eventCardUid: first!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();

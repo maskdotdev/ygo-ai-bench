@@ -100,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSentryScript)("Lua real script Crimso
         effectId: "lua-1",
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [8],
         targetUids: [battleTarget.uid],
         operationInfos: [{ category: 0x10, targetUids: [battleTarget.uid], count: 1, player: 0, parameter: 0 }],
       },

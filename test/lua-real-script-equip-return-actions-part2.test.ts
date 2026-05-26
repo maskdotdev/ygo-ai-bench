@@ -109,6 +109,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-63789924-0",
+          "targetFieldIds": [
+            7,
+          ],
           "targetUids": [
             "p0-deck-601043-1",
           ],
@@ -152,6 +155,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
               "sequence": 0,
             },
             "eventName": "leftField",
+            "eventPlayer": 0,
             "eventPreviousState": {
               "controller": 0,
               "faceUp": true,
@@ -195,6 +199,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
             "sequence": 0,
           },
           "eventName": "leftField",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": true,
@@ -384,6 +389,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-98239899-0",
+          "targetFieldIds": [
+            5,
+          ],
           "targetUids": [
             "p0-deck-601047-1",
           ],
@@ -453,6 +461,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
               "sequence": 0,
             },
             "eventName": "leftField",
+            "eventPlayer": 0,
             "eventPreviousState": {
               "controller": 0,
               "faceUp": true,
@@ -496,6 +505,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
             "sequence": 0,
           },
           "eventName": "leftField",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": true,
@@ -522,6 +532,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-98239899-0",
+          "targetFieldIds": [
+            5,
+          ],
           "targetUids": [
             "p0-deck-601047-1",
           ],

@@ -67,7 +67,7 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Gora Turtle targeted Spell
     expect(host.loadCardScript(Number(goraCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(targetedSpellCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(responderCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(3);
+    expect(host.registerInitialEffects()).toBe(3);
 
     const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredOpen);
@@ -112,9 +112,6 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Gora Turtle targeted Spell
           "registryKey": "lua:42868711:lua-2-1020",
           "sourceUid": "p0-deck-42868711-0",
           "target": [Function],
-          "triggerCode": 1020,
-          "triggerEvent": "chainSolving",
-          "triggerTiming": "when",
         },
         {
           "canActivate": [Function],
@@ -182,6 +179,9 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Gora Turtle targeted Spell
         ],
         "player": 1,
         "sourceUid": "p1-deck-42868712-0",
+        "targetFieldIds": [
+          4,
+        ],
         "targetUids": [
           "p0-deck-42868711-0",
         ],

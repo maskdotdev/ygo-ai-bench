@@ -87,19 +87,24 @@ describe.skipIf(!hasUpstreamScripts || !hasObsidianScript)("Lua real script Gem-
       reasonPlayer: 0,
       reasonCardUid: sender.uid,
     });
-    expect(session.state.pendingTriggers).toMatchObject([
+    expect(session.state.pendingTriggers).toEqual([
       {
-        sourceUid: obsidian.uid,
-        player: 0,
-        triggerBucket: "turnOptional",
-        eventName: "sentToGraveyard",
-        eventCode: 1014,
+        id: "trigger-4-1",
+        effectId: "lua-1-1014",
         eventCardUid: obsidian.uid,
+        eventCode: 1014,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceDown", sequence: 2 },
+        eventName: "sentToGraveyard",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventReason: duelReason.effect,
-        eventReasonPlayer: 0,
         eventReasonCardUid: sender.uid,
         eventReasonEffectId: 2,
+        eventReasonPlayer: 0,
         eventTriggerTiming: "if",
+        player: 0,
+        sourceUid: obsidian.uid,
+        triggerBucket: "turnOptional",
       },
     ]);
 
@@ -120,6 +125,7 @@ describe.skipIf(!hasUpstreamScripts || !hasObsidianScript)("Lua real script Gem-
       activationSequence: 2,
       eventName: "sentToGraveyard",
       eventCode: 1014,
+      eventPlayer: 0,
       eventCardUid: obsidian.uid,
       eventReason: duelReason.effect,
       eventReasonPlayer: 0,
@@ -141,6 +147,7 @@ describe.skipIf(!hasUpstreamScripts || !hasObsidianScript)("Lua real script Gem-
         sequence: 2,
       },
       operationInfos: [{ category: 0x200, targetUids: [normalTarget.uid], count: 1, player: 0, parameter: 0 }],
+      targetFieldIds: [7],
       targetUids: [normalTarget.uid],
     });
 

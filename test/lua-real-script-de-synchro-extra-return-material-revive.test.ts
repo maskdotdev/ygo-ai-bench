@@ -110,6 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDeSynchroScript)("Lua real script De-
       ],
       player: 0,
       sourceUid: deSynchro.uid,
+      targetFieldIds: [8],
       targetUids: [synchro.uid],
     });
 

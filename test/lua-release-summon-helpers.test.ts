@@ -124,7 +124,8 @@ describe("Lua release summon helpers", () => {
 
     expect(host.messages).toContain("release ritual source result 1");
     expect(host.messages).toContain("release ritual source true/true");
-    expect(material).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    const movedMaterial = session.state.cards.find((card) => card.uid === material!.uid);
+    expect(movedMaterial).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
   });
 
   it("lets Lua scripts check tribute summon availability", () => {

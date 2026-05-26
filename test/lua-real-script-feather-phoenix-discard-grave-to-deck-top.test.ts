@@ -99,6 +99,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script A 
         ],
         "player": 0,
         "sourceUid": "p0-deck-49140998-0",
+        "targetFieldIds": [
+          8,
+        ],
         "targetUids": [
           "p0-deck-49141000-2",
         ],
@@ -136,6 +139,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script A 
         ],
         "player": 0,
         "sourceUid": "p0-deck-49140998-0",
+        "targetFieldIds": [
+          8,
+        ],
         "targetUids": [
           "p0-deck-49141000-2",
         ],

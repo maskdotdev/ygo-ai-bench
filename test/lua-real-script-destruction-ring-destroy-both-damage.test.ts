@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
       ],
       player: 0,
       sourceUid: ring.uid,
+      targetFieldIds: [5],
       targetUids: [target.uid],
     });
 

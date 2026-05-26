@@ -139,6 +139,9 @@ describe.skipIf(!hasUpstreamScripts || !hasGoatShadowSpellScript)("Lua real scri
         "id": "chain-3",
         "player": 0,
         "sourceUid": "p0-deck-504700050-0",
+        "targetFieldIds": [
+          7,
+        ],
         "targetUids": [
           "p1-deck-613922-0",
         ],

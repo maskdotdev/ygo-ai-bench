@@ -61,7 +61,7 @@ describe("duel battle timing", () => {
       expect(pass).toBeTruthy();
       applyAndAssert(restored, pass!);
     }
-    expect(restored.state.players[1].lifePoints).toBeLessThan(session.state.players[1].lifePoints);
+    expect(restored.state.players[1].lifePoints).toBe(6200);
     expect(restored.state.pendingBattle).toBeUndefined();
   });
 
@@ -379,17 +379,17 @@ describe("duel battle timing", () => {
 
     passBattleWindow(restored);
     expect(restored.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-calc-reset"]);
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-step-reset", "restore-damage-calc-reset"]);
     passDamageWindow(restored);
     expect(restored.state.battleWindow?.kind).toBe("beforeDamageCalculation");
-    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-calc-reset"]);
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-step-reset", "restore-damage-calc-reset"]);
     passDamageWindow(restored);
 
     expect(restored.state.battleWindow?.kind).toBe("duringDamageCalculation");
-    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-calc-reset"]);
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-step-reset", "restore-damage-calc-reset"]);
     passDamageWindow(restored);
     expect(restored.state.battleWindow?.kind).toBe("afterDamageCalculation");
-    expect(restored.state.effects).toHaveLength(0);
+    expect(restored.state.effects.map((effect) => effect.id)).toEqual(["restore-damage-step-reset"]);
   });
 
   it("prunes damage subphase flag effects after restoring an attack response window", () => {
@@ -415,17 +415,17 @@ describe("duel battle timing", () => {
 
     passBattleWindow(restored);
     expect(restored.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([611]);
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([610, 611]);
     passDamageWindow(restored);
     expect(restored.state.battleWindow?.kind).toBe("beforeDamageCalculation");
-    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([611]);
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([610, 611]);
     passDamageWindow(restored);
 
     expect(restored.state.battleWindow?.kind).toBe("duringDamageCalculation");
-    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([611]);
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([610, 611]);
     passDamageWindow(restored);
     expect(restored.state.battleWindow?.kind).toBe("afterDamageCalculation");
-    expect(restored.state.flagEffects).toHaveLength(0);
+    expect(restored.state.flagEffects.map((flag) => flag.code)).toEqual([610]);
   });
 
   it("restores a pending after-damage trigger and continues the battle window after it resolves", () => {
@@ -560,7 +560,7 @@ describe("duel battle timing", () => {
     }
     expect(restored.state.battleWindow).toBeUndefined();
     expect(restored.state.pendingBattle).toBeUndefined();
-    expect(restored.state.players[1].lifePoints).toBeLessThan(session.state.players[1].lifePoints);
+    expect(restored.state.players[1].lifePoints).toBe(6200);
   });
 
   it("gates quick effects by explicit damage sub-window kind", () => {
