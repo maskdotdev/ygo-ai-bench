@@ -96,6 +96,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         },
         "eventReason": 0,
         "eventReasonPlayer": 0,
+        "eventUids": [
+          "p0-deck-100-0",
+          "p1-deck-200-1",
+        ],
         "id": "chain-3",
         "operationInfos": [
           {
@@ -108,6 +112,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         ],
         "player": 1,
         "sourceUid": "p1-deck-62279055-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p0-deck-100-0",
         ],
@@ -146,6 +153,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         },
         "eventReason": 0,
         "eventReasonPlayer": 0,
+        "eventUids": [
+          "p0-deck-100-0",
+          "p1-deck-200-1",
+        ],
         "id": "chain-3",
         "operationInfos": [
           {
@@ -158,6 +169,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         ],
         "player": 1,
         "sourceUid": "p1-deck-62279055-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p0-deck-100-0",
         ],

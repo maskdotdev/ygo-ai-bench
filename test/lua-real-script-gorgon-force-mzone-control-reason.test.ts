@@ -88,8 +88,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     expect(probe.ok, probe.error).toBe(true);
     expect(restored.host.messages).toContain("gorgon force mzone summon/control 0/1");
     expect(restored.host.messages).toContain("gorgon force mzone control predicate true");
-    expect(restored.host.messages).toContain("gorgon force mzone control take 1");
-    expect(restored.host.messages).toContain("gorgon force mzone control result 0/3");
+    expect(restored.host.messages).toContain("gorgon force mzone control take 0");
+    expect(restored.host.messages).toContain("gorgon force mzone control result 1/0");
   });
 });
 

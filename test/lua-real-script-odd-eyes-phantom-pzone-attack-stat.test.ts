@@ -3,7 +3,8 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { currentAttack } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, specialSummonDuelCard, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -21,6 +22,7 @@ const attackerCode = "931496553";
 const pendulumType = 0x1000001;
 const typeMonster = 0x1;
 const setOddEyes = 0x99;
+const summonTypePendulum = 0x4a000000;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasPhantomScript)("Lua real script Odd-Eyes Phantom PZONE attack stat", () => {
   it("restores PZONE attack-announcement targeting into a temporary battle ATK boost", () => {
@@ -87,9 +89,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasPhantomScript
         eventName: "attackDeclared",
         eventCode: 1130,
         eventCardUid: attacker.uid,
+        eventPlayer: 0,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventTriggerTiming: "when",
+        eventUids: [attacker.uid, defender.uid],
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         effectLabelObjectUid: attacker.uid,
@@ -157,6 +161,123 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasPhantomScript
       },
     ]);
   });
+
+  it("restores Pendulum-Summoned battle-damage trigger into Odd-Eyes PZONE effect damage", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const script = workspace.readScript(`official/c${phantomCode}.lua`);
+    expect(script).toContain("e2:SetCode(EVENT_BATTLE_DAMAGE)");
+    expect(script).toContain("return ep~=tp and e:GetHandler():IsPendulumSummoned()");
+    expect(script).toContain("Duel.GetMatchingGroupCount(aux.FaceupFilter(Card.IsSetCard,SET_ODD_EYES),tp,LOCATION_PZONE,0,nil)");
+    expect(script).toContain("Duel.Damage(1-tp,ct*1200,REASON_EFFECT)");
+
+    const phantomData = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === phantomCode);
+    expect(phantomData).toBeDefined();
+    const cards: DuelCardData[] = [
+      phantomData!,
+      { code: otherScaleCode, name: "Odd-Eyes Phantom Other Scale", kind: "monster", typeFlags: pendulumType, setcodes: [setOddEyes], level: 4, attack: 1000, defense: 1000 },
+      { code: defenderCode, name: "Odd-Eyes Phantom Battle Target", kind: "monster", typeFlags: typeMonster, level: 4, attack: 1000, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 93149656, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [phantomCode, otherScaleCode] }, 1: { main: [defenderCode] } });
+    startDuel(session);
+
+    const phantom = requireCard(session, phantomCode);
+    const otherScale = requireCard(session, otherScaleCode);
+    const defender = requireCard(session, defenderCode);
+    moveDuelCard(session.state, phantom.uid, "hand", 0);
+    moveDuelCard(session.state, otherScale.uid, "spellTrapZone", 0).sequence = 1;
+    otherScale.position = "faceUpAttack";
+    otherScale.faceUp = true;
+    moveDuelCard(session.state, defender.uid, "monsterZone", 1).position = "faceUpAttack";
+    defender.faceUp = true;
+    session.state.phase = "main1";
+    session.state.turnPlayer = 0;
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(phantomCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+    specialSummonDuelCard(session.state, phantom.uid, 0, 0, {}, summonTypePendulum);
+    expect(session.state.cards.find((card) => card.uid === phantom.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      faceUp: true,
+      position: "faceUpAttack",
+      summonType: "pendulum",
+      summonTypeCode: summonTypePendulum,
+    });
+    session.state.phase = "battle";
+    session.state.waitingFor = 0;
+
+    const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+    expectCleanRestore(restoredBattle);
+    expectRestoredLegalActions(restoredBattle, 0);
+    const attack = getLuaRestoreLegalActions(restoredBattle, 0).find(
+      (action) => action.type === "declareAttack" && action.attackerUid === phantom.uid && action.targetUid === defender.uid,
+    );
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredBattle, attack!);
+    passBattleUntilTrigger(restoredBattle);
+
+    expect(restoredBattle.session.state.players[1].lifePoints).toBe(6500);
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
+      {
+        id: "trigger-6-1",
+        effectId: "lua-4-1143",
+        eventCardUid: phantom.uid,
+        eventCode: 1143,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "battleDamageDealt",
+        eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.battle,
+        eventReasonCardUid: phantom.uid,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventValue: 1500,
+        player: 0,
+        sourceUid: phantom.uid,
+        triggerBucket: "turnOptional",
+      },
+    ]);
+
+    const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), workspace, reader);
+    expectCleanRestore(restoredTrigger);
+    expectRestoredLegalActions(restoredTrigger, 0);
+    const damageTrigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === phantom.uid);
+    expect(damageTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
+    expect(("operationInfos" in damageTrigger! ? damageTrigger!.operationInfos : []) ?? []).toEqual([]);
+    applyLuaRestoreAndAssert(restoredTrigger, damageTrigger!);
+
+    expect(restoredTrigger.session.state.players[1].lifePoints).toBe(5300);
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: phantom.uid,
+        eventPlayer: 1,
+        eventValue: 1500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: phantom.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 1200,
+        eventReason: duelReason.effect,
+        eventReasonCardUid: phantom.uid,
+        eventReasonEffectId: 4,
+        eventReasonPlayer: 0,
+      },
+    ]);
+  });
 });
 
 function requireCard(session: DuelSession, code: string) {
@@ -175,6 +296,18 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
   expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
   expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
+function passBattleUntilTrigger(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.pendingBattle && restored.session.state.pendingTriggers.length === 0) {
+    expect(++guard).toBeLessThan(20);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const passType = restored.session.state.battleStep === "damage" || restored.session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === passType);
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restored, pass!);
+  }
 }
 
 function applyAndAssert(session: DuelSession, action: DuelAction): void {
