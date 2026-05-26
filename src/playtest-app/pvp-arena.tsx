@@ -10,6 +10,7 @@ import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader, createB
 import type { BrowserLuaScriptCache, BrowserLuaScriptManifest, BrowserLuaScriptPreloadResult } from "./duel-pvp-script-cache.js";
 import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
 import { runDuelBattlefieldScript, runDuelBattlefieldScriptStep, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult, type DuelBattlefieldScriptStepResult } from "./duel-battlefield-script.js";
+import { duelActionAnchorUids } from "./duel-action-anchors.js";
 import { CardZoom, ToastStack, readBuilderDeck, starterYdk } from "./ui.js";
 import type { CardImageInfo, ToastMessage } from "./ui.js";
 import { hydrateCardImagesByPasscode } from "./card-images.js";
@@ -259,6 +260,19 @@ function browserPvpBootDiagnostics(
   return diagnostics;
 }
 
+function revealedCardDetail(session: DuelSession, previousEventCount: number): string | undefined {
+  const confirmed = session.state.eventHistory
+    .slice(previousEventCount)
+    .filter((event) => event.eventName === "confirmed" && event.eventUids !== undefined)
+    .at(-1);
+  if (!confirmed?.eventUids?.length) return undefined;
+  const names = confirmed.eventUids
+    .map((uid) => session.state.cards.find((card) => card.uid === uid)?.name)
+    .filter((name): name is string => Boolean(name));
+  if (!names.length) return undefined;
+  return `Revealed ${names.join(", ")}. If no prompt appears, there was no eligible card to add and the deck top was reordered.`;
+}
+
 function pvpDeckCodes(p0Text: string, p1Text: string): string[] {
   const p0 = parseYdk(p0Text);
   const p1 = parseYdk(p1Text);
@@ -303,7 +317,7 @@ export function PvpArena() {
   const [handSizeDraft, setHandSizeDraft] = useState(5);
   const [menuOpen, setMenuOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
-  const [zoomCard, setZoomCard] = useState<{ name: string; image: string } | null>(null);
+  const [zoomCard, setZoomCard] = useState<{ uid?: string; name: string; image: string } | null>(null);
   const [pileModal, setPileModal] = useState<{ title: string; icon: string; cards: PublicDuelCard[] } | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [imageRevision, setImageRevision] = useState(0);
@@ -438,6 +452,7 @@ export function PvpArena() {
 
   const apply = useCallback(
     (action: DuelAction) => {
+      const previousEventCount = session.state.eventHistory.length;
       const result = applyResponse(session, action);
       setRevision((current) => current + 1);
       if (!result.ok) {
@@ -448,6 +463,21 @@ export function PvpArena() {
         const w = result.state.winner;
         const label = w === "draw" ? "Draw game" : `Player ${(w as PlayerId) + 1} wins`;
         notify("Duel finished", label, "success");
+        return;
+      }
+      if (action.type === "activateEffect") {
+        const revealDetail = revealedCardDetail(session, previousEventCount);
+        const detail = result.state.chain.length > 0
+          ? `Chain Link ${result.state.chain.length} is pending. Player ${(result.state.waitingFor ?? action.player) + 1} must respond or pass.`
+          : result.state.prompt
+            ? `Player ${result.state.prompt.player + 1} must answer the prompt.`
+            : revealDetail ?? "The effect was applied.";
+        notify("Effect activated", `${action.label}. ${detail}`, "success");
+      } else if (action.type === "passChain" && result.state.prompt) {
+        notify("Chain resolved", `Player ${result.state.prompt.player + 1} must answer the prompt.`, "success");
+      } else if (action.type === "passChain") {
+        const revealDetail = revealedCardDetail(session, previousEventCount);
+        if (revealDetail) notify("Chain resolved", revealDetail, "success");
       }
     },
     [notify, session],
@@ -466,8 +496,25 @@ export function PvpArena() {
   const inspectCard = useCallback((card: PublicDuelCard) => {
     const image = cardImages.current.get(card.code);
     const url = image?.large || image?.small;
-    if (url) setZoomCard({ name: card.name, image: url });
+    if (url) setZoomCard({ uid: card.uid, name: card.name, image: url });
   }, [imageRevision]);
+
+  const zoomActions = useMemo(() => {
+    if (!zoomCard) return [];
+    const showCurrentDecision = publicState.chain.length > 0 || publicState.prompt !== undefined || publicState.triggerOrderPrompt !== undefined;
+    return legalActions.filter((action) => {
+      const anchors = duelActionAnchorUids(action);
+      if (zoomCard.uid !== undefined && anchors.includes(zoomCard.uid)) return true;
+      return showCurrentDecision && anchors.length === 0;
+    });
+  }, [legalActions, publicState.chain.length, publicState.prompt, publicState.triggerOrderPrompt, zoomCard]);
+
+  const zoomActionTitle = useMemo(() => {
+    if (publicState.prompt) return `Player ${publicState.prompt.player + 1} prompt`;
+    if (publicState.chain.length > 0 && waiting !== undefined) return `Player ${waiting + 1} chain response`;
+    if (publicState.triggerOrderPrompt) return `Player ${publicState.triggerOrderPrompt.player + 1} trigger order`;
+    return "Available actions";
+  }, [publicState.chain.length, publicState.prompt, publicState.triggerOrderPrompt, waiting]);
 
   return (
     <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-950 text-slate-200">
@@ -657,7 +704,7 @@ export function PvpArena() {
                     key={`${card.uid}-${index}`}
                     type="button"
                     className={`rounded-lg p-1 text-left transition-colors hover:bg-slate-800 ${cardTypeClass}`}
-                    onClick={() => url && setZoomCard({ name: card.name, image: url })}
+                    onClick={() => url && setZoomCard({ uid: card.uid, name: card.name, image: url })}
                   >
                     <div className="aspect-[59/86] w-full overflow-hidden rounded border border-slate-700 bg-slate-950">
                       {url ? (
@@ -676,7 +723,18 @@ export function PvpArena() {
       ) : null}
 
       <ToastStack toasts={toasts} />
-      {zoomCard ? <CardZoom card={zoomCard} onClose={() => setZoomCard(null)} /> : null}
+      {zoomCard ? (
+        <CardZoom
+          card={zoomCard}
+          actions={zoomActions}
+          actionTitle={zoomActionTitle}
+          onAction={(action) => {
+            apply(action);
+            setZoomCard(null);
+          }}
+          onClose={() => setZoomCard(null)}
+        />
+      ) : null}
     </div>
   );
 }

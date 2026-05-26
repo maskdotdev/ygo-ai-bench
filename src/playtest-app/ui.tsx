@@ -1,4 +1,5 @@
 import type { CardSummary, PlaytestLogEntry } from "#engine/types.js";
+import type { DuelAction } from "#duel/types.js";
 
 export interface CardImageInfo {
   small: string;
@@ -13,6 +14,7 @@ export interface ToastMessage {
 }
 
 export interface ZoomCard {
+  uid?: string;
   name: string;
   image: string;
 }
@@ -120,11 +122,18 @@ export function LogPanel(props: { log: PlaytestLogEntry[] }) {
   );
 }
 
-export function CardZoom(props: { card: ZoomCard; onClose: () => void }) {
+export function CardZoom(props: {
+  card: ZoomCard;
+  actions?: readonly DuelAction[];
+  actionTitle?: string;
+  onAction?: (action: DuelAction) => void;
+  onClose: () => void;
+}) {
+  const actions = props.actions ?? [];
   return (
     <div className="card-zoom-overlay fixed inset-0 z-50 grid place-items-center p-4" onClick={props.onClose}>
       <div
-        className="card-zoom-frame relative rounded-xl p-5 shadow-2xl"
+        className="card-zoom-frame relative grid max-h-[92dvh] w-[min(94vw,900px)] grid-cols-1 gap-4 overflow-hidden rounded-xl p-4 shadow-2xl md:grid-cols-[minmax(260px,420px)_minmax(220px,1fr)]"
         onClick={(event) => event.stopPropagation()}
       >
         <button
@@ -136,11 +145,32 @@ export function CardZoom(props: { card: ZoomCard; onClose: () => void }) {
           ×
         </button>
         <img
-          className="max-h-[80vh] w-[min(85vw,420px)] rounded-lg object-contain"
+          className="mx-auto max-h-[78dvh] w-full max-w-[420px] rounded-lg object-contain"
           src={props.card.image}
           alt={props.card.name}
         />
-        <p className="mt-4 text-center font-['Cinzel'] text-xl font-bold text-[#fff7dc]">{props.card.name}</p>
+        <div className="flex min-h-0 flex-col">
+          <p className="font-['Cinzel'] text-xl font-bold leading-tight text-[#fff7dc]">{props.card.name}</p>
+          {actions.length > 0 && props.onAction ? (
+            <>
+              <p className="mt-2 text-[10px] font-bold uppercase tracking-[0.18em] text-[#d4af37]/70">
+                {props.actionTitle ?? "Available Actions"}
+              </p>
+              <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+                {actions.map((action) => (
+                  <button
+                    key={JSON.stringify(action)}
+                    type="button"
+                    className="action-button w-full rounded-lg px-3 py-3 text-left text-xs font-semibold leading-snug sm:text-sm"
+                    onClick={() => props.onAction?.(action)}
+                  >
+                    <span className="line-clamp-4">{action.label}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );
