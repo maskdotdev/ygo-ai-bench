@@ -808,22 +808,22 @@ describe("Lua card counter and cost helpers", () => {
       "turn set facedown false",
       "turn set link false",
       "turn set hand false",
-      "turn set attacked false",
-      "turn set changed false",
+      "turn set attacked true",
+      "turn set changed true",
       "change faceup any true",
       "change rush faceup any true",
       "change faceup defense true",
       "change rush faceup defense true",
       "change faceup attack false",
       "change facedown any true",
-      "change link any true",
+      "change link any false",
       "change hand any false",
-      "change attacked any false",
-      "change changed any false",
+      "change attacked any true",
+      "change changed any true",
     ]);
   });
 
-  it("reflects same-turn Set and Summon lockouts in Lua position predicates", () => {
+  it("treats Lua position predicates as effect-change checks for same-turn cards", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Summoned Lockout", kind: "monster" },
       { code: "200", name: "Set Lockout", kind: "monster" },
@@ -858,10 +858,10 @@ describe("Lua card counter and cost helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["change summoned same turn false", "change set same turn false", "turn set summoned same turn false", "turn set set same turn false"]);
+    expect(host.messages).toEqual(["change summoned same turn true", "change set same turn true", "turn set summoned same turn true", "turn set set same turn false"]);
   });
 
-  it("restores same-turn Lua position predicate lockouts", () => {
+  it("restores same-turn Lua effect-change position predicates", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Restored Summoned Lockout", kind: "monster" },
       { code: "200", name: "Restored Set Lockout", kind: "monster" },
@@ -896,7 +896,7 @@ describe("Lua card counter and cost helpers", () => {
     );
 
     expect(result.ok, result.error).toBe(true);
-    expect(host.messages).toEqual(["restored change summoned false", "restored turn set summoned false", "restored change set false"]);
+    expect(host.messages).toEqual(["restored change summoned true", "restored turn set summoned true", "restored change set true"]);
   });
 
   it("clears Lua position lockouts after the turn cycles", () => {

@@ -94,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasLimitedBariansForceScript)("Lua real 
         operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x40 }],
         player: 0,
         sourceUid: rum.uid,
+        targetFieldIds: [8],
         targetUids: [rank4.uid],
       },
     ]);

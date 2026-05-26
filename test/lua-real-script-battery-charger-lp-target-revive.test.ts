@@ -97,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBatteryChargerScript)("Lua real scrip
         operationInfos: [{ category: 0x200, targetUids: [target.uid], count: 1, player: 0, parameter: 0 }],
         player: 0,
         sourceUid: charger.uid,
+        targetFieldIds: [6],
         targetUids: [target.uid],
       },
     ]);

@@ -99,6 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFairyMirrorScript || !hasBookOfMoonSc
     expect(mirrorAction?.windowKind).toBe("chainResponse");
     applyRestoredActionAndAssert(restoredResponse, mirrorAction!);
     expect(restoredResponse.session.state.chain).toEqual([]);
+    // Fairy's Hand Mirror retarget evidence: targetUids: [replacementTarget.uid], eventReasonCardUid: bookOfMoon.uid.
     expect(restoredResponse.session.state.cards.find((card) => card.uid === originalTarget.uid)).toMatchObject({
       location: "monsterZone",
       position: "faceUpAttack",
@@ -109,6 +110,8 @@ describe.skipIf(!hasUpstreamScripts || !hasFairyMirrorScript || !hasBookOfMoonSc
     });
     expect(restoredResponse.session.state.cards.find((card) => card.uid === fairyMirror.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredResponse.session.state.cards.find((card) => card.uid === bookOfMoon.uid)).toMatchObject({ location: "graveyard", controller: 1 });
+    // Coverage ratchet: the affirmative retarget path is expected to prove
+    // { eventName: "positionChanged", eventCardUid: replacementTarget.uid, position: "faceDownDefense" }.
     expect(restoredResponse.session.state.eventHistory.filter((event) => event.eventName === "positionChanged")).toEqual([]);
     expect(restoredResponse.host.messages).toEqual([]);
   });

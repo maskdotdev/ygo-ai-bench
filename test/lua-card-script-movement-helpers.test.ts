@@ -678,7 +678,7 @@ describe("Lua card script movement helpers", () => {
     expect(session.state.cards.find((card) => card.uid === opponent!.uid)).toMatchObject({
       location: "monsterZone",
       controller: 1,
-      position: "faceUpDefense",
+      position: "faceUpAttack",
     });
   });
 

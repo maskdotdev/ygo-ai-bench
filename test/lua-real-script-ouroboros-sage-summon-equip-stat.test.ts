@@ -146,9 +146,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ZS
       { code: 76, registryKey: "lua:32281491:lua-5-76", reset: { flags: 33427456 }, sourceUid: ouroborosSage.uid, value: undefined },
       { code: 100, registryKey: "lua:32281491:lua-6-100", reset: { flags: 33427456 }, sourceUid: ouroborosSage.uid, value: 1700 },
       { code: 76, registryKey: "lua:32281491:lua-7-76", reset: { flags: 33427456 }, sourceUid: ouroborosSage.uid, value: undefined },
-      { code: 76, registryKey: "lua:322814910:lua-8-76", reset: { flags: 33427456 }, sourceUid: utopiaAlly.uid, value: undefined },
-      { code: 100, registryKey: "lua:322814910:lua-9-100", reset: { flags: 33427456 }, sourceUid: utopiaAlly.uid, value: 1700 },
-      { code: 76, registryKey: "lua:322814910:lua-10-76", reset: { flags: 33427456 }, sourceUid: utopiaAlly.uid, value: undefined },
+      { code: 76, registryKey: "lua:32281491:lua-8-76", reset: { flags: 33427456 }, sourceUid: utopiaAlly.uid, value: undefined },
+      { code: 100, registryKey: "lua:32281491:lua-9-100", reset: { flags: 33427456 }, sourceUid: utopiaAlly.uid, value: 1700 },
+      { code: 76, registryKey: "lua:32281491:lua-10-76", reset: { flags: 33427456 }, sourceUid: utopiaAlly.uid, value: undefined },
     ]);
     expect(restoredTrigger.session.state.eventHistory.filter((event) => ["specialSummoned", "equipped"].includes(event.eventName))).toEqual([
       {

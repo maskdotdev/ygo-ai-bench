@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData, DuelResponse } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -83,6 +84,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         ],
         "player": 0,
         "sourceUid": "p0-deck-56948373-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p1-deck-56940001-0",
         ],
@@ -176,6 +180,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expectRestoredLegalActions(restoredDamageChain, 1);
     resolveRestoredChain(restoredDamageChain);
     expect(restoredDamageChain.session.state.players[1].lifePoints).toBe(7500);
+    expect(restoredDamageChain.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 500,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: mask!.uid,
+        eventReasonEffectId: 4,
+      },
+    ]);
     expect(restoredDamageChain.host.messages).not.toContain("mask responder resolved");
   });
 });

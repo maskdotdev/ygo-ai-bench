@@ -109,6 +109,7 @@ describe.skipIf(!hasUpstreamScripts || !hasLightPhoenixScript)("Lua real script 
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [7],
         targetUids: [performapalTarget.uid],
         operationInfos: [{ category: 0x200000, targetUids: [performapalTarget.uid], count: 1, player: 0, parameter: 0 }],
       },

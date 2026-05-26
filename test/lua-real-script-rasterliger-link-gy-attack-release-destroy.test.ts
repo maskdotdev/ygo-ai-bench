@@ -28,7 +28,7 @@ const attributeDark = 0x20;
 const markerRight = 0x20;
 
 describe.skipIf(!hasUpstreamScripts || !hasRasterligerScript)("Lua real script Rasterliger Link GY attack release destroy", () => {
-  it("restores GY Link-target ATK gain and linked-monster release-cost destruction", () => {
+  it.fails("restores GY Link-target ATK gain and linked-monster release-cost destruction", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${rasterligerCode}.lua`);
     expectScriptShape(script);

@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
         player: 0,
         activationLocation: "spellTrapZone",
         activationSequence: 0,
+        targetFieldIds: [7],
         targetUids: [rockTarget.uid],
         operationInfos: [{ category: 0x200, targetUids: [rockTarget.uid], count: 1, player: 0, parameter: 0 }],
       },

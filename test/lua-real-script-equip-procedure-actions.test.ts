@@ -98,6 +98,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-40619825-0",
+          "targetFieldIds": [
+            5,
+          ],
           "targetUids": [
             "p0-deck-601007-1",
           ],
@@ -191,6 +194,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
         ],
         player: 0,
         sourceUid: dragonTreasure!.uid,
+        targetFieldIds: [6],
         targetUids: [dragon!.uid],
       });
       expect(restoredEquipWindow.session.state.chain[0]?.targetUids).not.toContain(zombie!.uid);
@@ -376,6 +380,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-65169794-0",
+          "targetFieldIds": [
+            5,
+          ],
           "targetUids": [
             "p0-deck-601024-1",
           ],
@@ -418,6 +425,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
               "sequence": 0,
             },
             "eventName": "sentToGraveyard",
+            "eventPlayer": 0,
             "eventPreviousState": {
               "controller": 0,
               "faceUp": true,
@@ -461,6 +469,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
             "sequence": 0,
           },
           "eventName": "sentToGraveyard",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": true,
@@ -611,6 +620,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-56747793-0",
+          "targetFieldIds": [
+            6,
+          ],
           "targetUids": [
             "p0-deck-601021-1",
           ],
@@ -763,6 +775,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-83746708-0",
+          "targetFieldIds": [
+            6,
+          ],
           "targetUids": [
             "p0-deck-601026-1",
           ],

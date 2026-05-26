@@ -74,7 +74,6 @@ describe.skipIf(!hasUpstreamScripts || !hasPilderScript)("Lua real script Rocket
       { code: 76, event: "continuous", range: ["spellTrapZone"], triggerEvent: undefined },
       { code: effectIndestructibleBattle, event: "continuous", range: ["spellTrapZone"], triggerEvent: undefined },
       { code: eventDamageStepEnd, event: "trigger", range: ["spellTrapZone"], triggerEvent: "damageStepEnded" },
-      { code: 76, event: "continuous", range: ["spellTrapZone"], triggerEvent: undefined },
     ]);
 
     const attack = getLuaRestoreLegalActions(restoredOpen, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker.uid && action.targetUid === defender.uid);

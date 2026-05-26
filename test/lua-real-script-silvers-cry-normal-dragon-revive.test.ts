@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSilversCryScript)("Lua real script Si
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [7],
         targetUids: [normalDragon.uid],
         operationInfos: [{ category: 0x200, targetUids: [normalDragon.uid], count: 1, player: 0, parameter: 0 }],
       },

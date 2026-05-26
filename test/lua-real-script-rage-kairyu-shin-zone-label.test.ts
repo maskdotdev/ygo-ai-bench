@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
       id: "chain-2",
       player: 0,
       sourceUid: rage.uid,
+      targetFieldIds: [9],
       targetUids: [opponentTarget.uid],
       operationInfos: [
         { category: 0x1, targetUids: [opponentTarget.uid], count: 1, player: 0, parameter: 0 },

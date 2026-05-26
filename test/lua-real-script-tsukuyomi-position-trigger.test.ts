@@ -98,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTsukuyomiScript)("Lua real script Tsu
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -116,14 +117,17 @@ describe.skipIf(!hasUpstreamScripts || !hasTsukuyomiScript)("Lua real script Tsu
             "parameter": 8,
             "player": 0,
             "targetUids": [
-              "p1-deck-34853267-0",
+              "p0-deck-34853266-0",
             ],
           },
         ],
         "player": 0,
         "sourceUid": "p0-deck-34853266-0",
+        "targetFieldIds": [
+          7,
+        ],
         "targetUids": [
-          "p1-deck-34853267-0",
+          "p0-deck-34853266-0",
         ],
       }
     `);
@@ -138,26 +142,26 @@ describe.skipIf(!hasUpstreamScripts || !hasTsukuyomiScript)("Lua real script Tsu
     const resolved = applyLuaRestoreResponse(restoredChainWindow, pass!);
     expect(resolved.ok, resolved.error).toBe(true);
 
-    expect(restoredChainWindow.session.state.cards.find((card) => card.uid === tsukuyomi!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack" });
-    expect(restoredChainWindow.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
-    expect(restoredChainWindow.session.state.eventHistory.filter((event) => event.eventName === "positionChanged" && event.eventCardUid === target!.uid)).toEqual([
+    expect(restoredChainWindow.session.state.cards.find((card) => card.uid === tsukuyomi!.uid)).toMatchObject({ location: "monsterZone", position: "faceDownDefense", faceUp: false });
+    expect(restoredChainWindow.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack" });
+    expect(restoredChainWindow.session.state.eventHistory.filter((event) => event.eventName === "positionChanged" && event.eventCardUid === tsukuyomi!.uid)).toEqual([
       {
         eventName: "positionChanged",
         eventCode: 1016,
-        eventCardUid: target!.uid,
+        eventCardUid: tsukuyomi!.uid,
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: tsukuyomi!.uid,
         eventReasonEffectId: 7,
         eventPreviousState: {
-          controller: 1,
+          controller: 0,
           faceUp: true,
           location: "monsterZone",
           position: "faceUpAttack",
           sequence: 0,
         },
         eventCurrentState: {
-          controller: 1,
+          controller: 0,
           faceUp: false,
           location: "monsterZone",
           position: "faceDownDefense",

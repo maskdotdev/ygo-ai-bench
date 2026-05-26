@@ -65,8 +65,10 @@ describe("Lua Fusion Summon reason source", () => {
 
     expect(host.messages).toContain("fusion reason result 1");
     expect(host.messages).toContain("fusion reason summoned true/true");
-    expect(material).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
-    expect(fusion).toMatchObject({ location: "monsterZone", summonType: "fusion", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    const movedMaterial = session.state.cards.find((card) => card.uid === material!.uid);
+    const movedFusion = session.state.cards.find((card) => card.uid === fusion!.uid);
+    expect(movedMaterial).toMatchObject({ location: "graveyard", reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(movedFusion).toMatchObject({ location: "monsterZone", summonType: "fusion", reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "usedAsMaterial", eventCardUid: material!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
     expect(session.state.eventHistory).toContainEqual(expect.objectContaining({ eventName: "specialSummoned", eventCardUid: fusion!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
