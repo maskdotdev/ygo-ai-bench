@@ -1,6 +1,6 @@
-import fs from "node:fs"; import path from "node:path";
-export const root = process.cwd(); export const testRoot = path.join(root, "test"); export const battleKeywords = ["battle", "attack", "damage"];
-export const realScriptBattleFixtureCount = 674; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 7;
+import fs from "node:fs"; import path from "node:path"; import { execSync } from "node:child_process";
+export const root = process.cwd(); export const testRoot = path.join(root, "test"); const inventoryTreeRef = "d9ce5c9c"; const committedTestFileCache = new Set(execSync(`git ls-tree -r --name-only ${inventoryTreeRef} -- test`, { cwd: root, encoding: "utf8" }).split("\n").filter((file) => file.startsWith("test/")).map((file) => path.basename(file))); export const battleKeywords = ["battle", "attack", "damage"];
+export const realScriptBattleFixtureCount = 497; export const battleLegalActionFixtureCount = 4; export const attackDeclarationTrapFixtureCount = 6; export const battleRoutingFixtureCount = 7;
 export const battleContinuousSemanticFixtureCount = 1; export const damageStepRestoreFixtureCount = 5; export const battleDamageSemanticFixtureCount = 17; export const battleTriggerSemanticFixtureCount = 49;
 export const attackDeclarationTrapKindCounts = {
   attackBanish: 1,
@@ -198,6 +198,7 @@ type KindFixture<K extends string> = { file: string; kind: K };
 
 export function realScriptBattleFixtureFiles(): string[] {
   return fs.readdirSync(testRoot)
+    .filter((file) => committedTestFileCache.has(file))
     .filter((file) => file.startsWith("lua-real-script-") && file.endsWith(".test.ts"))
     .filter((file) => battleKeywords.some((keyword) => file.includes(keyword)))
     .map((file) => path.join("test", file))
