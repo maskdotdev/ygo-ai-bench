@@ -87,16 +87,18 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-two-toads-equip-summon-destroy.test.ts"
 // Restore ownership: "test/lua-real-script-ursarctic-big-dipper-counter-control.test.ts"
 // Restore ownership: "test/lua-real-script-utopic-draco-future-negate-control.test.ts"
+// Restore ownership: "test/lua-real-script-utopic-future-damage-step-control-replace.test.ts"
 // Restore ownership: "test/lua-real-script-vampire-fascinator-release-control.test.ts"
 // Restore ownership: "test/lua-real-script-vampire-red-baron-swap-revive.test.ts"
 // Restore ownership: "test/lua-real-script-vaylantz-duke-facedown-lock.test.ts"
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 45;
+const controlFixtureCount = 46;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
+  damageStepBattleControlReplace: 1,
   battleCounterControl: 2,
   chainControlSummon: 1,
   chainControlToken: 1,
@@ -150,6 +152,7 @@ const controlSemanticVariantCounts = {
 type ControlKind =
   | "battleDestroyedTrapControlRace"
   | "battleStartPhaseControl"
+  | "damageStepBattleControlReplace"
   | "battleCounterControl"
   | "chainControlSummon"
   | "chainControlToken"
@@ -442,6 +445,30 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.GetControl(sc,tp)",
         'eventName: "counterAdded"',
         'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-utopic-future-damage-step-control-replace.test.ts",
+      kind: "damageStepBattleControlReplace",
+      required: [
+        "restores battle damage prevention, Damage Step End control, and detach destroy replacement",
+        'const utopicFutureCode = "65305468"',
+        "--Number F0: Utopic Future",
+        "Xyz.AddProcedure(c,s.xyzfilter,nil,2,nil,nil,nil,nil,false,s.xyzcheck)",
+        "EFFECT_EQUIP_SPELL_XYZ_MAT",
+        "Card.GetRank",
+        "e3:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e4:SetCode(EFFECT_NO_BATTLE_DAMAGE)",
+        "e5:SetCode(EFFECT_AVOID_BATTLE_DAMAGE)",
+        "e6:SetCode(EVENT_DAMAGE_STEP_END)",
+        "Duel.GetControl(tc,tp,PHASE_BATTLE,1)",
+        "e7:SetCode(EFFECT_DESTROY_REPLACE)",
+        "Duel.SelectEffectYesNo(tp,c,96)",
+        "c:RemoveOverlayCard(tp,1,1,REASON_EFFECT)",
+        'eventName: "damageStepEnded"',
+        'eventName: "controlChanged"',
+        'eventName: "detachedMaterial"',
         "previousController: 1",
       ],
     },
@@ -915,6 +942,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
     {
       battleStartPhaseControl: 0,
       battleDestroyedTrapControlRace: 0,
+      damageStepBattleControlReplace: 0,
       battleCounterControl: 0,
       chainControlSummon: 0,
       chainControlToken: 0,
