@@ -71,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasSoulStrikeScr
     }))).toEqual([
       { eventName: "attackDeclared", eventCardUid: requireCard(restored.session, attackerCode).uid, eventPlayer: undefined, eventReason: 0, eventReasonPlayer: 1, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: undefined, eventValue: undefined, previous: "deck", current: "monsterZone" },
       { eventName: "lifePointCostPaid", eventCardUid: undefined, eventPlayer: 0, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: soulStrike.uid, eventReasonEffectId: 1, relatedEffectId: undefined, eventValue: 2000, previous: undefined, current: undefined },
-      { eventName: "becameTarget", eventCardUid: target.uid, eventPlayer: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, eventValue: undefined, previous: "deck", current: "monsterZone" },
+      { eventName: "becameTarget", eventCardUid: target.uid, eventPlayer: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, eventValue:  1, previous: "deck", current: "monsterZone" },
     ]);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });

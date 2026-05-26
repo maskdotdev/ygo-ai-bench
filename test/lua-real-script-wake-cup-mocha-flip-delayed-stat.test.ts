@@ -98,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMochaScript)("Lua real script WAKE CU
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: mocha.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

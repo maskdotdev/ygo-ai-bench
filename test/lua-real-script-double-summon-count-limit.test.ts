@@ -186,6 +186,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDoubleSummonScript)("Lua real script 
         "controller": 0,
         "event": "continuous",
         "id": "lua-2-28",
+        "luaTypeFlags": 2,
         "oncePerTurn": false,
         "operation": [Function],
         "ownerPlayer": 0,

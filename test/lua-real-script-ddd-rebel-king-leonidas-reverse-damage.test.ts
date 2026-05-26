@@ -101,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D/
         "description": 1480583490,
         "event": "continuous",
         "id": "lua-11-80",
+        "luaTypeFlags": 2,
         "luaValueDescriptor": "value-predicate:effect-reason",
         "oncePerTurn": false,
         "ownerPlayer": 0,

@@ -60,11 +60,23 @@ describe.skipIf(!hasUpstreamScripts || !hasZhangYuanScript)("Lua real script Anc
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, attack!);
     passUntilBattleStarted(restoredOpen);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-1-1132",
+        effectLabelObjectUid: opponentBattler.uid,
+        eventCardUid: ancientWarrior.uid,
+        eventCode: 1132,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleStarted",
-        sourceUid: zhangYuan.uid,
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [ancientWarrior.uid, opponentBattler.uid],
         player: 0,
+        sourceUid: zhangYuan.uid,
         triggerBucket: "turnOptional",
       },
     ]);
@@ -178,6 +190,7 @@ describe.skipIf(!hasUpstreamScripts || !hasZhangYuanScript)("Lua real script Anc
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: opponentTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
