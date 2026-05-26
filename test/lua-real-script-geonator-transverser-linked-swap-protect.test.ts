@@ -62,7 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGeonatorScript)("Lua real script Geon
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(geonatorCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expectCleanRestore(restoredOpen);
