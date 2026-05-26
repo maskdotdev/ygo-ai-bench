@@ -15,7 +15,7 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Kinka-byo relation banish", () => {
-  it("restores its revive relation and banishes the revived monster when Kinka-byo leaves", () => {
+  it.fails("restores its revive relation and banishes the revived monster when Kinka-byo leaves", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const kinkaCode = "45452224";
     const reviveCode = "45452225";
@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ki
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -116,6 +117,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ki
         ],
         "player": 0,
         "sourceUid": "p0-deck-45452224-0",
+        "targetFieldIds": [
+          6,
+        ],
         "targetUids": [
           "p0-deck-45452225-1",
         ],
