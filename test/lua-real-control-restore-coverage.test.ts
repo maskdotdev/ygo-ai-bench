@@ -105,7 +105,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 59;
+const controlFixtureCount = 60;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -149,6 +149,7 @@ const controlKindCounts = {
   summonAndGraveTriggerControlProtect: 1,
   summonProcControlAttackLockStat: 1,
   linkedLpCostControlDelayedDestroy: 1,
+  lpCostTargetedSwapPositionLock: 1,
   swapControlLock: 1,
   targetedSwapControl: 4,
   temporaryControl: 1,
@@ -216,6 +217,7 @@ type ControlKind =
   | "summonAndGraveTriggerControlProtect"
   | "summonProcControlAttackLockStat"
   | "linkedLpCostControlDelayedDestroy"
+  | "lpCostTargetedSwapPositionLock"
   | "swapControlLock"
   | "targetedSwapControl"
   | "temporaryControl"
@@ -877,6 +879,27 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-psychic-jumper-lp-swap-position-lock.test.ts",
+      kind: "lpCostTargetedSwapPositionLock",
+      required: [
+        "restores LP-cost dual targets into SwapControl and position-change locks",
+        "--Psychic Jumper",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e1:SetCost(Cost.PayLP(1000))",
+        "return c:IsFaceup() and c:IsRace(RACE_PSYCHIC) and c:GetCode()~=id and c:IsAbleToChangeControler()",
+        "return c:IsFaceup() and c:IsAbleToChangeControler()",
+        "Duel.SelectTarget(tp,s.filter1,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SelectTarget(tp,s.filter2,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "Duel.SwapControl(tc1,tc2)",
+        "e1:SetCode(EFFECT_CANNOT_CHANGE_POSITION)",
+        'eventName: "lifePointCostPaid"',
+        'eventName: "controlChanged"',
+        "eventUids",
+      ],
+    },
+    {
       file: "lua-real-script-rb-lambda-blade-send-control-delayed-destroy.test.ts",
       kind: "linkedLpCostControlDelayedDestroy",
       required: [
@@ -1316,6 +1339,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       summonAndGraveTriggerControlProtect: 0,
       summonProcControlAttackLockStat: 0,
       linkedLpCostControlDelayedDestroy: 0,
+      lpCostTargetedSwapPositionLock: 0,
       swapControlLock: 0,
       targetedSwapControl: 0,
       temporaryControl: 0,
