@@ -46,6 +46,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-hecahands-xeno-extra-summon.test.ts"
 // Restore ownership: "test/lua-real-script-illegal-knight-quick-summon-control-tohand.test.ts"
 // Restore ownership: "test/lua-real-script-intercept-tribute-material-control.test.ts"
+// Restore ownership: "test/lua-real-script-interplanetary-invader-a-battle-start-control.test.ts"
 // Restore ownership: "test/lua-real-script-invader-throne-flip-swap-control.test.ts"
 // Restore ownership: "test/lua-real-script-jowls-flip-control-direct.test.ts"
 // Restore ownership: "test/lua-real-script-libromancer-displaced-control-return.test.ts"
@@ -92,9 +93,10 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 44;
+const controlFixtureCount = 45;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
+  battleStartPhaseControl: 1,
   battleCounterControl: 2,
   chainControlSummon: 1,
   chainControlToken: 1,
@@ -147,6 +149,7 @@ const controlSemanticVariantCounts = {
 
 type ControlKind =
   | "battleDestroyedTrapControlRace"
+  | "battleStartPhaseControl"
   | "battleCounterControl"
   | "chainControlSummon"
   | "chainControlToken"
@@ -261,6 +264,29 @@ function realScriptControlFixtureFiles(): Array<{
         'eventName: "controlChanged"',
         "currentRace(controlledAttacker, restoredTrigger.session.state)).toBe(raceReptile)",
         "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-interplanetary-invader-a-battle-start-control.test.ts",
+      kind: "battleStartPhaseControl",
+      required: [
+        'const invaderCode = "14729426"',
+        '--Interplanetary Invader "A"',
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_CONTINUOUS)",
+        "e1:SetCode(EVENT_BATTLE_START)",
+        "e:GetHandler()==Duel.GetAttackTarget()",
+        "local a=Duel.GetAttacker()",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_F)",
+        "e1:SetCode(EVENT_PHASE|PHASE_BATTLE)",
+        "e1:SetLabelObject(a)",
+        "Duel.RegisterEffect(e1,tp)",
+        "Duel.SetTargetCard(a)",
+        "Duel.GetControl(tc,tp)",
+        'eventName: "battleStarted"',
+        'eventName: "phaseBattle"',
+        'eventName: "controlChanged"',
+        "previousController: 0",
       ],
     },
     {
@@ -887,6 +913,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       return counts;
     },
     {
+      battleStartPhaseControl: 0,
       battleDestroyedTrapControlRace: 0,
       battleCounterControl: 0,
       chainControlSummon: 0,
