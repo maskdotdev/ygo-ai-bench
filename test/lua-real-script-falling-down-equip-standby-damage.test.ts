@@ -171,6 +171,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFallingScript)("Lua real script Falli
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: stealTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

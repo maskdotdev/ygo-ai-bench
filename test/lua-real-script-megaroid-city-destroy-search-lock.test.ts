@@ -99,6 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMegaroidScript)("Lua real script Mega
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: target.uid,
         eventChainDepth: 1,
         eventChainLinkId: "chain-2",

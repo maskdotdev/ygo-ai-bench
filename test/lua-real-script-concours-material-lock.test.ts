@@ -143,6 +143,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
         "event": "continuous",
         "id": "lua-1-248",
         "luaTargetDescriptor": "target:not-setcode-any:407,518",
+        "luaTypeFlags": 2,
         "luaValueDescriptor": "cannot-material:controller-summon-types:1124073472,1174405120,1224736768,1275068416",
         "oncePerTurn": false,
         "operation": [Function],

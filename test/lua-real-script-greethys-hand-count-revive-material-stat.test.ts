@@ -100,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGreethysScript)("Lua real script Gree
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: reviveTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -152,14 +153,22 @@ describe.skipIf(!hasUpstreamScripts || !hasGreethysScript)("Lua real script Gree
     expectCleanRestore(restoredMaterialOpen);
     expectRestoredLegalActions(restoredMaterialOpen, 0);
     synchroSummonDuelCard(restoredMaterialOpen.session.state, 0, synchro.uid, [materialGreethys.uid, partner.uid]);
-    expect(restoredMaterialOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredMaterialOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-4-1",
         effectId: "lua-2-1108",
-        sourceUid: materialGreethys.uid,
+        eventCardUid: materialGreethys.uid,
+        eventCode: eventBeMaterial,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventName: "usedAsMaterial",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.synchro,
         eventReasonCardUid: synchro.uid,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
         player: 0,
+        sourceUid: materialGreethys.uid,
         triggerBucket: "turnOptional",
       },
     ]);
