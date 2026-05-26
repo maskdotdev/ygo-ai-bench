@@ -12,6 +12,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-altergeist-adminia-cost-control-setcode.test.ts"
 // Restore ownership: "test/lua-real-script-amanokujaki-quick-control-attribute.test.ts"
 // Restore ownership: "test/lua-real-script-amaze-attraction-viking-vortex-attack-control.test.ts"
+// Restore ownership: "test/lua-real-script-archfiends-advent-sarcophagus-summon-control-stat.test.ts"
 // Restore ownership: "test/lua-real-script-armityle-phantom-fury-control-end-summon.test.ts"
 // Restore ownership: "test/lua-real-script-baytal-hecahands-release-control-end-send.test.ts"
 // Restore ownership: "test/lua-real-script-big-eye-detach-control-lock.test.ts"
@@ -99,7 +100,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 51;
+const controlFixtureCount = 52;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -134,6 +135,7 @@ const controlKindCounts = {
   selfDiscardTemporaryControl: 1,
   selfToGraveAttributeControl: 1,
   summonTriggerTemporaryControl: 1,
+  summonProcControlAttackLockStat: 1,
   linkedLpCostControlDelayedDestroy: 1,
   swapControlLock: 1,
   targetedSwapControl: 4,
@@ -193,6 +195,7 @@ type ControlKind =
   | "selfDiscardTemporaryControl"
   | "selfToGraveAttributeControl"
   | "summonTriggerTemporaryControl"
+  | "summonProcControlAttackLockStat"
   | "linkedLpCostControlDelayedDestroy"
   | "swapControlLock"
   | "targetedSwapControl"
@@ -798,6 +801,30 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-archfiends-advent-sarcophagus-summon-control-stat.test.ts",
+      kind: "summonProcControlAttackLockStat",
+      required: [
+        'const adventCode = "53008933"',
+        "--Archfiend's Advent",
+        "restores Shining Sarcophagus no-tribute summon into control and turn-player ally ATK gain",
+        "restores the no-Sarcophagus control branch that prevents the taken monster from attacking",
+        "e1:SetCode(EFFECT_SUMMON_PROC)",
+        "CARD_SHINING_SARCOPHAGUS",
+        "e2:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e3:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,Card.IsControlerCanBeChanged,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e4:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e4:SetValue(500)",
+        "currentAttack(requireCard(restoredSummon.session, allyCode), restoredSummon.session.state)).toBe(1800)",
+        'eventName: "normalSummoned"',
+        'eventName: "specialSummoned"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-change-of-heart-control-return.test.ts",
       kind: "temporaryControl",
       required: [
@@ -1106,6 +1133,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       selfDiscardTemporaryControl: 0,
       selfToGraveAttributeControl: 0,
       summonTriggerTemporaryControl: 0,
+      summonProcControlAttackLockStat: 0,
       linkedLpCostControlDelayedDestroy: 0,
       swapControlLock: 0,
       targetedSwapControl: 0,
