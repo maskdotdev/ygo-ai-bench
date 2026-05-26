@@ -56,6 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSilverClawScript)("Lua real script Pe
         eventReason: 0,
         eventReasonPlayer: 0,
         eventTriggerTiming: "when",
+        eventUids: [attackingSilver!.uid, defender.uid],
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 2 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
@@ -86,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSilverClawScript)("Lua real script Pe
       { code: effectUpdateAttack, range: ["monsterZone"], reset: { flags: 1107169408 }, sourceUid: ally.uid, targetRange: undefined, value: 300 },
     ]);
     expect(restoredAttack.session.state.pendingTriggers).toEqual([]);
+    expect(restoredAttack.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
 
     const restoredStats = restoreDuelWithLuaScripts(serializeDuel(restoredAttack.session), workspace, reader);
     expectCleanRestore(restoredStats);
