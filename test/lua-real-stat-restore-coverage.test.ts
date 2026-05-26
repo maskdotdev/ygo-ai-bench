@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 662; const statKindCounts = {
+const statFixtureCount = 663; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -132,6 +132,7 @@ const statFixtureCount = 662; const statKindCounts = {
   divineScorpionSerketSummonBanishExtraAttackStat: 1,
   amazementAbominationArlekinoSummonSearchToDeckStat: 1,
   gatewaySixCounterSearchSummonStat: 1,
+  signalWarriorCounterSelectEffectStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -612,6 +613,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   divineScorpionSerketSummonBanishExtraAttackStat: 1,
   amazementAbominationArlekinoSummonSearchToDeckStat: 1,
   gatewaySixCounterSearchSummonStat: 1,
+  signalWarriorCounterSelectEffectStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -1039,6 +1041,7 @@ type ExtraStatKind =
   | "divineScorpionSerketSummonBanishExtraAttackStat"
   | "amazementAbominationArlekinoSummonSearchToDeckStat"
   | "gatewaySixCounterSearchSummonStat"
+  | "signalWarriorCounterSelectEffectStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -1575,6 +1578,7 @@ type ExtraStatSemanticVariant =
   | "divineScorpionSerketSummonBanishExtraAttackStat"
   | "amazementAbominationArlekinoSummonSearchToDeckStat"
   | "gatewaySixCounterSearchSummonStat"
+  | "signalWarriorCounterSelectEffectStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -3008,6 +3012,36 @@ function statFixtureFiles(): Array<{
         "eventName: \"becameTarget\"",
         "eventName: \"sentToHandConfirmed\"",
         "eventName: \"specialSummoned\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-signal-warrior-counter-select-effect.test.ts",
+      kind: "signalWarriorCounterSelectEffectStat",
+      required: [
+        'const signalWarriorCode = "9634146"',
+        "Signal Warrior",
+        "restores Signal Counter costs into damage, draw, and destroy branches",
+        "Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(nil),1,99)",
+        "e1:SetCategory(CATEGORY_COUNTER)",
+        "e1:SetCode(EVENT_PHASE|PHASE_STANDBY)",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        "EFFECT_INDESTRUCTABLE_EFFECT",
+        "COUNTER_SIGNAL",
+        "Duel.SelectEffect(tp,",
+        "Duel.RemoveCounter(tp,1,1,COUNTER_SIGNAL,ct,REASON_COST)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,800)",
+        "Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,1,tp,0)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+        "Duel.Draw(p,d,REASON_EFFECT)",
+        "Duel.SelectMatchingCard(tp,nil,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,1,nil)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "getDuelCardCounter(findCard",
+        "eventName: \"damageDealt\"",
+        "eventName === \"destroyed\"",
+        "api: \"SelectEffect\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -13037,6 +13071,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       divineScorpionSerketSummonBanishExtraAttackStat: 0,
       amazementAbominationArlekinoSummonSearchToDeckStat: 0,
       gatewaySixCounterSearchSummonStat: 0,
+      signalWarriorCounterSelectEffectStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
@@ -14525,6 +14560,24 @@ function statSemanticVariants(): Array<{
         "eventName: \"counterRemoved\"",
         "eventName: \"sentToHandConfirmed\"",
         "eventName: \"specialSummoned\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-signal-warrior-counter-select-effect.test.ts",
+      kind: "signalWarriorCounterSelectEffectStat",
+      required: [
+        'const signalWarriorCode = "9634146"',
+        "Signal Warrior",
+        "COUNTER_SIGNAL",
+        "Duel.SelectEffect(tp,",
+        "Duel.RemoveCounter(tp,1,1,COUNTER_SIGNAL,ct,REASON_COST)",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+        "Duel.Draw(p,d,REASON_EFFECT)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "eventName: \"damageDealt\"",
+        "eventName === \"destroyed\"",
+        "api: \"SelectEffect\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -19886,6 +19939,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       divineScorpionSerketSummonBanishExtraAttackStat: 0,
       amazementAbominationArlekinoSummonSearchToDeckStat: 0,
       gatewaySixCounterSearchSummonStat: 0,
+      signalWarriorCounterSelectEffectStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
