@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 664; const statKindCounts = {
+const statFixtureCount = 665; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -134,6 +134,7 @@ const statFixtureCount = 664; const statKindCounts = {
   gatewaySixCounterSearchSummonStat: 1,
   signalWarriorCounterSelectEffectStat: 1,
   darkStringsCounterDestroyDrawDamageStat: 1,
+  movingPointPendulumCounterColumnDamageStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -616,6 +617,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   gatewaySixCounterSearchSummonStat: 1,
   signalWarriorCounterSelectEffectStat: 1,
   darkStringsCounterDestroyDrawDamageStat: 1,
+  movingPointPendulumCounterColumnDamageStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -1045,6 +1047,7 @@ type ExtraStatKind =
   | "gatewaySixCounterSearchSummonStat"
   | "signalWarriorCounterSelectEffectStat"
   | "darkStringsCounterDestroyDrawDamageStat"
+  | "movingPointPendulumCounterColumnDamageStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -1583,6 +1586,7 @@ type ExtraStatSemanticVariant =
   | "gatewaySixCounterSearchSummonStat"
   | "signalWarriorCounterSelectEffectStat"
   | "darkStringsCounterDestroyDrawDamageStat"
+  | "movingPointPendulumCounterColumnDamageStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -3073,6 +3077,35 @@ function statFixtureFiles(): Array<{
         "eventName: \"counterAdded\"",
         "eventName: \"cardsDrawn\"",
         "eventName: \"breakEffect\"",
+        "eventName: \"damageDealt\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-moving-point-pendulum-counter-column-damage.test.ts",
+      kind: "movingPointPendulumCounterColumnDamageStat",
+      required: [
+        'const movingPointCode = "5208118"',
+        "Moving Point Pendulum",
+        "restores T Counter quick effect into adjacent move, column destroy, and previous-ATK damage",
+        "c:EnableCounterPermit(COUNTER_T)",
+        "e0:SetType(EFFECT_TYPE_ACTIVATE)",
+        "e1:SetCategory(CATEGORY_COUNTER)",
+        "e1:SetCode(EVENT_PHASE+PHASE_STANDBY)",
+        "e:GetHandler():AddCounter(COUNTER_T,1)",
+        "CATEGORY_DESTROY+CATEGORY_DAMAGE",
+        "Duel.SelectTarget(tp,s.movefilter,tp,LOCATION_MMZONE,0,1,1,nil)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DESTROY,nil,1,1-tp,LOCATION_MZONE)",
+        "tc:MoveAdjacent()",
+        "tc:GetColumnGroup():Match(s.desfilter,nil,opp,tc:GetScale())",
+        "Duel.BreakEffect()",
+        "Duel.Destroy(column_g,REASON_EFFECT)",
+        "Duel.GetOperatedGroup():GetSum(Card.GetPreviousAttackOnField)",
+        "Duel.Damage(opp,total_atk,REASON_EFFECT)",
+        "getDuelCardCounter",
+        "eventName: \"becameTarget\"",
+        "eventName: \"breakEffect\"",
+        "eventName: \"destroyed\"",
         "eventName: \"damageDealt\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
@@ -13105,6 +13138,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       gatewaySixCounterSearchSummonStat: 0,
       signalWarriorCounterSelectEffectStat: 0,
       darkStringsCounterDestroyDrawDamageStat: 0,
+      movingPointPendulumCounterColumnDamageStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
@@ -14629,6 +14663,24 @@ function statSemanticVariants(): Array<{
         "Cost.DetachFromSelf(1)",
         "eventName: \"counterAdded\"",
         "eventName: \"cardsDrawn\"",
+        "eventName: \"damageDealt\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-moving-point-pendulum-counter-column-damage.test.ts",
+      kind: "movingPointPendulumCounterColumnDamageStat",
+      required: [
+        'const movingPointCode = "5208118"',
+        "Moving Point Pendulum",
+        "CATEGORY_DESTROY+CATEGORY_DAMAGE",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DESTROY,nil,1,1-tp,LOCATION_MZONE)",
+        "tc:MoveAdjacent()",
+        "tc:GetColumnGroup():Match(s.desfilter,nil,opp,tc:GetScale())",
+        "Duel.BreakEffect()",
+        "Duel.GetOperatedGroup():GetSum(Card.GetPreviousAttackOnField)",
+        "Duel.Damage(opp,total_atk,REASON_EFFECT)",
+        "eventName: \"destroyed\"",
         "eventName: \"damageDealt\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
@@ -19993,6 +20045,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       gatewaySixCounterSearchSummonStat: 0,
       signalWarriorCounterSelectEffectStat: 0,
       darkStringsCounterDestroyDrawDamageStat: 0,
+      movingPointPendulumCounterColumnDamageStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
