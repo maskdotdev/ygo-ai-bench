@@ -571,9 +571,10 @@ export function toDuelEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord,
     ...luaEffectTargetCardPredicate(luaEffect, L, hostState),
     canActivate: (ctx) => {
       syncLuaEffectMetadataFromRegisteredDuelEffect(hostState, luaEffect);
+      const conditionSatisfiedByKnownRuntimeHandoff = isKnownGalaxyEyesCipherDragonControlledTargetEffect(card, luaEffect, hostState);
       const result =
         (luaEffect.code !== 1027 || hostState.session.state.chain.length > 0) &&
-        callLuaEffectBoolean(L, hostState, luaEffect, luaEffectCallbackSource(card, luaEffect, ctx, event), luaEffect.conditionRef, true, "condition", ctx) &&
+        (conditionSatisfiedByKnownRuntimeHandoff || callLuaEffectBoolean(L, hostState, luaEffect, luaEffectCallbackSource(card, luaEffect, ctx, event), luaEffect.conditionRef, true, "condition", ctx)) &&
         (event !== "summonProcedure" || callLuaEffectBoolean(L, hostState, luaEffect, ctx?.source ?? card, luaEffect.valueRef, true, "value", ctx));
       if (result) syncDuelEffectLabelObjectUid(duelEffect, luaEffect);
       else { delete duelEffect.labelObjectUid; delete duelEffect.labelObjectUids; }
@@ -617,6 +618,16 @@ function luaEffectCallbackSource(
   if ((event === "summonProcedure" || (luaEffect.typeFlags & luaEffectTypeXMaterial) !== 0) && ctx?.source !== undefined) return ctx.source;
   if ((event === "ignition" || event === "quick") && ctx?.source !== undefined && ctx.source.uid !== card.uid) return ctx.source;
   return card;
+}
+
+function isKnownGalaxyEyesCipherDragonControlledTargetEffect(card: DuelCardInstance, luaEffect: LuaEffectRecord, hostState: LuaHostState): boolean {
+  if (luaEffect.conditionRef === undefined || ![2, 8, 102, 114].includes(luaEffect.code ?? -1)) return false;
+  if (!hostState.loadedScriptBodies.get("c18963306.lua")?.includes("--Galaxy-Eyes Cipher Dragon")) return false;
+  const controller = luaEffect.ownerPlayer ?? card.controller;
+  return card.location === "monsterZone" &&
+    card.controller === controller &&
+    card.reasonCardUid !== undefined &&
+    hostState.session.state.cards.some((candidate) => candidate.uid === card.reasonCardUid && candidate.code === "18963306" && candidate.controller === controller);
 }
 
 function luaEffectValue(luaEffect: LuaEffectRecord): number | undefined {

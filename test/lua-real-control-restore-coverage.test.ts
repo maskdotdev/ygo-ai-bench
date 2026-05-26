@@ -38,6 +38,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-evil-twin-present-swap-todeck.test.ts"
 // Restore ownership: "test/lua-real-script-eye-illusion-select-control.test.ts"
 // Restore ownership: "test/lua-real-script-giant-ballgame-activate-summon-swap-race.test.ts"
+// Restore ownership: "test/lua-real-script-galaxy-eyes-cipher-dragon-detach-control-stat-code.test.ts"
 // Restore ownership: "test/lua-real-script-gladiator-taming-select-position-control.test.ts"
 // Restore ownership: "test/lua-real-script-gotterdammerung-control-end-banish.test.ts"
 // Restore ownership: "test/lua-real-script-goyo-emperor-battle-revive.test.ts"
@@ -94,7 +95,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 46;
+const controlFixtureCount = 47;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -104,6 +105,7 @@ const controlKindCounts = {
   chainControlToken: 1,
   cannotChangeControl: 1,
   confirmDamageGroupControl: 1,
+  detachControlStatCode: 1,
   fusionSummonReleaseCostControl: 1,
   geminiCounterControlEndDestroy: 1,
   detachControlReleaseDestroy: 1,
@@ -158,6 +160,7 @@ type ControlKind =
   | "chainControlToken"
   | "cannotChangeControl"
   | "confirmDamageGroupControl"
+  | "detachControlStatCode"
   | "fusionSummonReleaseCostControl"
   | "geminiCounterControlEndDestroy"
   | "detachControlReleaseDestroy"
@@ -363,6 +366,31 @@ function realScriptControlFixtureFiles(): Array<{
         'eventName: "controlChanged"',
         'eventName: "released"',
         'eventName: "destroyed"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-galaxy-eyes-cipher-dragon-detach-control-stat-code.test.ts",
+      kind: "detachControlStatCode",
+      required: [
+        "restores detach control into disable, final ATK, code change, and direct-attack lock",
+        'const cipherCode = "18963306"',
+        "--Galaxy-Eyes Cipher Dragon",
+        "Xyz.AddProcedure(c,nil,8,2)",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetCost(Cost.DetachFromSelf(1))",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "Duel.NegateRelatedChain(tc,RESET_TURN_SET)",
+        "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "e2:SetCode(EFFECT_DISABLE)",
+        "e3:SetCode(EFFECT_DISABLE_EFFECT)",
+        "e4:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e5:SetCode(EFFECT_CHANGE_CODE)",
+        "e:GetHandler():GetCardEffect(EFFECT_SET_CONTROL)",
+        'eventName: "detachedMaterial"',
+        'eventName: "becameTarget"',
+        'eventName: "controlChanged"',
         "previousController: 1",
       ],
     },
@@ -948,6 +976,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       chainControlToken: 0,
       cannotChangeControl: 0,
       confirmDamageGroupControl: 0,
+      detachControlStatCode: 0,
       detachControlReleaseDestroy: 0,
       discardCostTemporaryControl: 0,
       equipControl: 0,
