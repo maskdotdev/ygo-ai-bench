@@ -114,7 +114,7 @@ function pushAddCounter<EffectRecord extends LuaCardApiEffectRecord>(L: unknown,
   );
   if (added && card) {
     markLuaOperationTimingBoundary(session, hostState);
-    collectCounterEvent(session, hostState, "counterAdded", card, duelReason.effect);
+    collectCounterEvent(session, hostState, "counterAdded", card, duelReason.effect, counterTypeKey);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   lua.lua_pushboolean(L, added);
@@ -137,7 +137,7 @@ function pushRemoveCounter<EffectRecord extends LuaCardApiEffectRecord>(L: unkno
   const removed = Boolean(card && !luaMoveBlockedByImmunity(L, session, hostState, card, reason) && removeDuelCardCounter(card, counterType, count));
   if (removed && card) {
     markLuaOperationTimingBoundary(session, hostState);
-    collectCounterEvent(session, hostState, "counterRemoved", card, reason);
+    collectCounterEvent(session, hostState, "counterRemoved", card, reason, counterType);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
   }
   lua.lua_pushboolean(L, removed);
@@ -197,8 +197,12 @@ function totalCounters(card: DuelCardInstance): number {
   return Object.values(getAllDuelCardCounters(card)).reduce((total, value) => total + value, 0);
 }
 
-function collectCounterEvent(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, eventName: DuelEventName, card: DuelCardInstance, reason: number): void {
-  collectDuelTriggerEffects(session.state, eventName, card, luaEffectReasonPayload(hostState, reason, hostState.activeContext?.player ?? session.state.turnPlayer));
+function collectCounterEvent(session: DuelSession, hostState: LuaOperationTimingBoundaryHostState, eventName: DuelEventName, card: DuelCardInstance, reason: number, counterType: number): void {
+  const baseEventCode = eventName === "counterRemoved" ? 0x20000 : 0x10000;
+  collectDuelTriggerEffects(session.state, eventName, card, {
+    ...luaEffectReasonPayload(hostState, reason, hostState.activeContext?.player ?? session.state.turnPlayer),
+    triggerEventCode: baseEventCode + storedCounterType(counterType),
+  });
 }
 
 export function canLuaCardAddCounter<EffectRecord extends LuaCardApiEffectRecord>(

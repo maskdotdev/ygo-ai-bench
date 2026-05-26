@@ -36,7 +36,8 @@ export function collectDuelGroupedTriggerEffectsWithChooser(
   const groupedOptions = eventUids && eventUids.length > 0 ? { ...options, eventUids } : options;
   const eventOptions = eventName === "usedAsMaterial" && eventCard ? { ...eventCardReasonPayload(eventCard), ...groupedOptions } : groupedOptions;
   const eventCode = eventOptions.eventCode ?? duelEventCode(eventName);
-  const triggerOptions = eventCode === undefined ? eventOptions : { ...eventOptions, eventCode };
+  const triggerCode = eventOptions.triggerEventCode ?? eventCode;
+  const triggerOptions = triggerCode === undefined ? eventOptions : { ...eventOptions, eventCode: triggerCode };
   recordDuelEvent(state, eventName, eventCard, eventCode, eventRecordPayload(eventCard, groupedOptions));
   if (eventCode !== undefined) executeContinuousEvent?.(state, eventName, eventCode, uniqueEventCards, triggerOptions, continuousChainLink);
   const chooser = (
