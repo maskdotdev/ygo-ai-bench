@@ -32,6 +32,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-double-magical-arm-bind-release-control.test.ts"
 // Restore ownership: "test/lua-real-script-dummy-golem-flip-opponent-swap.test.ts"
 // Restore ownership: "test/lua-real-script-embrace-tistina-chain-set-control.test.ts"
+// Restore ownership: "test/lua-real-script-emperor-prophecy-banish-cost-control-lock.test.ts"
 // Restore ownership: "test/lua-real-script-enlilgirsu-banished-return-deck-control.test.ts"
 // Restore ownership: "test/lua-real-script-eternal-bond-revive-control-attack-lock.test.ts"
 // Restore ownership: "test/lua-real-script-eulers-circuit-field-control-search.test.ts"
@@ -102,13 +103,14 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 54;
+const controlFixtureCount = 55;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
   damageStepBattleControlReplace: 1,
   chainDetachControlProtectStat: 1,
   battleCounterControl: 2,
+  banishCostControlAttackLock: 1,
   chainControlSummon: 1,
   chainControlToken: 1,
   cannotChangeControl: 1,
@@ -171,6 +173,7 @@ type ControlKind =
   | "damageStepBattleControlReplace"
   | "chainDetachControlProtectStat"
   | "battleCounterControl"
+  | "banishCostControlAttackLock"
   | "chainControlSummon"
   | "chainControlToken"
   | "cannotChangeControl"
@@ -536,6 +539,29 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.Remove(g,POS_FACEUP,REASON_COST)",
         "Duel.SetTargetCard(eg)",
         "Duel.GetControl(tc,tp)",
+        'eventName: "banished"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-emperor-prophecy-banish-cost-control-lock.test.ts",
+      kind: "banishCostControlAttackLock",
+      required: [
+        'const emperorCode = "53136004"',
+        "--Emperor of Prophecy",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return c:IsFaceup() and c:IsRace(RACE_SPELLCASTER) and c:IsAbleToRemoveAsCost()",
+        "return c:IsSetCard(SET_SPELLBOOK) and c:IsAbleToRemoveAsCost()",
+        "e:GetHandler():GetAttackAnnouncedCount()==0",
+        "Duel.SelectMatchingCard(tp,s.cfilter1,tp,LOCATION_MZONE,0,1,1,e:GetHandler())",
+        "Duel.SelectMatchingCard(tp,s.cfilter2,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.Remove(g1,POS_FACEUP,REASON_COST)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK_ANNOUNCE)",
+        "EFFECT_FLAG_CANNOT_DISABLE+EFFECT_FLAG_OATH+EFFECT_FLAG_CLIENT_HINT",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
         'eventName: "banished"',
         'eventName: "controlChanged"',
         "previousController: 1",
@@ -1151,6 +1177,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
     {
       battleStartPhaseControl: 0,
       battleDestroyedTrapControlRace: 0,
+      banishCostControlAttackLock: 0,
       damageStepBattleControlReplace: 0,
       chainDetachControlProtectStat: 0,
       battleCounterControl: 0,
