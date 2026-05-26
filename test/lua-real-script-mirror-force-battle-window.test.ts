@@ -94,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
           "sequence": 0,
         },
         "eventName": "attackDeclared",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,

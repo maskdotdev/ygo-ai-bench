@@ -6,8 +6,8 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
-const unreferencedRestoreCoverageFixtureCount = 143;
-const restoreCoverageKindRatchetFileCount = 82;
+const unreferencedRestoreCoverageFixtureCount = 144;
+const restoreCoverageKindRatchetFileCount = 83;
 const inventoryTreeRef = "HEAD";
 const committedTestFileCache = new Set(
   execSync(`git ls-tree -r --name-only ${inventoryTreeRef} -- test`, { cwd: root, encoding: "utf8" })

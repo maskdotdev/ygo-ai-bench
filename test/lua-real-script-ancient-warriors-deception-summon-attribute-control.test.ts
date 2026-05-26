@@ -160,6 +160,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDeceptionScript)("Lua real script Anc
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: opponentTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

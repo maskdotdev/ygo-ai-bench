@@ -89,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCrossScript)("Lua real script Cross-D
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: musketeer.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

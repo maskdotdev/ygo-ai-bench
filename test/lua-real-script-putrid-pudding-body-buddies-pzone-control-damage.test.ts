@@ -109,6 +109,7 @@ describe.skipIf(!hasUpstreamScripts || !hasPutridScript)("Lua real script Putrid
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

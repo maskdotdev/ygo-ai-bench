@@ -107,6 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHeboScript)("Lua real script Hebo Spi
           "sequence": 1,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -120,6 +121,9 @@ describe.skipIf(!hasUpstreamScripts || !hasHeboScript)("Lua real script Hebo Spi
         "id": "chain-4",
         "player": 0,
         "sourceUid": "p0-deck-90365482-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p0-deck-90365483-1",
         ],
@@ -150,6 +154,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHeboScript)("Lua real script Hebo Spi
           "description": 1445847712,
           "event": "continuous",
           "id": "lua-10-115",
+          "luaTypeFlags": 1,
           "oncePerTurn": false,
           "operation": [Function],
           "property": 67109888,
@@ -169,6 +174,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHeboScript)("Lua real script Hebo Spi
           "countLimit": 1,
           "event": "continuous",
           "id": "lua-11-4608",
+          "luaTypeFlags": 2050,
           "oncePerTurn": true,
           "operation": [Function],
           "property": 128,
@@ -180,9 +186,6 @@ describe.skipIf(!hasUpstreamScripts || !hasHeboScript)("Lua real script Hebo Spi
             "flags": 33427456,
           },
           "sourceUid": "p0-deck-90365483-1",
-          "triggerCode": 4608,
-          "triggerEvent": "phaseEnd",
-          "triggerTiming": "when",
         },
       ]
     `);

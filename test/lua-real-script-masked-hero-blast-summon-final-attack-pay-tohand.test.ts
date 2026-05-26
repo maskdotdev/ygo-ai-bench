@@ -123,9 +123,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasBlastScript)(
       eventValue: event.eventValue,
       relatedEffectId: event.relatedEffectId,
     }))).toEqual([
-      { eventCardUid: opponentMonster.uid, eventCode: 1028, eventName: "becameTarget", eventPlayer: undefined, eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventValue: undefined, relatedEffectId: 3 },
+      { eventCardUid: opponentMonster.uid, eventCode: 1028, eventName: "becameTarget", eventPlayer: undefined, eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventValue: 1, relatedEffectId: 3 },
       { eventCardUid: undefined, eventCode: 1201, eventName: "lifePointCostPaid", eventPlayer: 0, eventReason: duelReason.cost, eventReasonCardUid: blast.uid, eventReasonEffectId: 4, eventReasonPlayer: 0, eventValue: 500, relatedEffectId: undefined },
-      { eventCardUid: opponentSpell.uid, eventCode: 1028, eventName: "becameTarget", eventPlayer: undefined, eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventValue: undefined, relatedEffectId: 4 },
+      { eventCardUid: opponentSpell.uid, eventCode: 1028, eventName: "becameTarget", eventPlayer: undefined, eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventValue: 1, relatedEffectId: 4 },
       { eventCardUid: opponentSpell.uid, eventCode: 1012, eventName: "sentToHand", eventPlayer: undefined, eventReason: duelReason.effect, eventReasonCardUid: blast.uid, eventReasonEffectId: 4, eventReasonPlayer: 0, eventValue: undefined, relatedEffectId: undefined },
     ]);
     expect(restoredQuick.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });

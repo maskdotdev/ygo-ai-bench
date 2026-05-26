@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -76,7 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
+        "activationLocation": "hand",
         "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-2-1002",
@@ -140,6 +141,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
         "controller": 0,
         "event": "continuous",
         "id": "lua-4-100",
+        "luaTypeFlags": 1,
         "oncePerTurn": false,
         "operation": [Function],
         "ownerPlayer": 0,
@@ -157,6 +159,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ho
 
     passBattleResponses(restoredBattle.session);
     expect(restoredBattle.session.state.battleDamage[1]).toBe(1000);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker!.uid,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: attacker!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(7000);
     expect(restoredBattle.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restoredBattle.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });

@@ -95,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDeltaScript)("Lua real script Kozmo D
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: statDelta.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -134,13 +135,21 @@ describe.skipIf(!hasUpstreamScripts || !hasDeltaScript)("Lua real script Kozmo D
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(summonSession), workspace, reader);
     expectCleanRestore(restoredTrigger);
     expectRestoredLegalActions(restoredTrigger, 0);
-    expect(restoredTrigger.session.state.pendingTriggers).toMatchObject([
+    expect(restoredTrigger.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
         effectId: "lua-2-1014",
-        sourceUid: summonDelta.uid,
+        eventCardUid: summonDelta.uid,
+        eventCode: 1014,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventName: "sentToGraveyard",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
         player: 0,
+        sourceUid: summonDelta.uid,
         triggerBucket: "turnOptional",
       },
     ]);
