@@ -14,7 +14,7 @@ export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ri
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 659;
+export const realScriptSummonFixtureCount = 660;
 export const summonProcedureFixtureCount = 39;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -29,7 +29,7 @@ export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
   fusion: 75,
   link: 60,
-  pendulum: 24,
+  pendulum: 25,
   ritual: 34,
   summon: 385,
   synchro: 50,
