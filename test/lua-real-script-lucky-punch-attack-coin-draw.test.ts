@@ -68,6 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasLuckyPunchScr
         eventReason: 0,
         eventReasonPlayer: 1,
         eventTriggerTiming: "when",
+        eventUids: [attacker.uid, ownTarget.uid],
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },

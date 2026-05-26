@@ -128,7 +128,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasChariotScript
         effectId: "lua-4-1139",
         sourceUid: chariot.uid,
         eventName: "battleDestroyed",
-        eventCode: 1140,
+        eventCode: 1139,
         eventCardUid: chariot.uid,
         eventPlayer: 1,
         eventReason: duelReason.battle | duelReason.destroy,

@@ -68,10 +68,21 @@ describe.skipIf(!hasUpstreamScripts || !hasFalconScript)("Lua real script Blade 
     applyRestoredActionAndAssert(restoredBattle, attack!);
     finishBattleUntilTrigger(restoredBattle);
 
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-6-1",
+        effectId: "lua-3-1139",
         eventCardUid: falcon.uid,
+        eventCode: 1139,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDestroyed",
+        eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.battle | duelReason.destroy,
+        eventReasonCardUid: falcon.uid,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        player: 0,
         sourceUid: falcon.uid,
         triggerBucket: "turnOptional",
       },
@@ -117,6 +128,32 @@ describe.skipIf(!hasUpstreamScripts || !hasFalconScript)("Lua real script Blade 
       reason: 0,
     });
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 500 });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: falcon.uid,
+        eventPlayer: 1,
+        eventValue: 500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: falcon.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredTrigger.session.state.eventHistory.filter((event) => ["destroyed", "battleDestroyed", "detachedMaterial"].includes(event.eventName)).map((event) => ({
       eventName: event.eventName,
       eventCode: event.eventCode,

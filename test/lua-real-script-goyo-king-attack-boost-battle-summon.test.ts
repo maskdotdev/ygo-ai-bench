@@ -64,8 +64,24 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
     const attack = getLegalActions(session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === goyoKing.uid && action.targetUid === battleTarget.uid);
     expect(attack, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, attack!);
-    expect(session.state.pendingTriggers).toMatchObject([
-      { effectId: "lua-2-1130", eventName: "attackDeclared", player: 0, sourceUid: goyoKing.uid, triggerBucket: "turnMandatory" },
+    expect(session.state.pendingTriggers).toEqual([
+      {
+        id: "trigger-3-1",
+        effectId: "lua-3-1130",
+        eventCardUid: goyoKing.uid,
+        eventCode: 1130,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "attackDeclared",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [goyoKing.uid, battleTarget.uid],
+        player: 0,
+        sourceUid: goyoKing.uid,
+        triggerBucket: "turnMandatory",
+      },
     ]);
 
     const restoredAttack = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -87,8 +103,24 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
       previousLocation: "monsterZone",
       previousPosition: "faceUpAttack",
     });
-    expect(restoredAttack.session.state.pendingTriggers).toMatchObject([
-      { effectId: "lua-3-1139", eventName: "battleDestroyed", player: 0, sourceUid: goyoKing.uid, triggerBucket: "turnOptional" },
+    expect(restoredAttack.session.state.pendingTriggers).toEqual([
+      {
+        id: "trigger-8-1",
+        effectId: "lua-4-1139",
+        eventCardUid: goyoKing.uid,
+        eventCode: 1139,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "battleDestroyed",
+        eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.battle | duelReason.destroy,
+        eventReasonCardUid: goyoKing.uid,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        player: 0,
+        sourceUid: goyoKing.uid,
+        triggerBucket: "turnOptional",
+      },
     ]);
 
     const restoredBattleDestroying = restoreDuelWithLuaScripts(serializeDuel(restoredAttack.session), workspace, reader);
@@ -108,7 +140,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
       reason: duelReason.summon | duelReason.specialSummon,
       reasonPlayer: 0,
       reasonCardUid: goyoKing.uid,
-      reasonEffectId: 3,
+      reasonEffectId: 4,
     });
     expect(restoredBattleDestroying.session.state.currentAttack).toBeUndefined();
     expect(restoredBattleDestroying.session.state.pendingBattle).toBeUndefined();
@@ -119,6 +151,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
         eventCardUid: goyoKing.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventUids: [goyoKing.uid, battleTarget.uid],
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
@@ -139,7 +172,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
         eventReason: duelReason.summon | duelReason.specialSummon,
         eventReasonPlayer: 0,
         eventReasonCardUid: goyoKing.uid,
-        eventReasonEffectId: 3,
+        eventReasonEffectId: 4,
         eventUids: [battleTarget.uid],
         eventPreviousState: { controller: 1, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 2 },

@@ -81,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasOrdealScript)
       { eventName: "battleDestroyed", eventCode: 1140, eventCardUid: target.uid, eventReason: duelReason.battle | duelReason.destroy, eventReasonPlayer: 0, eventReasonCardUid: attacker.uid, eventReasonEffectId: undefined },
       { eventName: "counterRemoved", eventCode: 0x20000, eventCardUid: ordeal.uid, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: ordeal.uid, eventReasonEffectId: 3 },
       { eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: ordeal.uid, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: ordeal.uid, eventReasonEffectId: 4 },
+      { eventName: "counterRemoved", eventCode: 0x20205, eventCardUid: ordeal.uid, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: ordeal.uid, eventReasonEffectId: 3 },
       { eventName: "cardsDrawn", eventCode: 1110, eventCardUid: drawCard.uid, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: ordeal.uid, eventReasonEffectId: 3 },
     ]);
   });
