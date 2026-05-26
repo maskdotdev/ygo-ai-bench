@@ -100,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasKingdomScript
         id: "trigger-4-1",
         effectId: "lua-3-1014",
         eventName: "sentToGraveyard",
+        eventPlayer: 1,
         eventCode: 1014,
         eventCardUid: opponentDeck.uid,
         eventReason: duelReason.effect,
@@ -155,6 +156,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasKingdomScript
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: kingdom.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

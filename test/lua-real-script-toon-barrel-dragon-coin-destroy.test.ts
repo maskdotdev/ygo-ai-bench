@@ -82,6 +82,7 @@ describe.skipIf(!hasUpstreamScripts || !hasToonBarrelScript)("Lua real script To
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: toonBarrel.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

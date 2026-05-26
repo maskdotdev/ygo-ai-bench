@@ -102,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSenkoScript)("Lua real script Senko s
         player: 0,
         activationLocation: "graveyard",
         activationSequence: 0,
+        targetFieldIds: [6, 7],
         targetUids: [ownWarrior.uid, opponentTarget.uid],
         operationInfos: [
           { category: 0x200000, targetUids: [ownWarrior.uid], count: 1, player: 0, parameter: -1500 },
@@ -233,6 +234,7 @@ function becameTargetEvent(cardUid: string, expected: { controller: PlayerId; se
   return {
     eventName: "becameTarget",
     eventCode: 1028,
+        eventValue: 1,
     eventCardUid: cardUid,
     eventReason: 0,
     eventReasonPlayer: 0,

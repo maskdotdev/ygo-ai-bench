@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSaviorScript)("Lua real script Avendr
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: vendread.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

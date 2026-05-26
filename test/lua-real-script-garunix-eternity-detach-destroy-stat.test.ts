@@ -103,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGarunixScript)("Lua real script Garun
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [7],
         targetUids: [targetTrap.uid],
         operationInfos: [
           { category: 0x1, targetUids: [targetTrap.uid], count: 1, player: 0, parameter: 0 },
@@ -248,6 +249,7 @@ function becameTargetEvent(cardUid: string) {
   return {
     eventName: "becameTarget",
     eventCode: 1028,
+        eventValue: 1,
     eventCardUid: cardUid,
     eventReason: 0,
     eventReasonPlayer: 0,
