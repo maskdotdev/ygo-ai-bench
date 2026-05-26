@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasBackToFrontSc
         operationInfos: [{ category: 0x200, targetUids: [target.uid], count: 1, player: 0, parameter: 0 }],
         player: 0,
         sourceUid: backToFront.uid,
+        targetFieldIds: [6],
         targetUids: [target.uid],
       },
     ]);
@@ -99,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasBackToFrontSc
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -136,6 +138,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasBackToFrontSc
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -203,4 +206,5 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   if (player === undefined) return;
   expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, player));
   expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }

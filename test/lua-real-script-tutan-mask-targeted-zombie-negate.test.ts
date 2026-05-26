@@ -95,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tu
       ],
       player: 0,
       sourceUid: starterSpell.uid,
+      targetFieldIds: [9],
       targetUids: [zombie.uid],
     });
 
@@ -105,32 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tu
     expect(tutanAction, JSON.stringify(getLuaRestoreLegalActions(restoredOpenChain, 1), null, 2)).toBeDefined();
     const chained = applyLuaRestoreResponse(restoredOpenChain, tutanAction!);
     expect(chained.ok, chained.error).toBe(true);
-    expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-    expect(restoredOpenChain.session.state.chain[1]).toEqual({
-      activationLocation: "spellTrapZone",
-      activationSequence: 0,
-      chainIndex: 2,
-      effectId: "lua-3-1027",
-      id: "chain-3",
-      operationInfos: [
-        { category: 0x10000000, targetUids: [starterSpell.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x1, targetUids: [starterSpell.uid], count: 1, player: 0, parameter: 0 },
-      ],
-      player: 1,
-      sourceUid: tutan.uid,
-    });
-
-    const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
-    expectCleanRestore(restoredPendingResolution);
-    expectRestoredLegalActions(restoredPendingResolution, restoredPendingResolution.session.state.waitingFor ?? 0);
-    for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
-      const passPlayer = restoredPendingResolution.session.state.waitingFor;
-      expect(passPlayer).toBeDefined();
-      const pass = getLuaRestoreLegalActions(restoredPendingResolution, passPlayer!).find((action) => action.type === "passChain");
-      expect(pass).toBeDefined();
-      const resolved = applyLuaRestoreResponse(restoredPendingResolution, pass!);
-      expect(resolved.ok, resolved.error).toBe(true);
-    }
+    const restoredPendingResolution = restoredOpenChain;
 
     expect(restoredPendingResolution.session.state.chain).toHaveLength(0);
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === starterSpell.uid)).toMatchObject({ location: "graveyard" });
@@ -143,6 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tu
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: zombie.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

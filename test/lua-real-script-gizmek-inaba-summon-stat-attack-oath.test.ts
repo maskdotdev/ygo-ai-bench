@@ -168,6 +168,7 @@ describe.skipIf(!hasUpstreamScripts || !hasInabaScript)("Lua real script Gizmek 
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: statTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -186,7 +187,7 @@ describe.skipIf(!hasUpstreamScripts || !hasInabaScript)("Lua real script Gizmek 
     expectRestoredLegalActions(restoredBattle, 0);
     const targetAttacks = getLuaRestoreLegalActions(restoredBattle, 0).filter((action) => action.type === "declareAttack" && action.attackerUid === statTarget.uid);
     const otherAttacks = getLuaRestoreLegalActions(restoredBattle, 0).filter((action) => action.type === "declareAttack" && action.attackerUid === otherMachine.uid);
-    expect(targetAttacks.length).toBeGreaterThan(0);
+    expect(targetAttacks).toHaveLength(1);
     expect(otherAttacks).toEqual([]);
   });
 });

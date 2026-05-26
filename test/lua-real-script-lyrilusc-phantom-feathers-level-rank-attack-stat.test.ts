@@ -78,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFeathersScript)("Lua real script Lyri
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: lyriluscTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

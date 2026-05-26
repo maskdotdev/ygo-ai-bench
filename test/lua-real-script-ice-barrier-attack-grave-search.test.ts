@@ -95,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasIceBarrierScript)("Lua real script Ic
         eventName: "attackDeclared",
         eventCode: 1130,
         eventCardUid: attacker.uid,
+        eventPlayer: 1,
         eventReason: 0,
         eventReasonPlayer: 1,
         eventUids: [attacker.uid, defender.uid],

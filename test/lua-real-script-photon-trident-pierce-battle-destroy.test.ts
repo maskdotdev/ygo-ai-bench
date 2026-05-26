@@ -102,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTridentScript)("Lua real script Photo
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: photon.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -125,15 +126,21 @@ describe.skipIf(!hasUpstreamScripts || !hasTridentScript)("Lua real script Photo
     applyRestoredActionAndAssert(restoredBattle, attack!);
     passBattleUntilTrigger(restoredBattle);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(5500);
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-8-1",
         effectId: "lua-4-1143",
+        effectLabelObjectUid: photon.uid,
         eventCardUid: photon.uid,
+        eventCode: 1143,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDamageDealt",
         eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventReason: duelReason.battle,
         eventReasonCardUid: photon.uid,
         eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         eventValue: 2500,
         player: 0,
         sourceUid: trident.uid,
@@ -173,10 +180,10 @@ describe.skipIf(!hasUpstreamScripts || !hasTridentScript)("Lua real script Photo
       previousLocation: event.eventPreviousState?.location,
       currentLocation: event.eventCurrentState?.location,
     }))).toEqual([
-      { eventName: "becameTarget", eventCode: 1028, eventCardUid: photon.uid, eventPlayer: undefined, eventValue: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, previousLocation: "deck", currentLocation: "monsterZone" },
+      { eventName: "becameTarget", eventCode: 1028, eventCardUid: photon.uid, eventPlayer: undefined, eventValue:  1, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, previousLocation: "deck", currentLocation: "monsterZone" },
       { eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: trident.uid, eventPlayer: undefined, eventValue: undefined, eventReason: duelReason.rule, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: undefined, previousLocation: "spellTrapZone", currentLocation: "graveyard" },
       { eventName: "battleDamageDealt", eventCode: 1143, eventCardUid: photon.uid, eventPlayer: 1, eventValue: 2500, eventReason: duelReason.battle, eventReasonPlayer: 0, eventReasonCardUid: photon.uid, eventReasonEffectId: undefined, relatedEffectId: undefined, previousLocation: "deck", currentLocation: "monsterZone" },
-      { eventName: "becameTarget", eventCode: 1028, eventCardUid: destroySpell.uid, eventPlayer: undefined, eventValue: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 4, previousLocation: "deck", currentLocation: "spellTrapZone" },
+      { eventName: "becameTarget", eventCode: 1028, eventCardUid: destroySpell.uid, eventPlayer: undefined, eventValue:  1, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 4, previousLocation: "deck", currentLocation: "spellTrapZone" },
       { eventName: "destroyed", eventCode: 1029, eventCardUid: destroySpell.uid, eventPlayer: undefined, eventValue: undefined, eventReason: duelReason.effect | duelReason.destroy, eventReasonPlayer: 0, eventReasonCardUid: trident.uid, eventReasonEffectId: 4, relatedEffectId: undefined, previousLocation: "spellTrapZone", currentLocation: "graveyard" },
       { eventName: "sentToGraveyard", eventCode: 1014, eventCardUid: destroySpell.uid, eventPlayer: undefined, eventValue: undefined, eventReason: duelReason.effect | duelReason.destroy, eventReasonPlayer: 0, eventReasonCardUid: trident.uid, eventReasonEffectId: 4, relatedEffectId: undefined, previousLocation: "spellTrapZone", currentLocation: "graveyard" },
     ]);

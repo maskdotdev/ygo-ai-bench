@@ -96,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasApocalypseScript)("Lua real script Tr
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: ownTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

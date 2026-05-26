@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasLerajeScript)
         triggerBucket: "turnOptional",
         eventName: "normalSummoned",
         eventCode: 1100,
+        eventPlayer: 0,
         eventCardUid: leraje.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,
@@ -147,6 +148,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasLerajeScript)
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

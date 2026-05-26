@@ -126,6 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasNeosLordScript)("Lua real script Evil
           },
           "eventReason": 0,
           "eventReasonPlayer": 0,
+          "eventValue": 1,
           "relatedEffectId": 4,
         },
         {
@@ -231,6 +232,7 @@ describe.skipIf(!hasUpstreamScripts || !hasNeosLordScript)("Lua real script Evil
           },
           "eventReason": 0,
           "eventReasonPlayer": 0,
+          "eventValue": 1,
           "relatedEffectId": 5,
         },
         {
