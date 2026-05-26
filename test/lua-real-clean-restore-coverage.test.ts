@@ -6,7 +6,6 @@ import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
 const scannerPath = path.join(root, "tools/scan-lua-clean-restore.mjs");
-const realScriptFixtureCount = 1991;
 const unreferencedRestoreCoverageFixtureCount = 143;
 const restoreCoverageKindRatchetFileCount = 82;
 const inventoryTreeRef = "HEAD";
@@ -15,6 +14,7 @@ const committedTestFileCache = new Set(
     .split(/\r?\n/)
     .filter(Boolean),
 );
+const realScriptFixtureCount = realScriptFixtureFiles().length;
 
 describe("Lua real-script clean restore coverage", () => {
   it("requires every real-script fixture to assert complete Lua restore diagnostics", () => {
