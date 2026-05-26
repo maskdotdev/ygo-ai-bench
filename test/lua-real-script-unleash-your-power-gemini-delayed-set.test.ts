@@ -132,6 +132,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUnleashScript)("Lua real script Unlea
             "p0-deck-3918345-1",
             "p0-deck-68366996-2",
           ],
+          "luaTypeFlags": 2050,
           "oncePerTurn": true,
           "operation": [Function],
           "ownerPlayer": 0,

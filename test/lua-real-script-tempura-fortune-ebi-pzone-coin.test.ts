@@ -22,7 +22,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasEbiScript)("L
     const script = workspace.readScript(`official/c${ebiCode}.lua`);
     expectScriptShape(script);
     const reader = createCardReader(cards(workspace));
-    const session = createDuel({ seed: 6, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    const session = createDuel({ seed: 1, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
     loadDecks(session, { 0: { main: [ebiCode] }, 1: { main: [] } });
     startDuel(session);
 
@@ -31,6 +31,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasEbiScript)("L
     session.state.phase = "main1";
     session.state.turnPlayer = 0;
     session.state.waitingFor = 0;
+    session.state.randomCounter = 0;
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(ebiCode), workspace).ok).toBe(true);
@@ -57,6 +58,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasEbiScript)("L
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: ebi.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

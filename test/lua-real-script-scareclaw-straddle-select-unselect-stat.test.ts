@@ -81,6 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStraddleScript)("Lua real script Scar
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: scareclaw.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -93,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStraddleScript)("Lua real script Scar
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: opponent.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

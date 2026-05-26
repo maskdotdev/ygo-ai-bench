@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasReinforceScript)("Lua real script REI
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: rescueMonster.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -128,6 +129,7 @@ describe.skipIf(!hasUpstreamScripts || !hasReinforceScript)("Lua real script REI
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: rescueSpell.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

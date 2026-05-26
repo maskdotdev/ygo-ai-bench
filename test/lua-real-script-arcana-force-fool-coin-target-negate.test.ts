@@ -132,6 +132,7 @@ describe.skipIf(!hasUpstreamScripts || !hasFoolScript)("Lua real script Arcana F
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: fool.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,

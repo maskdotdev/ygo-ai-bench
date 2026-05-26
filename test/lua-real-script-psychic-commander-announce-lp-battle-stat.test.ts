@@ -87,7 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasCommanderScri
     }))).toEqual([
       { eventName: "attackDeclared", eventCardUid: attacker.uid, eventReason: 0, eventReasonPlayer: 1, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventValue: undefined, relatedEffectId: undefined },
       { eventName: "lifePointCostPaid", eventCardUid: undefined, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: commander.uid, eventReasonEffectId: 1, eventValue: 500, relatedEffectId: undefined },
-      { eventName: "becameTarget", eventCardUid: attacker.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventValue: undefined, relatedEffectId: 1 },
+      { eventName: "becameTarget", eventCardUid: attacker.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventValue:  1, relatedEffectId: 1 },
     ]);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
