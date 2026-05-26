@@ -106,8 +106,8 @@ function runBattleDestroyedSourceOnly(eventCode: string, label: string): string[
   expect(battleTriggers).toHaveLength(2);
   expect(battleTriggers).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ sourceUid: expectedSource!.uid, eventCardUid: expectedEventCard!.uid, eventCode: 1140 }),
-      expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: expectedEventCard!.uid, eventCode: 1140 }),
+      expect.objectContaining({ sourceUid: expectedSource!.uid, eventCardUid: expectedEventCard!.uid, eventCode: eventCode === "EVENT_BATTLE_DESTROYING" ? 1139 : 1140 }),
+      expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: expectedEventCard!.uid, eventCode: eventCode === "EVENT_BATTLE_DESTROYING" ? 1139 : 1140 }),
     ]),
   );
   expect(battleTriggers.some((trigger) => trigger.sourceUid === rejectedSingleSource!.uid)).toBe(false);
@@ -121,8 +121,8 @@ function runBattleDestroyedSourceOnly(eventCode: string, label: string): string[
   expect(restoredBattleTriggers).toHaveLength(2);
   expect(restoredBattleTriggers).toEqual(
     expect.arrayContaining([
-      expect.objectContaining({ sourceUid: expectedSource!.uid, eventCardUid: expectedEventCard!.uid, eventCode: 1140 }),
-      expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: expectedEventCard!.uid, eventCode: 1140 }),
+      expect.objectContaining({ sourceUid: expectedSource!.uid, eventCardUid: expectedEventCard!.uid, eventCode: eventCode === "EVENT_BATTLE_DESTROYING" ? 1139 : 1140 }),
+      expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: expectedEventCard!.uid, eventCode: eventCode === "EVENT_BATTLE_DESTROYING" ? 1139 : 1140 }),
     ]),
   );
   expect(restoredBattleTriggers.some((trigger) => trigger.sourceUid === rejectedSingleSource!.uid)).toBe(false);

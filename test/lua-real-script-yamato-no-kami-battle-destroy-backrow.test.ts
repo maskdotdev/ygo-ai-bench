@@ -105,7 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
         {
           "effectId": "lua-8-1139",
           "eventCardUid": "p0-deck-82841979-0",
-          "eventCode": 1140,
+          "eventCode": 1139,
           "eventCurrentState": {
             "controller": 0,
             "faceUp": true,
@@ -150,7 +150,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
         "chainIndex": 1,
         "effectId": "lua-8-1139",
         "eventCardUid": "p0-deck-82841979-0",
-        "eventCode": 1140,
+        "eventCode": 1139,
         "eventCurrentState": {
           "controller": 0,
           "faceUp": true,
@@ -185,6 +185,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ya
         ],
         "player": 0,
         "sourceUid": "p0-deck-82841979-0",
+        "targetFieldIds": [
+          9,
+        ],
         "targetUids": [
           "p1-deck-82841982-1",
         ],
