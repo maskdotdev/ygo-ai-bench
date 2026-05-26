@@ -72,7 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Jo
         sourceUid: jowls.uid,
         triggerBucket: "turnMandatory",
         eventName: "flipSummoned",
-        eventCode: 1101,
+        eventCode: 1001,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventPlayer: 0,

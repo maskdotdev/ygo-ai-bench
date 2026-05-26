@@ -87,7 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHomerunKingScript)("Lua real script U
         id: "trigger-6-1",
         effectId: "lua-1-1139",
         eventCardUid: homerunKing.uid,
-        eventCode: eventBattleDestroyed,
+        eventCode: eventBattleDestroying,
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDestroyed",
         eventPlayer: 1,

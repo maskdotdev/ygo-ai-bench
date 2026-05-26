@@ -79,7 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasJoanScript)("Lua real script Guardian
         {
           "effectId": "lua-1-1139",
           "eventCardUid": "p0-deck-68007326-0",
-          "eventCode": 1140,
+          "eventCode": 1139,
           "eventCurrentState": {
             "controller": 0,
             "faceUp": true,
