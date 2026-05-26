@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 34;
-const chainResponseNegationFixtureCount = 29;
+const negationFixtureCount = 35;
+const chainResponseNegationFixtureCount = 30;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 38;
+const negationInventoryFixtureCount = 39;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 25,
+  chainNegateToGrave: 26,
   handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -25,6 +25,7 @@ const negationSemanticVariantCounts = {
   adamancipatorResonanceDamageCalculationNegateDestroy: 1,
   armorBreakEquipActiveTypeNegateDestroy: 1,
   ashBlossomHandTrapDeckSearchNegate: 1,
+  chroniclerFairyTailBanishNegateDestroy: 1,
   cyberAngelVrashDestroyOperationNegateCost: 1,
   darkBribeNegateDestroyOpponentDraw: 1,
   disarmGladiatorCostToDeckSpellNegateDestroy: 1,
@@ -77,6 +78,7 @@ type NegationSemanticVariant =
   | "adamancipatorResonanceDamageCalculationNegateDestroy"
   | "armorBreakEquipActiveTypeNegateDestroy"
   | "ashBlossomHandTrapDeckSearchNegate"
+  | "chroniclerFairyTailBanishNegateDestroy"
   | "cyberAngelVrashDestroyOperationNegateCost"
   | "darkBribeNegateDestroyOpponentDraw"
   | "disarmGladiatorCostToDeckSpellNegateDestroy"
@@ -232,6 +234,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-adamancipator-resonance-damage-cal-negate.test.ts",
     "lua-real-script-ash-blossom-chain-negate.test.ts",
     "lua-real-script-armor-break-equip-active-type-negate.test.ts",
+    "lua-real-script-chronicler-fairy-tail-banish-negate.test.ts",
     "lua-real-script-cyber-angel-vrash-destroy-op-negate-cost.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
     "lua-real-script-disarm-gladiator-negate-to-deck-cost.test.ts",
@@ -301,6 +304,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-armor-break-equip-active-type-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-chronicler-fairy-tail-banish-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -492,6 +499,25 @@ function negationSemanticVariants(): Array<{
         'const ashBlossomCode = "14558127"',
         "restores its hand response to a Deck search and suppresses the negated operation",
         'eventName: "chainNegated"',
+      ],
+    },
+    {
+      file: "lua-real-script-chronicler-fairy-tail-banish-negate.test.ts",
+      kind: "chroniclerFairyTailBanishNegateDestroy",
+      required: [
+        'const chroniclerCode = "4026187"',
+        "restores Fairy Tail hand banish cost into activation negation, source destruction, and suppressed Spell",
+        "--Chronicler of Fairy Tail Tales",
+        "Fusion.AddProcMix(c,true,true,s.matfilter,aux.FilterBoolFunctionEx(Card.IsRace,RACE_SPELLCASTER))",
+        "e3:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DAMAGE_CAL)",
+        "return c:IsSetCard(SET_FAIRY_TAIL) and c:IsAbleToRemoveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.negcostfilter,tp,LOCATION_HAND|LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        'eventName: "banished"',
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("chronicler starter resolved")',
       ],
     },
     {
@@ -1048,6 +1074,7 @@ function countNegationSemanticVariants(
       adamancipatorResonanceDamageCalculationNegateDestroy: 0,
       armorBreakEquipActiveTypeNegateDestroy: 0,
       ashBlossomHandTrapDeckSearchNegate: 0,
+      chroniclerFairyTailBanishNegateDestroy: 0,
       cyberAngelVrashDestroyOperationNegateCost: 0,
       darkBribeNegateDestroyOpponentDraw: 0,
       disarmGladiatorCostToDeckSpellNegateDestroy: 0,
