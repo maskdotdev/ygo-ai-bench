@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasRealmScript)("Lua real script Shatter
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [6],
         targetUids: [target.uid],
         operationInfos: [
           { category: 0x1, targetUids: [target.uid], count: 1, player: 0, parameter: 0 },
@@ -222,6 +223,7 @@ function becameTargetEvent(cardUid: string) {
     eventName: "becameTarget",
     eventCode: 1028,
     eventCardUid: cardUid,
+    eventValue: 1,
     eventReason: 0,
     eventReasonPlayer: 0,
     relatedEffectId: 1,

@@ -91,7 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCausalityScript)("Lua real script Cub
       relatedEffectId: event.relatedEffectId,
     }))).toEqual([
       { eventName: "banished", eventCardUid: graveCausality.uid, eventPlayer: undefined, eventValue: undefined, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: graveCausality.uid, eventReasonEffectId: 2, relatedEffectId: undefined },
-      { eventName: "becameTarget", eventCardUid: attacker.uid, eventPlayer: undefined, eventValue: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 2 },
+      { eventName: "becameTarget", eventCardUid: attacker.uid, eventPlayer: undefined, eventValue: 1, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 2 },
     ]);
     expect(getDuelCardCounter(restoredGrave.session.state.cards.find((card) => card.uid === victim.uid), cubicCounter)).toBe(1);
     expect(restoredGrave.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });

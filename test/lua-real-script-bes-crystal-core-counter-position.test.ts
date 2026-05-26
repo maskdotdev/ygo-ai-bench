@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCrystalScript)("Lua real script BES C
         eventName: "becameTarget",
         eventCode: 1028,
         eventCardUid: target.uid,
+        eventValue: 1,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
