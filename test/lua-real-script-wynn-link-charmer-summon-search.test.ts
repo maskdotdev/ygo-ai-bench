@@ -177,6 +177,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wy
         sourceUid: wynn.uid,
         triggerBucket: "opponentOptional",
         eventName: "destroyed",
+        eventPlayer: 0,
         eventCode: 1029,
         eventCardUid: wynn.uid,
         eventReason: duelReason.effect | duelReason.destroy,

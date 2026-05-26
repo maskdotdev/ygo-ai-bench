@@ -56,7 +56,7 @@ describe("EDOPro parity phase-standby missed timing decline fixture", () => {
             logMessage: "Phase-standby decline open fast resolved",
           },
         ],
-        collectEvents: [{ collectEvent: "phaseStandby", eventCode: 0x1002, eventIsLast: false }],
+        collectEvents: [{ collectEvent: "phaseStandby", eventCode: 0x1002, eventPlayer: 0, eventIsLast: false }],
       },
       responses: [
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "phase-standby-decline-optional-if" }), {
@@ -67,8 +67,9 @@ describe("EDOPro parity phase-standby missed timing decline fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-standby-decline-optional-if", eventName: "phaseStandby", eventCode: 0x1002, eventTriggerTiming: "if" }],
+            pendingTriggers: [{ player: 0, effectId: "phase-standby-decline-optional-if", eventName: "phaseStandby", eventCode: 0x1002, eventPlayer: 0, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{ eventName: "phaseStandby", eventCode: 0x1002, eventPlayer: 0 }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-standby-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-standby-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

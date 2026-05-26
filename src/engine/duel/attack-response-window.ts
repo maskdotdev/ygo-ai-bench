@@ -112,6 +112,10 @@ function advanceDamageWindow(state: DuelState, lastDamageResponder: PlayerId, ha
     return;
   }
   resolvePendingBattle(state, handlers);
+  pruneResetEffectsAfterPhaseFlag(state, 0x20);
+  if (!state.pendingTriggers.some((trigger) => trigger.eventName === "battleDestroyed")) {
+    pruneDuelFlagEffectsAfterPhaseFlag(state, 0x20);
+  }
 }
 
 function currentDamageWindowKind(state: DuelState): DamageBattleWindowKind {
@@ -122,7 +126,7 @@ function currentDamageWindowKind(state: DuelState): DamageBattleWindowKind {
 
 function pruneBattleSubphaseResets(state: DuelState, kind: BattleWindowKind, previousKind: BattleWindowKind | undefined): void {
   if (kind === previousKind) return;
-  const phaseFlag = kind === "attackNegationResponse" ? 0x10 : kind === "startDamageStep" ? 0x20 : undefined;
+  const phaseFlag = kind === "attackNegationResponse" ? 0x10 : undefined;
   if (phaseFlag === undefined) return;
   pruneResetEffectsAfterPhaseFlag(state, phaseFlag);
   pruneDuelFlagEffectsAfterPhaseFlag(state, phaseFlag);

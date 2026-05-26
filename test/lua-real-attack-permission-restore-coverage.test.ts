@@ -4,11 +4,12 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const attackPermissionFixtureCount = 5;
+const attackPermissionFixtureCount = 7;
 const attackPermissionKindCounts = {
   attackAllOwnMonsterLock: 1,
   attackCostPayment: 1,
   activationOathLock: 1,
+  goukiNonGoukiAttackLock: 2,
   summonTurnLock: 1,
   summonTurnStatusLock: 1,
 } satisfies Record<AttackPermissionKind, number>;
@@ -24,6 +25,7 @@ type AttackPermissionKind =
   | "attackAllOwnMonsterLock"
   | "attackCostPayment"
   | "activationOathLock"
+  | "goukiNonGoukiAttackLock"
   | "summonTurnLock"
   | "summonTurnStatusLock";
 type AttackPermissionSemanticVariant =
@@ -109,6 +111,30 @@ function realScriptAttackPermissionFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-gouki-finishing-move-link-attack-pierce-lock.test.ts",
+      kind: "goukiNonGoukiAttackLock",
+      required: [
+        'const finishingMoveCode = "35870016"',
+        "ge1:SetCode(EFFECT_CANNOT_ATTACK_ANNOUNCE)",
+        "ge1:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)",
+        "target:not-setcode:252",
+        "action.type === \"declareAttack\" && action.attackerUid === nonGouki.uid",
+        "action.type === \"declareAttack\" && action.attackerUid === goukiLink.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-gouki-finishing-move-link-pierce-lock-stat.test.ts",
+      kind: "goukiNonGoukiAttackLock",
+      required: [
+        'const finishingMoveCode = "35870016"',
+        "ge1:SetCode(EFFECT_CANNOT_ATTACK_ANNOUNCE)",
+        "ge1:SetProperty(EFFECT_FLAG_IGNORE_IMMUNE)",
+        "targetRange: [4, 0]",
+        "effectCannotAttackAnnounce",
+        "nonGouki",
+      ],
+    },
+    {
       file: "test/lua-real-script-true-sun-god-special-summon-attack-lock.test.ts",
       kind: "summonTurnStatusLock",
       required: [
@@ -145,6 +171,7 @@ function countAttackPermissionKinds(
       attackAllOwnMonsterLock: 0,
       attackCostPayment: 0,
       activationOathLock: 0,
+      goukiNonGoukiAttackLock: 0,
       summonTurnLock: 0,
       summonTurnStatusLock: 0,
     },

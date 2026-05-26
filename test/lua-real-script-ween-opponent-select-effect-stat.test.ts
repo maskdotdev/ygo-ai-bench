@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script We
         player: 0,
         triggerBucket: "turnOptional",
         eventName: "normalSummoned",
+        eventPlayer: 0,
         eventCode: 1100,
         eventCardUid: ween.uid,
         eventReason: duelReason.summon,
@@ -119,6 +120,79 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script We
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
     ]);
+  });
+
+  it("restores opponent-chosen SelectEffect damage branch into Zombie-count effect damage", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const script = workspace.readScript(`official/c${weenCode}.lua`);
+    expect(script).toContain("Duel.GetMatchingGroupCount(Card.IsRace,tp,LOCATION_GRAVE,0,nil,RACE_ZOMBIE)");
+    expect(script).toContain("local op=Duel.SelectEffect(1-tp,");
+    expect(script).toContain("Duel.Damage(1-tp,ct*500,REASON_EFFECT)");
+
+    const cards: DuelCardData[] = [
+      ...workspace.readDatabaseCards("cards.cdb").filter((card) => card.code === weenCode),
+      { code: zombieACode, name: "Ween Zombie A", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceZombie, level: 4, attack: 1000, defense: 1000 },
+      { code: zombieBCode, name: "Ween Zombie B", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceZombie, level: 4, attack: 1100, defense: 1000 },
+      { code: warriorCode, name: "Ween Warrior Decoy", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceWarrior, level: 4, attack: 1200, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 81005501, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [weenCode, zombieACode, zombieBCode, warriorCode] }, 1: { main: [] } });
+    startDuel(session);
+
+    const ween = requireCard(session, weenCode);
+    const zombieA = requireCard(session, zombieACode);
+    const zombieB = requireCard(session, zombieBCode);
+    const warrior = requireCard(session, warriorCode);
+    moveDuelCard(session.state, ween.uid, "hand", 0);
+    moveDuelCard(session.state, zombieA.uid, "graveyard", 0);
+    moveDuelCard(session.state, zombieB.uid, "graveyard", 0);
+    moveDuelCard(session.state, warrior.uid, "graveyard", 0);
+    session.state.phase = "main1";
+    session.state.turnPlayer = 0;
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(weenCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const summon = getLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === ween.uid);
+    expect(summon, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
+    applyAndAssert(session, summon!);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader, {
+      promptOverrides: [{ api: "SelectEffect", player: 1, returned: 2 }],
+    });
+    expectCleanRestore(restoredTriggerWindow);
+    expectRestoredLegalActions(restoredTriggerWindow, 0);
+
+    const trigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === ween.uid);
+    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restoredTriggerWindow, trigger!);
+    expect(restoredTriggerWindow.host.promptDecisions).toEqual([
+      { id: "lua-prompt-1", api: "SelectEffect", player: 1, options: [1, 2], descriptions: [1296088002, 1296088003], returned: 2 },
+    ]);
+
+    const restoredDamageResolved = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), workspace, reader);
+    expectCleanRestore(restoredDamageResolved);
+    expectRestoredLegalActions(restoredDamageResolved, 0);
+    const restoredWeen = restoredDamageResolved.session.state.cards.find((card) => card.uid === ween.uid);
+    expect(restoredWeen).toMatchObject({ location: "monsterZone", controller: 0, faceUp: true });
+    expect(currentAttack(restoredWeen, restoredDamageResolved.session.state)).toBe(ween.data.attack ?? 0);
+    expect(restoredDamageResolved.session.state.players[1].lifePoints).toBe(7000);
+    expect(restoredDamageResolved.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.effect,
+        eventReasonCardUid: ween.uid,
+        eventReasonEffectId: 1,
+        eventReasonPlayer: 0,
+      },
+    ]);
+    expect(restoredDamageResolved.host.promptDecisions).toEqual([]);
   });
 });
 

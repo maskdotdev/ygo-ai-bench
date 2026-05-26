@@ -1,4 +1,5 @@
 import fengari from "fengari";
+import { cardTypeFlags } from "#duel/card-stats.js";
 import { canMoveDuelCardToLocation, canSpecialSummonDuelCard } from "#duel/core.js";
 import { isMonsterSetPrevented, isNormalSummonPrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
@@ -80,6 +81,10 @@ function pushSummonPredicate(L: unknown, fieldName: string, session: DuelSession
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const ignoreCount = lua.lua_toboolean(state, 2);
+    if (fieldName === "IsSummonableCard" && card && card.location !== "hand") {
+      lua.lua_pushboolean(state, card.kind === "monster" && (cardTypeFlags(card, session.state) & 0x40) === 0);
+      return 1;
+    }
     const minTributes = lua.lua_isnumber(state, 4) ? Math.max(0, lua.lua_tointeger(state, 4)) : readMinTributeRequirement(state, card);
     const actions = card ? summonActionsForCard(session, card, ignoreCount, minTributes) : [];
     lua.lua_pushboolean(

@@ -63,6 +63,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
     expect(session.state.battleWindow?.kind).toBe("endDamageStep");
     expect(session.state.battleDamage).toEqual({ 0: 0, 1: 500 });
     expect(session.state.players[1].lifePoints).toBe(7500);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: defender!.uid,
+        eventPlayer: 1,
+        eventValue: 500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: defender!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);

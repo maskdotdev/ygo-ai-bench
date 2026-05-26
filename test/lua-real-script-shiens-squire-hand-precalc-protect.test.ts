@@ -80,7 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasSquireScript)
       { code: Number(squireCode), ownerId: "0", ownerType: "player", property: 0, reset: 1073741888, value: 0 },
     ]);
     expect(restored.session.state.eventHistory.filter((event) => ["attackDeclared", "sentToGraveyard"].includes(event.eventName)).map((event) => ({
-      current: event.current?.location,
+      current: event.eventCurrentState?.location,
       eventCardUid: event.eventCardUid,
       eventCode: event.eventCode,
       eventName: event.eventName,
@@ -88,11 +88,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasSquireScript)
       eventReasonCardUid: event.eventReasonCardUid,
       eventReasonEffectId: event.eventReasonEffectId,
       eventReasonPlayer: event.eventReasonPlayer,
-      previous: event.previous?.location,
+      previous: event.eventPreviousState?.location,
       relatedEffectId: event.relatedEffectId,
     }))).toEqual([
-      { current: undefined, eventCardUid: attacker.uid, eventCode: 1130, eventName: "attackDeclared", eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 1, previous: undefined, relatedEffectId: undefined },
-      { current: undefined, eventCardUid: squire.uid, eventCode: 1014, eventName: "sentToGraveyard", eventReason: duelReason.cost, eventReasonCardUid: squire.uid, eventReasonEffectId: 1, eventReasonPlayer: 0, previous: undefined, relatedEffectId: undefined },
+      { current: "monsterZone", eventCardUid: attacker.uid, eventCode: 1130, eventName: "attackDeclared", eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 1, previous: "deck", relatedEffectId: undefined },
+      { current: "graveyard", eventCardUid: squire.uid, eventCode: 1014, eventName: "sentToGraveyard", eventReason: duelReason.cost, eventReasonCardUid: squire.uid, eventReasonEffectId: 1, eventReasonPlayer: 0, previous: "hand", relatedEffectId: undefined },
     ]);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });

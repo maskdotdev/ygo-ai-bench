@@ -63,25 +63,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(search, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(search, activation!);
     expect(search.session.state.chain).toHaveLength(1);
-    expect(search.session.state.chain[0]?.operationInfos).toEqual([{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 1 }]);
-    expect(search.session.state.cards.find((card) => card.uid === handGeneral.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(search.session.state.chain[0]!.operationInfos).toEqual([{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }]);
 
-    const restoredSearchChain = restoreDuelWithLuaScripts(serializeDuel(search.session), source, reader);
-    expectCleanRestore(restoredSearchChain);
-    expectRestoredLegalActions(restoredSearchChain, 1);
-    expect(getLuaRestoreLegalActions(restoredSearchChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-    resolveRestoredChain(restoredSearchChain);
-    expect(restoredSearchChain.host.messages).not.toContain("archfiend general responder resolved");
-    expect(restoredSearchChain.host.messages).toContain(`confirmed 1: ${pandemoniumCode}`);
-    expect(restoredSearchChain.session.state.cards.find((card) => card.uid === pandemonium.uid)).toMatchObject({
+    const searchChain = restoreDuelWithLuaScripts(serializeDuel(search.session), source, reader);
+    expectCleanRestore(searchChain);
+    expectRestoredLegalActions(searchChain, 1);
+    expect(getLuaRestoreLegalActions(searchChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passRestoredChain(searchChain, 1);
+    expect(searchChain.session.state.cards.find((card) => card.uid === handGeneral.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(getLuaRestoreLegalActions(searchChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(false);
+    expect(searchChain.host.messages).not.toContain("archfiend general responder resolved");
+    expect(searchChain.host.messages).toContain(`confirmed 1: ${pandemoniumCode}`);
+    expect(searchChain.session.state.cards.find((card) => card.uid === pandemonium.uid)).toMatchObject({
       location: "hand",
       controller: 0,
       reason: duelReason.effect,
       reasonCardUid: handGeneral.uid,
       reasonEffectId: 1,
     });
-    expect(restoredSearchChain.session.state.cards.find((card) => card.uid === searchDecoy.uid)).toMatchObject({ location: "deck", controller: 0 });
-    expect(restoredSearchChain.session.state.eventHistory.filter((event) => ["sentToGraveyard", "sentToHand", "confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
+    expect(searchChain.session.state.cards.find((card) => card.uid === searchDecoy.uid)).toMatchObject({ location: "deck", controller: 0 });
+    expect(searchChain.session.state.eventHistory.filter((event) => ["sentToGraveyard", "sentToHand", "confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
       sentToGraveEvent(handGeneral.uid),
       sentToHandEvent(pandemonium.uid, handGeneral.uid),
       confirmedEvent(pandemonium.uid, handGeneral.uid),
@@ -198,6 +199,12 @@ function activateAndResolveDummySpell(restored: ReturnType<typeof restoreDuelWit
   applyLuaRestoreAndAssert(restored, pass!);
   expect(restored.session.state.chain).toHaveLength(0);
   expect(restored.host.messages).toContain("archfiend general dummy resolved");
+}
+
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyLuaRestoreAndAssert(restored, pass!);
 }
 
 function expectSelfDestroyEffect(session: DuelSession, uid: string): void {

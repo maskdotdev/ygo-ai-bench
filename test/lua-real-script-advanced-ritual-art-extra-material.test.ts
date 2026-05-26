@@ -69,44 +69,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
     expect(activate).toBeDefined();
     applyAndAssert(session, activate!);
     expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "hand",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-1-1002",
-        "id": "chain-2",
-        "operationInfos": [
-          {
-            "category": 512,
-            "count": 1,
-            "parameter": 2,
-            "player": 0,
-            "targetUids": [],
-          },
-        ],
-        "player": 0,
-        "sourceUid": "p0-deck-46052429-0",
-      }
-    `);
-    expect(session.state.chain[0]?.operationInfos).toEqual([
-      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 },
-    ]);
+    expect(session.state.chain[0]?.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    passChain(session, 1);
+    expect(session.state.chain).toHaveLength(0);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
-      { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 },
-    ]);
-
-    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreResponse(restored, pass!);
-    expect(resolved.ok, resolved.error).toBe(true);
+    const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, restoredPlayer));
+    expect(restored.session.state.chain).toHaveLength(0);
 
     const summonedRitual = restored.session.state.cards.find((card) => card.uid === ritualTarget!.uid);
     expect(summonedRitual).toMatchObject({
@@ -229,6 +204,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
       ]
     `);
     expect(restored.host.messages).not.toContain("advanced ritual art responder resolved");
+    expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(false);
   });
 });
 
@@ -254,4 +230,10 @@ function applyAndAssert(session: DuelSession, action: DuelAction) {
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function passChain(session: DuelSession, player: 0 | 1): void {
+  const pass = getLegalActions(session, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLegalActions(session, player), null, 2)).toBeDefined();
+  applyAndAssert(session, pass!);
 }

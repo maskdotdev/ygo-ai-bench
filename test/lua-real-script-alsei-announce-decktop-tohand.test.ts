@@ -78,28 +78,33 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     const activation = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "activateEffect" && action.uid === alsei.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restored, activation!);
-    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
+    expect(restored.session.state.chain).toHaveLength(1);
+    expect(restored.session.state.chain[0]!.operationInfos).toEqual([
       { category: 0x20000000, targetUids: [], count: 0, player: 0, parameter: 0x8 },
     ]);
 
-    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    applyLuaRestoreAndAssert(restored, pass!);
+    const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
+    expectCleanRestore(restoredChainWindow);
+    expectRestoredLegalActions(restoredChainWindow, 1);
+    expect(getLuaRestoreLegalActions(restoredChainWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passRestoredChain(restoredChainWindow, 1);
+    expectRestoredLegalActions(restoredChainWindow, 0);
+    expect(getLuaRestoreLegalActions(restoredChainWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(false);
 
     expect(restored.host.promptDecisions).toEqual([
       { id: "lua-prompt-1", api: "AnnounceCard", player: 0, options: [Number(declaredTopCode)], descriptions: [Number(declaredTopCode)], returned: Number(declaredTopCode) },
     ]);
-    expect(restored.host.messages).toContain(`confirmed decktop 0: ${declaredTopCode}`);
-    expect(restored.session.state.shuffleCheckDisabled).toBe(true);
-    expect(restored.session.state.cards.find((card) => card.uid === declaredTop.uid)).toMatchObject({
+    expect(restoredChainWindow.host.messages).toContain(`confirmed decktop 0: ${declaredTopCode}`);
+    expect(restoredChainWindow.session.state.shuffleCheckDisabled).toBe(true);
+    expect(restoredChainWindow.session.state.cards.find((card) => card.uid === declaredTop.uid)).toMatchObject({
       location: "hand",
       controller: 0,
       reason: duelReason.effect,
       reasonCardUid: alsei.uid,
       reasonEffectId: 2,
     });
-    expect(restored.session.state.cards.find((card) => card.uid === filler.uid)).toMatchObject({ location: "deck", controller: 0 });
-    expect(restored.session.state.eventHistory.filter((event) => ["confirmed", "sentToHand"].includes(event.eventName))).toEqual([
+    expect(restoredChainWindow.session.state.cards.find((card) => card.uid === filler.uid)).toMatchObject({ location: "deck", controller: 0 });
+    expect(restoredChainWindow.session.state.eventHistory.filter((event) => ["confirmed", "sentToHand"].includes(event.eventName))).toEqual([
       {
         eventName: "confirmed",
         eventCode: 1211,
@@ -122,9 +127,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
         eventCurrentState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
       },
     ]);
-    expect(restored.host.messages).not.toContain("alsei responder resolved");
+    expect(restoredChainWindow.host.messages).not.toContain("alsei responder resolved");
 
-    const restoredResolved = restoreDuelWithLuaScripts(serializeDuel(restored.session), source, reader);
+    const restoredResolved = restoreDuelWithLuaScripts(serializeDuel(restoredChainWindow.session), source, reader);
     expectCleanRestore(restoredResolved);
     expectRestoredLegalActions(restoredResolved, 0);
   });
@@ -180,4 +185,10 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
+}
+
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyLuaRestoreAndAssert(restored, pass!);
 }

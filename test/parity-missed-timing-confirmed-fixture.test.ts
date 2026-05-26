@@ -127,6 +127,13 @@ describe("EDOPro parity confirmed missed timing fixture", () => {
               },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              { eventName: "confirmed", eventCode: 1211, eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 8201 },
+              { eventName: "chainSolved" },
+            ],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "confirm-activation-optional-if", triggerBucket: "turnOptional", count: 1 },

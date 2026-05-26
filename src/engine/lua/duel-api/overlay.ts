@@ -45,13 +45,21 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
   for (const uid of readCardOrGroupUids(L, 2)) {
     if (uid === target.uid || target.overlayUids.includes(uid)) continue;
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || !canMoveDuelCardToLocation(session.state, uid, "overlay", duelReason.effect) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
+    const reassigningOverlayMaterial = card?.location === "overlay";
+    if (!card || (!reassigningOverlayMaterial && !canMoveDuelCardToLocation(session.state, uid, "overlay", duelReason.effect)) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
     try {
       const attachedUids = [...card.overlayUids];
       removeOverlayReference(session.state, uid);
-      moveDuelCard(session.state, uid, "overlay", target.controller, duelReason.effect, reasonPlayer);
+      if (reassigningOverlayMaterial) {
+        card.controller = target.controller;
+        card.reason = duelReason.effect;
+        card.reasonPlayer = reasonPlayer;
+      } else {
+        moveDuelCard(session.state, uid, "overlay", target.controller, duelReason.effect, reasonPlayer);
+      }
       applyReasonPayload(card, payload);
       card.overlayUids = [];
+      card.sequence = target.overlayUids.length;
       target.overlayUids.push(uid);
       moved.push(uid);
       for (const attachedUid of attachedUids) {
@@ -69,6 +77,7 @@ function pushOverlay(L: unknown, session: DuelSession, hostState: LuaDuelMoveApi
           continue;
         }
         applyReasonPayload(attached, payload);
+        attached.sequence = target.overlayUids.length;
         target.overlayUids.push(attachedUid);
         moved.push(attachedUid);
       }
@@ -99,7 +108,7 @@ function pushRemoveOverlayCard(L: unknown, session: DuelSession, hostState: LuaD
   const min = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 1;
   const max = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : min;
   const reason = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : duelReason.cost;
-  const holders = overlayHolders(session, player, selfLocations, opponentLocations);
+  const holders = overlayHoldersFromGroup(L, session, 7) ?? overlayHolders(session, player, selfLocations, opponentLocations);
   markLuaOperationTimingBoundary(session, hostState);
   const triggerStart = session.state.pendingTriggers.length;
   const detached = detachOverlayRange(session, holders, min, max, player, reason, hostState);
@@ -116,9 +125,15 @@ function pushCheckRemoveOverlayCard(L: unknown, session: DuelSession): number {
   const selfLocations = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const opponentLocations = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   const count = Math.max(0, lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : 1);
-  const holders = overlayHolders(session, player, selfLocations, opponentLocations);
+  const holders = overlayHoldersFromGroup(L, session, 6) ?? overlayHolders(session, player, selfLocations, opponentLocations);
   lua.lua_pushboolean(L, countOverlayMaterials(holders) >= count);
   return 1;
+}
+
+function overlayHoldersFromGroup(L: unknown, session: DuelSession, index: number): DuelCardInstance[] | undefined {
+  if (lua.lua_gettop(L) < index || lua.lua_isnoneornil(L, index)) return undefined;
+  const requested = new Set(readCardOrGroupUids(L, index));
+  return session.state.cards.filter((card) => requested.has(card.uid) && card.overlayUids.length > 0);
 }
 
 function overlayHolders(session: DuelSession, player: PlayerId, selfMask: number, opponentMask: number): DuelCardInstance[] {

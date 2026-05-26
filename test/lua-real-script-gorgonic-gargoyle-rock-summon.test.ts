@@ -71,6 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGargoyleScript)("Lua real script Gorg
         triggerBucket: "turnOptional",
         eventName: "normalSummoned",
         eventCode: 1100,
+        eventPlayer: 0,
         eventCardUid: rockSummon.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,

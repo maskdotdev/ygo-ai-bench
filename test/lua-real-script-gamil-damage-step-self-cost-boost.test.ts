@@ -166,6 +166,32 @@ describe.skipIf(!hasUpstreamScripts || !hasGamilScript)("Lua real script Master 
     expect(currentAttack(restoredBoost.session.state.cards.find((card) => card.uid === defender.uid), restoredBoost.session.state)).toBe((defender.data.attack ?? 0) + 300);
     finishBattle(restoredBoost.session);
     expect(restoredBoost.session.state.battleDamage).toEqual({ 0: 0, 1: 100 });
+    expect(restoredBoost.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: defender.uid,
+        eventPlayer: 1,
+        eventValue: 100,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: defender.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredBoost.session.state.players[1].lifePoints).toBe(7900);
     expect(restoredBoost.session.state.cards.find((card) => card.uid === defender.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredBoost.session.state.cards.find((card) => card.uid === attacker.uid)).toMatchObject({ location: "graveyard", controller: 1 });

@@ -431,7 +431,7 @@ describe("Lua battle helpers", () => {
     expect(host.messages).toEqual([
       "stat timing main true/4",
       "stat timing damage true/32/false",
-      "stat timing calculation false/64/true",
+      "stat timing calculation true/64/false",
     ]);
   });
 

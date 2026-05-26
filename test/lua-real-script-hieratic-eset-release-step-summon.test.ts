@@ -90,16 +90,24 @@ describe.skipIf(!hasUpstreamScripts || !hasEsetScript)("Lua real script Hieratic
       reasonCardUid: starter.uid,
       reasonEffectId: 4,
     });
-    expect(restoredStarterChain.session.state.pendingTriggers).toMatchObject([
+    expect(restoredStarterChain.session.state.pendingTriggers).toEqual([
       {
-        sourceUid: eset.uid,
-        player: 0,
-        triggerBucket: "turnMandatory",
-        eventName: "released",
-        eventCode: 1017,
+        id: "trigger-4-1",
+        effectId: "lua-3-1017",
         eventCardUid: eset.uid,
+        eventCode: 1017,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
+        eventName: "released",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.effect | duelReason.release,
+        eventReasonCardUid: starter.uid,
+        eventReasonEffectId: 4,
         eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        player: 0,
+        sourceUid: eset.uid,
+        triggerBucket: "turnMandatory",
       },
     ]);
 
@@ -119,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasEsetScript)("Lua real script Hieratic
       activationSequence: 0,
       eventName: "released",
       eventCode: 1017,
+      eventPlayer: 0,
       eventCardUid: eset.uid,
       eventReason: duelReason.effect | duelReason.release,
       eventReasonPlayer: 0,

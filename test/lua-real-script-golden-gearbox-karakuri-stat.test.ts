@@ -87,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasGearboxScript
         effectId: "lua-1-1002",
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [6],
         targetUids: [karakuri.uid],
       },
     ]);

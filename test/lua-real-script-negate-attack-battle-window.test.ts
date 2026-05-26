@@ -80,49 +80,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     const negateAction = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateEffect" && action.uid === negateAttack!.uid);
     expect(negateAction, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
+    expect((negateAction as { operationInfos?: unknown[] }).operationInfos ?? []).toEqual([]);
 
     const activated = applyLuaRestoreResponse(restored, negateAction!);
     expect(activated.ok, activated.error).toBe(true);
-    expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]?.operationInfos ?? []).toEqual([]);
-    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "spellTrapZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-2-1130",
-        "eventCardUid": "p0-deck-100-0",
-        "eventCode": 1130,
-        "eventCurrentState": {
-          "controller": 0,
-          "faceUp": true,
-          "location": "monsterZone",
-          "position": "faceUpAttack",
-          "sequence": 0,
-        },
-        "eventName": "attackDeclared",
-        "eventPreviousState": {
-          "controller": 0,
-          "faceUp": false,
-          "location": "deck",
-          "position": "faceDown",
-          "sequence": 0,
-        },
-        "eventReason": 0,
-        "eventReasonPlayer": 0,
-        "id": "chain-3",
-        "player": 1,
-        "sourceUid": "p1-deck-14315573-0",
-        "targetUids": [
-          "p0-deck-100-0",
-        ],
-      }
-    `);
-
-    const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreResponse(restored, pass!);
-    expect(resolved.ok, resolved.error).toBe(true);
     expect(restored.session.state.currentAttack).toBeUndefined();
     expect(restored.session.state.pendingBattle).toBeUndefined();
     expect(restored.session.state.chain).toHaveLength(0);

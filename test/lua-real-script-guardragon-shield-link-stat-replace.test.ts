@@ -144,6 +144,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gu
     passBattleResponses(restoredBattle.session);
     expect(restoredBattle.session.state.battleDamage[1]).toBe(300);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(7700);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: dragonTarget.uid,
+        eventPlayer: 1,
+        eventValue: 300,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: dragonTarget.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 2 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
 
     const restoredReplacement = restoreDuelWithLuaScripts(serializeDuel(restoredStatEffects.session), source, reader);
     expectCleanRestore(restoredReplacement);

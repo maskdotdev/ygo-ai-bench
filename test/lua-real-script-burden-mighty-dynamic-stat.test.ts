@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData, DuelResponse } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -135,6 +136,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bu
     passBattleResponses(restoredStat);
 
     expect(restoredStat.session.state.battleDamage[0]).toBe(800);
+    expect(restoredStat.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: highAttacker!.uid,
+        eventPlayer: 0,
+        eventValue: 800,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: highAttacker!.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 2,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredStat.session.state.players[0].lifePoints).toBe(7200);
     expect(restoredStat.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredStat.session.state.cards.find((card) => card.uid === highAttacker!.uid)).toMatchObject({ location: "monsterZone" });

@@ -137,6 +137,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
             "sequence": 0,
           },
           "eventName": "sentToGraveyard",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -187,6 +188,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
         sequence: 0,
       },
       eventName: "sentToGraveyard",
+      eventPlayer: 0,
       eventPreviousState: {
         controller: 0,
         faceUp: false,

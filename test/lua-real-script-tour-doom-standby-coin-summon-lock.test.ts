@@ -172,7 +172,7 @@ function moveToHand(session: DuelSession, card: DuelCardInstance, player: Player
   return moved;
 }
 
-function lockEffects(session: DuelSession, sourceUid: string): Array<{ code: number | undefined; targetRange: number[] | undefined; reset: unknown }> {
+function lockEffects(session: DuelSession, sourceUid: string): Array<{ code: number | undefined; targetRange: ReadonlyArray<number | undefined> | undefined; reset: unknown }> {
   return session.state.effects
     .filter((effect) => effect.sourceUid === sourceUid && (effect.code === effectCannotSummon || effect.code === effectCannotFlipSummon))
     .map((effect) => ({ code: effect.code, targetRange: effect.targetRange, reset: effect.reset }));

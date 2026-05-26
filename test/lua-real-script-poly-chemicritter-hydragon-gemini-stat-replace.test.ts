@@ -115,7 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHydragonScript)("Lua real script Poly
     const boosted = restoredTrigger.session.state.cards.find((card) => card.uid === target.uid);
     expect(currentAttack(boosted, restoredTrigger.session.state)).toBe(2100);
     expect(currentDefense(boosted, restoredTrigger.session.state)).toBe(1700);
-    expect(restoredTrigger.session.state.effects.filter((effect) => effect.sourceUid === target.uid && [effectUpdateAttack, effectUpdateDefense].includes(effect.code)).map((effect) => ({
+    expect(restoredTrigger.session.state.effects.filter((effect) => effect.sourceUid === target.uid && effect.code !== undefined && [effectUpdateAttack, effectUpdateDefense].includes(effect.code)).map((effect) => ({
       code: effect.code,
       event: effect.event,
       reset: effect.reset,

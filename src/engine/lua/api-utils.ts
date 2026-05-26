@@ -11,6 +11,7 @@ export function copyGlobalFunctionToField(L: unknown, tableName: string, fieldNa
 }
 
 export function readTableStringField(L: unknown, index: number, fieldName: string): string | undefined {
+  if (!lua.lua_istable(L, index)) return undefined;
   lua.lua_getfield(L, index, to_luastring(fieldName));
   const value = lua.lua_isstring(L, -1) ? lua.lua_tojsstring(L, -1) : undefined;
   lua.lua_pop(L, 1);
@@ -18,6 +19,7 @@ export function readTableStringField(L: unknown, index: number, fieldName: strin
 }
 
 export function readTableNumberField(L: unknown, index: number, fieldName: string): number | undefined {
+  if (!lua.lua_istable(L, index)) return undefined;
   lua.lua_getfield(L, index, to_luastring(fieldName));
   const value = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : undefined;
   lua.lua_pop(L, 1);

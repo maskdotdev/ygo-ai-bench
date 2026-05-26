@@ -92,9 +92,6 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Combo Master chain extra a
           "registryKey": "lua:44800181:lua-1-1027",
           "sourceUid": "p0-deck-44800181-0",
           "target": [Function],
-          "triggerCode": 1027,
-          "triggerEvent": "chaining",
-          "triggerTiming": "when",
         },
         {
           "canActivate": [Function],

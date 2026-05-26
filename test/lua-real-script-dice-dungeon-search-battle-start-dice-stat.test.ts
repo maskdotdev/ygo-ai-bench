@@ -91,9 +91,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDiceDungeonSc
     const battle = getLuaRestoreLegalActions(restoredActivated, 0).find((action) => action.type === "changePhase" && action.phase === "battle");
     expect(battle, JSON.stringify(getLuaRestoreLegalActions(restoredActivated, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredActivated, battle!);
-    expect(restoredActivated.session.state.pendingTriggers).toMatchObject([
+    expect(restoredActivated.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-5-1",
+        effectId: "lua-2-4104",
+        eventCode: 4104,
         eventName: "phaseBattle",
+        eventTriggerTiming: "when",
+        player: 0,
         sourceUid: diceDungeon.uid,
         triggerBucket: "turnOptional",
       },

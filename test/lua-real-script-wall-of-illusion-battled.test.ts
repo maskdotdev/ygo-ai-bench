@@ -67,6 +67,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
             "sequence": 0,
           },
           "eventName": "afterDamageCalculation",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": false,
@@ -106,6 +107,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === wall!.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: wall!.uid,
+        eventPlayer: 0,
+        eventValue: 50,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: wall!.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "afterDamageCalculation")).toEqual([
       {
         eventName: "afterDamageCalculation",

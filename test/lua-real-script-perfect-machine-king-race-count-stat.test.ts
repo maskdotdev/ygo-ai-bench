@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import type { UpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -91,6 +92,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pe
     declareAndPassRestoredBattle(restored, perfectKing.uid, defender.uid);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 700 });
     expect(restored.session.state.players[1].lifePoints).toBe(7300);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: perfectKing.uid,
+        eventPlayer: 1,
+        eventValue: 700,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: perfectKing.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === defender.uid)).toMatchObject({ location: "graveyard", controller: 1 });
   });
 });

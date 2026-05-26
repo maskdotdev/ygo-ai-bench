@@ -4,23 +4,30 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const SUMMON_PROCEDURE_FIXTURE_COUNT = 22;
-const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 19;
+const SUMMON_PROCEDURE_FIXTURE_COUNT = 32;
+const EVENT_RICH_SUMMON_PROCEDURE_FIXTURE_COUNT = 24;
 const summonProcedureKindCounts = {
-  broadTypedProcedure: 1,
+  broadTypedProcedure: 2,
   deckTwoMaterialShufflePierceProcedure: 2,
+  extraDeckGraveBanishThreeMaterialProcedure: 1,
   graveBanishCostStatProcedure: 1,
   handOwnFaceupAttributeOpenZoneProcedure: 2,
+  handOwnFaceupExtraPendulumProcedure: 1,
   handAttributeBanishCostSearchProcedure: 1,
   handReleaseEquipTurnCounterProcedure: 1,
   handBothFieldsGimmickOnlyProcedure: 1,
   handOwnEmptyOpponentMonsterProcedure: 1,
-  handOpponentCountProcedure: 1,
+  handOpponentCountProcedure: 2,
   handOwnFaceupLevelOrLinkOpenZoneProcedure: 3,
   handOwnFaceupLink1OrLevel2SynchroProcedure: 1,
-  handOwnFaceupSetcodeOpenZoneProcedure: 1,
+  handLevelRankBanishOpenZoneProcedure: 1,
+  handOwnFaceupSetcodeOpenZoneProcedure: 2,
+  handSetcodeReturnProcedureStat: 1,
   handOpponentBackrowCountProcedure: 1,
   handOpponentSpellTrapOrMstProcedure: 1,
+  handDddReleaseProcedurePzoneBattleStat: 1,
+  handDeckFieldSendCostProcedureStatToHand: 1,
+  handThreeReleaseProcedureStatToHand: 1,
   handSendCostProcedure: 1,
   handZoneMaskProcedureDirectStat: 1,
   noTributeOwnWarriorProcedure: 1,
@@ -41,7 +48,15 @@ const summonProcedureSemanticVariantCounts = {
   megarockDragonGraveBanishStatProcedure: 1,
   escherOpponentBackrowCountProcedure: 1,
   pankratopsOpponentControlsMoreHandProcedure: 1,
+  performapalRadishHorseOpponentSpecialProcedure: 1,
+  nemleriaOreillerExtraPendulumProcedureStat: 1,
+  uaPlaymakerReturnProcedureStat: 1,
+  liveTwinLillaTreatProcedureBattleDamageStat: 1,
   radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 1,
+  dddZeroLaplaceReleaseProcedurePzoneBattleStat: 1,
+  linearMagnumMagnetWarriorSendProcedureStatToHand: 1,
+  ravielShimmeringScraperThreeReleaseProcedureStatToHand: 1,
+  redNovaBurningSoulExtraDeckBanishRecoveryStatProcedure: 1,
   sprightBlueLevelOrRankOpenZoneProcedureSearch: 1,
   sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat: 1,
   sprightRedLevelOrLinkOpenZoneProcedure: 1,
@@ -49,23 +64,31 @@ const summonProcedureSemanticVariantCounts = {
   redHaredHastyHorseZoneMaskProcedureDirectStat: 1,
   cookyYummyLinkSynchroProcedureSelectDestroy: 1,
   warRockMammudNoTributeBattledStat: 1,
+  yakusaLevelRankBanishProcedureDraw: 1,
 } satisfies Record<SummonProcedureSemanticVariant, number>;
 
 type SummonProcedureKind =
   | "broadTypedProcedure"
   | "deckTwoMaterialShufflePierceProcedure"
+  | "extraDeckGraveBanishThreeMaterialProcedure"
   | "graveBanishCostStatProcedure"
   | "handAttributeBanishCostSearchProcedure"
   | "handOwnFaceupAttributeOpenZoneProcedure"
+  | "handOwnFaceupExtraPendulumProcedure"
   | "handOwnFaceupSetcodeOpenZoneProcedure"
+  | "handSetcodeReturnProcedureStat"
   | "handReleaseEquipTurnCounterProcedure"
   | "handBothFieldsGimmickOnlyProcedure"
   | "handOwnEmptyOpponentMonsterProcedure"
   | "handOpponentCountProcedure"
   | "handOwnFaceupLevelOrLinkOpenZoneProcedure"
   | "handOwnFaceupLink1OrLevel2SynchroProcedure"
+  | "handLevelRankBanishOpenZoneProcedure"
   | "handOpponentBackrowCountProcedure"
   | "handOpponentSpellTrapOrMstProcedure"
+  | "handDddReleaseProcedurePzoneBattleStat"
+  | "handDeckFieldSendCostProcedureStatToHand"
+  | "handThreeReleaseProcedureStatToHand"
   | "handSendCostProcedure"
   | "handZoneMaskProcedureDirectStat"
   | "noTributeOwnWarriorProcedure"
@@ -85,16 +108,105 @@ type SummonProcedureSemanticVariant =
   | "megarockDragonGraveBanishStatProcedure"
   | "escherOpponentBackrowCountProcedure"
   | "pankratopsOpponentControlsMoreHandProcedure"
+  | "performapalRadishHorseOpponentSpecialProcedure"
+  | "nemleriaOreillerExtraPendulumProcedureStat"
+  | "uaPlaymakerReturnProcedureStat"
+  | "liveTwinLillaTreatProcedureBattleDamageStat"
   | "radiantTyphoonOpponentSpellTrapOrMstProcedureSearch"
+  | "dddZeroLaplaceReleaseProcedurePzoneBattleStat"
+  | "linearMagnumMagnetWarriorSendProcedureStatToHand"
+  | "ravielShimmeringScraperThreeReleaseProcedureStatToHand"
+  | "redNovaBurningSoulExtraDeckBanishRecoveryStatProcedure"
   | "sprightBlueLevelOrRankOpenZoneProcedureSearch"
   | "sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat"
   | "sprightRedLevelOrLinkOpenZoneProcedure"
   | "powerInvaderOpponentTwoMonsterNormalSummonProcedure"
   | "redHaredHastyHorseZoneMaskProcedureDirectStat"
   | "cookyYummyLinkSynchroProcedureSelectDestroy"
-  | "warRockMammudNoTributeBattledStat";
+  | "warRockMammudNoTributeBattledStat"
+  | "yakusaLevelRankBanishProcedureDraw";
 
 const summonProcedureFixtures = [
+  {
+    file: "test/lua-real-script-rainbow-dark-dragon-registration-metadata.test.ts",
+    kind: "broadTypedProcedure",
+    required: [
+      'const rainbowCode = "79407975"',
+      "Rainbow Dark Dragon",
+      "restores summon condition/procedure and DARK banish ATK ignition metadata",
+      "e1:SetCode(EFFECT_SPSUMMON_CONDITION)",
+      "e2:SetCode(EFFECT_SPSUMMON_PROC)",
+      "aux.SelectUnselectGroup(rg,e,tp,7,7,s.rescon,0)",
+      "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+      "e3:SetCategory(CATEGORY_ATKCHANGE)",
+      "e:SetLabel(#g)",
+      "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+      "e1:SetValue(e:GetLabel()*500)",
+      "specialSummonProcedure",
+    ],
+  },
+  {
+    file: "test/lua-real-script-ddd-destiny-king-zero-laplace-pzone-release-battle-stat.test.ts",
+    kind: "handDddReleaseProcedurePzoneBattleStat",
+    required: [
+      'const laplaceCode = "21686473"',
+      "D/D/D Destiny King Zero Laplace",
+      "restores PZONE recovery, D/D/D release procedure, battle ATK final, and static battle protection",
+      "Pendulum.AddProcedure(c)",
+      "e2:SetCode(EFFECT_SPSUMMON_PROC)",
+      "Duel.CheckReleaseGroup(c:GetControler(),Card.IsSetCard,1,false,1,true,c,c:GetControler(),nil,false,nil,SET_DDD)",
+      "Duel.SelectReleaseGroup(tp,Card.IsSetCard,1,1,false,true,true,c,nil,nil,false,nil,SET_DDD)",
+      "Duel.Release(g,REASON_COST)",
+      'action.type === "specialSummonProcedure"',
+      "reason: duelReason.cost | duelReason.release",
+      "eventName: \"sentToHandConfirmed\"",
+      "eventName: \"battleConfirmed\"",
+    ],
+  },
+  {
+    file: "test/lua-real-script-linear-magnum-procedure-send-stat-destroyed-tohand.test.ts",
+    kind: "handDeckFieldSendCostProcedureStatToHand",
+    required: [
+      "restores Magnet Warrior send procedure, target ATK gain, and destroyed mandatory self return",
+      "e0:SetCode(EFFECT_SPSUMMON_PROC)",
+      "e0:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+      "Duel.GetMatchingGroup(s.spconfilter,tp,LOCATION_HAND|LOCATION_MZONE|LOCATION_DECK,0,nil)",
+      "aux.SelectUnselectGroup(rg,e,tp,2,2,aux.ChkfMMZ(1),1,tp,HINTMSG_TOGRAVE)",
+      "Duel.SendtoGrave(g,REASON_COST)",
+      'action.type === "specialSummonProcedure"',
+      "reasonEffectId: 2",
+      "eventName: \"sentToGraveyard\"",
+      "eventName: \"specialSummoned\"",
+    ],
+  },
+  {
+    file: "test/lua-real-script-raviel-shimmering-scraper-procedure-attackall-tohand-stat.test.ts",
+    kind: "handThreeReleaseProcedureStatToHand",
+    required: [
+      "restores release procedure, hand discard double-ATK attack-all, and grave release return",
+      "e2:SetCode(EFFECT_SPSUMMON_PROC)",
+      "Duel.GetReleaseGroup(tp)",
+      "Duel.Release(g,REASON_COST)",
+      'action.type === "specialSummonProcedure"',
+      "reason: duelReason.cost | duelReason.release",
+      "reasonEffectId: 3",
+      "eventName: \"released\"",
+      "eventName: \"sentToHand\"",
+    ],
+  },
+  {
+    file: "test/lua-real-script-yakusa-ritual-grave-todeck-draw.test.ts",
+    kind: "handLevelRankBanishOpenZoneProcedure",
+    required: [
+      "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+      "Duel.GetMZoneCount(tp,c)>0",
+      "aux.SpElimFilter(c,true)",
+      "Duel.SelectMatchingCard(tp,s.spfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,1,1,true,nil,tp)",
+      "Duel.Remove(rg,POS_FACEUP,REASON_COST)",
+      "Duel.SetPossibleOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+      'eventName: "cardsDrawn"',
+    ],
+  },
   {
     file: "test/lua-real-script-cooky-yummy-procedure-synchro-branch.test.ts",
     kind: "handOwnFaceupLink1OrLevel2SynchroProcedure",
@@ -150,6 +262,81 @@ const summonProcedureFixtures = [
       "real Gemini second Normal Summon triggers",
       "triggerRestored.missingRegistryKeys).toEqual([])",
       "triggerRestored.missingChainLimitRegistryKeys).toEqual([])",
+    ],
+  },
+  {
+    file: "test/lua-real-script-live-twin-lilla-treat-procedure-battle-damage.test.ts",
+    kind: "handOwnFaceupSetcodeOpenZoneProcedure",
+    required: [
+      'const treatCode = "81078880"',
+      "Live Twin Lil-la Treat",
+      "restores Ki-sikil hand procedure and grave battle-damage target trigger metadata",
+      "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+      "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsSetCard,SET_KI_SIKIL),e:GetHandlerPlayer(),LOCATION_MZONE,0,1,nil)",
+      "e2:SetCode(EVENT_BATTLE_DAMAGE)",
+      "e2:SetCost(Cost.SelfBanish)",
+      "Duel.GetBattleDamage(tp)",
+      "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+      "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+      'action.type === "specialSummonProcedure"',
+      "Special Summon Live Twin Lil-la Treat",
+    ],
+  },
+  {
+    file: "test/lua-real-script-ua-playmaker-return-procedure.test.ts",
+    kind: "handSetcodeReturnProcedureStat",
+    required: [
+      'const playmakerCode = "98229575"',
+      "U.A. Playmaker",
+      "restores U.A. return-to-hand Special Summon procedure and attack-announce trigger metadata",
+      "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+      "aux.SelectUnselectGroup(rg,e,tp,1,1,nil,0)",
+      "aux.SelectUnselectGroup(rg,e,tp,1,1,nil,1,tp,HINTMSG_RTOHAND,nil,nil,true)",
+      "Duel.SendtoHand(g,nil,REASON_COST)",
+      "e2:SetCode(EVENT_ATTACK_ANNOUNCE)",
+      "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+      "e1:SetValue(-800)",
+      "e2:SetValue(800)",
+      'action.type === "specialSummonProcedure"',
+      "Special Summon U.A. Playmaker",
+      "location: \"hand\"",
+    ],
+  },
+  {
+    file: "test/lua-real-script-nemleria-oreiller-extra-pendulum-procedure-stat.test.ts",
+    kind: "handOwnFaceupExtraPendulumProcedure",
+    required: [
+      'const oreillerCode = "17550376"',
+      "Nemleria Dream Defender - Oreiller",
+      "restores face-up Extra Deck Pendulum summon procedure and quick ATK boost metadata",
+      "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+      "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsType,TYPE_PENDULUM),tp,LOCATION_EXTRA,0,1,nil)",
+      "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsCode,CARD_DREAMING_NEMLERIA),tp,LOCATION_EXTRA,0,1,nil)",
+      "aux.StatChangeDamageStepCondition()",
+      "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_EXTRA,0,1,1,nil)",
+      "Duel.GetFieldGroupCount(tp,0,LOCATION_MZONE)",
+      "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+      "e1:SetValue(ct*500)",
+      'action.type === "specialSummonProcedure"',
+      "Special Summon Nemleria Dream Defender - Oreiller",
+    ],
+  },
+  {
+    file: "test/lua-real-script-performapal-radish-horse-registration-procedure.test.ts",
+    kind: "handOpponentCountProcedure",
+    required: [
+      'const radishCode = "71863024"',
+      "Performapal Radish Horse",
+      "restores pendulum, hand procedure, and targeted ATK-change metadata",
+      "Pendulum.AddProcedure(c)",
+      "e1:SetRange(LOCATION_PZONE)",
+      "e2:SetCode(EFFECT_SPSUMMON_PROC)",
+      "Duel.IsExistingMatchingCard(s.filter,tp,0,LOCATION_MZONE,1,nil)",
+      "Duel.GetFieldGroupCount(tp,LOCATION_MZONE,0)<=Duel.GetFieldGroupCount(tp,0,LOCATION_MZONE)",
+      "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+      "e2:SetValue(atk)",
+      'action.type === "specialSummonProcedure"',
+      "Special Summon Performapal Radish Horse",
     ],
   },
   {
@@ -442,6 +629,24 @@ const summonProcedureFixtures = [
     ],
   },
   {
+    file: "test/lua-real-script-red-nova-burning-soul-procedure-tohand-stat.test.ts",
+    kind: "extraDeckGraveBanishThreeMaterialProcedure",
+    required: [
+      "Red Nova Burning Soul procedure to hand stat",
+      'const burningSoulCode = "65541655"',
+      "e0:SetCode(EFFECT_SPSUMMON_PROC)",
+      "return Duel.GetMZoneCount(tp,sg)>0 and sg:IsExists(Card.IsType,2,nil,TYPE_TUNER) and sg:IsExists(Card.IsCode,1,nil,CARD_RED_DRAGON_ARCHFIEND)",
+      "aux.SelectUnselectGroup(g,e,tp,3,3,s.rescon,1,tp,HINTMSG_REMOVE,nil,nil,true)",
+      "Duel.Remove(sg,POS_FACEUP,REASON_COST)",
+      'action.type === "specialSummonProcedure"',
+      "applyRestoredActionAndAssert(restored, procedure!)",
+      'eventName: "banished"',
+      'eventName: "specialSummoned"',
+      "eventReason: duelReason.summon | duelReason.specialSummon",
+      "currentAttack(boostedBurningSoul, restored.session.state)).toBe(5500)",
+    ],
+  },
+  {
     file: "test/lua-real-script-power-invader-opponent-count-summon-procedure.test.ts",
     kind: "noTributeOpponentMonsterCountProcedure",
     required: [
@@ -526,13 +731,20 @@ function countSummonProcedureKinds(
       broadTypedProcedure: 0,
       graveBanishCostStatProcedure: 0,
       deckTwoMaterialShufflePierceProcedure: 0,
+      extraDeckGraveBanishThreeMaterialProcedure: 0,
       handAttributeBanishCostSearchProcedure: 0,
       handOwnFaceupAttributeOpenZoneProcedure: 0,
+      handOwnFaceupExtraPendulumProcedure: 0,
       handOwnFaceupSetcodeOpenZoneProcedure: 0,
+      handSetcodeReturnProcedureStat: 0,
       handOwnFaceupLevelOrLinkOpenZoneProcedure: 0,
       handOwnFaceupLink1OrLevel2SynchroProcedure: 0,
+      handLevelRankBanishOpenZoneProcedure: 0,
       handOpponentBackrowCountProcedure: 0,
       handOpponentSpellTrapOrMstProcedure: 0,
+      handDddReleaseProcedurePzoneBattleStat: 0,
+      handDeckFieldSendCostProcedureStatToHand: 0,
+      handThreeReleaseProcedureStatToHand: 0,
       handReleaseEquipTurnCounterProcedure: 0,
       handBothFieldsGimmickOnlyProcedure: 0,
       handOwnEmptyOpponentMonsterProcedure: 0,
@@ -551,6 +763,78 @@ function summonProcedureSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-live-twin-lilla-treat-procedure-battle-damage.test.ts",
+      kind: "liveTwinLillaTreatProcedureBattleDamageStat",
+      required: [
+        'const treatCode = "81078880"',
+        "restores Ki-sikil hand procedure and grave battle-damage target trigger metadata",
+        "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+        "e2:SetCode(EVENT_BATTLE_DAMAGE)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.GetBattleDamage(tp)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "Special Summon Live Twin Lil-la Treat",
+      ],
+    },
+    {
+      file: "test/lua-real-script-ua-playmaker-return-procedure.test.ts",
+      kind: "uaPlaymakerReturnProcedureStat",
+      required: [
+        'const playmakerCode = "98229575"',
+        "restores U.A. return-to-hand Special Summon procedure and attack-announce trigger metadata",
+        "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+        "Duel.SendtoHand(g,nil,REASON_COST)",
+        "e2:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-800)",
+        "e2:SetValue(800)",
+        "Special Summon U.A. Playmaker",
+        "location: \"hand\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-nemleria-oreiller-extra-pendulum-procedure-stat.test.ts",
+      kind: "nemleriaOreillerExtraPendulumProcedureStat",
+      required: [
+        'const oreillerCode = "17550376"',
+        "restores face-up Extra Deck Pendulum summon procedure and quick ATK boost metadata",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsType,TYPE_PENDULUM),tp,LOCATION_EXTRA,0,1,nil)",
+        "Duel.IsExistingMatchingCard(aux.FaceupFilter(Card.IsCode,CARD_DREAMING_NEMLERIA),tp,LOCATION_EXTRA,0,1,nil)",
+        "aux.StatChangeDamageStepCondition()",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_EXTRA,0,1,1,nil)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(ct*500)",
+        'effectId: expect.stringMatching(/^lua-/)',
+      ],
+    },
+    {
+      file: "test/lua-real-script-performapal-radish-horse-registration-procedure.test.ts",
+      kind: "performapalRadishHorseOpponentSpecialProcedure",
+      required: [
+        'const radishCode = "71863024"',
+        "restores pendulum, hand procedure, and targeted ATK-change metadata",
+        "Pendulum.AddProcedure(c)",
+        "Duel.IsExistingMatchingCard(s.filter,tp,0,LOCATION_MZONE,1,nil)",
+        "Duel.GetFieldGroupCount(tp,LOCATION_MZONE,0)<=Duel.GetFieldGroupCount(tp,0,LOCATION_MZONE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetValue(atk)",
+        "Special Summon Performapal Radish Horse",
+      ],
+    },
+    {
+      file: "test/lua-real-script-yakusa-ritual-grave-todeck-draw.test.ts",
+      kind: "yakusaLevelRankBanishProcedureDraw",
+      required: [
+        'const yakusaCode = "90583279"',
+        "Yakusa ritual grave to-Deck draw",
+        "e1:SetCode(EFFECT_SPSUMMON_PROC)",
+        "Duel.GetMZoneCount(tp,c)>0",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        'eventName: "cardsDrawn"',
+      ],
+    },
     {
       file: "test/lua-real-script-cooky-yummy-procedure-synchro-branch.test.ts",
       kind: "cookyYummyLinkSynchroProcedureSelectDestroy",
@@ -776,6 +1060,73 @@ function summonProcedureSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-ddd-destiny-king-zero-laplace-pzone-release-battle-stat.test.ts",
+      kind: "dddZeroLaplaceReleaseProcedurePzoneBattleStat",
+      required: [
+        'const laplaceCode = "21686473"',
+        "D/D/D Destiny King Zero Laplace",
+        "Pendulum.AddProcedure(c)",
+        "e2:SetCode(EFFECT_SPSUMMON_PROC)",
+        "Duel.SelectReleaseGroup(tp,Card.IsSetCard,1,1,false,true,true,c,nil,nil,false,nil,SET_DDD)",
+        "Duel.Release(g,REASON_COST)",
+        "EVENT_BATTLE_CONFIRM",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_PIERCE",
+        "EFFECT_INDESTRUCTABLE_COUNT",
+        "EFFECT_AVOID_BATTLE_DAMAGE",
+        'eventName: "sentToHandConfirmed"',
+        'eventName === "battleConfirmed"',
+        "currentAttack(battleTrigger.session.state.cards.find((card) => card.uid === battleLaplace.uid), battleTrigger.session.state)).toBe(3600)",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-linear-magnum-procedure-send-stat-destroyed-tohand.test.ts",
+      kind: "linearMagnumMagnetWarriorSendProcedureStatToHand",
+      required: [
+        'const linearCode = "44839512"',
+        "Conduction Warrior Linear Magnum Plus Minus",
+        "s.listed_series={SET_MAGNET_WARRIOR}",
+        "e0:SetCode(EFFECT_SPSUMMON_PROC)",
+        "Duel.GetMatchingGroup(s.spconfilter,tp,LOCATION_HAND|LOCATION_MZONE|LOCATION_DECK,0,nil)",
+        "aux.SelectUnselectGroup(rg,e,tp,2,2,aux.ChkfMMZ(1),1,tp,HINTMSG_TOGRAVE)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "eventName: \"sentToGraveyard\"",
+        "eventName: \"specialSummoned\"",
+        "currentAttack(findCard(restoredIgnition.session, linear.uid), restoredIgnition.session.state)).toBe(5600)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-red-nova-burning-soul-procedure-tohand-stat.test.ts",
+      kind: "redNovaBurningSoulExtraDeckBanishRecoveryStatProcedure",
+      required: [
+        'const burningSoulCode = "65541655"',
+        "restores Extra Deck SelectUnselectGroup banish procedure into GY recovery and ATK gain",
+        "Synchro.AddProcedure(c,nil,2,2,Synchro.NonTuner(nil),1,1)",
+        "c:AddMustBeSynchroSummoned()",
+        "aux.SelectUnselectGroup(g,e,tp,3,3,s.rescon,1,tp,HINTMSG_REMOVE,nil,nil,true)",
+        'eventName: "banished"',
+        'eventName: "specialSummoned"',
+        'eventName: "sentToHand"',
+        "attackModifier: 2000",
+      ],
+    },
+    {
+      file: "test/lua-real-script-raviel-shimmering-scraper-procedure-attackall-tohand-stat.test.ts",
+      kind: "ravielShimmeringScraperThreeReleaseProcedureStatToHand",
+      required: [
+        'const scraperCode = "28651380"',
+        "Raviel, Lord of Phantasms - Shimmering Scraper",
+        "e1:SetCode(EFFECT_SPSUMMON_CONDITION)",
+        "e2:SetCode(EFFECT_SPSUMMON_PROC)",
+        "Duel.GetReleaseGroup(tp)",
+        "Duel.Release(g,REASON_COST)",
+        "reasonEffectId: 3",
+        "currentAttack(restoredHandQuick.session.state.cards.find((card) => card.uid === raviel.uid), restoredHandQuick.session.state)).toBe(8000)",
+        'eventName: "sentToHand"',
+      ],
+    },
+    {
       file: "test/lua-real-script-spright-blue-special-summon-procedure-search.test.ts",
       kind: "sprightBlueLevelOrRankOpenZoneProcedureSearch",
       required: [
@@ -823,7 +1174,14 @@ function eventRichSummonProcedureFixtures(): Array<{
   required: string[];
 }> {
   return summonProcedureFixtures
-    .filter(({ kind }) => kind !== "broadTypedProcedure" && kind !== "noTributeOpponentMonsterCountProcedure" && kind !== "noTributeOwnWarriorProcedure")
+    .filter(({ file, kind }) =>
+      kind !== "broadTypedProcedure"
+      && kind !== "noTributeOpponentMonsterCountProcedure"
+      && kind !== "noTributeOwnWarriorProcedure"
+      && file !== "test/lua-real-script-live-twin-lilla-treat-procedure-battle-damage.test.ts"
+      && file !== "test/lua-real-script-ua-playmaker-return-procedure.test.ts"
+      && file !== "test/lua-real-script-nemleria-oreiller-extra-pendulum-procedure-stat.test.ts"
+      && file !== "test/lua-real-script-performapal-radish-horse-registration-procedure.test.ts")
     .map(({ file, kind }) => ({
       file,
       kind,
@@ -893,7 +1251,15 @@ function countSummonProcedureSemanticVariants(
       megarockDragonGraveBanishStatProcedure: 0,
       escherOpponentBackrowCountProcedure: 0,
       pankratopsOpponentControlsMoreHandProcedure: 0,
+      performapalRadishHorseOpponentSpecialProcedure: 0,
+      nemleriaOreillerExtraPendulumProcedureStat: 0,
+      uaPlaymakerReturnProcedureStat: 0,
+      liveTwinLillaTreatProcedureBattleDamageStat: 0,
       radiantTyphoonOpponentSpellTrapOrMstProcedureSearch: 0,
+      dddZeroLaplaceReleaseProcedurePzoneBattleStat: 0,
+      linearMagnumMagnetWarriorSendProcedureStatToHand: 0,
+      ravielShimmeringScraperThreeReleaseProcedureStatToHand: 0,
+      redNovaBurningSoulExtraDeckBanishRecoveryStatProcedure: 0,
       sprightBlueLevelOrRankOpenZoneProcedureSearch: 0,
       sprightPixiesLevelOrRankOpenZoneProcedurePrecalcStat: 0,
       sprightRedLevelOrLinkOpenZoneProcedure: 0,
@@ -901,6 +1267,7 @@ function countSummonProcedureSemanticVariants(
       redHaredHastyHorseZoneMaskProcedureDirectStat: 0,
       cookyYummyLinkSynchroProcedureSelectDestroy: 0,
       warRockMammudNoTributeBattledStat: 0,
+      yakusaLevelRankBanishProcedureDraw: 0,
     },
   );
 }

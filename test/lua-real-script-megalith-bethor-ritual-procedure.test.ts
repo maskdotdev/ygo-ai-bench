@@ -70,7 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
+        "activationLocation": "hand",
         "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-2",
@@ -102,7 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
+        "activationLocation": "hand",
         "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-2",

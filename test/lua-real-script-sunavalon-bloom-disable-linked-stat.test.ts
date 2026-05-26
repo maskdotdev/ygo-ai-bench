@@ -234,7 +234,7 @@ function passUntilBattleWindow(restored: ReturnType<typeof restoreDuelWithLuaScr
   while (restored.session.state.battleWindow?.kind !== kind) {
     expect(++guard).toBeLessThan(20);
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
-    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain" || action.type === "pass" || action.type === "passAttack" || action.type === "passDamage");
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain" || action.type === "passAttack" || action.type === "passDamage");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restored, pass!);
   }

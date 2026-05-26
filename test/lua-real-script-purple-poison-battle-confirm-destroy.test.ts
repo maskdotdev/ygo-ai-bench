@@ -106,19 +106,24 @@ describe.skipIf(!hasUpstreamScripts || !hasPurplePoisonScript)("Lua real script 
     const restoredDestroyed = restoreDuelWithLuaScripts(serializeDuel(restoredConfirm.session), workspace, reader);
     expectCleanRestore(restoredDestroyed);
     expectRestoredLegalActions(restoredDestroyed, 0);
-    expect(restoredDestroyed.session.state.pendingTriggers).toMatchObject([
+    expect(restoredDestroyed.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-6-1",
         effectId: "lua-4-1029",
-        sourceUid: purplePoison.uid,
-        player: 0,
-        triggerBucket: "turnOptional",
-        eventName: "destroyed",
-        eventCode: 1029,
         eventCardUid: purplePoison.uid,
+        eventCode: 1029,
+        eventCurrentState: { controller: 0, faceUp: true, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventName: "destroyed",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "spellTrapZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.effect | duelReason.destroy,
-        eventReasonPlayer: 0,
         eventReasonCardUid: purplePoison.uid,
         eventReasonEffectId: 3,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
+        player: 0,
+        sourceUid: purplePoison.uid,
+        triggerBucket: "turnOptional",
       },
     ]);
     const destroyedTrigger = getLuaRestoreLegalActions(restoredDestroyed, 0).find((action) => action.type === "activateTrigger" && action.uid === purplePoison.uid);

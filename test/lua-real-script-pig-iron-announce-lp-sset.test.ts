@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasPigIronScript)("Lua real script Pig I
     const activate = getLegalActions(activationSession, 0).find((action) => action.type === "activateEffect" && action.uid === pigIron.uid);
     expect(activate, JSON.stringify(getLegalActions(activationSession, 0), null, 2)).toBeDefined();
     applyAndAssert(activationSession, activate!);
+    drainDefaultLuaOperationPrompts(activationSession);
     expect(activationSession.state.chain).toEqual([]);
     expect(activationSession.state.chain.flatMap((link) => link.operationInfos ?? [])).toEqual([]);
 
@@ -173,6 +174,19 @@ function applyAndAssert(session: DuelSession, action: DuelAction): void {
   expect(response.legalActions).toEqual(getLegalActions(session, player));
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, player));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+}
+
+function drainDefaultLuaOperationPrompts(session: DuelSession): void {
+  for (let index = 0; index < 8 && session.state.prompt?.origin === "luaOperation"; index += 1) {
+    const prompt = session.state.prompt;
+    const response = getLegalActions(session, prompt.player).find((action) =>
+      prompt.type === "selectOption" ? action.type === "selectOption" && action.option === (prompt.options[0] ?? 0) : action.type === "selectYesNo" && action.yes,
+    );
+    expect(response).toBeDefined();
+    const result = applyResponse(session, response);
+    expect(result.ok, result.error).toBe(true);
+  }
+  expect(session.state.prompt?.origin).not.toBe("luaOperation");
 }
 
 function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

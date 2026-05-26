@@ -71,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinishingMove
     expect(currentAttack(findCard(restoredOpen.session, goukiLink.uid), restoredOpen.session.state)).toBe(4800);
     expect(currentAttack(findCard(restoredOpen.session, nonGouki.uid), restoredOpen.session.state)).toBe(1400);
     expect(restoredOpen.session.state.effects.filter((effect) =>
-      effect.sourceUid === goukiLink.uid && [effectUpdateAttack, effectPierce].includes(effect.code)
+      effect.sourceUid === goukiLink.uid && [effectUpdateAttack, effectPierce].includes(effect.code ?? -1)
     ).map((effect) => ({
       code: effect.code,
       description: effect.description,
@@ -81,7 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinishingMove
       reset: effect.reset,
       sourceUid: effect.sourceUid,
       value: effect.value,
-    })).sort((left, right) => left.code - right.code)).toEqual([
+    })).sort((left, right) => (left.code ?? -1) - (right.code ?? -1))).toEqual([
       { code: effectUpdateAttack, description: undefined, event: "continuous", property: effectFlagSingleRange, range: ["monsterZone"], reset: { flags: resetStandardPhaseEnd }, sourceUid: goukiLink.uid, value: undefined },
       { code: effectPierce, description: 3208, event: "continuous", property: effectFlagClientHint, range: ["monsterZone"], reset: { flags: resetStandardPhaseEnd }, sourceUid: goukiLink.uid, value: undefined },
     ]);

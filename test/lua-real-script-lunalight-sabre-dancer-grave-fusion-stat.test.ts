@@ -44,7 +44,9 @@ describe.skipIf(!hasUpstreamScripts || !hasSabreScript)("Lua real script Lunalig
     });
     startDuel(session);
 
-    const [fieldSabre, graveSabre] = requireCards(session, sabreCode, 2);
+    const sabres = requireCards(session, sabreCode, 2);
+    const fieldSabre = sabres[0]!;
+    const graveSabre = sabres[1]!;
     const ownGrave = requireCard(session, ownGraveCode);
     const opponentGrave = requireCard(session, opponentGraveCode);
     const ownBanished = requireCard(session, ownBanishedCode);
@@ -94,8 +96,9 @@ describe.skipIf(!hasUpstreamScripts || !hasSabreScript)("Lua real script Lunalig
       (candidate) => candidate.type === "activateEffect" && candidate.uid === graveSabre.uid,
     );
     expect(action, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
-    const activatedEffectId = Number(action!.effectId.replace("lua-", ""));
-    applyRestoredActionAndAssert(restored, action!);
+    const activateAction = action as Extract<DuelAction, { type: "activateEffect" }>;
+    const activatedEffectId = Number(activateAction.effectId.replace("lua-", ""));
+    applyRestoredActionAndAssert(restored, activateAction);
     resolveRestoredChain(restored);
 
     expect(restored.session.state.cards.find((card) => card.uid === graveSabre.uid)).toMatchObject({

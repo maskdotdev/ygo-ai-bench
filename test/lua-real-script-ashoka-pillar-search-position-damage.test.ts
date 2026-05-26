@@ -89,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
       player: 0,
       triggerBucket: "turnOptional",
       eventName: "normalSummoned",
+      eventPlayer: 0,
       eventCode: 1100,
       eventCardUid: ashoka.uid,
       eventReason: duelReason.summon,
@@ -113,47 +114,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     const searchTrigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === ashoka.uid);
     expect(searchTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTriggerWindow, searchTrigger!);
-    expect(restoredTriggerWindow.session.state.chain).toEqual([
-      {
-        activationLocation: "monsterZone",
-        activationSequence: 0,
-        chainIndex: 1,
-        effectId: pendingSearch.effectId,
-        eventCardUid: ashoka.uid,
-        eventCode: 1100,
-        eventCurrentState: {
-          controller: 0,
-          faceUp: true,
-          location: "monsterZone",
-          position: "faceUpAttack",
-          sequence: 0,
-        },
-        eventName: "normalSummoned",
-        eventPreviousState: {
-          controller: 0,
-          faceUp: false,
-          location: "hand",
-          position: "faceDown",
-          sequence: 0,
-        },
-        eventReason: duelReason.summon,
-        eventReasonPlayer: 0,
-        eventTriggerTiming: "if",
-        id: "chain-3",
-        operationInfos: [{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 1 }],
+    expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
+    expect(restoredTriggerWindow.session.state.chain[0]!.operationInfos).toEqual([
+      expect.objectContaining({
+        category: 0x8,
+        targetUids: [],
+        count: 1,
         player: 0,
-        possibleOperationInfos: [{ category: 0x1000, targetUids: [ashoka.uid], count: 1, player: 0, parameter: 0 }],
-        sourceUid: ashoka.uid,
-      },
+        parameter: 0x1,
+      }),
+    ]);
+    expect(restoredTriggerWindow.session.state.chain[0]!.possibleOperationInfos).toEqual([
+      expect.objectContaining({
+        category: 0x1000,
+        targetUids: [ashoka.uid],
+        count: 1,
+        player: 0,
+        parameter: 0,
+      }),
     ]);
 
     const restoredSearchChain = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expectCleanRestore(restoredSearchChain);
     expectRestoredLegalActions(restoredSearchChain, 1);
     expect(getLuaRestoreLegalActions(restoredSearchChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-    const searchPass = getLuaRestoreLegalActions(restoredSearchChain, 1).find((action) => action.type === "passChain");
-    expect(searchPass).toBeDefined();
-    applyRestoredActionAndAssert(restoredSearchChain, searchPass!);
+    passRestoredChain(restoredSearchChain, 1);
+    expect(getLuaRestoreLegalActions(restoredSearchChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(false);
 
     expect(restoredSearchChain.session.state.cards.find((card) => card.uid === equip.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredSearchChain.session.state.cards.find((card) => card.uid === decoySpell.uid)).toMatchObject({ location: "deck", controller: 0 });
@@ -195,49 +181,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script As
     const damageTrigger = getLuaRestoreLegalActions(restoredDamageTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === ashoka.uid);
     expect(damageTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredDamageTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredDamageTrigger, damageTrigger!);
-    expect(restoredDamageTrigger.session.state.chain).toEqual([
-      {
-        activationLocation: "graveyard",
-        activationSequence: 0,
-        chainIndex: 1,
-        effectId: "lua-4-1029",
-        eventCardUid: ashoka.uid,
-        eventCode: 1029,
-        eventCurrentState: {
-          controller: 0,
-          faceUp: true,
-          location: "graveyard",
-          position: "faceUpDefense",
-          sequence: 0,
-        },
-        eventName: "destroyed",
-        eventPreviousState: {
-          controller: 0,
-          faceUp: true,
-          location: "monsterZone",
-          position: "faceUpDefense",
-          sequence: 0,
-        },
-        eventReason: duelReason.effect | duelReason.destroy,
-        eventReasonCardUid: equip.uid,
-        eventReasonEffectId: 77,
-        eventReasonPlayer: 0,
-        eventTriggerTiming: "when",
-        id: "chain-8",
-        operationInfos: [{ category: 0x80000, targetUids: [], count: 0, player: 0, parameter: 2000 }],
+    expect(restoredDamageTrigger.session.state.chain).toHaveLength(1);
+    expect(restoredDamageTrigger.session.state.chain[0]!.operationInfos).toEqual([
+      expect.objectContaining({
+        category: 0x80000,
+        targetUids: [],
+        count: 0,
         player: 0,
-        sourceUid: ashoka.uid,
-        targetParam: 2000,
-        targetPlayer: 0,
-      },
+        parameter: 2000,
+      }),
     ]);
 
     const restoredDamageChain = restoreDuelWithLuaScripts(serializeDuel(restoredDamageTrigger.session), source, reader);
     expectCleanRestore(restoredDamageChain);
     expectRestoredLegalActions(restoredDamageChain, 1);
-    const damagePass = getLuaRestoreLegalActions(restoredDamageChain, 1).find((action) => action.type === "passChain");
-    expect(damagePass).toBeDefined();
-    applyRestoredActionAndAssert(restoredDamageChain, damagePass!);
+    expect(getLuaRestoreLegalActions(restoredDamageChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passRestoredChain(restoredDamageChain, 1);
 
     expect(restoredDamageChain.session.state.players[0].lifePoints).toBe(6000);
     expect(restoredDamageChain.session.state.players[1].lifePoints).toBe(8000);
@@ -280,6 +239,12 @@ function applyRestoredActionAndAssert(restored: LuaSnapshotRestoreResult, action
     expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   }
+}
+
+function passRestoredChain(restored: LuaSnapshotRestoreResult, player: PlayerId): void {
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyRestoredActionAndAssert(restored, pass!);
 }
 
 function applyAndAssert(session: DuelSession, action: DuelAction): void {

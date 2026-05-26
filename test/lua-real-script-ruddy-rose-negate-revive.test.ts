@@ -64,7 +64,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
       const loaded = host.loadCardScript(Number(code), source);
       expect(loaded.ok, loaded.error).toBe(true);
     }
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
 
     const starterAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === starter.uid);
     expect(starterAction, JSON.stringify(getLegalActions(session, 1), null, 2)).toBeDefined();
@@ -74,7 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
         activationLocation: "hand",
         activationSequence: 0,
         chainIndex: 1,
-        effectId: "lua-4-1002",
+        effectId: "lua-5-1002",
         id: "chain-2",
         operationInfos: [{ category: 0x1, targetUids: [starter.uid], count: 1, player: 0, parameter: 0 }],
         player: 1,
@@ -94,7 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
       reason: duelReason.cost | duelReason.release,
       reasonPlayer: 0,
       reasonCardUid: ruddyRose.uid,
-      reasonEffectId: 3,
+      reasonEffectId: 4,
     });
     expect(restoredOpenChain.host.promptDecisions).toEqual([
       { id: "lua-prompt-1", api: "SelectYesNo", player: 0, description: 642239955, returned: true },
@@ -109,7 +109,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
       reason: duelReason.summon | duelReason.specialSummon,
       reasonPlayer: 0,
       reasonCardUid: ruddyRose.uid,
-      reasonEffectId: 3,
+      reasonEffectId: 4,
     });
     expect(restoredOpenChain.session.state.eventHistory.filter((event) => ["released", "specialSummoned", "chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
       {
@@ -119,7 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
         eventReason: duelReason.cost | duelReason.release,
         eventReasonPlayer: 0,
         eventReasonCardUid: ruddyRose.uid,
-        eventReasonEffectId: 3,
+        eventReasonEffectId: 4,
         eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 1 },
       },
@@ -130,7 +130,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
         eventReason: duelReason.summon | duelReason.specialSummon,
         eventReasonPlayer: 0,
         eventReasonCardUid: ruddyRose.uid,
-        eventReasonEffectId: 3,
+        eventReasonEffectId: 4,
         eventPreviousState: { controller: 0, faceUp: true, location: "graveyard", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventUids: [blackRose.uid],
@@ -143,7 +143,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
         eventReasonPlayer: 1,
         eventChainDepth: 1,
         eventChainLinkId: "chain-2",
-        relatedEffectId: 4,
+        relatedEffectId: 5,
       },
       {
         eventName: "chainDisabled",
@@ -153,7 +153,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ru
         eventReasonPlayer: 1,
         eventChainDepth: 1,
         eventChainLinkId: "chain-2",
-        relatedEffectId: 4,
+        relatedEffectId: 5,
       },
     ]);
   });

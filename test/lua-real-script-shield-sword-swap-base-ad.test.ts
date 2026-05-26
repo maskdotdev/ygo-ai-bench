@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack, currentBaseAttack, currentBaseDefense, currentDefense } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { ApplyDuelResponseResult, DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -85,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [7, 8],
         targetUids: [ownMonster.uid, opponentMonster.uid],
       },
     ]);
@@ -149,6 +151,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(currentAttack(opponentMonster, restoredSwap.session.state)).toBe(2100);
     passBattleResponses(restoredSwap.session);
     expect(restoredSwap.session.state.battleDamage[0]).toBe(1200);
+    expect(restoredSwap.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: opponentMonster.uid,
+        eventPlayer: 0,
+        eventValue: 1200,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: opponentMonster.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredSwap.session.state.players[0].lifePoints).toBe(6800);
   });
 });

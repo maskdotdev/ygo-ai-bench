@@ -106,6 +106,13 @@ describe("EDOPro parity flip-summon-negated missed timing decline fixture", () =
               },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              { eventName: "flipSummonNegated", eventCode: 1115, eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 30301 },
+              { eventName: "chainSolved" },
+            ],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "flip-summon-negated-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "flip-summon-negated-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

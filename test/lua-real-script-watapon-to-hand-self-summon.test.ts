@@ -78,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasWataponScript)("Lua real script Watap
         player: 0,
         triggerBucket: "turnOptional",
         eventName: "sentToHand",
+        eventPlayer: 0,
         eventCode: 1012,
         eventCardUid: watapon.uid,
         eventReason: duelReason.effect,

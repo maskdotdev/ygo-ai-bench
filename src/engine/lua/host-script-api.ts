@@ -7,7 +7,7 @@ import type { LuaHostState, LuaInitialEffectRegistrationResult, LuaPromptCorouti
 
 const { lua, lauxlib, to_luastring } = fengari;
 
-export function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSession, loadedScriptBodies: ReadonlyMap<string, string> = new Map()): LuaInitialEffectRegistrationResult[] {
+export function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSession, hostState: LuaHostState, loadedScriptBodies: ReadonlyMap<string, string> = new Map()): LuaInitialEffectRegistrationResult[] {
   const results: LuaInitialEffectRegistrationResult[] = [];
   for (const card of session.state.cards) {
     lua.lua_getglobal(L, to_luastring(`c${card.code}`));
@@ -25,7 +25,11 @@ export function registerLuaInitialEffectsDetailed(L: unknown, session: DuelSessi
     lua.lua_getglobal(L, to_luastring("__duel_call_initial_effect"));
     lua.lua_insert(L, -2);
     pushCardTable(L, card.uid);
+    const previousCode = session.state.cards.find((candidate) => candidate.uid === card.uid)?.code;
+    const oldCode = hostState.currentScriptCardCode;
+    hostState.currentScriptCardCode = previousCode ?? oldCode;
     const status = lua.lua_pcall(L, 2, 2, 0);
+    hostState.currentScriptCardCode = oldCode;
     if (status !== lua.LUA_OK) {
       const error = readLuaError(L);
       lua.lua_pop(L, 1);

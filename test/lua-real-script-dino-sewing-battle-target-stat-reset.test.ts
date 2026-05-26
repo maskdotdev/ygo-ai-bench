@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -73,11 +74,20 @@ describe.skipIf(!hasUpstreamScripts || !hasDinoScript)("Lua real script Dino-Sew
     );
     expect(firstAttack, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 1), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, firstAttack!);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
         effectId: "lua-2-1131",
         eventCardUid: dino.uid,
+        eventCode: 1131,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleTargeted",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        player: 0,
         sourceUid: dino.uid,
         triggerBucket: "opponentMandatory",
       },
@@ -105,6 +115,32 @@ describe.skipIf(!hasUpstreamScripts || !hasDinoScript)("Lua real script Dino-Sew
     expectCleanRestore(restoredProtected);
     finishBattle(restoredProtected);
     expect(restoredProtected.session.state.battleDamage).toEqual({ 0: 500, 1: 0 });
+    expect(restoredProtected.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker.uid,
+        eventPlayer: 0,
+        eventValue: 500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: attacker.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredProtected.session.state.cards.find((card) => card.uid === dino.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredProtected.session.state.cards.find((card) => card.uid === attacker.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
 

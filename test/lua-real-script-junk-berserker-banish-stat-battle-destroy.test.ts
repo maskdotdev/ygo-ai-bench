@@ -86,13 +86,22 @@ describe.skipIf(!hasUpstreamScripts || !hasJunkBerserkerScript)("Lua real script
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattleOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredBattleOpen, attack!);
     passUntilBattleStarted(restoredBattleOpen);
-    expect(restoredBattleOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattleOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-6-1",
         effectId: "lua-4-1132",
-        sourceUid: junkBerserker.uid,
-        eventName: "battleStarted",
-        eventCode: 1132,
         eventCardUid: junkBerserker.uid,
+        eventCode: 1132,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "battleStarted",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [junkBerserker.uid, defenseTarget.uid],
+        player: 0,
+        sourceUid: junkBerserker.uid,
         triggerBucket: "turnMandatory",
       },
     ]);

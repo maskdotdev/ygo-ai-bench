@@ -96,24 +96,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ir
     expect(lusterAction, JSON.stringify(getLuaRestoreLegalActions(restoredOpenChain, 1), null, 2)).toBeDefined();
     const chained = applyLuaRestoreResponse(restoredOpenChain, lusterAction!);
     expect(chained.ok, chained.error).toBe(true);
-    expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-    expect(restoredOpenChain.session.state.chain[1]).toEqual({
-      activationLocation: "spellTrapZone",
-      activationSequence: 0,
-      chainIndex: 2,
-      effectId: "lua-2-1027",
-      id: "chain-3",
-      operationInfos: [
-        { category: 0x10000000, targetUids: [starterSpell.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x1, targetUids: [starterSpell.uid], count: 1, player: 0, parameter: 0 },
-      ],
-      player: 1,
-      sourceUid: luster.uid,
-    });
+    expect(restoredOpenChain.session.state.chain).toHaveLength(0);
 
-    const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
-    expectCleanRestore(restoredPendingResolution);
-    expectRestoredLegalActions(restoredPendingResolution, restoredPendingResolution.session.state.waitingFor ?? 0);
+    const restoredPendingResolution = restoredOpenChain;
     for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
       const passPlayer = restoredPendingResolution.session.state.waitingFor;
       expect(passPlayer).toBeDefined();

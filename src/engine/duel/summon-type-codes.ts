@@ -24,6 +24,12 @@ export function summonProcedureTypeCodeFromValue(value: number | undefined): num
   return luaSpecialSummonTypeCode(value);
 }
 
+export function normalSummonProcedureTypeCodeFromValue(value: number | undefined, fallback: number): number {
+  if (value === undefined || !Number.isSafeInteger(value)) return fallback;
+  if (value >= luaSummonTypeNormal) return value;
+  return fallback + value;
+}
+
 export function isFaceDownExtraDeckSummonTypeCode(summonTypeCode: number | undefined): boolean {
   const summonType = duelSummonTypeFromCode(summonTypeCode);
   return summonType === "fusion" || summonType === "synchro" || summonType === "xyz" || summonType === "link" || isCustomSpecialSummonTypeCode(summonTypeCode);

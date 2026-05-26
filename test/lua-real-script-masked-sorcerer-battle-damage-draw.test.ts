@@ -91,12 +91,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
         eventReasonCardUid: maskedSorcerer.uid,
       },
     ]);
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-5-1",
         effectId: "lua-1-1143",
         eventCardUid: maskedSorcerer.uid,
+        eventCode: 1143,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDamageDealt",
         eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
         eventReason: duelReason.battle,
         eventReasonCardUid: maskedSorcerer.uid,
         eventReasonPlayer: 0,

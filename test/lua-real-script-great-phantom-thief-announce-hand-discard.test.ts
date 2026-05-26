@@ -84,12 +84,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
     ]);
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-5-1",
         effectId: "lua-1-1143",
         eventCardUid: thief.uid,
+        eventCode: 1143,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDamageDealt",
         eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.battle,
+        eventReasonCardUid: thief.uid,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         eventValue: 1000,
         player: 0,
         sourceUid: thief.uid,

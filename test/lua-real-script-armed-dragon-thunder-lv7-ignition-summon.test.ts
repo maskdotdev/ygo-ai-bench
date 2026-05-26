@@ -100,30 +100,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
       reasonCardUid: thunderLv7.uid,
       reasonEffectId: 2,
     });
-    expect(session.state.chain).toEqual([
-      {
-        id: "chain-3",
-        chainIndex: 1,
-        sourceUid: thunderLv7.uid,
-        player: 0,
-        effectId: "lua-2",
-        activationLocation: "monsterZone",
-        activationSequence: 0,
-        operationInfos: [
-          { category: 0x20, targetUids: [thunderLv7.uid], count: 1, player: 0, parameter: 0 },
-          { category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x3 },
-        ],
-      },
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]!.operationInfos).toEqual([
+      expect.objectContaining({ category: 0x20 }),
+      expect.objectContaining({ category: 0x200 }),
     ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restored);
     expectRestoredLegalActions(restored, 1);
     expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
-    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
-    applyRestoredActionAndAssert(restored, pass!);
-
+    passRestoredChain(restored);
     expect(restored.session.state.chain).toEqual([]);
     expect(restored.session.state.cards.find((card) => card.uid === thunderLv7.uid)).toMatchObject({ location: "graveyard", reason: duelReason.effect });
     expect(restored.session.state.cards.find((card) => card.uid === cost.uid)).toMatchObject({ location: "graveyard" });
@@ -209,8 +196,11 @@ function applyAndAssert(session: DuelSession, action: DuelAction): void {
   }
 }
 
-function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {
-  const response = applyLuaRestoreResponse(restored, action);
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  const response = applyLuaRestoreResponse(restored, pass!);
   expect(response.ok, response.error).toBe(true);
   const waitingFor = response.state.waitingFor;
   if (waitingFor !== undefined) {

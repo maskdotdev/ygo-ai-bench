@@ -68,6 +68,32 @@ describe.skipIf(!hasUpstreamScripts || !hasDigitJammingScript)("Lua real script 
     expect(currentAttack(restoredDamage.session.state.cards.find((card) => card.uid === attacker.uid), restoredDamage.session.state)).toBe(600);
     passRestoredBattleResponses(restoredDamage);
     expect(restoredDamage.session.state.battleDamage).toEqual({ 0: 100, 1: 0 });
+    expect(restoredDamage.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: opponent.uid,
+        eventPlayer: 0,
+        eventValue: 100,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: opponent.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDamage.session.state.players[0].lifePoints).toBe(7900);
 
     const restoredDestroyed = createRestoredField({ reader, source, workspace });

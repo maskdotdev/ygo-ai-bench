@@ -104,7 +104,7 @@ describe("Lua battle timing helpers", () => {
     expect(legalEffectCodes(session, 0)).toEqual(["400"]);
     applyAndAssert(session, activateEffectByCode(session, 0, "400")!);
     applyAndAssert(session, getDuelLegalActions(session, 0).find((candidate) => candidate.type === "passChain")!);
-    expect(host.messages).toContain("lua damage calculation quick 64/true/true/true");
+    expect(host.messages).toContain("lua damage calculation quick 64/true/false/true");
 
     passBattleResponses(session);
     expect(session.state.players[1].lifePoints).toBe(6200);
@@ -563,7 +563,7 @@ describe("Lua battle timing helpers", () => {
     expectLuaRestoreStalePreapply(restored, trigger!, 0);
     applyLuaRestoreAndAssert(restored, trigger!);
 
-    expect(restored.host.messages).toEqual(["restored battled trigger true/false"]);
+    expect(restored.host.messages).toEqual(["restored battled trigger true/true"]);
     expect(restored.session.state.chain).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
     expect(restored.session.state.pendingBattle).toBeDefined();

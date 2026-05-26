@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gu
             "sequence": 0,
           },
           "eventName": "battleStarted",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,

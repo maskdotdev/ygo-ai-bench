@@ -73,10 +73,9 @@ describe.skipIf(!hasUpstreamScripts || !hasSpiritScript)("Lua real script Gearsp
       code: effect.code,
       reset: effect.reset,
       sourceUid: effect.sourceUid,
-      targetCardUids: effect.targetCardUids,
       value: effect.value,
     }))).toEqual([
-      { code: effectSetAttackFinal, reset: { flags: 1107169792 }, sourceUid: target.uid, targetCardUids: undefined, value: 0 },
+      { code: effectSetAttackFinal, reset: { flags: 1107169792 }, sourceUid: target.uid, value: 0 },
     ]);
     expect(restoredField.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });

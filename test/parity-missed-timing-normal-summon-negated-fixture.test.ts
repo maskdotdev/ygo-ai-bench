@@ -130,6 +130,13 @@ describe("EDOPro parity normal-summon-negated missed timing fixture", () => {
               },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              { eventName: "normalSummonNegated", eventCode: 1114, eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 30001 },
+              { eventName: "chainSolved" },
+            ],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "normal-summon-negated-activation-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "normal-summon-negated-activation-optional-if", triggerBucket: "turnOptional", count: 1 },

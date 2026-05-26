@@ -100,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
             "sequence": 0,
           },
           "eventName": "afterDamageCalculation",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -138,6 +139,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     expect(triggered.ok, triggered.error).toBe(true);
 
     expect(restored.session.state.pendingTriggers).toEqual([]);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: nullfier!.uid,
+        eventPlayer: 1,
+        eventValue: 600,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: nullfier!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === lightTarget!.uid && [2, 8].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {

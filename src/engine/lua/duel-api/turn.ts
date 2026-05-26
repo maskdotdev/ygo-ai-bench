@@ -1,5 +1,5 @@
 import fengari from "fengari";
-import { isBattleAttackStep, isBattleDamageCalculation, isBattleDamageStep } from "#duel/battle-window-state.js";
+import { currentBattleWindowKind, isBattleAttackStep, isBattleDamageCalculation, isBattleDamageStep } from "#duel/battle-window-state.js";
 import { isPhaseEntryPrevented } from "#duel/continuous-effects.js";
 import { currentDuelPhaseMask, isBattleEndPhase, isBattleStartPhase, phaseMask } from "#duel/phase-mask.js";
 import { duelPhases } from "#duel/state-kinds.js";
@@ -81,7 +81,7 @@ export function installDuelTurnApi(L: unknown, session: DuelSession): void {
   lua.lua_setfield(L, -2, to_luastring("IsDamageStep"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : undefined;
-    lua.lua_pushboolean(state, isBattleDamageCalculation(session.state) && matchesTurnPlayer(session.state, player));
+    lua.lua_pushboolean(state, isDamageCalculated(session.state) && matchesTurnPlayer(session.state, player));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("IsDamageCalculated"));
@@ -114,6 +114,10 @@ function pushPhasePredicate(L: unknown, fieldName: string, session: DuelSession,
 
 function matchesTurnPlayer(state: DuelState, player: PlayerId | undefined): boolean {
   return player === undefined || state.turnPlayer === player;
+}
+
+function isDamageCalculated(state: DuelState): boolean {
+  return currentBattleWindowKind(state) === "afterDamageCalculation" || state.pendingBattle?.damageApplied === true || state.pendingBattle?.resultApplied === true;
 }
 
 function playerTurnCount(state: DuelState, player: PlayerId): number {

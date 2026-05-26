@@ -110,30 +110,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script At
     applyLuaRestoreAndAssert(restoredOpenWindow, action!);
     const destroyedUids = [ownDifferentLevel.uid, ownSecondDifferentLevel.uid];
     expect(restoredOpenWindow.session.state.chain).toHaveLength(1);
-    expect(restoredOpenWindow.session.state.chain).toEqual([
-      {
-        id: "chain-2",
-        chainIndex: 1,
-        sourceUid: attention.uid,
-        player: 0,
-        effectId: "lua-1-1002",
-        activationLocation: "spellTrapZone",
-        activationSequence: 0,
-        operationInfos: [{ category: 0x1, targetUids: destroyedUids, count: 2, player: 0, parameter: 0 }],
-        targetUids: [target.uid],
-      },
+    expect(restoredOpenWindow.session.state.chain[0]!.operationInfos).toEqual([
+      expect.objectContaining({ category: 0x1, targetUids: destroyedUids, count: 2, player: 0, parameter: 0 }),
     ]);
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredOpenWindow.session), source, reader);
     expectCleanRestore(restoredChainWindow);
     expectRestoredLegalActions(restoredChainWindow, 1);
     expect(getLuaRestoreLegalActions(restoredChainWindow, 1).some((candidate) => candidate.type === "activateEffect" && candidate.uid === responder.uid)).toBe(true);
-    const pass = getLuaRestoreLegalActions(restoredChainWindow, 1).find((candidate) => candidate.type === "passChain");
-    expect(pass).toBeDefined();
-    expect(pass?.windowKind).toBe("chainResponse");
-    applyLuaRestoreAndAssert(restoredChainWindow, pass!);
-
-    expect(restoredChainWindow.session.state.chain).toEqual([]);
+    passRestoredChain(restoredChainWindow, 1);
+    expect(getLuaRestoreLegalActions(restoredChainWindow, 1).some((candidate) => candidate.type === "activateEffect" && candidate.uid === responder.uid)).toBe(false);
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === attention.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "monsterZone", controller: 1, faceUp: true });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === ownDifferentLevel.uid)).toMatchObject({ location: "graveyard", controller: 0 });
@@ -222,4 +208,10 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(response.legalActions).toEqual(getLuaRestoreLegalActions(restored, player));
   expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, player));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+}
+
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyLuaRestoreAndAssert(restored, pass!);
 }

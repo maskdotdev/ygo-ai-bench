@@ -1,19 +1,23 @@
 import { moveDuelCard } from "#duel/card-state.js";
 import { isMaterialUsePrevented, type ContinuousEffectContextFactory } from "#duel/continuous-effects.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags, currentAttribute, currentLevel, currentRace, currentRank } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttribute, currentFiniteEffectValues, currentLevel, currentRace, currentRank } from "#duel/card-stats.js";
 import { availableForcedMonsterZoneCount } from "#duel/forced-monster-zones.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 
 export function canLuaXyzSummonCard(session: DuelSession, card: DuelCardInstance, suppliedUids: string[]): boolean {
-  return findLuaXyzMaterialUidSet(session, card, suppliedUids) !== undefined;
+  return findLuaXyzMaterialUidSet(session, card, suppliedUids, card.controller, { allowSuppliedNonField: true }) !== undefined;
 }
 
-export function findLuaXyzMaterialUidSet(session: DuelSession, card: DuelCardInstance, suppliedUids: string[], player: PlayerId = card.controller): string[] | undefined {
+export function findLuaXyzMaterialUidSet(session: DuelSession, card: DuelCardInstance, suppliedUids: string[], player: PlayerId = card.controller, options: { allowSuppliedNonField?: boolean } = {}): string[] | undefined {
   if (card.location !== "extraDeck" || !isMonsterLike(session, card)) return undefined;
   const supplied = new Set(suppliedUids);
-  const materialPool = session.state.cards.filter((candidate) => candidate.controller === player && candidate.location === "monsterZone" && canBeXyzMaterial(session, candidate, card));
+  const materialPool = session.state.cards.filter((candidate) =>
+    candidate.controller === player &&
+    (candidate.location === "monsterZone" || (options.allowSuppliedNonField === true && supplied.has(candidate.uid))) &&
+    canBeXyzMaterial(session, candidate, card)
+  );
   if ([...supplied].some((uid) => !materialPool.some((candidate) => candidate.uid === uid))) return undefined;
   if (card.data.xyzMaterials?.length) {
     const count = xyzMaterialCount(card);
@@ -52,12 +56,12 @@ function targetAllowsMaterial(session: DuelSession, target: DuelCardInstance, ca
   if (!xyzMaterialSetcodeMatches(session, target, card)) return false;
   if (!xyzMaterialRankMatches(session, target, card)) return false;
   const targetRank = cardRank(session, target);
-  return targetRank > 0 && currentLevel(card, session.state) === targetRank;
+  return targetRank > 0 && currentXyzMaterialLevel(session, card) === targetRank;
 }
 
 function canGenericXyzMaterialsMatch(session: DuelSession, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetRank = cardRank(session, card);
-  return targetRank > 0 && materials.length >= xyzMaterialCount(card) && materials.length <= xyzMaterialMax(card) && materials.every((material) => currentLevel(material, session.state) === targetRank && xyzMaterialRaceMatches(session, card, material) && xyzMaterialAttributeMatches(session, card, material) && xyzMaterialTypeMatches(session, card, material) && xyzMaterialSetcodeMatches(session, card, material) && xyzMaterialRankMatches(session, card, material));
+  return targetRank > 0 && materials.length >= xyzMaterialCount(card) && materials.length <= xyzMaterialMax(card) && materials.every((material) => currentXyzMaterialLevel(session, material) === targetRank && xyzMaterialRaceMatches(session, card, material) && xyzMaterialAttributeMatches(session, card, material) && xyzMaterialTypeMatches(session, card, material) && xyzMaterialSetcodeMatches(session, card, material) && xyzMaterialRankMatches(session, card, material));
 }
 
 function materialCodesMatch(session: DuelSession, materials: DuelCardInstance[], requiredCodes: string[]): boolean {
@@ -113,6 +117,10 @@ function xyzMaterialSetcodeMatches(session: DuelSession, target: DuelCardInstanc
 
 function xyzMaterialRankMatches(session: DuelSession, target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.xyzMaterialRank === undefined || cardRank(session, material) === target.data.xyzMaterialRank;
+}
+
+function currentXyzMaterialLevel(session: DuelSession, material: DuelCardInstance): number {
+  return currentFiniteEffectValues(material, session.state, 242).at(-1) ?? currentLevel(material, session.state);
 }
 
 function isMonsterLike(session: DuelSession, card: DuelCardInstance): boolean {

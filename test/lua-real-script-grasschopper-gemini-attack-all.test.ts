@@ -49,6 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
         "cost": [Function],
         "event": "continuous",
         "id": "lua-4-193",
+        "luaConditionDescriptor": "condition:gemini-status",
         "luaTypeFlags": 1,
         "oncePerTurn": false,
         "operation": [Function],

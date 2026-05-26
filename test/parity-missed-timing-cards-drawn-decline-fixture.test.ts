@@ -182,6 +182,22 @@ describe("EDOPro parity cards-drawn missed timing decline fixture", () => {
               },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              { eventName: "cardsDrawn", eventCode: 1110, eventPlayer: 0, eventValue: 1, eventUids: ["p0-deck-700-5"], eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 9801 },
+              {
+                eventName: "sentToGraveyard",
+                eventCode: 1014,
+                eventReason: 0x40,
+                eventReasonPlayer: 0,
+                eventPreviousState: { controller: 0, location: "monsterZone", sequence: 0, position: "faceUpAttack", faceUp: true },
+                eventCurrentState: { controller: 0, location: "graveyard", sequence: 0, position: "faceUpAttack", faceUp: true },
+                eventCardUid: "p0-deck-600-4",
+              },
+              { eventName: "chainSolved" },
+            ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

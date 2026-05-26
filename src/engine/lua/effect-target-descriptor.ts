@@ -16,10 +16,20 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
     /\bDuel\s*\.\s*SelectTarget\s*\(\s*tp\s*,\s*Card\s*\.\s*IsAbleToChangeControler\s*,\s*tp\s*,\s*0\s*,\s*LOCATION_PZONE\s*,\s*1\s*,\s*1\s*,\s*nil\s*\)/.test(snippet) &&
     /\bDuel\s*\.\s*SetOperationInfo\s*\(\s*0\s*,\s*CATEGORY_CONTROL\s*,\s*\w+\s*,\s*1\s*,\s*tp\s*,\s*0\s*\)/.test(snippet)
   ) return "target:select-opponent-pzone-able-control";
+  const delegatedFaceupRaceLevelAbove = delegatedFaceupRaceLevelAboveTargetDescriptor(L, index, hostState, snippet);
+  if (delegatedFaceupRaceLevelAbove !== undefined) return delegatedFaceupRaceLevelAbove;
   const params = luaFunctionParams(snippet);
   const cardParam = params?.[1] ?? (params?.length === 1 ? params[0] : undefined);
   if (!cardParam) return undefined;
   const card = escapeRegExp(cardParam);
+  const tributeSummonPlayerParam = params?.[2];
+  const tributeSummonTypeParam = params?.[3];
+  if (tributeSummonPlayerParam && tributeSummonTypeParam) {
+    const summonType = escapeRegExp(tributeSummonTypeParam);
+    const tributeSetcode = snippet.match(new RegExp(`\\breturn\\s+\\(?\\s*${summonType}\\s*&\\s*SUMMON_TYPE_TRIBUTE\\s*\\)?\\s*==\\s*SUMMON_TYPE_TRIBUTE\\s+and\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)`));
+    const tributeSetcodeValue = tributeSetcode?.[1] ? luaNumberExpressionValue(L, index, tributeSetcode[1]) : undefined;
+    if (tributeSetcodeValue !== undefined) return `target:tribute-summon-setcode:${tributeSetcodeValue}`;
+  }
   if (new RegExp(`\\breturn\\s+${card}\\s*~=\\s*e\\s*:\\s*GetOwner\\s*\\(\\s*\\)\\s*(?:end\\b|$)`).test(snippet)) return "target:not-effect-owner";
   const battleTargetType = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*==\\s*e\\s*:\\s*GetHandler\\s*\\(\\s*\\)\\s*:\\s*GetBattleTarget\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*(?:end\\b|$)`));
   const battleTargetTypeValue = battleTargetType?.[1] ? luaNumberExpressionValue(L, index, battleTargetType[1]) : undefined;
@@ -48,6 +58,12 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const race = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s*(?:end\\b|$)`));
   const raceValue = race?.[1] ? luaNumberExpressionValue(L, index, race[1]) : undefined;
   if (raceValue !== undefined) return `target:race:${raceValue}`;
+  const faceupRaceLevelAbove = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsFaceup\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLevelAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)|${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLevelAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsFaceup\\s*\\(\\s*\\))\\s*(?:end\\b|$)`));
+  const faceupRaceLevelAboveRaceToken = faceupRaceLevelAbove?.[1] ?? faceupRaceLevelAbove?.[3];
+  const faceupRaceLevelAboveLevelToken = faceupRaceLevelAbove?.[2] ?? faceupRaceLevelAbove?.[4];
+  const faceupRaceLevelAboveRace = faceupRaceLevelAboveRaceToken ? luaNumberExpressionValue(L, index, faceupRaceLevelAboveRaceToken) : undefined;
+  const faceupRaceLevelAboveLevel = faceupRaceLevelAboveLevelToken ? luaNumberTokenValue(L, index, faceupRaceLevelAboveLevelToken) : undefined;
+  if (faceupRaceLevelAboveRace !== undefined && faceupRaceLevelAboveLevel !== undefined) return `target:faceup-race-level-above:${faceupRaceLevelAboveRace}:${faceupRaceLevelAboveLevel}`;
   const setcodeType = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)|${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsSetCard\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))\\s*(?:end\\b|$)`));
   const setcodeTypeSetcodeToken = setcodeType?.[1] ?? setcodeType?.[4];
   const setcodeTypeTypeToken = setcodeType?.[2] ?? setcodeType?.[3];
@@ -208,12 +224,22 @@ export function knownLuaEffectTargetDescriptor(L: unknown, index: number, hostSt
   const notAttributeRaceExtraAttribute = notAttributeRaceExtraAttributeToken ? luaNumberExpressionValue(L, index, notAttributeRaceExtraAttributeToken) : undefined;
   const notAttributeRaceExtraRace = notAttributeRaceExtraRaceToken ? luaNumberExpressionValue(L, index, notAttributeRaceExtraRaceToken) : undefined;
   if (notAttributeRaceExtraAttribute !== undefined && notAttributeRaceExtraRace !== undefined) return `special-summon-limit:not-attribute-race-extra:${notAttributeRaceExtraAttribute}:${notAttributeRaceExtraRace}`;
+  const attributeRace = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)|${card}\\s*:\\s*IsRace\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\))\\s*(?:end\\b|$)`));
+  const attributeRaceAttributeToken = attributeRace?.[1] ?? attributeRace?.[4];
+  const attributeRaceRaceToken = attributeRace?.[2] ?? attributeRace?.[3];
+  const attributeRaceAttribute = attributeRaceAttributeToken ? luaNumberExpressionValue(L, index, attributeRaceAttributeToken) : undefined;
+  const attributeRaceRace = attributeRaceRaceToken ? luaNumberExpressionValue(L, index, attributeRaceRaceToken) : undefined;
+  if (attributeRaceAttribute !== undefined && attributeRaceRace !== undefined) return `target:attribute-race:${attributeRaceAttribute}:${attributeRaceRace}`;
   const attribute = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsAttribute\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
   const attributeValue = attribute?.[1] ? luaNumberExpressionValue(L, index, attribute[1]) : undefined;
   if (attributeValue !== undefined) return `target:attribute:${attributeValue}`;
   const type = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsType\\s*\\(\\s*(${numericOrIdentifierExpressionPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
   const typeValue = type?.[1] ? luaNumberExpressionValue(L, index, type[1]) : undefined;
   if (typeValue !== undefined) return `target:type:${typeValue}`;
+  const levelAboveSynchro = snippet.match(new RegExp(`\\breturn\\s+(?:${card}\\s*:\\s*IsLevelAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsSynchroMonster\\s*\\(\\s*\\)|${card}\\s*:\\s*IsSynchroMonster\\s*\\(\\s*\\)\\s+and\\s+${card}\\s*:\\s*IsLevelAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\))`));
+  const levelAboveSynchroToken = levelAboveSynchro?.[1] ?? levelAboveSynchro?.[2];
+  const levelAboveSynchroValue = levelAboveSynchroToken ? luaNumberTokenValue(L, index, levelAboveSynchroToken) : undefined;
+  if (levelAboveSynchroValue !== undefined) return `target:level-above-synchro:${levelAboveSynchroValue}`;
   const levelAbove = snippet.match(new RegExp(`\\breturn\\s+${card}\\s*:\\s*IsLevelAbove\\s*\\(\\s*(${numericOrIdentifierPattern})\\s*\\)(?!\\s+(?:and|or)\\b)`));
   const levelAboveValue = levelAbove?.[1] ? luaNumberTokenValue(L, index, levelAbove[1]) : undefined;
   if (levelAboveValue !== undefined) return `target:level-above:${levelAboveValue}`;
@@ -494,6 +520,35 @@ function setcodeOrCodeTypeTargetDescriptor(L: unknown, index: number, snippet: s
   const code = luaNumberTokenValue(L, index, match[2]);
   const type = luaNumberTokenValue(L, index, match[3]);
   return setcode !== undefined && code !== undefined && type !== undefined ? `target:setcode-or-code-type:${setcode}:${code}:${type}` : undefined;
+}
+
+function delegatedFaceupRaceLevelAboveTargetDescriptor(L: unknown, index: number, hostState: LuaHostState, targetSnippet: string): string | undefined {
+  const selector = targetSnippet.match(/\bDuel\s*\.\s*SelectTarget\s*\(\s*tp\s*,\s*([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)?)\s*,\s*tp\s*,\s*LOCATION_MZONE\s*,\s*LOCATION_MZONE\s*,\s*1\s*,\s*1\s*,\s*nil\s*\)/);
+  const filterName = selector?.[1];
+  if (!filterName) return undefined;
+  const script = sourceContainingSnippet(hostState, targetSnippet);
+  if (!script) return undefined;
+  const escapedFilterName = escapeRegExp(filterName);
+  const escapedCard = String.raw`([A-Za-z_]\w*)`;
+  const filter = script.match(new RegExp(String.raw`function\s+${escapedFilterName}\s*\(\s*${escapedCard}\s*\)\s+return\s+(.+?)\s+end\b`, "s"));
+  const cardParam = filter?.[1];
+  const expression = filter?.[2];
+  if (!cardParam || !expression) return undefined;
+  const card = escapeRegExp(cardParam);
+  const faceupRaceLevelAbove = expression.match(new RegExp(String.raw`^(?:${card}\s*:\s*IsFaceup\s*\(\s*\)\s+and\s+${card}\s*:\s*IsRace\s*\(\s*(${numericOrIdentifierExpressionPattern})\s*\)\s+and\s+${card}\s*:\s*IsLevelAbove\s*\(\s*(${numericOrIdentifierPattern})\s*\)|${card}\s*:\s*IsRace\s*\(\s*(${numericOrIdentifierExpressionPattern})\s*\)\s+and\s+${card}\s*:\s*IsLevelAbove\s*\(\s*(${numericOrIdentifierPattern})\s*\)\s+and\s+${card}\s*:\s*IsFaceup\s*\(\s*\))$`));
+  const raceToken = faceupRaceLevelAbove?.[1] ?? faceupRaceLevelAbove?.[3];
+  const levelToken = faceupRaceLevelAbove?.[2] ?? faceupRaceLevelAbove?.[4];
+  const race = raceToken ? luaNumberExpressionValue(L, index, raceToken) : undefined;
+  const level = levelToken ? luaNumberTokenValue(L, index, levelToken) : undefined;
+  return race !== undefined && level !== undefined ? `target:faceup-race-level-above:${race}:${level}` : undefined;
+}
+
+function sourceContainingSnippet(hostState: Pick<LuaHostState, "loadedScriptBodies">, snippet: string): string | undefined {
+  const normalizedSnippet = snippet.replace(/\s+/g, " ").trim();
+  for (const source of hostState.loadedScriptBodies.values()) {
+    if (source.replace(/\s+/g, " ").includes(normalizedSnippet)) return source.replace(/\s+/g, " ").trim();
+  }
+  return undefined;
 }
 
 function luaNumberTokenValue(L: unknown, functionIndex: number, token: string): number | undefined {

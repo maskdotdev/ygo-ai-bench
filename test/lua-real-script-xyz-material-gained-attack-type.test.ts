@@ -169,6 +169,7 @@ function assertXyzMaterialGrant(workspace: UpstreamNodeWorkspace, testCase: Mate
       sourceUid: normalXyz.uid,
       effectId: "lua-2-1102",
       eventName: "specialSummoned",
+      eventPlayer: 0,
       triggerBucket: "turnMandatory",
       eventCode: eventSpecialSummonSuccess,
       eventTriggerTiming: "when",

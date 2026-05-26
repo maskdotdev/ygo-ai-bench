@@ -48,7 +48,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasRiryokuScript
 
     expect(currentAttack(findCard(restored.session, high.uid), restored.session.state)).toBe(1500);
     expect(currentAttack(findCard(restored.session, low.uid), restored.session.state)).toBe(2500);
-    expect(restored.session.state.effects.filter((effect) => [high.uid, low.uid].includes(effect.sourceUid) && [effectSetAttackFinal, effectUpdateAttack].includes(effect.code)).map((effect) => ({
+    expect(restored.session.state.effects.filter((effect) => [high.uid, low.uid].includes(effect.sourceUid ?? "") && effect.code !== undefined && [effectSetAttackFinal, effectUpdateAttack].includes(effect.code)).map((effect) => ({
       code: effect.code,
       reset: effect.reset,
       sourceUid: effect.sourceUid,

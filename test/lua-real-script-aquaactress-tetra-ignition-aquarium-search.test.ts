@@ -74,22 +74,18 @@ describe.skipIf(!hasUpstreamScripts || !hasTetraScript)("Lua real script Aquaact
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredOpen, activation!);
     expect(restoredOpen.session.state.chain).toHaveLength(1);
-    expect(restoredOpen.session.state.chain[0]?.sourceUid).toBe(tetra.uid);
-    expect(restoredOpen.session.state.chain[0]?.operationInfos).toEqual([{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 1 }]);
+    expect(restoredOpen.session.state.chain[0]!.operationInfos).toEqual([{ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }]);
+    expectRestoredLegalActions(restoredOpen, 1);
+    expect(getLuaRestoreLegalActions(restoredOpen, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passRestoredChain(restoredOpen);
+    expect(restoredOpen.session.state.chain).toHaveLength(0);
     expect(restoredOpen.session.state.cards.find((card) => card.uid === tetra.uid)).toMatchObject({ location: "monsterZone", controller: 0, faceUp: true });
-
-    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
-    expectCleanRestore(restoredChain);
-    expectRestoredLegalActions(restoredChain, 1);
-    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-    resolveRestoredChain(restoredChain);
-    expect(restoredChain.session.state.chain).toHaveLength(0);
-    expect(restoredChain.session.state.cards.find((card) => card.uid === tetra.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === aquariumSpell.uid)).toMatchObject({ location: "hand", controller: 0, reason: duelReason.effect });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === offSetSpell.uid)).toMatchObject({ location: "deck", controller: 0 });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === offTypeAquarium.uid)).toMatchObject({ location: "deck", controller: 0 });
-    expect(restoredChain.host.messages).not.toContain("aquaactress tetra responder resolved");
-    expect(restoredChain.session.state.eventHistory.filter((event) => ["sentToHand", "confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === tetra.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === aquariumSpell.uid)).toMatchObject({ location: "hand", controller: 0, reason: duelReason.effect });
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === offSetSpell.uid)).toMatchObject({ location: "deck", controller: 0 });
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === offTypeAquarium.uid)).toMatchObject({ location: "deck", controller: 0 });
+    expect(restoredOpen.host.messages).not.toContain("aquaactress tetra responder resolved");
+    expect(restoredOpen.session.state.eventHistory.filter((event) => ["sentToHand", "confirmed", "sentToHandConfirmed"].includes(event.eventName))).toEqual([
       sentToHandEvent(aquariumSpell.uid, tetra.uid),
       confirmedEvent(aquariumSpell.uid, tetra.uid),
       sentToHandConfirmedEvent(aquariumSpell.uid, tetra.uid),
@@ -180,14 +176,18 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): ReturnType<typeof applyLuaRestoreResponse> {
   const response = applyLuaRestoreResponse(restored, action);
   expect(response.ok, response.error).toBe(true);
-  expect(response.legalActions).toEqual(getLegalActions(restored.session, response.state.waitingFor!));
-  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, response.state.waitingFor!));
-  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  const waitingFor = response.state.waitingFor;
+  if (waitingFor !== undefined) {
+    expect(response.legalActions).toEqual(getLegalActions(restored.session, waitingFor));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, waitingFor));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  }
   return response;
 }
 
-function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): ReturnType<typeof applyLuaRestoreResponse> {
-  const pass = getLuaRestoreLegalActions(restored, restored.session.state.waitingFor!).find((action) => action.type === "passChain");
-  expect(pass).toBeDefined();
-  return applyLuaRestoreAndAssert(restored, pass!);
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyLuaRestoreAndAssert(restored, pass!);
 }

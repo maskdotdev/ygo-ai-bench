@@ -176,6 +176,7 @@ export function restoreDuelWithLuaScripts(
   restoredRegistryKeys.push(...restoreDoubleOrNothingBattleStartEffects(session, snapshot.state.effects, restoredRegistryKeys));
   restoredRegistryKeys.push(...restoreMagnificentMachineAngelBattleStartDisableEffects(session, snapshot.state.effects, restoredRegistryKeys));
   restoreKnownLuaChainOperations(session);
+  restoreVernusylphAttributeActivationLock(session);
   session.state.effects = session.state.effects.map(restoredLuaEffectWithoutPromptOperation);
   prunePendingTriggersWithoutEffects(session.state);
   const missingRegistryKeys = [...registryKeys].filter((key) => !restoredRegistryKeys.includes(key));
@@ -184,6 +185,33 @@ export function restoreDuelWithLuaScripts(
   const incompleteReasons = luaRestoreIncompleteReasons([...loadedScripts, ...restoredStateScripts], missingRegistryKeys, missingChainLimitRegistryKeys);
   const restoreComplete = incompleteReasons.length === 0;
   return { session, host, restoreComplete, loadedScripts: [...loadedScripts, ...restoredStateScripts], registeredEffects, restoredRegistryKeys, missingRegistryKeys, chainLimitRegistryKeys, missingChainLimitRegistryKeys, incompleteReasons };
+}
+
+function restoreVernusylphAttributeActivationLock(session: DuelSession): void {
+  if (session.state.effects.some((effect) => effect.code === 6 && effect.luaValueDescriptor === "cannot-activate:monster-attribute-except:1")) return;
+  const source = session.state.cards.find((card) => card.code === "9350312" && (card.location === "graveyard" || card.location === "monsterZone" || card.location === "hand"));
+  if (!source || !session.state.eventHistory.some((event) => event.eventName === "sentToGraveyard" && event.eventCardUid === source.uid && ((event.eventReason ?? 0) & duelReason.cost) !== 0)) return;
+  if (session.state.status !== "ended") session.state.status = "awaiting";
+  session.state.waitingFor ??= source.controller;
+  delete session.state.prompt;
+  delete session.state.luaOperationPrompt;
+  session.state.effects.push({
+    id: `lua-vernusylph-attribute-lock-${source.uid}`,
+    sourceUid: source.uid,
+    controller: source.controller,
+    event: "continuous",
+    code: 6,
+    range: [...duelLocations],
+    targetRange: [1, 0],
+    reset: { flags: 0x40000200 },
+    luaValueDescriptor: "cannot-activate:monster-attribute-except:1",
+    operation() {},
+    valuePredicate(ctx) {
+      const relatedEffect = ctx.relatedEffectId === undefined ? undefined : ctx.duel.effects.find((effect) => Number(effect.id.match(/^lua-(\d+)/)?.[1]) === ctx.relatedEffectId || effect.id === `lua-${ctx.relatedEffectId}`);
+      const handler = ctx.duel.cards.find((card) => card.uid === relatedEffect?.sourceUid) ?? ctx.eventCard;
+      return Boolean(handler && (cardTypeFlags(handler, ctx.duel) & 0x1) !== 0 && ((handler.data.attribute ?? 0) & ~0x1) !== 0);
+    },
+  });
 }
 
 function loadAvailableCardMetadataScripts(host: LuaScriptHost, source: LuaScriptSource, cardCodes: string[], loadedScripts: LuaScriptLoadResult[]): void {
@@ -354,7 +382,7 @@ function filterRestoredLuaEffects(session: DuelSession, registryKeys: Set<string
       const snapshotEffect = snapshotEffectsByKey.get(effect.registryKey ?? "") ?? semanticSnapshotEffect;
       const rebound = rebindRestoredLuaEffectCallbacks(effect, liveLuaEffectsByKey.get(effect.registryKey ?? ""));
       const restored = mergeRestoredLuaEffectMetadata(rebound, snapshotEffect);
-      return semanticSnapshotEffect ? { ...restored, id: semanticSnapshotEffect.id, registryKey: semanticSnapshotEffect.registryKey } : restored;
+      return semanticSnapshotEffect ? { ...restored, id: semanticSnapshotEffect.id, ...(semanticSnapshotEffect.registryKey === undefined ? {} : { registryKey: semanticSnapshotEffect.registryKey }) } : restored;
     });
   const exactRegistryKeys = session.state.effects.map((effect) => effect.registryKey).filter((key): key is string => Boolean(key?.startsWith("lua:") && registryKeys.has(key)));
   return [...new Set([...exactRegistryKeys, ...semanticRegistryKeys])];
@@ -1910,7 +1938,7 @@ function isKnownClashingSoulsBattledFieldSendEffect(effect: SerializedDuelEffect
     hasDefaultLuaFieldRange(effect);
 }
 function isKnownDivineEvolutionAttackAnnounceSendEffect(effect: SerializedDuelEffect): boolean {
-  return Boolean(effect.registryKey?.startsWith("lua:21208154:") || effect.registryKey?.startsWith("lua:62180201:") || effect.registryKey?.startsWith("lua:57793869:")) &&
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaDivineEvolutionCode}:`) || effect.registryKey?.startsWith("lua:21208154:") || effect.registryKey?.startsWith("lua:62180201:") || effect.registryKey?.startsWith("lua:57793869:")) &&
     effect.event === "trigger" &&
     effect.code === 1130 &&
     effect.triggerEvent === "attackDeclared" &&
@@ -3135,6 +3163,7 @@ function battleguardRageTargetLeaveSelfDestroyOperation(effect: SerializedDuelEf
     const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
     if (!source || source.location !== "spellTrapZone") return;
     if (!ctx.eventCard || !(source.cardTargetUids ?? []).includes(ctx.eventCard.uid)) return;
+    if (((ctx.eventReason ?? ctx.eventCard.reason ?? 0) & duelReason.destroy) === 0) return;
     destroyDuelCard(ctx.duel, source.uid, source.controller, duelReason.effect | duelReason.destroy, effect.controller, "graveyard", {
       eventReasonCardUid: source.uid,
       ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),

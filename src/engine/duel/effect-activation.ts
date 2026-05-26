@@ -12,7 +12,7 @@ import { createEffectContext } from "#duel/effect-context.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
-import { luaSummonTypeNormal, luaSummonTypeTribute, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
+import { luaSummonTypeNormal, luaSummonTypeTribute, normalSummonProcedureTypeCodeFromValue, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
 import type {
   DuelCardInstance,
   DuelEffectContext,
@@ -33,6 +33,7 @@ const luaEffectLimitSummonProc = 33;
 const luaEffectFlagSpecialSummonParam = 0x100000;
 const luaPositionFaceUpAttack = 0x1;
 const luaPositionFaceUpDefense = 0x4;
+const luaEventChaining = 1027;
 
 export interface DuelActivationHandlers {
   createEffectContext(
@@ -175,6 +176,10 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
     );
     pushDuelLog(session.state, "activate", player, source.name, effect.id);
     markEffectUsed(session.state, effect);
+    if (shouldContinueTriggerSelection(session.state)) {
+      setWaitingForPendingTriggerBucket(session.state);
+      return;
+    }
     const responsePlayer = otherPlayer(player);
     const chainPlayer = nextChainResponsePlayer(session.state, player, responsePlayer, handlers);
     if (chainPlayer !== undefined) {
@@ -254,7 +259,7 @@ export function normalSummonDuelByProcedure(
     currentSource.position = "faceUpAttack";
     currentSource.faceUp = true;
     currentSource.summonType = normalProcedureSummonType(effect.value);
-    currentSource.summonTypeCode = effect.value ?? (currentSource.summonType === "tribute" ? luaSummonTypeTribute : luaSummonTypeNormal);
+    currentSource.summonTypeCode = normalSummonProcedureTypeCodeFromValue(effect.value, currentSource.summonType === "tribute" ? luaSummonTypeTribute : luaSummonTypeNormal);
     currentSource.summonPlayer = player;
     currentSource.summonPhase = state.phase;
     currentSource.summonMaterialUids = materialUids;
@@ -400,7 +405,8 @@ export function shouldContinueTriggerSelection(state: DuelState): boolean {
   if (state.pendingTriggers.length === 0) return false;
   const firstLink = state.chain[0];
   if (!firstLink) return true;
-  return state.pendingTriggers.every((trigger) => triggerEventPayloadMatchesLink(trigger, firstLink));
+  const latestLink = state.chain.at(-1);
+  return state.pendingTriggers.every((trigger) => triggerEventPayloadMatchesLink(trigger, firstLink) || (latestLink !== undefined && triggerEventPayloadMatchesChainingLink(trigger, latestLink)));
 }
 
 function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][number], link: ChainLink): boolean {
@@ -424,6 +430,20 @@ function triggerEventPayloadMatchesLink(trigger: DuelState["pendingTriggers"][nu
   );
 }
 
+function triggerEventPayloadMatchesChainingLink(trigger: DuelState["pendingTriggers"][number], link: ChainLink): boolean {
+  return (
+    trigger.eventName === "chaining" &&
+    trigger.eventCode === luaEventChaining &&
+    trigger.eventPlayer === link.player &&
+    trigger.eventValue === link.chainIndex &&
+    trigger.eventReasonPlayer === link.player &&
+    trigger.relatedEffectId === relatedEffectIdFromEffectId(link.effectId) &&
+    trigger.eventChainDepth === link.chainIndex &&
+    trigger.eventChainLinkId === link.id &&
+    trigger.eventCardUid === link.sourceUid
+  );
+}
+
 function sameEventCardState(left: DuelEventCardState | undefined, right: DuelEventCardState | undefined): boolean {
   if (left === undefined || right === undefined) return left === right;
   return left.controller === right.controller && left.location === right.location && left.sequence === right.sequence && left.position === right.position && left.faceUp === right.faceUp;
@@ -432,6 +452,11 @@ function sameEventCardState(left: DuelEventCardState | undefined, right: DuelEve
 function sameOptionalStringList(left: string[] | undefined, right: string[] | undefined): boolean {
   if (left === undefined || right === undefined) return left === right;
   return left.length === right.length && left.every((value, index) => value === right[index]);
+}
+
+function relatedEffectIdFromEffectId(effectId: string): number | undefined {
+  const id = Number(effectId.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(id) ? id : undefined;
 }
 
 function luaRelatedEffectId(effect: DuelEffectDefinition): number | undefined {

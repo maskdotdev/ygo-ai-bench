@@ -456,9 +456,10 @@ function createPlayerCheckContext(session: DuelSession): ContinuousEffectContext
 
 function pushPlayerMoveMatcher(L: unknown, fieldName: string, session: DuelSession, location: DuelLocation): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
+    const player = lua.lua_isnumber(state, 1) ? normalizePlayer(lua.lua_tointeger(state, 1)) : session.state.turnPlayer;
     const uids = readCardOrGroupUids(state, 2);
     const reason = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : duelReason.effect;
-    lua.lua_pushboolean(state, uids.length === 0 || uids.every((uid) => canMoveDuelCardToLocation(session.state, uid, location, reason)));
+    lua.lua_pushboolean(state, uids.length === 0 || uids.every((uid) => canMoveDuelCardToLocation(session.state, uid, location, reason, player)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));

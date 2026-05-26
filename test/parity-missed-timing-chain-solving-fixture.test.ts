@@ -89,6 +89,17 @@ describe("EDOPro parity chain-solving missed timing fixture", () => {
               },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{
+              eventName: "chainSolving",
+              eventCode: 1020,
+              eventCardUid: "p0-deck-100-0",
+              eventPlayer: 0,
+              eventValue: 1,
+              eventReasonPlayer: 0,
+              relatedEffectId: 1,
+              eventChainDepth: 1,
+              eventChainLinkId: "fixture-chain-1",
+            }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "chain-solving-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "chain-solving-optional-if", triggerBucket: "turnOptional", count: 1 },

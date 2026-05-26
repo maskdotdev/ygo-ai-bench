@@ -98,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSparrowScript)("Lua real script Red S
         eventName: "battleDestroyed",
         eventCode: 1140,
         eventCardUid: sparrow.uid,
+        eventPlayer: 0,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 1,
         eventReasonCardUid: attacker.uid,

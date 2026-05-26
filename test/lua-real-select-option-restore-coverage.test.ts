@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
+// Restore ownership: "test/lua-real-script-triple-tactics-talent-select-branch.test.ts"
 const upstreamOfficialRoot = path.join(root, ".upstream/ignis/script/official");
 const selectOptionKindCounts = {
   leadingBooleanLiteralOptions: 1,

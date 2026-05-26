@@ -4,14 +4,15 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battledRemovalFixtureCount = 6;
+const battledRemovalFixtureCount = 7;
 const battledRemovalKindCounts = {
   afterDamageBanish: 2,
   battleDestroyRedirect: 1,
   battleDestroyedBackrowDestroy: 1,
-  battleDestroyedMonsterDestroy: 2,
+  battleDestroyedMonsterDestroy: 3,
 } satisfies Record<BattledRemovalKind, number>;
 const battledRemovalSemanticVariantCounts = {
+  bladeBurnerFalconBattleDestroyingDetachCountDestroy: 1,
   ddAssailantAfterDamageBanishBoth: 1,
   divineKnightIshzarkAfterDamageBanishTarget: 1,
   lesserFiendBattleDestroyRedirect: 1,
@@ -26,6 +27,7 @@ type BattledRemovalKind =
   | "battleDestroyedBackrowDestroy"
   | "battleDestroyedMonsterDestroy";
 type BattledRemovalSemanticVariant =
+  | "bladeBurnerFalconBattleDestroyingDetachCountDestroy"
   | "ddAssailantAfterDamageBanishBoth"
   | "divineKnightIshzarkAfterDamageBanishTarget"
   | "lesserFiendBattleDestroyRedirect"
@@ -84,6 +86,31 @@ function battledRemovalFixtureFiles(): Array<{
 }> {
   return ([
     {
+      file: "test/lua-real-script-blade-burner-falcon-battle-destroying-detach-count-destroy.test.ts",
+      kind: "battleDestroyedMonsterDestroy",
+      required: [
+        "expect(restoredBattle.session.state.pendingTriggers).toEqual",
+        'id: "trigger-6-1"',
+        'effectId: "lua-3-1139"',
+        'eventName: "battleDestroyed"',
+        "eventCode: 1140",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "turnOptional"',
+        'type === "activateTrigger"',
+        'eventName: "detachedMaterial"',
+        'eventName: "destroyed"',
+        'eventName: "battleDamageDealt"',
+        "eventPlayer: 1",
+        "eventValue: 500",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: falcon.uid",
+        "eventReasonPlayer: 0",
+        "battleDamage).toEqual({ 0: 0, 1: 500 })",
+        'location: "graveyard"',
+        "reasonCardUid: falcon.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-dd-assailant-battled-remove.test.ts",
       kind: "afterDamageBanish",
       required: [
@@ -136,6 +163,12 @@ function battledRemovalFixtureFiles(): Array<{
       required: [
         'eventName: "battleDestroyed"',
         "pendingTriggers).toEqual([])",
+        "battleDamage).toEqual({ 0: 0, 1: 1100 })",
+        'eventName: "battleDamageDealt"',
+        "eventValue: 1100",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: lesserFiend!.uid",
+        "eventReasonPlayer: 0",
         'eventName: "banished"',
         'location: "banished"',
         "code: 204",
@@ -184,6 +217,23 @@ function battledRemovalSemanticVariants(): Array<{
 }> {
   return ([
     {
+      file: "test/lua-real-script-blade-burner-falcon-battle-destroying-detach-count-destroy.test.ts",
+      kind: "bladeBurnerFalconBattleDestroyingDetachCountDestroy",
+      required: [
+        'const falconCode = "96592102"',
+        "restores battle-destroying detach cost label into exact opponent monster destruction",
+        'eventName: "battleDamageDealt"',
+        "eventValue: 500",
+        "eventReasonCardUid: falcon.uid",
+        "expect(restoredBattle.session.state.pendingTriggers).toEqual",
+        'effectId: "lua-3-1139"',
+        'eventTriggerTiming: "when"',
+        'eventName: "detachedMaterial"',
+        "eventReasonEffectId: 3",
+        "reasonCardUid: falcon.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-dd-assailant-battled-remove.test.ts",
       kind: "ddAssailantAfterDamageBanishBoth",
       required: [
@@ -210,6 +260,8 @@ function battledRemovalSemanticVariants(): Array<{
         'const lesserFiendCode = "16475472"',
         "restores Lesser Fiend and banishes monsters it destroys by battle",
         "restores mutual Lesser Fiend battle destruction and redirects both monsters",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: lesserFiend!.uid",
         "reason: 0x4000021",
       ],
     },
@@ -259,6 +311,7 @@ function countBattledRemovalSemanticVariants(
       return counts;
     },
     {
+      bladeBurnerFalconBattleDestroyingDetachCountDestroy: 0,
       ddAssailantAfterDamageBanishBoth: 0,
       divineKnightIshzarkAfterDamageBanishTarget: 0,
       lesserFiendBattleDestroyRedirect: 0,

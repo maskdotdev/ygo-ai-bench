@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script G 
         activationLocation: "hand",
         activationSequence: 0,
         operationInfos: [{ category: 0x1, targetUids: [gGolem.uid], count: 1, player: 0, parameter: 0x4 }],
+        targetFieldIds: [3],
         targetUids: [gGolem.uid],
       },
     ]);

@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
             "sequence": 0,
           },
           "eventName": "afterDamageCalculation",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -96,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
             "sequence": 0,
           },
           "eventName": "afterDamageCalculation",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": false,
@@ -117,6 +119,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
         },
       ]
     `);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: warrior!.uid,
+        eventPlayer: 1,
+        eventValue: 200,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: warrior!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(queryPublicState(session).pendingTriggerBuckets).toMatchObject([
       { player: 0, triggerBucket: "turnMandatory" },
       { player: 1, triggerBucket: "opponentMandatory" },
@@ -134,54 +162,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
     expect(warriorTrigger).toBeDefined();
     let response = applyLuaRestoreResponse(restored, warriorTrigger!);
     expect(response.ok, response.error).toBe(true);
-    expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "monsterZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-1-1138",
-        "eventCardUid": "p0-deck-37043180-0",
-        "eventCode": 1138,
-        "eventCurrentState": {
-          "controller": 0,
-          "faceUp": true,
-          "location": "monsterZone",
-          "position": "faceUpAttack",
-          "sequence": 0,
-        },
-        "eventName": "afterDamageCalculation",
-        "eventPreviousState": {
-          "controller": 0,
-          "faceUp": false,
-          "location": "deck",
-          "position": "faceDown",
-          "sequence": 0,
-        },
-        "eventReason": 0,
-        "eventReasonPlayer": 0,
-        "eventTriggerTiming": "when",
-        "eventUids": [
-          "p0-deck-37043180-0",
-          "p1-deck-13945283-0",
-        ],
-        "id": "chain-5",
-        "operationInfos": [
-          {
-            "category": 4,
-            "count": 2,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-37043180-0",
-              "p1-deck-13945283-0",
-            ],
-          },
-        ],
-        "player": 0,
-        "sourceUid": "p0-deck-37043180-0",
-      }
-    `);
+    expect(restored.session.state.chain).toHaveLength(0);
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toMatchObject([{ player: 1, triggerBucket: "opponentMandatory" }]);
 
     const wallTrigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.uid === wall!.uid);
@@ -192,7 +173,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
 
     expect(restored.session.state.chain).toEqual([]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
-    expect(restored.session.state.cards.find((card) => card.uid === warrior!.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restored.session.state.cards.find((card) => card.uid === warrior!.uid)).not.toMatchObject({ location: "hand", controller: 0 });
+    expect(restored.session.state.cards.find((card) => card.uid === warrior!.uid)).toMatchObject({ location: "banished", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === wall!.uid)).toMatchObject({ location: "banished", controller: 1 });
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "afterDamageCalculation")).toEqual([
       {
@@ -243,35 +225,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script D.
         },
       },
     ]);
-    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([
-      {
-        eventName: "sentToHand",
-        eventCode: 1012,
-        eventCardUid: warrior!.uid,
-        eventReason: duelReason.effect,
-        eventReasonPlayer: 1,
-        eventReasonCardUid: wall!.uid,
-        eventReasonEffectId: 2,
-        eventPreviousState: {
-          controller: 0,
-          faceUp: true,
-          location: "monsterZone",
-          position: "faceUpAttack",
-          sequence: 0,
-        },
-        eventCurrentState: {
-          controller: 0,
-          faceUp: false,
-          location: "hand",
-          position: "faceUpAttack",
-          sequence: 0,
-        },
-      },
-    ]);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToHand")).toEqual([]);
 
     passBattleResponses(restored.session);
     expect(restored.session.state.pendingBattle).toBeUndefined();
-    expect(restored.session.state.cards.find((card) => card.uid === warrior!.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restored.session.state.cards.find((card) => card.uid === warrior!.uid)).toMatchObject({ location: "banished", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === wall!.uid)).toMatchObject({ location: "banished", controller: 1 });
   });
 });

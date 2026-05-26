@@ -158,6 +158,13 @@ describe("EDOPro parity pre-used-as-material missed timing decline fixture", () 
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "pre-material-decline-optional-if", eventName: "preUsedAsMaterial", eventCode: 1109, eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 8401, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              { eventName: "preUsedAsMaterial", eventCode: 1109, eventCardUid: "p0-deck-600-4", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 8401 },
+              { eventName: "chainSolved" },
+            ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

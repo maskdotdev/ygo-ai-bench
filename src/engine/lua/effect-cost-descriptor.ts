@@ -10,6 +10,7 @@ export function knownLuaEffectCostDescriptor(L: unknown, index: number, hostStat
   const snippet = luaFunctionSourceSnippet(L, index, hostState);
   if (!snippet) return undefined;
   if (releaseGroupCostCanFreeMonsterZone(snippet)) return "cost:release-group-can-free-mzone";
+  if (releaseLinkedGroupNotBattleDestroyedCost(snippet)) return "cost:release-linked-group-not-battle-destroyed";
   const summonTypeParam = luaFunctionParams(snippet)?.[3];
   if (!summonTypeParam) return undefined;
   const comparison = new RegExp(`\\breturn\\s+${escapeRegExp(summonTypeParam)}\\s*(==|~=)\\s*(SUMMON_TYPE_SPECIAL\\s*\\+\\s*${numericOrIdentifierPattern}|${numericOrIdentifierPattern})`);
@@ -19,9 +20,18 @@ export function knownLuaEffectCostDescriptor(L: unknown, index: number, hostStat
   return match?.[1] === "==" ? `cost:special-summon-type-is:${value}` : `cost:special-summon-type-not:${value}`;
 }
 
+function releaseLinkedGroupNotBattleDestroyedCost(snippet: string): boolean {
+  return (
+    /\bGetLinkedGroup\s*\(/.test(snippet) &&
+    /\bDuel\s*\.\s*CheckReleaseGroupCost\s*\(/.test(snippet) &&
+    /\bDuel\s*\.\s*SelectReleaseGroupCost\s*\(/.test(snippet) &&
+    /\bDuel\s*\.\s*Release\s*\([^)]*\bREASON_COST\b/.test(snippet)
+  );
+}
+
 function releaseGroupCostCanFreeMonsterZone(snippet: string): boolean {
   return (
-    /\bDuel\s*\.\s*GetLocationCount\s*\([^)]*\bLOCATION_MZONE\b/.test(snippet) &&
+    (/\bDuel\s*\.\s*GetLocationCount\s*\([^)]*\bLOCATION_MZONE\b/.test(snippet) || /\baux\s*\.\s*ReleaseCheckMMZ\b/.test(snippet)) &&
     /\bDuel\s*\.\s*CheckReleaseGroupCost\s*\(/.test(snippet) &&
     /\bDuel\s*\.\s*SelectReleaseGroupCost\s*\(/.test(snippet) &&
     /\bDuel\s*\.\s*Release\s*\([^)]*\bREASON_COST\b/.test(snippet)

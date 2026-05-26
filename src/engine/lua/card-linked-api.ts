@@ -37,6 +37,7 @@ export function installCardLinkedApi(L: unknown, session: DuelSession): void {
   });
   lua.lua_setfield(L, -2, to_luastring("GetMutualLinkedGroup"));
   pushNumberGetter(L, "GetLinkedGroupCount", session, (card) => (card ? linkedGroupUidsForCard(session, card).length : 0));
+  pushNumberGetter(L, "GetMutualLinkedGroupCount", session, (card) => (card ? mutualLinkedGroupUidsForCard(session, card).length : 0));
 }
 
 function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, getter: (card: DuelCardInstance | undefined) => number): void {

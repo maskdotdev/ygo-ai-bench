@@ -101,6 +101,20 @@ describe.skipIf(!hasUpstreamScripts || !hasScoreScript)("Lua real script Score t
     passRestoredBattleResponses(restoredZeroed);
     expect(restoredZeroed.session.state.battleDamage).toEqual({ 0: 0, 1: 1200 });
     expect(restoredZeroed.session.state.players[1].lifePoints).toBe(6800);
+    expect(restoredZeroed.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker.uid,
+        eventPlayer: 1,
+        eventValue: 1200,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: attacker.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredZeroed.session.state.cards.find((card) => card.uid === attacker.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredZeroed.session.state.cards.find((card) => card.uid === defender.uid)).toMatchObject({ location: "graveyard", controller: 1 });
   });

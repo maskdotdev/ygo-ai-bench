@@ -62,13 +62,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
     applyRestoredAction(restoredOpen, activation!);
     expect(restoredOpen.session.state.chain).toEqual([]);
     expect(restoredOpen.session.state.cards.find((card) => card.uid === delayedTarget.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
-    expect(restoredOpen.session.state.effects.filter((effect) => effect.event === "continuous" && effect.triggerEvent === "phaseEnd" && effect.sourceUid === engraver.uid)).toHaveLength(1);
+    expect(restoredOpen.session.state.effects.filter((effect) => effect.event === "continuous" && effect.code === 0x1200 && effect.sourceUid === engraver.uid)).toHaveLength(1);
     expect(restoredOpen.session.state.flagEffects).toContainEqual(expect.objectContaining({ ownerType: "card", ownerId: delayedTarget.uid, code: Number(engraverCode) }));
 
     const restoredWatcher = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), workspace, reader);
     expectCleanRestore(restoredWatcher);
     expectRestoredLegalActions(restoredWatcher, 0);
-    expect(restoredWatcher.session.state.effects.filter((effect) => effect.event === "continuous" && effect.triggerEvent === "phaseEnd" && effect.sourceUid === engraver.uid)).toEqual([
+    expect(restoredWatcher.session.state.effects.filter((effect) => effect.event === "continuous" && effect.code === 0x1200 && effect.sourceUid === engraver.uid)).toEqual([
       expect.objectContaining({ reset: { flags: 1073742336, count: 3 } }),
     ]);
 
@@ -95,7 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script En
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
       },
     ]);
-    expect(restoredNextEnd.session.state.effects.some((effect) => effect.event === "continuous" && effect.triggerEvent === "phaseEnd" && effect.sourceUid === engraver.uid)).toBe(false);
+    expect(restoredNextEnd.session.state.effects.some((effect) => effect.event === "continuous" && effect.code === 0x1200 && effect.sourceUid === engraver.uid)).toBe(false);
   });
 });
 

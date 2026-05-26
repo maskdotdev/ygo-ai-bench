@@ -96,6 +96,22 @@ describe.skipIf(!hasUpstreamScripts || !hasDarkRulerScript)("Lua real script Arc
     passRestoredChain(restoredTrigger);
 
     expect(restoredTrigger.session.state.lastCoinResults).toEqual([1]);
+    expect(restoredTrigger.session.state.eventHistory.filter((event) =>
+      event.eventName === "specialSummoned" || event.eventName === "coinTossed"
+    ).map((event) => ({
+      eventName: event.eventName,
+      eventCode: event.eventCode,
+      eventCardUid: event.eventCardUid,
+      eventPlayer: event.eventPlayer,
+      eventReason: event.eventReason,
+      eventReasonCardUid: event.eventReasonCardUid,
+      eventReasonEffectId: event.eventReasonEffectId,
+      eventReasonPlayer: event.eventReasonPlayer,
+      eventValue: event.eventValue,
+    }))).toEqual([
+      { eventName: "specialSummoned", eventCode: 1102, eventCardUid: darkRuler.uid, eventPlayer: undefined, eventReason: 2064, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventValue: undefined },
+      { eventName: "coinTossed", eventCode: 1151, eventCardUid: undefined, eventPlayer: 0, eventReason: 64, eventReasonCardUid: darkRuler.uid, eventReasonEffectId: 4, eventReasonPlayer: 0, eventValue: 1 },
+    ]);
     expect(restoredTrigger.session.state.effects.filter((effect) => effect.sourceUid === darkRuler.uid && [effectExtraAttack, 4224, 1019].includes(effect.code ?? 0)).map((effect) => ({
       code: effect.code,
       event: effect.event,

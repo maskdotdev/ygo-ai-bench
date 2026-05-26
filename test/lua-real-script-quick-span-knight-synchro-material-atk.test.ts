@@ -104,12 +104,20 @@ describe.skipIf(!hasUpstreamScripts || !hasQuickSpanScript)("Lua real script Qui
         eventCardUid: quickSpan.uid,
       },
     ]);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-4-1",
+        effectId: "lua-1-1108",
         eventCardUid: quickSpan.uid,
+        eventCode: eventBeMaterial,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventName: "usedAsMaterial",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.synchro,
         eventReasonCardUid: synchro.uid,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         player: 0,
         sourceUid: quickSpan.uid,
         triggerBucket: "turnMandatory",

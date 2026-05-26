@@ -14,7 +14,8 @@ function main(argv) {
     return 0;
   }
 
-  const rows = options.roots.flatMap((root) => scanRoot(path.resolve(root), options.limit));
+  const baseline = options.baseline === undefined ? new Map() : readBaseline(options.baseline);
+  const rows = options.roots.flatMap((root) => scanRoot(path.resolve(root), options.limit, baseline));
   rows.sort((a, b) => b.lines - a.lines || a.file.localeCompare(b.file));
 
   if (rows.length === 0) {
@@ -28,17 +29,27 @@ function main(argv) {
 }
 
 function parseArgs(argv) {
-  const options = { roots: [], limit: defaultLimit, help: false };
+  const options = { roots: [], limit: defaultLimit, baseline: undefined, help: false };
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
     if (arg === "--help" || arg === "-h") options.help = true;
     else if (arg === "--limit") options.limit = Number(requireOptionValue(argv, ++index, arg));
+    else if (arg === "--baseline") options.baseline = requireOptionValue(argv, ++index, arg);
     else if (arg === "--root") options.roots.push(requireOptionValue(argv, ++index, arg));
     else options.roots.push(arg);
   }
   if (options.roots.length === 0) options.roots = [...defaultRoots];
   options.limit = Number.isFinite(options.limit) && options.limit > 0 ? Math.floor(options.limit) : defaultLimit;
   return options;
+}
+
+function readBaseline(file) {
+  const raw = JSON.parse(fs.readFileSync(file, "utf8"));
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("--baseline must point to an object JSON file");
+  return new Map(Object.entries(raw).map(([key, value]) => {
+    if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`Baseline line count for ${key} must be a positive integer`);
+    return [path.normalize(key), value];
+  }));
 }
 
 function requireOptionValue(argv, index, option) {
@@ -51,22 +62,23 @@ function printHelp() {
   console.log(`Usage: node tools/check-file-loc.mjs [roots...] [options]
 
 Options:
-  --root <path>      Directory or file to check. May be repeated.
-  --limit <lines>    Maximum allowed lines per file. Default: ${defaultLimit}
+  --root <path>          Directory or file to check. May be repeated.
+  --limit <lines>        Maximum allowed lines per file. Default: ${defaultLimit}
+  --baseline <json>      Existing oversized files mapped to maximum current nonblank line counts.
 `);
 }
 
-function scanRoot(root, limit) {
+function scanRoot(root, limit, baseline) {
   if (!fs.existsSync(root)) return [];
   const stat = fs.statSync(root);
-  if (stat.isFile()) return shouldCheck(root) ? overLimit(root, limit) : [];
+  if (stat.isFile()) return shouldCheck(root) ? overLimit(root, limit, baseline) : [];
   if (!stat.isDirectory()) return [];
 
   const rows = [];
   for (const entry of fs.readdirSync(root, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
     const fullPath = path.join(root, entry.name);
-    if (entry.isDirectory()) rows.push(...scanRoot(fullPath, limit));
-    else if (entry.isFile() && shouldCheck(fullPath)) rows.push(...overLimit(fullPath, limit));
+    if (entry.isDirectory()) rows.push(...scanRoot(fullPath, limit, baseline));
+    else if (entry.isFile() && shouldCheck(fullPath)) rows.push(...overLimit(fullPath, limit, baseline));
   }
   return rows;
 }
@@ -75,9 +87,11 @@ function shouldCheck(file) {
   return checkedExtensions.has(path.extname(file));
 }
 
-function overLimit(file, limit) {
+function overLimit(file, limit, baseline) {
   const lines = countLines(fs.readFileSync(file, "utf8"));
-  return lines > limit ? [{ file, lines }] : [];
+  const relative = path.normalize(path.relative(process.cwd(), file));
+  const allowed = Math.max(limit, baseline.get(relative) ?? 0);
+  return lines > allowed ? [{ file, lines }] : [];
 }
 
 function countLines(text) {

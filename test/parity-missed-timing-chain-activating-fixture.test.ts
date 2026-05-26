@@ -82,6 +82,16 @@ describe("EDOPro parity chain-activating missed timing fixture", () => {
               eventTriggerTiming: "if",
             }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{
+              eventName: "chainActivating",
+              eventCode: 1021,
+              eventCardUid: "p0-deck-100-0",
+              eventReason: 1024,
+              eventReasonPlayer: 0,
+              relatedEffectId: 1,
+              eventPreviousState: { controller: 0, location: "deck", sequence: 2, position: "faceDown", faceUp: false },
+              eventCurrentState: { controller: 0, location: "hand", sequence: 2, position: "faceDown", faceUp: false },
+            }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "chain-activating-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "chain-activating-optional-if", triggerBucket: "turnOptional", count: 1 },

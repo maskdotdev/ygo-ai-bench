@@ -111,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pu
           sequence: 0,
         },
         eventName: "battleDestroyed",
+        eventPlayer: 0,
         eventPreviousState: {
           controller: 0,
           faceUp: true,
@@ -144,7 +145,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pu
       triggerBucket: "turnMandatory",
       windowId: 13,
       windowKind: "triggerBucket",
-      windowToken: "window-g",
+      windowToken: trigger!.windowToken,
     });
     applyLuaRestoreAndAssert(restoredTrigger, trigger!);
     expect(restoredTrigger.session.state.chain).toEqual([]);

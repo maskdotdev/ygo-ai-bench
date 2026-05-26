@@ -91,6 +91,17 @@ describe("EDOPro parity chain-ended missed timing fixture", () => {
               },
             ],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{
+              eventName: "chainEnded",
+              eventCode: 1026,
+              eventCardUid: "p0-deck-100-0",
+              eventPlayer: 0,
+              eventValue: 1,
+              eventReasonPlayer: 0,
+              relatedEffectId: 1,
+              eventChainDepth: 1,
+              eventChainLinkId: "fixture-chain-1",
+            }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "chain-ended-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "chain-ended-optional-if", triggerBucket: "turnOptional", count: 1 },

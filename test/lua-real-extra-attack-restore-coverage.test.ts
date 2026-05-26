@@ -4,28 +4,32 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const EXTRA_ATTACK_FIXTURE_COUNT = 12;
+const EXTRA_ATTACK_FIXTURE_COUNT = 16;
 const extraAttackKindCounts = {
   attackAll: 2,
   chainAttack: 3,
   chainFlagExtraAttack: 1,
-  extraAttack: 3,
-  monsterOnlyExtraAttack: 2,
+  extraAttack: 6,
+  monsterOnlyExtraAttack: 3,
   overlayCountMonsterExtraAttack: 1,
 } satisfies Record<ExtraAttackKind, number>;
 const extraAttackSemanticVariantCounts = {
   alienHunterBattleDestroyChainAttack: 1,
   ashuraKingOverlayCountExtraAttack: 1,
   asuraPriestSpiritAttackAllMonsters: 1,
+  borrelswordPositionExtraAttackStat: 1,
   comboMasterChainFlagExtraAttack: 1,
+  doubleOrNothingAttackDisabledExtraFinalStat: 1,
   elementDoomAttributeGatedChainAttack: 1,
   ghostBirdSequenceGatedMonsterOnlyExtraAttack: 1,
   hexeTrudeDestroyGrantMonsterOnlyExtraAttack: 1,
   hayabusaKnightStaticSecondDirectAttack: 1,
+  hiSpeedroidChanbaraExtraBattleStatToHand: 1,
   juggernautLiebeOverlayCountMonsterExtraAttack: 1,
   machineLordUrAttackAllNoDirectAttack: 1,
   matazaControlLockStaticExtraAttack: 1,
   nitroWarriorPositionChangedChainAttack: 1,
+  shootingcodeTalkerLinkedBattleStartMonsterOnlyExtraAttack: 1,
 } satisfies Record<ExtraAttackSemanticVariant, number>;
 
 type ExtraAttackKind = "attackAll" | "chainAttack" | "chainFlagExtraAttack" | "extraAttack" | "monsterOnlyExtraAttack" | "overlayCountMonsterExtraAttack";
@@ -33,15 +37,19 @@ type ExtraAttackSemanticVariant =
   | "alienHunterBattleDestroyChainAttack"
   | "ashuraKingOverlayCountExtraAttack"
   | "asuraPriestSpiritAttackAllMonsters"
+  | "borrelswordPositionExtraAttackStat"
   | "comboMasterChainFlagExtraAttack"
+  | "doubleOrNothingAttackDisabledExtraFinalStat"
   | "elementDoomAttributeGatedChainAttack"
   | "ghostBirdSequenceGatedMonsterOnlyExtraAttack"
   | "hexeTrudeDestroyGrantMonsterOnlyExtraAttack"
   | "hayabusaKnightStaticSecondDirectAttack"
+  | "hiSpeedroidChanbaraExtraBattleStatToHand"
   | "juggernautLiebeOverlayCountMonsterExtraAttack"
   | "machineLordUrAttackAllNoDirectAttack"
   | "matazaControlLockStaticExtraAttack"
-  | "nitroWarriorPositionChangedChainAttack";
+  | "nitroWarriorPositionChangedChainAttack"
+  | "shootingcodeTalkerLinkedBattleStartMonsterOnlyExtraAttack";
 
 describe("Lua real extra attack restore coverage", () => {
   it("requires representative multi-attack fixtures to assert clean Lua restore and replayed legal attacks", () => {
@@ -139,8 +147,51 @@ function realScriptExtraAttackFixtureFiles(): Array<{
         'const ashuraCode = "80993256"',
         "e1:SetCode(EFFECT_EXTRA_ATTACK)",
         "return math.max(0,oc-1)",
+        'eventTriggerTiming: "when"',
+        'eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 }',
         "hasDirectAttack(secondActions, ashura.uid)).toBe(false)",
         "secondAttack",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hi-speedroid-chanbara-extra-battle-stat-tohand.test.ts",
+      kind: "extraAttack",
+      required: [
+        'const chanbaraCode = "42110604"',
+        "restores static extra attack, mandatory battle-start ATK gain, and delayed Speedroid banished recovery",
+        "EFFECT_EXTRA_ATTACK",
+        "EVENT_BATTLE_START",
+        "secondActions.some((action) => action.type === \"declareAttack\" && action.attackerUid === chanbara.uid && action.targetUid === secondTarget.uid)).toBe(true)",
+        "secondActions.some((action) => action.type === \"declareAttack\" && action.attackerUid === chanbara.uid && action.directAttack === true)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-borrelsword-position-extra-attack-stat.test.ts",
+      kind: "extraAttack",
+      required: [
+        'const borrelswordCode = "85289965"',
+        "Duel.SetChainLimit(s.chlimit)",
+        "e2:SetCode(EFFECT_EXTRA_ATTACK)",
+        "code: 194",
+        "declareAttack",
+        "currentAttack(restoredStat.session.state.cards.find((card) => card.uid === borrelsword.uid), restoredStat.session.state)).toBe(4251)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-double-or-nothing-attack-disabled-extra-final-stat.test.ts",
+      kind: "extraAttack",
+      required: [
+        'const doubleOrNothingCode = "94770493"',
+        "restores attack-disabled activation into extra attack and battle-start final ATK doubling",
+        "e1:SetCode(EVENT_ATTACK_DISABLED)",
+        "Duel.SetTargetCard(eg:GetFirst())",
+        "tc:RegisterFlagEffect(id,RESETS_STANDARD_PHASE_END,0,1)",
+        "e1:SetCode(EFFECT_EXTRA_ATTACK)",
+        "e1:SetValue(tc:GetAttackAnnouncedCount())",
+        "e2:SetCode(EVENT_BATTLE_START)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "secondAttack",
+        "battleDamage).toEqual({ 0: 0, 1: 2200 })",
       ],
     },
     {
@@ -192,6 +243,8 @@ function realScriptExtraAttackFixtureFiles(): Array<{
         "return math.max(0,oc)",
         "hasAttack(secondActions, liebe.uid, secondTarget.uid)).toBe(true)",
         "hasDirectAttack(battleActions, liebe.uid)).toBe(false)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: liebe.uid",
       ],
     },
     {
@@ -210,6 +263,26 @@ function realScriptExtraAttackFixtureFiles(): Array<{
         "effectId.endsWith(\"-1138\")",
         "targetUid: followupTarget!.uid",
         "battleDamage).toMatchObject({ 1: 1800 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 1800",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: nitro!.uid",
+        "eventReasonPlayer: 0",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shootingcode-talker-battle-extra-draw.test.ts",
+      kind: "monsterOnlyExtraAttack",
+      required: [
+        'const shootingcodeCode = "33897356"',
+        "restores linked Battle Start extra attack, damage-calculation ATK loss, battle-destroying flag, and Battle Phase draw",
+        "e1:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
+        "e:GetHandler():GetLinkedGroupCount()>0",
+        "eventName: \"phaseBattle\"",
+        "code: 346",
+        "value: 1",
+        "eventName: \"battleDestroyed\"",
+        "eventName: \"cardsDrawn\"",
       ],
     },
   ] satisfies Array<{
@@ -280,7 +353,21 @@ function extraAttackSemanticVariants(): Array<{
         'const ashuraCode = "80993256"',
         "restores overlay-count extra attacks and mandatory battle-start ATK stacking",
         "EFFECT_EXTRA_ATTACK",
+        'eventTriggerTiming: "when"',
+        'eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 }',
         "hasDirectAttack(secondActions, ashura.uid)).toBe(false)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-borrelsword-position-extra-attack-stat.test.ts",
+      kind: "borrelswordPositionExtraAttackStat",
+      required: [
+        'const borrelswordCode = "85289965"',
+        "restores target position chain-limit, extra attack grant, and attack-announcement ATK steal",
+        "Duel.ChangePosition(tc,POS_FACEUP_DEFENSE,POS_FACEDOWN_DEFENSE)",
+        "code: 194",
+        "eventName: \"attackDeclared\"",
+        "value: 1251",
       ],
     },
     {
@@ -325,6 +412,17 @@ function extraAttackSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-hi-speedroid-chanbara-extra-battle-stat-tohand.test.ts",
+      kind: "hiSpeedroidChanbaraExtraBattleStatToHand",
+      required: [
+        'const chanbaraCode = "42110604"',
+        "restores static extra attack, mandatory battle-start ATK gain, and delayed Speedroid banished recovery",
+        "EFFECT_EXTRA_ATTACK",
+        "eventName: \"battleStarted\"",
+        "battleDamage).toEqual({ 0: 0, 1: 1200 })",
+      ],
+    },
+    {
       file: "test/lua-real-script-machine-lord-ur-attack-all.test.ts",
       kind: "machineLordUrAttackAllNoDirectAttack",
       required: [
@@ -342,6 +440,8 @@ function extraAttackSemanticVariants(): Array<{
         "restores detach-cost self stat boost, other-monster attack lock, and overlay-count extra monster attack",
         "e2:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)",
         "hasAttack(secondActions, liebe.uid, secondTarget.uid)).toBe(true)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: liebe.uid",
       ],
     },
     {
@@ -362,6 +462,35 @@ function extraAttackSemanticVariants(): Array<{
         "restores its battled trigger and chain-attacks the selected position-changed monster",
         'effectId.endsWith("-1138")',
         "battleDamage).toMatchObject({ 1: 1800 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: nitro!.uid",
+      ],
+    },
+    {
+      file: "test/lua-real-script-shootingcode-talker-battle-extra-draw.test.ts",
+      kind: "shootingcodeTalkerLinkedBattleStartMonsterOnlyExtraAttack",
+      required: [
+        'const shootingcodeCode = "33897356"',
+        "restores linked Battle Start extra attack, damage-calculation ATK loss, battle-destroying flag, and Battle Phase draw",
+        "EFFECT_EXTRA_ATTACK_MONSTER",
+        "GetLinkedGroupCount()>0",
+        "currentAttack(restoredBattleStart.session.state.cards.find",
+        "eventReasonEffectId: 3",
+      ],
+    },
+    {
+      file: "test/lua-real-script-double-or-nothing-attack-disabled-extra-final-stat.test.ts",
+      kind: "doubleOrNothingAttackDisabledExtraFinalStat",
+      required: [
+        'const doubleOrNothingCode = "94770493"',
+        "restores attack-disabled activation into extra attack and battle-start final ATK doubling",
+        "EVENT_ATTACK_DISABLED",
+        "EFFECT_EXTRA_ATTACK",
+        "EVENT_BATTLE_START",
+        "EFFECT_SET_ATTACK_FINAL",
+        "secondAttack",
+        "toBe(3600)",
+        "battleDamage).toEqual({ 0: 0, 1: 2200 })",
       ],
     },
   ] satisfies Array<{
@@ -383,15 +512,19 @@ function countExtraAttackSemanticVariants(
       alienHunterBattleDestroyChainAttack: 0,
       ashuraKingOverlayCountExtraAttack: 0,
       asuraPriestSpiritAttackAllMonsters: 0,
+      borrelswordPositionExtraAttackStat: 0,
       comboMasterChainFlagExtraAttack: 0,
+      doubleOrNothingAttackDisabledExtraFinalStat: 0,
       elementDoomAttributeGatedChainAttack: 0,
       ghostBirdSequenceGatedMonsterOnlyExtraAttack: 0,
       hexeTrudeDestroyGrantMonsterOnlyExtraAttack: 0,
       hayabusaKnightStaticSecondDirectAttack: 0,
+      hiSpeedroidChanbaraExtraBattleStatToHand: 0,
       juggernautLiebeOverlayCountMonsterExtraAttack: 0,
       machineLordUrAttackAllNoDirectAttack: 0,
       matazaControlLockStaticExtraAttack: 0,
       nitroWarriorPositionChangedChainAttack: 0,
+      shootingcodeTalkerLinkedBattleStartMonsterOnlyExtraAttack: 0,
     },
   );
 }

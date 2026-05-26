@@ -26,6 +26,7 @@ export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardIns
     if (fusionRepeatedMaterials.race !== undefined) card.data.fusionMaterialRace = fusionRepeatedMaterials.race;
     if (fusionRepeatedMaterials.type !== undefined) card.data.fusionMaterialType = fusionRepeatedMaterials.type;
     if (fusionRepeatedMaterials.setcode !== undefined) card.data.fusionMaterialSetcode = fusionRepeatedMaterials.setcode;
+    if (fusionRepeatedMaterials.setcodes !== undefined) card.data.fusionMaterialSetcodes = fusionRepeatedMaterials.setcodes;
     if (fusionRepeatedMaterials.location !== undefined) card.data.fusionMaterialLocation = fusionRepeatedMaterials.location;
     if (fusionRepeatedMaterials.attackMax !== undefined) card.data.fusionMaterialAttackMax = fusionRepeatedMaterials.attackMax;
     if (fusionRepeatedMaterials.attackMin !== undefined) card.data.fusionMaterialAttackMin = fusionRepeatedMaterials.attackMin;
@@ -219,14 +220,27 @@ function readFusionPredicateRequirementFromLuaBody(body: string | undefined): Fu
   return Object.keys(predicate).length > 0 ? predicate : undefined;
 }
 
-type FusionRepeatedMaterialMetadata = { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; attackMax?: number; attackMin?: number; attribute?: number; excludedType?: number; level?: number; levelMax?: number; levelMin?: number; race?: number; type?: number; setcode?: number; location?: number };
+type FusionRepeatedMaterialMetadata = { min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; attackMax?: number; attackMin?: number; attribute?: number; excludedType?: number; level?: number; levelMax?: number; levelMin?: number; race?: number; type?: number; setcode?: number; setcodes?: number[]; location?: number };
 
 function readFusionAddProcMixRepMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
   return readFusionAddProcMixRepNamedFilterMaterials(source)
+    ?? readFusionAddProcMixRepSetcodeTableFilter(source)
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsRace", RACE_CONSTANT_EXPRESSION, "race")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsType", TYPE_CONSTANT_EXPRESSION, "type")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsSetCard", SET_CONSTANT_EXPRESSION, "setcode")
     ?? readFusionAddProcMixRepConstantFilter(source, "Card.IsLocation", LOCATION_CONSTANT_EXPRESSION, "location");
+}
+
+function readFusionAddProcMixRepSetcodeTableFilter(source: string | undefined): ({ min: number; max: number; extraCodes: number[]; extraSetcodes: number[]; setcodes: number[] }) | undefined {
+  const setcodeListExpression = String.raw`${SET_CONSTANT_EXPRESSION}(?:\s*,\s*${SET_CONSTANT_EXPRESSION})*`;
+  const match = source?.match(new RegExp(String.raw`Fusion\.AddProcMixRep\(\s*c\s*,\s*(?:true|false)\s*,\s*(?:true|false)\s*,\s*aux\.FilterBoolFunction(?:Ex)?\(\s*Card\.IsSetCard\s*,\s*\{\s*(${setcodeListExpression})\s*\}\s*\)\s*,\s*(\d+)\s*,\s*(\d+)([^\n]*)\)`));
+  const setcodes = readLuaConstantListExpression(match?.[1]);
+  const min = match?.[2] === undefined ? undefined : Number.parseInt(match[2], 10);
+  const max = match?.[3] === undefined ? undefined : Number.parseInt(match[3], 10);
+  const extraCodes = readLuaCodeList(match?.[4]);
+  const extraSetcodes = readLuaSetcodeFilterList(match?.[4]);
+  if (setcodes.length === 0 || min === undefined || max === undefined || min <= 0 || max < min) return undefined;
+  return { min, max, extraCodes, extraSetcodes, setcodes };
 }
 
 function readFusionAddProcFunRepMaterials(source: string | undefined): FusionRepeatedMaterialMetadata | undefined {
@@ -538,6 +552,13 @@ function readLuaConstantExpression(expression: string | undefined): number | und
     value |= numeric;
   }
   return value;
+}
+
+function readLuaConstantListExpression(expression: string | undefined): number[] {
+  if (!expression) return [];
+  return expression.split(",")
+    .map((part) => readLuaConstantExpression(part.trim()))
+    .filter((value): value is number => value !== undefined);
 }
 
 function readLuaCodeList(source: string | undefined): number[] {

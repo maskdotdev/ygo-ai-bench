@@ -91,11 +91,19 @@ describe.skipIf(!hasUpstreamScripts || !hasWingmanScript)("Lua real script Favor
     expectCleanRestore(restoredOpen);
     expectRestoredLegalActions(restoredOpen, 0);
     specialSummonDuelCard(restoredOpen.session.state, wingman.uid, 0, 0, {}, luaSummonTypeFusion, true, true);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-2-1102",
         eventCardUid: wingman.uid,
         eventCode: 1102,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "specialSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
         player: 0,
         sourceUid: wingman.uid,
         triggerBucket: "turnOptional",

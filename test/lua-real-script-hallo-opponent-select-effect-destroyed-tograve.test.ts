@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Hallo opponent SelectEffec
         triggerBucket: "turnOptional",
         eventName: "normalSummoned",
         eventCode: 1100,
+        eventPlayer: 0,
         eventCardUid: hallo.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,
@@ -137,6 +138,7 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Hallo opponent SelectEffec
         triggerBucket: "turnOptional",
         eventName: "destroyed",
         eventCode: 1029,
+        eventPlayer: 0,
         eventCardUid: hallo.uid,
         eventReason: duelReason.effect | duelReason.destroy,
         eventReasonCardUid: opponentMonster.uid,
@@ -180,6 +182,87 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Hallo opponent SelectEffec
         eventCurrentState: { controller: 1, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
       },
     ]);
+  });
+
+  it("restores opponent-chosen summon damage branch into Fiend-count effect damage", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const script = workspace.readScript(`official/c${halloCode}.lua`);
+    expect(script).toContain("Duel.GetMatchingGroupCount(Card.IsRace,tp,LOCATION_GRAVE,0,nil,RACE_FIEND)");
+    expect(script).toContain("Duel.SelectEffect(1-tp,");
+    expect(script).toContain("Duel.Damage(1-tp,ct*500,REASON_EFFECT)");
+
+    const cards: DuelCardData[] = [
+      { code: halloCode, name: "Hallo, the Spirit of Tricks", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceFiend, level: 4, attack: 1000, defense: 1000 },
+      { code: fiendACode, name: "Hallo Fiend A", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceFiend, level: 4, attack: 1000, defense: 1000 },
+      { code: fiendBCode, name: "Hallo Fiend B", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceFiend, level: 4, attack: 1100, defense: 1000 },
+      { code: warriorCode, name: "Hallo Warrior Decoy", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceWarrior, level: 4, attack: 1200, defense: 1000 },
+      { code: opponentMonsterCode, name: "Hallo Opponent Monster", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceWarrior, level: 4, attack: 1300, defense: 1000 },
+    ];
+    const reader = createCardReader(cards);
+    const session = createDuel({ seed: 54611592, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+    loadDecks(session, { 0: { main: [halloCode, fiendACode, fiendBCode, warriorCode] }, 1: { main: [opponentMonsterCode] } });
+    startDuel(session);
+
+    const hallo = requireCard(session, halloCode);
+    const fiendA = requireCard(session, fiendACode);
+    const fiendB = requireCard(session, fiendBCode);
+    const warrior = requireCard(session, warriorCode);
+    const opponentMonster = requireCard(session, opponentMonsterCode);
+    moveDuelCard(session.state, hallo.uid, "hand", 0);
+    moveDuelCard(session.state, fiendA.uid, "graveyard", 0);
+    moveDuelCard(session.state, fiendB.uid, "graveyard", 0);
+    moveDuelCard(session.state, warrior.uid, "graveyard", 0);
+    moveDuelCard(session.state, opponentMonster.uid, "monsterZone", 1);
+    opponentMonster.position = "faceUpAttack";
+    opponentMonster.faceUp = true;
+    opponentMonster.reason = duelReason.summon;
+    opponentMonster.reasonPlayer = 1;
+    session.state.phase = "main1";
+    session.state.turnPlayer = 0;
+    session.state.waitingFor = 0;
+
+    const host = createLuaScriptHost(session, workspace);
+    expect(host.loadCardScript(Number(halloCode), workspace).ok).toBe(true);
+    expect(host.registerInitialEffects()).toBe(1);
+
+    const summon = getLegalActions(session, 0).find((action) => action.type === "normalSummon" && action.uid === hallo.uid);
+    expect(summon, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
+    applyAndAssert(session, summon!);
+
+    const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader, {
+      promptOverrides: [{ api: "SelectEffect", player: 1, returned: 2 }],
+    });
+    expectCleanRestore(restoredTriggerWindow);
+    expectRestoredLegalActions(restoredTriggerWindow, 0);
+
+    const damageTrigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === hallo.uid);
+    expect(damageTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
+    expect(("operationInfos" in damageTrigger! ? damageTrigger!.operationInfos : []) ?? []).toEqual([]);
+    applyLuaRestoreAndAssert(restoredTriggerWindow, damageTrigger!);
+    expect(restoredTriggerWindow.host.promptDecisions).toEqual([
+      { id: "lua-prompt-1", api: "SelectEffect", player: 1, options: [1, 2], descriptions: [873785458, 873785459], returned: 2 },
+    ]);
+
+    const restoredDamageResolved = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), workspace, reader);
+    expectCleanRestore(restoredDamageResolved);
+    expectRestoredLegalActions(restoredDamageResolved, 0);
+    const restoredHallo = restoredDamageResolved.session.state.cards.find((card) => card.uid === hallo.uid);
+    expect(restoredHallo).toMatchObject({ location: "monsterZone", controller: 0, faceUp: true });
+    expect(currentAttack(restoredHallo, restoredDamageResolved.session.state)).toBe(hallo.data.attack ?? 0);
+    expect(restoredDamageResolved.session.state.players[1].lifePoints).toBe(7000);
+    expect(restoredDamageResolved.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.effect,
+        eventReasonCardUid: hallo.uid,
+        eventReasonEffectId: 1,
+        eventReasonPlayer: 0,
+      },
+    ]);
+    expect(restoredDamageResolved.host.promptDecisions).toEqual([]);
   });
 });
 

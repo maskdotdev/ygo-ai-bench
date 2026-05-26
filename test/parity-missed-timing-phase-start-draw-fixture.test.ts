@@ -45,7 +45,7 @@ describe("EDOPro parity phase-start-draw missed timing fixture", () => {
             logMessage: "Phase-start-draw optional if resolved",
           },
         ],
-        collectEvents: [{ collectEvent: "phaseStartDraw", eventCode: 0x2001, eventIsLast: false }],
+        collectEvents: [{ collectEvent: "phaseStartDraw", eventCode: 0x2001, eventPlayer: 0, eventIsLast: false }],
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "phase-start-draw-optional-if" }), {
@@ -56,8 +56,9 @@ describe("EDOPro parity phase-start-draw missed timing fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-start-draw-optional-if", eventName: "phaseStartDraw", eventCode: 0x2001, eventTriggerTiming: "if" }],
+            pendingTriggers: [{ player: 0, effectId: "phase-start-draw-optional-if", eventName: "phaseStartDraw", eventCode: 0x2001, eventPlayer: 0, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{ eventName: "phaseStartDraw", eventCode: 0x2001, eventPlayer: 0 }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-draw-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-draw-optional-if", triggerBucket: "turnOptional", count: 1 },

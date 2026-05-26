@@ -106,6 +106,13 @@ describe("EDOPro parity banished missed timing fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "banish-optional-if", eventName: "banished", eventCode: 1011, eventCardUid: "p0-deck-600-3", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 6301, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              { eventName: "banished", eventCode: 1011, eventCardUid: "p0-deck-600-3", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 6301 },
+              { eventName: "chainSolved" },
+            ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

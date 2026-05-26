@@ -110,6 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStaurikoScript)("Lua real script Jurr
         triggerBucket: "opponentMandatory",
         eventName: "battleDestroyed",
         eventCode: 1140,
+        eventPlayer: 0,
         eventCardUid: stauriko.uid,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 1,

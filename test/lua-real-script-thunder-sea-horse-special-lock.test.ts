@@ -70,7 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Th
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
+        "activationLocation": "hand",
         "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-1",

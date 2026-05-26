@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -93,10 +94,21 @@ describe.skipIf(!hasUpstreamScripts || !hasAshuraScript)("Lua real script Ashura
     expect(firstAttack, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, firstAttack!);
     passUntilBattleStarted(restoredOpen);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        effectId: "lua-3-1132",
         eventCardUid: ashura.uid,
+        eventCode: 1132,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleStarted",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [ashura.uid, firstTarget.uid],
+        id: "trigger-3-1",
+        player: 0,
         sourceUid: ashura.uid,
         triggerBucket: "turnMandatory",
       },
@@ -122,6 +134,20 @@ describe.skipIf(!hasUpstreamScripts || !hasAshuraScript)("Lua real script Ashura
     finishBattle(restoredTrigger);
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === firstTarget.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 1300 });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: ashura.uid,
+        eventPlayer: 1,
+        eventValue: 1300,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: ashura.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
 
     const restoredSecondAttack = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), workspace, reader);
     expectCleanRestore(restoredSecondAttack);

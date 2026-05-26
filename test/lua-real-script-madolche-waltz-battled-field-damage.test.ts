@@ -83,6 +83,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
     expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
     expect(session.state.battleDamage).toEqual({ 0: 0, 1: 500 });
     expect(session.state.players[1].lifePoints).toBe(7500);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker!.uid,
+        eventPlayer: 1,
+        eventValue: 500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: attacker!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(session.state.pendingTriggers).toEqual([
       {
         effectId: "lua-2-1138",
@@ -96,6 +122,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
           sequence: 0,
         },
         eventName: "afterDamageCalculation",
+        eventPlayer: 0,
         eventPreviousState: {
           controller: 0,
           faceUp: false,
@@ -135,6 +162,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
       eventCardUid: attacker!.uid,
       eventName: "afterDamageCalculation",
       eventCode: 1138,
+      eventPlayer: 0,
       eventCurrentState: {
         controller: 0,
         faceUp: true,

@@ -85,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTestApeScript)("Lua real script Test 
         sourceUid: testApe.uid,
         triggerBucket: "opponentOptional",
         eventName: "battleDestroyed",
+        eventPlayer: 0,
         eventCode: 1140,
         eventCardUid: testApe.uid,
         eventReason: duelReason.battle | duelReason.destroy,

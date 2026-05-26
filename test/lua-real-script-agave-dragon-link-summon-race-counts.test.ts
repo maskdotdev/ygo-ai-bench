@@ -92,11 +92,19 @@ describe.skipIf(!hasUpstreamScripts || !hasAgaveScript)("Lua real script Agave D
       reason: duelReason.summon | duelReason.specialSummon,
       reasonPlayer: 0,
     });
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-2-1102",
         eventCardUid: agave.uid,
         eventCode: 1102,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "specialSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
         player: 0,
         sourceUid: agave.uid,
         triggerBucket: "turnOptional",

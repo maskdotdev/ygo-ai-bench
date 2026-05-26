@@ -68,14 +68,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), workspace, reader);
     expectCleanRestore(restoredTrigger);
     expectRestoredLegalActions(restoredTrigger, 0);
-    expect(restoredTrigger.session.state.pendingTriggers).toMatchObject([
+    expect(restoredTrigger.session.state.pendingTriggers).toEqual([
       {
-        sourceUid: ghibli.uid,
-        player: 0,
-        triggerBucket: "opponentOptional",
-        eventName: "attackDeclared",
+        id: "trigger-3-1",
+        effectId: "lua-1-1130",
         eventCardUid: attacker.uid,
+        eventCode: 1130,
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "attackDeclared",
+        eventPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
         eventReasonPlayer: 1,
+        eventTriggerTiming: "when",
+        player: 0,
+        sourceUid: ghibli.uid,
+        triggerBucket: "opponentOptional",
       },
     ]);
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === ghibli.uid);

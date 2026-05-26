@@ -116,6 +116,20 @@ describe.skipIf(!hasUpstreamScripts || !hasDarkRequiemScript)("Lua real script D
     applyRestoredActionAndAssert(restoredResolved, attack!);
     finishBattle(restoredResolved);
     expect(restoredResolved.session.state.battleDamage).toEqual({ 0: 0, 1: 5400 });
+    expect(restoredResolved.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: darkRequiem.uid,
+        eventPlayer: 1,
+        eventValue: 5400,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: darkRequiem.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
   });
 });
 

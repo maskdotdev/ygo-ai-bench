@@ -275,6 +275,11 @@ export function potAndSearchOperationVariants(): Array<{ file: string; kind: Pot
         "drawDuelCards(restored.session.state, 0, 1, \"Blocked prosperity draw\")).toBe(0)",
         "effect.sourceUid === pot!.uid && effect.code === 82",
         "battleDamage[1]).toBe(500)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 500",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: attacker!.uid",
+        "eventReasonPlayer: 0",
       ],
     },
     {

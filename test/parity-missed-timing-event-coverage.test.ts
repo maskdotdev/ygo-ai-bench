@@ -16,6 +16,7 @@ const missedTimingMultiStepFixtureCount = 166;
 const missedTimingOptionalWhenVsIfFixtureCount = 166;
 const missedTimingFullSourceEffectCauseFixtureCount = 126;
 const missedTimingSourceEffectCauseEventCodeFixtureCount = 123;
+const missedTimingSourceEffectCauseEventHistoryFixtureCount = 126;
 const missedTimingSourceEffectCauseEventCodeExceptions = [
   "parity-missed-timing-activated-fixture.test.ts",
   "parity-missed-timing-phase-changed-fixture.test.ts",
@@ -30,6 +31,7 @@ const missedTimingChainActivatingStateFixtureCount = 2;
 const missedTimingChainLifecycleOriginFixtureCount = 12;
 const missedTimingBattleDamageCauseFixtureCount = 4;
 const missedTimingPhaseBoundaryFixtureCount = 22;
+const missedTimingPhaseBoundaryEventHistoryFixtureCount = 22;
 const missedTimingPhaseEndBoundaryCauseFixtureCount = 4;
 const missedTimingPostDeclineOpenFastResolutionFixtureCount = 85;
 const missedTimingSourceEffectCauseExceptionFamilyCounts = {
@@ -165,6 +167,18 @@ describe("EDOPro parity missed-timing event coverage", () => {
     expect(sourceEffectCauseEventCodeExceptions).toEqual([...missedTimingSourceEffectCauseEventCodeExceptions].sort());
   });
 
+  it("pins canonical source-effect cause event-history metadata coverage", () => {
+    const multiStepFiles = fs.readdirSync(testRoot)
+      .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts"))
+      .filter((file) => readTestFile(file).includes("eventIsLast: false"))
+      .sort();
+    const sourceEffectCauseEventHistoryFiles = multiStepFiles
+      .filter((file) => hasSourceEffectCauseMetadata(file) && hasSourceEffectCauseEventHistoryMetadata(file));
+
+    expect(multiStepFiles).toHaveLength(missedTimingMultiStepFixtureCount);
+    expect(sourceEffectCauseEventHistoryFiles).toHaveLength(missedTimingSourceEffectCauseEventHistoryFixtureCount);
+  });
+
   it("accounts for every source-effect cause event-code exception with a dedicated metadata guard", () => {
     const multiStepFiles = fs.readdirSync(testRoot)
       .filter((file) => file.startsWith("parity-missed-timing-") && file.endsWith("-fixture.test.ts"))
@@ -223,9 +237,12 @@ describe("EDOPro parity missed-timing event coverage", () => {
       .filter((file) => /^parity-missed-timing-(?:phase-(?:draw|standby|main1|battle|main2)|phase-start-(?:draw|standby|main1|battle|main2)|startup)(?:-decline)?-fixture\.test\.ts$/.test(file))
       .sort();
     const phaseBoundaryMetadataFiles = phaseBoundaryFiles.filter((file) => hasPhaseBoundaryMetadata(file));
+    const phaseBoundaryEventHistoryFiles = phaseBoundaryFiles.filter((file) => hasPhaseBoundaryEventHistoryMetadata(file));
 
     expect(phaseBoundaryFiles).toHaveLength(missedTimingPhaseBoundaryFixtureCount);
     expect(phaseBoundaryMetadataFiles).toEqual(phaseBoundaryFiles);
+    expect(phaseBoundaryEventHistoryFiles).toHaveLength(missedTimingPhaseBoundaryEventHistoryFixtureCount);
+    expect(phaseBoundaryEventHistoryFiles).toEqual(phaseBoundaryFiles);
   });
 
   it("pins missed-timing phase-end boundary source-effect cause metadata coverage", () => {
@@ -459,8 +476,14 @@ function hasSyntheticNoEventCodeSourceEffectCauseMetadata(file: string): boolean
     /collectEventsOnResolve:\s*\[\s*\{[\s\S]*collectEvent:\s*["'](?:activated|phaseChanged|turnStarted)["']/.test(text) &&
     /eventName:\s*["'](?:activated|phaseChanged|turnStarted)["']/.test(text) &&
     /eventReasonEffectId:\s*\d+/.test(text) &&
+    /eventHistory:\s*\[[\s\S]*eventName:\s*["'](?:activated|phaseChanged|turnStarted)["'][\s\S]*eventReason:\s*0x40[\s\S]*eventReasonPlayer:\s*0[\s\S]*eventReasonCardUid:\s*["']p0-deck-100-0["'][\s\S]*eventReasonEffectId:\s*\d+/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)
   );
+}
+
+function hasSourceEffectCauseEventHistoryMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return /eventHistory:\s*\[[\s\S]*eventReason:\s*0x(?:40|80)[\s\S]*eventReasonPlayer:\s*0[\s\S]*eventReasonCardUid:\s*["']p0-deck-100-0["'][\s\S]*eventReasonEffectId:\s*\d+/.test(text);
 }
 
 function hasOptionalWhenVsIfMissedTimingProof(file: string): boolean {
@@ -492,6 +515,7 @@ function hasChainActivatingStateMetadata(file: string): boolean {
     /relatedEffectId:\s*1/.test(text) &&
     /eventPreviousState:\s*\{/.test(text) &&
     /eventCurrentState:\s*\{/.test(text) &&
+    /eventHistory:\s*\[[\s\S]*eventName:\s*["']chainActivating["'][\s\S]*eventCardUid:\s*["']p0-deck-100-0["'][\s\S]*eventReason:\s*1024[\s\S]*eventReasonPlayer:\s*0[\s\S]*relatedEffectId:\s*1[\s\S]*eventPreviousState:\s*\{[\s\S]*eventCurrentState:\s*\{/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)
   );
 }
@@ -506,6 +530,7 @@ function hasChainLifecycleOriginMetadata(file: string): boolean {
     /relatedEffectId:\s*1/.test(text) &&
     /eventChainDepth:\s*1/.test(text) &&
     /eventChainLinkId:\s*["']fixture-chain-1["']/.test(text) &&
+    /eventHistory:\s*\[[\s\S]*eventName:\s*["'](?:chaining|chainSolving|chainSolved|chainNegated|chainDisabled|chainEnded)["'][\s\S]*eventCardUid:\s*["']p0-deck-100-0["'][\s\S]*eventPlayer:\s*0[\s\S]*eventValue:\s*1[\s\S]*eventReasonPlayer:\s*0[\s\S]*relatedEffectId:\s*1[\s\S]*eventChainDepth:\s*1[\s\S]*eventChainLinkId:\s*["']fixture-chain-1["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text)
   );
 }
@@ -520,6 +545,7 @@ function hasBattleDamageCauseMetadata(file: string): boolean {
     /eventReason:\s*0x20/.test(text) &&
     /eventReasonPlayer:\s*0/.test(text) &&
     /eventReasonCardUid:\s*["']p0-deck-700-4["']/.test(text) &&
+    /eventHistory:\s*\[[\s\S]*eventName:\s*["'](?:beforeBattleDamage|battleDamageDealt)["'][\s\S]*eventCode:\s*(?:1136|1143)[\s\S]*eventCardUid:\s*["']p0-deck-700-4["'][\s\S]*eventPlayer:\s*1[\s\S]*eventValue:\s*1800[\s\S]*eventReason:\s*0x20[\s\S]*eventReasonPlayer:\s*0[\s\S]*eventReasonCardUid:\s*["']p0-deck-700-4["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text) &&
     !/eventReasonEffectId/.test(text)
   );
@@ -530,9 +556,19 @@ function hasPhaseBoundaryMetadata(file: string): boolean {
   return (
     /collectEvents:\s*\[\{ collectEvent:\s*["'](?:phaseDraw|phaseStandby|phaseMain1|phaseBattle|phaseMain2|phaseStartDraw|phaseStartStandby|phaseStartMain1|phaseStartBattle|phaseStartMain2|startup)["']/.test(text) &&
     /eventCode:\s*(?:1000|0x1001|0x1002|0x1004|0x1008|0x1100|0x2001|0x2002|0x2004|0x2008|0x2100)/.test(text) &&
+    /eventPlayer:\s*0/.test(text) &&
     /eventName:\s*["'](?:phaseDraw|phaseStandby|phaseMain1|phaseBattle|phaseMain2|phaseStartDraw|phaseStartStandby|phaseStartMain1|phaseStartBattle|phaseStartMain2|startup)["']/.test(text) &&
     /eventTriggerTiming:\s*["']if["']/.test(text) &&
-    !/eventReasonEffectId/.test(text)
+    !/eventReasonEffectId/.test(text) &&
+    hasPhaseBoundaryEventHistoryMetadata(file)
+  );
+}
+
+function hasPhaseBoundaryEventHistoryMetadata(file: string): boolean {
+  const text = readTestFile(file);
+  return (
+    /eventHistory:\s*\[\{ eventName:\s*["'](?:phaseDraw|phaseStandby|phaseMain1|phaseBattle|phaseMain2|phaseStartDraw|phaseStartStandby|phaseStartMain1|phaseStartBattle|phaseStartMain2|startup)["'],\s*eventCode:\s*(?:1000|0x1001|0x1002|0x1004|0x1008|0x1100|0x2001|0x2002|0x2004|0x2008|0x2100),\s*eventPlayer:\s*0\s*\}\]/.test(text) &&
+    !/eventHistory:\s*\[\{[\s\S]*eventReasonEffectId/.test(text)
   );
 }
 

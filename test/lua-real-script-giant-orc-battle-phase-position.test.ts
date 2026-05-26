@@ -64,9 +64,6 @@ describe.skipIf(!hasUpstreamScripts || !hasGiantOrcScript)("Lua real script Gian
         "registryKey": "lua:73698349:lua-1-4224",
         "sourceUid": "p0-deck-73698349-0",
         "target": [Function],
-        "triggerCode": 4224,
-        "triggerEvent": "phaseBattle",
-        "triggerTiming": "when",
       }
     `);
 
@@ -108,9 +105,6 @@ describe.skipIf(!hasUpstreamScripts || !hasGiantOrcScript)("Lua real script Gian
         "registryKey": "lua:73698349:lua-1-4224",
         "sourceUid": "p0-deck-73698349-0",
         "target": [Function],
-        "triggerCode": 4224,
-        "triggerEvent": "phaseBattle",
-        "triggerTiming": "when",
       }
     `);
     expect(restored.host.messages).toEqual(host.messages);

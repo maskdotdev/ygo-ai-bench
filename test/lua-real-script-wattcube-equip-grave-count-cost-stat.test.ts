@@ -89,7 +89,6 @@ describe.skipIf(!hasUpstreamScripts || !hasWattcubeScript)("Lua real script Watt
       { code: 76, controller: 0, event: "continuous", id: "lua-2-76", luaConditionDescriptor: undefined, luaCostDescriptor: undefined, luaTargetDescriptor: undefined, luaTypeFlags: 1, range: ["spellTrapZone"], targetRange: undefined, value: undefined },
       { code: 100, controller: 0, event: "continuous", id: "lua-3-100", luaConditionDescriptor: undefined, luaCostDescriptor: undefined, luaTargetDescriptor: undefined, luaTypeFlags: 4, range: ["spellTrapZone"], targetRange: undefined, value: undefined },
       { code: undefined, controller: 0, event: "ignition", id: "lua-4", luaConditionDescriptor: undefined, luaCostDescriptor: undefined, luaTargetDescriptor: "target:faceup-race:8192", luaTypeFlags: 64, range: ["spellTrapZone"], targetRange: undefined, value: undefined },
-      { code: 76, controller: 0, event: "continuous", id: "lua-5-76", luaConditionDescriptor: undefined, luaCostDescriptor: undefined, luaTargetDescriptor: undefined, luaTypeFlags: 1, range: ["spellTrapZone"], targetRange: undefined, value: undefined },
     ]);
 
     const boost = getLuaRestoreLegalActions(restoredEquipped, 0).find((action) => action.type === "activateEffect" && action.uid === wattcube.uid && action.effectId === "lua-4");

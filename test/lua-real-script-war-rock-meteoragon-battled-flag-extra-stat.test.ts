@@ -128,10 +128,12 @@ function expectScriptShape(script: string | undefined): void {
   expect(script).toContain("Duel.SetTargetCard(e:GetHandler():GetBattleTarget())");
   expect(script).toContain("Duel.AdjustInstantly(c)");
   expect(script).toContain("e4:SetCode(EVENT_CHAIN_SOLVING)");
+  expect(script).toContain("Duel.NegateEffect(ev)");
   expect(script).toContain("aux.GlobalCheck(s,function()");
   expect(script).toContain("ge1:SetCode(EVENT_BATTLED)");
   expect(script).toContain("Duel.RegisterFlagEffect(bc0:GetControler(),id,RESET_PHASE|PHASE_END,0,1)");
   expect(script).toContain("e3:SetCode(EVENT_FREE_CHAIN)");
+  expect(script).toContain("return Duel.IsBattlePhase() and Duel.GetFlagEffect(tp,id)>0");
   expect(script).toContain("Duel.GetFlagEffect(tp,id)>0");
   expect(script).toContain("e1:SetCode(EFFECT_EXTRA_ATTACK_MONSTER)");
   expect(script).toContain("e2:SetCode(EFFECT_UPDATE_ATTACK)");

@@ -4,9 +4,10 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTargetPredicateFixtureCount = 8;
+const battleTargetPredicateFixtureCount = 9;
 const battleTargetPredicateKindCounts = {
   archetypeSelectionAndTargetProtection: 1,
+  battleRegistrationMetadata: 1,
   auxImval1Lock: 1,
   auxImval2Protection: 1,
   endDamageTargetLock: 1,
@@ -17,6 +18,7 @@ const battleTargetPredicateKindCounts = {
 } satisfies Record<BattleTargetPredicateKind, number>;
 const battleTargetPredicateSemanticVariantCounts = {
   altergeistFifinellagTargetProtection: 1,
+  amazonessPetLigerBattleRegistration: 1,
   battleTargetSyntheticDescriptorPredicates: 1,
   commandKnightAuxImval1TargetLock: 1,
   decoyroidNonMatchingTargetSelectionLock: 1,
@@ -28,6 +30,7 @@ const battleTargetPredicateSemanticVariantCounts = {
 
 type BattleTargetPredicateKind =
   | "archetypeSelectionAndTargetProtection"
+  | "battleRegistrationMetadata"
   | "auxImval1Lock"
   | "auxImval2Protection"
   | "endDamageTargetLock"
@@ -37,6 +40,7 @@ type BattleTargetPredicateKind =
   | "warriorSelectionLock";
 type BattleTargetPredicateSemanticVariant =
   | "altergeistFifinellagTargetProtection"
+  | "amazonessPetLigerBattleRegistration"
   | "battleTargetSyntheticDescriptorPredicates"
   | "commandKnightAuxImval1TargetLock"
   | "decoyroidNonMatchingTargetSelectionLock"
@@ -93,6 +97,26 @@ function battleTargetPredicateFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-amazoness-pet-liger-battle-registration.test.ts",
+      kind: "battleRegistrationMetadata",
+      required: [
+        'const ligerCode = "68507541"',
+        "Amazoness Pet Liger",
+        "restores pre-damage, battled target, and battle-target restriction metadata",
+        "Fusion.AddProcMix(c,true,true,10979723,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_AMAZONESS))",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e2:SetCode(EVENT_BATTLED)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
+        "e3:SetCode(EFFECT_CANNOT_SELECT_BATTLE_TARGET)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(-800)",
+        'triggerEvent: "beforeDamageCalculation"',
+        'triggerEvent: "afterDamageCalculation"',
+        "targetRange: [0, 4]",
+      ],
+    },
     {
       file: "test/lua-real-script-altergeist-fifinellag-target-protection.test.ts",
       kind: "archetypeSelectionAndTargetProtection",
@@ -198,6 +222,7 @@ function countBattleTargetPredicateKinds(
     {
       auxImval1Lock: 0,
       archetypeSelectionAndTargetProtection: 0,
+      battleRegistrationMetadata: 0,
       auxImval2Protection: 0,
       endDamageTargetLock: 0,
       nonMatchingSelectionLock: 0,
@@ -214,6 +239,21 @@ function battleTargetPredicateSemanticVariants(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "test/lua-real-script-amazoness-pet-liger-battle-registration.test.ts",
+      kind: "amazonessPetLigerBattleRegistration",
+      required: [
+        'const ligerCode = "68507541"',
+        "restores pre-damage, battled target, and battle-target restriction metadata",
+        "EVENT_PRE_DAMAGE_CALCULATE",
+        "EVENT_BATTLED",
+        "EFFECT_CANNOT_SELECT_BATTLE_TARGET",
+        "EFFECT_UPDATE_ATTACK",
+        'triggerEvent: "beforeDamageCalculation"',
+        'triggerEvent: "afterDamageCalculation"',
+        "targetRange: [0, 4]",
+      ],
+    },
     {
       file: "test/lua-real-script-altergeist-fifinellag-target-protection.test.ts",
       kind: "altergeistFifinellagTargetProtection",
@@ -313,6 +353,7 @@ function countBattleTargetPredicateSemanticVariants(
     {
       battleTargetSyntheticDescriptorPredicates: 0,
       altergeistFifinellagTargetProtection: 0,
+      amazonessPetLigerBattleRegistration: 0,
       commandKnightAuxImval1TargetLock: 0,
       decoyroidNonMatchingTargetSelectionLock: 0,
       hunterOwlWindAllyTargetStatLock: 0,

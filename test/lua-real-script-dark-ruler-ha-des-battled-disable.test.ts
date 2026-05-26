@@ -79,9 +79,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
           "registryKey": "lua:53982768:lua-2-1138",
           "sourceUid": "p0-deck-53982768-0",
           "target": [Function],
-          "triggerCode": 1138,
-          "triggerEvent": "afterDamageCalculation",
-          "triggerTiming": "when",
         },
       ]
     `);

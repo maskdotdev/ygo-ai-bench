@@ -100,10 +100,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gh
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
     expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
+        "activationLocation": "hand",
         "activationSequence": 0,
         "chainIndex": 2,
         "effectId": "lua-3-1027",
+        "eventCardUid": "p0-deck-920-0",
+        "eventChainDepth": 1,
+        "eventChainLinkId": "chain-2",
+        "eventCode": 1027,
+        "eventCurrentState": {
+          "controller": 0,
+          "faceUp": true,
+          "location": "monsterZone",
+          "position": "faceUpAttack",
+          "sequence": 0,
+        },
+        "eventName": "chaining",
+        "eventPlayer": 0,
+        "eventPreviousState": {
+          "controller": 0,
+          "faceUp": false,
+          "location": "deck",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReasonPlayer": 0,
+        "eventValue": 1,
         "id": "chain-4",
         "operationInfos": [
           {

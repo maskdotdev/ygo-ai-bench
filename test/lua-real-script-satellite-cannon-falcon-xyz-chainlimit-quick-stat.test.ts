@@ -112,8 +112,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFalconScript)
     const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === falcon.uid);
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, trigger!);
-    expect(restoredTrigger.session.state.chain.flatMap((link) => link.operationInfos ?? [])).toEqual([]);
-    expect(restoredTrigger.session.state.chainLimits).toEqual([]);
+    expect(restoredTrigger.session.state.chain.flatMap((link) => link.operationInfos ?? [])).toEqual([
+      { category: 0x1, targetUids: [opponentSpell.uid, opponentTrap.uid], count: 2, player: 0, parameter: 0 },
+    ]);
+    expect(restoredTrigger.session.state.chainLimits).toHaveLength(1);
+    expect(restoredTrigger.session.state.chainLimits[0]?.registryKey).toBe(
+      "lua-chain-limit:23603403:0:link:known:closure:response-matches-chain-player",
+    );
     passRestoredChain(restoredTrigger);
     expect(restoredTrigger.host.messages).not.toContain("satellite cannon falcon responder resolved");
     for (const backrow of [opponentSpell, opponentTrap]) {
@@ -165,7 +170,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFalconScript)
       previousLocation: event.eventPreviousState?.location,
       currentLocation: event.eventCurrentState?.location,
     }))).toEqual([
-      { eventName: "specialSummoned", eventCode: 1102, eventCardUid: falcon.uid, eventReason: duelReason.summon | duelReason.specialSummon | duelReason.xyz, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, previousLocation: "extraDeck", currentLocation: "monsterZone" },
       { eventName: "specialSummoned", eventCode: 1102, eventCardUid: falcon.uid, eventReason: duelReason.summon | duelReason.specialSummon | duelReason.xyz, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, previousLocation: "extraDeck", currentLocation: "monsterZone" },
       { eventName: "destroyed", eventCode: 1029, eventCardUid: opponentSpell.uid, eventReason: duelReason.effect | duelReason.destroy, eventReasonPlayer: 0, eventReasonCardUid: falcon.uid, eventReasonEffectId: 2, previousLocation: "spellTrapZone", currentLocation: "graveyard" },
       { eventName: "destroyed", eventCode: 1029, eventCardUid: opponentTrap.uid, eventReason: duelReason.effect | duelReason.destroy, eventReasonPlayer: 0, eventReasonCardUid: falcon.uid, eventReasonEffectId: 2, previousLocation: "spellTrapZone", currentLocation: "graveyard" },

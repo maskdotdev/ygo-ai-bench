@@ -56,7 +56,7 @@ describe("EDOPro parity startup missed timing decline fixture", () => {
             logMessage: "Startup decline open fast resolved",
           },
         ],
-        collectEvents: [{ collectEvent: "startup", eventCode: 1000, eventIsLast: false }],
+        collectEvents: [{ collectEvent: "startup", eventCode: 1000, eventPlayer: 0, eventIsLast: false }],
       },
       responses: [
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "startup-decline-optional-if" }), {
@@ -67,8 +67,9 @@ describe("EDOPro parity startup missed timing decline fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "startup-decline-optional-if", eventName: "startup", eventCode: 1000, eventTriggerTiming: "if" }],
+            pendingTriggers: [{ player: 0, effectId: "startup-decline-optional-if", eventName: "startup", eventCode: 1000, eventPlayer: 0, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{ eventName: "startup", eventCode: 1000, eventPlayer: 0 }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "startup-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "startup-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

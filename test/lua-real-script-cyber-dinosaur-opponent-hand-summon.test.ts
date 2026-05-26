@@ -77,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCyberDinosaurScript)("Lua real script
         eventCardUid: opponentSummon.uid,
         eventReason: duelReason.summon | duelReason.specialSummon,
         eventReasonPlayer: 1,
+        eventPlayer: 1,
         eventTriggerTiming: "when",
         eventPreviousState: opponentPreviousState,
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },

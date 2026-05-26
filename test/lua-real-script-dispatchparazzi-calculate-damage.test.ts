@@ -181,6 +181,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDispatchScript)("Lua real script Disp
             "sequence": 0,
           },
           "eventName": "destroyed",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": true,

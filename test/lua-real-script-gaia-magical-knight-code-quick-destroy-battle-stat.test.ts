@@ -104,6 +104,32 @@ describe.skipIf(!hasUpstreamScripts || !hasGaiaScript)("Lua real script Gaia Mag
 
     expect(currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === battleGaia.uid), restoredTrigger.session.state)).toBe(5200);
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 1600 });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: battleGaia.uid,
+        eventPlayer: 1,
+        eventValue: 1600,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: battleGaia.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === battleTarget.uid)).toMatchObject({
       location: "graveyard",
       controller: 1,

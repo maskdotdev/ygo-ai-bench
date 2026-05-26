@@ -102,8 +102,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script St
     });
     expect(session.state.cards.find((card) => card.uid === offAttributeCost.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(session.state.chain[0]).toEqual({
-      activationLocation: "graveyard",
-      activationSequence: 1,
+      activationLocation: "hand",
+      activationSequence: 0,
       chainIndex: 1,
       effectId: "lua-1",
       id: "chain-4",

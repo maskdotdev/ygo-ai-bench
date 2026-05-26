@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMojaScript)("
         triggerBucket: "opponentOptional",
         eventName: "battleDestroyed",
         eventCode: 1140,
+        eventPlayer: 0,
         eventCardUid: moja!.uid,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 1,

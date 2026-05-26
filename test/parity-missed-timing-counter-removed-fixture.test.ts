@@ -107,6 +107,13 @@ describe("EDOPro parity counter-removed missed timing fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "counter-removed-optional-if", eventName: "counterRemoved", eventCode: 0x20000, eventCardUid: "p0-deck-600-3", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 8901, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              { eventName: "counterRemoved", eventCode: 0x20000, eventCardUid: "p0-deck-600-3", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 8901 },
+              { eventName: "chainSolved" },
+            ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

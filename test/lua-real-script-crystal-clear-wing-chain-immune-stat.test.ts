@@ -104,7 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCrystalClearWingScript)("Lua real scr
         eventReasonPlayer: 0,
         eventChainDepth: 2,
         eventChainLinkId: "chain-3",
-        relatedEffectId: 2,
+        relatedEffectId: 3,
       },
       {
         eventName: "chainSolved",
@@ -114,7 +114,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCrystalClearWingScript)("Lua real scr
         eventReasonPlayer: 1,
         eventChainDepth: 1,
         eventChainLinkId: "chain-2",
-        relatedEffectId: 5,
+        relatedEffectId: 6,
       },
     ]);
     expect(restoredResponse.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });

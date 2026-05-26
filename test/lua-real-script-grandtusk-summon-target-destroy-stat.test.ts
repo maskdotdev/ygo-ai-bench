@@ -105,6 +105,32 @@ describe.skipIf(!hasUpstreamScripts || !hasGrandtuskScript)("Lua real script Gra
     applyRestoredActionAndAssert(restoredBattle, directAttack!);
     finishBattle(restoredBattle);
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 3800 });
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: grandtusk.uid,
+        eventPlayer: 1,
+        eventValue: 3800,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: grandtusk.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 

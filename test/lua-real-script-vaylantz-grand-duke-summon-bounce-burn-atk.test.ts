@@ -59,17 +59,25 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Va
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(grandDukeCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expectCleanRestore(restoredOpen);
     expectRestoredLegalActions(restoredOpen, 0);
     specialSummonDuelCard(restoredOpen.session.state, grandDuke.uid, 0);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-6-1102",
         eventCardUid: grandDuke.uid,
         eventCode: 1102,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "specialSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
         player: 0,
         sourceUid: grandDuke.uid,
         triggerBucket: "turnOptional",

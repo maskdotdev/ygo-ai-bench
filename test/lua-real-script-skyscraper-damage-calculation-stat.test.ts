@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -113,6 +114,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sk
     passRestoredBattleResponses(restoredDamageCalculation);
     expect(restoredDamageCalculation.session.state.battleDamage).toEqual({ 0: 0, 1: 700 });
     expect(restoredDamageCalculation.session.state.players[1].lifePoints).toBe(7300);
+    expect(restoredDamageCalculation.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: hero!.uid,
+        eventPlayer: 1,
+        eventValue: 700,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: hero!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDamageCalculation.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredDamageCalculation.session.state.cards.find((card) => card.uid === hero!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
   });

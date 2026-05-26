@@ -89,8 +89,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ka
     });
     expect(session.state.cards.find((card) => card.uid === blueEyes.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(session.state.chain[0]).toEqual({
-      activationLocation: "graveyard",
-      activationSequence: 0,
+      activationLocation: "monsterZone",
+      activationSequence: 4,
       chainIndex: 1,
       effectId: "lua-1",
       id: "chain-3",

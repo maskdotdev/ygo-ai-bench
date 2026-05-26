@@ -87,7 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBlackfeatherScript)("Lua real script 
       {
         id: "trigger-4-1",
         player: 0,
-        effectId: "lua-3-1111",
+        effectId: "lua-4-1111",
         sourceUid: blackfeather.uid,
         triggerBucket: "turnOptional",
         eventName: "damageDealt",
@@ -117,7 +117,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBlackfeatherScript)("Lua real script 
       reason: duelReason.effect,
       reasonPlayer: 0,
       reasonCardUid: blackfeather.uid,
-      reasonEffectId: 3,
+      reasonEffectId: 4,
     });
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === millSpell.uid)).toMatchObject({ location: "deck" });
     expect(currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === blackfeather.uid), restoredTrigger.session.state)).toBe(3200);
@@ -139,7 +139,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBlackfeatherScript)("Lua real script 
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: blackfeather.uid,
-        eventReasonEffectId: 3,
+        eventReasonEffectId: 4,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceDown", sequence: 0 },
       },

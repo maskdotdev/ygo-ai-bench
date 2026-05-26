@@ -1,5 +1,6 @@
 import fengari from "fengari";
 import { isDuelCardPendingBattleDestroyed } from "#duel/battle.js";
+import { cardTypeFlags } from "#duel/card-stats.js";
 import { isPhaseEntryPrevented } from "#duel/continuous-effects.js";
 import { canDuelCardAttack, getDuelAttackableTargets } from "#duel/core.js";
 import { duelReason } from "#duel/reasons.js";
@@ -8,7 +9,6 @@ import { readCardUid } from "#lua/api-utils.js";
 import { pushCardTable } from "#lua/card-api.js";
 import { readRequestedNumbers } from "#lua/card-code-utils.js";
 import { matchingLuaEffects } from "#lua/card-effect-query-api.js";
-import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { pushGroupTable } from "#lua/group-api.js";
 import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-types.js";
 import type { CardPosition, DuelCardInstance, DuelEffectContext, DuelEffectDefinition, DuelPhase, DuelSession, DuelState } from "#duel/types.js";
@@ -46,6 +46,7 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
   lua.lua_setfield(L, -2, to_luastring("GetBattledGroup"));
   pushNumberGetter(L, "GetBattledGroupCount", session, (card) => battledOpponentUids(session, card).length);
   pushNumberGetter(L, "GetAttackedCount", session, (card) => (card ? session.state.battlePairs.filter((pair) => pair.attackerUid === card.uid).length : 0));
+  pushNumberGetter(L, "GetAttackedGroupCount", session, (card) => attackedOpponentUids(session, card).length);
 }
 
 function canLuaCardAttack<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, hostState: LuaCardApiState<EffectRecord>): boolean {
@@ -148,6 +149,12 @@ function battledOpponentUids(session: DuelSession, card: DuelCardInstance | unde
     if (pair.targetUid === card.uid) return [pair.attackerUid];
     return [];
   });
+  return [...new Set(opponents)].filter((uid) => session.state.cards.some((candidate) => candidate.uid === uid));
+}
+
+function attackedOpponentUids(session: DuelSession, card: DuelCardInstance | undefined): string[] {
+  if (!card) return [];
+  const opponents = session.state.battlePairs.flatMap((pair) => pair.attackerUid === card.uid ? [pair.targetUid] : []);
   return [...new Set(opponents)].filter((uid) => session.state.cards.some((candidate) => candidate.uid === uid));
 }
 

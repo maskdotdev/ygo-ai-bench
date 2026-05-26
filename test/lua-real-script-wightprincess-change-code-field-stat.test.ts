@@ -72,13 +72,21 @@ describe.skipIf(!hasUpstreamScripts || !hasWightprincessScript)("Lua real script
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSummon.session), workspace, reader);
     expectCleanRestore(restoredTrigger);
     expectRestoredLegalActions(restoredTrigger, 0);
-    expect(restoredTrigger.session.state.pendingTriggers).toMatchObject([
+    expect(restoredTrigger.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
         effectId: "lua-2-1100",
-        sourceUid: summonedPrincess.uid,
+        eventCardUid: summonedPrincess.uid,
+        eventCode: 1100,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "normalSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventReason: duelReason.summon,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
         player: 0,
+        sourceUid: summonedPrincess.uid,
         triggerBucket: "turnOptional",
       },
     ]);

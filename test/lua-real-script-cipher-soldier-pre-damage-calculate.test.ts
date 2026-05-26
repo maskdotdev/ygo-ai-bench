@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { currentAttack } from "#duel/card-stats.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -104,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCipherSoldierScript)("Lua real script
             "sequence": 0,
           },
           "eventName": "beforeDamageCalculation",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -195,6 +197,32 @@ describe.skipIf(!hasUpstreamScripts || !hasCipherSoldierScript)("Lua real script
 
     expect(restored.session.state.players[1].lifePoints).toBe(6650);
     expect(restored.session.state.battleDamage[1]).toBe(1350);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: cipherSoldier!.uid,
+        eventPlayer: 1,
+        eventValue: 1350,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: cipherSoldier!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === warriorTarget!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restored.session.state.pendingBattle).toBeUndefined();
     expect(restored.session.state.battleWindow).toBeUndefined();

@@ -134,6 +134,32 @@ describe.skipIf(!hasUpstreamScripts || !hasAshenveilScript)("Lua real script Fab
     passBattleResponses(restoredBattle);
     expect(restoredBattle.session.state.battleDamage[1]).toBe((ashenveil.data.attack ?? 0) + 600 - (defender.data.attack ?? 0));
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(8000 - restoredBattle.session.state.battleDamage[1]!);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: ashenveil.uid,
+        eventPlayer: 1,
+        eventValue: (ashenveil.data.attack ?? 0) + 600 - (defender.data.attack ?? 0),
+        eventReason: duelReason.battle,
+        eventReasonCardUid: ashenveil.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredBattle.session.state.cards.find((card) => card.uid === defender.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredBattle.host.messages).not.toContain("ashenveil responder resolved");
   });

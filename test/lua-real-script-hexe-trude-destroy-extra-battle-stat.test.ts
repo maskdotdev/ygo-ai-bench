@@ -102,6 +102,20 @@ describe.skipIf(!hasUpstreamScripts || !hasHexeScript)("Lua real script Hexe Tru
 
     expect(currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === hexe.uid), restoredTrigger.session.state)).toBe(2600);
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 1200 });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: hexe.uid,
+        eventPlayer: 1,
+        eventValue: 1200,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: hexe.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === firstTarget.uid)).toMatchObject({
       location: "graveyard",
       controller: 1,

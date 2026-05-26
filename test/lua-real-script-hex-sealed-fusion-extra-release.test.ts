@@ -109,7 +109,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
         effectLabel: Number(targetFusionCode),
         sourceUid: hexSealed.uid,
         player: 0,
-        activationLocation: "graveyard",
+        activationLocation: "monsterZone",
         activationSequence: 0,
         operationInfos: [{ category: categorySpecialSummon, targetUids: [], count: 1, player: 0, parameter: 0x40 }],
       },

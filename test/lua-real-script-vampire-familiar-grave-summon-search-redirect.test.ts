@@ -162,6 +162,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Va
         activationLocation: "monsterZone",
         activationSequence: 0,
         eventName: "specialSummoned",
+        eventPlayer: 0,
         eventCode: 1102,
         eventCardUid: familiar.uid,
         eventUids: [familiar.uid],

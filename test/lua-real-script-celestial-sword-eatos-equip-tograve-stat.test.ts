@@ -82,7 +82,6 @@ describe.skipIf(!hasUpstreamScripts || !hasSwordScript)("Lua real script Celesti
       { code: 76, event: "continuous", property: 1024, range: ["spellTrapZone"], triggerEvent: undefined, value: undefined },
       { code: effectUpdateAttack, event: "continuous", property: undefined, range: ["spellTrapZone"], triggerEvent: undefined, value: 500 },
       { code: eventToGrave, event: "trigger", property: 16400, range: allLuaLocations, triggerEvent: "sentToGraveyard", value: undefined },
-      { code: 76, event: "continuous", property: 1024, range: ["spellTrapZone"], triggerEvent: undefined, value: undefined },
     ]);
 
     destroyDuelCard(restoredEquipped.session.state, sword.uid, 0, duelReason.effect | duelReason.destroy, 0);

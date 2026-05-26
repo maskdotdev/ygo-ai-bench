@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -53,7 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
         "cost": [Function],
         "description": 288209440,
         "event": "trigger",
-        "id": "lua-6-1138",
+        "id": "lua-7-1138",
         "luaTypeFlags": 129,
         "oncePerTurn": false,
         "operation": [Function],
@@ -70,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
           "extraDeck",
           "overlay",
         ],
-        "registryKey": "lua:18013090:lua-6-1138",
+        "registryKey": "lua:18013090:lua-7-1138",
         "sourceUid": "p0-extraDeck-18013090-0",
         "target": [Function],
         "targetCardPredicate": [Function],
@@ -92,7 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     expect(session.state.pendingTriggers).toMatchInlineSnapshot(`
       [
         {
-          "effectId": "lua-6-1138",
+          "effectId": "lua-7-1138",
           "eventCardUid": "p0-extraDeck-18013090-0",
           "eventCode": 1138,
           "eventCurrentState": {
@@ -103,6 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
             "sequence": 0,
           },
           "eventName": "afterDamageCalculation",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -136,6 +138,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
         eventUids: [nitro!.uid, firstTarget!.uid],
       },
     ]);
+    expect(session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: nitro!.uid,
+        eventPlayer: 1,
+        eventValue: 1800,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: nitro!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -157,6 +173,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     expect(restored.session.state.cards.find((card) => card.uid === followupTarget!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restored.session.state.players[1].lifePoints).toBe(4400);
     expect(restored.session.state.battleDamage).toMatchObject({ 1: 1800 });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: nitro!.uid,
+        eventPlayer: 1,
+        eventValue: 1800,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: nitro!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
   });
 });
 

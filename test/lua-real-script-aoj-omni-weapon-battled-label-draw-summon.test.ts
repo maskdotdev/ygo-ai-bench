@@ -129,6 +129,7 @@ describe.skipIf(!hasUpstreamScripts || !hasOmniWeaponScript)("Lua real script Al
           sequence: 0,
         },
         eventName: "battleDestroyed",
+        eventPlayer: 1,
         eventPreviousState: {
           controller: 1,
           faceUp: true,

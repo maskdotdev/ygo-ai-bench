@@ -359,9 +359,23 @@ export const auxUtilitySource = `
       return (ev or 0) & 0xff
     end
     function aux.GetCoinHeadsFromEv(ev)
+      if (ev or 0) <= 0xff then
+        local heads=0
+        for _,res in ipairs({Duel.GetCoinResult()}) do
+          if res==COIN_HEADS then heads=heads+1 end
+        end
+        return heads
+      end
       return ((ev or 0) >> 8) & 0xff
     end
     function aux.GetCoinTailsFromEv(ev)
+      if (ev or 0) <= 0xff then
+        local tails=0
+        for _,res in ipairs({Duel.GetCoinResult()}) do
+          if res==COIN_TAILS then tails=tails+1 end
+        end
+        return tails
+      end
       return ((ev or 0) >> 16) & 0xff
     end
     function aux.GetDiceCountSelfFromEv(ev)
@@ -778,15 +792,31 @@ export const auxUtilitySource = `
     end
     function aux.RemoveUntil(card_or_group,pos,reason,phase,flag,e,tp,oper,cond,reset,reset_count,hint,effect_desc)
       local g
+      local single_card
       if aux.IsGroupObject(card_or_group) then
         g=card_or_group
       else
+        single_card=card_or_group
         g=Group.FromCards(card_or_group)
       end
       if pos==nil then pos=POS_FACEUP end
       if reason==nil then reason=REASON_EFFECT end
       local moved=Duel.Remove(g,pos,reason)
       if moved==0 then return false end
+      if phase and e and oper then
+        local c=e:GetHandler()
+        local de=Effect.CreateEffect(c)
+        de:SetType(EFFECT_TYPE_FIELD|EFFECT_TYPE_CONTINUOUS)
+        de:SetCode(EVENT_PHASE|phase)
+        de:SetCountLimit(1)
+        de:SetReset(reset or (RESET_PHASE|phase),reset_count or 1)
+        de:SetLabelObject(single_card or g)
+        de:SetOperation(function(de,tp2,eg2,ep2,ev2,re2,r2,rp2)
+          if cond and not cond() then return end
+          oper(de:GetLabelObject(),de,tp)
+        end)
+        Duel.RegisterEffect(de,tp or 0)
+      end
       return true
     end
     Auxiliary=Auxiliary or aux

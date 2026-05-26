@@ -98,11 +98,22 @@ describe.skipIf(!hasUpstreamScripts || !hasWaveScript)("Lua real script Vaylantz
       reasonCardUid: mover.uid,
       reasonEffectId: 3,
     });
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
-        eventName: "moved",
-        eventCode: 1030,
+        id: "trigger-3-1",
+        effectId: "lua-2-1030",
         eventCardUid: movedProbe.uid,
+        eventCode: 1030,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 2 },
+        eventName: "moved",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
+        eventReason: duelReason.effect,
+        eventReasonCardUid: mover.uid,
+        eventReasonEffectId: 3,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
+        player: 0,
         sourceUid: wave.uid,
         triggerBucket: "turnOptional",
       },

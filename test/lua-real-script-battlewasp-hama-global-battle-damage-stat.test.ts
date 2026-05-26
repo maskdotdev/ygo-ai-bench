@@ -75,13 +75,22 @@ describe.skipIf(!hasUpstreamScripts || !hasHamaScript)("Lua real script Battlewa
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredSetup, attack!);
     passBattleUntilTrigger(restoredSetup);
-    expect(restoredSetup.session.state.pendingTriggers).toMatchObject([
+    expect(restoredSetup.session.state.pendingTriggers).toEqual([
       {
-        effectId: "lua-4-1143",
+        id: "trigger-6-1",
+        effectId: "lua-5-1143",
         eventCardUid: hama.uid,
+        eventCode: 1143,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDamageDealt",
         eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.battle,
+        eventReasonCardUid: hama.uid,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         eventValue: 1800,
+        player: 0,
         sourceUid: hama.uid,
         triggerBucket: "turnOptional",
       },
@@ -106,10 +115,14 @@ describe.skipIf(!hasUpstreamScripts || !hasHamaScript)("Lua real script Battlewa
     const main2 = getLuaRestoreLegalActions(restoredEndBattle, 0).find((action) => action.type === "changePhase" && action.phase === "main2");
     expect(main2, JSON.stringify(getLuaRestoreLegalActions(restoredEndBattle, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredEndBattle, main2!);
-    expect(restoredEndBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredEndBattle.session.state.pendingTriggers).toEqual([
       {
-        effectId: "lua-5-4224",
+        id: "trigger-9-1",
+        effectId: "lua-6-4224",
+        eventCode: 4224,
         eventName: "phaseBattle",
+        eventTriggerTiming: "when",
+        player: 0,
         sourceUid: hama.uid,
         triggerBucket: "turnOptional",
       },
@@ -146,7 +159,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHamaScript)("Lua real script Battlewa
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: hama.uid,
-        eventReasonEffectId: 5,
+        eventReasonEffectId: 6,
       },
     ]);
   });

@@ -359,6 +359,7 @@ function pushLuaSummonResult(L: unknown, session: DuelSession, hostState: LuaDue
     else if (summonType === "LinkSummon") linkSummonSelectedMaterials(session, hostState, target, selectedMaterials, summonPlayer);
     else if (target.data.ritualMaterials?.length) ritualSummonDuelCard(session.state, target.controller, target.uid, materialUids, requestedPosition);
     else ritualSummonSelectedMaterials(session, hostState, target, materialUids, materialsAlreadyMoved, requestedPosition);
+    runLuaMaterialCheckEffectsForSummon(L, session, hostState, summonPlayer, target);
     if (hostState.activeContext) hostState.activeOperationMoved = true;
     setOperatedUids(hostState, [target.uid]);
     lua.lua_pushinteger(L, 1);
@@ -554,6 +555,7 @@ function linkSummonSelectedMaterials(
   const reasonPlayer = hostState.activeContext?.player ?? summonPlayer;
   const materialReason = duelReason.material | duelReason.link;
   const materialPayload = luaEffectReasonPayload(hostState, materialReason, reasonPlayer);
+  materialPayload.eventReasonCardUid = target.uid;
   for (const uid of materialUids) {
     const material = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!material) continue;
@@ -702,6 +704,8 @@ function collectLuaSummonEvent(session: DuelSession, eventName: Parameters<typeo
   const payload: DuelEventPayload = {};
   if (eventCard?.reason !== undefined) payload.eventReason = eventCard.reason;
   if (eventCard?.reasonPlayer !== undefined) payload.eventReasonPlayer = eventCard.reasonPlayer;
+  if (eventCard?.reasonCardUid !== undefined) payload.eventReasonCardUid = eventCard.reasonCardUid;
+  if (eventCard?.reasonEffectId !== undefined) payload.eventReasonEffectId = eventCard.reasonEffectId;
   collectDuelTriggerEffects(session.state, eventName, eventCard, payload);
 }
 

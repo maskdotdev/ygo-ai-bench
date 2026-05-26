@@ -124,6 +124,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     resolveRestoredChain(restoredTrigger);
 
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: (mammudData!.attack ?? 0) - 1000 });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: mammud.uid,
+        eventPlayer: 1,
+        eventValue: (mammudData!.attack ?? 0) - 1000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: mammud.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === backrow.uid)).toMatchObject({
       location: "graveyard",
       controller: 1,

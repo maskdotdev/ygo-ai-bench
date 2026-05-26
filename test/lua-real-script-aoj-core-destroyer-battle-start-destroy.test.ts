@@ -66,14 +66,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
 
     expect(session.state.battleWindow?.kind).toBe("startDamageStep");
     expect(session.state.pendingBattle).toMatchObject({ attackerUid: attacker.uid, targetUid: coreDestroyer.uid });
-    expect(session.state.pendingTriggers).toMatchObject([
+    expect(session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-1-1132",
         sourceUid: coreDestroyer.uid,
         player: 1,
         triggerBucket: "opponentMandatory",
         eventName: "battleStarted",
         eventCode: 1132,
         eventCardUid: coreDestroyer.uid,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventPlayer: 1,
+        eventReason: 0,
+        eventReasonPlayer: 1,
+        eventTriggerTiming: "when",
         eventUids: [attacker.uid, coreDestroyer.uid],
       },
     ]);

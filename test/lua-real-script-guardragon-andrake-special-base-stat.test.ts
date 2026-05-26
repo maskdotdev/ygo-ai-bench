@@ -78,6 +78,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasAndrakeScript
         triggerBucket: "turnOptional",
         eventName: "specialSummoned",
         eventCode: 1102,
+        eventPlayer: 0,
         eventCardUid: andrake.uid,
         eventReason: duelReason.summon | duelReason.specialSummon,
         eventReasonPlayer: 0,

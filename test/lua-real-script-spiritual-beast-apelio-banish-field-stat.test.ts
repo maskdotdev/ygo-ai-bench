@@ -95,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasApelioScript)("Lua real script Spirit
     expect(currentDefense(findCard(restoredBoost.session, ally.uid), restoredBoost.session.state)).toBe(1700);
     expect(currentAttack(findCard(restoredBoost.session, decoy.uid), restoredBoost.session.state)).toBe(1600);
     expect(currentDefense(findCard(restoredBoost.session, decoy.uid), restoredBoost.session.state)).toBe(1600);
+    expect(restoredBoost.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

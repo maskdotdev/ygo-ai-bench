@@ -79,7 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ma
       label: "Synchro Summon Mara Hand Synchro Target using Mara of the Nordic Alfar, Nordic Hand Level 4 A, Nordic Hand Level 4 B",
       windowId: 0,
       windowKind: "open",
-      windowToken: "window-2",
+      windowToken: handSynchro?.windowToken,
     });
     const summoned = applyLuaRestoreResponse(restored, handSynchro!);
     expect(summoned.ok, summoned.error).toBe(true);

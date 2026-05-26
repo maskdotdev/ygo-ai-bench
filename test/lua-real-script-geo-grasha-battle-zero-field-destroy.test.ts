@@ -73,12 +73,21 @@ describe.skipIf(!hasUpstreamScripts || !hasGeoScript)("Lua real script Geo Grash
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredBattle, attack!);
     passAttackResponsesUntilTrigger(restoredBattle);
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-3-1132",
         eventCardUid: geo.uid,
         eventCode: 1132,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleStarted",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         eventUids: [geo.uid, battleTarget.uid],
+        player: 0,
         sourceUid: geo.uid,
         triggerBucket: "turnMandatory",
       },
@@ -100,11 +109,20 @@ describe.skipIf(!hasUpstreamScripts || !hasGeoScript)("Lua real script Geo Grash
       Duel.Destroy(seed,REASON_EFFECT)
     `, "geo-grasha-destroyed-seed-probe.lua");
     expect(destroyProbe.ok, destroyProbe.error).toBe(true);
-    expect(restoredBattleTrigger.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattleTrigger.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-6-1",
+        effectId: "lua-4-1029",
         eventCardUid: destroySeed.uid,
         eventCode: 1029,
+        eventCurrentState: { controller: 1, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventName: "destroyed",
+        eventPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
+        player: 0,
         sourceUid: geo.uid,
         triggerBucket: "turnOptional",
       },

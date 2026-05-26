@@ -106,6 +106,9 @@ describe.skipIf(!hasUpstreamScripts || !hasMiniaturizeScript)("Lua real script M
         "id": "chain-3",
         "player": 0,
         "sourceUid": "p0-deck-34815282-0",
+        "targetFieldIds": [
+          6,
+        ],
         "targetUids": [
           "p0-deck-613911-1",
         ],

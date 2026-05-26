@@ -111,7 +111,7 @@ export function resolvePendingDuelBattle(state: DuelState, callbacks: DuelBattle
   const pending = state.pendingBattle;
   if (!pending) return false;
   if (pending.resultApplied) {
-    const appliedStoredDamage = pending.damageApplied ? false : callbacks.applyStoredBattleDamage?.(pendingBattleCards(state, pending)) ?? false;
+    const appliedStoredDamage = callbacks.applyStoredBattleDamage?.(pendingBattleCards(state, pending)) ?? false;
     const resolvedDeferredDestruction = resolveDeferredBattleDestroyed(state, pending, callbacks);
     clearPendingBattleState(state);
     return appliedStoredDamage || resolvedDeferredDestruction;
@@ -257,6 +257,7 @@ export function canEffectChangeDuelCardPosition(state: DuelState, uid: string, p
   const card = findCard(state, uid);
   if (!card || card.location !== "monsterZone") return false;
   if (!isMonsterLike(state, card)) return false;
+  if ((cardTypeFlags(card, state) & 0x4000000) !== 0) return false;
   if (!isMonsterPosition(position)) return false;
   if (card.position === position) return false;
   return true;
@@ -450,9 +451,11 @@ function resolveWithPreservedBattleContext(
     const targetAttack = getBattleAttack(target, callbacks);
     if (attackerAttack > targetAttack) {
       changePreservedBattleDamage(callbacks, target.controller, attackerAttack - targetAttack, [attacker, target]);
+      pending.damageApplied = true;
       deferPreventableBattleDestroyed(pending, target, attacker.controller, attacker.uid, callbacks);
     } else if (attackerAttack < targetAttack) {
       changePreservedBattleDamage(callbacks, attacker.controller, targetAttack - attackerAttack, [attacker, target]);
+      pending.damageApplied = true;
       deferPreventableBattleDestroyed(pending, attacker, target.controller, target.uid, callbacks);
     } else {
       deferPreventableBattleDestroyed(pending, attacker, target.controller, target.uid, callbacks);
@@ -468,7 +471,10 @@ function resolveWithPreservedBattleContext(
     markBattleResultApplied(state, options);
     return true;
   }
-  if (attackerAttack < targetDefense) changePreservedBattleDamage(callbacks, attacker.controller, targetDefense - attackerAttack, [attacker, target]);
+  if (attackerAttack < targetDefense) {
+    changePreservedBattleDamage(callbacks, attacker.controller, targetDefense - attackerAttack, [attacker, target]);
+    pending.damageApplied = true;
+  }
   markBattleResultApplied(state, options);
   return true;
 }

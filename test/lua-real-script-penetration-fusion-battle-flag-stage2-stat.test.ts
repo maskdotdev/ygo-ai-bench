@@ -159,8 +159,9 @@ function createRestoredBattleDestroyedFlag({
     action.type === "declareAttack" && action.attackerUid === requireCard(session, attackerCode).uid && action.targetUid === requireCard(session, defenderCode).uid
   );
   expect(attack, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
-  applyRestoredActionAndAssert({ session, host, restoreComplete: true, incompleteReasons: [], missingRegistryKeys: [], missingChainLimitRegistryKeys: [] } as ReturnType<typeof restoreDuelWithLuaScripts>, attack!);
-  passBattleUntilComplete({ session, host, restoreComplete: true, incompleteReasons: [], missingRegistryKeys: [], missingChainLimitRegistryKeys: [] } as ReturnType<typeof restoreDuelWithLuaScripts>);
+  const liveRestore = { session, host, restoreComplete: true, incompleteReasons: [], missingRegistryKeys: [], missingChainLimitRegistryKeys: [] } as unknown as ReturnType<typeof restoreDuelWithLuaScripts>;
+  applyRestoredActionAndAssert(liveRestore, attack!);
+  passBattleUntilComplete(liveRestore);
   session.state.phase = "main2";
   session.state.waitingFor = 0;
   return restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);

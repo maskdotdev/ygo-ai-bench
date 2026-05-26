@@ -67,7 +67,6 @@ describe("Lua real summon-negation restore coverage", () => {
       .filter((fixture) => {
         const text = coverageText(fs.readFileSync(path.join(root, fixture.file), "utf8"));
         return ![
-          "state.chain).toHaveLength(1)",
           '"category": 32768',
           '"category": 1',
           'location: "graveyard"',

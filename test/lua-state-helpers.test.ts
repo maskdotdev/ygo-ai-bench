@@ -575,7 +575,7 @@ describe("Lua state helpers", () => {
     expect(host.messages).toContain("phase main1 true/true/false");
     expect(host.messages).toContain("phase battle step 16/true/true/false/false/false/true/true/false");
     expect(host.messages).toContain("phase damage step 32/true/true/true/false/false");
-    expect(host.messages).toContain("phase damage calc 64/true/true/true/true/false/true/false");
+    expect(host.messages).toContain("phase damage calc 64/true/true/true/true/false/false/false");
     expect(host.messages).toContain("phase battle start 8/true/false/true/true/false");
     expect(host.messages).toContain("phase battle end 128/true/false/false/false/true");
     expect(host.messages).toContain("phase end true/true/false");

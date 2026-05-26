@@ -134,6 +134,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasPantherScript
     }))).toEqual([
       { code: effectUpdateAttack, event: "continuous", reset: { flags: 1107234944 }, value: 200 },
     ]);
+    expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 1800 });
   });
 });
 

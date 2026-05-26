@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
             "sequence": 0,
           },
           "eventName": "battleTargeted",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": false,
@@ -123,6 +124,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wi
             "sequence": 0,
           },
           "eventName": "battleTargeted",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": false,

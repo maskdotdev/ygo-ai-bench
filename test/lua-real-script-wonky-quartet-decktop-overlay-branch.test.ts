@@ -91,6 +91,8 @@ describe.skipIf(!hasUpstreamScripts || !hasWonkyScript)("Lua real script Wonky Q
     expectCleanRestore(controlTrigger);
     expectRestoredLegalActions(controlTrigger, 0);
     activateTrigger(controlTrigger, controlWonky.uid, "lua-3-1102");
+    const controlOperationInfos = controlTrigger.session.state.chain.flatMap((link) => link.operationInfos ?? []);
+    expect(controlOperationInfos).toEqual([]);
     passRestoredChain(controlTrigger);
     expect(controlTrigger.session.state.cards.find((card) => card.uid === controlWonky.uid)).toMatchObject({
       location: "monsterZone",
@@ -153,6 +155,8 @@ describe.skipIf(!hasUpstreamScripts || !hasWonkyScript)("Lua real script Wonky Q
     expectCleanRestore(damageTrigger);
     expectRestoredLegalActions(damageTrigger, 0);
     activateTrigger(damageTrigger, damageWonky.uid, "lua-3-1102");
+    const damageOperationInfos = damageTrigger.session.state.chain.flatMap((link) => link.operationInfos ?? []);
+    expect(damageOperationInfos).toEqual([]);
     passRestoredChain(damageTrigger);
     expect(damageTrigger.session.state.players[0].lifePoints).toBe(5600);
     expect(damageTrigger.session.state.cards.find((card) => card.uid === damageWonky.uid)).toMatchObject({

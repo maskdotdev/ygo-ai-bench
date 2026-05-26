@@ -113,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTorrentialScript)("Lua real script To
           "sequence": 1,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -150,6 +151,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTorrentialScript)("Lua real script To
           "sequence": 1,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -204,6 +206,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTorrentialScript)("Lua real script To
           "sequence": 1,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,

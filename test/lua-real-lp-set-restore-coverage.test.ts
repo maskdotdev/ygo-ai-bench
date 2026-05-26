@@ -4,16 +4,18 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const LP_SET_FIXTURE_COUNT = 1;
+const LP_SET_FIXTURE_COUNT = 2;
 const lpSetKindCounts = {
   pairedSetLpDraw: 1,
+  scaleLossSetLp: 1,
 } satisfies Record<LpSetKind, number>;
 const lpSetSemanticVariantCounts = {
   selfDestructButtonGetLpConditionSetBothToZero: 1,
+  pendulumScaleLossAfterCoinDestroy: 1,
 } satisfies Record<LpSetSemanticVariant, number>;
 
-type LpSetKind = "pairedSetLpDraw";
-type LpSetSemanticVariant = "selfDestructButtonGetLpConditionSetBothToZero";
+type LpSetKind = "pairedSetLpDraw" | "scaleLossSetLp";
+type LpSetSemanticVariant = "selfDestructButtonGetLpConditionSetBothToZero" | "pendulumScaleLossAfterCoinDestroy";
 
 describe("Lua real LP SetLP restore coverage", () => {
   it("requires LP SetLP fixtures to assert clean Lua registry restore and restored legal actions", () => {
@@ -73,6 +75,17 @@ function lpSetFixtureFiles(): Array<{ file: string; kind: LpSetKind; required: s
         "players[1].lifePoints).toBe(0)",
       ],
     },
+    {
+      file: "test/lua-real-script-tempura-fortune-ebi-pzone-coin.test.ts",
+      kind: "scaleLossSetLp",
+      required: [
+        "restores targeted PZone TossCoin into self-destruction and scale LP loss",
+        "Duel.GetLP(tp)-tc:GetScale()*300",
+        "players[0].lifePoints).toBe(5600)",
+        "lastCoinResults).toEqual([0])",
+        'location: "extraDeck"',
+      ],
+    },
   ];
 }
 
@@ -88,19 +101,29 @@ function lpSetSemanticVariants(): Array<{ file: string; kind: LpSetSemanticVaria
         'winner).toBe("draw")',
       ],
     },
+    {
+      file: "test/lua-real-script-tempura-fortune-ebi-pzone-coin.test.ts",
+      kind: "pendulumScaleLossAfterCoinDestroy",
+      required: [
+        "restores targeted PZone TossCoin into self-destruction and scale LP loss",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "Duel.SetLP(tp,Duel.GetLP(tp)-tc:GetScale()*300)",
+        "players[0].lifePoints).toBe(5600)",
+      ],
+    },
   ];
 }
 
 function countLpSetKinds(fixtures: Array<{ kind: LpSetKind }>): Record<LpSetKind, number> {
   return fixtures.reduce<Record<LpSetKind, number>>(
     (counts, fixture) => ({ ...counts, [fixture.kind]: counts[fixture.kind] + 1 }),
-    { pairedSetLpDraw: 0 },
+    { pairedSetLpDraw: 0, scaleLossSetLp: 0 },
   );
 }
 
 function countLpSetSemanticVariants(fixtures: Array<{ kind: LpSetSemanticVariant }>): Record<LpSetSemanticVariant, number> {
   return fixtures.reduce<Record<LpSetSemanticVariant, number>>(
     (counts, fixture) => ({ ...counts, [fixture.kind]: counts[fixture.kind] + 1 }),
-    { selfDestructButtonGetLpConditionSetBothToZero: 0 },
+    { selfDestructButtonGetLpConditionSetBothToZero: 0, pendulumScaleLossAfterCoinDestroy: 0 },
   );
 }

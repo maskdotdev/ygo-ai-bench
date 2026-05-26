@@ -119,14 +119,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
       },
     ]);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-4-1",
+        effectId: "lua-1-1108",
         eventCardUid: darksea.uid,
         eventCode: eventBeMaterial,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventName: "usedAsMaterial",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.synchro,
         eventReasonCardUid: synchro.uid,
         eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         player: 0,
         sourceUid: darksea.uid,
         triggerBucket: "turnMandatory",
@@ -154,6 +160,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
         eventReason: duelReason.synchro,
         eventReasonPlayer: 0,
         eventReasonCardUid: synchro.uid,
+        eventPlayer: 0,
         eventTriggerTiming: "when",
         eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },

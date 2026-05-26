@@ -72,12 +72,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
     applyLuaRestoreAndAssert(restored, activation!);
 
     expect(restored.session.state.players[0].lifePoints).toBe(7500);
-    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
+    expect(restored.session.state.chain).toHaveLength(1);
+    expect(restored.session.state.chain[0]!.operationInfos).toEqual([
       { category: 0x20000000, targetUids: [], count: 0, player: 0, parameter: 0x8 },
     ]);
-    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    applyLuaRestoreAndAssert(restored, pass!);
+    expectRestoredLegalActions(restored, 1);
+    expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passRestoredChain(restored);
+    expect(restored.session.state.chain).toHaveLength(0);
 
     expect(restored.host.promptDecisions).toEqual([
       { id: "lua-prompt-1", api: "AnnounceCard", player: 0, options: [Number(declaredTopCode)], descriptions: [Number(declaredTopCode)], returned: Number(declaredTopCode) },
@@ -183,4 +185,11 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
     expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
   }
+}
+
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyLuaRestoreAndAssert(restored, pass!);
 }

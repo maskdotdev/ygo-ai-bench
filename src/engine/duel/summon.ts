@@ -7,7 +7,7 @@ import { availableForcedMonsterZoneCount, firstOpenForcedMonsterZoneSequence } f
 import { tributeUnitCount } from "#duel/double-tribute.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode, currentLinkMaterialCodes, currentLinkMaterialMatchesSetcode } from "#duel/card-code-state.js";
-import { cardTypeFlags, currentAttack, currentAttribute, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
+import { cardTypeFlags, currentAttack, currentAttribute, currentFiniteEffectValues, currentLevel, currentLink, currentRace, currentRank } from "#duel/card-stats.js";
 import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { cardCombinations, materialCodesMatch, selectMaterialUidsForCodes, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
@@ -323,10 +323,10 @@ export function linkSummonDuelCard(
   const { card, materials } = requireLinkSummonMaterials(state, player, uid, materialUids, canUseMaterial);
   for (const material of materials) {
     collectEvent("preUsedAsMaterial", material);
-    const result = moveMaterial(material.uid, player, duelReason.material | duelReason.link);
+    const result = moveMaterial(material.uid, player, duelReason.material | duelReason.link, card.uid);
     pushDuelLog(state, "linkMaterial", player, material.name, `Used for ${card.name}`);
     collectSentToGraveyard(result, collectEvent);
-    collectEvent("usedAsMaterial", result.card);
+    collectEvent("usedAsMaterial", result.card, { eventReason: duelReason.link, eventReasonPlayer: player, eventReasonCardUid: card.uid });
   }
 
   collectEvent("specialSummoning", card);
@@ -668,12 +668,12 @@ function findFusionMaterialUidSets(state: DuelState, player: PlayerId, cards: Du
   return results;
 }
 
-export function hasGenericFusionMaterialRequirement(card: DuelCardInstance): boolean { return card.data.fusionMaterialMin !== undefined || card.data.fusionMaterialMax !== undefined || card.data.fusionMaterialAttackMax !== undefined || card.data.fusionMaterialAttackMin !== undefined || card.data.fusionMaterialLevel !== undefined || card.data.fusionMaterialLevelMax !== undefined || card.data.fusionMaterialLevelMin !== undefined || card.data.fusionMaterialAttribute !== undefined || card.data.fusionMaterialExcludedType !== undefined || card.data.fusionMaterialRace !== undefined || card.data.fusionMaterialType !== undefined || card.data.fusionMaterialSetcode !== undefined || card.data.fusionMaterialLocation !== undefined; }
+export function hasGenericFusionMaterialRequirement(card: DuelCardInstance): boolean { return card.data.fusionMaterialMin !== undefined || card.data.fusionMaterialMax !== undefined || card.data.fusionMaterialAttackMax !== undefined || card.data.fusionMaterialAttackMin !== undefined || card.data.fusionMaterialLevel !== undefined || card.data.fusionMaterialLevelMax !== undefined || card.data.fusionMaterialLevelMin !== undefined || card.data.fusionMaterialAttribute !== undefined || card.data.fusionMaterialExcludedType !== undefined || card.data.fusionMaterialRace !== undefined || card.data.fusionMaterialType !== undefined || card.data.fusionMaterialSetcode !== undefined || card.data.fusionMaterialSetcodes !== undefined || card.data.fusionMaterialLocation !== undefined; }
 
 export function fusionMaterialCountAllowed(card: DuelCardInstance, count: number): boolean { return !hasGenericFusionMaterialRequirement(card) || (count >= (card.data.fusionMaterialMin ?? 1) && count <= (card.data.fusionMaterialMax ?? Number.POSITIVE_INFINITY)); }
 
 export function fusionMaterialMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
-  return (target.data.fusionMaterialAttackMax === undefined || currentAttack(material, state) <= target.data.fusionMaterialAttackMax) && (target.data.fusionMaterialAttackMin === undefined || currentAttack(material, state) >= target.data.fusionMaterialAttackMin) && (target.data.fusionMaterialLevel === undefined || currentLevel(material, state) === target.data.fusionMaterialLevel) && (target.data.fusionMaterialLevelMax === undefined || currentLevel(material, state) <= target.data.fusionMaterialLevelMax) && (target.data.fusionMaterialLevelMin === undefined || currentLevel(material, state) >= target.data.fusionMaterialLevelMin) && (target.data.fusionMaterialAttribute === undefined || (currentAttribute(material, state) & target.data.fusionMaterialAttribute) !== 0) && (target.data.fusionMaterialRace === undefined || (currentRace(material, state) & target.data.fusionMaterialRace) !== 0) && (target.data.fusionMaterialType === undefined || (cardTypeFlags(material, state) & target.data.fusionMaterialType) !== 0) && (target.data.fusionMaterialExcludedType === undefined || (cardTypeFlags(material, state) & target.data.fusionMaterialExcludedType) === 0) && (target.data.fusionMaterialSetcode === undefined || currentCardMatchesSetcode(material, state, target.data.fusionMaterialSetcode)) && (target.data.fusionMaterialLocation === undefined || fusionMaterialLocationMatches(material, target.data.fusionMaterialLocation));
+  return (target.data.fusionMaterialAttackMax === undefined || currentAttack(material, state) <= target.data.fusionMaterialAttackMax) && (target.data.fusionMaterialAttackMin === undefined || currentAttack(material, state) >= target.data.fusionMaterialAttackMin) && (target.data.fusionMaterialLevel === undefined || currentLevel(material, state) === target.data.fusionMaterialLevel) && (target.data.fusionMaterialLevelMax === undefined || currentLevel(material, state) <= target.data.fusionMaterialLevelMax) && (target.data.fusionMaterialLevelMin === undefined || currentLevel(material, state) >= target.data.fusionMaterialLevelMin) && (target.data.fusionMaterialAttribute === undefined || (currentAttribute(material, state) & target.data.fusionMaterialAttribute) !== 0) && (target.data.fusionMaterialRace === undefined || (currentRace(material, state) & target.data.fusionMaterialRace) !== 0) && (target.data.fusionMaterialType === undefined || (cardTypeFlags(material, state) & target.data.fusionMaterialType) !== 0) && (target.data.fusionMaterialExcludedType === undefined || (cardTypeFlags(material, state) & target.data.fusionMaterialExcludedType) === 0) && (target.data.fusionMaterialSetcode === undefined || currentCardMatchesSetcode(material, state, target.data.fusionMaterialSetcode)) && (target.data.fusionMaterialSetcodes === undefined || target.data.fusionMaterialSetcodes.some((setcode) => currentCardMatchesSetcode(material, state, setcode))) && (target.data.fusionMaterialLocation === undefined || fusionMaterialLocationMatches(material, target.data.fusionMaterialLocation));
 }
 
 export function fusionRequiredMaterialPredicateMatches(state: DuelState, material: DuelCardInstance, predicate: NonNullable<DuelCardInstance["data"]["fusionRequiredMaterialPredicates"]>[number]): boolean { return (predicate.attribute === undefined || (currentAttribute(material, state) & predicate.attribute) !== 0) && (predicate.attackMax === undefined || currentAttack(material, state) <= predicate.attackMax) && (predicate.attackMin === undefined || currentAttack(material, state) >= predicate.attackMin) && (predicate.levelMax === undefined || currentLevel(material, state) <= predicate.levelMax) && (predicate.levelMin === undefined || currentLevel(material, state) >= predicate.levelMin) && (predicate.location === undefined || fusionMaterialLocationMatches(material, predicate.location)) && (predicate.race === undefined || (currentRace(material, state) & predicate.race) !== 0) && (predicate.setcode === undefined || currentCardMatchesSetcode(material, state, predicate.setcode)) && (predicate.type === undefined || (cardTypeFlags(material, state) & predicate.type) !== 0); }
@@ -994,7 +994,7 @@ function synchroLevel(state: DuelState, card: DuelCardInstance): number {
 
 function canGenericXyzMaterialsMatch(state: DuelState, card: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const targetRank = xyzRank(state, card);
-  return targetRank > 0 && materials.length >= xyzMaterialCount(card) && materials.length <= xyzMaterialMax(card) && materials.every((material) => currentLevel(material, state) === targetRank && xyzMaterialRaceMatches(state, card, material) && xyzMaterialAttributeMatches(state, card, material) && xyzMaterialTypeMatches(state, card, material) && xyzMaterialSetcodeMatches(state, card, material) && xyzMaterialRankMatches(state, card, material));
+  return targetRank > 0 && materials.length >= xyzMaterialCount(card) && materials.length <= xyzMaterialMax(card) && materials.every((material) => currentXyzMaterialLevel(state, material) === targetRank && xyzMaterialRaceMatches(state, card, material) && xyzMaterialAttributeMatches(state, card, material) && xyzMaterialTypeMatches(state, card, material) && xyzMaterialSetcodeMatches(state, card, material) && xyzMaterialRankMatches(state, card, material));
 }
 
 function xyzRank(state: DuelState, card: DuelCardInstance): number {
@@ -1027,6 +1027,10 @@ function xyzMaterialSetcodeMatches(state: DuelState, target: DuelCardInstance, m
 
 function xyzMaterialRankMatches(state: DuelState, target: DuelCardInstance, material: DuelCardInstance): boolean {
   return target.data.xyzMaterialRank === undefined || xyzRank(state, material) === target.data.xyzMaterialRank;
+}
+
+function currentXyzMaterialLevel(state: DuelState, material: DuelCardInstance): number {
+  return currentFiniteEffectValues(material, state, 242).at(-1) ?? currentLevel(material, state);
 }
 
 function isTuner(state: DuelState, card: DuelCardInstance): boolean {

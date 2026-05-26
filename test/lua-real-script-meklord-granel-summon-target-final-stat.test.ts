@@ -164,6 +164,7 @@ function expectScriptShape(script: string | undefined): void {
   expect(script).toContain("e2:SetProperty(EFFECT_FLAG_CARD_TARGET)");
   expect(script).toContain("e2:SetCode(EVENT_SUMMON_SUCCESS)");
   expect(script).toContain("Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)");
+  expect(script).toContain("Duel.GetFirstTarget()");
   expect(script).toContain("e1:SetCode(EFFECT_SET_ATTACK_FINAL)");
   expect(script).toContain("e1:SetValue(tc:GetAttack()//2)");
   expect(script).toContain("e1:SetReset(RESETS_STANDARD_PHASE_END)");

@@ -14,6 +14,7 @@ import { installRankUpApi } from "#lua/rank-up-api.js";
 import { installSkillProcedureApi } from "#lua/skill-procedure-api.js";
 import { installUnionProcedureApi } from "#lua/union-procedure-api.js";
 import type { DuelSession } from "#duel/types.js";
+import { knownLuaEffectTargetDescriptor } from "#lua/effect-target-descriptor.js";
 import type { LuaHostState } from "#lua/host-types.js";
 
 const { lua, lauxlib, to_jsstring, to_luastring } = fengari;
@@ -39,9 +40,9 @@ export function installAuxApi(L: unknown, readLuaError: (state: unknown) => stri
   lua.lua_setfield(L, -2, to_luastring("FALSE"));
   lua.lua_pushcfunction(L, (state: unknown) => pushFilterBoolFunction(state, readLuaError));
   lua.lua_setfield(L, -2, to_luastring("FilterBoolFunction"));
-  pushFixedFilterWrapper(L, "FilterBoolFunctionEx", readLuaError, false, hostState);
-  pushFixedFilterWrapper(L, "TargetBoolFunction", readLuaError, false, hostState);
-  pushFixedFilterWrapper(L, "FaceupFilter", readLuaError, true, hostState);
+  pushFixedFilterWrapper(L, "FilterBoolFunctionEx", readLuaError, false, hostState, 1, true);
+  pushFixedFilterWrapper(L, "TargetBoolFunction", readLuaError, false, hostState, 2, true);
+  pushFixedFilterWrapper(L, "FaceupFilter", readLuaError, true, hostState, 1, true);
   lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, session, false, false));
   lua.lua_setfield(L, -2, to_luastring("bdcon"));
   lua.lua_pushcfunction(L, (state: unknown) => pushBattleDestroyedCondition(state, session, true, false));
@@ -309,7 +310,7 @@ function callIsPlayerAffectedByEffect(L: unknown, cardIndex: number, code: numbe
   lua.lua_pushinteger(L, player);
   lua.lua_pushinteger(L, code);
   const status = lua.lua_pcall(L, 2, 1, 0);
-  if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+  if (status !== lua.LUA_OK) return lauxlib.luaL_error(L, to_luastring(readLuaError(L)));
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, lua.lua_gettop(L) - top);
   return Boolean(result);
@@ -326,7 +327,7 @@ function callLuaBooleanMethod(L: unknown, tableIndex: number, methodName: string
   lua.lua_pushvalue(L, absoluteIndex);
   for (const arg of args) lua.lua_pushinteger(L, arg);
   const status = lua.lua_pcall(L, args.length + 1, 1, 0);
-  if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+  if (status !== lua.LUA_OK) return lauxlib.luaL_error(L, to_luastring(readLuaError(L)));
   const result = lua.lua_toboolean(L, -1);
   lua.lua_pop(L, lua.lua_gettop(L) - top);
   return Boolean(result);
@@ -544,7 +545,7 @@ function upstreamAuxGroupPredicateMatches(L: unknown, selectedUids: string[], al
   return Boolean(result);
 }
 
-function pushFixedFilterWrapper(L: unknown, fieldName: string, readLuaError: (state: unknown) => string, requireFaceup: boolean, hostState?: LuaHostState): void {
+function pushFixedFilterWrapper(L: unknown, fieldName: string, readLuaError: (state: unknown) => string, requireFaceup: boolean, hostState: LuaHostState | undefined, cardArgIndex: number, forwardOtherRuntimeArgs: boolean): void {
   lua.lua_pushcfunction(L, (state: unknown) => {
     if (!lua.lua_isfunction(state, 1)) {
       lua.lua_pushnil(state);
@@ -558,18 +559,27 @@ function pushFixedFilterWrapper(L: unknown, fieldName: string, readLuaError: (st
       lua.lua_pushvalue(state, index + 2);
       refs.push(lauxlib.luaL_ref(state, lua.LUA_REGISTRYINDEX));
     }
-    const descriptor = knownFixedFilterDescriptor(state, requireFaceup);
+    const descriptor = knownFixedFilterDescriptor(state, requireFaceup) ?? (hostState && extraArgCount === 0 ? knownLuaEffectTargetDescriptor(state, 1, hostState) : undefined);
     lua.lua_pushjsfunction(state, (callState: unknown) => {
-      if (requireFaceup && !isLuaCardFaceup(callState, readLuaError)) {
+      const effectiveCardArgIndex = lua.lua_istable(callState, cardArgIndex) ? cardArgIndex : lua.lua_istable(callState, 1) ? 1 : cardArgIndex;
+      if (requireFaceup && !isLuaCardFaceup(callState, readLuaError, effectiveCardArgIndex)) {
         lua.lua_pushboolean(callState, false);
         return 1;
       }
       const runtimeArgCount = lua.lua_gettop(callState);
       lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, refs[0]);
-      if (runtimeArgCount > 0) lua.lua_pushvalue(callState, 1);
+      const pushedCardArg = runtimeArgCount >= effectiveCardArgIndex ? 1 : 0;
+      if (pushedCardArg) lua.lua_pushvalue(callState, effectiveCardArgIndex);
       for (let index = 1; index < refs.length; index += 1) lua.lua_rawgeti(callState, lua.LUA_REGISTRYINDEX, refs[index]);
-      for (let index = 2; index <= runtimeArgCount; index += 1) lua.lua_pushvalue(callState, index);
-      const status = lua.lua_pcall(callState, runtimeArgCount + refs.length - 1, 1, 0);
+      let forwardedArgCount = 0;
+      if (forwardOtherRuntimeArgs) {
+        for (let index = 1; index <= runtimeArgCount; index += 1) {
+          if (index === effectiveCardArgIndex) continue;
+          lua.lua_pushvalue(callState, index);
+          forwardedArgCount += 1;
+        }
+      }
+      const status = lua.lua_pcall(callState, pushedCardArg + refs.length - 1 + forwardedArgCount, 1, 0);
       if (status !== lua.LUA_OK) return lauxlib.luaL_error(callState, to_luastring(readLuaError(callState)));
       return 1;
     });
@@ -619,43 +629,49 @@ function isNamedTableFunction(L: unknown, index: number, tableName: string, fiel
   return same;
 }
 
-function isLuaCardFaceup(L: unknown, readLuaError: (state: unknown) => string): boolean {
-  if (!lua.lua_istable(L, 1)) return false;
-  if (!isLuaCardOnField(L, readLuaError)) return isLuaCardMarkedFaceup(L, readLuaError);
-  lua.lua_getfield(L, 1, to_luastring("GetPosition"));
+function isLuaCardFaceup(L: unknown, readLuaError: (state: unknown) => string, cardIndex: number): boolean {
+  if (!lua.lua_istable(L, cardIndex)) return false;
+  const location = luaCardLocationMask(L, readLuaError, cardIndex);
+  if ((location & 0x0c) === 0) return isLuaCardMarkedFaceup(L, readLuaError, cardIndex);
+  if ((location & 0x08) !== 0) return isLuaCardMarkedFaceup(L, readLuaError, cardIndex);
+  lua.lua_getfield(L, cardIndex, to_luastring("GetPosition"));
   if (lua.lua_isfunction(L, -1)) {
-    lua.lua_pushvalue(L, 1);
+    lua.lua_pushvalue(L, cardIndex);
     const status = lua.lua_pcall(L, 1, 1, 0);
     if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
     const position = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : 0;
     lua.lua_pop(L, 1);
-    return (position & 0x5) !== 0;
+    if (position !== 0) return (position & 0x5) !== 0;
   }
   lua.lua_pop(L, 1);
-  return isLuaCardMarkedFaceup(L, readLuaError);
+  return isLuaCardMarkedFaceup(L, readLuaError, cardIndex);
 }
 
-function isLuaCardOnField(L: unknown, readLuaError: (state: unknown) => string): boolean {
-  lua.lua_getfield(L, 1, to_luastring("GetLocation"));
+function isLuaCardOnField(L: unknown, readLuaError: (state: unknown) => string, cardIndex: number): boolean {
+  return (luaCardLocationMask(L, readLuaError, cardIndex) & 0x0c) !== 0;
+}
+
+function luaCardLocationMask(L: unknown, readLuaError: (state: unknown) => string, cardIndex: number): number {
+  lua.lua_getfield(L, cardIndex, to_luastring("GetLocation"));
   if (!lua.lua_isfunction(L, -1)) {
     lua.lua_pop(L, 1);
-    return false;
+    return 0;
   }
-  lua.lua_pushvalue(L, 1);
+  lua.lua_pushvalue(L, cardIndex);
   const status = lua.lua_pcall(L, 1, 1, 0);
-  if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
+  if (status !== lua.LUA_OK) return lauxlib.luaL_error(L, to_luastring(readLuaError(L))) as number;
   const location = lua.lua_isnumber(L, -1) ? lua.lua_tointeger(L, -1) : 0;
   lua.lua_pop(L, 1);
-  return (location & 0x0c) !== 0;
+  return location;
 }
 
-function isLuaCardMarkedFaceup(L: unknown, readLuaError: (state: unknown) => string): boolean {
-  lua.lua_getfield(L, 1, to_luastring("IsFaceup"));
+function isLuaCardMarkedFaceup(L: unknown, readLuaError: (state: unknown) => string, cardIndex: number): boolean {
+  lua.lua_getfield(L, cardIndex, to_luastring("IsFaceup"));
   if (!lua.lua_isfunction(L, -1)) {
     lua.lua_pop(L, 1);
     return false;
   }
-  lua.lua_pushvalue(L, 1);
+  lua.lua_pushvalue(L, cardIndex);
   const status = lua.lua_pcall(L, 1, 1, 0);
   if (status !== lua.LUA_OK) return Boolean(lauxlib.luaL_error(L, to_luastring(readLuaError(L))));
   const result = lua.lua_toboolean(L, -1);

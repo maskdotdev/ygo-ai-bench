@@ -117,6 +117,8 @@ function realScriptAttackRetargetFixtureFiles(): Array<{
         'eventName: "battleTargeted"',
         "targetUid: spellcaster.uid",
         "battleDamage).toMatchObject({ 1: 400 })",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: attacker.uid",
       ],
     },
     {
@@ -126,6 +128,8 @@ function realScriptAttackRetargetFixtureFiles(): Array<{
         "effectId.endsWith(\"-1131\")",
         "targetUid: blocker!.uid",
         "battleDamage).toMatchObject({ 1: 1400 })",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: attacker!.uid",
       ],
     },
     {
@@ -135,6 +139,8 @@ function realScriptAttackRetargetFixtureFiles(): Array<{
         'action.type === "activateEffect"',
         "targetUid: newTarget!.uid",
         "battleDamage).toMatchObject({ 1: 1300 })",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: attacker!.uid",
       ],
     },
     {
@@ -144,6 +150,8 @@ function realScriptAttackRetargetFixtureFiles(): Array<{
         'eventName: "battleTargeted"',
         "targetUid: spellcaster!.uid",
         "battleDamage).toMatchObject({ 1: 400 })",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: attacker!.uid",
       ],
     },
     {
@@ -202,6 +210,8 @@ function realScriptAttackRetargetSemanticVariants(): Array<{
         'sourceUid": "p1-deck-56132807-0"',
         "targetUid: spellcaster.uid",
         "players[1].lifePoints).toBe(7600)",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: attacker.uid",
       ],
     },
     {
@@ -214,6 +224,8 @@ function realScriptAttackRetargetSemanticVariants(): Array<{
         "action.type === \"activateEffect\" && action.uid === sevenTools!.uid)).toBe(true)",
         "targetUid: newTarget!.uid",
         "battleDamage).toMatchObject({ 1: 1300 })",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: attacker!.uid",
       ],
     },
     {
@@ -237,6 +249,8 @@ function realScriptAttackRetargetSemanticVariants(): Array<{
         "moveDuelCard(session.state, spellcaster!.uid, \"graveyard\", 1)",
         "targetUid: spellcaster!.uid",
         "players[1].lifePoints).toBe(7600)",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: attacker!.uid",
       ],
     },
     {
@@ -248,6 +262,8 @@ function realScriptAttackRetargetSemanticVariants(): Array<{
         "currentAttack?.targetUid).toBeUndefined()",
         "pendingBattle?.targetUid).toBeUndefined()",
         "battleDamage).toMatchObject({ 1: 1800 })",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: attacker!.uid",
       ],
     },
     {

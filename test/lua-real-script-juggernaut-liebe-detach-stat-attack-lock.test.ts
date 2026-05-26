@@ -135,6 +135,20 @@ describe.skipIf(!hasUpstreamScripts || !hasLiebeScript)("Lua real script Juggern
     passBattleResponses(restoredBoost);
     expect(restoredBoost.session.state.cards.find((card) => card.uid === firstTarget.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredBoost.session.state.battleDamage).toEqual({ 0: 0, 1: 5000 });
+    expect(restoredBoost.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: liebe.uid,
+        eventPlayer: 1,
+        eventValue: 5000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: liebe.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
 
     const restoredSecondAttack = restoreDuelWithLuaScripts(serializeDuel(restoredBoost.session), workspace, reader);
     expectCleanRestore(restoredSecondAttack);

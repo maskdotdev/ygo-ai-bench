@@ -48,7 +48,7 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
     if (!source) continue;
     const candidate = triggerEventCandidate(state, effect, eventName, eventCard, options);
     if (isBattleDestroyingSingleTrigger(effect, eventName) && candidate.eventCard?.uid !== source.uid) continue;
-    if (effect.triggerSourceOnly && candidate.eventCard?.uid !== source.uid) continue;
+    if (effect.triggerSourceOnly && !triggerSourceOnlyMatches(effect, source, eventName, candidate.eventCard, candidate.options)) continue;
     if (!triggerSourceInRange(effect, source, eventName, candidate.eventCard)) continue;
     if (isTriggerPrevented(state, source)) continue;
     if (!shouldDeferCustomEventChoice(state, eventName) && !canChooseEffect(state, effect, source, eventName, candidate.eventCard, candidate.options)) continue;
@@ -122,7 +122,7 @@ function firstTriggerEventCandidate(
   for (const eventCard of eventCards) {
     const candidate = triggerEventCandidate(state, effect, eventName, eventCard, options);
     if (isBattleDestroyingSingleTrigger(effect, eventName) && candidate.eventCard?.uid !== source.uid) continue;
-    if (effect.triggerSourceOnly && candidate.eventCard?.uid !== source.uid) continue;
+    if (effect.triggerSourceOnly && !triggerSourceOnlyMatches(effect, source, eventName, candidate.eventCard, candidate.options)) continue;
     if (canChooseEffect(state, effect, source, eventName, candidate.eventCard, candidate.options)) return candidate;
   }
   return { options };
@@ -135,12 +135,24 @@ function triggerEventCandidate(
   eventCard: DuelCardInstance | undefined,
   options: DuelTriggerCollectOptions,
 ): TriggerEventCandidate {
-  if (eventName === "detachedMaterial" && eventCard) return detachedMaterialTriggerCandidate(state, eventCard, options);
+  if (eventName === "detachedMaterial" && eventCard) return detachedMaterialTriggerCandidate(eventCard, options);
   if (!isBattleDestroyingTrigger(effect, eventName) || !eventCard) return { eventCard, options: eventCard ? eventCardReasonTriggerOptions(options, eventCard) : options };
   const destroyingUid = battleDestroyingSourceUid(state, eventCard);
   const destroyingCard = destroyingUid === undefined ? undefined : findCard(state, destroyingUid);
   if (!destroyingCard) return { eventCard, options };
   return { eventCard: destroyingCard, options: battleDestroyingTriggerOptions(options, eventCard) };
+}
+
+function triggerSourceOnlyMatches(
+  effect: DuelEffectDefinition,
+  source: DuelCardInstance,
+  eventName: DuelEventName,
+  eventCard: DuelCardInstance | undefined,
+  options: DuelTriggerCollectOptions,
+): boolean {
+  if (!effect.triggerSourceOnly) return true;
+  if (eventCard?.uid === source.uid) return true;
+  return eventName === "detachedMaterial" && options.eventReasonCardUid === source.uid;
 }
 
 function eventCardReasonTriggerOptions(options: DuelTriggerCollectOptions, eventCard: DuelCardInstance): DuelTriggerCollectOptions {
@@ -155,16 +167,10 @@ function eventCardReasonTriggerOptions(options: DuelTriggerCollectOptions, event
   };
 }
 
-function detachedMaterialTriggerCandidate(
-  state: DuelState,
-  detachedMaterial: DuelCardInstance,
-  options: DuelTriggerCollectOptions,
-): TriggerEventCandidate {
+function detachedMaterialTriggerCandidate(detachedMaterial: DuelCardInstance, options: DuelTriggerCollectOptions): TriggerEventCandidate {
   const reasonPayload = eventCardReasonPayload(detachedMaterial);
-  const holderUid = options.eventReasonCardUid ?? reasonPayload.eventReasonCardUid;
-  const holder = holderUid === undefined ? undefined : findCard(state, holderUid);
   return {
-    eventCard: holder ?? detachedMaterial,
+    eventCard: detachedMaterial,
     options: {
       ...options,
       ...(options.eventPlayer === undefined ? { eventPlayer: detachedMaterial.controller } : {}),

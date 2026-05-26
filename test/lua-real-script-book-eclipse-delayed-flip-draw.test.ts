@@ -157,9 +157,6 @@ describe.skipIf(!hasUpstreamScripts || !hasBookScript)("Lua real script Book of 
         },
         "sourceUid": "p0-deck-35480699-0",
         "target": [Function],
-        "triggerCode": 4608,
-        "triggerEvent": "phaseEnd",
-        "triggerTiming": "when",
       }
     `);
     expect(restoredChain.host.messages).not.toContain("book of eclipse responder resolved");

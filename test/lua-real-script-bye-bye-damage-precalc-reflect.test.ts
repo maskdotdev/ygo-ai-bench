@@ -151,6 +151,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script By
         },
       },
     ]);
+    expect(restoredReflect.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 0,
+        eventValue: 1600,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 1,
+        eventReasonCardUid: defender.uid,
+        eventReasonEffectId: 3,
+      },
+    ]);
   });
 });
 

@@ -78,11 +78,20 @@ describe.skipIf(!hasUpstreamScripts || !hasSaizanScript)("Lua real script Karaku
     );
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 1), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredSetup, attack!);
-    expect(restoredSetup.session.state.pendingTriggers).toMatchObject([
+    expect(restoredSetup.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
         effectId: "lua-2-1131",
         eventCardUid: saizan.uid,
+        eventCode: 1131,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleTargeted",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        player: 0,
         sourceUid: saizan.uid,
         triggerBucket: "opponentMandatory",
       },
@@ -122,13 +131,22 @@ describe.skipIf(!hasUpstreamScripts || !hasSaizanScript)("Lua real script Karaku
     expect(saizanAttack, JSON.stringify(getLuaRestoreLegalActions(restoredDamageSetup, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredDamageSetup, saizanAttack!);
     passBattleUntilTrigger(restoredDamageSetup);
-    expect(restoredDamageSetup.session.state.pendingTriggers).toMatchObject([
+    expect(restoredDamageSetup.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-6-1",
         effectId: "lua-3-1143",
         eventCardUid: attacker.uid,
+        eventCode: 1143,
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDamageDealt",
         eventPlayer: 0,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.battle,
+        eventReasonCardUid: attacker.uid,
+        eventReasonPlayer: 1,
+        eventTriggerTiming: "when",
         eventValue: 1800,
+        player: 0,
         sourceUid: saizan.uid,
         triggerBucket: "turnMandatory",
       },

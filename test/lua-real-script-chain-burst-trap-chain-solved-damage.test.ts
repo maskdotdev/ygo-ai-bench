@@ -90,7 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasChainBurstScript)("Lua real script Ch
         },
         eventCurrentState: {
           controller: 0,
-          faceUp: false,
+          faceUp: true,
           location: "spellTrapZone",
           position: "faceDown",
           sequence: 1,

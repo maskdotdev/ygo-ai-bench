@@ -368,7 +368,7 @@ describe("Lua effect reset", () => {
     expect(session.state.effects).toHaveLength(0);
   });
 
-  it("removes Lua RESET_PHASE effects when entering the Damage Step", () => {
+  it("removes Lua RESET_PHASE effects when leaving the Damage Step", () => {
     const { session } = setupLuaChainFixture({
       seed: 127,
       startingHandSize: 2,
@@ -401,6 +401,20 @@ describe("Lua effect reset", () => {
     enterDamageStep(session, attacker!.uid);
 
     expect(session.state.battleWindow?.kind).toBe("startDamageStep");
+    expect(session.state.effects).toHaveLength(1);
+    passDamageWindow(session);
+    expect(session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
+    expect(session.state.effects).toHaveLength(1);
+    passDamageWindow(session);
+    expect(session.state.battleWindow?.kind).toBe("duringDamageCalculation");
+    expect(session.state.effects).toHaveLength(1);
+    passDamageWindow(session);
+    expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
+    expect(session.state.effects).toHaveLength(1);
+    passDamageWindow(session);
+    expect(session.state.battleWindow?.kind).toBe("endDamageStep");
+    expect(session.state.effects).toHaveLength(1);
+    passDamageWindow(session);
     expect(session.state.effects).toHaveLength(0);
   });
 

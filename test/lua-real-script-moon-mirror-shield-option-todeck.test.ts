@@ -66,13 +66,21 @@ describe.skipIf(!hasUpstreamScripts || !hasShieldScript)("Lua real script Moon M
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expectCleanRestore(restoredTrigger);
     expectRestoredLegalActions(restoredTrigger, 0);
-    expect(restoredTrigger.session.state.pendingTriggers).toMatchObject([
+    expect(restoredTrigger.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
         effectId: "lua-4-1014",
-        sourceUid: shield.uid,
+        eventCardUid: shield.uid,
+        eventCode: 1014,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventName: "sentToGraveyard",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "spellTrapZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         player: 0,
+        sourceUid: shield.uid,
         triggerBucket: "turnMandatory",
       },
     ]);

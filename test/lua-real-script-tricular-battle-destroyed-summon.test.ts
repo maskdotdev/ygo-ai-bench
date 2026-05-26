@@ -87,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts)("Lua real script Tricular battle-destroyed 
         sourceUid: tricular.uid,
         triggerBucket: "opponentOptional",
         eventName: "battleDestroyed",
+        eventPlayer: 0,
         eventCode: 1140,
         eventCardUid: tricular.uid,
         eventReason: duelReason.battle | duelReason.destroy,

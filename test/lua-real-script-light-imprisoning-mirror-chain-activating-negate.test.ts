@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMirrorScript)
         eventName: "chainActivating",
         eventCode: 1021,
         eventCardUid: lightMonster.uid,
+        eventPlayer: 0,
         eventReason: 0,
         eventReasonPlayer: 0,
         relatedEffectId: 3,

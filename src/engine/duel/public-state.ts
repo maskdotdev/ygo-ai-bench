@@ -75,6 +75,7 @@ function copyPublicChainLink(link: DuelState["chain"][number]): PublicChainLink 
   return {
     ...publicLink,
     ...(link.targetUids === undefined ? {} : { targetUids: [...link.targetUids] }),
+    ...(link.targetFieldIds === undefined ? {} : { targetFieldIds: [...link.targetFieldIds] }),
     ...(link.operationInfos === undefined ? {} : { operationInfos: copyOperationInfos(link.operationInfos) }),
     ...(link.possibleOperationInfos === undefined ? {} : { possibleOperationInfos: copyOperationInfos(link.possibleOperationInfos) }),
     ...(link.eventUids === undefined ? {} : { eventUids: [...link.eventUids] }),

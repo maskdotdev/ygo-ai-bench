@@ -256,7 +256,7 @@ function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts
     guard += 1;
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
-    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, restored.session.state.waitingFor), null, 2)).toBeDefined();
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restored, pass!);
   }
   expect(restored.session.state.chain).toEqual([]);

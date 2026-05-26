@@ -93,8 +93,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
       triggerEvent: effect.triggerEvent,
     }))).toEqual([
       { code: 1002, event: "ignition", label: Number(announcedSpellCode), range: ["hand", "spellTrapZone"], triggerEvent: undefined },
-      { code: 1027, event: "continuous", label: undefined, range: ["spellTrapZone"], triggerEvent: "chaining" },
-      { code: 1022, event: "continuous", label: undefined, range: ["spellTrapZone"], triggerEvent: "chainSolved" },
+      { code: 1027, event: "continuous", label: undefined, range: ["spellTrapZone"], triggerEvent: undefined },
+      { code: 1022, event: "continuous", label: undefined, range: ["spellTrapZone"], triggerEvent: undefined },
       { code: 41, event: "continuous", label: undefined, range: ["spellTrapZone"], triggerEvent: undefined },
     ]);
 
@@ -110,8 +110,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
       triggerEvent: effect.triggerEvent,
     }))).toEqual([
       { code: 1002, event: "ignition", label: Number(announcedSpellCode), labelObjectId: undefined, range: ["hand", "spellTrapZone"], triggerEvent: undefined },
-      { code: 1027, event: "continuous", label: undefined, labelObjectId: 1, range: ["spellTrapZone"], triggerEvent: "chaining" },
-      { code: 1022, event: "continuous", label: undefined, labelObjectId: 1, range: ["spellTrapZone"], triggerEvent: "chainSolved" },
+      { code: 1027, event: "continuous", label: undefined, labelObjectId: 1, range: ["spellTrapZone"], triggerEvent: undefined },
+      { code: 1022, event: "continuous", label: undefined, labelObjectId: 1, range: ["spellTrapZone"], triggerEvent: undefined },
       { code: 41, event: "continuous", label: undefined, labelObjectId: undefined, range: ["spellTrapZone"], triggerEvent: undefined },
     ]);
 
@@ -123,14 +123,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Di
     expect(restoredChainWatchers.host.messages).toContain("dirge announced spell resolved");
     expect(restoredChainWatchers.session.state.players[0].lifePoints).toBe(4000);
     expect(restoredChainWatchers.session.state.players[1].lifePoints).toBe(8000);
-    expect(restoredChainWatchers.session.state.effects.filter((effect) => effect.sourceUid === dirge.uid && effect.triggerEvent === "phaseEnd")).toEqual([
+    expect(restoredChainWatchers.session.state.effects.filter((effect) => effect.sourceUid === dirge.uid && effect.code === phaseEndEventCode)).toEqual([
       expect.objectContaining({
         code: phaseEndEventCode,
         countLimit: 1,
         event: "continuous",
         range: ["spellTrapZone"],
-        triggerCode: phaseEndEventCode,
-        triggerEvent: "phaseEnd",
       }),
     ]);
     expect(restoredChainWatchers.session.state.eventHistory.filter((event) => ["chaining", "chainSolved"].includes(event.eventName))).toEqual([

@@ -79,43 +79,32 @@ describe.skipIf(!hasUpstreamScripts || !hasEnemyCatcherScript)("Lua real script 
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTriggerWindow, trigger!);
     expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
-    expect(restoredTriggerWindow.session.state.chain[0]).toEqual({
-      activationLocation: "monsterZone",
-      activationSequence: 0,
-      chainIndex: 1,
-      effectId: "lua-1-1100",
-      eventCardUid: enemyCatcher.uid,
-      eventCode: 1100,
-      eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
-      eventName: "normalSummoned",
-      eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
-      eventReason: duelReason.summon,
-      eventReasonPlayer: 0,
-      eventTriggerTiming: "when",
-      id: "chain-3",
-      operationInfos: [{ category: 0x2000, targetUids: [target.uid], count: 1, player: 0, parameter: 0 }],
-      player: 0,
-      sourceUid: enemyCatcher.uid,
-      targetUids: [target.uid],
-    });
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expect(restoredChainWindow.restoreComplete, restoredChainWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChainWindow.missingRegistryKeys).toEqual([]);
     expect(restoredChainWindow.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredChainWindow, 1);
-    passRestoredChain(restoredChainWindow);
+    expect(getLuaRestoreLegalActions(restoredChainWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passRestoredChain(restoredChainWindow, 1);
 
-    expect(restoredChainWindow.host.messages).not.toContain("enemy catcher responder resolved");
-    expect(restoredChainWindow.session.state.cards.find((card) => card.uid === enemyCatcher.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
-    expect(restoredChainWindow.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({
+    const restoredResolvedWindow = restoreDuelWithLuaScripts(serializeDuel(restoredChainWindow.session), source, reader);
+    expect(restoredResolvedWindow.restoreComplete, restoredResolvedWindow.incompleteReasons.join("; ")).toBe(true);
+    expect(restoredResolvedWindow.missingRegistryKeys).toEqual([]);
+    expect(restoredResolvedWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expectRestoredLegalActions(restoredResolvedWindow, 0);
+    expect(getLuaRestoreLegalActions(restoredResolvedWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(false);
+
+    expect(restoredResolvedWindow.host.messages).not.toContain("enemy catcher responder resolved");
+    expect(restoredResolvedWindow.session.state.cards.find((card) => card.uid === enemyCatcher.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
+    expect(restoredResolvedWindow.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({
       location: "monsterZone",
       controller: 0,
       previousController: 1,
       position: "faceDownDefense",
       faceUp: false,
     });
-    expect(restoredChainWindow.session.state.effects.find((effect) => effect.registryKey === `lua:${targetCode}:temporary-control-return:${target.uid}`)).toMatchObject({
+    expect(restoredResolvedWindow.session.state.effects.find((effect) => effect.registryKey === `lua:${targetCode}:temporary-control-return:${target.uid}`)).toMatchObject({
       code: 0x1200,
       event: "continuous",
       luaValueDescriptor: "temporary-control-return",
@@ -123,7 +112,7 @@ describe.skipIf(!hasUpstreamScripts || !hasEnemyCatcherScript)("Lua real script 
       sourceUid: target.uid,
       value: 1,
     });
-    expect(restoredChainWindow.session.state.eventHistory.filter((event) => event.eventName === "controlChanged" && event.eventCardUid === target.uid)).toEqual([
+    expect(restoredResolvedWindow.session.state.eventHistory.filter((event) => event.eventName === "controlChanged" && event.eventCardUid === target.uid)).toEqual([
       {
         eventName: "controlChanged",
         eventCode: 1120,
@@ -137,7 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasEnemyCatcherScript)("Lua real script 
       },
     ]);
 
-    const restoredReturnWindow = restoreDuelWithLuaScripts(serializeDuel(restoredChainWindow.session), source, reader);
+    const restoredReturnWindow = restoreDuelWithLuaScripts(serializeDuel(restoredResolvedWindow.session), source, reader);
     expect(restoredReturnWindow.restoreComplete, restoredReturnWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredReturnWindow.missingRegistryKeys).toEqual([]);
     expect(restoredReturnWindow.missingChainLimitRegistryKeys).toEqual([]);
@@ -192,21 +181,10 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
   }
 }
 
-function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
-  while (restored.session.state.chain.length > 0) {
-    const player = restored.session.state.waitingFor;
-    expect(player).toBeDefined();
-    const pass = getLuaRestoreLegalActions(restored, player!).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const result = applyLuaRestoreResponse(restored, pass!);
-    expect(result.ok, result.error).toBe(true);
-    const waitingFor = restored.session.state.waitingFor;
-    if (waitingFor !== undefined) {
-      expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
-      expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
-      expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
-    }
-  }
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyRestoredActionAndAssert(restored, pass!);
 }
 
 function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {

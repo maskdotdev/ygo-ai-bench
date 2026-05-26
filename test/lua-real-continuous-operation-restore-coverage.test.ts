@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const continuousOperationFixtureCount = 13;
+const continuousOperationFixtureCount = 15;
 const continuousOperationKindCounts = {
   attributeStatDestroyedToHand: 1,
   chainSolvingDoubleSnareNegateDestroy: 1,
@@ -14,7 +14,9 @@ const continuousOperationKindCounts = {
   continuousRedirect: 4,
   endPhaseControlReturn: 1,
   originalCodeSummonLock: 1,
-  persistentAttackAnnounceStatMaintenance: 1,
+  persistentStatMustAttackDraw: 1,
+  summonDrawAttackStat: 1,
+  removeCustomStat: 1,
   summonTriggerBackrowDestroy: 1,
 } satisfies Record<ContinuousOperationKind, number>;
 const continuousOperationSemanticVariantCounts = {
@@ -24,11 +26,14 @@ const continuousOperationSemanticVariantCounts = {
   coreOfChaosFaceUpLeaveFieldRedirect: 1,
   darkMagicianOriginalCodeSummonLock: 1,
   dimensionalFissureToGraveRedirect: 1,
+  hinezumiHanabiCounterControlDiceBurn: 1,
   fenghuangSetBackrowDestroy: 1,
   goraTurtleTargetedSpellNegateDestroy: 1,
   magicalMusketeerCasparHandTrapSearch: 1,
-  mirrorWallAttackAnnounceMaintenance: 1,
+  marincessBubbleReefRemoveCustomStat: 1,
   missusRadiantAttributeStatDestroyedToHand: 1,
+  aiShadowPersistentStatMustAttackDraw: 1,
+  piercingDarknessNormalDrawAttackStat: 1,
   ryuGeRealmGrantRedirectStat: 1,
   skullArchfiendDiceTargetNegateDestroy: 1,
 } satisfies Record<ContinuousOperationSemanticVariant, number>;
@@ -42,7 +47,9 @@ type ContinuousOperationKind =
   | "continuousRedirect"
   | "endPhaseControlReturn"
   | "originalCodeSummonLock"
-  | "persistentAttackAnnounceStatMaintenance"
+  | "persistentStatMustAttackDraw"
+  | "summonDrawAttackStat"
+  | "removeCustomStat"
   | "summonTriggerBackrowDestroy";
 
 type ContinuousOperationSemanticVariant =
@@ -52,11 +59,14 @@ type ContinuousOperationSemanticVariant =
   | "coreOfChaosFaceUpLeaveFieldRedirect"
   | "darkMagicianOriginalCodeSummonLock"
   | "dimensionalFissureToGraveRedirect"
+  | "hinezumiHanabiCounterControlDiceBurn"
   | "fenghuangSetBackrowDestroy"
   | "goraTurtleTargetedSpellNegateDestroy"
   | "magicalMusketeerCasparHandTrapSearch"
-  | "mirrorWallAttackAnnounceMaintenance"
+  | "marincessBubbleReefRemoveCustomStat"
   | "missusRadiantAttributeStatDestroyedToHand"
+  | "aiShadowPersistentStatMustAttackDraw"
+  | "piercingDarknessNormalDrawAttackStat"
   | "ryuGeRealmGrantRedirectStat"
   | "skullArchfiendDiceTargetNegateDestroy";
 
@@ -109,23 +119,34 @@ function continuousOperationFixtureFiles(): Array<{
 }> {
   return ([
     {
-      file: "test/lua-real-script-mirror-wall-attack-announce-maintenance.test.ts",
-      kind: "persistentAttackAnnounceStatMaintenance",
+      file: "test/lua-real-script-ai-shadow-persistent-stat-draw.test.ts",
+      kind: "persistentStatMustAttackDraw",
       required: [
-        "Mirror Wall attack announce maintenance",
-        "aux.StatChangeDamageStepCondition",
-        "EVENT_ATTACK_ANNOUNCE",
-        "e:GetLabelObject():AddCard(a)",
-        "EFFECT_SET_ATTACK_FINAL",
-        "return c:GetAttack()/2",
-        "EVENT_PHASE|PHASE_STANDBY",
-        "Duel.CheckLPCost(tp,2000)",
-        "Duel.SelectYesNo(tp,aux.Stringid(id,0))",
-        "Duel.PayLPCost(tp,2000)",
-        "Duel.Destroy(e:GetHandler(),REASON_COST)",
-        "currentAttack(restoredAttack",
-        "battleDamage).toEqual({ 0: 0, 1: 100 })",
-        "eventName: \"lifePointCostPaid\"",
+        "A.I. Shadow persistent stat draw",
+        "aux.AddPersistentProcedure(c,0,aux.FaceupFilter(Card.IsSetCard,SET_IGNISTER),CATEGORY_ATKCHANGE,EFFECT_FLAG_DAMAGE_STEP",
+        "e1:SetTarget(aux.PersistentTargetFilter)",
+        "e2:SetCode(EFFECT_MUST_ATTACK)",
+        "e3:SetCode(EFFECT_MUST_ATTACK_MONSTER)",
+        "e4:SetCode(EVENT_TO_GRAVE)",
+        "e5:SetCode(EVENT_REMOVE)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "currentAttack(restoredChain.session.state.cards.find",
+        "eventName: \"cardsDrawn\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-piercing-darkness-normal-draw-attack-stat.test.ts",
+      kind: "summonDrawAttackStat",
+      required: [
+        "Piercing the Darkness normal draw attack stat",
+        "e2:SetCode(EVENT_SUMMON_SUCCESS)",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "e4:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "ge1:SetCode(EFFECT_MATERIAL_CHECK)",
+        "currentAttack(restoredAttackTrigger.session.state.cards.find",
+        "eventName: \"cardsDrawn\"",
       ],
     },
     {
@@ -193,6 +214,20 @@ function continuousOperationFixtureFiles(): Array<{
         "action.type === \"activateTrigger\"",
         "eventName: \"moved\"",
         "location).toBe(\"hand\")",
+      ],
+    },
+    {
+      file: "test/lua-real-script-marincess-great-bubble-reef-remove-custom-stat.test.ts",
+      kind: "removeCustomStat",
+      required: [
+        "restores EVENT_REMOVE continuous RaiseSingleEvent into custom-event ATK gain",
+        "e2b:SetCode(EVENT_REMOVE)",
+        "Duel.RaiseSingleEvent(e:GetHandler(),EVENT_CUSTOM+id,re,r,rp,ep,ct)",
+        "e2a:SetCode(EVENT_CUSTOM+id)",
+        "c:UpdateAttack(ev*600,RESETS_STANDARD_DISABLE_PHASE_END)",
+        'eventName: "banished"',
+        'eventName: "customEvent"',
+        "currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === bubbleReef.uid), restoredTrigger.session.state)).toBe(3200)",
       ],
     },
     {
@@ -325,7 +360,9 @@ function countContinuousOperationKinds(
       continuousRedirect: 0,
       endPhaseControlReturn: 0,
       originalCodeSummonLock: 0,
-      persistentAttackAnnounceStatMaintenance: 0,
+      persistentStatMustAttackDraw: 0,
+      summonDrawAttackStat: 0,
+      removeCustomStat: 0,
       summonTriggerBackrowDestroy: 0,
     },
   );
@@ -338,16 +375,30 @@ function continuousOperationSemanticVariants(): Array<{
 }> {
   return ([
     {
-      file: "test/lua-real-script-mirror-wall-attack-announce-maintenance.test.ts",
-      kind: "mirrorWallAttackAnnounceMaintenance",
+      file: "test/lua-real-script-ai-shadow-persistent-stat-draw.test.ts",
+      kind: "aiShadowPersistentStatMustAttackDraw",
       required: [
-        'const mirrorWallCode = "22359980"',
-        "restores tracked attacking monsters, final ATK halving, and Standby LP upkeep",
-        "e:GetLabelObject():IsContains(c)",
-        "Duel.SelectYesNo(tp,aux.Stringid(id,0))",
-        "currentAttack(restoredAttack",
-        "players[0].lifePoints).toBe(6000)",
-        "eventValue: 2000",
+        'const aiShadowCode = "77421977"',
+        "restores persistent @Ignister targeting, must-attack effects, and opponent-effect removal draw",
+        "setIgnister = 0x135",
+        "cardTargetUids: [target.uid]",
+        "effect.code === 191",
+        "effect.code === 344",
+        "eventReasonEffectId: 8",
+        "eventReasonEffectId: 6",
+      ],
+    },
+    {
+      file: "test/lua-real-script-piercing-darkness-normal-draw-attack-stat.test.ts",
+      kind: "piercingDarknessNormalDrawAttackStat",
+      required: [
+        'const piercingCode = "21862633"',
+        "restores normal-monster Summon draw and attack-announcement ATK gain from the field Spell",
+        "return c:IsType(TYPE_NORMAL) and not c:IsType(TYPE_TOKEN) and c:IsSummonPlayer(tp)",
+        "triggerBucket: \"turnOptional\"",
+        "eventReasonEffectId: 2",
+        "registryKey: \"lua:21862633:lua-6-100\"",
+        "value: 1600",
       ],
     },
     {
@@ -411,6 +462,18 @@ function continuousOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-marincess-great-bubble-reef-remove-custom-stat.test.ts",
+      kind: "marincessBubbleReefRemoveCustomStat",
+      required: [
+        'const bubbleReefCode = "47910940"',
+        "Marincess Great Bubble Reef remove custom stat",
+        "Duel.Remove(g,POS_FACEUP,REASON_EFFECT)",
+        "eventCode: 0x10000000 + Number(bubbleReefCode)",
+        "eventValue: 1",
+        "eventReasonCardUid: starter.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-missus-radiant-destroyed-attribute-to-hand.test.ts",
       kind: "missusRadiantAttributeStatDestroyedToHand",
       required: [
@@ -432,6 +495,37 @@ function continuousOperationSemanticVariants(): Array<{
         "eventName: \"controlChanged\"",
         "previousController: 1",
         "not.toContain(`lua:${targetCode}:temporary-control-return",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hinezumi-hanabi-counter-control-dice.test.ts",
+      kind: "hinezumiHanabiCounterControlDiceBurn",
+      required: [
+        "restores summon counters into End Phase control transfer and dice destroy burn",
+        "--Hinezumi Hanabi",
+        "c:EnableCounterPermit(0x203)",
+        "e1:SetCode(EFFECT_CANNOT_BE_MATERIAL)",
+        "e1:SetValue(aux.cannotmatfilter(SUMMON_TYPE_FUSION,SUMMON_TYPE_SYNCHRO,SUMMON_TYPE_XYZ,SUMMON_TYPE_LINK))",
+        "Duel.SetOperationInfo(0,CATEGORY_COUNTER,nil,3,0,0x203)",
+        "e:GetHandler():AddCounter(0x203,6)",
+        "e4:SetCode(EVENT_PHASE+PHASE_END)",
+        "return Duel.IsTurnPlayer(tp)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,e:GetHandler(),1,0,0)",
+        "Duel.GetControl(c,1-tp)",
+        "e5:SetCode(EVENT_CONTROL_CHANGED)",
+        "e:GetHandler():GetCounter(0x203)>0",
+        "Duel.TossDice(tp,1)",
+        "c:RemoveCounter(tp,0x203,ct,REASON_EFFECT)",
+        "Duel.Destroy(c,REASON_EFFECT)",
+        "Duel.Damage(tp,2000,REASON_EFFECT)",
+        'eventName: "normalSummoned"',
+        'eventName: "counterAdded"',
+        'eventName: "phaseEnd"',
+        'eventName: "controlChanged"',
+        'eventName: "diceTossed"',
+        'eventName: "counterRemoved"',
+        'eventName: "destroyed"',
+        'eventName: "damageDealt"',
       ],
     },
     {
@@ -518,11 +612,14 @@ function countContinuousOperationSemanticVariants(
       coreOfChaosFaceUpLeaveFieldRedirect: 0,
       darkMagicianOriginalCodeSummonLock: 0,
       dimensionalFissureToGraveRedirect: 0,
+      hinezumiHanabiCounterControlDiceBurn: 0,
       fenghuangSetBackrowDestroy: 0,
       goraTurtleTargetedSpellNegateDestroy: 0,
       magicalMusketeerCasparHandTrapSearch: 0,
-      mirrorWallAttackAnnounceMaintenance: 0,
+      marincessBubbleReefRemoveCustomStat: 0,
       missusRadiantAttributeStatDestroyedToHand: 0,
+      aiShadowPersistentStatMustAttackDraw: 0,
+      piercingDarknessNormalDrawAttackStat: 0,
       ryuGeRealmGrantRedirectStat: 0,
       skullArchfiendDiceTargetNegateDestroy: 0,
     },

@@ -56,7 +56,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     });
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toEqual({
-      activationLocation: "graveyard",
+      activationLocation: "monsterZone",
       activationSequence: 0,
       chainIndex: 1,
       effectId: "lua-1",
@@ -74,7 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restored, 1);
     expect(restored.session.state.chain[0]).toEqual({
-      activationLocation: "graveyard",
+      activationLocation: "monsterZone",
       activationSequence: 0,
       chainIndex: 1,
       effectId: "lua-1",

@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasUnicornScript
     const battleActions = getLuaRestoreLegalActions(restoredBattle, 0);
     expect(battleActions.some((action) => action.type === "declareAttack" && action.attackerUid === unicorn.uid && action.targetUid === target.uid)).toBe(true);
     expect(battleActions.filter((action) => action.type === "declareAttack" && action.attackerUid === ally.uid)).toEqual([]);
+    expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

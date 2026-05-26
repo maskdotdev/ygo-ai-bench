@@ -83,14 +83,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     expect(restoredBattle.session.state.cards.find((card) => card.uid === armorMaster.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredBattle.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
     expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([]);
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
-        eventName: "damageStepEnded",
+        id: "trigger-6-1",
+        effectId: "lua-5-1141",
+        eventCardUid: armorMaster.uid,
         eventCode: 1141,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "damageStepEnded",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [armorMaster.uid, target.uid],
         player: 0,
         sourceUid: armorMaster.uid,
-        eventCardUid: armorMaster.uid,
-        eventUids: [armorMaster.uid, target.uid],
+        triggerBucket: "turnOptional",
       },
     ]);
 
@@ -111,7 +120,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
         eventReason: 0x40,
         eventReasonPlayer: 0,
         eventReasonCardUid: armorMaster.uid,
-        eventReasonEffectId: 4,
+        eventReasonEffectId: 5,
       },
     ]);
 

@@ -79,16 +79,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expectCleanRestore(restoredTriggerWindow);
     expectRestoredLegalActions(restoredTriggerWindow, 0);
-    expect(restoredTriggerWindow.session.state.pendingTriggers).toMatchObject([
+    expect(restoredTriggerWindow.session.state.pendingTriggers).toEqual([
       {
-        sourceUid: crane!.uid,
-        player: 0,
-        triggerBucket: "turnOptional",
-        eventName: "normalSummoned",
-        eventCode: 1100,
+        id: "trigger-3-1",
+        effectId: "lua-1-1100",
         eventCardUid: crane!.uid,
+        eventCode: 1100,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "normalSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        player: 0,
+        sourceUid: crane!.uid,
+        triggerBucket: "turnOptional",
       },
     ]);
     const trigger = getLuaRestoreLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.uid === crane!.uid);

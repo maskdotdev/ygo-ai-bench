@@ -597,7 +597,9 @@ describe("Lua effect metadata helpers", () => {
     expect(host.messages).toContain("effect value number 2500");
     expect(session.state.effects[0]).toMatchObject({
       registryKey: "lua:100:lua-1-1100",
-      triggerEvent: "normalSummoned",
+      event: "ignition",
+      code: 1100,
+      value: 2500,
       range: ["hand"],
       description: 1234,
       category: 0x30000,

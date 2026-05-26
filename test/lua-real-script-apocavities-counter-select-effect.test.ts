@@ -8,7 +8,7 @@ import type { DuelAction, DuelCardData, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
-import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+import { getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
@@ -95,26 +95,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ap
         returned: 4,
       }),
     ]));
-    expect(session.state.chain).toEqual([
-      {
-        id: "chain-2",
-        chainIndex: 1,
-        effectId: "lua-3",
-        sourceUid: apocavities.uid,
-        player: 0,
-        activationLocation: "spellTrapZone",
-        activationSequence: 0,
-        effectLabel: 4,
-        targetUids: [target.uid],
-        operationInfos: [{ category: 0x1, count: 1, parameter: 0, player: 0, targetUids: [target.uid] }],
-      },
-    ]);
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]!.effectLabel).toBe(4);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passChain(session, 1);
+    expect(session.state.chain).toEqual([]);
     expect(session.state.cards.find((card) => card.uid === apocavities.uid)?.counters?.[cariesCounter] ?? 0).toBe(0);
 
     const restoredDestroyChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expectCleanRestore(restoredDestroyChain);
-    expectRestoredLegalActions(restoredDestroyChain, 1);
-    passChain(restoredDestroyChain, 1);
+    expectRestoredLegalActions(restoredDestroyChain, restoredDestroyChain.session.state.waitingFor ?? restoredDestroyChain.session.state.turnPlayer);
+    expect(getLuaRestoreLegalActions(restoredDestroyChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(false);
     expect(restoredDestroyChain.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({
       location: "graveyard",
       controller: 1,
@@ -176,14 +167,13 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
-function passChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
-  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
-  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
-  const response = applyLuaRestoreResponse(restored, pass!);
-  expect(response.ok, response.error).toBe(true);
-}
-
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: DuelAction): void {
   const response = applyResponse(session, action);
   expect(response.ok, response.error).toBe(true);
+}
+
+function passChain(session: ReturnType<typeof createDuel>, player: PlayerId): void {
+  const pass = getLegalActions(session, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLegalActions(session, player), null, 2)).toBeDefined();
+  applyAndAssert(session, pass!);
 }

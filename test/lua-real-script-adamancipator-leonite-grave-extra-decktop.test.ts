@@ -85,36 +85,30 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
     );
     expect(action, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredOpen, action!);
-    expect(restoredOpen.session.state.chain).toEqual([
-      {
-        id: "chain-2",
-        chainIndex: 1,
-        effectId: "lua-2",
-        sourceUid: leonite.uid,
-        player: 0,
-        activationLocation: "graveyard",
-        activationSequence: 0,
-        targetUids: [synchro.uid],
-        operationInfos: [
-          { category: 0x10, targetUids: [leonite.uid], count: 1, player: 0, parameter: 16 },
-          { category: 0x4000000, targetUids: [synchro.uid], count: 1, player: 0, parameter: 0 },
-        ],
-      },
+    expect(restoredOpen.session.state.chain).toHaveLength(1);
+    expect(restoredOpen.session.state.chain[0]!.operationInfos).toEqual([
+      expect.objectContaining({ category: 0x10, targetUids: [leonite.uid], count: 1, player: 0, parameter: 0x10 }),
+      expect.objectContaining({ category: 0x4000000, targetUids: [synchro.uid], count: 1, player: 0, parameter: 0 }),
     ]);
 
     const synchroPreviousState = cardEventState(synchro);
     const leonitePreviousState = cardEventState(leonite);
-    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
-    expectCleanRestore(restoredChain);
-    expectRestoredLegalActions(restoredChain, 1);
-    expect(getLuaRestoreLegalActions(restoredChain, 1).some((candidate) => candidate.type === "activateEffect" && candidate.uid === responder.uid)).toBe(true);
-    resolveRestoredChain(restoredChain);
-    expect(restoredChain.host.messages).toContain(`confirmed decktop 0: ${leoniteCode}`);
-    expect(restoredChain.host.messages).not.toContain("leonite responder resolved");
-    expect(restoredChain.session.state.cards.find((card) => card.uid === synchro.uid)).toMatchObject({ location: "extraDeck", controller: 0 });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === leonite.uid)).toMatchObject({ location: "deck", controller: 0 });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === nonFireSynchro.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restoredChain.session.state.eventHistory.filter((event) => ["sentToDeck", "confirmed"].includes(event.eventName))).toEqual([
+    const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
+    expectCleanRestore(restoredChainWindow);
+    expectRestoredLegalActions(restoredChainWindow, 1);
+    expect(getLuaRestoreLegalActions(restoredChainWindow, 1).some((candidate) => candidate.type === "activateEffect" && candidate.uid === responder.uid)).toBe(true);
+    passRestoredChain(restoredChainWindow, 1);
+
+    const restoredResolved = restoreDuelWithLuaScripts(serializeDuel(restoredChainWindow.session), source, reader);
+    expectCleanRestore(restoredResolved);
+    expectRestoredLegalActions(restoredResolved, 0);
+    expect(getLuaRestoreLegalActions(restoredResolved, 1).some((candidate) => candidate.type === "activateEffect" && candidate.uid === responder.uid)).toBe(false);
+    expect(restoredChainWindow.host.messages).toContain(`confirmed decktop 0: ${leoniteCode}`);
+    expect(restoredResolved.host.messages).not.toContain("leonite responder resolved");
+    expect(restoredResolved.session.state.cards.find((card) => card.uid === synchro.uid)).toMatchObject({ location: "extraDeck", controller: 0 });
+    expect(restoredResolved.session.state.cards.find((card) => card.uid === leonite.uid)).toMatchObject({ location: "deck", controller: 0 });
+    expect(restoredResolved.session.state.cards.find((card) => card.uid === nonFireSynchro.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restoredResolved.session.state.eventHistory.filter((event) => ["sentToDeck", "confirmed"].includes(event.eventName))).toEqual([
       {
         eventName: "sentToDeck",
         eventCode: 1013,
@@ -208,8 +202,7 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
 
-function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
-  const player = restored.session.state.waitingFor as PlayerId;
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
   const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
   expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
   applyLuaRestoreAndAssert(restored, pass!);

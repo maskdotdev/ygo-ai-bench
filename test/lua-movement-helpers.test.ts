@@ -27,6 +27,34 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
 }
 
 describe("Lua movement helpers", () => {
+  it("lets ChangePosition overloads use zero for unaffected current positions", () => {
+    const cards: DuelCardData[] = [{ code: "100", name: "Overloaded Position Target", kind: "monster" }];
+    const session = createDuel({ seed: 348, startingHandSize: 1, cardReader: createCardReader(cards) });
+    loadDecks(session, { 0: { main: ["100"] }, 1: { main: [] } });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    const moved = moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+    moved.faceUp = true;
+    moved.position = "faceUpDefense";
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c = Duel.GetFieldCard(0, LOCATION_MZONE, 0)
+      Debug.Message("overload position " .. Duel.ChangePosition(c,0,0,POS_FACEUP_ATTACK,0))
+      `,
+      "change-position-zero-overload.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual(["overload position 1"]);
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({
+      location: "monsterZone",
+      position: "faceUpAttack",
+    });
+  });
+
   it("lets Lua scripts remove cards from the duel", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Removed From Duel A", kind: "monster" },

@@ -45,7 +45,7 @@ describe("EDOPro parity startup missed timing fixture", () => {
             logMessage: "Startup optional if resolved",
           },
         ],
-        collectEvents: [{ collectEvent: "startup", eventCode: 1000, eventIsLast: false }],
+        collectEvents: [{ collectEvent: "startup", eventCode: 1000, eventPlayer: 0, eventIsLast: false }],
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "startup-optional-if" }), {
@@ -56,8 +56,9 @@ describe("EDOPro parity startup missed timing fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "startup-optional-if", eventName: "startup", eventCode: 1000, eventTriggerTiming: "if" }],
+            pendingTriggers: [{ player: 0, effectId: "startup-optional-if", eventName: "startup", eventCode: 1000, eventPlayer: 0, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{ eventName: "startup", eventCode: 1000, eventPlayer: 0 }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "startup-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "startup-optional-if", triggerBucket: "turnOptional", count: 1 },

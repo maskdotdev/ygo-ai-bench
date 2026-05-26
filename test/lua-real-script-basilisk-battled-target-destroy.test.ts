@@ -68,6 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
           sequence: 0,
         },
         eventName: "afterDamageCalculation",
+        eventPlayer: 0,
         eventPreviousState: {
           controller: 0,
           faceUp: false,
@@ -112,6 +113,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script He
       reasonCardUid: basilisk!.uid,
       reasonEffectId: 1,
     });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: battleTarget!.uid,
+        eventPlayer: 0,
+        eventValue: 2000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: battleTarget!.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "afterDamageCalculation")).toEqual([
       {
         eventName: "afterDamageCalculation",

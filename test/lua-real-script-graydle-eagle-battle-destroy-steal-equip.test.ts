@@ -81,13 +81,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
       reason: duelReason.battle | duelReason.destroy,
       reasonPlayer: 1,
     });
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-1-1014",
         eventCardUid: graydle.uid,
         eventCode: eventToGrave,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventName: "sentToGraveyard",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 1,
+        eventTriggerTiming: "if",
         player: 0,
         sourceUid: graydle.uid,
         triggerBucket: "turnOptional",
@@ -111,12 +117,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
         activationSequence: 0,
         eventName: "sentToGraveyard",
         eventCode: eventToGrave,
+        eventPlayer: 0,
         eventCardUid: graydle.uid,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 1,
         eventTriggerTiming: "if",
         eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
+        targetFieldIds: [5],
         targetUids: [target.uid],
         operationInfos: [
           { category: 262144, targetUids: [graydle.uid], count: 1, player: 0, parameter: 0 },

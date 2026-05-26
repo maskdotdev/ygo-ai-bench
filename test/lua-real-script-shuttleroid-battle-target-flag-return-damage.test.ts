@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasShuttleroidScript)("Lua real script S
         player: 0,
         triggerBucket: "opponentOptional",
         eventName: "battleTargeted",
+        eventPlayer: 0,
         eventCode: 1131,
         eventCardUid: shuttle.uid,
         eventReason: 0,

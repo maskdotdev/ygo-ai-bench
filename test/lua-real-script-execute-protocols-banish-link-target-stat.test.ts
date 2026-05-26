@@ -54,7 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasExecuteScript
       location: "banished",
       controller: 0,
       faceUp: true,
-      reason: duelReason.cost | duelReason.banish,
+      reason: duelReason.cost,
       reasonPlayer: 0,
       reasonCardUid: execute.uid,
       reasonEffectId: 2,
@@ -81,7 +81,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasExecuteScript
       previous: event.eventPreviousState?.location,
       current: event.eventCurrentState?.location,
     }))).toEqual([
-      { eventName: "banished", eventCardUid: darkLinkCost.uid, eventReason: duelReason.cost | duelReason.banish, eventReasonPlayer: 0, eventReasonCardUid: execute.uid, eventReasonEffectId: 2, relatedEffectId: undefined, previous: "graveyard", current: "banished" },
+      { eventName: "banished", eventCardUid: darkLinkCost.uid, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: execute.uid, eventReasonEffectId: 2, relatedEffectId: undefined, previous: "graveyard", current: "banished" },
       { eventName: "becameTarget", eventCardUid: borrelTarget.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 2, previous: "extraDeck", current: "monsterZone" },
     ]);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });

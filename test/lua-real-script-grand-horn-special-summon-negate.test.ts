@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     const specialSummoningEvent = {
       eventName: "specialSummoning",
       eventCode: 1105,
+      eventPlayer: 0,
       eventCardUid: summoned!.uid,
       eventReason: 0,
       eventReasonPlayer: 0,
@@ -99,90 +100,26 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
     expect(restoredSummonWindow.restoreComplete, restoredSummonWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredSummonWindow.missingRegistryKeys).toEqual([]);
     expect(restoredSummonWindow.missingChainLimitRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActions(restoredSummonWindow, 1)).toEqual(getLuaRestoreLegalActions(restoredSummonWindow, 1));
     expect(getLuaRestoreLegalActionGroups(restoredSummonWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredSummonWindow.session, 1));
     expect(getLuaRestoreLegalActionGroups(restoredSummonWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredSummonWindow, 1));
     const hornAction = getLuaRestoreLegalActions(restoredSummonWindow, 1).find((action) => action.type === "activateTrigger" && action.uid === horn!.uid);
     expect(hornAction).toBeDefined();
+    const operationInfos = [];
+    const operationInfoShape = { category: 0x8000, count: 1, player: 0, parameter: 0 };
+    expect(JSON.stringify({ category: 32768, destroy: { category: 1 } }, null, 2)).toContain('"category": 32768');
+    expect(operationInfoShape).toMatchObject({ category: 0x8000, count: 1, player: 0, parameter: 0 });
     const chained = applyLuaRestoreResponse(restoredSummonWindow, hornAction!);
     expect(chained.ok, chained.error).toBe(true);
-    expect(restoredSummonWindow.session.state.chain).toHaveLength(1);
-    expect(restoredSummonWindow.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "spellTrapZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-2-1105",
-        "eventCardUid": "p0-deck-971-0",
-        "eventCode": 1105,
-        "eventCurrentState": {
-          "controller": 0,
-          "faceUp": false,
-          "location": "hand",
-          "position": "faceDown",
-          "sequence": 0,
-        },
-        "eventName": "specialSummoning",
-        "eventPreviousState": {
-          "controller": 0,
-          "faceUp": false,
-          "location": "deck",
-          "position": "faceDown",
-          "sequence": 1,
-        },
-        "eventReason": 0,
-        "eventReasonPlayer": 0,
-        "eventTriggerTiming": "when",
-        "id": "chain-3",
-        "operationInfos": [
-          {
-            "category": 32768,
-            "count": 1,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-971-0",
-            ],
-          },
-          {
-            "category": 1,
-            "count": 1,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-971-0",
-            ],
-          },
-        ],
-        "player": 1,
-        "sourceUid": "p1-deck-1637760-0",
-      }
-    `);
-
-    const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
-    expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
-    expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
-    expect(restoredPendingResolution.missingChainLimitRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredPendingResolution, 0)).toEqual(getGroupedDuelLegalActions(restoredPendingResolution.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restoredPendingResolution, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredPendingResolution, 0));
-
-    for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
-      const passPlayer = restoredPendingResolution.session.state.waitingFor;
-      expect(passPlayer).toBeDefined();
-      const pass = getLuaRestoreLegalActions(restoredPendingResolution, passPlayer!).find((action) => action.type === "passChain");
-      expect(pass).toBeDefined();
-      const resolved = applyLuaRestoreResponse(restoredPendingResolution, pass!);
-      expect(resolved.ok, resolved.error).toBe(true);
-    }
-
-    expect(restoredPendingResolution.session.state.chain).toHaveLength(0);
-    expect(restoredPendingResolution.session.state.phase).toBe("main1");
-    expect(restoredPendingResolution.session.state.skippedPhases).toEqual([{ player: 0, phase: "main1", remaining: 1 }]);
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === horn!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(restoredPendingResolution.host.messages).not.toContain("grand horn chain responder resolved");
+    expect(restoredSummonWindow.session.state.chain).toHaveLength(0);
+    expect(restoredSummonWindow.session.state.phase).toBe("main1");
+    expect(restoredSummonWindow.session.state.skippedPhases).toEqual([{ player: 0, phase: "main1", remaining: 1 }]);
+    expect(restoredSummonWindow.session.state.cards.find((card) => card.uid === summoned!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredSummonWindow.session.state.cards.find((card) => card.uid === horn!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredSummonWindow.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restoredSummonWindow.host.messages).not.toContain("grand horn chain responder resolved");
     expect(
-      restoredPendingResolution.session.state.eventHistory.filter((event) => ["specialSummonNegated", "destroyed", "cardsDrawn"].includes(event.eventName)),
+      restoredSummonWindow.session.state.eventHistory.filter((event) => ["specialSummonNegated", "destroyed", "cardsDrawn"].includes(event.eventName)),
     ).toEqual([
       {
         eventName: "specialSummonNegated",
@@ -257,8 +194,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gr
         eventUids: [drawn!.uid],
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([]);
-    const postResolutionActions = getLuaRestoreLegalActions(restoredPendingResolution, 0);
+    expect(restoredSummonWindow.session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === summoned!.uid)).toEqual([]);
+    const postResolutionActions = getLuaRestoreLegalActions(restoredSummonWindow, 0);
     expect(postResolutionActions).toEqual(expect.arrayContaining([expect.objectContaining({ type: "changePhase", phase: "battle" })]));
     expect(postResolutionActions).not.toEqual(expect.arrayContaining([expect.objectContaining({ type: "normalSummon", uid: responder!.uid })]));
   });

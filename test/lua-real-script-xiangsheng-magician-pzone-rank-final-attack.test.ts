@@ -44,7 +44,9 @@ describe.skipIf(!hasUpstreamScripts || !hasXiangshengScript)("Lua real script Xi
     });
     startDuel(session);
 
-    const [pzoneXiangsheng, monsterXiangsheng] = requireCards(session, xiangshengCode, 2);
+    const xiangshengCards = requireCards(session, xiangshengCode, 2);
+    const pzoneXiangsheng = xiangshengCards[0]!;
+    const monsterXiangsheng = xiangshengCards[1]!;
     const xyzTarget = requireCard(session, xyzTargetCode);
     const levelTarget = requireCard(session, levelTargetCode);
     const attackTarget = requireCard(session, attackTargetCode);

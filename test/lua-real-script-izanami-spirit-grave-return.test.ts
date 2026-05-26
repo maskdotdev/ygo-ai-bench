@@ -111,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasIzanamiScript)("Lua real script Izana
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -135,6 +136,9 @@ describe.skipIf(!hasUpstreamScripts || !hasIzanamiScript)("Lua real script Izana
         ],
         "player": 0,
         "sourceUid": "p0-deck-43543777-0",
+        "targetFieldIds": [
+          8,
+        ],
         "targetUids": [
           "p0-deck-43543779-2",
         ],

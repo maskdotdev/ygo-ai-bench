@@ -478,7 +478,7 @@ describe("Node upstream chain and trigger Lua effects", () => {
     expect(result.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, 0));
     expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
     expect(result.state.cards.find((card) => card.code === "100")?.location).toBe("hand");
-    expect(host.messages).toContain("chain depth 1");
+    expect(host.messages).toContain("chain depth 2");
     expect(host.messages).toContain("lua negation resolved");
     expect(host.messages).not.toContain("negated lua operation should not resolve");
   });

@@ -7,7 +7,9 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
   if (luaValueDescriptor === "stat:all-grave-monster-count-x100") {
     return (ctx) => ctx.duel.cards.filter((card) => card.location === "graveyard" && (cardTypeFlags(card, ctx.duel) & 0x1) !== 0).length * 100;
   }
+  if (luaValueDescriptor === "stat:current-attack-half") return (ctx, card) => Math.floor(currentAttackWithoutEffect(card, ctx.duel, effectId) / 2);
   if (luaValueDescriptor === "stat:current-defense") return (ctx, card) => currentDefense(card, ctx.duel);
+  if (luaValueDescriptor === "stat:base-defense") return (ctx, card) => currentBaseDefense(card, ctx.duel, effectId);
   const currentScale = luaValueDescriptor?.match(/^stat:current-scale:x(-?\d+)$/);
   if (currentScale?.[1]) {
     const multiplier = Number(currentScale[1]);
@@ -25,6 +27,16 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
     if (Number.isSafeInteger(multiplier)) {
       return (ctx) => ctx.duel.cards.filter((candidate) => candidate.equippedToUid === ctx.source.uid).length * multiplier;
     }
+  }
+  const selfLink = luaValueDescriptor?.match(/^stat:self-link:x(-?\d+)$/);
+  if (selfLink?.[1]) {
+    const multiplier = Number(selfLink[1]);
+    if (Number.isSafeInteger(multiplier)) return (ctx, card) => currentLink(card, ctx.duel) * multiplier;
+  }
+  const rank = luaValueDescriptor?.match(/^stat:rank:x(-?\d+)$/);
+  if (rank?.[1]) {
+    const multiplier = Number(rank[1]);
+    if (Number.isSafeInteger(multiplier)) return (ctx, card) => currentRank(card, ctx.duel) * multiplier;
   }
   const levelOrRank = luaValueDescriptor?.match(/^stat:level-or-rank:x(-?\d+)$/);
   if (levelOrRank?.[1]) {
@@ -83,6 +95,27 @@ export function luaValueDescriptorStatValue(luaValueDescriptor: string | undefin
         return ctx.duel.cards.filter((candidate) => {
           if (!candidate.faceUp) return false;
           if (excludeHandler && candidate.uid === ctx.source.uid) return false;
+          if ((currentRace(candidate, ctx.duel) & race) === 0) return false;
+          return (candidate.controller === player && selfLocations.includes(candidate.location)) ||
+            (candidate.controller === opponent && opponentLocations.includes(candidate.location));
+        }).length * multiplier;
+      };
+    }
+  }
+  const matchingRaceCount = luaValueDescriptor?.match(/^stat:matching-race-count:(controller|player[01]):(\d+):(\d+):(\d+):x(-?\d+)$/);
+  if (matchingRaceCount?.[1] && matchingRaceCount[2] && matchingRaceCount[3] && matchingRaceCount[4] && matchingRaceCount[5]) {
+    const playerScope = matchingRaceCount[1];
+    const selfMask = Number(matchingRaceCount[2]);
+    const opponentMask = Number(matchingRaceCount[3]);
+    const race = Number(matchingRaceCount[4]);
+    const multiplier = Number(matchingRaceCount[5]);
+    if ([selfMask, opponentMask, race, multiplier].every(Number.isSafeInteger)) {
+      const selfLocations = locationsFromMask(selfMask);
+      const opponentLocations = locationsFromMask(opponentMask);
+      return (ctx, card) => {
+        const player = playerScope === "controller" ? card.controller : Number(playerScope.slice("player".length));
+        const opponent = player === 0 ? 1 : 0;
+        return ctx.duel.cards.filter((candidate) => {
           if ((currentRace(candidate, ctx.duel) & race) === 0) return false;
           return (candidate.controller === player && selfLocations.includes(candidate.location)) ||
             (candidate.controller === opponent && opponentLocations.includes(candidate.location));

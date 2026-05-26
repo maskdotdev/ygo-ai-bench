@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const summonTriggerOperationFixtureCount = 31;
+const summonTriggerOperationFixtureCount = 34;
 const summonTriggerOperationKindCounts = {
   specialSummonDeckCostLabelDamage: 1,
   specialSummonDamageStatExtraSummon: 1,
   summonAdjustInstantlyStatDamage: 1,
   releaseTriggerDeckStepSummonStatSet: 1,
-  summonDraw: 1,
+  summonDraw: 2,
   summonMassDestroy: 1,
   summonSearch: 8,
   summonSearchDiscard: 1,
@@ -26,7 +26,7 @@ const summonTriggerOperationKindCounts = {
   summonToDeck: 1,
   summonTargetDestroy: 1,
   summonTargetLevelUpdate: 1,
-  summonToHandBounce: 2,
+  summonToHandBounce: 4,
 } satisfies Record<SummonTriggerOperationKind, number>;
 const summonTriggerOperationSemanticVariantCounts = {
   aratamaSpiritSearchOnSummon: 1,
@@ -51,6 +51,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   hanShiKyudoColumnReturnOnSummon: 1,
   ichikiSayoriHimeEffectSummonSearch: 1,
   izanamiDiscardGraveSpiritReturnOnSummon: 1,
+  mayosenjuDaibakSummonTargetGroupReturn: 2,
   moonlitPapillonToGraveDeckSummon: 1,
   nuviaSummonSelfDestroyFieldCountStat: 1,
   rGenexMagmaLevelSetSearch: 1,
@@ -58,6 +59,7 @@ const summonTriggerOperationSemanticVariantCounts = {
   senjuClonedSummonRitualMonsterSearch: 1,
   shinobaronessShadePeacockSearchSelfSummon: 1,
   shinobirdCraneDrawOnSpiritSummon: 1,
+  wonkoPrologueSummonPromptDraw: 1,
   vaylantzGrandDukeSummonBounceBurnAtk: 1,
   yakshaBackrowReturnOnSummon: 1,
   swarmScarabsFlipSummonTargetDestroy: 1,
@@ -108,6 +110,7 @@ type SummonTriggerOperationSemanticVariant =
   | "hanShiKyudoColumnReturnOnSummon"
   | "ichikiSayoriHimeEffectSummonSearch"
   | "izanamiDiscardGraveSpiritReturnOnSummon"
+  | "mayosenjuDaibakSummonTargetGroupReturn"
   | "moonlitPapillonToGraveDeckSummon"
   | "nuviaSummonSelfDestroyFieldCountStat"
   | "rGenexMagmaLevelSetSearch"
@@ -115,6 +118,7 @@ type SummonTriggerOperationSemanticVariant =
   | "senjuClonedSummonRitualMonsterSearch"
   | "shinobaronessShadePeacockSearchSelfSummon"
   | "shinobirdCraneDrawOnSpiritSummon"
+  | "wonkoPrologueSummonPromptDraw"
   | "swarmScarabsFlipSummonTargetDestroy"
   | "vaylantzGrandDukeSummonBounceBurnAtk"
   | "yakshaBackrowReturnOnSummon";
@@ -185,6 +189,10 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "e2:SetCode(EFFECT_EXTRA_SUMMON_COUNT)",
         "aux.TargetBoolFunction(Card.IsSetCard,SET_BLACKWING)",
         'eventName: "specialSummoned"',
+        "effectId: \"lua-3-1102\"",
+        "eventCode: 1102",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "turnMandatory"',
         'eventName: "damageDealt"',
         "operationInfos",
         "category: 0x80000",
@@ -209,6 +217,10 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "Duel.AdjustInstantly(sc)",
         "Duel.Damage(1-tp,atk_diff,REASON_EFFECT)",
         'eventName: "normalSummoned"',
+        "effectId: \"lua-2-1100\"",
+        "eventCode: 1100",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "opponentOptional"',
         'eventName: "damageDealt"',
         "operationInfos",
         "category: 0x200000",
@@ -242,6 +254,10 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "restores EVENT_RELEASE mandatory trigger into Dragon Normal SpecialSummonStep with zero stats",
         'const esetCode = "4022819"',
         "e3:SetCode(EVENT_RELEASE)",
+        "expect(restoredStarterChain.session.state.pendingTriggers).toEqual",
+        'effectId: "lua-3-1017"',
+        "eventCode: 1017",
+        'eventTriggerTiming: "when"',
         "Duel.SetOperationInfo(0,CATEGORY_SPECIAL_SUMMON,nil,1,tp,LOCATION_HAND|LOCATION_DECK|LOCATION_GRAVE)",
         "Duel.SpecialSummonStep(sc,0,tp,tp,false,false,POS_FACEUP)",
         "Duel.SpecialSummonComplete()",
@@ -366,6 +382,10 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "expectRestoredLegalActions(restoredTriggerWindow, 0)",
         "expectRestoredLegalActions(restoredChainWindow, 1)",
         'eventName: "normalSummoned"',
+        "effectId: \"lua-1-1100\"",
+        "eventCode: 1100",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "turnOptional"',
         'eventName: "specialSummoned"',
         "category: 0x200",
         "toEqual([2, 8])",
@@ -407,6 +427,10 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "expectRestoredLegalActions(restoredBattle, 1)",
         "expectRestoredLegalActions(restoredTrigger, 0)",
         'eventName: "sentToGraveyard"',
+        "effectId: \"lua-1-1014\"",
+        "eventCode: 1014",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "opponentOptional"',
         'eventName: "specialSummoned"',
         "category: 0x200",
         "operationInfos",
@@ -427,6 +451,10 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "expectRestoredLegalActions(restoredTrigger, 0)",
         "expectRestoredLegalActions(restoredChain, 1)",
         'eventName: "sentToGraveyard"',
+        "effectId: \"lua-1-1014\"",
+        "eventCode: 1014",
+        'eventTriggerTiming: "if"',
+        'triggerBucket: "turnOptional"',
         'eventName === "specialSummoned"',
         "operationInfos",
         "category: 0x200",
@@ -466,6 +494,21 @@ function summonTriggerOperationFixtureFiles(): Array<{
         "category: 65536",
         "targetParam: 1",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-wonko-summon-prologue-draw.test.ts",
+      kind: "summonDraw",
+      required: [
+        'const wonkoCode = "17832359"',
+        'const prologueCode = "43236494"',
+        "restores normal Summon trigger into prompted Fairy Tale Prologue draw branch",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DRAW,nil,0,tp,1)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        "operationInfos",
+        'eventName: "normalSummoned"',
+        'eventName: "cardsDrawn"',
       ],
     },
     {
@@ -734,6 +777,49 @@ function summonTriggerOperationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-mayosenju-daibak-summon-tohand.test.ts",
+      kind: "summonToHandBounce",
+      required: [
+        "restores summon target selection through GetTargetCards into one-field-card hand return",
+        'const daibakCode = "93368494"',
+        "Mayosenju Daibak",
+        "e5:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e6:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,Card.IsAbleToHand,tp,LOCATION_ONFIELD,LOCATION_ONFIELD,1,2,nil)",
+        "Duel.GetTargetCards(e)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "ge1:SetOperation(aux.sumreg)",
+        'eventName: "normalSummoned"',
+        'eventName: "becameTarget"',
+        'eventName: "sentToHand"',
+        "operationInfos",
+        "target.uid",
+        "reasonEffectId: 6",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mayosenju-daibak-pzone-attack-summon-return-stat.test.ts",
+      kind: "summonToHandBounce",
+      required: [
+        "restores PZone attack boost, summon-success targeting, and sumreg End Phase return",
+        'const daibakCode = "93368494"',
+        "Mayosenju Daibak",
+        "e2:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e5:SetCode(EVENT_SUMMON_SUCCESS)",
+        "e6:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.GetTargetCards(e)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "e7:SetCode(EVENT_PHASE+PHASE_END)",
+        "ge1:SetOperation(aux.sumreg)",
+        'eventName: "becameTarget"',
+        'eventName: "sentToHand"',
+        "currentAttack(findCard(pzone.restored.session",
+        "toBe(2000)",
+        "reasonEffectId: 6",
+      ],
+    },
+    {
       file: "test/lua-real-script-gishki-natalia-spirit-to-deck.test.ts",
       kind: "summonToDeck",
       required: [
@@ -805,6 +891,10 @@ function summonTriggerOperationSemanticVariants(): Array<{
         "Duel.SetTargetParam(800)",
         "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
         "e2:SetCode(EFFECT_EXTRA_SUMMON_COUNT)",
+        "effectId: \"lua-3-1102\"",
+        "eventCode: 1102",
+        "eventTriggerTiming: \"when\"",
+        "triggerBucket: \"turnMandatory\"",
         "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === target.uid), restoredChain.session.state)).toBe(700)",
         "activityCounts[0].normalSummon).toBe(2)",
       ],
@@ -818,6 +908,10 @@ function summonTriggerOperationSemanticVariants(): Array<{
         "Duel.SetOperationInfo(0,CATEGORY_ATKCHANGE,sc,1,tp,val)",
         "Duel.AdjustInstantly(sc)",
         "Duel.Damage(1-tp,atk_diff,REASON_EFFECT)",
+        "effectId: \"lua-2-1100\"",
+        "eventCode: 1100",
+        "eventTriggerTiming: \"when\"",
+        "triggerBucket: \"opponentOptional\"",
         "currentAttack(restoredChain.session.state.cards.find((card) => card.uid === summoned.uid), restoredChain.session.state)).toBe(1000)",
       ],
     },
@@ -838,6 +932,10 @@ function summonTriggerOperationSemanticVariants(): Array<{
       requiredSnippets: [
         'const craneCode = "28637168"',
         "restores summon-success target revive through SpecialSummonStep and disables the revived monster",
+        "effectId: \"lua-1-1100\"",
+        "eventCode: 1100",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "turnOptional"',
         'eventName: "specialSummoned"',
         "toEqual([2, 8])",
         "isCardDisabled",
@@ -863,6 +961,8 @@ function summonTriggerOperationSemanticVariants(): Array<{
         'const esetCode = "4022819"',
         "restores EVENT_RELEASE mandatory trigger into Dragon Normal SpecialSummonStep with zero stats",
         "e3:SetCode(EVENT_RELEASE)",
+        "expect(restoredStarterChain.session.state.pendingTriggers).toEqual",
+        'effectId: "lua-3-1017"',
         "Duel.SpecialSummonStep(sc,0,tp,tp,false,false,POS_FACEUP)",
         'eventName: "released"',
         'eventName: "specialSummoned"',
@@ -955,6 +1055,10 @@ function summonTriggerOperationSemanticVariants(): Array<{
         'const obsidianCode = "19163116"',
         "restores hand-to-Graveyard trigger targeting a Normal Monster in the Graveyard",
         'eventName: "sentToGraveyard"',
+        "effectId: \"lua-1-1014\"",
+        "eventCode: 1014",
+        'eventTriggerTiming: "if"',
+        'triggerBucket: "turnOptional"',
         'eventName === "specialSummoned"',
         "targetUids: [normalTarget.uid]",
       ],
@@ -1016,6 +1120,10 @@ function summonTriggerOperationSemanticVariants(): Array<{
         'const papillonCode = "16366944"',
         "restores its Damage Step EVENT_TO_GRAVE trigger and Special Summons a Butterspy from Deck",
         'eventName: "sentToGraveyard"',
+        "effectId: \"lua-1-1014\"",
+        "eventCode: 1014",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "opponentOptional"',
         'eventName: "specialSummoned"',
         "setButterspy",
       ],
@@ -1074,6 +1182,17 @@ function summonTriggerOperationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-wonko-summon-prologue-draw.test.ts",
+      kind: "wonkoPrologueSummonPromptDraw",
+      requiredSnippets: [
+        'const wonkoCode = "17832359"',
+        "restores normal Summon trigger into prompted Fairy Tale Prologue draw branch",
+        "e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH+CATEGORY_DRAW)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,2))",
+        'eventName: "cardsDrawn"',
+      ],
+    },
+    {
       file: "test/lua-real-script-swarm-scarabs-turn-set-flip-destroy.test.ts",
       kind: "swarmScarabsFlipSummonTargetDestroy",
       requiredSnippets: [
@@ -1112,6 +1231,10 @@ function summonTriggerOperationSemanticVariants(): Array<{
         "Duel.SendtoHand(tc,nil,REASON_EFFECT)",
         "Duel.Damage(1-tp,atk,REASON_EFFECT)",
         "e1:SetValue(dam/2)",
+        "expect(restoredOpen.session.state.pendingTriggers).toEqual",
+        'effectId: "lua-6-1102"',
+        "eventCode: 1102",
+        'eventTriggerTiming: "if"',
         'eventName: "sentToHand"',
         'eventName: "damageDealt"',
       ],
@@ -1123,6 +1246,29 @@ function summonTriggerOperationSemanticVariants(): Array<{
         'const yakshaCode = "94215860"',
         "restores its summon trigger and returns one opponent Spell/Trap to hand",
         "targetUids",
+      ],
+    },
+    {
+      file: "test/lua-real-script-mayosenju-daibak-summon-tohand.test.ts",
+      kind: "mayosenjuDaibakSummonTargetGroupReturn",
+      requiredSnippets: [
+        'const daibakCode = "93368494"',
+        "restores summon target selection through GetTargetCards into one-field-card hand return",
+        "Duel.GetTargetCards(e)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        'eventName: "sentToHand"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-mayosenju-daibak-pzone-attack-summon-return-stat.test.ts",
+      kind: "mayosenjuDaibakSummonTargetGroupReturn",
+      requiredSnippets: [
+        'const daibakCode = "93368494"',
+        "restores PZone attack boost, summon-success targeting, and sumreg End Phase return",
+        "Duel.GetTargetCards(e)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        'eventName: "sentToHand"',
+        "effectUpdateAttack = 100",
       ],
     },
   ] satisfies Array<{
@@ -1197,6 +1343,7 @@ function countSummonTriggerOperationSemanticVariants(
       hanShiKyudoColumnReturnOnSummon: 0,
       ichikiSayoriHimeEffectSummonSearch: 0,
       izanamiDiscardGraveSpiritReturnOnSummon: 0,
+      mayosenjuDaibakSummonTargetGroupReturn: 0,
       moonlitPapillonToGraveDeckSummon: 0,
       nuviaSummonSelfDestroyFieldCountStat: 0,
       rGenexMagmaLevelSetSearch: 0,
@@ -1204,6 +1351,7 @@ function countSummonTriggerOperationSemanticVariants(
       senjuClonedSummonRitualMonsterSearch: 0,
       shinobaronessShadePeacockSearchSelfSummon: 0,
       shinobirdCraneDrawOnSpiritSummon: 0,
+      wonkoPrologueSummonPromptDraw: 0,
       swarmScarabsFlipSummonTargetDestroy: 0,
       vaylantzGrandDukeSummonBounceBurnAtk: 0,
       yakshaBackrowReturnOnSummon: 0,

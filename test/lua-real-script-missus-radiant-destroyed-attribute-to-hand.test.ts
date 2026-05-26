@@ -178,6 +178,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
         triggerBucket: "opponentOptional",
         eventName: "destroyed",
         eventCode: eventDestroyed,
+        eventPlayer: 0,
         eventCardUid: radiant.uid,
         eventReason: duelReason.effect | duelReason.destroy,
         eventReasonPlayer: 1,

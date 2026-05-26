@@ -104,6 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGauntletScript)("Lua real script Gaun
     expectCleanRestore(restoredStat);
     expect(currentAttack(restoredStat.session.state.cards.find((card) => card.uid === ally.uid), restoredStat.session.state)).toBe(2000);
     expect(currentDefense(restoredStat.session.state.cards.find((card) => card.uid === ally.uid), restoredStat.session.state)).toBe(1700);
+    expect(restoredStat.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

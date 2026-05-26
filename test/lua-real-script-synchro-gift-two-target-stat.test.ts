@@ -49,7 +49,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasGiftScript)("
 
     expect(currentAttack(findCard(restored.session, synchro.uid), restored.session.state)).toBe(0);
     expect(currentAttack(findCard(restored.session, receiver.uid), restored.session.state)).toBe(3300);
-    expect(restored.session.state.effects.filter((effect) => [synchro.uid, receiver.uid].includes(effect.sourceUid ?? "") && [effectUpdateAttack, effectSetAttackFinal].includes(effect.code)).map((effect) => ({
+    expect(restored.session.state.effects.filter((effect) => [synchro.uid, receiver.uid].includes(effect.sourceUid ?? "") && effect.code !== undefined && [effectUpdateAttack, effectSetAttackFinal].includes(effect.code)).map((effect) => ({
       code: effect.code,
       reset: effect.reset,
       sourceUid: effect.sourceUid,

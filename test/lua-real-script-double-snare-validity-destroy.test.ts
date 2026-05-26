@@ -87,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Do
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [6],
         targetUids: [validTarget.uid],
         operationInfos: [{ category: 0x1, targetUids: [validTarget.uid], count: 1, player: 0, parameter: 0 }],
       },

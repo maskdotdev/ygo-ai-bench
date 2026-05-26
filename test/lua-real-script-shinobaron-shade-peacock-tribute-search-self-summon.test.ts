@@ -94,8 +94,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(restoredOpenWindow.session.state.chain).toMatchInlineSnapshot(`
       [
         {
-          "activationLocation": "graveyard",
-          "activationSequence": 1,
+          "activationLocation": "monsterZone",
+          "activationSequence": 0,
           "chainIndex": 1,
           "effectId": "lua-7",
           "id": "chain-7",

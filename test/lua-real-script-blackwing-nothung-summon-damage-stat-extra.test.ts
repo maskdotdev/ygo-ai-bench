@@ -86,11 +86,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
       reason: duelReason.summon | duelReason.specialSummon,
       reasonPlayer: 0,
     });
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-3-1102",
         eventCardUid: nothung.uid,
         eventCode: 1102,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "specialSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         player: 0,
         sourceUid: nothung.uid,
         triggerBucket: "turnMandatory",
@@ -107,13 +115,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
       {
         id: "chain-3",
         chainIndex: 1,
-        effectId: "lua-2-1102",
+        effectId: "lua-3-1102",
         sourceUid: nothung.uid,
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
         eventName: "specialSummoned",
         eventCode: 1102,
+        eventPlayer: 0,
         eventCardUid: nothung.uid,
         eventReason: duelReason.summon | duelReason.specialSummon,
         eventReasonPlayer: 0,
@@ -147,7 +156,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
       eventReason: duelReason.effect,
       eventReasonPlayer: 0,
       eventReasonCardUid: nothung.uid,
-      eventReasonEffectId: 2,
+      eventReasonEffectId: 3,
     });
 
     const restoredExtraSummon = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);

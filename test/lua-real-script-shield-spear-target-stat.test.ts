@@ -46,7 +46,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasShieldSpearSc
 
     expect(currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(1900);
     expect(currentDefense(findCard(restored.session, target.uid), restored.session.state)).toBe(1600);
-    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === target.uid && [effectUpdateAttack, effectUpdateDefense].includes(effect.code)).map((effect) => ({
+    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === target.uid && effect.code !== undefined && [effectUpdateAttack, effectUpdateDefense].includes(effect.code)).map((effect) => ({
       code: effect.code,
       reset: effect.reset,
       sourceUid: effect.sourceUid,

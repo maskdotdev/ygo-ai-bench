@@ -178,6 +178,32 @@ describe.skipIf(!hasUpstreamScripts || !hasKusanagiScript)("Lua real script Hero
     applyRestoredActionAndAssert(restoredBattle, attack!);
     finishBattle(restoredBattle);
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 2000, 1: 0 });
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: kusanagi.uid,
+        eventPlayer: 0,
+        eventValue: 2000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: kusanagi.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 

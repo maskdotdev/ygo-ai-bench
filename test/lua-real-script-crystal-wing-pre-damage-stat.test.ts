@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -80,10 +81,21 @@ describe.skipIf(!hasUpstreamScripts || !hasCrystalWingScript)("Lua real script C
     applyRestoredActionAndAssert(restoredOpen, attack!);
     passBattleUntilTrigger(restoredOpen);
     expect(restoredOpen.session.state.battleWindow?.kind).toBe("beforeDamageCalculation");
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-4-1134",
         eventCardUid: crystalWing.uid,
+        eventCode: 1134,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "beforeDamageCalculation",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [crystalWing.uid, highLevelTarget.uid],
+        player: 0,
         sourceUid: crystalWing.uid,
         triggerBucket: "turnMandatory",
       },
@@ -110,6 +122,20 @@ describe.skipIf(!hasUpstreamScripts || !hasCrystalWingScript)("Lua real script C
     finishBattle(restoredTrigger);
     expect(restoredTrigger.session.state.cards.find((card) => card.uid === highLevelTarget.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 3000 });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: crystalWing.uid,
+        eventPlayer: 1,
+        eventValue: 3000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: crystalWing.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
   });
 });
 

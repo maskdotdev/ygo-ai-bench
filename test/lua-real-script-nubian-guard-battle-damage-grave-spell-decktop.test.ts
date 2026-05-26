@@ -68,15 +68,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Nu
     passBattleUntilTrigger(restoredBattle);
 
     expect(restoredBattle.session.state.players[1]!.lifePoints).toBe(7500);
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-5-1",
         effectId: "lua-1-1143",
         eventCardUid: nubianGuard.uid,
+        eventCode: 1143,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDamageDealt",
         eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
         eventReason: duelReason.battle,
         eventReasonCardUid: nubianGuard.uid,
         eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         eventValue: 500,
         player: 0,
         sourceUid: nubianGuard.uid,

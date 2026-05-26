@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMarieScript)("Lua real script Darklor
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     expect(JSON.stringify(trigger)).not.toContain("operationInfos");
     applyLuaRestoreAndAssert(restoredTrigger, trigger!);
+    passRestoredChain(restoredTrigger);
     expect(restoredTrigger.session.state.chain).toHaveLength(0);
     expect(restoredTrigger.session.state.pendingTriggers).toEqual([]);
     expect(restoredTrigger.session.state.players[0].lifePoints).toBe(8200);
@@ -133,6 +134,15 @@ function requireCard(session: DuelSession, code: string) {
   const card = session.state.cards.find((candidate) => candidate.code === code);
   expect(card).toBeDefined();
   return card!;
+}
+
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  while (restored.session.state.chain.length > 0) {
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyLuaRestoreAndAssert(restored, pass!);
+  }
 }
 
 function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {

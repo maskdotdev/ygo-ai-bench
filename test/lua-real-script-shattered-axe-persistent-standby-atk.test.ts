@@ -66,13 +66,25 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
     expect(JSON.stringify(activation)).not.toContain("operationInfos");
     applyLuaRestoreAndAssert(restoredActivation, activation!);
 
-    expect(restoredActivation.session.state.chain).toEqual([]);
+    expect(restoredActivation.session.state.chain.flatMap((link) => link.operationInfos ?? [])).toEqual([
+      { category: 0x4000, targetUids: [target!.uid], count: 1, player: 0, parameter: 0 },
+    ]);
     expect(restoredActivation.session.state.cards.find((card) => card.uid === shatteredAxe!.uid)).toMatchObject({
       location: "spellTrapZone",
-      cardTargetUids: [target!.uid],
       faceUp: true,
     });
     expect(restoredActivation.host.messages).not.toContain("shattered axe responder resolved");
+    for (let index = 0; index < 4 && restoredActivation.session.state.chain.length > 0; index += 1) {
+      const passPlayer = restoredActivation.session.state.waitingFor;
+      expect(passPlayer).toBeDefined();
+      const pass = getLuaRestoreLegalActions(restoredActivation, passPlayer!).find((action) => action.type === "passChain");
+      expect(pass, JSON.stringify(getLuaRestoreLegalActions(restoredActivation, passPlayer!), null, 2)).toBeDefined();
+      applyLuaRestoreAndAssert(restoredActivation, pass!);
+    }
+    expect(restoredActivation.session.state.chain).toEqual([]);
+    expect(restoredActivation.session.state.cards.find((card) => card.uid === shatteredAxe!.uid)).toMatchObject({
+      cardTargetUids: [target!.uid],
+    });
 
     const persistentSnapshot = serializeDuel(restoredActivation.session);
     const restoredPersistent = restoreDuelWithLuaScripts(persistentSnapshot, source, reader);

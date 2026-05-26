@@ -28,7 +28,7 @@ export function quickEffectActions(state: DuelState, player: PlayerId, canChoose
     if (!source || !activationEffectInUsableRange(state, effect, source, player)) continue;
     if (!chainSpeedAllowsResponse(state, effect, source)) continue;
     if (!quickEffectTimingAllows(state, effect, source)) continue;
-    if (shouldRequireMatchingFirstChainEvent(state, effect) && quickEffectEventContext(state, effect) === undefined) continue;
+    if (shouldRequireMatchingEventContext(state, effect) && quickEffectEventContext(state, effect) === undefined) continue;
     if (!chainLimitsAllow(state, effect, player)) continue;
     if (!canUseEffectCount(state, effect)) continue;
     if (!canChooseEffect(state, effect, source, player)) continue;
@@ -167,10 +167,10 @@ function battleOpenTimingMask(state: DuelState): number {
   return 0;
 }
 
-function shouldRequireMatchingFirstChainEvent(state: DuelState, effect: DuelEffectDefinition): boolean {
+function shouldRequireMatchingEventContext(state: DuelState, effect: DuelEffectDefinition): boolean {
   if (effect.triggerEvent === undefined || isChainEvent(effect.triggerEvent)) return false;
   if (effect.triggerEvent === "battleDamageDealt") return true;
-  return state.chain.length > 0;
+  return state.chain.length > 0 || effect.triggerEvent === "attackDisabled";
 }
 
 function isChainEvent(eventName: string): boolean {

@@ -86,10 +86,20 @@ describe.skipIf(!hasUpstreamScripts || !hasBergamotScript)("Lua real script Arom
         eventReasonEffectId: 3,
       },
     ]);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-4-1",
         effectId: "lua-2-1112",
+        eventCode: 1112,
+        eventPlayer: 0,
+        eventReason: duelReason.effect,
+        eventReasonCardUid: recoverSpell.uid,
+        eventReasonEffectId: 3,
+        eventReasonPlayer: 0,
+        eventValue: 500,
         eventName: "recoveredLifePoints",
+        eventTriggerTiming: "when",
+        player: 0,
         sourceUid: bergamot.uid,
         triggerBucket: "turnMandatory",
       },

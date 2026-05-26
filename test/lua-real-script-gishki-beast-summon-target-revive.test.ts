@@ -102,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
             "sequence": 0,
           },
           "eventName": "normalSummoned",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -140,6 +141,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
             "sequence": 0,
           },
           "eventName": "normalSummoned",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -164,6 +166,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
           ],
           "player": 0,
           "sourceUid": "p0-deck-36227804-0",
+          "targetFieldIds": [
+            7,
+          ],
           "targetUids": [
             "p0-deck-36227805-1",
           ],

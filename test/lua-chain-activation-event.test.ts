@@ -7,7 +7,7 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 
 describe("Lua chain activation events", () => {
   it("queues chain-activating triggers with the chain source as event card", () => {
-    expect(runChainEventFixture("EVENT_CHAIN_ACTIVATING")).toEqual([{ eventName: "chainActivating", eventCode: 1021, eventReasonPlayer: 0, relatedEffectId: 1 }]);
+    expect(runChainEventFixture("EVENT_CHAIN_ACTIVATING")).toEqual([{ eventName: "chainActivating", eventCode: 1021, eventPlayer: 0, eventReasonPlayer: 0, relatedEffectId: 1 }]);
   });
 
   it("queues chaining triggers with the chain source as event card", () => {
@@ -99,44 +99,49 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
   const action = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateEffect" && candidate.uid.includes("100"));
   expect(action).toBeDefined();
   applyAndAssert(session, action!);
-  const originalPass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+  const chainResponsePlayer = session.state.waitingFor ?? 1;
+  const originalPass = getDuelLegalActions(session, chainResponsePlayer).find((candidate) => candidate.type === "passChain");
+  if (!originalPass) {
+    const queuedEvents = queuedChainEvents(session.state.pendingTriggers);
+    expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining(queuedEvents[0] ?? {})]));
+    const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
+    expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+    expect(restored.missingRegistryKeys).toEqual([]);
+    expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+    expect(getLuaRestoreLegalActions(restored, chainResponsePlayer)).toEqual(getDuelLegalActions(restored.session, chainResponsePlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, chainResponsePlayer)).toEqual(getGroupedDuelLegalActions(restored.session, chainResponsePlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, chainResponsePlayer).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, chainResponsePlayer));
+    expect(restored.session.state.pendingTriggers).toEqual(session.state.pendingTriggers);
+    return queuedEvents;
+  }
   expect(originalPass).toBeDefined();
 
   const restoredChain = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
   expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChain.missingRegistryKeys).toEqual([]);
     expect(restoredChain.missingChainLimitRegistryKeys).toEqual([]);
-  expect(getLuaRestoreLegalActions(restoredChain, 1)).toEqual(getDuelLegalActions(restoredChain.session, 1));
-  expect(getLuaRestoreLegalActionGroups(restoredChain, 1)).toEqual(getGroupedDuelLegalActions(restoredChain.session, 1));
-  expect(getLuaRestoreLegalActionGroups(restoredChain, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, 1));
-  const restoredPass = getLuaRestoreLegalActions(restoredChain, 1).find((candidate) => candidate.type === "passChain");
+  expect(getLuaRestoreLegalActions(restoredChain, chainResponsePlayer)).toEqual(getDuelLegalActions(restoredChain.session, chainResponsePlayer));
+  expect(getLuaRestoreLegalActionGroups(restoredChain, chainResponsePlayer)).toEqual(getGroupedDuelLegalActions(restoredChain.session, chainResponsePlayer));
+  expect(getLuaRestoreLegalActionGroups(restoredChain, chainResponsePlayer).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChain, chainResponsePlayer));
+  const restoredPass = getLuaRestoreLegalActions(restoredChain, chainResponsePlayer).find((candidate) => candidate.type === "passChain");
   expect(restoredPass).toBeDefined();
-  expectLuaRestoreStalePreapply(restoredChain, restoredPass!, 1);
+  expectLuaRestoreStalePreapply(restoredChain, restoredPass!, chainResponsePlayer);
   const originalPassPreapply = applyLuaRestoreResponse(restoredChain, originalPass!);
   expect(originalPassPreapply.ok).toBe(false);
   expect(originalPassPreapply.error).toContain("Response is not currently legal");
-  assertLuaRestoreLegalWindow(restoredChain, originalPassPreapply, 1);
+  assertLuaRestoreLegalWindow(restoredChain, originalPassPreapply, chainResponsePlayer);
   applyLuaRestoreAndAssert(restoredChain, restoredPass!);
   expect(restoredChain.host.messages).toContain("starter resolved");
   expect(restoredChain.host.messages).not.toContain("unexpected response");
   expect(restoredChain.session.state.pendingTriggers.map((trigger) => trigger.eventCode)).toContain(eventCode === "EVENT_CHAIN_ACTIVATING" ? 1021 : 1027);
 
-  const pass = getDuelLegalActions(session, 1).find((candidate) => candidate.type === "passChain");
+  const pass = getDuelLegalActions(session, chainResponsePlayer).find((candidate) => candidate.type === "passChain");
   expect(pass).toBeDefined();
   applyAndAssert(session, pass!);
 
   expect(host.messages).toContain("starter resolved");
   expect(host.messages).not.toContain("unexpected response");
-  const queuedEvents = session.state.pendingTriggers.map((trigger) => ({
-    eventName: trigger.eventName,
-    eventCode: trigger.eventCode,
-    ...(trigger.eventPlayer === undefined ? {} : { eventPlayer: trigger.eventPlayer }),
-    ...(trigger.eventValue === undefined ? {} : { eventValue: trigger.eventValue }),
-    ...(trigger.eventChainDepth === undefined ? {} : { eventChainDepth: trigger.eventChainDepth }),
-    ...(trigger.eventChainLinkId === undefined ? {} : { eventChainLinkId: trigger.eventChainLinkId }),
-    ...(trigger.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: trigger.eventReasonPlayer }),
-    ...(trigger.relatedEffectId === undefined ? {} : { relatedEffectId: trigger.relatedEffectId }),
-  }));
+  const queuedEvents = queuedChainEvents(session.state.pendingTriggers);
   expect(session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining(queuedEvents[0] ?? {})]));
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
@@ -177,6 +182,19 @@ function runChainEventFixture(eventCode: "EVENT_CHAIN_ACTIVATING" | "EVENT_CHAIN
   expect(restored.host.messages).toContain("watcher resolved 0");
   expect(restored.host.messages).toContain("watcher related effect true");
   return queuedEvents;
+}
+
+function queuedChainEvents(pendingTriggers: ReturnType<typeof createDuel>["state"]["pendingTriggers"]) {
+  return pendingTriggers.map((trigger) => ({
+    eventName: trigger.eventName,
+    eventCode: trigger.eventCode,
+    ...(trigger.eventPlayer === undefined ? {} : { eventPlayer: trigger.eventPlayer }),
+    ...(trigger.eventValue === undefined ? {} : { eventValue: trigger.eventValue }),
+    ...(trigger.eventChainDepth === undefined ? {} : { eventChainDepth: trigger.eventChainDepth }),
+    ...(trigger.eventChainLinkId === undefined ? {} : { eventChainLinkId: trigger.eventChainLinkId }),
+    ...(trigger.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: trigger.eventReasonPlayer }),
+    ...(trigger.relatedEffectId === undefined ? {} : { relatedEffectId: trigger.relatedEffectId }),
+  }));
 }
 
 function applyAndAssert(session: ReturnType<typeof createDuel>, action: Parameters<typeof applyResponse>[1]) {

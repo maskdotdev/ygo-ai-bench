@@ -68,7 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script St
     expect(restoredOpen.session.state.effects.filter((effect) => effect.sourceUid === venemy.uid && effect.code === 114)).toEqual([
       expect.objectContaining({ code: 114, value: Number(venemyCode), reset: { flags: 1107169792 } }),
     ]);
-    expect(restoredOpen.session.state.effects.filter((effect) => effect.sourceUid === restoredVenemy.uid && effect.copyId !== undefined).length).toBeGreaterThan(0);
+    expect(restoredOpen.session.state.effects.filter((effect) => effect.sourceUid === restoredVenemy.uid && effect.copyId !== undefined)).toHaveLength(7);
     expect(restoredOpen.session.state.effects.some((effect) => effect.sourceUid === restoredTarget.uid && effect.code === 2)).toBe(true);
     expect(restoredOpen.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
       {
@@ -93,7 +93,7 @@ function requireCard(session: DuelSession, code: string): DuelCardInstance {
 
 function requireCards(session: DuelSession, code: string): DuelCardInstance[] {
   const cards = session.state.cards.filter((candidate) => candidate.code === code);
-  expect(cards.length).toBeGreaterThan(0);
+  expect(cards).toHaveLength(2);
   return cards;
 }
 

@@ -79,7 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
       location: "graveyard",
       reason: duelReason.cost | duelReason.discard,
       reasonCardUid: combatWheel.uid,
-      reasonEffectId: 4,
+      reasonEffectId: 5,
     });
     expect(currentAttack(restoredCombatWheel, restoredOpen.session.state)).toBe((combatWheel.data.attack ?? 0) + 800);
     expect(getDuelCardCounter(restoredCombatWheel, combatCounter)).toBe(1);
@@ -94,7 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
         eventReason: duelReason.cost | duelReason.discard,
         eventReasonPlayer: 0,
         eventReasonCardUid: combatWheel.uid,
-        eventReasonEffectId: 4,
+        eventReasonEffectId: 5,
         eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceDown", sequence: 0 },
       },
@@ -105,7 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Co
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: combatWheel.uid,
-        eventReasonEffectId: 4,
+        eventReasonEffectId: 5,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },

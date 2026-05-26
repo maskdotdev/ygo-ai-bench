@@ -97,13 +97,29 @@ describe("EDOPro parity before-battle-damage missed timing decline fixture", () 
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "before-battle-damage-decline-optional-if", eventName: "beforeBattleDamage", eventCode: 1136, eventCardUid: "p0-deck-700-4", eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-700-4", eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
-            legalActions: [
-              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "before-battle-damage-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
-              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "before-battle-damage-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+            eventHistory: [
+              {},
+              {},
+              {},
+              {
+                eventName: "beforeBattleDamage",
+                eventCode: 1136,
+                eventCardUid: "p0-deck-700-4",
+                eventPlayer: 1,
+                eventValue: 1800,
+                eventReason: 0x20,
+                eventReasonPlayer: 0,
+                eventReasonCardUid: "p0-deck-700-4",
+              },
+              {},
             ],
             legalActionGroups: [
               triggerActivationGroup(0, "before-battle-damage-decline-optional-if", "turnOptional", 1, 1),
               triggerDeclineGroup(0, "before-battle-damage-decline-optional-if", "turnOptional", 1, 1),
+            ],
+            legalActions: [
+              { type: "activateTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "before-battle-damage-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
+              { type: "declineTrigger", player: 0, windowId: 1, windowKind: "triggerBucket", effectId: "before-battle-damage-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
             ],
             absentLegalActionGroups: [
               absentTriggerActivationGroup(0, "before-battle-damage-decline-optional-when", "turnOptional", 1, "triggerBucket"),

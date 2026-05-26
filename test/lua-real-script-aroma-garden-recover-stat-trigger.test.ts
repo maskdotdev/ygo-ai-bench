@@ -106,11 +106,20 @@ describe.skipIf(!hasUpstreamScripts || !hasAromaGardenScript)("Lua real script A
     const restoredBoosted = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), workspace, reader);
     expectCleanRestore(restoredBoosted);
     destroyDuelCard(restoredBoosted.session.state, aroma.uid, 0, duelReason.effect | duelReason.destroy, 1);
-    expect(restoredBoosted.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBoosted.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-6-1",
         effectId: "lua-3-1014",
         eventCardUid: aroma.uid,
+        eventCode: 1014,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventName: "sentToGraveyard",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventReason: duelReason.effect | duelReason.destroy,
+        eventReasonPlayer: 1,
+        eventTriggerTiming: "when",
+        player: 0,
         sourceUid: garden.uid,
         triggerBucket: "turnMandatory",
       },

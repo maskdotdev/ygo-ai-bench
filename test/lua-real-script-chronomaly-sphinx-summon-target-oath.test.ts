@@ -99,6 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSphinxScript)("Lua real script Chrono
         eventCardUid: sphinx.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,
+        eventPlayer: 0,
         eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventTriggerTiming: "when",

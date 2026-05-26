@@ -13,20 +13,17 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 const upstreamRoot = path.resolve(".upstream/ignis");
 const mushroomCode = "93900406";
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 const hasMushroomScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${mushroomCode}.lua`));
-const typeMonster = 0x1;
-const typeEffect = 0x20;
-const racePlant = 0x400;
-const attributeEarth = 0x1;
 const categoryDamage = 0x80000;
 const categoryControl = 0x2000;
 
-describe.skipIf(!hasUpstreamScripts || !hasMushroomScript)("Lua real script Mushroom Man 2 standby end control", () => {
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMushroomScript)("Lua real script Mushroom Man 2 standby end control", () => {
   it("restores turn-player Standby damage and LP-cost End Phase control transfer", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${mushroomCode}.lua`);
     expectScriptShape(script);
-    const reader = createCardReader(cards());
+    const reader = createCardReader(cards(workspace));
 
     const standbyOpen = createRestoredMushroomPhase({ reader, workspace, phase: "draw", turnPlayer: 0 });
     const standbyMushroom = requireCard(standbyOpen.session, mushroomCode);
@@ -155,10 +152,10 @@ function expectScriptShape(script: string | undefined): void {
   expect(script).toContain("Duel.GetControl(c,1-tp)");
 }
 
-function cards(): DuelCardData[] {
-  return [
-    { code: mushroomCode, name: "Mushroom Man #2", kind: "monster", typeFlags: typeMonster | typeEffect, race: racePlant, attribute: attributeEarth, level: 3, attack: 1250, defense: 800 },
-  ];
+function cards(workspace: ReturnType<typeof createUpstreamNodeWorkspace>): DuelCardData[] {
+  const mushroom = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === mushroomCode);
+  expect(mushroom).toBeDefined();
+  return [mushroom!];
 }
 
 function createRestoredMushroomPhase({

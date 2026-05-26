@@ -189,6 +189,32 @@ describe.skipIf(!hasUpstreamScripts || !hasPhantomClawScript)("Lua real script R
     applyRestoredActionAndAssert(restoredBattle, attack!);
     finishBattle(restoredBattle);
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 2600, 1: 0 });
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: raidraptorXyz.uid,
+        eventPlayer: 0,
+        eventValue: 2600,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: raidraptorXyz.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
   });
 });
 

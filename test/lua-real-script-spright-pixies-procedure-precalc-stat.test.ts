@@ -117,6 +117,20 @@ describe.skipIf(!hasUpstreamScripts || !hasPixiesScript)("Lua real script Sprigh
     passRestoredBattleResponses(restoredDamage);
     expect(restoredDamage.session.state.battleDamage[1]).toBe(1000);
     expect(restoredDamage.session.state.players[1].lifePoints).toBe(7000);
+    expect(restoredDamage.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: enabler.uid,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: enabler.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 2 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredDamage.session.state.cards.find((card) => card.uid === opponent.uid)).toMatchObject({ location: "graveyard", controller: 1 });
   });
 });

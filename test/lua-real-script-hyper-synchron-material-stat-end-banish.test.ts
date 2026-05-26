@@ -185,6 +185,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHyperSynchronScript)("Lua real script
     expectCleanRestore(restoredStat);
     expectRestoredLegalActions(restoredStat, 0);
     expect(currentAttack(restoredStat.session.state.cards.find((card) => card.uid === dragonSynchro.uid), restoredStat.session.state)).toBe(3200);
+    expect(restoredStat.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

@@ -82,16 +82,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mo
       reason: duelReason.battle | duelReason.destroy,
       reasonCardUid: attacker!.uid,
     });
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
-        sourceUid: papillon!.uid,
-        player: 0,
-        triggerBucket: "opponentOptional",
-        eventName: "sentToGraveyard",
-        eventCode: 1014,
+        id: "trigger-6-1",
+        effectId: "lua-1-1014",
         eventCardUid: papillon!.uid,
+        eventCode: 1014,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
+        eventName: "sentToGraveyard",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonCardUid: attacker!.uid,
+        eventReasonPlayer: 1,
+        eventTriggerTiming: "when",
+        player: 0,
+        sourceUid: papillon!.uid,
+        triggerBucket: "opponentOptional",
       },
     ]);
 

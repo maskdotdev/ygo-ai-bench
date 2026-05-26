@@ -21,7 +21,12 @@ export function isKnownTrapMonsterDisableEffect(effect: SerializedDuelEffect): b
   return (
     effect.code === 10 &&
     effect.event === "continuous" &&
-    effect.targetRange !== undefined &&
+    (effect.targetRange !== undefined || (
+      effect.sourceUid !== undefined &&
+      effect.reset?.flags !== undefined &&
+      effect.range.length === 1 &&
+      effect.range[0] === "monsterZone"
+    )) &&
     effect.value === undefined &&
     effect.luaValueDescriptor === undefined &&
     effect.luaTargetDescriptor === undefined

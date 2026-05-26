@@ -15,6 +15,7 @@ const upstreamRoot = path.resolve(".upstream/ignis");
 const beastRisingCode = "84962466";
 const costBeastCode = "849624660";
 const targetBeastWarriorCode = "849624661";
+const defenderCode = "849624662";
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 const hasBeastRisingScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${beastRisingCode}.lua`));
@@ -41,6 +42,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasBeastRisingSc
     const beastRising = requireCard(restored.session, beastRisingCode);
     const costBeast = requireCard(restored.session, costBeastCode);
     const target = requireCard(restored.session, targetBeastWarriorCode);
+    const defender = requireCard(restored.session, defenderCode);
+    const attack = getLuaRestoreLegalActions(restored, 0).find((action) =>
+      action.type === "declareAttack" && action.attackerUid === target.uid && action.targetUid === defender.uid
+    );
+    expect(attack, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, attack!);
+    passUntilBattleWindow(restored, "beforeDamageCalculation");
+    if (restored.session.state.waitingFor === 1) {
+      const opponentPass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passDamage");
+      expect(opponentPass, JSON.stringify(getLuaRestoreLegalActions(restored, 1), null, 2)).toBeDefined();
+      applyRestoredActionAndAssert(restored, opponentPass!);
+    }
     const boost = getLuaRestoreLegalActions(restored, 0).find((action) =>
       action.type === "activateEffect" && action.uid === beastRising.uid && action.effectId === "lua-2-1002"
     );
@@ -93,6 +106,7 @@ function cards(workspace: ReturnType<typeof createUpstreamNodeWorkspace>): DuelC
     { ...beastRising!, kind: "trap", typeFlags: typeTrap | typeContinuous },
     { code: costBeastCode, name: "Beast Rising Cost Beast", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceBeast, attribute: attributeEarth, level: 4, attack: 1400, defense: 1000 },
     { code: targetBeastWarriorCode, name: "Beast Rising Beast-Warrior Target", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceBeastWarrior, attribute: attributeEarth, level: 4, attack: 1600, defense: 1200 },
+    { code: defenderCode, name: "Beast Rising Defender", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceBeast, attribute: attributeEarth, level: 4, attack: 3200, defense: 1200 },
   ];
 }
 
@@ -104,13 +118,14 @@ function createRestoredField({
   workspace: ReturnType<typeof createUpstreamNodeWorkspace>;
 }): ReturnType<typeof restoreDuelWithLuaScripts> {
   const session = createDuel({ seed: 84962466, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
-  loadDecks(session, { 0: { main: [beastRisingCode, costBeastCode, targetBeastWarriorCode] }, 1: { main: [] } });
+  loadDecks(session, { 0: { main: [beastRisingCode, costBeastCode, targetBeastWarriorCode] }, 1: { main: [defenderCode] } });
   startDuel(session);
   const beastRising = requireCard(session, beastRisingCode);
   moveFaceUpSpellTrap(session, beastRising, 0, 0);
   moveFaceUpAttack(session, requireCard(session, costBeastCode), 0, 0);
   moveFaceUpAttack(session, requireCard(session, targetBeastWarriorCode), 0, 1);
-  session.state.phase = "main1";
+  moveFaceUpAttack(session, requireCard(session, defenderCode), 1, 0);
+  session.state.phase = "battle";
   session.state.turnPlayer = 0;
   session.state.waitingFor = 0;
   const host = createLuaScriptHost(session, workspace);
@@ -195,5 +210,18 @@ function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScri
     const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restored, pass!);
+  }
+}
+
+function passUntilBattleWindow(restored: ReturnType<typeof restoreDuelWithLuaScripts>, kind: NonNullable<DuelSession["state"]["battleWindow"]>["kind"]): void {
+  let guard = 0;
+  while (restored.session.state.battleWindow?.kind !== kind) {
+    expect(++guard).toBeLessThan(20);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const action = getLuaRestoreLegalActions(restored, player).find((candidate) =>
+      candidate.type === "passAttack" || candidate.type === "passDamage" || candidate.type === "passChain"
+    );
+    expect(action, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, action!);
   }
 }

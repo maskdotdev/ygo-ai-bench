@@ -130,6 +130,20 @@ describe.skipIf(!hasUpstreamScripts || !hasNumeronDragonScript)("Lua real script
     finishBattle(restoredBattle);
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 1000 });
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(7000);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: numeronDragon.uid,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: numeronDragon.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
   });
 });
 

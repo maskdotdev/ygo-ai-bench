@@ -63,6 +63,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
         sourceUid: starter.uid,
         triggerBucket: "turnOptional",
         eventName: "flipSummoned",
+        eventPlayer: 1,
         eventCode: 1101,
         eventCardUid: flipTarget.uid,
         eventReason: 0,
@@ -105,6 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ad
           "sequence": 0,
         },
         "eventName": "flipSummoned",
+        "eventPlayer": 1,
         "eventPreviousState": {
           "controller": 1,
           "faceUp": false,

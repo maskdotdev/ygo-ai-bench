@@ -59,18 +59,25 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
 
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(defconCode), workspace).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+    expect(host.registerInitialEffects()).toBe(1);
 
     const attack = getLegalActions(session, 1).find((action) => action.type === "declareAttack" && action.attackerUid === attacker.uid && action.targetUid === cyberseTarget.uid);
     expect(attack, JSON.stringify(getLegalActions(session, 1), null, 2)).toBeDefined();
     applyAndAssert(session, attack!);
     expect(session.state.pendingBattle).toMatchObject({ attackerUid: attacker.uid, targetUid: cyberseTarget.uid });
-    expect(session.state.pendingTriggers).toMatchObject([
+    expect(session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
         effectId: "lua-2-1131",
         eventCardUid: cyberseTarget.uid,
         eventCode: 1131,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
         eventName: "battleTargeted",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         player: 0,
         sourceUid: defcon.uid,
         triggerBucket: "opponentOptional",

@@ -119,6 +119,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSkullArchfiendScript)("Lua real scrip
       ],
       player: 1,
       sourceUid: targetedSpell.uid,
+      targetFieldIds: [4],
       targetUids: [skull.uid],
     });
     expect(getLuaRestoreLegalActions(restoredOpen, 0).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);

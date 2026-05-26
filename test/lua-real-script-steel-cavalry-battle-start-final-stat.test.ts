@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -68,6 +69,20 @@ describe.skipIf(!hasUpstreamScripts || !hasCavalryScript)("Lua real script Steel
     expect(restoredRegular.session.state.pendingTriggers).toEqual([]);
     finishBattle(restoredRegular);
     expect(restoredRegular.session.state.battleDamage).toEqual({ 0: 0, 1: 400 });
+    expect(restoredRegular.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: cavalry.uid,
+        eventPlayer: 1,
+        eventValue: 400,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: cavalry.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(currentAttack(restoredRegular.session.state.cards.find((card) => card.uid === cavalry.uid), restoredRegular.session.state)).toBe(1600);
     expect(currentDefense(restoredRegular.session.state.cards.find((card) => card.uid === cavalry.uid), restoredRegular.session.state)).toBe(2600);
 
@@ -81,10 +96,21 @@ describe.skipIf(!hasUpstreamScripts || !hasCavalryScript)("Lua real script Steel
     applyRestoredActionAndAssert(restoredOpen, pendulumAttack!);
     passUntilBattleStarted(restoredOpen);
     expect(restoredOpen.session.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-3-1132",
         eventCardUid: cavalry.uid,
+        eventCode: 1132,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleStarted",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [cavalry.uid, pendulumTarget.uid],
+        player: 0,
         sourceUid: cavalry.uid,
         triggerBucket: "turnMandatory",
       },
@@ -112,6 +138,20 @@ describe.skipIf(!hasUpstreamScripts || !hasCavalryScript)("Lua real script Steel
     expectCleanRestore(restoredHalved);
     finishBattle(restoredHalved);
     expect(restoredHalved.session.state.battleDamage).toEqual({ 0: 400, 1: 0 });
+    expect(restoredHalved.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: pendulumTarget.uid,
+        eventPlayer: 0,
+        eventValue: 400,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: pendulumTarget.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredHalved.session.state.cards.find((card) => card.uid === cavalry.uid)).toMatchObject({ location: "extraDeck", controller: 0, faceUp: true });
     expect(restoredHalved.session.state.cards.find((card) => card.uid === pendulumTarget.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
   });

@@ -98,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUnmaskedDragonScript)("Lua real scrip
         sourceUid: unmaskedDragon.uid,
         triggerBucket: "opponentOptional",
         eventName: "battleDestroyed",
+        eventPlayer: 0,
         eventCode: 1140,
         eventCardUid: unmaskedDragon.uid,
         eventReason: duelReason.battle | duelReason.destroy,

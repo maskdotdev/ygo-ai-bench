@@ -4,15 +4,19 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageStepStatFixtureCount = 9;
+const damageStepStatFixtureCount = 14;
 const damageStepStatKindCounts = {
-  activatedDamageStepBoost: 5,
+  activatedDamageStepBaseAttackZero: 1,
+  activatedDamageStepBoost: 7,
   activatedDamageStepLpFinalAttackDamageHalf: 1,
   labelObjectCostBoost: 1,
-  mandatoryPreDamageBoost: 1,
+  mandatoryPreDamageBoost: 3,
   persistentDamageStepDebuff: 1,
 } satisfies Record<DamageStepStatKind, number>;
 const damageStepStatSemanticVariantCounts = {
+  alchemyCycleBaseAttackBattleDraw: 1,
+  adhilsaberHandDiscardDamageStepStat: 1,
+  appliancerCeltopusColinkPreDamageBoost: 1,
   cipherSoldierMandatoryPreDamageBoost: 1,
   fabledAshenveilDamageStepHandCostBoost: 1,
   gamilDefenderBranchSelfToGraveBoost: 1,
@@ -22,15 +26,21 @@ const damageStepStatSemanticVariantCounts = {
   reliableGuardianTargetedDamageStepDefenseUpdate: 1,
   rushRecklesslyTargetedDamageStepBoost: 1,
   shinobirdCrowLabelObjectCostBoost: 1,
+  soulUnionDamageStepHeroStat: 1,
+  sevenWeaponsAnnounceRacePreDamageBoost: 1,
 } satisfies Record<DamageStepStatSemanticVariant, number>;
 
 type DamageStepStatKind =
+  | "activatedDamageStepBaseAttackZero"
   | "activatedDamageStepBoost"
   | "activatedDamageStepLpFinalAttackDamageHalf"
   | "labelObjectCostBoost"
   | "mandatoryPreDamageBoost"
   | "persistentDamageStepDebuff";
 type DamageStepStatSemanticVariant =
+  | "alchemyCycleBaseAttackBattleDraw"
+  | "adhilsaberHandDiscardDamageStepStat"
+  | "appliancerCeltopusColinkPreDamageBoost"
   | "cipherSoldierMandatoryPreDamageBoost"
   | "fabledAshenveilDamageStepHandCostBoost"
   | "gamilDefenderBranchSelfToGraveBoost"
@@ -39,7 +49,9 @@ type DamageStepStatSemanticVariant =
   | "miniaturizePersistentDamageStepDebuff"
   | "reliableGuardianTargetedDamageStepDefenseUpdate"
   | "rushRecklesslyTargetedDamageStepBoost"
-  | "shinobirdCrowLabelObjectCostBoost";
+  | "shinobirdCrowLabelObjectCostBoost"
+  | "soulUnionDamageStepHeroStat"
+  | "sevenWeaponsAnnounceRacePreDamageBoost";
 
 describe("Lua real damage-step stat restore coverage", () => {
   it("requires damage-step stat fixtures to assert clean restore and restored battle outcome", () => {
@@ -106,6 +118,20 @@ function damageStepStatFixtureFiles(): Array<{
 }> {
   return ([
     {
+      file: "test/lua-real-script-alchemy-cycle-base-attack-battle-draw.test.ts",
+      kind: "activatedDamageStepBaseAttackZero",
+      required: [
+        "aux.StatChangeDamageStepCondition",
+        "Duel.GetMatchingGroup(s.filter,tp,LOCATION_MZONE,0,nil)",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "tc:RegisterFlagEffect(id,RESET_EVENT|RESETS_STANDARD_EXC_GRAVE|RESET_PHASE|PHASE_END,0,1,fid)",
+        "currentAttack(zeroedTarget",
+        "eventName: \"battleDestroyed\"",
+        "eventName: \"cardsDrawn\"",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+      ],
+    },
+    {
       file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
       kind: "activatedDamageStepBoost",
       required: [
@@ -115,6 +141,10 @@ function damageStepStatFixtureFiles(): Array<{
         "expectCleanRestore(restoredBattle)",
         "currentAttack(boostedAshenveil",
         "battleDamage[1]).toBe",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: ashenveil.uid",
+        "eventReasonPlayer: 0",
         "host.messages).not.toContain",
       ],
     },
@@ -129,6 +159,11 @@ function damageStepStatFixtureFiles(): Array<{
         "Duel.IsTurnPlayer(1-tp)",
         "currentAttack(restoredChain.session.state.cards.find",
         "battleDamage).toEqual({ 0: 0, 1: 100 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 100",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: defender.uid",
+        "eventReasonPlayer: 0",
         "host.messages).not.toContain",
       ],
     },
@@ -143,6 +178,10 @@ function damageStepStatFixtureFiles(): Array<{
         "RegisterFlagEffect(id,RESET_PHASE|PHASE_DAMAGE_CAL,0,1)",
         "currentAttack(boostedLily",
         "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: lily.uid",
+        "eventReasonPlayer: 0",
         "flagEffects).toEqual([])",
       ],
     },
@@ -188,6 +227,10 @@ function damageStepStatFixtureFiles(): Array<{
         "effectLabelObjectUid: costSpirit!.uid",
         "currentAttack(restoredCrow",
         "battleDamage[1]).toBe(200)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: crow!.uid",
+        "eventReasonPlayer: 0",
         "host.messages).not.toContain",
       ],
     },
@@ -204,6 +247,37 @@ function damageStepStatFixtureFiles(): Array<{
         "battleDamage[0]).toBe(100)",
         "eventHistory.filter((event) => event.eventName === \"battleDamageDealt\")",
         "host.messages).not.toContain",
+      ],
+    },
+    {
+      file: "test/lua-real-script-adhilsaber-hand-discard-damage-step-stat.test.ts",
+      kind: "activatedDamageStepBoost",
+      required: [
+        "expectCleanRestore(restoredActivation)",
+        "expectCleanRestore(restoredBoost)",
+        "Duel.IsBattlePhase() and aux.StatChangeDamageStepCondition()",
+        "e1:SetCost(Cost.SelfDiscard)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsSetCard,SET_SKY_STRIKER),tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "currentAttack(restoredActivation.session.state.cards.find",
+        "battleDamage).toEqual({ 0: 400, 1: 0 })",
+        "eventHistory.filter((event) => event.eventName === \"battleDamageDealt\")",
+      ],
+    },
+    {
+      file: "test/lua-real-script-soul-union-damage-step-hero-stat.test.ts",
+      kind: "activatedDamageStepBoost",
+      required: [
+        "expectCleanRestore(restoredOpen)",
+        "expectCleanRestore(restoredChain)",
+        "expectCleanRestore(restoredBoost)",
+        "aux.StatChangeDamageStepCondition",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil):GetFirst()",
+        "Duel.SelectTarget(tp,s.atkfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_FUSION_SUMMON,nil,1,tp,LOCATION_EXTRA)",
+        "effectLabelObjectUid: attacker.uid",
+        "currentAttack(restoredChain.session.state.cards.find",
+        "battleDamage).toEqual({ 0: 0, 1: 300 })",
+        "eventHistory.filter((event) => event.eventName === \"battleDamageDealt\")",
       ],
     },
     {
@@ -229,8 +303,43 @@ function damageStepStatFixtureFiles(): Array<{
         "eventName: \"beforeDamageCalculation\"",
         "currentAttack(restored.session.state.cards.find((card) => card.uid === cipherSoldier!.uid)",
         "battleDamage[1]).toBe(1350)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: cipherSoldier!.uid",
+        "eventReasonPlayer: 0",
         "value: 2000",
         "finishBattle(restored.session)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hunter-7-weapons-announce-race-battle-stat.test.ts",
+      kind: "mandatoryPreDamageBoost",
+      required: [
+        "Duel.AnnounceRace(tp,1,RACE_ALL)",
+        "e:GetHandler():SetHint(CHINT_RACE,rc)",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "return bc and bc:IsRace(e:GetLabel())",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "triggerEvent: \"beforeDamageCalculation\"",
+        "currentAttack(restoredPreDamage.session.state.cards.find",
+        "eventName: \"beforeDamageCalculation\"",
+        "value: 1000",
+      ],
+    },
+    {
+      file: "test/lua-real-script-appliancer-celtopus-colink-battle-stat-draw.test.ts",
+      kind: "mandatoryPreDamageBoost",
+      required: [
+        "e1:SetCode(EFFECT_CANNOT_BE_BATTLE_TARGET)",
+        "e2:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e3:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "local mg=a:GetMutualLinkedGroup()",
+        "local octg=e:GetHandler():GetMutualLinkedGroup()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "trigger = getLuaRestoreLegalActions(restoredPreDamage",
+        "currentAttack(restoredPreDamage.session.state.cards.find",
+        "eventName: \"beforeDamageCalculation\"",
+        "value: 1000",
       ],
     },
   ] satisfies Array<{
@@ -249,6 +358,7 @@ function countDamageStepStatKinds(
       return counts;
     },
     {
+      activatedDamageStepBaseAttackZero: 0,
       activatedDamageStepBoost: 0,
       activatedDamageStepLpFinalAttackDamageHalf: 0,
       labelObjectCostBoost: 0,
@@ -265,6 +375,34 @@ function damageStepStatSemanticVariants(): Array<{
 }> {
   return ([
     {
+      file: "test/lua-real-script-alchemy-cycle-base-attack-battle-draw.test.ts",
+      kind: "alchemyCycleBaseAttackBattleDraw",
+      required: [
+        'const alchemyCycleCode = "65384019"',
+        "restores its SetBaseAttack flag handoff into battle-destroyed CHAININFO draw",
+        "e1:SetCode(EFFECT_SET_BASE_ATTACK)",
+        "e2:SetCode(EVENT_BATTLE_DESTROYED)",
+        "eg:IsExists(s.drfilter,1,nil,e:GetLabel())",
+        "currentAttack(zeroedTarget",
+        "triggerBucket: \"opponentMandatory\"",
+        "eventReasonEffectId: 3",
+      ],
+    },
+    {
+      file: "test/lua-real-script-adhilsaber-hand-discard-damage-step-stat.test.ts",
+      kind: "adhilsaberHandDiscardDamageStepStat",
+      required: [
+        'const adhilsaberCode = "61151074"',
+        "restores the hand discard cost, target info, and Damage Step ATK update",
+        "e1:SetCost(Cost.SelfDiscard)",
+        'eventName: "sentToGraveyard"',
+        "currentAttack(restoredBoost.session.state.cards.find",
+        "battleDamage).toEqual({ 0: 400, 1: 0 })",
+        'eventName: "battleDamageDealt"',
+        "eventReasonCardUid: defender.uid",
+      ],
+    },
+    {
       file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
       kind: "fabledAshenveilDamageStepHandCostBoost",
       required: [
@@ -274,6 +412,7 @@ function damageStepStatSemanticVariants(): Array<{
         "eventName: \"sentToGraveyard\"",
         "currentAttack(boostedAshenveil",
         "ashenveil responder resolved",
+        "eventName: \"battleDamageDealt\"",
       ],
     },
     {
@@ -288,6 +427,7 @@ function damageStepStatSemanticVariants(): Array<{
         'eventName: "lifePointCostPaid"',
         "currentAttack(boostedLily",
         "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+        "eventName: \"battleDamageDealt\"",
       ],
     },
     {
@@ -316,6 +456,8 @@ function damageStepStatSemanticVariants(): Array<{
         "eventName: \"sentToGraveyard\"",
         "currentAttack(restoredChain.session.state.cards.find",
         "battleDamage).toEqual({ 0: 0, 1: 100 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: defender.uid",
       ],
     },
     {
@@ -328,6 +470,22 @@ function damageStepStatSemanticVariants(): Array<{
         "effectLabelObjectUid: costSpirit!.uid",
         "eventName: \"discarded\"",
         "battleDamage[1]).toBe(200)",
+        "eventName: \"battleDamageDealt\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-soul-union-damage-step-hero-stat.test.ts",
+      kind: "soulUnionDamageStepHeroStat",
+      required: [
+        'const soulUnionCode = "69389481"',
+        "restores Damage Step target pair selection into Elemental HERO grave ATK gain",
+        "e1:SetCategory(CATEGORY_ATKCHANGE+CATEGORY_REMOVE+CATEGORY_SPECIAL_SUMMON+CATEGORY_FUSION_SUMMON)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "effectLabelObjectUid: attacker.uid",
+        "possibleOperationInfos",
+        "currentAttack(restoredBoost.session.state.cards.find",
+        "battleDamage).toEqual({ 0: 0, 1: 300 })",
+        'eventName: "battleDamageDealt"',
       ],
     },
     {
@@ -378,6 +536,36 @@ function damageStepStatSemanticVariants(): Array<{
         "triggerEvent: \"beforeDamageCalculation\"",
         "currentAttack(restored.session.state.cards.find((card) => card.uid === cipherSoldier!.uid)",
         "battleDamage[1]).toBe(1350)",
+        "eventName: \"battleDamageDealt\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-hunter-7-weapons-announce-race-battle-stat.test.ts",
+      kind: "sevenWeaponsAnnounceRacePreDamageBoost",
+      required: [
+        'const hunterCode = "1525329"',
+        "restores summon AnnounceRace into race-gated pre-damage ATK boost",
+        "Duel.AnnounceRace(tp,1,RACE_ALL)",
+        "e:GetHandler():SetHint(CHINT_RACE,rc)",
+        "triggerEvent: \"beforeDamageCalculation\"",
+        "currentAttack(restoredPreDamage.session.state.cards.find",
+        "value: 1000",
+      ],
+    },
+    {
+      file: "test/lua-real-script-appliancer-celtopus-colink-battle-stat-draw.test.ts",
+      kind: "appliancerCeltopusColinkPreDamageBoost",
+      required: [
+        'const celtopusCode = "78225596"',
+        "restores co-linked pre-damage Appliancer ATK boost and target locks",
+        "e1:SetValue(aux.imval1)",
+        "e2:SetValue(aux.tgoval)",
+        "local mg=a:GetMutualLinkedGroup()",
+        "local octg=e:GetHandler():GetMutualLinkedGroup()",
+        "e4:SetCode(EVENT_LEAVE_FIELD_P)",
+        "e5:SetCode(EVENT_DESTROYED)",
+        "currentAttack(restoredPreDamage.session.state.cards.find",
+        "value: 1000",
       ],
     },
   ] satisfies Array<{
@@ -396,6 +584,9 @@ function countDamageStepStatSemanticVariants(
       return counts;
     },
     {
+      alchemyCycleBaseAttackBattleDraw: 0,
+      adhilsaberHandDiscardDamageStepStat: 0,
+      appliancerCeltopusColinkPreDamageBoost: 0,
       cipherSoldierMandatoryPreDamageBoost: 0,
       fabledAshenveilDamageStepHandCostBoost: 0,
       gamilDefenderBranchSelfToGraveBoost: 0,
@@ -405,6 +596,8 @@ function countDamageStepStatSemanticVariants(
       reliableGuardianTargetedDamageStepDefenseUpdate: 0,
       rushRecklesslyTargetedDamageStepBoost: 0,
       shinobirdCrowLabelObjectCostBoost: 0,
+      soulUnionDamageStepHeroStat: 0,
+      sevenWeaponsAnnounceRacePreDamageBoost: 0,
     },
   );
 }

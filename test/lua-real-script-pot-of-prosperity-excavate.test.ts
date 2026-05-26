@@ -249,6 +249,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Po
     applyAndAssert(restored.session, getLegalActions(restored.session, 0).find((action) => action.type === "declareAttack" && action.attackerUid === attacker!.uid)!);
     passBattleResponses(restored.session);
     expect(restored.session.state.battleDamage[1]).toBe(500);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker!.uid,
+        eventPlayer: 1,
+        eventValue: 500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: attacker!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 3,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.players[1].lifePoints).toBe(7500);
     expect(restored.host.messages).not.toContain("pot of prosperity responder resolved");
   });

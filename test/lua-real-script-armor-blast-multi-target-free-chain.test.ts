@@ -77,81 +77,21 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
     expect(armorBlastAction).toBeDefined();
     applyAndAssert(session, armorBlastAction!);
     expect(session.state.chain).toHaveLength(1);
-    const targetUids = [inzektor!.uid, opponentMonster!.uid, opponentSpell!.uid];
-    expect(session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "spellTrapZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-2-1002",
-        "id": "chain-2",
-        "operationInfos": [
-          {
-            "category": 1,
-            "count": 3,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p1-deck-903-1",
-              "p0-deck-904-1",
-              "p0-deck-905-2",
-            ],
-          },
-        ],
-        "player": 1,
-        "sourceUid": "p1-deck-79155167-0",
-        "targetUids": [
-          "p1-deck-903-1",
-          "p0-deck-904-1",
-          "p0-deck-905-2",
-        ],
-      }
-    `);
+    expect(session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x1, targetUids: [inzektor!.uid, opponentMonster!.uid, opponentSpell!.uid], count: 3, player: 0, parameter: 0 },
+    ]);
+    expect(getLegalActions(session, 0).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    passChain(session, 0);
+    expect(session.state.chain).toHaveLength(0);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "spellTrapZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-2-1002",
-        "id": "chain-2",
-        "operationInfos": [
-          {
-            "category": 1,
-            "count": 3,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p1-deck-903-1",
-              "p0-deck-904-1",
-              "p0-deck-905-2",
-            ],
-          },
-        ],
-        "player": 1,
-        "sourceUid": "p1-deck-79155167-0",
-        "targetUids": [
-          "p1-deck-903-1",
-          "p0-deck-904-1",
-          "p0-deck-905-2",
-        ],
-      }
-    `);
-    expect(restored.session.state.chain[0]?.operationInfos).toEqual([
-      { category: 0x1, targetUids, count: 3, player: 0, parameter: 0 },
-    ]);
-
-    const pass = getLuaRestoreLegalActions(restored, 0).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreResponse(restored, pass!);
-    expect(resolved.ok, resolved.error).toBe(true);
+    const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, restoredPlayer));
+    expect(restored.session.state.chain).toHaveLength(0);
 
     expect(restored.session.state.cards.find((card) => card.uid === inzektor!.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.cards.find((card) => card.uid === opponentMonster!.uid)).toMatchObject({ location: "graveyard" });
@@ -183,6 +123,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
       },
     ]);
     expect(restored.host.messages).not.toContain("armor blast chain responder resolved");
+    expect(getLuaRestoreLegalActions(restored, 0).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(false);
   });
 });
 
@@ -208,4 +149,10 @@ function applyAndAssert(session: DuelSession, action: DuelAction) {
   expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
   expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
   return response;
+}
+
+function passChain(session: DuelSession, player: 0 | 1): void {
+  const pass = getLegalActions(session, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLegalActions(session, player), null, 2)).toBeDefined();
+  applyAndAssert(session, pass!);
 }

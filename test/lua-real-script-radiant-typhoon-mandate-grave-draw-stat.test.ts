@@ -103,6 +103,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
         effectId: "lua-2-1002",
         activationLocation: "spellTrapZone",
         activationSequence: 0,
+        targetFieldIds: [10, 11, 12],
         targetUids: graveCards.map((card) => card.uid),
         operationInfos: [
           { category: 0x10, targetUids: graveCards.map((card) => card.uid), count: 3, player: 0, parameter: 0 },

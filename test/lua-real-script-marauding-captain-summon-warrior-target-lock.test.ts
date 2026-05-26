@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasCaptainScript
         player: 0,
         eventName: "normalSummoned",
         eventCode: 1100,
+        eventPlayer: 0,
         eventCardUid: captain.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,

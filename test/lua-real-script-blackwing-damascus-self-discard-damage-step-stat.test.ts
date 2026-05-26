@@ -75,11 +75,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDamascusScrip
       eventReasonCardUid: event.eventReasonCardUid,
       eventReasonEffectId: event.eventReasonEffectId,
       relatedEffectId: event.relatedEffectId,
-      toLocation: event.toLocation,
+      toLocation: event.eventCurrentState?.location,
     }))).toEqual([
-      { eventName: "attackDeclared", eventCardUid: attacker.uid, eventReason: 0, eventReasonPlayer: 1, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: undefined, toLocation: undefined },
-      { eventName: "moved", eventCardUid: damascus.uid, eventReason: duelReason.cost | duelReason.discard, eventReasonPlayer: 0, eventReasonCardUid: damascus.uid, eventReasonEffectId: 1, relatedEffectId: undefined, toLocation: undefined },
-      { eventName: "becameTarget", eventCardUid: blackwing.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, toLocation: undefined },
+      { eventName: "attackDeclared", eventCardUid: attacker.uid, eventReason: 0, eventReasonPlayer: 1, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: undefined, toLocation: "monsterZone" },
+      { eventName: "moved", eventCardUid: damascus.uid, eventReason: duelReason.cost | duelReason.discard, eventReasonPlayer: 0, eventReasonCardUid: damascus.uid, eventReasonEffectId: 1, relatedEffectId: undefined, toLocation: "graveyard" },
+      { eventName: "becameTarget", eventCardUid: blackwing.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, toLocation: "monsterZone" },
     ]);
     expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });

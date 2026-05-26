@@ -88,7 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGaiaSoulScript)("Lua real script Gaia
       triggerEvent: effect.triggerEvent,
       value: effect.value,
     }))).toEqual([
-      { code: 203, event: "continuous", property: undefined, reset: undefined, triggerEvent: "customEvent", value: undefined },
+      { code: 203, event: "continuous", property: undefined, reset: undefined, triggerEvent: undefined, value: undefined },
       { code: 4608, event: "trigger", property: undefined, reset: undefined, triggerEvent: "phaseEnd", value: undefined },
     ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "released").map((event) => ({

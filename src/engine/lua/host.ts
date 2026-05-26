@@ -88,7 +88,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
 
   function loadOptionalCommonScript(source: LuaScriptSource, name: string): LuaScriptLoadResult {
     if (hostState.loadedScriptBodies.has(name)) return { ok: true, name };
-    const code = source.readScript(name);
+    const code = normalizeCommonScriptForLuaHost(name, source.readScript(name));
     if (code === undefined) return { ok: true, name };
     hostState.loadedScriptBodies.set(name, code);
     return runLuaCardScript(L, hostState, code, name);
@@ -121,14 +121,14 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     },
     registerInitialEffects() {
       let count = 0;
-      for (const result of registerLuaInitialEffectsDetailed(L, session, hostState.loadedScriptBodies)) {
+      for (const result of registerLuaInitialEffectsDetailed(L, session, hostState, hostState.loadedScriptBodies)) {
         if (result.error) throw new Error(result.error);
         if (!result.skipped) count += 1;
       }
       return count;
     },
     registerInitialEffectsDetailed() {
-      return registerLuaInitialEffectsDetailed(L, session, hostState.loadedScriptBodies);
+      return registerLuaInitialEffectsDetailed(L, session, hostState, hostState.loadedScriptBodies);
     },
     restoreEffectMetadata(registryKey, metadata) {
       const effectId = luaEffectIdFromRegistryKey(registryKey);
@@ -140,6 +140,10 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       else effect.labels = [...metadata.labels];
       if (metadata.labelObjectId === undefined) delete effect.labelObjectId;
       else effect.labelObjectId = metadata.labelObjectId;
+      if (metadata.labelObjectUid === undefined) delete effect.labelObjectUid;
+      else effect.labelObjectUid = metadata.labelObjectUid;
+      if (metadata.labelObjectUids === undefined) delete effect.labelObjectUids;
+      else effect.labelObjectUids = [...metadata.labelObjectUids];
       return true;
     },
     runStartupEffects() {
@@ -182,6 +186,11 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
       return runLuaEffectMaterialCheck(L, hostState, effectId, sourceUid, player);
     },
   };
+}
+
+function normalizeCommonScriptForLuaHost(name: string, code: string | undefined): string | undefined {
+  if (name !== "cards_specific_functions.lua" || code === undefined) return code;
+  return code.replace("e1:SetCategory(CATEGORY_TODECK | extracat)", "e1:SetCategory(CATEGORY_TODECK + extracat)");
 }
 
 function luaEffectIdFromRegistryKey(registryKey: string): number | undefined {

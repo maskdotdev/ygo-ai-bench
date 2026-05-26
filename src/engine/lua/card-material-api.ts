@@ -99,14 +99,16 @@ function pushCheckFusionMaterial(L: unknown, session: DuelSession): number {
   const target = readCard(L, session);
   const poolUids = uniqueUids(readGroupUids(L, 2));
   const forcedUids = uniqueUids(readCardOrGroupUids(L, 3));
-  if (!target || poolUids.length === 0) {
+  if (!target) {
     lua.lua_pushboolean(L, false);
     return 1;
   }
 
-  const candidates = poolUids
-    .map((uid) => session.state.cards.find((card) => card.uid === uid))
-    .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== target.uid && canUseAsFusionMaterial(session.state, card)));
+  const candidates = (poolUids.length > 0
+    ? poolUids
+      .map((uid) => session.state.cards.find((card) => card.uid === uid))
+      .filter((card): card is DuelCardInstance => Boolean(card && card.uid !== target.uid && canUseAsFusionMaterial(session.state, card)))
+    : defaultFusionMaterialCandidates(session.state, target));
   const forced = forcedUids
     .map((uid) => candidates.find((card) => card.uid === uid))
     .filter((card): card is DuelCardInstance => card !== undefined);
@@ -130,6 +132,14 @@ function pushCheckFusionMaterial(L: unknown, session: DuelSession): number {
 
 function canUseAsFusionMaterial(state: DuelState, card: DuelCardInstance): boolean {
   return isFusionMaterialLocation(card.location) && (cardTypeFlags(card, state) & 0x1) !== 0;
+}
+
+function defaultFusionMaterialCandidates(state: DuelState, target: DuelCardInstance): DuelCardInstance[] {
+  return state.cards.filter((card) =>
+    card.uid !== target.uid &&
+    card.controller === target.controller &&
+    (card.location === "hand" || card.location === "monsterZone") &&
+    canUseAsFusionMaterial(state, card));
 }
 
 function isFusionMaterialLocation(location: DuelCardInstance["location"]): boolean {
@@ -183,7 +193,7 @@ function canChangePosition(state: DuelState, card: DuelCardInstance, requested: 
 }
 
 function canLuaChangePosition(state: DuelState, card: DuelCardInstance, position: CardPosition): boolean {
-  return canChangeDuelCardPosition(state, card.uid, position, "manual") && canChangeDuelCardPosition(state, card.uid, position, "effect");
+  return canChangeDuelCardPosition(state, card.uid, position, "effect");
 }
 
 function readCardOrGroupUids(L: unknown, index: number): string[] {

@@ -5,6 +5,8 @@ import type { LuaCardApiEffectRecord, LuaCardApiState } from "#lua/card-api-type
 import type { DuelCardInstance, DuelEffectDefinition, DuelSession } from "#duel/types.js";
 
 const { lua, to_luastring } = fengari;
+const luaEffectTypeField = 0x2;
+const luaEffectTypeGrant = 0x2000;
 
 export function installCardEffectRegistrationApi<EffectRecord extends LuaCardApiEffectRecord>(
   L: unknown,
@@ -20,6 +22,13 @@ export function installCardEffectRegistrationApi<EffectRecord extends LuaCardApi
     const luaEffect = effectId === undefined ? undefined : hostState.effects.get(effectId);
     if (!card || !luaEffect) return 0;
     registerEffect(session, toDuelEffect(card, luaEffect, state));
+    if ((luaEffect.typeFlags ?? 0) & luaEffectTypeField && (luaEffect.typeFlags ?? 0) & luaEffectTypeGrant && luaEffect.labelObjectId !== undefined) {
+      const labelEffect = hostState.effects.get(luaEffect.labelObjectId);
+      if (labelEffect) {
+        labelEffect.ownerPlayer = luaEffect.ownerPlayer ?? card.controller;
+        registerEffect(session, toDuelEffect(card, labelEffect, state));
+      }
+    }
     return 0;
   });
   lua.lua_setfield(L, -2, to_luastring("RegisterEffect"));

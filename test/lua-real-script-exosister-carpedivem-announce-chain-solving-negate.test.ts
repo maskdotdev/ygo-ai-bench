@@ -83,6 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ex
         triggerBucket: "turnOptional",
         eventName: "specialSummoned",
         eventCode: 1102,
+        eventPlayer: 0,
         eventCardUid: exosisterXyz.uid,
         eventReason: duelReason.summon | duelReason.specialSummon,
         eventReasonPlayer: 0,
@@ -121,7 +122,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ex
         label: Number(announcedSpellCode),
         reset: { flags: 1073742336 },
         targetRange: undefined,
-        triggerEvent: "chainSolving",
+        triggerEvent: undefined,
         luaConditionDescriptor: "condition:chain-solving-effect-handler-original-code-label",
       },
     ]);
@@ -141,7 +142,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ex
         code: 1020,
         label: Number(announcedSpellCode),
         targetRange: undefined,
-        triggerEvent: "chainSolving",
+        triggerEvent: undefined,
         luaConditionDescriptor: "condition:chain-solving-effect-handler-original-code-label",
       },
     ]);

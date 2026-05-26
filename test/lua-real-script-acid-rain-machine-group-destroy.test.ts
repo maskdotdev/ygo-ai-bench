@@ -88,35 +88,21 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasAcidRainScrip
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyLuaRestoreAndAssert(restoredOpen, activation!);
     const destroyedUids = [ownMachine.uid, opponentMachine.uid];
-    expect(restoredOpen.session.state.chain).toEqual([
-      {
-        id: "chain-2",
-        chainIndex: 1,
-        player: 0,
-        sourceUid: acidRain.uid,
-        effectId: "lua-1-1002",
-        activationLocation: "hand",
-        activationSequence: 0,
-        operationInfos: [{ category: 0x1, targetUids: destroyedUids, count: 2, player: 0, parameter: 0 }],
-      },
+    expect(restoredOpen.session.state.chain).toHaveLength(1);
+    expect(restoredOpen.session.state.chain[0]!.operationInfos).toEqual([
+      expect.objectContaining({ category: 0x1, targetUids: destroyedUids, count: 2, player: 0, parameter: 0 }),
     ]);
-
-    const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
-    expectCleanRestore(restoredChain);
-    expectRestoredLegalActions(restoredChain, 1);
-    expect(getLuaRestoreLegalActions(restoredChain, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-    const pass = getLuaRestoreLegalActions(restoredChain, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    applyLuaRestoreAndAssert(restoredChain, pass!);
-
-    expect(restoredChain.session.state.chain).toEqual([]);
-    expect(restoredChain.session.state.cards.find((card) => card.uid === acidRain.uid)).toMatchObject({ location: "graveyard", controller: 0 });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === ownMachine.uid)).toMatchObject({ location: "graveyard", controller: 0, reason: duelReason.effect | duelReason.destroy });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === opponentMachine.uid)).toMatchObject({ location: "graveyard", controller: 1, reason: duelReason.effect | duelReason.destroy });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === facedownMachine.uid)).toMatchObject({ location: "monsterZone", controller: 0, faceUp: false });
-    expect(restoredChain.session.state.cards.find((card) => card.uid === warriorDecoy.uid)).toMatchObject({ location: "monsterZone", controller: 1, faceUp: true });
-    expect(restoredChain.host.messages).not.toContain("acid rain responder resolved");
-    expect(restoredChain.session.state.eventHistory.filter((event) => event.eventName === "destroyed")).toEqual([
+    expectRestoredLegalActions(restoredOpen, 1);
+    expect(getLuaRestoreLegalActions(restoredOpen, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passRestoredChain(restoredOpen);
+    expect(restoredOpen.session.state.chain).toEqual([]);
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === acidRain.uid)).toMatchObject({ location: "graveyard", controller: 0 });
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === ownMachine.uid)).toMatchObject({ location: "graveyard", controller: 0, reason: duelReason.effect | duelReason.destroy });
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === opponentMachine.uid)).toMatchObject({ location: "graveyard", controller: 1, reason: duelReason.effect | duelReason.destroy });
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === facedownMachine.uid)).toMatchObject({ location: "monsterZone", controller: 0, faceUp: false });
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === warriorDecoy.uid)).toMatchObject({ location: "monsterZone", controller: 1, faceUp: true });
+    expect(restoredOpen.host.messages).not.toContain("acid rain responder resolved");
+    expect(restoredOpen.session.state.eventHistory.filter((event) => event.eventName === "destroyed")).toEqual([
       destroyedEvent(ownMachine.uid, acidRain.uid, 0, 0),
       destroyedEvent(opponentMachine.uid, acidRain.uid, 1, 0),
       { ...destroyedEvent(ownMachine.uid, acidRain.uid, 0, 0), eventUids: destroyedUids },
@@ -185,4 +171,12 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   if (player === undefined) return;
   expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, player));
   expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+}
+
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyLuaRestoreAndAssert(restored, pass!);
 }

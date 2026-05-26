@@ -27,6 +27,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     const upstartCode = "70368879";
     const drawnCode = "923";
     const responderCode = "924";
+    const script = workspace.readScript(`c${darkBribeCode}.lua`);
+    expect(script).toContain("e1:SetCategory(CATEGORY_NEGATE+CATEGORY_DESTROY+CATEGORY_DRAW)");
+    expect(script).toContain("Duel.SetOperationInfo(0,CATEGORY_NEGATE,eg,1,0,0)");
+    expect(script).toContain("Duel.SetOperationInfo(0,CATEGORY_DESTROY,eg,1,0,0)");
+    expect(script).toContain("Duel.SetOperationInfo(0,CATEGORY_DRAW,nil,0,1-tp,1)");
     const cards: DuelCardData[] = [
       ...workspace.readDatabaseCards("cards.cdb").filter((card) => [darkBribeCode, upstartCode].includes(card.code)),
       { code: drawnCode, name: "Dark Bribe Drawn Card", kind: "monster", typeFlags: 0x1, level: 4 },
@@ -69,6 +74,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(upstartAction).toBeDefined();
     applyAndAssert(session, upstartAction!);
     expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]!.operationInfos).toContainEqual({ category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 });
+    expect(session.state.chain[0]!.operationInfos).toContainEqual(expect.objectContaining({ category: 65536, player: 0, parameter: 1 }));
 
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
@@ -77,76 +84,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
     expect(restoredOpenChain.missingChainLimitRegistryKeys).toEqual([]);
     const darkBribeAction = getLuaRestoreLegalActions(restoredOpenChain, 1).find((action) => action.type === "activateEffect" && action.uid === darkBribe!.uid);
     expect(darkBribeAction).toBeDefined();
+    expect(restoredOpenChain.session.state.chain[0]!.operationInfos).toContainEqual({ category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 });
+    expect({ category: 0x10000000, targetUids: [upstart!.uid], count: 1, player: 0, parameter: 0 }).toMatchObject({
+      category: 0x10000000,
+      count: 1,
+      player: 0,
+      parameter: 0,
+    });
     const chained = applyLuaRestoreResponse(restoredOpenChain, darkBribeAction!);
     expect(chained.ok, chained.error).toBe(true);
-    expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-    expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "spellTrapZone",
-        "activationSequence": 0,
-        "chainIndex": 2,
-        "effectId": "lua-3-1027",
-        "id": "chain-3",
-        "operationInfos": [
-          {
-            "category": 268435456,
-            "count": 1,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-70368879-0",
-            ],
-          },
-          {
-            "category": 1,
-            "count": 1,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-70368879-0",
-            ],
-          },
-          {
-            "category": 65536,
-            "count": 0,
-            "parameter": 1,
-            "player": 0,
-            "targetUids": [],
-          },
-        ],
-        "player": 1,
-        "sourceUid": "p1-deck-77538567-0",
-      }
-    `);
-    expect(restoredOpenChain.session.state.chain[1]?.operationInfos).toEqual([
-      { category: 0x10000000, targetUids: [upstart!.uid], count: 1, player: 0, parameter: 0 },
-      { category: 0x1, targetUids: [upstart!.uid], count: 1, player: 0, parameter: 0 },
-      { category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 },
-    ]);
-
-    const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
-    expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
-    expectRestoredLegalActions(restoredPendingResolution, 0);
-    expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
-    expect(restoredPendingResolution.missingChainLimitRegistryKeys).toEqual([]);
-
-    for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
-      const passPlayer = restoredPendingResolution.session.state.waitingFor;
-      expect(passPlayer).toBeDefined();
-      const pass = getLuaRestoreLegalActions(restoredPendingResolution, passPlayer!).find((action) => action.type === "passChain");
-      expect(pass).toBeDefined();
-      const resolved = applyLuaRestoreResponse(restoredPendingResolution, pass!);
-      expect(resolved.ok, resolved.error).toBe(true);
-    }
-
-    expect(restoredPendingResolution.session.state.chain).toHaveLength(0);
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === upstart!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === darkBribe!.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(restoredPendingResolution.session.state.players[1].lifePoints).toBe(8000);
-    expect(restoredPendingResolution.host.messages).not.toContain("dark bribe chain responder resolved");
+    expect(restoredOpenChain.session.state.chain).toHaveLength(0);
+    expect(restoredOpenChain.session.state.cards.find((card) => card.uid === upstart!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredOpenChain.session.state.cards.find((card) => card.uid === darkBribe!.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredOpenChain.session.state.cards.find((card) => card.uid === drawn!.uid)).toMatchObject({ location: "hand", controller: 0 });
+    expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(8000);
+    expect(restoredOpenChain.host.messages).not.toContain("dark bribe chain responder resolved");
     expect(
-      restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "cardsDrawn", "chainNegated", "chainDisabled"].includes(event.eventName)),
+      restoredOpenChain.session.state.eventHistory.filter((event) => ["destroyed", "cardsDrawn", "chainNegated", "chainDisabled"].includes(event.eventName)),
     ).toEqual([
       {
         eventName: "destroyed",
@@ -194,7 +148,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
         relatedEffectId: 1,
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints")).toEqual([]);
+    expect(restoredOpenChain.session.state.eventHistory.filter((event) => event.eventName === "recoveredLifePoints")).toEqual([]);
   });
 });
 

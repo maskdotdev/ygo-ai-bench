@@ -57,11 +57,19 @@ describe.skipIf(!hasUpstreamScripts || !hasEhrenScript)("Lua real script Ehren b
     passUntilPendingTrigger(session, "battleConfirmed");
 
     expect(session.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(session.state.pendingTriggers).toMatchObject([
+    expect(session.state.pendingTriggers).toEqual([
       {
-        eventName: "battleConfirmed",
-        eventCode: 1133,
+        id: "trigger-3-1",
+        effectId: "lua-1-1133",
         eventCardUid: ehren!.uid,
+        eventCode: 1133,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "battleConfirmed",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         eventUids: [ehren!.uid, target!.uid],
         player: 0,
         sourceUid: ehren!.uid,

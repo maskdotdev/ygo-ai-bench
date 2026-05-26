@@ -56,7 +56,7 @@ describe("EDOPro parity phase-start-battle missed timing decline fixture", () =>
             logMessage: "Phase-start-battle decline open fast resolved",
           },
         ],
-        collectEvents: [{ collectEvent: "phaseStartBattle", eventCode: 0x2008, eventIsLast: false }],
+        collectEvents: [{ collectEvent: "phaseStartBattle", eventCode: 0x2008, eventPlayer: 0, eventIsLast: false }],
       },
       responses: [
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "phase-start-battle-decline-optional-if" }), {
@@ -67,8 +67,9 @@ describe("EDOPro parity phase-start-battle missed timing decline fixture", () =>
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-start-battle-decline-optional-if", eventName: "phaseStartBattle", eventCode: 0x2008, eventTriggerTiming: "if" }],
+            pendingTriggers: [{ player: 0, effectId: "phase-start-battle-decline-optional-if", eventName: "phaseStartBattle", eventCode: 0x2008, eventPlayer: 0, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{ eventName: "phaseStartBattle", eventCode: 0x2008, eventPlayer: 0 }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-battle-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-battle-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

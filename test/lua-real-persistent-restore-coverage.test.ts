@@ -468,6 +468,10 @@ function persistentSemanticVariants(): Array<{
         'const maskCode = "56948373"',
         "restores equip target attack lock and Standby damage to the equipped monster controller",
         "cardTargetUids",
+        "eventName: \"damageDealt\"",
+        "eventValue: 500",
+        "eventReasonCardUid: mask!.uid",
+        "eventReasonEffectId: 4",
       ],
     },
     {
@@ -504,6 +508,10 @@ function persistentSemanticVariants(): Array<{
         'const wheelCode = "54704216"',
         "restores official persistent trap target relation into Standby Phase damage",
         "cardTargetUids",
+        "eventName: \"damageDealt\"",
+        "eventValue: 500",
+        "eventReasonCardUid: wheel!.uid",
+        "eventReasonEffectId: 5",
       ],
     },
     {

@@ -90,7 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasIronChainDrag
       reason: duelReason.effect,
       reasonPlayer: 0,
       reasonCardUid: dragon.uid,
-      reasonEffectId: 2,
+      reasonEffectId: 3,
     });
     expect(restoredOpen.session.state.cards.find((card) => card.uid === decoy.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(currentAttack(restoredOpen.session.state.cards.find((card) => card.uid === dragon.uid), restoredOpen.session.state)).toBe(2700);
@@ -123,7 +123,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasIronChainDrag
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: dragon.uid,
-        eventReasonEffectId: 2,
+        eventReasonEffectId: 3,
         eventPreviousState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "banished", position: "faceUpAttack", sequence: 0 },
       },

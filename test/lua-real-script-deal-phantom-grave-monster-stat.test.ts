@@ -125,7 +125,7 @@ function requireCard(session: DuelSession, code: string): DuelCardInstance {
 
 function requireCards(session: DuelSession, code: string): DuelCardInstance[] {
   const cards = session.state.cards.filter((candidate) => candidate.code === code);
-  expect(cards.length).toBeGreaterThan(0);
+  expect(cards).toHaveLength(3);
   return cards;
 }
 

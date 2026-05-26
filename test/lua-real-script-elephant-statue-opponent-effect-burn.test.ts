@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
         effectId: "lua-1-1014",
         eventCardUid: elephant.uid,
         eventCode: 1014,
+        eventPlayer: 0,
         eventCurrentState: {
           controller: 0,
           faceUp: true,
@@ -115,6 +116,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script El
         effectId: "lua-1-1014",
         eventCardUid: elephant.uid,
         eventCode: 1014,
+        eventPlayer: 0,
         eventCurrentState: {
           controller: 0,
           faceUp: true,

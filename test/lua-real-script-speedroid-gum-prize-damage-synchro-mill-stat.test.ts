@@ -79,8 +79,21 @@ describe.skipIf(!hasUpstreamScripts || !hasGumScript)("Lua real script Speedroid
     expectRestoredLegalActions(restoredOpen, 0);
     const damage = restoredOpen.host.loadScript("Duel.Damage(0,500,REASON_EFFECT)", "gum-prize-damage-probe.lua");
     expect(damage.ok, damage.error).toBe(true);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
-      { sourceUid: gum.uid, eventName: "damageDealt", eventCode: 1111, eventPlayer: 0, eventValue: 500, triggerBucket: "turnOptional" },
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
+      {
+        id: "trigger-3-1",
+        effectId: "lua-1-1111",
+        eventCode: 1111,
+        eventName: "damageDealt",
+        eventPlayer: 0,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
+        eventValue: 500,
+        player: 0,
+        sourceUid: gum.uid,
+        triggerBucket: "turnOptional",
+      },
     ]);
 
     const restoredDamageTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);

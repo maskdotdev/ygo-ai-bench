@@ -98,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Be
         activationSequence: 0,
         eventName: "normalSummoned",
         eventCode: 1100,
+        eventPlayer: 0,
         eventCardUid: beta.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,

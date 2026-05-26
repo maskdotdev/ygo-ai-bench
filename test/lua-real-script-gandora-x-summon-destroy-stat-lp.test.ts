@@ -89,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGandoraScript)("Lua real script Gando
         effectId: "lua-1-1100",
         eventName: "normalSummoned",
         eventCode: 1100,
+        eventPlayer: 0,
         eventCardUid: gandora.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,
@@ -243,8 +244,9 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   const raw = getLuaRestoreLegalActions(restored, player);
   const grouped = getLuaRestoreLegalActionGroups(restored, player);
   expect(grouped.flatMap((group) => group.actions)).toEqual(raw);
-  expect(result.legalActions).toEqual(raw);
-  expect(result.legalActionGroups).toEqual(grouped);
+  expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, player));
+  expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
 
 function passChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {

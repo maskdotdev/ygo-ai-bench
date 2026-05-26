@@ -85,7 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDragonlordScr
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(dragonlordCode), source).ok).toBe(true);
     expect(host.loadCardScript(Number(starterCode), source).ok).toBe(true);
-    expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(2);
+    expect(host.registerInitialEffects()).toBe(2);
     expect((currentAttribute(dragonlord, session.state) & attributeDark) !== 0).toBe(true);
 
     const starterAction = getLegalActions(session, 1).find((action) => action.type === "activateEffect" && action.uid === starter.uid);

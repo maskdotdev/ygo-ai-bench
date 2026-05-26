@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasPurpleScript)("Lua real script Purple
         effectId: "lua-4",
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [6],
         operationInfos: [
           { category: 0x1, targetUids: [target.uid], count: 1, player: 0, parameter: 0 },
           { category: 0x80000, targetUids: [], count: 0, player: 1, parameter: 1200 },
@@ -147,6 +148,7 @@ describe.skipIf(!hasUpstreamScripts || !hasPurpleScript)("Lua real script Purple
         eventName: "destroyed",
         eventCode: 1029,
         eventCardUid: purple.uid,
+        eventPlayer: 0,
         eventReason: duelReason.effect | duelReason.destroy,
         eventReasonPlayer: 1,
         eventReasonCardUid: destroyer.uid,
@@ -283,8 +285,9 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   const raw = getLuaRestoreLegalActions(restored, player);
   const grouped = getLuaRestoreLegalActionGroups(restored, player);
   expect(grouped.flatMap((group) => group.actions)).toEqual(raw);
-  expect(result.legalActions).toEqual(raw);
-  expect(result.legalActionGroups).toEqual(grouped);
+  expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, player));
+  expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
 
 function passChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {

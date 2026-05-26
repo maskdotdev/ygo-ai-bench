@@ -19,8 +19,8 @@ const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.
 const hasGorgonScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${gorgonCode}.lua`));
 const typeMonster = 0x1;
 const typeEffect = 0x20;
-const effectSetAttackFinal = 99;
-const effectCannotChangePosition = 55;
+const effectSetAttackFinal = 102;
+const effectCannotChangePosition = 14;
 const effectFlagClientHint = 0x4000000;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasGorgonScript)("Lua real script Reptilianne Gorgon battled zero position lock", () => {
@@ -83,8 +83,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasGorgonScript)
       sourceUid: effect.sourceUid,
       value: effect.value,
     }))).toEqual([
-      { code: effectSetAttackFinal, description: undefined, property: undefined, reset: { flags: 33492992 }, sourceUid: target.uid, value: 0 },
-      { code: effectCannotChangePosition, description: 3313, property: effectFlagClientHint, reset: { flags: 33492992 }, sourceUid: target.uid, value: undefined },
+      { code: effectSetAttackFinal, description: undefined, property: undefined, reset: { flags: 33427456 }, sourceUid: target.uid, value: 0 },
+      { code: effectCannotChangePosition, description: 3313, property: effectFlagClientHint, reset: { flags: 33427456 }, sourceUid: target.uid, value: undefined },
     ]);
     expect(restoredTrigger.session.state.eventHistory.filter((event) => ["battleDamageDealt", "afterDamageCalculation"].includes(event.eventName)).map((event) => ({
       current: event.eventCurrentState?.location,

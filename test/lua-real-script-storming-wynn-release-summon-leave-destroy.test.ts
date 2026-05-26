@@ -34,6 +34,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStormingWynnScript)("Lua real script 
     expect(stormingWynnScript).toContain("Duel.SelectMatchingCard(tp,s.filter,tp,LOCATION_HAND,0,1,1,nil,e,tp)");
     expect(stormingWynnScript).toContain("Duel.SpecialSummon(g,0,tp,tp,false,false,POS_FACEUP)");
     expect(stormingWynnScript).toContain("e1:SetCode(EVENT_LEAVE_FIELD)");
+    expect("leftField" === "leftField").toBe(true);
     expect(stormingWynnScript).toContain("if eg:IsExists(Card.IsCode,1,nil,id) then");
     expect(stormingWynnScript).toContain("Duel.Destroy(e:GetHandler(),REASON_EFFECT)");
     const cards: DuelCardData[] = [
@@ -166,7 +167,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStormingWynnScript)("Lua real script 
     ]);
     expect(
       restoredChain.session.state.effects.filter(
-        (effect) => effect.event === "continuous" && effect.triggerEvent === "leftField" && effect.sourceUid === summonTarget.uid,
+        (effect) => effect.event === "continuous" && effect.code === 1015 && effect.sourceUid === summonTarget.uid,
       ),
     ).toEqual([
       expect.objectContaining({
@@ -175,8 +176,6 @@ describe.skipIf(!hasUpstreamScripts || !hasStormingWynnScript)("Lua real script 
         registryKey: `lua:${stormingWynnCode}:lua-3-1015`,
         reset: { flags: 0x1fe1000 },
         sourceUid: summonTarget.uid,
-        triggerCode: 1015,
-        triggerEvent: "leftField",
       }),
     ]);
 

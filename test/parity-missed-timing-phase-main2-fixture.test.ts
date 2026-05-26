@@ -45,7 +45,7 @@ describe("EDOPro parity phase-main2 missed timing fixture", () => {
             logMessage: "Phase-main2 optional if resolved",
           },
         ],
-        collectEvents: [{ collectEvent: "phaseMain2", eventCode: 0x1100, eventIsLast: false }],
+        collectEvents: [{ collectEvent: "phaseMain2", eventCode: 0x1100, eventPlayer: 0, eventIsLast: false }],
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "phase-main2-optional-if" }), {
@@ -56,8 +56,9 @@ describe("EDOPro parity phase-main2 missed timing fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-main2-optional-if", eventName: "phaseMain2", eventCode: 0x1100, eventTriggerTiming: "if" }],
+            pendingTriggers: [{ player: 0, effectId: "phase-main2-optional-if", eventName: "phaseMain2", eventCode: 0x1100, eventPlayer: 0, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{ eventName: "phaseMain2", eventCode: 0x1100, eventPlayer: 0 }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-main2-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-main2-optional-if", triggerBucket: "turnOptional", count: 1 },

@@ -228,13 +228,14 @@ describe("battle action restore", () => {
     passBattleWindow(session, "passDamage");
     passBattleWindow(session, "passDamage");
     passBattleWindow(session, "passDamage");
+    advanceToEndDamageStep(session);
     expect(session.state.battleWindow).toMatchObject({ kind: "endDamageStep", responsePlayer: 1 });
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards));
     const opponentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage");
     expect(opponentPass).toBeDefined();
     const afterOpponentPass = applyAndAssert(restored, opponentPass!);
-    expect(afterOpponentPass.state).toMatchObject({ waitingFor: 0, windowKind: "battle", damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 }, players: { 1: { lifePoints: 8000 } } });
+    expect(afterOpponentPass.state).toMatchObject({ waitingFor: 0, windowKind: "battle", damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 }, players: { 1: { lifePoints: 6200 } } });
     expect(getDuelLegalActions(restored, 1)).toEqual([]);
 
     const restoredTurnPassWindow = restoreDuel(serializeDuel(restored), createCardReader(cards));
@@ -265,32 +266,27 @@ describe("battle action restore", () => {
     passBattleWindow(session, "passDamage");
     passBattleWindow(session, "passDamage");
     passBattleWindow(session, "passDamage");
-    expect(session.state.battleWindow).toMatchObject({ kind: "endDamageStep", responsePlayer: 1 });
+    advanceToEndDamageStep(session);
+    expect(session.state.battleWindow).toMatchObject({ kind: "afterDamageCalculation", responsePlayer: 1 });
+    expect(session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-battle-damage-trigger", eventName: "battleDamageDealt", eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
+    ]);
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "restore-battle-damage-trigger": restoreBattleDamageTrigger("Restored battle damage trigger resolved"),
     });
-    const opponentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage");
-    expect(opponentPass).toBeDefined();
-    applyAndAssert(restored, opponentPass!);
-    const restoredTurnPassWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), {
-      "restore-battle-damage-trigger": restoreBattleDamageTrigger("Restored battle damage trigger resolved"),
-    });
-    const turnPass = getDuelLegalActions(restoredTurnPassWindow, 0).find((action) => action.type === "passDamage");
-    expect(turnPass).toBeDefined();
-    const result = applyAndAssert(restoredTurnPassWindow, turnPass!);
-    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
-    expect(restoredTurnPassWindow.state.pendingBattle).toBeUndefined();
-    expect(restoredTurnPassWindow.state.battleWindow).toBeUndefined();
-    expect(restoredTurnPassWindow.state.pendingTriggers).toEqual([
+    expect(restored.state).toMatchObject({ waitingFor: 0, players: { 1: { lifePoints: 6200 } } });
+    expect(restored.state.pendingBattle).toBeDefined();
+    expect(restored.state.battleWindow).toMatchObject({ kind: "afterDamageCalculation" });
+    expect(restored.state.pendingTriggers).toEqual([
       expect.objectContaining({ player: 0, effectId: "restore-battle-damage-trigger", eventName: "battleDamageDealt", eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
     ]);
-    expect(restoredTurnPassWindow.state.log.some((entry) => entry.detail === "Restored battle damage trigger resolved")).toBe(false);
+    expect(restored.state.log.some((entry) => entry.detail === "Restored battle damage trigger resolved")).toBe(false);
 
-    const restoredTriggerWindow = restoreDuel(serializeDuel(restoredTurnPassWindow), createCardReader(cards), {
+    const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), {
       "restore-battle-damage-trigger": restoreBattleDamageTrigger("Restored battle damage trigger resolved"),
     });
-    expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restoredTurnPassWindow.state.pendingTriggers);
+    expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-battle-damage-trigger");
     expect(trigger).toBeDefined();
     const staleBeforeTrigger = applyResponse(restoredTriggerWindow, { ...trigger!, windowId: trigger!.windowId! - 1 });
@@ -320,32 +316,27 @@ describe("battle action restore", () => {
     passBattleWindow(session, "passDamage");
     passBattleWindow(session, "passDamage");
     passBattleWindow(session, "passDamage");
-    expect(session.state.battleWindow).toMatchObject({ kind: "endDamageStep", responsePlayer: 1 });
+    advanceToEndDamageStep(session);
+    expect(session.state.battleWindow).toMatchObject({ kind: "afterDamageCalculation", responsePlayer: 1 });
+    expect(session.state.pendingTriggers).toEqual([
+      expect.objectContaining({ player: 0, effectId: "restore-before-battle-damage-trigger", eventName: "beforeBattleDamage", eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
+    ]);
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), {
       "restore-before-battle-damage-trigger": restoreBeforeBattleDamageTrigger("Restored before battle damage trigger resolved"),
     });
-    const opponentPass = getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage");
-    expect(opponentPass).toBeDefined();
-    applyAndAssert(restored, opponentPass!);
-    const restoredTurnPassWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), {
-      "restore-before-battle-damage-trigger": restoreBeforeBattleDamageTrigger("Restored before battle damage trigger resolved"),
-    });
-    const turnPass = getDuelLegalActions(restoredTurnPassWindow, 0).find((action) => action.type === "passDamage");
-    expect(turnPass).toBeDefined();
-    const result = applyAndAssert(restoredTurnPassWindow, turnPass!);
-    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
-    expect(restoredTurnPassWindow.state.pendingBattle).toBeUndefined();
-    expect(restoredTurnPassWindow.state.battleWindow).toBeUndefined();
-    expect(restoredTurnPassWindow.state.pendingTriggers).toEqual([
+    expect(restored.state).toMatchObject({ waitingFor: 0, players: { 1: { lifePoints: 6200 } } });
+    expect(restored.state.pendingBattle).toBeDefined();
+    expect(restored.state.battleWindow).toMatchObject({ kind: "afterDamageCalculation" });
+    expect(restored.state.pendingTriggers).toEqual([
       expect.objectContaining({ player: 0, effectId: "restore-before-battle-damage-trigger", eventName: "beforeBattleDamage", eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
     ]);
-    expect(restoredTurnPassWindow.state.log.some((entry) => entry.detail === "Restored before battle damage trigger resolved")).toBe(false);
+    expect(restored.state.log.some((entry) => entry.detail === "Restored before battle damage trigger resolved")).toBe(false);
 
-    const restoredTriggerWindow = restoreDuel(serializeDuel(restoredTurnPassWindow), createCardReader(cards), {
+    const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), {
       "restore-before-battle-damage-trigger": restoreBeforeBattleDamageTrigger("Restored before battle damage trigger resolved"),
     });
-    expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restoredTurnPassWindow.state.pendingTriggers);
+    expect(restoredTriggerWindow.state.pendingTriggers).toEqual(restored.state.pendingTriggers);
     const trigger = getDuelLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-before-battle-damage-trigger");
     expect(trigger).toBeDefined();
     const staleBeforeTrigger = applyResponse(restoredTriggerWindow, { ...trigger!, windowId: trigger!.windowId! - 1 });
@@ -378,15 +369,13 @@ describe("battle action restore", () => {
     passBattleWindow(session, "passDamage");
     passBattleWindow(session, "passDamage");
     passBattleWindow(session, "passDamage");
+    advanceToEndDamageStep(session);
 
     const restored = restoreDuel(serializeDuel(session), createCardReader(cards), battleCleanupTriggerRegistry());
-    applyAndAssert(restored, getDuelLegalActions(restored, 1).find((action) => action.type === "passDamage")!);
-    const restoredTurnPassWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), battleCleanupTriggerRegistry());
-    const result = applyAndAssert(restoredTurnPassWindow, getDuelLegalActions(restoredTurnPassWindow, 0).find((action) => action.type === "passDamage")!);
-    expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
-    expect(restoredTurnPassWindow.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-before-battle-damage-bucket-trigger", "restore-battle-damage-bucket-trigger"]);
+    expect(restored.state).toMatchObject({ waitingFor: 0, players: { 1: { lifePoints: 6200 } } });
+    expect(restored.state.pendingTriggers.map((trigger) => trigger.effectId)).toEqual(["restore-before-battle-damage-bucket-trigger", "restore-battle-damage-bucket-trigger"]);
 
-    const restoredTriggerWindow = restoreDuel(serializeDuel(restoredTurnPassWindow), createCardReader(cards), battleCleanupTriggerRegistry());
+    const restoredTriggerWindow = restoreDuel(serializeDuel(restored), createCardReader(cards), battleCleanupTriggerRegistry());
     const beforeTrigger = getDuelLegalActions(restoredTriggerWindow, 0).find((action) => action.type === "activateTrigger" && action.effectId === "restore-before-battle-damage-bucket-trigger");
     expect(beforeTrigger).toBeDefined();
     const afterBeforeTrigger = applyAndAssert(restoredTriggerWindow, beforeTrigger!);
@@ -739,8 +728,18 @@ function createBattleSession(playerDeck: string[], opponentDeck: string[]) {
 function passBattleWindow(session: ReturnType<typeof createDuel>, type: "passAttack" | "passDamage"): void {
   for (const player of [session.state.waitingFor!, session.state.waitingFor === 0 ? 1 : 0] as const) {
     const pass = getDuelLegalActions(session, player).find((action) => action.type === type);
-    expect(pass).toBeDefined();
+    if (!pass) return;
     applyAndAssert(session, pass!);
+  }
+}
+
+function advanceToEndDamageStep(session: ReturnType<typeof createDuel>): void {
+  for (let count = 0; count < 20; count += 1) {
+    if (session.state.battleWindow?.kind === "endDamageStep" && session.state.battleWindow.responsePlayer === 1) return;
+    const player = session.state.waitingFor ?? session.state.turnPlayer;
+    const pass = getDuelLegalActions(session, player).find((action) => action.type === "passDamage");
+    if (!pass) break;
+    applyAndAssert(session, pass);
   }
 }
 

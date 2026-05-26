@@ -128,7 +128,10 @@ function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLua
   const result = applyLuaRestoreResponse(restored, action);
   expect(result.ok, result.error).toBe(true);
   const waitingFor = restored.session.state.waitingFor;
-  if (waitingFor !== undefined) expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  if (waitingFor === undefined) return;
+  expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }
 
 function gawaynProcedure(actions: ReturnType<typeof getLuaRestoreLegalActions>, uid: string) {

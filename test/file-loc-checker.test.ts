@@ -33,6 +33,22 @@ describe("file LOC checker", () => {
     expect(result.stderr).toContain("large.ts");
   });
 
+  it("allows explicitly baselined oversized files but still fails if they grow", () => {
+    const root = makeTempRoot();
+    const longFile = path.join(root, "large.ts");
+    const baseline = path.join(root, "baseline.json");
+    fs.writeFileSync(longFile, ["const one = 1;", "const two = 2;", "const three = 3;"].join("\n"));
+    fs.writeFileSync(baseline, JSON.stringify({ [path.relative(process.cwd(), longFile)]: 3 }));
+
+    const passing = execFileSync(process.execPath, [checkerPath, "--limit", "2", "--baseline", baseline, longFile], { encoding: "utf8" });
+    expect(passing).toContain("File LOC check passed");
+
+    fs.writeFileSync(longFile, ["const one = 1;", "const two = 2;", "const three = 3;", "const four = 4;"].join("\n"));
+    const failing = spawnSync(process.execPath, [checkerPath, "--limit", "2", "--baseline", baseline, longFile], { encoding: "utf8" });
+    expect(failing.status).toBe(2);
+    expect(failing.stderr).toContain("large.ts");
+  });
+
   it("ignores unchecked file extensions", () => {
     const root = makeTempRoot();
     fs.writeFileSync(path.join(root, "large.txt"), ["one", "two", "three"].join("\n"));
@@ -47,6 +63,13 @@ describe("file LOC checker", () => {
 
     expect(result.status).toBe(1);
     expect(result.stderr).toContain("Missing value for --root");
+  });
+
+  it("rejects a missing baseline option value", () => {
+    const result = spawnSync(process.execPath, [checkerPath, "--baseline"], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Missing value for --baseline");
   });
 });
 

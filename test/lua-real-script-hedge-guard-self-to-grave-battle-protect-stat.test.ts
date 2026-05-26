@@ -134,6 +134,7 @@ function expectScriptShape(script: string | undefined): void {
   expect(script).toContain("e1:SetCost(Cost.SelfToGrave)");
   expect(script).toContain("local tc=Duel.GetAttacker()");
   expect(script).toContain("if tc:IsControler(1-tp) then tc=Duel.GetAttackTarget() end");
+  expect(script).toContain("e:SetLabelObject(tc)");
   expect(script).toContain("e1:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)");
   expect(script).toContain("e2:SetCode(EFFECT_SET_ATTACK_FINAL)");
   expect(script).toContain("e2:SetValue(tc:GetAttack()/2)");

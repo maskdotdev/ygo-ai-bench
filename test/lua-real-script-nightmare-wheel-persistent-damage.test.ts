@@ -75,6 +75,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
         "id": "chain-2",
         "player": 0,
         "sourceUid": "p0-deck-54704216-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p1-deck-613001-0",
         ],
@@ -162,6 +165,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ni
     expectRestoredLegalActions(restoredDamageChain, 1);
     resolveRestoredChain(restoredDamageChain);
     expect(restoredDamageChain.session.state.players[1].lifePoints).toBe(7500);
+    expect(restoredDamageChain.session.state.eventHistory.filter((event) => event.eventName === "damageDealt")).toEqual([
+      {
+        eventName: "damageDealt",
+        eventCode: 1111,
+        eventPlayer: 1,
+        eventValue: 500,
+        eventReason: duelReason.effect,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: wheel!.uid,
+        eventReasonEffectId: 5,
+      },
+    ]);
     expect(restoredDamageChain.host.messages).not.toContain("nightmare wheel responder resolved");
 
     destroyDuelCard(restoredDamageChain.session.state, target!.uid, 1, duelReason.effect | duelReason.destroy, 0);

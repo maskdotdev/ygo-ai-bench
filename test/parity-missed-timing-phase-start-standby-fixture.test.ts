@@ -45,7 +45,7 @@ describe("EDOPro parity phase-start-standby missed timing fixture", () => {
             logMessage: "Phase-start-standby optional if resolved",
           },
         ],
-        collectEvents: [{ collectEvent: "phaseStartStandby", eventCode: 0x2002, eventIsLast: false }],
+        collectEvents: [{ collectEvent: "phaseStartStandby", eventCode: 0x2002, eventPlayer: 0, eventIsLast: false }],
       },
       responses: [
         makeScriptedStep(makeResponseSelector("activateTrigger", 0, { effectId: "phase-start-standby-optional-if" }), {
@@ -56,8 +56,9 @@ describe("EDOPro parity phase-start-standby missed timing fixture", () => {
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-start-standby-optional-if", eventName: "phaseStartStandby", eventCode: 0x2002, eventTriggerTiming: "if" }],
+            pendingTriggers: [{ player: 0, effectId: "phase-start-standby-optional-if", eventName: "phaseStartStandby", eventCode: 0x2002, eventPlayer: 0, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{ eventName: "phaseStartStandby", eventCode: 0x2002, eventPlayer: 0 }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-standby-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-standby-optional-if", triggerBucket: "turnOptional", count: 1 },

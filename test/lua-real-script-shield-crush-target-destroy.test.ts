@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
       operationInfos: [{ category: 0x1, count: 1, parameter: 0, player: 0, targetUids: [target!.uid] }],
       player: 0,
       sourceUid: shieldCrush!.uid,
+      targetFieldIds: [6],
       targetUids: [target!.uid],
     });
 
@@ -96,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sh
       operationInfos: [{ category: 0x1, count: 1, parameter: 0, player: 0, targetUids: [target!.uid] }],
       player: 0,
       sourceUid: shieldCrush!.uid,
+      targetFieldIds: [6],
       targetUids: [target!.uid],
     });
 

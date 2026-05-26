@@ -109,12 +109,16 @@ describe.skipIf(!hasUpstreamScripts || !hasHorusScript)("Lua real script Metaphy
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredAction(restoredTrigger, trigger!);
     if (restoredTrigger.session.state.chain.length > 0) {
-      expect(restoredTrigger.session.state.chain).toEqual([
-        expect.objectContaining({
+      expect(restoredTrigger.session.state.chain.map((link) => ({
+        effectId: link.effectId,
+        sourceUid: link.sourceUid,
+        operationInfos: link.operationInfos,
+      }))).toEqual([
+        {
           effectId: "lua-6-1102",
           sourceUid: horus.uid,
           operationInfos: [{ category: categoryControl, targetUids: [], count: 1, player: 0, parameter: 0 }],
-        }),
+        },
       ]);
       passRestoredChain(restoredTrigger);
     }
@@ -131,9 +135,14 @@ describe.skipIf(!hasUpstreamScripts || !hasHorusScript)("Lua real script Metaphy
       reasonCardUid: horus.uid,
       reasonEffectId: 6,
     });
-    expect(restoredControlled.session.state.effects).toEqual(expect.arrayContaining([
-      expect.objectContaining({ sourceUid: target.uid, code: 85, description: 3206, reset: { flags: 1107169792 } }),
-    ]));
+    expect(restoredControlled.session.state.effects.filter((effect) => effect.sourceUid === target.uid && effect.code === 85).map((effect) => ({
+      code: effect.code,
+      description: effect.description,
+      reset: effect.reset,
+      sourceUid: effect.sourceUid,
+    }))).toEqual([
+      { sourceUid: target.uid, code: 85, description: 3206, reset: { flags: 1107169792 } },
+    ]);
     expect(restoredControlled.session.state.eventHistory.filter((event) => ["specialSummoned", "controlChanged"].includes(event.eventName)).map((event) => ({
       eventName: event.eventName,
       eventCode: event.eventCode,

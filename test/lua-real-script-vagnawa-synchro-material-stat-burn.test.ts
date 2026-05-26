@@ -90,11 +90,19 @@ describe.skipIf(!hasUpstreamScripts || !hasVagnawaScript)("Lua real script Vagna
       summonType: "synchro",
       summonMaterialUids: [tuner.uid, nonTuner.uid],
     });
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-7-1",
+        effectId: "lua-4-1102",
         eventCardUid: vagnawa.uid,
         eventCode: 1102,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "specialSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.summon | duelReason.specialSummon | duelReason.synchro,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
         player: 0,
         sourceUid: vagnawa.uid,
         triggerBucket: "turnOptional",
@@ -111,12 +119,13 @@ describe.skipIf(!hasUpstreamScripts || !hasVagnawaScript)("Lua real script Vagna
       {
         id: "chain-7",
         chainIndex: 1,
-        effectId: "lua-3-1102",
+        effectId: "lua-4-1102",
         sourceUid: vagnawa.uid,
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
         eventName: "specialSummoned",
+        eventPlayer: 0,
         eventCode: 1102,
         eventCardUid: vagnawa.uid,
         eventReason: duelReason.summon | duelReason.specialSummon | duelReason.synchro,
@@ -149,7 +158,7 @@ describe.skipIf(!hasUpstreamScripts || !hasVagnawaScript)("Lua real script Vagna
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: vagnawa.uid,
-        eventReasonEffectId: 3,
+        eventReasonEffectId: 4,
       },
     ]);
   });

@@ -58,13 +58,16 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
+        "activationLocation": "hand",
         "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-1-1002",
         "id": "chain-3",
         "player": 0,
         "sourceUid": "p0-deck-88392300-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p1-deck-88392301-0",
         ],

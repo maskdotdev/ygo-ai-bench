@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions as getDuelLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData, DuelResponse } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -106,7 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     expect(restoredChain.host.messages).not.toContain("triangle power responder resolved");
     assertTrianglePowerStats(restoredChain, boostedAttacker!.uid, boostedAlly!.uid, levelTwoNormal!.uid, effectLevelOne!.uid);
     expect(restoredChain.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === boostedAttacker!.uid && [103, 107].includes(effect.code ?? -1))).toHaveLength(2);
-    expect(restoredChain.session.state.effects.some((effect) => effect.event === "continuous" && effect.triggerEvent === "phaseEnd" && effect.sourceUid === trianglePower!.uid)).toBe(true);
+    expect(restoredChain.session.state.effects.some((effect) => effect.event === "continuous" && effect.code === 0x1200 && effect.sourceUid === trianglePower!.uid)).toBe(true);
 
     const restoredStats = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expectCleanRestore(restoredStats);
@@ -121,6 +122,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Tr
     passRestoredBattleResponses(restoredStats);
     expect(restoredStats.session.state.battleDamage).toEqual({ 0: 0, 1: 1500 });
     expect(restoredStats.session.state.players[1].lifePoints).toBe(6500);
+    expect(restoredStats.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: boostedAttacker!.uid,
+        eventPlayer: 1,
+        eventValue: 1500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: boostedAttacker!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 4 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredStats.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredStats.session.state.cards.find((card) => card.uid === boostedAttacker!.uid)).toMatchObject({ location: "monsterZone" });
 

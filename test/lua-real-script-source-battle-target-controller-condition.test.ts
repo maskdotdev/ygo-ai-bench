@@ -148,7 +148,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
           "controller": 0,
           "cost": [Function],
           "event": "continuous",
-          "id": "lua-3-208",
+          "id": "lua-4-208",
           "lifePointValue": [Function],
           "luaConditionDescriptor": "condition:source-battle-target-opponent",
           "luaTypeFlags": 1,
@@ -159,7 +159,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script so
           "range": [
             "monsterZone",
           ],
-          "registryKey": "lua:42632209:lua-3-208",
+          "registryKey": "lua:42632209:lua-4-208",
           "sourceUid": "p0-extraDeck-42632209-0",
           "statValue": [Function],
           "target": [Function],

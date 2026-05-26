@@ -83,7 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasTriangleScrip
       { code: effectSetAttackFinal, event: "continuous", range: ["monsterZone"], reset: { flags: 1107169792 }, sourceUid: opponentHarpie!.uid, value: 2700 },
     ].sort((left, right) => left.sourceUid.localeCompare(right.sourceUid)));
     expect(restoredOpen.session.state.effects.filter((effect) =>
-      effect.sourceUid === triangle.uid && [effectCannotActivate, effectDisable, effectDisableTrapMonster].includes(effect.code)
+      effect.sourceUid === triangle.uid && effect.code !== undefined && [effectCannotActivate, effectDisable, effectDisableTrapMonster].includes(effect.code)
     ).map((effect) => ({
       code: effect.code,
       event: effect.event,
@@ -91,7 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasTriangleScrip
       reset: effect.reset,
       sourceUid: effect.sourceUid,
       targetRange: effect.targetRange,
-    })).sort((left, right) => left.code - right.code)).toEqual([
+    })).sort((left, right) => (left.code ?? 0) - (right.code ?? 0))).toEqual([
       { code: effectDisable, event: "continuous", range: allLocations, reset: { flags: 1073742336 }, sourceUid: triangle.uid, targetRange: [0, 8] },
       { code: effectCannotActivate, event: "continuous", range: allLocations, reset: { flags: 1073742336 }, sourceUid: triangle.uid, targetRange: [0, 1] },
       { code: effectDisableTrapMonster, event: "continuous", range: allLocations, reset: { flags: 1073742336 }, sourceUid: triangle.uid, targetRange: [0, 4] },

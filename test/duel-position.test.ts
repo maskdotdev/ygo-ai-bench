@@ -294,6 +294,30 @@ describe("duel position changes", () => {
     expect(restoreDuel(serializeDuel(session), createCardReader(cards)).state.positionsChanged).toContain(monster!.uid);
   });
 
+  it("blocks manual and effect position changes for Link monsters", () => {
+    const linkCards = [
+      ...cards,
+      { code: "900", name: "Link Position Probe", kind: "extra" as const, typeFlags: 0x4000001, level: 2, attack: 1500, defense: 0, linkMarkers: 0x5 },
+    ];
+    const session = createDuel({ seed: 6, startingHandSize: 0, cardReader: createCardReader(linkCards) });
+    loadDecks(session, {
+      0: { main: [], extra: ["900"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+
+    const link = session.state.cards.find((card) => card.code === "900");
+    expect(link).toBeTruthy();
+    const moved = moveDuelCard(session.state, link!.uid, "monsterZone", 0);
+    moved.position = "faceUpAttack";
+    moved.faceUp = true;
+
+    expect(canChangeDuelCardPosition(session.state, moved.uid, "faceUpDefense")).toBe(false);
+    expect(canChangeDuelCardPosition(session.state, moved.uid, "faceUpDefense", "effect")).toBe(false);
+    expect(getDuelLegalActions(session, 0).some((candidate) => candidate.type === "changePosition" && candidate.uid === moved.uid)).toBe(false);
+    expect(() => changeDuelCardPosition(session.state, 0, moved.uid, "faceUpDefense", "effect")).toThrow("cannot change position");
+  });
+
   it("collects position-change trigger effects", () => {
     const session = createDuel({ seed: 1, startingHandSize: 2, cardReader: createCardReader(cards) });
     loadDecks(session, {

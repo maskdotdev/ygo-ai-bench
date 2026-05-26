@@ -134,6 +134,8 @@ function createTriggeredSession({
   banishDuelCard(session.state, banished.uid, 0, duelReason.effect, 0, { eventReasonCardUid: zeroForce.uid, eventReasonEffectId: 1 });
   const [event] = session.state.eventHistory.filter((candidate) => candidate.eventName === "banished" && candidate.eventCardUid === banished.uid);
   expect(event).toBeDefined();
+  expect(event!.eventPreviousState).toBeDefined();
+  expect(event!.eventCurrentState).toBeDefined();
   session.state.pendingTriggers.push({
     id: "trigger-1-1",
     eventName: "banished",
@@ -144,8 +146,8 @@ function createTriggeredSession({
     eventReasonPlayer: 0,
     eventReasonCardUid: zeroForce.uid,
     eventReasonEffectId: 1,
-    eventPreviousState: event!.eventPreviousState,
-    eventCurrentState: event!.eventCurrentState,
+    eventPreviousState: event!.eventPreviousState!,
+    eventCurrentState: event!.eventCurrentState!,
     sourceUid: zeroForce.uid,
     effectId: "lua-1-1011",
     player: 0,

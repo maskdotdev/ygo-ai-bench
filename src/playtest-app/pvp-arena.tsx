@@ -79,6 +79,15 @@ export interface BootstrapPvpDuelWithBrowserAssetsResult extends BootstrapPvpDue
   luaScriptManifest: BrowserLuaScriptManifest;
 }
 
+export interface BrowserPvpBootSummary {
+  detail: string;
+  message: string;
+  tone: "success" | "warning";
+  missingCards: string[];
+  missingScripts: string[];
+  registrationFailures: { code: string; uid: string; error?: string }[];
+}
+
 export interface BrowserPvpAssetCacheOptions {
   cardRowsEndpoint?: string;
   cardRowsManifestEndpoint?: string;
@@ -202,6 +211,50 @@ export async function bootstrapPvpDuelWithBrowserAssets(
   ]);
   const boot = await bootstrapPvpDuelWithBrowserData(p0Text, p1Text, seed, handSize, options);
   return { ...boot, cardDataManifest, luaScriptManifest };
+}
+
+export function summarizeBrowserPvpBoot(boot: BootstrapPvpDuelWithBrowserAssetsResult): BrowserPvpBootSummary {
+  const missingCards = [...boot.cardPreload.missing];
+  const missingScripts = [...boot.scriptPreload.missing];
+  const registrationFailures = boot.scriptRegistrations
+    .filter((registration) => !registration.ok && !registration.skipped)
+    .map((registration) => ({
+      code: registration.code,
+      uid: registration.uid,
+      ...(registration.error === undefined ? {} : { error: registration.error }),
+    }));
+  const degraded = missingCards.length > 0 || missingScripts.length > 0 || registrationFailures.length > 0;
+  const detail = [
+    `Browser data loaded (${boot.cardPreload.loaded.length} cards, ${boot.scriptPreload.loaded.length} scripts`,
+    `missing ${missingCards.length}/${missingScripts.length}`,
+    `registration failures ${registrationFailures.length}`,
+    `manifests ${boot.cardDataManifest.datasRows}/${boot.luaScriptManifest.copiedCount}).`,
+  ].join("; ");
+  const diagnostics = browserPvpBootDiagnostics(missingCards, missingScripts, registrationFailures);
+  return {
+    detail,
+    message: diagnostics.length ? `${detail} ${diagnostics.join(" ")}` : detail,
+    tone: degraded ? "warning" : "success",
+    missingCards,
+    missingScripts,
+    registrationFailures,
+  };
+}
+
+function browserPvpBootDiagnostics(
+  missingCards: readonly string[],
+  missingScripts: readonly string[],
+  registrationFailures: readonly { code: string; uid: string; error?: string }[],
+): string[] {
+  const diagnostics: string[] = [];
+  if (missingCards.length) diagnostics.push(`Missing cards: ${missingCards.slice(0, 5).join(", ")}${missingCards.length > 5 ? ", ..." : ""}.`);
+  if (missingScripts.length) diagnostics.push(`Missing scripts: ${missingScripts.slice(0, 5).join(", ")}${missingScripts.length > 5 ? ", ..." : ""}.`);
+  if (registrationFailures.length) {
+    diagnostics.push(`Registration failures: ${registrationFailures.slice(0, 3).map((failure) => (
+      `${failure.code}${failure.error ? ` (${failure.error.split("\n")[0]})` : ""}`
+    )).join(", ")}${registrationFailures.length > 3 ? ", ..." : ""}.`);
+  }
+  return diagnostics;
 }
 
 function pvpDeckCodes(p0Text: string, p1Text: string): string[] {
@@ -342,23 +395,25 @@ export function PvpArena() {
       const seed = seedDraft.trim().toLowerCase() === "random" || !seedDraft.trim() ? Date.now() : seedDraft;
       let next: DuelSession;
       let detail = "Two-player duel (DuelSession).";
+      let startTone: ToastMessage["tone"] = "success";
       try {
         browserAssetCaches.current ??= createBrowserPvpAssetCaches();
         const boot = await bootstrapPvpDuelWithBrowserAssets(deckP0, deckP1, seed, handSizeDraft, browserAssetCaches.current);
         next = boot.session;
-        const missingCards = boot.cardPreload.missing.length;
-        const missingScripts = boot.scriptPreload.missing.length;
-        detail = `Browser data loaded (${boot.cardPreload.loaded.length} cards, ${boot.scriptPreload.loaded.length} scripts; missing ${missingCards}/${missingScripts}; manifests ${boot.cardDataManifest.datasRows}/${boot.luaScriptManifest.copiedCount}).`;
+        const summary = summarizeBrowserPvpBoot(boot);
+        detail = summary.message;
+        startTone = summary.tone;
       } catch (error) {
         console.warn("Browser PvP data unavailable", error);
         next = bootstrapPvpDuel(deckP0, deckP1, seed, handSizeDraft);
+        startTone = "warning";
         notify("Browser data unavailable", error instanceof Error ? error.message : "Using bundled fallback data.", "warning");
       }
       session.state = next.state;
       session.cardReader = next.cardReader;
       setRevision((current) => current + 1);
       setMenuOpen(false);
-      notify("Duel started", detail, "success");
+      notify(startTone === "warning" ? "Duel started with degraded data" : "Duel started", detail, startTone);
     } catch (error) {
       notify("Could not start", error instanceof Error ? error.message : "Invalid deck", "error");
     }

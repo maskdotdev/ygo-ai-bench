@@ -109,4 +109,9 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
 function applyLuaRestoreAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, response: Parameters<typeof applyLuaRestoreResponse>[1]): void {
   const result = applyLuaRestoreResponse(restored, response);
   expect(result.ok, result.error).toBe(true);
+  const player = restored.session.state.waitingFor;
+  if (player === undefined) return;
+  expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, player));
+  expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, player));
+  expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
 }

@@ -97,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHyenaScript)("Lua real script Hyena b
         triggerBucket: "opponentOptional",
         eventName: "battleDestroyed",
         eventCode: 1140,
+        eventPlayer: 0,
         eventCardUid: destroyedHyena.uid,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 1,

@@ -114,6 +114,7 @@ describe.skipIf(!hasUpstreamScripts || !hasRazorangScript)("Lua real script Spee
     expectCleanRestore(restoredStat);
     expectRestoredLegalActions(restoredStat, 0);
     expect(currentAttack(restoredStat.session.state.cards.find((card) => card.uid === razorang.uid), restoredStat.session.state)).toBe(1200);
+    expect(restoredStat.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

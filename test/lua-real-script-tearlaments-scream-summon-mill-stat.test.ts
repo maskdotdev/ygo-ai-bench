@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasScreamScript)
         id: "trigger-3-1",
         effectId: "lua-2-1100",
         eventName: "normalSummoned",
+        eventPlayer: 0,
         eventCode: 1100,
         eventCardUid: summoned.uid,
         eventReason: duelReason.summon,

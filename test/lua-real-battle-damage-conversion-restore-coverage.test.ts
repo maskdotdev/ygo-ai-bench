@@ -4,18 +4,20 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleDamageConversionFixtureCount = 9;
+const battleDamageConversionFixtureCount = 11;
 const battleDamageConversionKindCounts: Record<BattleDamageConversionKind, number> = {
   alsoBattleDamage: 1,
   battleDamageToEffect: 1,
   bothBattleDamage: 1,
-  changeBattleDamage: 4,
-  reflectBattleDamage: 2,
+  changeBattleDamage: 7,
+  reflectBattleDamage: 1,
 };
 const battleDamageConversionSemanticVariantCounts: Record<BattleDamageConversionSemanticVariant, number> = {
   amazonessSwordsWomanReflectBattleDamage: 1,
-  byeByeDamagePrecalcReflect: 1,
+  abyssSplashDetachFinalAttackHalfDamage: 1,
+  dinowrestlerMartialAmpeloPreDamageHalfDamageSearch: 1,
   gravekeepersVassalBattleDamageToEffect: 1,
+  lifeHackLpAttackDamageHalf: 1,
   majespecterSonicsFinalStatHalfDamage: 1,
   numberC96AlsoBattleDamage: 1,
   skullgiosBattleConfirmSwapPierceDamage: 1,
@@ -86,8 +88,10 @@ type BattleDamageConversionKind = "alsoBattleDamage" | "battleDamageToEffect" | 
 
 type BattleDamageConversionSemanticVariant =
   | "amazonessSwordsWomanReflectBattleDamage"
-  | "byeByeDamagePrecalcReflect"
+  | "abyssSplashDetachFinalAttackHalfDamage"
+  | "dinowrestlerMartialAmpeloPreDamageHalfDamageSearch"
   | "gravekeepersVassalBattleDamageToEffect"
+  | "lifeHackLpAttackDamageHalf"
   | "majespecterSonicsFinalStatHalfDamage"
   | "numberC96AlsoBattleDamage"
   | "skullgiosBattleConfirmSwapPierceDamage"
@@ -109,8 +113,10 @@ function countBattleDamageConversionSemanticVariants(
     (counts, { kind }) => ({ ...counts, [kind]: counts[kind] + 1 }),
     {
       amazonessSwordsWomanReflectBattleDamage: 0,
-      byeByeDamagePrecalcReflect: 0,
+      abyssSplashDetachFinalAttackHalfDamage: 0,
+      dinowrestlerMartialAmpeloPreDamageHalfDamageSearch: 0,
       gravekeepersVassalBattleDamageToEffect: 0,
+      lifeHackLpAttackDamageHalf: 0,
       majespecterSonicsFinalStatHalfDamage: 0,
       numberC96AlsoBattleDamage: 0,
       skullgiosBattleConfirmSwapPierceDamage: 0,
@@ -124,6 +130,25 @@ function countBattleDamageConversionSemanticVariants(
 function battleDamageConversionFixtureFiles(): Array<{ file: string; kind: BattleDamageConversionKind; required: string[] }> {
   return ([
     {
+      file: "lua-real-script-abyss-splash-detach-final-attack-half-damage.test.ts",
+      kind: "changeBattleDamage",
+      required: [
+        'const abyssCode = "36076683"',
+        "Number 73: Abyss Splash",
+        "restores Damage Step detach into doubled final ATK and half battle damage",
+        "e1:SetCost(Cost.DetachFromSelf(1))",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(c:GetAttack()*2)",
+        "e2:SetCode(EFFECT_CHANGE_BATTLE_DAMAGE)",
+        "HALF_DAMAGE",
+        "reasonEffectId: 2",
+        "currentAttack(restored.session.state.cards.find((card) => card.uid === abyss.uid), restored.session.state)).toBe(4800)",
+        "battleDamage[1]).toBe(1650)",
+        "players[1].lifePoints).toBe(6350)",
+        "eventName: \"detachedMaterial\"",
+      ],
+    },
+    {
       file: "lua-real-script-amazoness-swords-woman-reflect-battle-damage.test.ts",
       kind: "reflectBattleDamage",
       required: [
@@ -135,22 +160,6 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; kind: Battl
         "eventName: \"battleDamageDealt\"",
         "eventPlayer: 0",
         "eventValue: 500",
-      ],
-    },
-    {
-      file: "lua-real-script-bye-bye-damage-precalc-reflect.test.ts",
-      kind: "reflectBattleDamage",
-      required: [
-        "Bye Bye Damage pre-calc reflect",
-        "EVENT_PRE_DAMAGE_CALCULATE",
-        "EFFECT_INDESTRUCTABLE_BATTLE",
-        "EVENT_BATTLE_DAMAGE",
-        "Duel.Damage(1-tp,ev*2,REASON_EFFECT)",
-        "battleDamage).toEqual({ 0: 0, 1: 800 })",
-        "players[0].lifePoints).toBe(6400)",
-        "players[1].lifePoints).toBe(7200)",
-        "eventName: \"battleDamageDealt\"",
-        "eventValue: 800",
       ],
     },
     {
@@ -199,6 +208,23 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; kind: Battl
         "eventPlayer: 0",
         "eventPlayer: 1",
         "eventValue: 950",
+      ],
+    },
+    {
+      file: "lua-real-script-dinowrestler-martial-ampelo-pre-damage-half-damage-search.test.ts",
+      kind: "changeBattleDamage",
+      required: [
+        "Dinowrestler Martial Ampelo",
+        "Cost.SelfToGrave",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        "EFFECT_CHANGE_BATTLE_DAMAGE",
+        "HALF_DAMAGE",
+        "resetEventStandardPhaseDamage",
+        "battleDamage).toEqual({ 0: 250, 1: 0 })",
+        "players[0].lifePoints).toBe(7750)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 250",
+        "eventName: \"sentToHandConfirmed\"",
       ],
     },
     {
@@ -258,6 +284,23 @@ function battleDamageConversionFixtureFiles(): Array<{ file: string; kind: Battl
         "eventValue: 5000",
       ],
     },
+    {
+      file: "lua-real-script-life-hack-lp-attack-damage-half.test.ts",
+      kind: "changeBattleDamage",
+      required: [
+        'const lifeHackCode = "83589191"',
+        "restores hand activation into opponent-LP final ATK and halved battle damage",
+        "restores grave SelfBanish ignition into own-LP final ATK",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_CHANGE_DAMAGE)",
+        "e2:SetValue(function(e,re,val,r,rp,rc) return val//2 end)",
+        "currentAttack(findCard(restoredOpen.session, attacker.uid), restoredOpen.session.state)).toBe(6000)",
+        "battleDamage).toEqual({ 0: 0, 1: 3000 })",
+        "players[1].lifePoints).toBe(3000)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 3000",
+      ],
+    },
   ] satisfies Array<{ file: string; kind: BattleDamageConversionKind; required: string[] }>)
     .map(({ file, kind, required }) => ({ file: path.join("test", file), kind, required }))
     .sort((a, b) => a.file.localeCompare(b.file));
@@ -270,6 +313,21 @@ function battleDamageConversionSemanticVariants(): Array<{
 }> {
   return ([
     {
+      file: "lua-real-script-abyss-splash-detach-final-attack-half-damage.test.ts",
+      kind: "abyssSplashDetachFinalAttackHalfDamage",
+      required: [
+        'const abyssCode = "36076683"',
+        "Xyz.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsAttribute,ATTRIBUTE_WATER),5,2)",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)",
+        "e1:SetCondition(aux.StatChangeDamageStepCondition)",
+        "e1:SetCost(Cost.DetachFromSelf(1))",
+        "e1:SetReset(RESETS_STANDARD_DISABLE_PHASE_END|RESET_OPPO_TURN)",
+        "e2:SetValue(aux.ChangeBattleDamage(1,HALF_DAMAGE))",
+        "eventName: \"detachedMaterial\"",
+        "battleDamage[1]).toBe(1650)",
+      ],
+    },
+    {
       file: "lua-real-script-amazoness-swords-woman-reflect-battle-damage.test.ts",
       kind: "amazonessSwordsWomanReflectBattleDamage",
       required: [
@@ -279,21 +337,6 @@ function battleDamageConversionSemanticVariants(): Array<{
         "battleDamage).toEqual({ 0: 500, 1: 0 })",
         "eventPlayer: 0",
         "location: \"graveyard\"",
-      ],
-    },
-    {
-      file: "lua-real-script-bye-bye-damage-precalc-reflect.test.ts",
-      kind: "byeByeDamagePrecalcReflect",
-      required: [
-        'const byeByeCode = "20735371"',
-        "restores attack-target battle indestructibility and battle-damage double reflect",
-        "Duel.GetFlagEffect(tp,id)==0",
-        "Duel.RegisterFlagEffect(tp,id,RESET_PHASE|PHASE_END,0,1)",
-        "EFFECT_INDESTRUCTABLE_BATTLE",
-        "EVENT_BATTLE_DAMAGE",
-        "Duel.Damage(1-tp,ev*2,REASON_EFFECT)",
-        "players[0].lifePoints).toBe(6400)",
-        "eventValue: 800",
       ],
     },
     {
@@ -334,6 +377,23 @@ function battleDamageConversionSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-dinowrestler-martial-ampelo-pre-damage-half-damage-search.test.ts",
+      kind: "dinowrestlerMartialAmpeloPreDamageHalfDamageSearch",
+      required: [
+        'const ampeloCode = "54446813"',
+        "restores SelfToGrave battle protection, HALF_DAMAGE, and grave self-banish Dinowrestler search",
+        "e1:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e1:SetCost(Cost.SelfToGrave)",
+        "EFFECT_INDESTRUCTABLE_BATTLE",
+        "EFFECT_CHANGE_BATTLE_DAMAGE",
+        "Cost.SelfBanish",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "battleDamage).toEqual({ 0: 250, 1: 0 })",
+        "eventValue: 250",
+        "eventName: \"sentToHandConfirmed\"",
+      ],
+    },
+    {
       file: "lua-real-script-speedroid-hexasaucer-both-battle-damage.test.ts",
       kind: "speedroidHexasaucerBothBattleDamage",
       required: [
@@ -367,6 +427,19 @@ function battleDamageConversionSemanticVariants(): Array<{
         "currentAttack(boostedAttacker, restoredBoost.session.state)).toBe(2000)",
         "battleDamage).toEqual({ 0: 0, 1: 250 })",
         "eventValue: 250",
+      ],
+    },
+    {
+      file: "lua-real-script-life-hack-lp-attack-damage-half.test.ts",
+      kind: "lifeHackLpAttackDamageHalf",
+      required: [
+        'const lifeHackCode = "83589191"',
+        "restores hand activation into opponent-LP final ATK and halved battle damage",
+        "EFFECT_SET_ATTACK_FINAL",
+        "EFFECT_CHANGE_DAMAGE",
+        "currentAttack(findCard(restoredOpen.session, attacker.uid), restoredOpen.session.state)).toBe(6000)",
+        "battleDamage).toEqual({ 0: 0, 1: 3000 })",
+        "eventValue: 3000",
       ],
     },
     {

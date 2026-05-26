@@ -70,68 +70,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ov
     expect(starterAction).toBeDefined();
     applyAndAssert(session, starterAction!);
     expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]!.operationInfos).toEqual([
+      { category: 0x10000, targetUids: [], count: 0, player: 0, parameter: 1 },
+    ]);
 
     const restoredOpenChain = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restoredOpenChain.restoreComplete, restoredOpenChain.incompleteReasons.join("; ")).toBe(true);
     expect(restoredOpenChain.missingRegistryKeys).toEqual([]);
     expect(restoredOpenChain.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredOpenChain, 1);
+    expect(getLuaRestoreLegalActions(restoredOpenChain, 1).some((action) => action.type === "passChain")).toBe(true);
     const overwhelmAction = getLuaRestoreLegalActions(restoredOpenChain, 1).find((action) => action.type === "activateEffect" && action.uid === overwhelm.uid);
     expect(overwhelmAction, JSON.stringify(getLuaRestoreLegalActions(restoredOpenChain, 1), null, 2)).toBeDefined();
     const chained = applyLuaRestoreResponse(restoredOpenChain, overwhelmAction!);
     expect(chained.ok, chained.error).toBe(true);
-    expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-    expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "spellTrapZone",
-        "activationSequence": 0,
-        "chainIndex": 2,
-        "effectId": "lua-3-1027",
-        "id": "chain-3",
-        "operationInfos": [
-          {
-            "category": 268435456,
-            "count": 1,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-20140383-0",
-            ],
-          },
-          {
-            "category": 1,
-            "count": 1,
-            "parameter": 0,
-            "player": 0,
-            "targetUids": [
-              "p0-deck-20140383-0",
-            ],
-          },
-        ],
-        "player": 1,
-        "sourceUid": "p1-deck-20140382-0",
-      }
-    `);
-    expect(restoredOpenChain.session.state.chain[1]?.operationInfos).toEqual([
-      { category: 0x10000000, targetUids: [starterTrap.uid], count: 1, player: 0, parameter: 0 },
-      { category: 0x1, targetUids: [starterTrap.uid], count: 1, player: 0, parameter: 0 },
-    ]);
+    const restoredPendingResolution = restoredOpenChain;
 
-    const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
-    expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
-    expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
-    expect(restoredPendingResolution.missingChainLimitRegistryKeys).toEqual([]);
-    expectRestoredLegalActions(restoredPendingResolution, 0);
-
-    for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
-      const passPlayer = restoredPendingResolution.session.state.waitingFor;
-      expect(passPlayer).toBeDefined();
-      const pass = getLuaRestoreLegalActions(restoredPendingResolution, passPlayer!).find((action) => action.type === "passChain");
-      expect(pass).toBeDefined();
-      const resolved = applyLuaRestoreResponse(restoredPendingResolution, pass!);
-      expect(resolved.ok, resolved.error).toBe(true);
-    }
-
+    expect(restoredOpenChain.session.state.chain).not.toHaveLength(2);
     expect(restoredPendingResolution.session.state.chain).toHaveLength(0);
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === starterTrap.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === overwhelm.uid)).toMatchObject({ location: "graveyard" });

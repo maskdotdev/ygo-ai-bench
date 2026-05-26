@@ -27,6 +27,7 @@ describe.skipIf(!hasUpstreamScripts || !hasLeadYokeScript)("Lua real script Batt
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${leadYokeCode}.lua`);
     expect(script).toContain("Duel.EnableGlobalFlag(GLOBALFLAG_DETACH_EVENT)");
+    expect(script).toContain("Xyz.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_BATTLIN_BOXER),4,2)");
     expect(script).toContain("e1:SetCode(EFFECT_DESTROY_REPLACE)");
     expect(script).toContain("Duel.SelectEffectYesNo(tp,e:GetHandler(),96)");
     expect(script).toContain("e:GetHandler():RemoveOverlayCard(tp,1,1,REASON_EFFECT)");
@@ -154,9 +155,14 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
 }
 
 function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>) {
+  let guard = 0;
   while (restored.session.state.chain.length > 0) {
-    const response = applyLuaRestoreResponse(restored, { type: "resolveChain" });
-    expect(response).toMatchObject({ ok: true });
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const action = getLuaRestoreLegalActions(restored, player).find((candidate) => (candidate as { type: string }).type === "resolveChain");
+    expect(action, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, action!);
+    guard += 1;
+    expect(guard).toBeLessThan(10);
   }
 }
 

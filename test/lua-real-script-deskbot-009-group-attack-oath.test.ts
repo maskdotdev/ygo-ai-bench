@@ -54,7 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDeskbotScript)("Lua real script Deskb
     expect(currentAttack(findCard(restored.session, allyOne.uid), restored.session.state)).toBe(500);
     expect(currentAttack(findCard(restored.session, allyTwo.uid), restored.session.state)).toBe(1000);
     expect(currentAttack(findCard(restored.session, nonDeskbot.uid), restored.session.state)).toBe(2200);
-    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === deskbot.uid && [effectUpdateAttack, effectCannotAttack].includes(effect.code)).map((effect) => ({
+    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === deskbot.uid && effect.code !== undefined && [effectUpdateAttack, effectCannotAttack].includes(effect.code)).map((effect) => ({
       code: effect.code,
       label: effect.label,
       reset: effect.reset,

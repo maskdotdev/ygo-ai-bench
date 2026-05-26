@@ -79,18 +79,24 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ba
       reason: duelReason.effect | duelReason.destroy,
       reasonCardUid: destroyer.uid,
     });
-    expect(session.state.pendingTriggers).toMatchObject([
+    expect(session.state.pendingTriggers).toEqual([
       {
-        player: 0,
-        sourceUid: backfire.uid,
+        id: "trigger-4-1",
         effectId: "lua-2-1014",
-        triggerBucket: "turnMandatory",
-        eventName: "sentToGraveyard",
-        eventCode: 1014,
         eventCardUid: fireTarget.uid,
+        eventCode: 1014,
+        eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceUpAttack", sequence: 0 },
+        eventName: "sentToGraveyard",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventReason: duelReason.effect | duelReason.destroy,
         eventReasonCardUid: destroyer.uid,
         eventReasonEffectId: 3,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        player: 0,
+        sourceUid: backfire.uid,
+        triggerBucket: "turnMandatory",
       },
     ]);
 
@@ -117,6 +123,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ba
         sequence: 0,
       },
       eventName: "sentToGraveyard",
+      eventPlayer: 0,
       eventPreviousState: {
         controller: 0,
         faceUp: true,

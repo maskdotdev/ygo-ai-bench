@@ -114,6 +114,8 @@ describe("EDOPro parity during damage calculation window fixtures", () => {
               { eventName: "battleConfirmed", eventCode: 1133 },
               { eventName: "beforeDamageCalculation", eventCode: 1134 },
               { eventName: "damageCalculating", eventCode: 1135 },
+              { eventName: "beforeBattleDamage", eventCode: 1136, eventPlayer: 1, eventValue: 1800 },
+              { eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1800 },
               { eventName: "afterDamageCalculation", eventCode: 1138 },
             ],
             legalActionCounts: { 0: 0, 1: 1 },

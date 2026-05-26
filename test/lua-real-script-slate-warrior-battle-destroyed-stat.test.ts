@@ -100,6 +100,20 @@ describe.skipIf(!hasUpstreamScripts || !hasSlateScript)("Lua real script Slate W
     expect(currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === attacker.uid), restoredTrigger.session.state)).toBe(1900);
     expect(currentDefense(restoredTrigger.session.state.cards.find((card) => card.uid === attacker.uid), restoredTrigger.session.state)).toBe(1100);
     expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 500, 1: 0 });
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacker.uid,
+        eventPlayer: 0,
+        eventValue: 500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: attacker.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredTrigger.session.state.effects.filter((effect) => effect.sourceUid === attacker.uid && [100, 104].includes(effect.code ?? -1)).map((effect) => ({
       code: effect.code,
       reset: effect.reset,

@@ -67,6 +67,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasPowerforceScr
     );
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, activate!);
+    const operationInfos = restoredOpen.session.state.chain.flatMap((link) => link.operationInfos ?? []);
+    expect(operationInfos).toEqual([]);
     resolveRestoredChain(restoredOpen);
 
     expect(restoredOpen.session.state.effects.filter((effect) =>

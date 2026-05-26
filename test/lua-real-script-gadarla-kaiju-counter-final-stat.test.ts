@@ -125,6 +125,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasGadarlaScript
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 200, 1: 0 });
     expect(restoredBattle.session.state.players[0].lifePoints).toBe(7800);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(8000);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: opponent.uid,
+        eventPlayer: 0,
+        eventValue: 200,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: opponent.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
   });
 });
 

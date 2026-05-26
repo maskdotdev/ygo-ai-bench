@@ -33,7 +33,9 @@ describe.skipIf(!hasUpstreamScripts || !hasProtonBlastScript)("Lua real script P
     loadDecks(session, { 0: { main: [protonBlastCode, protonBlastCode, coinMonsterCode] }, 1: { main: [targetCode, handCode] } });
     startDuel(session);
 
-    const [fieldProtonBlast, graveProtonBlast] = requireCards(session, protonBlastCode, 2);
+    const protonBlasts = requireCards(session, protonBlastCode, 2);
+    const fieldProtonBlast = protonBlasts[0]!;
+    const graveProtonBlast = protonBlasts[1]!;
     const coinMonster = requireCard(session, coinMonsterCode);
     const target = requireCard(session, targetCode);
     const hand = requireCard(session, handCode);
@@ -62,12 +64,13 @@ describe.skipIf(!hasUpstreamScripts || !hasProtonBlastScript)("Lua real script P
     expectRestoredLegalActions(restoredOpen, 0);
     const activation = getLuaRestoreLegalActions(restoredOpen, 0).find((action) => action.type === "activateEffect" && action.uid === coinMonster.uid);
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
-    applyRestored(restoredOpen, activation!);
+    const activationAction = activation as Extract<DuelAction, { type: "activateEffect" }>;
+    applyRestored(restoredOpen, activationAction);
     expect(restoredOpen.session.state.chain).toEqual([
       {
         id: "chain-2",
         chainIndex: 1,
-        effectId: activation!.effectId,
+        effectId: activationAction.effectId,
         sourceUid: coinMonster.uid,
         player: 0,
         activationLocation: "monsterZone",

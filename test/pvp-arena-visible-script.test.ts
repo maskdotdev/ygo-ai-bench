@@ -10,6 +10,7 @@ import {
   pvpVisibleBattleFixtureYdk,
   runPvpArenaVisibleScript,
   runPvpArenaVisibleScriptStep,
+  summarizeBrowserPvpBoot,
 } from "../src/playtest-app/pvp-arena.js";
 import { createBrowserDuelCardDataCache } from "../src/playtest-app/duel-pvp-card-reader.js";
 import { createBrowserLuaScriptCache } from "../src/playtest-app/duel-pvp-script-cache.js";
@@ -296,9 +297,264 @@ describe("PvP arena visible scripts", () => {
       expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
       expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
       expect(result.luaHost.messages).toContain("endpoint script 2400");
+      expect(summarizeBrowserPvpBoot(result)).toEqual({
+        detail: "Browser data loaded (2 cards, 1 scripts; missing 0/1; registration failures 0; manifests 1/1).",
+        message: "Browser data loaded (2 cards, 1 scripts; missing 0/1; registration failures 0; manifests 1/1). Missing scripts: c7084129.lua.",
+        missingCards: [],
+        missingScripts: ["c7084129.lua"],
+        registrationFailures: [],
+        tone: "warning",
+      });
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+
+  it("reports browser asset boot as successful when exported card data and scripts are complete", async () => {
+    const originalFetch = globalThis.fetch;
+    const requestedUrls: string[] = [];
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const url = String(input);
+      requestedUrls.push(url);
+      if (url === "/card-data/cdb-rows.json?codes=90000003") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              datas: [{ id: 90000003, type: 1, atk: 2500 }],
+              texts: [{ id: 90000003, name: "Complete Endpoint Duelist" }],
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
+      if (url === "/card-data/manifest.json") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-cdb-rows",
+              payload: "cdb-rows.json",
+              selectedCodes: ["90000003"],
+              datasRows: 1,
+              textsRows: 1,
+              sha256: cardManifestHash,
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
+      if (url === "/card-scripts/c90000003.lua") {
+        return {
+          ok: true,
+          status: 200,
+          async text() {
+            return `
+              c90000003={}
+              function c90000003.initial_effect(c)
+                Debug.Message("complete endpoint script " .. c:GetAttack())
+              end
+            `;
+          },
+          async json() { return {}; },
+        } as Response;
+      }
+      if (url === "/card-scripts/manifest.json") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-lua-scripts",
+              selectedCodes: ["90000003"],
+              copiedCount: 1,
+              missingCount: 0,
+              sourceCounts: { "upstream-official": 1 },
+              fallbackKindCounts: {},
+              copied: ["c90000003.lua"],
+              missing: [],
+              files: [{ name: "c90000003.lua", source: "upstream-official", bytes: 91, sha256: scriptManifestHash }],
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
+      return { ok: false, status: 404, async text() { return ""; }, async json() { return {}; } } as Response;
+    }) as typeof fetch;
+    try {
+      const caches = createBrowserPvpAssetCaches({
+        cardRowsEndpoint: "/card-data/cdb-rows.json",
+        scriptBaseUrl: "/card-scripts",
+      });
+
+      const result = await bootstrapPvpDuelWithBrowserAssets(lazyLoadedYdk, lazyLoadedYdk, "pvp-complete-exported-endpoints", 1, caches);
+
+      expect(requestedUrls).toEqual([
+        "/card-data/manifest.json",
+        "/card-scripts/manifest.json",
+        "/card-data/cdb-rows.json?codes=90000003",
+        "/card-scripts/c90000003.lua",
+      ]);
+      expect(result.cardPreload).toEqual({ loaded: ["90000003"], missing: [] });
+      expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: [] });
+      expect(result.scriptRegistrations.filter((registration) => registration.ok && !registration.skipped)).toHaveLength(2);
+      expect(result.luaHost.messages).toEqual([
+        "complete endpoint script 2500",
+        "complete endpoint script 2500",
+      ]);
+      expect(summarizeBrowserPvpBoot(result)).toEqual({
+        detail: "Browser data loaded (1 cards, 1 scripts; missing 0/0; registration failures 0; manifests 1/1).",
+        message: "Browser data loaded (1 cards, 1 scripts; missing 0/0; registration failures 0; manifests 1/1).",
+        missingCards: [],
+        missingScripts: [],
+        registrationFailures: [],
+        tone: "success",
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("warns when browser asset scripts load but fail initial-effect registration", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url === "/card-data/cdb-rows.json?codes=90000003") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              datas: [{ id: 90000003, type: 1, atk: 2400 }],
+              texts: [{ id: 90000003, name: "Broken Script Duelist" }],
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
+      if (url === "/card-data/manifest.json") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-cdb-rows",
+              payload: "cdb-rows.json",
+              selectedCodes: ["90000003"],
+              datasRows: 1,
+              textsRows: 1,
+              sha256: cardManifestHash,
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
+      if (url === "/card-scripts/c90000003.lua") {
+        return {
+          ok: true,
+          status: 200,
+          async text() {
+            return `
+              c90000003={}
+              function c90000003.initial_effect(c)
+                error("registration boom")
+              end
+            `;
+          },
+          async json() { return {}; },
+        } as Response;
+      }
+      if (url === "/card-scripts/manifest.json") {
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return {
+              schemaVersion: 1,
+              kind: "browser-lua-scripts",
+              selectedCodes: ["90000003"],
+              copiedCount: 1,
+              missingCount: 0,
+              sourceCounts: { "upstream-official": 1 },
+              fallbackKindCounts: {},
+              copied: ["c90000003.lua"],
+              missing: [],
+              files: [{ name: "c90000003.lua", source: "upstream-official", bytes: 91, sha256: scriptManifestHash }],
+            };
+          },
+          async text() { return ""; },
+        } as Response;
+      }
+      return { ok: false, status: 404, async text() { return ""; }, async json() { return {}; } } as Response;
+    }) as typeof fetch;
+    try {
+      const caches = createBrowserPvpAssetCaches({
+        cardRowsEndpoint: "/card-data/cdb-rows.json",
+        scriptBaseUrl: "/card-scripts",
+      });
+
+      const result = await bootstrapPvpDuelWithBrowserAssets(lazyLoadedYdk, lazyLoadedYdk, "pvp-registration-failure", 1, caches);
+
+      expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: [] });
+      expect(result.scriptRegistrations).toContainEqual(expect.objectContaining({
+        code: "90000003",
+        ok: false,
+        error: expect.stringContaining("registration boom"),
+      }));
+      expect(summarizeBrowserPvpBoot(result)).toMatchObject({
+        detail: "Browser data loaded (1 cards, 1 scripts; missing 0/0; registration failures 2; manifests 1/1).",
+        message: expect.stringContaining("Registration failures: 90000003"),
+        missingCards: [],
+        missingScripts: [],
+        registrationFailures: [
+          { code: "90000003", error: expect.stringContaining("registration boom") },
+          { code: "90000003", error: expect.stringContaining("registration boom") },
+        ],
+        tone: "warning",
+      });
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("keeps long browser boot diagnostics bounded but inspectable", () => {
+    const boot = {
+      cardPreload: { loaded: ["1"], missing: ["90000001", "90000002", "90000003", "90000004", "90000005", "90000006"] },
+      scriptPreload: { loaded: ["c1.lua"], missing: ["c90000001.lua", "c90000002.lua", "c90000003.lua", "c90000004.lua", "c90000005.lua", "c90000006.lua"] },
+      scriptRegistrations: [
+        { code: "90000001", uid: "card-a", ok: false, error: "first\ntrace" },
+        { code: "90000002", uid: "card-b", ok: false, error: "second\ntrace" },
+        { code: "90000003", uid: "card-c", ok: false, error: "third\ntrace" },
+        { code: "90000004", uid: "card-d", ok: false, error: "fourth\ntrace" },
+        { code: "90000005", uid: "card-e", ok: true, skipped: true },
+      ],
+      cardDataManifest: { schemaVersion: 1, kind: "browser-cdb-rows", payload: "cdb-rows.json", selectedCodes: [], datasRows: 99, textsRows: 99, sha256: cardManifestHash },
+      luaScriptManifest: { schemaVersion: 1, kind: "browser-lua-scripts", selectedCodes: [], copiedCount: 88, missingCount: 0, sourceCounts: {}, fallbackKindCounts: {}, copied: [], missing: [], files: [] },
+    } as unknown as Parameters<typeof summarizeBrowserPvpBoot>[0];
+
+    expect(summarizeBrowserPvpBoot(boot)).toEqual({
+      detail: "Browser data loaded (1 cards, 1 scripts; missing 6/6; registration failures 4; manifests 99/88).",
+      message: [
+        "Browser data loaded (1 cards, 1 scripts; missing 6/6; registration failures 4; manifests 99/88).",
+        "Missing cards: 90000001, 90000002, 90000003, 90000004, 90000005, ....",
+        "Missing scripts: c90000001.lua, c90000002.lua, c90000003.lua, c90000004.lua, c90000005.lua, ....",
+        "Registration failures: 90000001 (first), 90000002 (second), 90000003 (third), ....",
+      ].join(" "),
+      missingCards: ["90000001", "90000002", "90000003", "90000004", "90000005", "90000006"],
+      missingScripts: ["c90000001.lua", "c90000002.lua", "c90000003.lua", "c90000004.lua", "c90000005.lua", "c90000006.lua"],
+      registrationFailures: [
+        { code: "90000001", uid: "card-a", error: "first\ntrace" },
+        { code: "90000002", uid: "card-b", error: "second\ntrace" },
+        { code: "90000003", uid: "card-c", error: "third\ntrace" },
+        { code: "90000004", uid: "card-d", error: "fourth\ntrace" },
+      ],
+      tone: "warning",
+    });
   });
 
   it("rejects browser asset bootstrap before payload fetches when manifests are unavailable", async () => {

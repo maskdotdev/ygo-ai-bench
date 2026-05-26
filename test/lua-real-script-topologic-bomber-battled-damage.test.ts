@@ -69,6 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
             "sequence": 0,
           },
           "eventName": "afterDamageCalculation",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -112,6 +113,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
         eventCardUid: bomber!.uid,
         eventUids: [bomber!.uid, target!.uid],
         eventReason: 0,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "extraDeck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: bomber!.uid,
+        eventPlayer: 1,
+        eventValue: 1800,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: bomber!.uid,
         eventReasonPlayer: 0,
         eventPreviousState: {
           controller: 0,

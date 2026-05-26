@@ -90,13 +90,13 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasPsiStationScr
     expect(currentLevel(findCard(restoredTrigger.session, psychicSummon.uid), restoredTrigger.session.state)).toBe(5);
     expect(currentAttack(findCard(restoredTrigger.session, psychicSummon.uid), restoredTrigger.session.state)).toBe(1800);
     expect(restoredTrigger.session.state.effects.filter((effect) =>
-      effect.sourceUid === psychicSummon.uid && [effectUpdateAttack, effectUpdateLevel].includes(effect.code)
+      effect.sourceUid === psychicSummon.uid && effect.code !== undefined && [effectUpdateAttack, effectUpdateLevel].includes(effect.code)
     ).map((effect) => ({
       code: effect.code,
       reset: effect.reset,
       sourceUid: effect.sourceUid,
       value: effect.value,
-    })).sort((left, right) => left.code - right.code)).toEqual([
+    })).sort((left, right) => (left.code ?? 0) - (right.code ?? 0))).toEqual([
       { code: effectUpdateAttack, reset: { flags: 33427456 }, sourceUid: psychicSummon.uid, value: 300 },
       { code: effectUpdateLevel, reset: { flags: 33427456 }, sourceUid: psychicSummon.uid, value: 1 },
     ]);

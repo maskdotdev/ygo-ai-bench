@@ -97,6 +97,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
         "event": "continuous",
         "id": "lua-4-47",
         "lifePointValue": [Function],
+        "luaConditionDescriptor": "condition:gemini-status",
         "luaTypeFlags": 1,
         "luaValueDescriptor": "value-predicate:reason-mask:32",
         "oncePerTurn": true,
@@ -152,6 +153,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
           sequence: 0,
         },
         eventName: "afterDamageCalculation",
+        eventPlayer: 0,
         eventPreviousState: {
           controller: 0,
           faceUp: true,
@@ -197,6 +199,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
         sequence: 0,
       },
       eventName: "afterDamageCalculation",
+      eventPlayer: 0,
       eventPreviousState: {
         controller: 0,
         faceUp: true,

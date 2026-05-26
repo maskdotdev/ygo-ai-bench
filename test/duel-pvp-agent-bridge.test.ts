@@ -22,6 +22,7 @@ const luaBridgeCards: DuelCardData[] = [
   { code: "300", name: "Lua Bridge Second Trigger", kind: "monster", level: 4 },
   { code: "729", name: "Lua Bridge Prompt Source", kind: "monster", level: 4 },
   { code: "730", name: "Lua Bridge Multi Code Prompt Source", kind: "monster", level: 4 },
+  { code: "731", name: "Lua Bridge Yes No Prompt Source", kind: "monster", level: 4 },
 ];
 
 const luaBridgeYdk = `#created by test
@@ -32,6 +33,17 @@ const luaBridgeYdk = `#created by test
 #extra
 !side`;
 
+const luaAliasBridgeCards: DuelCardData[] = [
+  { code: "90000021", alias: "90000020", name: "Lua Bridge Alias Script Card", kind: "monster", level: 4 },
+  { code: "100", name: "Lua Bridge Alias Filler", kind: "monster", level: 4 },
+];
+
+const luaAliasBridgeYdk = `#created by test
+#main
+90000021
+#extra
+!side`;
+
 const luaBridgeScripts: LuaScriptSource = {
   readScript(name) {
     return {
@@ -39,6 +51,24 @@ const luaBridgeScripts: LuaScriptSource = {
       "c300.lua": luaMandatoryTriggerScript("300"),
       "c729.lua": luaOptionPromptScript(),
       "c730.lua": luaMultiCodePromptScript(),
+      "c731.lua": luaYesNoPromptScript(),
+    }[name];
+  },
+};
+
+const luaAliasBridgeScripts: LuaScriptSource = {
+  readScript(name) {
+    return {
+      "c90000020.lua": `
+        c90000020={}
+        function c90000020.initial_effect(c)
+          local e1=Effect.CreateEffect(c)
+          e1:SetType(EFFECT_TYPE_IGNITION)
+          e1:SetRange(LOCATION_HAND)
+          e1:SetDescription(900020)
+          c:RegisterEffect(e1)
+        end
+      `,
     }[name];
   },
 };
@@ -266,6 +296,56 @@ describe("duel pvp agent bridge", () => {
     expect(visible.triggerOrder).toMatchObject({ label: "Trigger Order", detail: "P1 · turnMandatory · 2 triggers" });
   });
 
+  it("loads alias-backed Lua scripts during bridge startup", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaAliasBridgeCards),
+      luaScriptSource: luaAliasBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+
+    const started = agent.start({ player0Ydk: luaAliasBridgeYdk, player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-alias-start", handSize: 1 });
+
+    expect(started.state.cards).toContainEqual(expect.objectContaining({
+      code: "90000021",
+      name: "Lua Bridge Alias Script Card",
+    }));
+    expect(started.legalActions).toContainEqual(expect.objectContaining({
+      type: "activateEffect",
+      label: expect.stringContaining("Lua Bridge Alias Script Card"),
+    }));
+    expect(started.visibleBattlefield.actions).toContainEqual(expect.objectContaining({
+      type: "activateEffect",
+      label: expect.stringContaining("Lua Bridge Alias Script Card"),
+    }));
+  });
+
+  it("preloads direct and alias-backed Lua scripts before browser bridge startup", async () => {
+    const preloaded: string[][] = [];
+    const luaScriptSource = {
+      ...luaAliasBridgeScripts,
+      async preloadCardScripts(codes: readonly string[]) {
+        preloaded.push([...codes]);
+        return {
+          loaded: codes.map((code) => `c${code}.lua`),
+          missing: [],
+        };
+      },
+    };
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaAliasBridgeCards),
+      luaScriptSource,
+      luaRuntime: luaBridgeRuntime,
+    });
+
+    const result = await agent.preload({ player0Ydk: luaAliasBridgeYdk, player1Ydk: "#main\n100\n#extra\n!side" });
+
+    expect(preloaded).toEqual([["100", "90000020", "90000021"]]);
+    expect(result.luaScripts).toEqual({
+      loaded: ["c100.lua", "c90000020.lua", "c90000021.lua"],
+      missing: [],
+    });
+  });
+
   it("restores pending Lua trigger-order windows through the bridge", () => {
     const agent = createDuelPvpAgent({
       cardReader: createCardReader(luaBridgeCards),
@@ -391,6 +471,49 @@ describe("duel pvp agent bridge", () => {
 
     const result = agent.runVisibleScript([
       { player: 0, type: "selectOption", luaPromptApi: "SelectCardsFromCodes", promptReturnValues: [800, 900] },
+    ], started.sessionId);
+
+    expect(result.ok).toBe(true);
+    expect(result.failedStep).toBeUndefined();
+    expect(result.state.prompt).toBeUndefined();
+    expect(result.state.luaOperationPrompt).toBeUndefined();
+  });
+
+  it("exposes and resolves Lua yes/no operation prompts through visible bridge payloads", () => {
+    const agent = createDuelPvpAgent({
+      cardReader: createCardReader(luaBridgeCards),
+      luaScriptSource: luaBridgeScripts,
+      luaRuntime: luaBridgeRuntime,
+    });
+    const started = agent.start({ player0Ydk: "#main\n731\n#extra\n!side", player1Ydk: "#main\n100\n#extra\n!side", seed: "pvp-agent-lua-yes-no-prompt", handSize: 1 });
+    const activation = started.visibleBattlefield.actions.find((action) => action.type === "activateEffect");
+    expect(activation).toBeDefined();
+
+    const prompted = agent.action(activation, started.sessionId);
+
+    expect(prompted.ok).toBe(true);
+    expect(prompted.state.luaOperationPrompt?.prompt).toMatchObject({
+      api: "SelectYesNo",
+      description: 7310,
+      returned: true,
+    });
+    const visible = agent.visibleBattlefield(0, started.sessionId);
+    expect(visible.prompt?.detail).toBe("P1 · Prompt lua-prompt-1 · Lua operation · returns P1 · SelectYesNo · text 7310");
+    expect(visible.prompt?.choices).toEqual([
+      expect.objectContaining({ type: "selectYesNo", yes: true, description: 7310, action: expect.objectContaining({ type: "selectYesNo", yes: true }) }),
+      expect.objectContaining({ type: "selectYesNo", yes: false, description: 7310, action: expect.objectContaining({ type: "selectYesNo", yes: false }) }),
+    ]);
+    expectGroupsStampedWithCurrentWindow(visible.prompt?.groups ?? [], prompted.state);
+    if (!visible.prompt?.luaPrompt || visible.prompt.luaPrompt.api !== "SelectYesNo") throw new Error("Expected Lua yes/no prompt");
+    visible.prompt.luaPrompt.returned = true;
+    const yesChoice = visible.prompt.choices[0];
+    if (yesChoice?.type !== "selectYesNo") throw new Error("Expected yes/no prompt choice");
+    yesChoice.action.yes = false;
+
+    expect(agent.visibleBattlefield(0, started.sessionId).prompt?.luaPrompt).toEqual(prompted.state.luaOperationPrompt?.prompt);
+
+    const result = agent.runVisibleScript([
+      { player: 0, type: "selectYesNo", luaPromptApi: "SelectYesNo", yes: true },
     ], started.sessionId);
 
     expect(result.ok).toBe(true);
@@ -674,6 +797,22 @@ function luaMultiCodePromptScript(): string {
     e:SetOperation(function(e,tp)
       local first, second = Duel.SelectCardsFromCodes(tp, 1, 2, false, false, 700, 800, 900)
       Debug.Message("lua bridge multi code prompt " .. first .. "/" .. second)
+    end)
+    c:RegisterEffect(e)
+  end
+  `;
+}
+
+function luaYesNoPromptScript(): string {
+  return `
+  c731={}
+  function c731.initial_effect(c)
+    local e=Effect.CreateEffect(c)
+    e:SetType(EFFECT_TYPE_IGNITION)
+    e:SetRange(LOCATION_HAND)
+    e:SetOperation(function(e,tp)
+      local selected = Duel.SelectYesNo(tp, 7310)
+      Debug.Message("lua bridge yes no prompt " .. tostring(selected))
     end)
     c:RegisterEffect(e)
   end

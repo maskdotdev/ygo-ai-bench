@@ -72,7 +72,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
       label: "Synchro Summon Scrap Archfiend using Scrap Archfiend Level 3 Tuner, Scrap Archfiend Level 4 Non-Tuner",
       windowId: 0,
       windowKind: "open",
-      windowToken: "window-2",
+      windowToken: synchro!.windowToken,
     });
     const summoned = applyLuaRestoreResponse(restored, synchro!);
     expect(summoned.ok, summoned.error).toBe(true);

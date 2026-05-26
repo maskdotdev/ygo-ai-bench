@@ -313,6 +313,7 @@ const responseHandlers: DuelResponseHandlers = {
         collectDuelTriggerEffects(state, eventName, undefined, {
           ...(eventCode === undefined ? {} : { eventCode }),
           ...(eventName === "preDraw" ? { eventPlayer: state.turnPlayer, eventValue: state.options.drawPerTurn } : {}),
+          ...(eventName === "phaseDraw" ? { eventPlayer: state.turnPlayer } : {}),
         }),
       canDraw: (drawPlayer) => !isDrawPrevented(state, drawPlayer, createContinuousEffectContext(state)),
       canLoseByDeck: (drawPlayer) => !isDeckLossDefeatPrevented(state, drawPlayer, createContinuousEffectContext(state)),
@@ -400,7 +401,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...linkSummonActions(state, player, createMaterialUsePredicate(state, "link")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeLink)));
     actions.push(...ritualSummonActions(state, player, hand, createMaterialUsePredicate(state, "ritual")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeRitual)));
     actions.push(...pendulumSummonActions(state, player, (uid) => canSpecialSummonDuelCard(state, uid, player, luaSummonTypePendulum)));
-    actions.push(...specialSummonProcedureActions(state, player, (effect, source, actionPlayer) => canChooseEffect(state, effect, source, actionPlayer), (uid, summonTypeCode) => canAttemptSpecialSummonProcedure(state, uid, summonTypeCode)));
+    actions.push(...specialSummonProcedureActions(state, player, (effect, source, actionPlayer) => canChooseEffect(state, effect, source, actionPlayer), (uid, summonTypeCode, relatedEffectId) => canAttemptSpecialSummonProcedure(state, uid, summonTypeCode, relatedEffectId)));
     if (hasZoneSpace(state, player, "spellTrapZone")) {
       for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
         if (isSpellTrapSetPrevented(state, player, card, createContinuousEffectContext(state))) continue;
@@ -497,7 +498,7 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
   const summonController = controller ?? card.controller;
   if (isSpecialSummonPrevented(state, summonController, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition, summonPosition)) return false;
   if (availableForcedMonsterZoneCount(state, summonController, [], 0, duelReason.summon | duelReason.specialSummon, card) <= 0) return false;
-  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) return false;
+  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode) && relatedEffectId === undefined) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }
 
@@ -505,7 +506,7 @@ function canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonT
   const card = findCard(state, uid);
   if (!card || !isDuelMonsterLike(card, state)) return false;
   if (isSpecialSummonPrevented(state, card.controller, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId, true)) return false;
-  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode)) return false;
+  if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode) && relatedEffectId === undefined) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
 }
 
@@ -513,10 +514,10 @@ export function canPlayerSpecialSummon(state: DuelState, player: PlayerId, card?
   return !isSpecialSummonPrevented(state, player, createContinuousEffectContext(state), card, summonTypeCode, relatedEffectId, false, summonPosition);
 }
 
-export function canMoveDuelCardToLocation(state: DuelState, uid: string, to: DuelLocation, reason: number = duelReason.effect): boolean {
+export function canMoveDuelCardToLocation(state: DuelState, uid: string, to: DuelLocation, reason: number = duelReason.effect, reasonPlayer?: PlayerId): boolean {
   if (!canMoveDuelCardToLocationRule(state, uid, to)) return false;
   if ((reason & duelReason.release) !== 0 && isReleasePrevented(state, uid, reason, createContinuousEffectContext(state))) return false;
-  return !isMoveToLocationPrevented(state, uid, to, reason, createContinuousEffectContext(state));
+  return !isMoveToLocationPrevented(state, uid, to, reason, createContinuousEffectContext(state), reasonPlayer);
 }
 
 function requireDuelMoveAllowed(state: DuelState, uid: string, to: DuelLocation, reason: number): void {
@@ -622,6 +623,7 @@ function createMaterialMover(state: DuelState): DuelMaterialMover {
   return (uid, controller, reason, targetUid) => {
     if ((reason & duelReason.release) !== 0 && isReleasePrevented(state, uid, reason, createContinuousEffectContext(state), targetUid)) throw new Error(`Card ${uid} cannot be released`);
     const card = sendDuelCardToGraveyard(state, uid, controller, reason);
+    if (targetUid !== undefined) card.reasonCardUid = targetUid;
     return { card, collectedSentToGraveyard: card.location === "graveyard" };
   };
 }
@@ -779,7 +781,8 @@ function executeContinuousPhaseEffects(state: DuelState, phase: DuelPhase): void
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location) || !continuousEffectSourceIsActive(effect, source)) continue;
     const ctx = createEffectContext(state, source, effect.controller, "phaseChanged");
-    if (effect.canActivate && !effect.canActivate(ctx)) continue;
+    const active = effect.canActivate?.(ctx) ?? true;
+    if (!active) continue;
     effect.operation(ctx);
     markEffectUsed(state, effect);
   }
@@ -886,6 +889,9 @@ function pushChainLink(
 ): void {
   const source = findCard(state, sourceUid);
   const chainLinkId = `chain-${state.log.length + 1}`;
+  const targetFieldIds = targetUids
+    .map((targetUid) => findCard(state, targetUid)?.fieldId)
+    .filter((fieldId): fieldId is number => fieldId !== undefined);
   state.chain.push({
     id: chainLinkId,
     chainIndex: state.chain.length + 1,
@@ -912,6 +918,7 @@ function pushChainLink(
     ...(eventTriggerTiming === undefined ? {} : { eventTriggerTiming }),
     ...(eventCard === undefined ? {} : { eventCardUid: eventCard.uid }),
     ...(targetUids.length === 0 ? {} : { targetUids: [...targetUids] }),
+    ...(targetFieldIds.length === targetUids.length && targetFieldIds.length > 0 ? { targetFieldIds } : {}),
     ...(operationInfos.length === 0 ? {} : { operationInfos: copyDuelOperationInfos(operationInfos) }),
     ...(possibleOperationInfos.length === 0 ? {} : { possibleOperationInfos: copyDuelOperationInfos(possibleOperationInfos) }),
     ...(targetPlayer === undefined ? {} : { targetPlayer }),
@@ -923,15 +930,8 @@ function pushChainLink(
   });
   if (source) {
     recordChainActivity(state, player, source, effectId);
-    collectTriggerEffects(state, "chainActivating", source, relatedEffectPayload(effectId));
-    collectDuelTriggerEffects(state, "chaining", source, {
-      eventPlayer: player,
-      eventValue: state.chain.length,
-      eventChainDepth: state.chain.length,
-      eventChainLinkId: chainLinkId,
-      eventReasonPlayer: player,
-      ...relatedEffectPayload(effectId),
-    });
+    collectTriggerEffects(state, "chainActivating", source, { eventPlayer: player, eventReasonPlayer: player, ...relatedEffectPayload(effectId) });
+    collectDuelTriggerEffects(state, "chaining", source, { eventPlayer: player, eventValue: state.chain.length, eventChainDepth: state.chain.length, eventChainLinkId: chainLinkId, eventReasonPlayer: player, ...relatedEffectPayload(effectId) });
   }
   for (const targetUid of targetUids) {
     const target = findCard(state, targetUid);
@@ -973,7 +973,7 @@ function resolveChain(state: DuelState): void {
     while (state.chain.length) {
       const link = state.chain.pop();
       if (!link) continue;
-      const activation = findActivationEffectForSource(state, link.player, link.sourceUid, link.effectId);
+      const activation = findActivationEffectForSource(state, link.player, link.sourceUid, link.effectId, link.activationLocation === undefined ? {} : { activationLocation: link.activationLocation });
       const effect = activation?.effect;
       const source = activation?.source ?? findCard(state, link.sourceUid);
       if (link.negated) {
@@ -1062,8 +1062,6 @@ function resolveChain(state: DuelState): void {
 }
 
 function runPromptOperation(effect: DuelEffectDefinition, ctx: Parameters<DuelEffectDefinition["operation"]>[0]): LuaPromptCoroutineResult | undefined {
-  if (effect.event !== "ignition") return undefined;
-  if (ctx.source.code !== "729" && ctx.source.code !== "730") return undefined;
   return effect.promptOperation?.(ctx) as LuaPromptCoroutineResult | undefined;
 }
 

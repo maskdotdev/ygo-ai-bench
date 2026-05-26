@@ -75,40 +75,59 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     expect(activation, JSON.stringify(getLegalActions(session, 0), null, 2)).toBeDefined();
     applyAndAssert(session, activation!);
 
-    expect(session.state.cards.find((card) => card.uid === ancientRules.uid)).toMatchObject({ location: "spellTrapZone", controller: 0, sequence: 0 });
+    expect(session.state.chain).toHaveLength(1);
+    expect(session.state.chain[0]?.operationInfos).toEqual([{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }]);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
+    passChain(session, 1);
+    expect(session.state.chain).toHaveLength(0);
+    expect(session.state.cards.find((card) => card.uid === ancientRules.uid)).toMatchObject({
+      location: "graveyard",
+      controller: 0,
+      reason: duelReason.rule,
+      reasonPlayer: 0,
+    });
     expect(session.state.cards.find((card) => card.uid === effectDecoy.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(session.state.cards.find((card) => card.uid === lowLevelNormal.uid)).toMatchObject({ location: "hand", controller: 0 });
-    expect(session.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]).toEqual({
-      activationLocation: "hand",
-      activationSequence: 0,
-      chainIndex: 1,
-      effectId: "lua-1-1002",
-      id: "chain-2",
-      operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }],
-      player: 0,
-      sourceUid: ancientRules.uid,
+    expect(session.state.cards.find((card) => card.uid === summonTarget.uid)).toMatchObject({
+      location: "monsterZone",
+      controller: 0,
+      sequence: 0,
+      faceUp: true,
+      position: "faceUpAttack",
+      summonType: "special",
     });
+    expect(session.state.eventHistory.filter((event) => event.eventName === "specialSummoned" && event.eventCardUid === summonTarget.uid)).toEqual([
+      {
+        eventName: "specialSummoned",
+        eventCode: 1102,
+        eventCardUid: summonTarget.uid,
+        eventUids: [summonTarget.uid],
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventReasonCardUid: ancientRules.uid,
+        eventReasonEffectId: 1,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "hand",
+          position: "faceDown",
+          sequence: 3,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expectRestoredLegalActions(restored, 1);
-    expect(restored.session.state.chain[0]).toEqual({
-      activationLocation: "hand",
-      activationSequence: 0,
-      chainIndex: 1,
-      effectId: "lua-1-1002",
-      id: "chain-2",
-      operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }],
-      player: 0,
-      sourceUid: ancientRules.uid,
-    });
-    expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
-
-    passChain(restored);
-
+    expectRestoredLegalActions(restored, restored.session.state.waitingFor ?? restored.session.state.turnPlayer);
     expect(restored.session.state.chain).toHaveLength(0);
     expect(restored.session.state.cards.find((card) => card.uid === ancientRules.uid)).toMatchObject({ location: "graveyard", controller: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === effectDecoy.uid)).toMatchObject({ location: "hand", controller: 0 });
@@ -149,6 +168,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script An
     ]);
     expect(host.messages).not.toContain("ancient rules responder resolved");
     expect(restored.host.messages).not.toContain("ancient rules responder resolved");
+    expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(false);
   });
 });
 
@@ -182,19 +202,14 @@ function applyAndAssert(session: DuelSession, action: DuelAction) {
   return response;
 }
 
+function passChain(session: DuelSession, player: 0 | 1): void {
+  const pass = getLegalActions(session, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLegalActions(session, player), null, 2)).toBeDefined();
+  applyAndAssert(session, pass!);
+}
+
 function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
   expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
   expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
-}
-
-function passChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
-  while (restored.session.state.chain.length > 0) {
-    const player = restored.session.state.waitingFor;
-    expect(player).toBeDefined();
-    const pass = getLuaRestoreLegalActions(restored, player!).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreResponse(restored, pass!);
-    expect(resolved.ok, resolved.error).toBe(true);
-  }
 }

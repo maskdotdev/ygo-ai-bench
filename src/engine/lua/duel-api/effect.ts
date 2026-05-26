@@ -83,7 +83,7 @@ function pushReasonEffect(L: unknown, session: DuelSession, hostState: LuaDuelEf
     return 1;
   }
   if (hostState.activeContext?.eventReasonEffectId !== undefined) {
-    hostState.pushEffectTable(L, hostState.activeContext.eventReasonEffectId);
+    hostState.pushEffectTable(L, restoredReasonEffectLuaId(session, hostState.activeContext) ?? hostState.activeContext.eventReasonEffectId);
     return 1;
   }
   if (Number.isFinite(activeChainLuaId)) {
@@ -95,4 +95,19 @@ function pushReasonEffect(L: unknown, session: DuelSession, hostState: LuaDuelEf
   if (Number.isFinite(id)) hostState.pushEffectTable(L, id);
   else lua.lua_pushnil(L);
   return 1;
+}
+
+function restoredReasonEffectLuaId(session: DuelSession, ctx: DuelEffectContext): number | undefined {
+  const reasonEffectId = ctx.eventReasonEffectId;
+  const reasonCardUid = ctx.eventReasonCardUid;
+  if (reasonEffectId === undefined || reasonCardUid === undefined) return undefined;
+  const originalIdPattern = new RegExp(`:lua-${reasonEffectId}(?:-|$)`);
+  const effect = session.state.effects.find((candidate) =>
+    candidate.sourceUid === reasonCardUid && (
+      Number(candidate.id.match(/^lua-(\d+)/)?.[1]) === reasonEffectId ||
+      originalIdPattern.test(candidate.registryKey ?? "")
+    )
+  );
+  const restoredId = Number(effect?.id.match(/^lua-(\d+)/)?.[1]);
+  return Number.isFinite(restoredId) ? restoredId : undefined;
 }

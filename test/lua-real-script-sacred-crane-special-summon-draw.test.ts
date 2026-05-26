@@ -86,13 +86,19 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
     ]);
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-1-1102",
         eventCardUid: sacredCrane.uid,
         eventCode: eventSpecialSummonSuccess,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "specialSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventReason: duelReason.summon | duelReason.specialSummon,
         eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         player: 0,
         sourceUid: sacredCrane.uid,
         triggerBucket: "turnMandatory",
@@ -115,6 +121,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
         activationLocation: "monsterZone",
         activationSequence: 0,
         eventName: "specialSummoned",
+        eventPlayer: 0,
         eventCode: eventSpecialSummonSuccess,
         eventCardUid: sacredCrane.uid,
         eventReason: duelReason.summon | duelReason.specialSummon,

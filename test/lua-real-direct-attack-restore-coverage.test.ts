@@ -4,15 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const DIRECT_ATTACK_FIXTURE_COUNT = 10;
+const DIRECT_ATTACK_FIXTURE_COUNT = 12;
 const directAttackKindCounts = {
   cannotDirectAttack: 1,
   conditionalDirectAttack: 2,
   directAttackConversion: 1,
   directAttackDamageStatTrigger: 1,
   directAttackGroupGrant: 1,
+  directAttackGrantWithOathLock: 1,
   directAttackOnly: 1,
-  directAttackPermission: 1,
+  directAttackPermission: 2,
   directAttackTrigger: 1,
   directTargetLock: 1,
 } satisfies Record<DirectAttackKind, number>;
@@ -27,6 +28,7 @@ const directAttackSemanticVariantCounts = {
   reverseBusterDirectFaceUpTargetLock: 1,
   toonDefenseAttackToDirectConversion: 1,
   deltaAttackerGroupDirectGrant: 1,
+  magicHoleGolemDirectAttackStatOath: 1,
 } satisfies Record<DirectAttackSemanticVariant, number>;
 
 type DirectAttackKind =
@@ -34,6 +36,7 @@ type DirectAttackKind =
   | "conditionalDirectAttack"
   | "directAttackConversion"
   | "directAttackDamageStatTrigger"
+  | "directAttackGrantWithOathLock"
   | "directAttackGroupGrant"
   | "directAttackOnly"
   | "directAttackPermission"
@@ -48,6 +51,7 @@ type DirectAttackSemanticVariant =
   | "hayateDirectAttackBattledSendTrigger"
   | "inabaWhiteRabbitDirectOnlyDamage"
   | "jinzoSevenDirectAttackOption"
+  | "magicHoleGolemDirectAttackStatOath"
   | "reverseBusterDirectFaceUpTargetLock"
   | "toonDefenseAttackToDirectConversion";
 
@@ -128,6 +132,8 @@ function realScriptDirectAttackFixtureFiles(): Array<{
         "hasDirectAttack(battleActions, normal.uid)).toBe(true)",
         "hasDirectAttack(battleActions, effectDecoy.uid)).toBe(false)",
         "battleDamage[1]).toBe(1000)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: normalTrio[0]!.uid",
       ],
     },
     {
@@ -155,6 +161,8 @@ function realScriptDirectAttackFixtureFiles(): Array<{
         "e1:SetCode(EFFECT_DIRECT_ATTACK)",
         "return ep~=tp and Duel.GetAttackTarget()==nil",
         "eventName: \"battleDamageDealt\"",
+        'eventTriggerTiming: "when"',
+        'eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }',
         "currentAttack(restoredBoost.session.state.cards.find",
       ],
     },
@@ -174,6 +182,36 @@ function realScriptDirectAttackFixtureFiles(): Array<{
       required: [
         "hasAttack(actions, jinzo.uid, defender.uid)).toBe(true)",
         "hasDirectAttack(actions, jinzo.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-appliancer-propelion-direct-precalc-zero-stat.test.ts",
+      kind: "directAttackPermission",
+      required: [
+        'const propelionCode = "81769387"',
+        "Appliancer Propelion",
+        "restores direct attack permission and pre-damage trigger metadata",
+        "e2:SetCode(EFFECT_DIRECT_ATTACK)",
+        "e3:SetCode(EVENT_PRE_DAMAGE_CALCULATE)",
+        "e:GetHandler():GetMutualLinkedGroupCount()>0",
+        "c:GetMutualLinkedGroupCount()==0",
+        "action.attackerUid === propelion.uid && action.targetUid === undefined",
+        "triggerEvent: \"beforeDamageCalculation\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-magic-hole-golem-direct-attack-stat.test.ts",
+      kind: "directAttackGrantWithOathLock",
+      required: [
+        "restores Main Phase target into final ATK halving, direct attack, and attack oath",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e1:SetProperty(EFFECT_FLAG_OATH)",
+        "e2:SetCode(EFFECT_DIRECT_ATTACK)",
+        "battleActions.filter((action) => action.type === \"declareAttack\" && action.attackerUid === golem.uid)).toEqual([])",
+        "battleActions.some((action) => action.type === \"declareAttack\" && action.attackerUid === target.uid && action.targetUid === defender.uid)).toBe(true)",
+        "directAttack === true",
+        "battleDamage).toEqual({ 0: 0, 1: 800 })",
       ],
     },
     {
@@ -214,6 +252,7 @@ function countDirectAttackKinds(fixtures: Array<{ kind: DirectAttackKind }>): Re
       conditionalDirectAttack: 0,
       directAttackConversion: 0,
       directAttackDamageStatTrigger: 0,
+      directAttackGrantWithOathLock: 0,
       directAttackGroupGrant: 0,
       directAttackOnly: 0,
       directAttackPermission: 0,
@@ -257,6 +296,7 @@ function directAttackSemanticVariants(): Array<{
         "restores operation-registered direct attack effects for three same-code face-up Normal monsters",
         "Duel.IsExistingMatchingCard(s.filter,tp,LOCATION_MZONE,0,3,nil,tp)",
         "for tc in aux.Next(g) do",
+        "eventName: \"battleDamageDealt\"",
       ],
     },
     {
@@ -277,6 +317,8 @@ function directAttackSemanticVariants(): Array<{
         "restores its direct attack permission and mandatory battle-damage ATK gain",
         "e2:SetCode(EVENT_BATTLE_DAMAGE)",
         "eventName: \"battleDamageDealt\"",
+        'eventTriggerTiming: "when"',
+        'eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 }',
         "currentAttack(restoredBoost.session.state.cards.find",
       ],
     },
@@ -308,6 +350,20 @@ function directAttackSemanticVariants(): Array<{
         "restores its direct attack option while preserving monster attacks",
         "hasAttack(actions, jinzo.uid, defender.uid)).toBe(true)",
         "hasDirectAttack(actions, jinzo.uid)).toBe(true)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-magic-hole-golem-direct-attack-stat.test.ts",
+      kind: "magicHoleGolemDirectAttackStatOath",
+      required: [
+        'const golemCode = "82458280"',
+        "restores Main Phase target into final ATK halving, direct attack, and attack oath",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e1:SetLabel(g:GetFirst():GetFieldID())",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_DIRECT_ATTACK)",
+        "battleDamage).toEqual({ 0: 0, 1: 800 })",
       ],
     },
     {
@@ -354,6 +410,7 @@ function countDirectAttackSemanticVariants(
       hayateDirectAttackBattledSendTrigger: 0,
       inabaWhiteRabbitDirectOnlyDamage: 0,
       jinzoSevenDirectAttackOption: 0,
+      magicHoleGolemDirectAttackStatOath: 0,
       reverseBusterDirectFaceUpTargetLock: 0,
       toonDefenseAttackToDirectConversion: 0,
     },

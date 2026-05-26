@@ -124,6 +124,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUnifiedFrontScript)("Lua real script 
     passBattleResponses(restoredBattle.session);
     expect(restoredBattle.session.state.battleDamage[1]).toBe(500);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(7500);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: target.uid,
+        eventPlayer: 1,
+        eventValue: 500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: target.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
   });
 });
 

@@ -4,19 +4,21 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const PREDRAW_FIXTURE_COUNT = 2;
+const PREDRAW_FIXTURE_COUNT = 3;
 const predrawKindCounts = {
   battleDamagePredrawDiscard: 1,
+  fieldPredrawDeclaredStat: 1,
   spiritPredrawConfirm: 1,
 } satisfies Record<PredrawKind, number>;
 const predrawSemanticVariantCounts = {
   hinoKaguTsuchiBattleDamagePredrawDiscard: 1,
   maharaghiSpiritPredrawConfirm: 1,
+  whiteRoseCloisterPredrawDeclaredSynchroStat: 1,
 } satisfies Record<PredrawSemanticVariant, number>;
 
-type PredrawKind = "battleDamagePredrawDiscard" | "spiritPredrawConfirm";
+type PredrawKind = "battleDamagePredrawDiscard" | "fieldPredrawDeclaredStat" | "spiritPredrawConfirm";
 
-type PredrawSemanticVariant = "hinoKaguTsuchiBattleDamagePredrawDiscard" | "maharaghiSpiritPredrawConfirm";
+type PredrawSemanticVariant = "hinoKaguTsuchiBattleDamagePredrawDiscard" | "maharaghiSpiritPredrawConfirm" | "whiteRoseCloisterPredrawDeclaredSynchroStat";
 
 describe("Lua real predraw restore coverage", () => {
   it("requires representative predraw delayed-effect fixtures to assert clean Lua restore", () => {
@@ -98,6 +100,17 @@ function realScriptPredrawFixtureFiles(): Array<{
         'eventName: "confirmed"',
       ],
     },
+    {
+      file: "test/lua-real-script-white-rose-cloister-predraw-synchro-stat.test.ts",
+      kind: "fieldPredrawDeclaredStat",
+      required: [
+        'action.type === "activateTrigger"',
+        "code: effectUpdateAttack",
+        'eventName: "preDraw"',
+        'eventName: "confirmed"',
+        "target:level-above-synchro:7",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: PredrawKind;
@@ -113,6 +126,7 @@ function countPredrawKinds(fixtures: Array<{ kind: PredrawKind }>): Record<Predr
     },
     {
       battleDamagePredrawDiscard: 0,
+      fieldPredrawDeclaredStat: 0,
       spiritPredrawConfirm: 0,
     },
   );
@@ -148,6 +162,20 @@ function predrawSemanticVariants(): Array<{
         "eventUids: [firstDraw!.uid]",
       ],
     },
+    {
+      file: "test/lua-real-script-white-rose-cloister-predraw-synchro-stat.test.ts",
+      kind: "whiteRoseCloisterPredrawDeclaredSynchroStat",
+      required: [
+        'const cloisterCode = "84335863"',
+        "restores empty-field Plant summon and pre-draw declared Monster Synchro ATK gain",
+        "Duel.SelectOption(tp,DECLTYPE_MONSTER,DECLTYPE_SPELL,DECLTYPE_TRAP)",
+        "confirmed decktop 0",
+        "registryKey: `lua:${cloisterCode}:lua-5-100`",
+        "target:level-above-synchro:7",
+        "eventName: \"preDraw\"",
+        "eventName: \"confirmed\"",
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: PredrawSemanticVariant;
@@ -164,6 +192,7 @@ function countPredrawSemanticVariants(fixtures: Array<{ kind: PredrawSemanticVar
     {
       hinoKaguTsuchiBattleDamagePredrawDiscard: 0,
       maharaghiSpiritPredrawConfirm: 0,
+      whiteRoseCloisterPredrawDeclaredSynchroStat: 0,
     },
   );
 }

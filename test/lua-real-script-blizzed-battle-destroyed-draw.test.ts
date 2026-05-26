@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
         sourceUid: blizzed.uid,
         triggerBucket: "opponentMandatory",
         eventName: "battleDestroyed",
+        eventPlayer: 0,
         eventCode: 1140,
         eventCardUid: blizzed.uid,
         eventReason: duelReason.battle | duelReason.destroy,

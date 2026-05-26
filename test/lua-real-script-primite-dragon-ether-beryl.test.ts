@@ -74,6 +74,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
             "sequence": 0,
           },
           "eventName": "normalSummoned",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -154,7 +155,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     expect(session.state.chain).toHaveLength(1);
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
+        "activationLocation": "monsterZone",
         "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-2",

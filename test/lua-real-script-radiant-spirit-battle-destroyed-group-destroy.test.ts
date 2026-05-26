@@ -94,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
         eventName: "battleDestroyed",
         eventCode: 1140,
         eventCardUid: radiantSpirit.uid,
+        eventPlayer: 0,
         eventReason: battleDestroyReason,
         eventReasonPlayer: 1,
         eventReasonCardUid: attacker.uid,
@@ -144,6 +145,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ra
         sequence: 0,
       },
       eventName: "battleDestroyed",
+      eventPlayer: 0,
       eventPreviousState: {
         controller: 0,
         faceUp: true,

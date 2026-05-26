@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const battleTimingFixtureCount = 43;
-const battleTimingEventCodeFixtureCount = 43;
+const battleTimingFixtureCount = 44;
+const battleTimingEventCodeFixtureCount = 44;
 const battleTimingEventCodeExceptions: string[] = [];
 const battleTimingKindCounts: Record<BattleTimingKind, number> = {
   afterDamageCalculation: 18,
   beforeDamageCalculation: 8,
   duringDamageCalculation: 5,
-  endDamageStep: 7,
+  endDamageStep: 8,
   startDamageStep: 5,
 };
 const battleTimingSemanticVariantCounts = {
@@ -19,6 +19,7 @@ const battleTimingSemanticVariantCounts = {
   aojOmniWeaponBattledLabelDrawSummon: 1,
   bigShieldGardnaEndDamageStepPosition: 1,
   blackwingArmorMasterEndDamageCounterStat: 1,
+  chimeraIllusionBeastEndDamageDisable: 1,
   cipherSoldierBeforeDamageCalculationBoost: 1,
   ddAssailantAfterDamageBanishBoth: 1,
   ddWarriorWallMandatoryBattledSegoc: 1,
@@ -124,6 +125,7 @@ type BattleTimingSemanticVariant =
   | "aojOmniWeaponBattledLabelDrawSummon"
   | "bigShieldGardnaEndDamageStepPosition"
   | "blackwingArmorMasterEndDamageCounterStat"
+  | "chimeraIllusionBeastEndDamageDisable"
   | "cipherSoldierBeforeDamageCalculationBoost"
   | "ddAssailantAfterDamageBanishBoth"
   | "ddWarriorWallMandatoryBattledSegoc"
@@ -173,7 +175,15 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-ally-of-justice-nullfier-battled-disable.test.ts",
       kind: "allyOfJusticeNullfierAfterDamageDisable",
-      required: ["restores its EVENT_BATTLED label-object trigger and disables the LIGHT battle target", "eventName: \"afterDamageCalculation\"", "target disabled true"],
+      required: [
+        "restores its EVENT_BATTLED label-object trigger and disables the LIGHT battle target",
+        "eventName: \"afterDamageCalculation\"",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: nullfier!.uid",
+        "eventReasonPlayer: 0",
+        "target disabled true",
+      ],
     },
     {
       file: "test/lua-real-script-aoj-omni-weapon-battled-label-draw-summon.test.ts",
@@ -196,6 +206,10 @@ function battleTimingSemanticVariants(): Array<{
         "e2:SetCode(EVENT_DAMAGE_STEP_END)",
         "Duel.ChangePosition(c,POS_FACEUP_ATTACK)",
         "eventName: \"damageStepEnded\"",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: gardna!.uid",
+        "eventReasonPlayer: 1",
         "eventName: \"positionChanged\"",
       ],
     },
@@ -207,6 +221,11 @@ function battleTimingSemanticVariants(): Array<{
         "EFFECT_INDESTRUCTABLE_BATTLE",
         "EFFECT_AVOID_BATTLE_DAMAGE",
         "e3:SetCode(EVENT_DAMAGE_STEP_END)",
+        "eventName: \"damageStepEnded\"",
+        "eventCode: 1141",
+        "eventPlayer: 0",
+        "eventTriggerTiming: \"when\"",
+        "triggerBucket: \"turnOptional\"",
         "atg:AddCounter(0x1002,1)",
         "Duel.SetTargetCard(g)",
         "eventName: \"counterAdded\"",
@@ -215,19 +234,61 @@ function battleTimingSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-chimera-illusion-beast-damage-end-disable.test.ts",
+      kind: "chimeraIllusionBeastEndDamageDisable",
+      required: [
+        "restores battle indestructible Damage Step End trigger into battle target ATK zero and negation",
+        "Fusion.AddProcMixRep(c,true,true,aux.FilterBoolFunctionEx(Card.IsRace,RACE_ILLUSION),1,99,CARD_CHIMERA_MYTHICAL_BEAST)",
+        "e3:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e4:SetCode(EVENT_DAMAGE_STEP_END)",
+        "battleWindow?.kind).toBe(\"endDamageStep\")",
+        "eventName: \"damageStepEnded\"",
+        "eventCode: 1141",
+        "eventTriggerTiming: \"when\"",
+        "triggerBucket: \"turnOptional\"",
+        "eventName: \"battleDamageDealt\"",
+        "currentAttack(disabledTarget, restoredTrigger.session.state)).toBe(0)",
+        "isCardDisabled(restoredTrigger.session.state, disabledTarget",
+      ],
+    },
+    {
       file: "test/lua-real-script-cipher-soldier-pre-damage-calculate.test.ts",
       kind: "cipherSoldierBeforeDamageCalculationBoost",
-      required: ["restores its EVENT_PRE_DAMAGE_CALCULATE trigger and applies the Warrior battle stat boost", "eventCode: 1134", "currentAttack(restored.session.state.cards.find"],
+      required: [
+        "restores its EVENT_PRE_DAMAGE_CALCULATE trigger and applies the Warrior battle stat boost",
+        "eventCode: 1134",
+        "currentAttack(restored.session.state.cards.find",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: cipherSoldier!.uid",
+      ],
     },
     {
       file: "test/lua-real-script-dd-assailant-battled-remove.test.ts",
       kind: "ddAssailantAfterDamageBanishBoth",
-      required: ["restores D.D. Assailant after damage calculation and banishes both battle participants", "triggerBucket: \"opponentMandatory\"", "eventName: \"banished\""],
+      required: [
+        "restores D.D. Assailant after damage calculation and banishes both battle participants",
+        "triggerBucket: \"opponentMandatory\"",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: attacker!.uid",
+        "eventReasonPlayer: 0",
+        "eventName: \"banished\"",
+      ],
     },
     {
       file: "test/lua-real-script-dd-warrior-wall-battled-segoc.test.ts",
       kind: "ddWarriorWallMandatoryBattledSegoc",
-      required: ["restores simultaneous EVENT_BATTLED mandatory triggers and respects chain order battle relation", "triggerBucket: \"turnMandatory\"", "triggerBucket: \"opponentMandatory\""],
+      required: [
+        "restores simultaneous EVENT_BATTLED mandatory triggers and respects chain order battle relation",
+        "triggerBucket: \"turnMandatory\"",
+        "triggerBucket: \"opponentMandatory\"",
+        "battleDamage).toEqual({ 0: 0, 1: 200 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 200",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: warrior!.uid",
+        "eventReasonPlayer: 0",
+      ],
     },
     {
       file: "test/lua-real-script-dark-ruler-ha-des-battled-disable.test.ts",
@@ -241,7 +302,15 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-des-kangaroo-damage-step-end.test.ts",
       kind: "desKangarooEndDamageDestroy",
-      required: ["restores Des Kangaroo's end Damage Step trigger and destroys the lower-ATK attacker", "eventName: \"damageStepEnded\"", "eventName: \"destroyed\""],
+      required: [
+        "restores Des Kangaroo's end Damage Step trigger and destroys the lower-ATK attacker",
+        "eventName: \"damageStepEnded\"",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: kangaroo!.uid",
+        "eventReasonPlayer: 1",
+        "eventName: \"destroyed\"",
+      ],
     },
     {
       file: "test/lua-real-script-dracoon-lamp-change-battle-stat.test.ts",
@@ -253,17 +322,34 @@ function battleTimingSemanticVariants(): Array<{
         "target:source-or-battle-target",
         "eventName: \"damageCalculating\"",
         "battleDamage).toEqual({ 0: 0, 1: 1600 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: dracoon!.uid",
+        "eventReasonPlayer: 0",
       ],
     },
     {
       file: "test/lua-real-script-destruction-punch-damage-step-end.test.ts",
       kind: "destructionPunchEndDamageTrapDestroy",
-      required: ["restores its end-Damage-Step Trap activation and destroys the battle attacker", "eventName: \"damageStepEnded\"", "location: \"graveyard\""],
+      required: [
+        "restores its end-Damage-Step Trap activation and destroys the battle attacker",
+        "eventName: \"damageStepEnded\"",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: defender!.uid",
+        "eventReasonPlayer: 0",
+        "location: \"graveyard\"",
+      ],
     },
     {
       file: "test/lua-real-script-divine-knight-ishzark-battled-remove.test.ts",
       kind: "divineKnightIshzarkAfterDamageBanish",
-      required: ["restores Divine Knight Ishzark after damage calculation and banishes the battle-destroyed target", "triggerBucket: \"turnMandatory\"", "eventName: \"banished\""],
+      required: [
+        "restores Divine Knight Ishzark after damage calculation and banishes the battle-destroyed target",
+        "triggerBucket: \"turnMandatory\"",
+        "eventName === \"battleDamageDealt\")).toEqual([])",
+        "eventName: \"banished\"",
+      ],
     },
     {
       file: "test/lua-real-script-ehren-battle-confirm-to-deck.test.ts",
@@ -285,7 +371,13 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
       kind: "fabledAshenveilPreDamageBoost",
-      required: ["restores its hand cost and pre-damage calculation ATK boost", "battleWindow?.kind).toBe(\"beforeDamageCalculation\")", "eventReasonEffectId: 1"],
+      required: [
+        "restores its hand cost and pre-damage calculation ATK boost",
+        "battleWindow?.kind).toBe(\"beforeDamageCalculation\")",
+        "eventReasonEffectId: 1",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: ashenveil.uid",
+      ],
     },
     {
       file: "test/lua-real-script-gemini-soldier-battled-deck-summon.test.ts",
@@ -295,7 +387,15 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-getsu-fuhma-damage-step-end.test.ts",
       kind: "getsuFuhmaEndDamageTargetDestroy",
-      required: ["restores Getsu Fuhma's stored battle target and destroys it at the end of the Damage Step", "battleWindow?.kind).toBe(\"endDamageStep\")", "effectLabelObjectUid"],
+      required: [
+        "restores Getsu Fuhma's stored battle target and destroys it at the end of the Damage Step",
+        "battleWindow?.kind).toBe(\"endDamageStep\")",
+        "effectLabelObjectUid",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: fiend!.uid",
+        "eventReasonPlayer: 1",
+      ],
     },
     {
       file: "test/lua-real-script-gundari-battle-start-synchro-bounce.test.ts",
@@ -305,7 +405,15 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-hayate-battled-send.test.ts",
       kind: "hayateAfterDamageDeckSend",
-      required: ["restores its direct-attack EVENT_BATTLED trigger and sends a Sky Striker card from Deck to Graveyard", "triggerBucket: \"turnOptional\"", "eventReasonEffectId: 3"],
+      required: [
+        "restores its direct-attack EVENT_BATTLED trigger and sends a Sky Striker card from Deck to Graveyard",
+        "triggerBucket: \"turnOptional\"",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: hayate!.uid",
+        "eventReasonPlayer: 0",
+        "eventReasonEffectId: 3",
+      ],
     },
     {
       file: "test/lua-real-script-basilisk-battled-target-destroy.test.ts",
@@ -316,6 +424,10 @@ function battleTimingSemanticVariants(): Array<{
         "Duel.SetTargetCard(tc)",
         "Duel.Destroy(tc,REASON_EFFECT)",
         "eventName: \"afterDamageCalculation\"",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: battleTarget!.uid",
+        "eventReasonPlayer: 1",
         "eventName: \"destroyed\"",
       ],
     },
@@ -329,6 +441,8 @@ function battleTimingSemanticVariants(): Array<{
         "eventCode: 1134",
         "Duel.PayLPCost(tp,2000)",
         "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: lily.uid",
       ],
     },
     {
@@ -370,6 +484,12 @@ function battleTimingSemanticVariants(): Array<{
         "c:IsSetCard(SET_MADOLCHE)",
         "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
         "eventName: \"afterDamageCalculation\"",
+        "battleDamage).toEqual({ 0: 0, 1: 500 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 500",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: attacker!.uid",
+        "eventReasonPlayer: 0",
         "eventName: \"damageDealt\"",
       ],
     },
@@ -381,12 +501,28 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-nightmare-magician-battle-control.test.ts",
       kind: "nightmareMagicianEndDamageControl",
-      required: ["restores battle-target indestructibility and controls the battled monster at Damage Step end", "triggerBucket: \"turnOptional\"", "previousController: 1"],
+      required: [
+        "restores battle-target indestructibility and controls the battled monster at Damage Step end",
+        "triggerBucket: \"turnOptional\"",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: nightmare!.uid",
+        "eventReasonPlayer: 0",
+        "previousController: 1",
+      ],
     },
     {
       file: "test/lua-real-script-predaplant-sarraceniant-battled-destroy.test.ts",
       kind: "predaplantSarraceniantAfterDamageDestroy",
-      required: ["restores its EVENT_BATTLED trigger and destroys the monster it battled", "eventCode: 1138", "reasonEffectId: 2"],
+      required: [
+        "restores its EVENT_BATTLED trigger and destroys the monster it battled",
+        "eventCode: 1138",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: sarraceniant!.uid",
+        "eventReasonPlayer: 0",
+        "reasonEffectId: 2",
+      ],
     },
     {
       file: "test/lua-real-script-power-wall-pre-damage-deck-mill-shield.test.ts",
@@ -401,7 +537,16 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-zone-eater-delayed-battle-destroy.test.ts",
       kind: "zoneEaterAfterDamageDelayedDestroy",
-      required: ["restores battled target markers and destroys the marked monster on the fifth End Phase", "eventName: \"afterDamageCalculation\"", "eventCode: 1138", "eventName: \"destroyed\""],
+      required: [
+        "restores battled target markers and destroys the marked monster on the fifth End Phase",
+        "eventName: \"afterDamageCalculation\"",
+        "eventCode: 1138",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: target.uid",
+        "eventReasonPlayer: 1",
+        "eventName: \"destroyed\"",
+      ],
     },
     {
       file: "test/lua-real-script-drillroid-battle-confirm-destroy.test.ts",
@@ -411,7 +556,7 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-sasuke-samurai-battle-start-destroy.test.ts",
       kind: "sasukeSamuraiStartDamageDestroy",
-      required: ["restores its EVENT_BATTLE_START mandatory trigger and destroys the face-down Defense target", "battleWindow?.kind).toBe(\"startDamageStep\")", "eventName: \"destroyed\""],
+      required: ["restores its EVENT_BATTLE_START mandatory trigger and destroys the face-down Defense target", "battleWindow?.kind).toBe(\"startDamageStep\")", 'eventTriggerTiming: "when"', "eventName: \"destroyed\""],
     },
     {
       file: "test/lua-real-script-sanga-pre-damage-final-attack.test.ts",
@@ -424,6 +569,8 @@ function battleTimingSemanticVariants(): Array<{
         "eventCode: 1134",
         "currentAttack(restoredFinalAttack.session.state.cards.find((card) => card.uid === attacker.uid), restoredFinalAttack.session.state)).toBe(0)",
         "battleDamage).toEqual({ 0: sanga.data.attack, 1: 0 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: sanga.uid",
       ],
     },
     {
@@ -470,7 +617,15 @@ function battleTimingSemanticVariants(): Array<{
     {
       file: "test/lua-real-script-topologic-bomber-battled-damage.test.ts",
       kind: "topologicBomberAfterDamageBurn",
-      required: ["restores its EVENT_BATTLED trigger and deals effect damage from the battle target's base ATK", "eventName: \"damageDealt\"", "eventValue: 1200"],
+      required: [
+        "restores its EVENT_BATTLED trigger and deals effect damage from the battle target's base ATK",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: bomber!.uid",
+        "eventReasonPlayer: 0",
+        "eventName: \"damageDealt\"",
+        "eventValue: 1200",
+      ],
     },
     {
       file: "test/lua-real-script-turbo-rocket-battled-damage.test.ts",
@@ -479,6 +634,10 @@ function battleTimingSemanticVariants(): Array<{
         "restores its GetAttackTarget EVENT_BATTLED burn after battle damage with attacker battle indestructibility",
         "Duel.GetAttackTarget():GetAttack()/2",
         "e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: target!.uid",
+        "eventReasonPlayer: 1",
         "eventName: \"damageDealt\"",
         "eventValue: 1000",
         "eventName === \"battleDestroyed\"",
@@ -509,6 +668,7 @@ function countBattleTimingSemanticVariants(
       aojOmniWeaponBattledLabelDrawSummon: 0,
       bigShieldGardnaEndDamageStepPosition: 0,
       blackwingArmorMasterEndDamageCounterStat: 0,
+      chimeraIllusionBeastEndDamageDisable: 0,
       cipherSoldierBeforeDamageCalculationBoost: 0,
       ddAssailantAfterDamageBanishBoth: 0,
       ddWarriorWallMandatoryBattledSegoc: 0,
@@ -569,6 +729,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "afterDamageCalculation"',
         "eventCode: 1138",
         'triggerBucket: "turnMandatory"',
+        'eventName: "battleDamageDealt"',
         'eventName: "destroyed"',
         "eventReasonEffectId: 1",
       ],
@@ -580,6 +741,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
         'triggerBucket: "turnMandatory"',
+        'eventName: "battleDamageDealt"',
         "target disabled true",
         '"code": 2',
         '"code": 8',
@@ -606,6 +768,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'battleWindow?.kind).toBe("endDamageStep")',
         'eventName: "damageStepEnded"',
         "eventCode: 1141",
+        'eventName: "battleDamageDealt"',
         'eventName: "positionChanged"',
         "eventCode: 1016",
         "eventReasonEffectId: 2",
@@ -619,9 +782,26 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'battleWindow?.kind).toBe("endDamageStep")',
         'eventName: "damageStepEnded"',
         "eventCode: 1141",
+        "eventPlayer: 0",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "turnOptional"',
         "eventName: \"counterAdded\"",
         "currentAttack(restoredFinalStats.session.state.cards.find((card) => card.uid === target.uid), restoredFinalStats.session.state)).toBe(0)",
         "currentDefense(restoredFinalStats.session.state.cards.find((card) => card.uid === target.uid), restoredFinalStats.session.state)).toBe(0)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-chimera-illusion-beast-damage-end-disable.test.ts",
+      kind: "endDamageStep",
+      required: [
+        'battleWindow?.kind).toBe("endDamageStep")',
+        'eventName: "damageStepEnded"',
+        "eventCode: 1141",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "turnOptional"',
+        'eventName: "battleDamageDealt"',
+        "currentAttack(disabledTarget, restoredTrigger.session.state)).toBe(0)",
+        "isCardDisabled(restoredTrigger.session.state, disabledTarget",
       ],
     },
     {
@@ -651,6 +831,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       kind: "afterDamageCalculation",
       required: [
         'eventName: "afterDamageCalculation"',
+        'eventName: "battleDamageDealt"',
         "triggerBucket: \"turnMandatory\"",
         "triggerBucket: \"opponentMandatory\"",
         'location: "hand", controller: 0',
@@ -675,6 +856,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       required: [
         'battleWindow?.kind).toBe("endDamageStep")',
         'eventName: "damageStepEnded"',
+        'eventName: "battleDamageDealt"',
         'eventName: "destroyed"',
         'location: "graveyard"',
       ],
@@ -685,6 +867,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       required: [
         'battleWindow?.kind).toBe("endDamageStep")',
         'eventName: "damageStepEnded"',
+        'eventName: "battleDamageDealt"',
         'eventName: "destroyed"',
         'location: "graveyard"',
       ],
@@ -743,6 +926,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventReasonEffectId: 1",
         "currentAttack(boostedAshenveil, restoredChain.session.state)).toBe((ashenveil.data.attack ?? 0) + 600)",
         "battleDamage[1]).toBe((ashenveil.data.attack ?? 0) + 600 - (defender.data.attack ?? 0))",
+        'eventName: "battleDamageDealt"',
       ],
     },
     {
@@ -756,6 +940,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "Duel.PayLPCost(tp,2000)",
         "currentAttack(boostedLily, restoredDamageStep.session.state)).toBe(3400)",
         "battleDamage).toEqual({ 0: 0, 1: 1400 })",
+        'eventName: "battleDamageDealt"',
       ],
     },
     {
@@ -776,6 +961,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
+        'eventName: "battleDamageDealt"',
         "eventCode: 1138",
         "eventCardUid: attacker!.uid",
         'eventName: "damageDealt"',
@@ -806,6 +992,8 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "restoredTrigger.missingChainLimitRegistryKeys).toEqual([])",
         'battleWindow?.kind).toBe("startDamageStep")',
         'eventName: "battleStarted"',
+        'eventTriggerTiming: "when"',
+        'eventPreviousState: {',
         'eventName: "destroyed"',
         "eventReasonEffectId: 1",
       ],
@@ -818,6 +1006,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "damageStepEnded"',
         "effectLabelObjectUid",
         "battleDamage).toEqual({ 0: 300, 1: 0 })",
+        'eventName: "battleDamageDealt"',
         'eventName: "destroyed"',
         "eventReasonEffectId: 1",
       ],
@@ -898,6 +1087,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "e1:SetValue(0)",
         "currentAttack(restoredActivation.session.state.cards.find((card) => card.uid === attacker.uid), restoredActivation.session.state)).toBe(0)",
         "battleDamage).toEqual({ 0: sanga.data.attack, 1: 0 })",
+        'eventName: "battleDamageDealt"',
       ],
     },
     {
@@ -929,6 +1119,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'eventName: "damageStepEnded"',
         'triggerBucket: "turnOptional"',
         'luaTargetDescriptor: "target:source-or-battle-target"',
+        'eventName: "battleDamageDealt"',
         "targetCardPredicate).toBeDefined()",
         "previousController: 1",
       ],
@@ -970,6 +1161,10 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventCode: 1135",
         "currentAttack(restoredHero, restoredDamageCalculation.session.state)).toBe(2600)",
         "battleDamage).toEqual({ 0: 0, 1: 700 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: hero!.uid",
+        "eventReasonPlayer: 0",
       ],
     },
     {
@@ -985,6 +1180,12 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "currentAttack(restoredDefendingSteamroid, restoredDefending.session.state)).toBe((defending.steamroid.data.attack ?? 0) - 500)",
         "battleDamage).toEqual({ 0: 0, 1: 300 })",
         "battleDamage).toEqual({ 0: 500, 1: 0 })",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: attacking.steamroid.uid",
+        "eventReasonCardUid: defending.opposing.uid",
+        "eventReasonPlayer: 0",
+        "eventReasonPlayer: 1",
       ],
     },
     {
@@ -997,6 +1198,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "effectLabelObjectUid",
         "currentAttack(restoredCrow, restoredChain.session.state)).toBe(700)",
         "battleDamage[1]).toBe(200)",
+        'eventName: "battleDamageDealt"',
       ],
     },
     {
@@ -1006,6 +1208,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
         "eventCode: 1138",
+        'eventName: "battleDamageDealt"',
         'eventName: "destroyed"',
         "reasonEffectId: 2",
       ],
@@ -1018,6 +1221,7 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         "eventCode: 1138",
         "bc:RegisterEffect(e1)",
         "e3:SetCode(EVENT_PHASE+PHASE_END)",
+        'eventName: "battleDamageDealt"',
         'eventName: "destroyed"',
       ],
     },
@@ -1039,6 +1243,10 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
+        'eventName: "battleDamageDealt"',
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: bomber!.uid",
+        "eventReasonPlayer: 0",
         'eventName: "damageDealt"',
         "eventValue: 1200",
         "pendingBattle).toBeUndefined()",
@@ -1051,6 +1259,10 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
         "eventCode: 1138",
+        'eventName: "battleDamageDealt"',
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: target!.uid",
+        "eventReasonPlayer: 1",
         'eventName: "damageDealt"',
         "eventValue: 1000",
         "deferredBattleDestroyed ?? []).toEqual([])",
@@ -1063,6 +1275,10 @@ function battleTimingFixtureFiles(): Array<{ file: string; kind: BattleTimingKin
       required: [
         'battleWindow?.kind).toBe("afterDamageCalculation")',
         'eventName: "afterDamageCalculation"',
+        'eventName: "battleDamageDealt"',
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: wall!.uid",
+        "eventReasonPlayer: 1",
         'triggerBucket: "opponentMandatory"',
         'eventName: "sentToHand"',
         'location: "hand"',

@@ -83,11 +83,19 @@ describe.skipIf(!hasUpstreamScripts || !hasNurseScript)("Lua real script Antidot
     expectRestoredLegalActions(restoredOpen, 0);
     specialSummonDuelCard(restoredOpen.session.state, summoned.uid, 0);
     specialSummonDuelCard(restoredOpen.session.state, opponentSummoned.uid, 1);
-    expect(restoredOpen.session.state.pendingTriggers.filter((trigger) => trigger.sourceUid === nurse.uid)).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers.filter((trigger) => trigger.sourceUid === nurse.uid)).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-3-1102",
         eventCardUid: summoned.uid,
         eventCode: 1102,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
         eventName: "specialSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "if",
         player: 0,
         sourceUid: nurse.uid,
         triggerBucket: "turnOptional",

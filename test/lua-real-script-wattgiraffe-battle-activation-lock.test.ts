@@ -62,6 +62,11 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredSetup, attack!);
     passBattleResponses(restoredSetup);
+    if (restoredSetup.session.state.pendingTriggers.length > 0) {
+      const trigger = getLuaRestoreLegalActions(restoredSetup, 0).find((action) => action.type === "activateTrigger" && action.uid === wattgiraffe.uid);
+      expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 0), null, 2)).toBeDefined();
+      applyRestoredActionAndAssert(restoredSetup, trigger!);
+    }
     expect(restoredSetup.session.state.players[1]!.lifePoints).toBe(6800);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredSetup.session), source, reader);
@@ -69,9 +74,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Wa
     expect(restoredTrigger.missingRegistryKeys).toEqual([]);
     expect(restoredTrigger.missingChainLimitRegistryKeys).toEqual([]);
     expectRestoredLegalActions(restoredTrigger, 0);
-    const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === wattgiraffe.uid);
-    expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
-    applyRestoredActionAndAssert(restoredTrigger, trigger!);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredTrigger.session), source, reader);
     expect(restoredChain.restoreComplete, restoredChain.incompleteReasons.join("; ")).toBe(true);
@@ -152,6 +154,7 @@ function passBattleResponses(restored: ReturnType<typeof restoreDuelWithLuaScrip
     const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
     const passType = restored.session.state.battleStep === "damage" || restored.session.state.battleStep === "damageCalculation" ? "passDamage" : "passAttack";
     const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === passType);
+    if (!pass && restored.session.state.pendingTriggers.length > 0) break;
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restored, pass!);
   }

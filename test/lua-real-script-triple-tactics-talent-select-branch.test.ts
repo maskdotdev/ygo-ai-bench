@@ -84,22 +84,32 @@ describe.skipIf(!hasUpstreamScripts || !hasTalentScript)("Lua real script Triple
     );
     expect(activation, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredAction(restoredOpen, activation!);
-    expect(restoredOpen.host.promptDecisions.filter((prompt) => prompt.api === "SelectEffect" && "options" in prompt).map((prompt) => ({
-      api: prompt.api,
-      options: prompt.options,
-      player: prompt.player,
-      returned: prompt.returned,
-    }))).toEqual([{ api: "SelectEffect", options: [1, 2, 3], player: 0, returned: 3 }]);
+    expect(restoredOpen.host.promptDecisions.flatMap((prompt) => {
+      if (prompt.api !== "SelectEffect" || !("options" in prompt)) return [];
+      return [{
+        api: prompt.api,
+        options: prompt.options,
+        player: prompt.player,
+        returned: prompt.returned,
+      }];
+    })).toEqual([{ api: "SelectEffect", options: [1, 2, 3], player: 0, returned: 3 }]);
     if (restoredOpen.session.state.chain.length > 0) {
-      expect(restoredOpen.session.state.chain).toEqual([
-        expect.objectContaining({
+      expect(restoredOpen.session.state.chain.map((link) => ({
+        activationLocation: link.activationLocation,
+        effectId: link.effectId,
+        operationInfos: link.operationInfos,
+        player: link.player,
+        sourceUid: link.sourceUid,
+        targetPlayer: link.targetPlayer,
+      }))).toEqual([
+        {
           activationLocation: "hand",
           effectId: "lua-1-1002",
           operationInfos: [{ category: categoryToDeck, targetUids: [], count: 0, player: 1, parameter: 0x10 }],
           player: 0,
           sourceUid: talent.uid,
           targetPlayer: 0,
-        }),
+        },
       ]);
       passRestoredChain(restoredOpen);
     }

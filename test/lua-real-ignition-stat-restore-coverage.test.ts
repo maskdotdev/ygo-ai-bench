@@ -4,13 +4,17 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const ignitionStatFixtureCount = 8;
+const ignitionStatFixtureCount = 12;
 const ignitionStatKindCounts = {
   counterCostAttackBoost: 1,
   counterCostTargetPlantAttackDefenseBoost: 1,
   counterCostFinalAttackDirectLockEndSend: 1,
+  costBanishFinalAttackDraw: 1,
+  deckCostAttackBoostDestroyedDraw: 1,
+  equipCostFinalAttack: 1,
   groupUpdateLevel: 1,
   noTurnResetAttackLevelBoost: 1,
+  selectSearchStatEquip: 1,
   selfToGraveTargetUpdateLevel: 1,
   summedLevelChange: 1,
   targetLevelCopy: 1,
@@ -20,8 +24,12 @@ type IgnitionStatKind =
   | "counterCostAttackBoost"
   | "counterCostTargetPlantAttackDefenseBoost"
   | "counterCostFinalAttackDirectLockEndSend"
+  | "costBanishFinalAttackDraw"
+  | "deckCostAttackBoostDestroyedDraw"
+  | "equipCostFinalAttack"
   | "groupUpdateLevel"
   | "noTurnResetAttackLevelBoost"
+  | "selectSearchStatEquip"
   | "selfToGraveTargetUpdateLevel"
   | "summedLevelChange"
   | "targetLevelCopy";
@@ -55,6 +63,78 @@ describe("Lua real ignition stat restore coverage", () => {
 
 function realScriptIgnitionStatFixtures(): IgnitionStatFixture[] {
   return [
+    {
+      file: "test/lua-real-script-card-trooper-deck-cost-stat-draw.test.ts",
+      kind: "deckCostAttackBoostDestroyedDraw",
+      required: [
+        "Card Trooper deck cost stat draw",
+        "Duel.IsPlayerCanDiscardDeckAsCost(tp,1)",
+        "Duel.AnnounceNumber(tp,table.unpack(ct))",
+        "Duel.DiscardDeck(tp,ac,REASON_COST)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(ct*500)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "currentAttack(restoredOpen.session.state.cards.find",
+        "eventName: \"cardsDrawn\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-haggard-lizardose-banish-final-atk-draw.test.ts",
+      kind: "costBanishFinalAttackDraw",
+      required: [
+        "Haggard Lizardose banish final ATK draw",
+        "Link.AddProcedure(c,nil,2,2,function(g) return g:GetClassCount(Card.GetCode)==#g end)",
+        "Duel.SelectMatchingCard(tp,s.atkcostfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,1,1,nil,tp)",
+        "e:SetLabel(tc:GetTextAttack(),tc:GetOriginalRace())",
+        "Duel.Remove(tc,POS_FACEUP,REASON_COST)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(aux.NOT(Card.IsAttack),atk),tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "Duel.BreakEffect()",
+        "Duel.Draw(tp,1,REASON_EFFECT)",
+        "currentAttack(restoredOpen.session.state.cards.find",
+        "eventName: \"cardsDrawn\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dragunity-vajrayana-equip-cost-final-stat.test.ts",
+      kind: "equipCostFinalAttack",
+      required: [
+        "Dragunity Knight - Vajrayana equip cost final stat",
+        "Synchro.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsRace,RACE_DRAGON),1,1,Synchro.NonTunerEx(Card.IsRace,RACE_WINGEDBEAST),1,99)",
+        "e1:SetCategory(CATEGORY_LEAVE_GRAVE+CATEGORY_EQUIP)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "c:EquipByEffectAndLimitRegister(e,tp,tc)",
+        "aux.AddEREquipLimit(c,nil,s.eqval,Card.EquipByEffectAndLimitRegister,e1)",
+        "c:GetEquipGroup():FilterSelect(tp,s.cfilter,1,1,nil,tp)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e1:SetValue(c:GetAttack()*2)",
+        "currentAttack(restoredIgnition.session.state.cards.find",
+        "eventName: \"sentToGraveyard\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-spenta-select-search-stat-equip.test.ts",
+      kind: "selectSearchStatEquip",
+      required: [
+        "Spenta SelectEffect search stat equip",
+        "e1:SetCost(Cost.SelfDiscard)",
+        "Duel.SelectEffect(tp,",
+        "Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)",
+        "Duel.SendtoHand(g,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,g)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCost(Cost.SelfBanish)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SelectMatchingCard(tp,aux.NecroValleyFilter(s.eqfilter),tp,LOCATION_EXTRA|LOCATION_GRAVE,0,1,1,nil,tp):GetFirst()",
+        "Duel.Equip(tp,ec,tc)",
+        "e1:SetCode(EFFECT_EQUIP_LIMIT)",
+        "currentAttack(restoredStat.session.state.cards.find",
+        "equippedToUid: ownMonster.uid",
+      ],
+    },
     {
       file: "test/lua-real-script-world-tree-counter-stat.test.ts",
       kind: "counterCostTargetPlantAttackDefenseBoost",

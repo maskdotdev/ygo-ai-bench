@@ -62,7 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ma
           0,
           476,
         ],
-        "id": "lua-2-1002",
+        "id": "lua-3-1002",
         "luaConditionDescriptor": "condition:main-or-battle-phase",
         "luaTypeFlags": 256,
         "oncePerTurn": true,
@@ -71,7 +71,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ma
         "range": [
           "monsterZone",
         ],
-        "registryKey": "lua:34149150:lua-2-1002",
+        "registryKey": "lua:34149150:lua-3-1002",
         "sourceUid": "p0-extraDeck-34149150-0",
         "target": [Function],
         "targetCardPredicate": [Function],

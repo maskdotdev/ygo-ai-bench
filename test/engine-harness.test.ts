@@ -251,7 +251,7 @@ describe("EDOPro compatibility harness diagnostics", () => {
     expect(calculationResult.ok, calculationResult.error).toBe(true);
     expect(host.getGlobalNumber("calculation_phase")).toBe(0x40);
     expect(host.getGlobalString("calculation_step")).toBe("true");
-    expect(host.getGlobalString("calculation_calculated")).toBe("true");
+    expect(host.getGlobalString("calculation_calculated")).toBe("false");
     expect(host.getGlobalString("calculation_is_phase")).toBe("true");
   });
 
@@ -288,7 +288,7 @@ describe("EDOPro compatibility harness diagnostics", () => {
     expect(result.ok, result.error).toBe(true);
     expect(host.getGlobalNumber("explicit_phase")).toBe(0x40);
     expect(host.getGlobalString("explicit_damage_step")).toBe("true");
-    expect(host.getGlobalString("explicit_damage_calculated")).toBe("true");
+    expect(host.getGlobalString("explicit_damage_calculated")).toBe("false");
     expect(host.getGlobalString("explicit_battle_step")).toBe("false");
   });
 

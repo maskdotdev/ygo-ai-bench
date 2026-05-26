@@ -71,12 +71,25 @@ describe.skipIf(!hasUpstreamScripts || !hasOgreScript)("Lua real script Ogre of 
 
     declareDirectAttack(restoredOpen, attackerB.uid);
     passRestoredBattleUntil(restoredOpen, () => restoredOpen.session.state.pendingTriggers.some((trigger) => trigger.effectId === `lua-1-${0x10000000 + Number(ogreCode)}`));
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-7-1",
+        effectId: `lua-1-${0x10000000 + Number(ogreCode)}`,
         eventCardUid: attackerB.uid,
         eventCode: 0x10000000 + Number(ogreCode),
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
         eventName: "customEvent",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonCardUid: ogre.uid,
+        eventReasonEffectId: 3,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [attackerB.uid],
+        eventValue: 0,
         player: 0,
+        relatedEffectId: 3,
         sourceUid: ogre.uid,
         triggerBucket: "opponentOptional",
       },

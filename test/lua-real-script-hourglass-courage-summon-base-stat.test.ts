@@ -63,16 +63,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasHourglassScri
     const summon = getLuaRestoreLegalActions(restoredSummon, 0).find((action) => action.type === "normalSummon" && action.uid === hourglass.uid);
     expect(summon, JSON.stringify(getLuaRestoreLegalActions(restoredSummon, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredSummon, summon!);
-    expect(restoredSummon.session.state.pendingTriggers).toMatchObject([
+    expect(restoredSummon.session.state.pendingTriggers).toEqual([
       {
-        sourceUid: hourglass.uid,
-        player: 0,
-        triggerBucket: "turnMandatory",
-        eventName: "normalSummoned",
-        eventCode: 1100,
+        id: "trigger-3-1",
+        effectId: "lua-1-1100",
         eventCardUid: hourglass.uid,
+        eventCode: 1100,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "normalSummoned",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        player: 0,
+        sourceUid: hourglass.uid,
+        triggerBucket: "turnMandatory",
       },
     ]);
 
@@ -108,6 +114,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasHourglassScri
     applyRestoredActionAndAssert(restoredBattle, attack!);
     finishBattle(restoredBattle);
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 50 });
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: hourglass.uid,
+        eventPlayer: 1,
+        eventValue: 50,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: hourglass.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
   });
 });
 

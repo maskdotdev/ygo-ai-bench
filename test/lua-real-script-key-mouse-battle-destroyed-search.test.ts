@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ke
         triggerBucket: "turnOptional",
         eventName: "battleDestroyed",
         eventCode: 1140,
+        eventPlayer: 0,
         eventCardUid: battleKeyMouse.uid,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 1,

@@ -69,7 +69,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasClearWingScri
       reason: duelReason.effect | duelReason.destroy,
       reasonPlayer: 0,
       reasonCardUid: clearWing.uid,
-      reasonEffectId: 2,
+      reasonEffectId: 3,
     });
     expect(currentAttack(restoredResolved.session.state.cards.find((card) => card.uid === clearWing.uid), restoredResolved.session.state)).toBe(5500);
     expect(restoredResolved.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
@@ -120,7 +120,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasClearWingScri
       reason: duelReason.material | duelReason.synchro,
       reasonPlayer: 0,
       reasonCardUid: clearWing.uid,
-      reasonEffectId: 3,
+      reasonEffectId: 4,
     });
     expect(restoredResponse.session.state.cards.find((card) => card.uid === clearWing.uid)).toMatchObject({
       location: "graveyard",
@@ -128,7 +128,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasClearWingScri
       reason: duelReason.material | duelReason.synchro,
       reasonPlayer: 0,
       reasonCardUid: clearWing.uid,
-      reasonEffectId: 3,
+      reasonEffectId: 4,
     });
     expect(restoredResponse.session.state.cards.find((card) => card.uid === synchro.uid)).toMatchObject({
       location: "monsterZone",

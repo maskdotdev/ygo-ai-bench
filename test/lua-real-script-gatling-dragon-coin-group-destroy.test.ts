@@ -13,6 +13,8 @@ import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreL
 const upstreamRoot = path.resolve(".upstream/ignis");
 const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const gatlingCode = "87751584";
+const barrelCode = "81480460";
+const blowbackCode = "25551951";
 const allyCode = "877515840";
 const opponentCode = "877515841";
 const hasGatlingScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${gatlingCode}.lua`));
@@ -45,10 +47,12 @@ describe.skipIf(!hasUpstreamScripts || !hasGatlingScript)("Lua real script Gatli
     const host = createLuaScriptHost(session, workspace);
     expect(host.loadCardScript(Number(gatlingCode), workspace).ok).toBe(true);
     expect(host.registerInitialEffects()).toBe(1);
+    expect(gatling.data.fusionMaterials).toEqual([barrelCode, blowbackCode]);
 
     const restoredOpen = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
     expectCleanRestore(restoredOpen);
     expectRestoredLegalActions(restoredOpen, 0);
+    expect(restoredOpen.session.state.cards.find((card) => card.uid === gatling.uid)?.data.fusionMaterials).toEqual([barrelCode, blowbackCode]);
     expect(restoredOpen.session.state.effects.filter((effect) => effect.sourceUid === gatling.uid).map((effect) => ({
       category: effect.category,
       code: effect.code,

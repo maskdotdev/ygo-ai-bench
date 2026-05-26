@@ -107,6 +107,20 @@ describe.skipIf(!hasUpstreamScripts || !hasGaleScript)("Lua real script Blackwin
     passBattleResponses(restoredBattle.session);
     expect(restoredBattle.session.state.battleDamage[1]).toBe(400);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(7600);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: gale.uid,
+        eventPlayer: 1,
+        eventValue: 400,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: gale.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
+      },
+    ]);
   });
 });
 

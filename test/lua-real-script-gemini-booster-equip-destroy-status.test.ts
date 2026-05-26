@@ -94,6 +94,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
         ],
         "player": 0,
         "sourceUid": "p0-deck-18096222-0",
+        "targetFieldIds": [
+          6,
+        ],
         "targetUids": [
           "p0-deck-3918345-1",
         ],
@@ -153,7 +156,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
           "controller": 0,
           "cost": [Function],
           "event": "continuous",
-          "id": "lua-4-76",
+          "id": "lua-6-76",
+          "labelObjectUid": "p0-deck-3918345-1",
           "lifePointValue": [Function],
           "luaTypeFlags": 1,
           "oncePerTurn": false,
@@ -162,7 +166,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
           "range": [
             "spellTrapZone",
           ],
-          "registryKey": "lua:18096222:lua-4-76",
+          "registryKey": "lua:18096222:lua-6-76",
           "reset": {
             "flags": 33427456,
           },
@@ -177,6 +181,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
           "controller": 0,
           "event": "continuous",
           "id": "lua-5-100",
+          "luaTypeFlags": 4,
           "oncePerTurn": false,
           "operation": [Function],
           "range": [
@@ -214,6 +219,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
             "sequence": 0,
           },
           "eventName": "leftField",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": true,
@@ -259,6 +265,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
           "sequence": 0,
         },
         "eventName": "leftField",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": true,
@@ -274,6 +281,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ge
         "id": "chain-6",
         "player": 0,
         "sourceUid": "p0-deck-18096222-0",
+        "targetFieldIds": [
+          6,
+        ],
         "targetUids": [
           "p0-deck-3918345-1",
         ],

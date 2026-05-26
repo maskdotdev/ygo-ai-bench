@@ -67,13 +67,22 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasSkullgiosScri
     applyRestoredActionAndAssert(restoredBattle, attack!);
     passUntilPendingTrigger(restoredBattle, "battleConfirmed");
     expect(restoredBattle.session.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
-        sourceUid: skullgios.uid,
-        eventName: "battleConfirmed",
-        eventCode: 1133,
+        id: "trigger-3-1",
+        effectId: "lua-4-1133",
         eventCardUid: skullgios.uid,
+        eventCode: 1133,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+        eventName: "battleConfirmed",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "extraDeck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         eventUids: [skullgios.uid, defender.uid],
+        player: 0,
+        sourceUid: skullgios.uid,
         triggerBucket: "turnOptional",
       },
     ]);

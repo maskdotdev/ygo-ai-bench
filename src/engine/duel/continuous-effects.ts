@@ -67,7 +67,9 @@ export function isEffectActivationPrevented(
     const ctx = createContext(effect, source, card);
     const relatedEffectId = luaRelatedEffectId(activatingEffect);
     if (relatedEffectId !== undefined) ctx.relatedEffectId = relatedEffectId;
-    if (!continuousEffectTargetsPlayer(effect, source, player) && !continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
+    if (continuousEffectIsPlayerTarget(effect)) {
+      if (!continuousEffectTargetsPlayer(effect, source, player)) continue;
+    } else if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
     if (effect.valuePredicate && !effect.valuePredicate(ctx, player)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
@@ -397,7 +399,7 @@ export function isBattleDamagePreventedByCard(state: DuelState, player: PlayerId
       if (effect.event !== "continuous" || (effect.code !== 200 && effect.code !== 201)) continue;
       const source = findCard(state, effect.sourceUid);
       if (!source || !effect.range.includes(source.location)) continue;
-      if (effect.code === 201 && player !== source.controller) continue;
+      if (effect.code === 201 && !continuousEffectIsPlayerTarget(effect) && player !== source.controller) continue;
       if (effect.code === 200 && effect.value !== 1 && player === source.controller) continue;
       const ctx = createContext(effect, source, card);
       if (continuousEffectAppliesToCard(effect, source, card, ctx) && (!effect.canActivate || effect.canActivate(ctx))) return true;
@@ -897,7 +899,7 @@ export function findIndestructibleEffect(state: DuelState, uid: string, reason: 
   return undefined;
 }
 
-export function isMoveToLocationPrevented(state: DuelState, uid: string, to: DuelLocation, reason: number, createContext: ContinuousEffectContextFactory): boolean {
+export function isMoveToLocationPrevented(state: DuelState, uid: string, to: DuelLocation, reason: number, createContext: ContinuousEffectContextFactory, reasonPlayer?: PlayerId): boolean {
   const card = findCard(state, uid);
   if (!card) return false;
   for (const effect of state.effects) {
@@ -905,6 +907,12 @@ export function isMoveToLocationPrevented(state: DuelState, uid: string, to: Due
     const source = findCard(state, effect.sourceUid);
     if (!source || !effect.range.includes(source.location)) continue;
     const ctx = createContext(effect, source, card);
+    if (reasonPlayer !== undefined && continuousEffectIsPlayerTarget(effect)) {
+      if (!continuousEffectTargetsPlayer(effect, source, reasonPlayer)) continue;
+      if (effect.targetCardPredicate && !effect.targetCardPredicate(ctx, card)) continue;
+      if (!effect.canActivate || effect.canActivate(ctx)) return true;
+      continue;
+    }
     if (!continuousEffectAppliesToCard(effect, source, card, ctx)) continue;
     if (!effect.canActivate || effect.canActivate(ctx)) return true;
   }

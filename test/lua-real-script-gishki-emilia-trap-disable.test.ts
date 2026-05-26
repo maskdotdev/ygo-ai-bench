@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
             "sequence": 1,
           },
           "eventName": "normalSummoned",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -125,6 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
             "sequence": 1,
           },
           "eventName": "normalSummoned",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -217,9 +219,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
           },
           "sourceUid": "p0-deck-73551138-0",
           "target": [Function],
-          "triggerCode": 1020,
-          "triggerEvent": "chainSolving",
-          "triggerTiming": "when",
         },
       ]
     `);

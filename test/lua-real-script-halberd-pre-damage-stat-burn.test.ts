@@ -107,7 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasHalberdScript
     expect(restoredAttack.session.state.pendingTriggers).toEqual([
       {
         id: "trigger-7-1",
-        effectId: "lua-3-1143",
+        effectId: "lua-4-1143",
         eventCardUid: halberd.uid,
         eventName: "battleDamageDealt",
         eventCode: 1143,
@@ -144,7 +144,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasHalberdScript
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: halberd.uid,
-        eventReasonEffectId: 3,
+        eventReasonEffectId: 4,
       },
     ]);
   });

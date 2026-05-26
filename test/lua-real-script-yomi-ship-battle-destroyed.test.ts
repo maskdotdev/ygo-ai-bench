@@ -65,6 +65,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Yo
             "sequence": 0,
           },
           "eventName": "battleDestroyed",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": true,
@@ -105,6 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Yo
             "sequence": 0,
           },
           "eventName": "battleDestroyed",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": true,

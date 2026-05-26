@@ -43,7 +43,9 @@ describe("browser Lua script exporter", () => {
     expect(fs.readFileSync(path.join(outDir, "c100.lua"), "utf8")).toBe("official 100");
     expect(fs.readFileSync(path.join(outDir, "c300.lua"), "utf8")).toBe("pre 300");
     expect(fs.existsSync(path.join(outDir, "c200.lua"))).toBe(false);
-    expect(execFileSync("node", [checkerPath, "--card-scripts", outDir], { encoding: "utf8" })).toContain("Browser asset manifest check passed");
+    expect(() => execFileSync("node", [checkerPath, "--card-scripts", outDir], { encoding: "utf8", stdio: "pipe" })).toThrow(
+      /Lua script manifest lists missing exported scripts: c999\.lua/,
+    );
     expect(JSON.parse(fs.readFileSync(path.join(outDir, "manifest.json"), "utf8"))).toEqual({
       schemaVersion: 1,
       kind: "browser-lua-scripts",
@@ -84,6 +86,31 @@ describe("browser Lua script exporter", () => {
     expect(fs.readdirSync(outDir).sort()).toEqual(["c100.lua", "c200.lua", "manifest.json"]);
     expect(fs.existsSync(path.join(outDir, "c999.lua"))).toBe(false);
     expect(execFileSync("node", [checkerPath, "--card-scripts", outDir], { encoding: "utf8" })).toContain("Browser asset manifest check passed");
+  });
+
+  it("fails by default when selected scripts are missing", () => {
+    const root = makeTempRoot();
+    const scriptRoot = path.join(root, "script");
+    const outDir = path.join(root, "public", "card-scripts");
+    fs.mkdirSync(path.join(scriptRoot, "official"), { recursive: true });
+    fs.writeFileSync(path.join(scriptRoot, "official", "c100.lua"), "official 100", "utf8");
+
+    expect(() => execFileSync("node", [
+      exporterPath,
+      "--scripts",
+      scriptRoot,
+      "--out",
+      outDir,
+      "--codes",
+      "100,999",
+    ], { encoding: "utf8", stdio: "pipe" })).toThrow();
+
+    expect(JSON.parse(fs.readFileSync(path.join(outDir, "manifest.json"), "utf8"))).toMatchObject({
+      selectedCodes: ["100", "999"],
+      copied: ["c100.lua"],
+      missing: ["c999.lua"],
+      missingCount: 1,
+    });
   });
 
   it("prefers local overrides and falls back to local fallback scripts", () => {

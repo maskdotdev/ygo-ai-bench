@@ -29,6 +29,13 @@ export interface DuelPvpAgentStartOptions {
   handSize?: number;
 }
 
+export interface DuelPvpAgentPreloadResult {
+  luaScripts?: {
+    loaded: string[];
+    missing: string[];
+  };
+}
+
 export interface DuelPvpAgentOptions {
   cardReader?: DuelCardReader;
   luaScriptSource?: LuaScriptSource;
@@ -77,6 +84,7 @@ export interface DuelPvpVisibleAutoRunResult {
 
 export interface DuelPvpAgent {
   status(): { version: number; sessions: number; activeSessionId: string | null };
+  preload(options: Pick<DuelPvpAgentStartOptions, "player0Ydk" | "player1Ydk">): Promise<DuelPvpAgentPreloadResult>;
   start(options: DuelPvpAgentStartOptions): ReturnType<typeof duelSnapshot>;
   state(sessionId?: string): ReturnType<typeof duelSnapshot>;
   serialize(sessionId?: string): SerializedDuel;
@@ -122,6 +130,9 @@ export function createDuelPvpAgent(agentOptions: DuelPvpAgentOptions = {}): Duel
     status() {
       return { version: 1, sessions: sessions.size, activeSessionId };
     },
+    async preload(options) {
+      return preloadAgentDuel(options, cardReader, agentOptions.luaScriptSource);
+    },
     start(options) {
       return remember(startAgentDuel(options, cardReader, agentOptions.luaScriptSource, agentOptions.luaRuntime));
     },
@@ -165,6 +176,18 @@ export function createDuelPvpAgent(agentOptions: DuelPvpAgentOptions = {}): Duel
   };
 }
 
+async function preloadAgentDuel(
+  options: Pick<DuelPvpAgentStartOptions, "player0Ydk" | "player1Ydk">,
+  cardReader: DuelCardReader,
+  luaScriptSource: LuaScriptSource | undefined,
+): Promise<DuelPvpAgentPreloadResult> {
+  if (!hasLuaPreload(luaScriptSource)) return {};
+  const codes = agentDuelCodes(options.player0Ydk, options.player1Ydk);
+  return {
+    luaScripts: await luaScriptSource.preloadCardScripts(agentLuaScriptCodes(codes, cardReader)),
+  };
+}
+
 function startAgentDuel(
   options: DuelPvpAgentStartOptions,
   cardReader: DuelCardReader,
@@ -185,6 +208,27 @@ function startAgentDuel(
   startDuel(session);
   if (luaScriptSource && luaRuntime) registerAgentLuaScripts(session, [...player0.main, ...player0.extra, ...player1.main, ...player1.extra], luaScriptSource, luaRuntime);
   return { session };
+}
+
+function agentDuelCodes(player0Ydk: string, player1Ydk: string): string[] {
+  const player0 = parseYdk(player0Ydk);
+  const player1 = parseYdk(player1Ydk);
+  return [...new Set([...player0.main, ...player0.extra, ...player1.main, ...player1.extra].map(String).filter(Boolean))].sort();
+}
+
+function agentLuaScriptCodes(codes: readonly string[], cardReader: DuelCardReader): string[] {
+  const scriptCodes = new Set(codes.map(String).filter(Boolean));
+  for (const code of codes) {
+    const alias = cardReader(String(code))?.alias;
+    if (alias && alias !== String(code)) scriptCodes.add(String(alias));
+  }
+  return [...scriptCodes].sort();
+}
+
+function hasLuaPreload(source: LuaScriptSource | undefined): source is LuaScriptSource & {
+  preloadCardScripts(codes: readonly string[]): Promise<{ loaded: string[]; missing: string[] }>;
+} {
+  return typeof (source as { preloadCardScripts?: unknown } | undefined)?.preloadCardScripts === "function";
 }
 
 function restoreAgentDuel(

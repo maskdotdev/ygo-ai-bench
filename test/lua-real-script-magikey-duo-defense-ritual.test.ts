@@ -99,6 +99,9 @@ describe.skipIf(!hasUpstreamScripts || !hasMagikeyDuoScript)("Lua real script Ma
         ],
         "player": 0,
         "sourceUid": "p0-deck-51510279-0",
+        "targetFieldIds": [
+          9,
+        ],
         "targetUids": [
           "p0-deck-51510271-2",
         ],
@@ -129,6 +132,9 @@ describe.skipIf(!hasUpstreamScripts || !hasMagikeyDuoScript)("Lua real script Ma
         ],
         "player": 0,
         "sourceUid": "p0-deck-51510279-0",
+        "targetFieldIds": [
+          9,
+        ],
         "targetUids": [
           "p0-deck-51510271-2",
         ],

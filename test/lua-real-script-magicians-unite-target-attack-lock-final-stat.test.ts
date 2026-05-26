@@ -66,6 +66,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasUniteScript)(
     );
     expect(activate, JSON.stringify(getLuaRestoreLegalActions(restoredOpen, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpen, activate!);
+    const operationInfos = restoredOpen.session.state.chain.flatMap((link) => link.operationInfos ?? []);
+    expect(operationInfos).toEqual([]);
     resolveRestoredChain(restoredOpen);
 
     expect(currentAttack(findCard(restoredOpen.session, targetSpellcaster.uid), restoredOpen.session.state)).toBe(3000);

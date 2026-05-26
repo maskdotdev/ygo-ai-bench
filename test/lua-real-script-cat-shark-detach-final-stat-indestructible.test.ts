@@ -115,6 +115,20 @@ describe.skipIf(!hasUpstreamScripts || !hasCatSharkScript)("Lua real script Cat 
     finishBattle(restoredBoost);
     expect(restoredBoost.session.state.battleDamage).toEqual({ 0: 600, 1: 0 });
     expect(restoredBoost.session.state.players[0].lifePoints).toBe(7400);
+    expect(restoredBoost.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: defender.uid,
+        eventPlayer: 0,
+        eventValue: 600,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: defender.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredBoost.session.state.cards.find((card) => card.uid === catShark.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredBoost.session.state.cards.find((card) => card.uid === defender.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
   });

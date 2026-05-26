@@ -256,7 +256,7 @@ function findCard(session: DuelSession, uid: string): DuelCardInstance {
 
 function moveMonster(session: DuelSession, card: DuelCardInstance, player: PlayerId, position: CardPosition, sequence: number): DuelCardInstance {
   const moved = moveDuelCard(session.state, card.uid, "monsterZone", player);
-  moved.faceUp = position !== "faceDownAttack" && position !== "faceDownDefense";
+  moved.faceUp = position !== "faceDownDefense";
   moved.position = position;
   moved.sequence = sequence;
   return moved;

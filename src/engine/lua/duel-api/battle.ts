@@ -120,7 +120,7 @@ function currentBattle(session: DuelSession): DuelSession["state"]["currentAttac
 
 function activeBattlePair(session: DuelSession, hostState: LuaDuelBattleApiHostState): { attackerUid: string; targetUid?: string } | undefined {
   const eventName = hostState.activeContext?.eventName;
-  if (eventName !== "battleDestroyed" && eventName !== "battleEnded" && eventName !== "damageStepEnded") return undefined;
+  if (eventName !== "afterDamageCalculation" && eventName !== "battleDestroyed" && eventName !== "battleEnded" && eventName !== "damageStepEnded") return undefined;
   return session.state.battlePairs.at(-1);
 }
 

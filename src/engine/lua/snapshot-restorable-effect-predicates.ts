@@ -50,7 +50,7 @@ export function isKnownGeminiStatusEffect(effect: SerializedDuelEffect): boolean
 }
 
 export function isKnownRemainFieldEffect(effect: SerializedDuelEffect): boolean {
-  return effect.code === luaEffectRemainField && effect.sourceUid !== undefined && effect.reset?.flags === luaResetChain && effect.targetRange === undefined && effect.range.includes("spellTrapZone");
+  return effect.code === luaEffectRemainField && effect.sourceUid !== undefined && effect.reset?.flags === luaResetChain && effect.targetRange === undefined && (effect.range.includes("spellTrapZone") || effect.range.includes("hand"));
 }
 
 export function isKnownGeminiEndPhaseReturnEffect(effect: SerializedDuelEffect, snapshotEffects: SerializedDuelEffect[]): boolean {

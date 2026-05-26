@@ -56,7 +56,7 @@ describe("EDOPro parity phase-start-main1 missed timing decline fixture", () => 
             logMessage: "Phase-start-main1 decline open fast resolved",
           },
         ],
-        collectEvents: [{ collectEvent: "phaseStartMain1", eventCode: 0x2004, eventIsLast: false }],
+        collectEvents: [{ collectEvent: "phaseStartMain1", eventCode: 0x2004, eventPlayer: 0, eventIsLast: false }],
       },
       responses: [
         makeScriptedStep(makeResponseSelector("declineTrigger", 0, { effectId: "phase-start-main1-decline-optional-if" }), {
@@ -67,8 +67,9 @@ describe("EDOPro parity phase-start-main1 missed timing decline fixture", () => 
             windowId: 0,
             windowKind: "triggerBucket",
             waitingFor: 0,
-            pendingTriggers: [{ player: 0, effectId: "phase-start-main1-decline-optional-if", eventName: "phaseStartMain1", eventCode: 0x2004, eventTriggerTiming: "if" }],
+            pendingTriggers: [{ player: 0, effectId: "phase-start-main1-decline-optional-if", eventName: "phaseStartMain1", eventCode: 0x2004, eventPlayer: 0, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [{ eventName: "phaseStartMain1", eventCode: 0x2004, eventPlayer: 0 }],
             legalActions: [
               { type: "activateTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-main1-decline-optional-if", triggerBucket: "turnOptional", count: 1 },
               { type: "declineTrigger", player: 0, windowId: 0, windowKind: "triggerBucket", effectId: "phase-start-main1-decline-optional-if", triggerBucket: "turnOptional", count: 1 },

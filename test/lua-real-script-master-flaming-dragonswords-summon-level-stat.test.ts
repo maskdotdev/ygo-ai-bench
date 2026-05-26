@@ -83,7 +83,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMasterScript)("Lua real script Master
 
     expect(currentLevel(findCard(restoredTrigger.session, summonProbe.uid), restoredTrigger.session.state)).toBe(5);
     expect(currentAttack(findCard(restoredTrigger.session, master.uid), restoredTrigger.session.state)).toBe(2100);
-    expect(restoredTrigger.session.state.effects.filter((effect) => [effectUpdateAttack, effectUpdateLevel].includes(effect.code)).map((effect) => ({
+    expect(restoredTrigger.session.state.effects.filter((effect) => [effectUpdateAttack, effectUpdateLevel].includes(effect.code ?? -1)).map((effect) => ({
       code: effect.code,
       controller: effect.controller,
       event: effect.event,

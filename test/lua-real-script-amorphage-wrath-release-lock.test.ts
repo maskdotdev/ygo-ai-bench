@@ -60,6 +60,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
         "cost": [Function],
         "event": "continuous",
         "id": "lua-6-46",
+        "luaConditionDescriptor": "condition:controller-has-faceup-setcode:224",
         "luaTargetDescriptor": "target:not-setcode:224",
         "luaTypeFlags": 2,
         "oncePerTurn": false,

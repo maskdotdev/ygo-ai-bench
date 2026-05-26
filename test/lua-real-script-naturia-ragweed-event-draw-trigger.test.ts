@@ -93,8 +93,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Na
     expect(session.state.cards.find((card) => card.uid === ragweed!.uid)).toMatchObject({ location: "graveyard" });
     expect(session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
-        "activationSequence": 1,
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-3-1110",
         "eventCardUid": "p0-deck-913-0",
@@ -151,8 +151,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Na
     expect(restored.session.state.chain).toHaveLength(1);
     expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
-        "activationSequence": 1,
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-3-1110",
         "eventCardUid": "p0-deck-913-0",

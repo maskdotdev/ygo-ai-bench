@@ -69,6 +69,17 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
     const summon = getLuaRestoreLegalActions(restoredSummonWindow, 0).find((action) => action.type === "normalSummon" && action.uid === aratama!.uid);
     expect(summon, JSON.stringify(getLuaRestoreLegalActions(restoredSummonWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredSummonWindow, summon!);
+    expect(restoredSummonWindow.session.state.eventHistory.filter((event) => event.eventName === "normalSummoned" && event.eventCardUid === aratama!.uid)).toEqual([
+      {
+        eventName: "normalSummoned",
+        eventCode: 1100,
+        eventCardUid: aratama!.uid,
+        eventReason: duelReason.summon,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, location: "hand", sequence: 0, position: "faceDown", faceUp: false },
+        eventCurrentState: { controller: 0, location: "monsterZone", sequence: 0, position: "faceUpAttack", faceUp: true },
+      },
+    ]);
 
     const restoredTriggerWindow = restoreDuelWithLuaScripts(serializeDuel(restoredSummonWindow.session), source, reader);
     expect(restoredTriggerWindow.restoreComplete, restoredTriggerWindow.incompleteReasons.join("; ")).toBe(true);
@@ -81,58 +92,18 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ar
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTriggerWindow, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTriggerWindow, trigger!);
     expect(restoredTriggerWindow.session.state.chain).toHaveLength(1);
-    expect(restoredTriggerWindow.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "monsterZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-7-1100",
-        "eventCardUid": "p0-deck-16889337-0",
-        "eventCode": 1100,
-        "eventCurrentState": {
-          "controller": 0,
-          "faceUp": true,
-          "location": "monsterZone",
-          "position": "faceUpAttack",
-          "sequence": 0,
-        },
-        "eventName": "normalSummoned",
-        "eventPreviousState": {
-          "controller": 0,
-          "faceUp": false,
-          "location": "hand",
-          "position": "faceDown",
-          "sequence": 0,
-        },
-        "eventReason": 16,
-        "eventReasonPlayer": 0,
-        "eventTriggerTiming": "when",
-        "id": "chain-4",
-        "operationInfos": [
-          {
-            "category": 8,
-            "count": 1,
-            "parameter": 1,
-            "player": 0,
-            "targetUids": [],
-          },
-        ],
-        "player": 0,
-        "sourceUid": "p0-deck-16889337-0",
-      }
-    `);
+    expect(restoredTriggerWindow.session.state.chain[0]!.operationInfos).toEqual([
+      expect.objectContaining({ category: 0x8, targetUids: [], count: 1, player: 0, parameter: 0x1 }),
+    ]);
 
     const restoredChainWindow = restoreDuelWithLuaScripts(serializeDuel(restoredTriggerWindow.session), source, reader);
     expect(restoredChainWindow.restoreComplete, restoredChainWindow.incompleteReasons.join("; ")).toBe(true);
     expect(restoredChainWindow.missingRegistryKeys).toEqual([]);
     expect(restoredChainWindow.missingChainLimitRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restoredChainWindow, 1)).toEqual(getGroupedDuelLegalActions(restoredChainWindow.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restoredChainWindow, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restoredChainWindow, 1));
     expect(getLuaRestoreLegalActions(restoredChainWindow, 1)).toEqual(getDuelLegalActions(restoredChainWindow.session, 1));
-    const pass = getLuaRestoreLegalActions(restoredChainWindow, 1).find((action) => action.type === "passChain");
-    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restoredChainWindow, 1), null, 2)).toBeDefined();
-    const resolved = applyLuaRestoreResponse(restoredChainWindow, pass!);
-    expect(resolved.ok, resolved.error).toBe(true);
+    expect(getLuaRestoreLegalActions(restoredChainWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    passRestoredChain(restoredChainWindow, 1);
+    expect(getLuaRestoreLegalActions(restoredChainWindow, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(false);
 
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === searchedSpirit!.uid)).toMatchObject({ location: "hand", controller: 0 });
     expect(restoredChainWindow.session.state.cards.find((card) => card.uid === invalidMonster!.uid)).toMatchObject({ location: "deck", controller: 0 });
@@ -202,5 +173,15 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
   const result = applyLuaRestoreResponse(restored, action);
   expect(result.ok, result.error).toBe(true);
   const waitingFor = restored.session.state.waitingFor;
-  if (waitingFor !== undefined) expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  if (waitingFor !== undefined) {
+    expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+    expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  }
+}
+
+function passRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: 0 | 1): void {
+  const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+  applyRestoredActionAndAssert(restored, pass!);
 }

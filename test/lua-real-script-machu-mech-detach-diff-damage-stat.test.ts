@@ -102,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMachuScript)("Lua real script Machu M
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [7],
         targetUids: [target.uid],
         operationInfos: [{ category: 0x80000, targetUids: [], count: 0, player: 1, parameter: 700 }],
       },

@@ -52,9 +52,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sk
       replayTargetCount: 0,
       replayTargetUids: [],
     });
-    expect(session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
+    expect(session.state.battleDamage).toEqual({ 0: 0, 1: 1500 });
     expect(session.state.players[0].lifePoints).toBe(8000);
-    expect(session.state.players[1].lifePoints).toBe(8000);
+    expect(session.state.players[1].lifePoints).toBe(6500);
     expect(session.state.pendingTriggers).toEqual([
       {
         effectId: "lua-3-1138",
@@ -68,6 +68,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sk
           sequence: 0,
         },
         eventName: "afterDamageCalculation",
+        eventPlayer: 0,
         eventPreviousState: {
           controller: 0,
           faceUp: false,
@@ -78,7 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sk
         eventReason: 0,
         eventReasonPlayer: 0,
         eventTriggerTiming: "when",
-        id: "trigger-3-1",
+        id: "trigger-5-1",
         player: 0,
         sourceUid: hayate!.uid,
         triggerBucket: "turnOptional",
@@ -107,6 +108,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sk
       reasonCardUid: hayate!.uid,
       reasonEffectId: 3,
     });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: hayate!.uid,
+        eventPlayer: 1,
+        eventValue: 1500,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: hayate!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "sentToGraveyard")).toEqual([
       {
         eventName: "sentToGraveyard",

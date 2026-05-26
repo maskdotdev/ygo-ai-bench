@@ -87,7 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasRiderScript)(
       reason: duelReason.effect,
       reasonPlayer: 0,
       reasonCardUid: rider.uid,
-      reasonEffectId: 2,
+      reasonEffectId: 3,
     });
     expect(restoredResolved.session.state.cards.find((card) => card.uid === opponentA.uid)).toMatchObject({
       location: "graveyard",
@@ -95,7 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasRiderScript)(
       reason: duelReason.effect | duelReason.destroy,
       reasonPlayer: 0,
       reasonCardUid: rider.uid,
-      reasonEffectId: 2,
+      reasonEffectId: 3,
     });
     expect(restoredResolved.session.state.cards.find((card) => card.uid === opponentB.uid)).toMatchObject({
       location: "monsterZone",
@@ -127,7 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasRiderScript)(
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: rider.uid,
-        eventReasonEffectId: 2,
+        eventReasonEffectId: 3,
       },
       {
         eventName: "sentToDeck",
@@ -137,7 +137,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasRiderScript)(
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: rider.uid,
-        eventReasonEffectId: 2,
+        eventReasonEffectId: 3,
       },
       {
         eventName: "destroyed",
@@ -147,7 +147,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasRiderScript)(
         eventReason: duelReason.effect | duelReason.destroy,
         eventReasonPlayer: 0,
         eventReasonCardUid: rider.uid,
-        eventReasonEffectId: 2,
+        eventReasonEffectId: 3,
       },
     ]);
     expect(restoredResolved.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });

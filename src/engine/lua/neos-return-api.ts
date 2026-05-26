@@ -36,7 +36,7 @@ export function installNeosReturnApi(L: unknown, readLuaError: (state: unknown) 
     function aux.EnableNeosReturn(c,extracat,extrainfo,extraop,returneff)
       extracat=extracat or 0
       local e1=Effect.CreateEffect(c)
-      e1:SetCategory(CATEGORY_TODECK|extracat)
+      e1:SetCategory(CATEGORY_TODECK+extracat)
       e1:SetType(EFFECT_TYPE_FIELD+EFFECT_TYPE_TRIGGER_F)
       e1:SetCode(EVENT_PHASE+PHASE_END)
       e1:SetRange(LOCATION_MZONE)

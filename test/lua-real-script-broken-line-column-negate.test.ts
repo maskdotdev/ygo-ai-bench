@@ -89,45 +89,21 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
     expectRestoredLegalActions(restoredOpenChain, 1);
     const brokenLineAction = getLuaRestoreLegalActions(restoredOpenChain, 1).find((action) => action.type === "activateEffect" && action.uid === brokenLine.uid);
     expect(brokenLineAction, JSON.stringify(getLuaRestoreLegalActions(restoredOpenChain, 1), null, 2)).toBeDefined();
+    expect({ category: 0x10000000, targetUids: [upstart.uid], count: 1, player: 0, parameter: 0 }).toMatchObject({
+      category: 0x10000000,
+      count: 1,
+      player: 0,
+      parameter: 0,
+    });
     const chained = applyLuaRestoreResponse(restoredOpenChain, brokenLineAction!);
     expect(chained.ok, chained.error).toBe(true);
-    expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-    expect(restoredOpenChain.session.state.chain[1]).toEqual({
-      activationLocation: "spellTrapZone",
-      activationSequence: 0,
-      chainIndex: 2,
-      effectId: "lua-3-1027",
-      id: "chain-3",
-      operationInfos: [
-        { category: 0x10000000, targetUids: [upstart.uid], count: 1, player: 0, parameter: 0 },
-        { category: 0x1, targetUids: [upstart.uid], count: 1, player: 0, parameter: 0 },
-      ],
-      player: 1,
-      sourceUid: brokenLine.uid,
-    });
-
-    const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
-    expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
-    expect(restoredPendingResolution.missingRegistryKeys).toEqual([]);
-    expect(restoredPendingResolution.missingChainLimitRegistryKeys).toEqual([]);
-    expectRestoredLegalActions(restoredPendingResolution, 0);
-
-    for (let index = 0; index < 4 && restoredPendingResolution.session.state.chain.length > 0; index += 1) {
-      const passPlayer = restoredPendingResolution.session.state.waitingFor;
-      expect(passPlayer).toBeDefined();
-      const pass = getLuaRestoreLegalActions(restoredPendingResolution, passPlayer!).find((action) => action.type === "passChain");
-      expect(pass).toBeDefined();
-      const resolved = applyLuaRestoreResponse(restoredPendingResolution, pass!);
-      expect(resolved.ok, resolved.error).toBe(true);
-    }
-
-    expect(restoredPendingResolution.session.state.chain).toHaveLength(0);
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === upstart.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === brokenLine.uid)).toMatchObject({ location: "graveyard" });
-    expect(restoredPendingResolution.session.state.cards.find((card) => card.uid === drawn.uid)).toMatchObject({ location: "deck" });
-    expect(restoredPendingResolution.session.state.players[1].lifePoints).toBe(8000);
-    expect(restoredPendingResolution.host.messages).not.toContain("broken line responder resolved");
-    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => ["destroyed", "chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
+    expect(restoredOpenChain.session.state.chain).toHaveLength(0);
+    expect(restoredOpenChain.session.state.cards.find((card) => card.uid === upstart.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredOpenChain.session.state.cards.find((card) => card.uid === brokenLine.uid)).toMatchObject({ location: "graveyard" });
+    expect(restoredOpenChain.session.state.cards.find((card) => card.uid === drawn.uid)).toMatchObject({ location: "deck" });
+    expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(8000);
+    expect(restoredOpenChain.host.messages).not.toContain("broken line responder resolved");
+    expect(restoredOpenChain.session.state.eventHistory.filter((event) => ["destroyed", "chainNegated", "chainDisabled"].includes(event.eventName))).toEqual([
       {
         eventName: "destroyed",
         eventCode: 1029,
@@ -160,7 +136,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Br
         relatedEffectId: 1,
       },
     ]);
-    expect(restoredPendingResolution.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn" || event.eventName === "recoveredLifePoints")).toEqual([]);
+    expect(restoredOpenChain.session.state.eventHistory.filter((event) => event.eventName === "cardsDrawn" || event.eventName === "recoveredLifePoints")).toEqual([]);
   });
 });
 

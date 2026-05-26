@@ -118,6 +118,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Va
         player: 0,
         triggerBucket: "turnOptional",
         eventName: "normalSummoned",
+        eventPlayer: 0,
         eventCode: 1100,
         eventCardUid: searchMadLove.uid,
         eventReason: duelReason.summon,

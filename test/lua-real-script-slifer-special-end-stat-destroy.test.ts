@@ -96,10 +96,19 @@ describe.skipIf(!hasUpstreamScripts || !hasSliferScript)("Lua real script Slifer
     ]);
 
     specialSummonDuelCard(restoredSummonedSlifer.session.state, weakSummoned.uid, 1);
-    expect(restoredSummonedSlifer.session.state.pendingTriggers.filter((trigger) => trigger.sourceUid === slifer.uid)).toMatchObject([
+    expect(restoredSummonedSlifer.session.state.pendingTriggers.filter((trigger) => trigger.sourceUid === slifer.uid)).toEqual([
       {
+        id: "trigger-4-1",
+        effectId: "lua-9-1102",
+        eventCardUid: weakSummoned.uid,
         eventCode: 1102,
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "specialSummoned",
+        eventPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.summon | duelReason.specialSummon,
+        eventReasonPlayer: 1,
+        eventTriggerTiming: "when",
         player: 0,
         sourceUid: slifer.uid,
         triggerBucket: "turnMandatory",

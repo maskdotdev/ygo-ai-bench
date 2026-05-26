@@ -66,6 +66,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Zo
         eventReason: 0,
         eventReasonPlayer: 0,
         eventCode: 1138,
+        eventPlayer: 0,
         eventUids: [zoneEater.uid, target.uid],
         eventPreviousState: { controller: 0, location: "deck", sequence: 0, position: "faceDown", faceUp: false },
         eventCurrentState: { controller: 0, location: "monsterZone", sequence: 0, position: "faceUpAttack", faceUp: true },
@@ -81,10 +82,25 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Zo
     applyRestoredAndAssert(restoredBattle, trigger!);
     passRestoredBattleResponses(restoredBattle);
     expect(restoredBattle.session.state.cards.find((card) => card.uid === target.uid)).toMatchObject({ location: "monsterZone", controller: 1 });
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: target.uid,
+        eventPlayer: 0,
+        eventValue: 950,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: target.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredBattle.session.state.effects.some((effect) => effect.sourceUid === target.uid && effect.code === Number(zoneEaterCode))).toBe(true);
-    expect(restoredBattle.session.state.effects.some((effect) => effect.triggerEvent === "phaseEnd" && effect.sourceUid === zoneEater.uid)).toBe(true);
+    expect(restoredBattle.session.state.effects.some((effect) => effect.event === "continuous" && effect.code === 0x1200 && effect.sourceUid === zoneEater.uid)).toBe(true);
 
     let restored = restoreDuelWithLuaScripts(serializeDuel(restoredBattle.session), workspace, reader);
+    expect(restored.session.state.effects.some((effect) => effect.event === "continuous" && effect.code === 0x1200 && effect.sourceUid === zoneEater.uid && effect.triggerEvent === "phaseEnd")).toBe(true);
     for (let i = 1; i <= 5; i += 1) {
       expectCleanRestore(restored);
       restored.session.state.phase = "main2";

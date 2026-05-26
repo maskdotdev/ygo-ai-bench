@@ -54,11 +54,12 @@ describe.skipIf(!hasUpstreamScripts || !hasNichirinScript)("Lua real script Twil
     const discard = requireCard(restored.session, discardCode);
     expect(restored.host.promptDecisions.filter((prompt) => prompt.api === "SelectEffect").map((prompt) => ({
       api: prompt.api,
-      options: prompt.options,
+      options: "options" in prompt ? prompt.options : undefined,
       player: prompt.player,
       returned: prompt.returned,
     }))).toEqual([{ api: "SelectEffect", options: [1, 2], player: 0, returned: 2 }]);
     expect(currentAttack(nichirin, restored.session.state)).toBe(3300);
+    expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
     expect(restored.session.state.cards.find((card) => card.uid === discard.uid)).toMatchObject({ location: "graveyard" });
     expect(restored.session.state.effects.filter((effect) => effect.sourceUid === nichirin.uid && effect.code === 100).map((effect) => ({
       code: effect.code,

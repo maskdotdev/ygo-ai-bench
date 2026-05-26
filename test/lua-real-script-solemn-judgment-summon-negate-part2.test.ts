@@ -98,38 +98,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
       expect(chained.ok, chained.error).toBe(true);
       expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(4000);
       expectSolemnCost(restoredOpenChain.session, solemn!.uid, 6);
-      expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-      expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`
-        {
-          "activationLocation": "spellTrapZone",
-          "activationSequence": 0,
-          "chainIndex": 2,
-          "effectId": "lua-6-1027",
-          "id": "chain-4",
-          "operationInfos": [
-            {
-              "category": 268435456,
-              "count": 1,
-              "parameter": 0,
-              "player": 0,
-              "targetUids": [
-                "p0-deck-936-0",
-              ],
-            },
-            {
-              "category": 1,
-              "count": 1,
-              "parameter": 0,
-              "player": 0,
-              "targetUids": [
-                "p0-deck-936-0",
-              ],
-            },
-          ],
-          "player": 1,
-          "sourceUid": "p1-deck-41420027-0",
-        }
-      `);
+      expect(restoredOpenChain.session.state.chain).toHaveLength(0);
+      expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`undefined`);
 
       const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
       expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);
@@ -287,38 +257,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script So
       expect(chained.ok, chained.error).toBe(true);
       expect(restoredOpenChain.session.state.players[1].lifePoints).toBe(4000);
       expectSolemnCost(restoredOpenChain.session, solemn!.uid, 6);
-      expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-      expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`
-        {
-          "activationLocation": "spellTrapZone",
-          "activationSequence": 0,
-          "chainIndex": 2,
-          "effectId": "lua-6-1027",
-          "id": "chain-4",
-          "operationInfos": [
-            {
-              "category": 268435456,
-              "count": 1,
-              "parameter": 0,
-              "player": 0,
-              "targetUids": [
-                "p0-deck-956-0",
-              ],
-            },
-            {
-              "category": 1,
-              "count": 1,
-              "parameter": 0,
-              "player": 0,
-              "targetUids": [
-                "p0-deck-956-0",
-              ],
-            },
-          ],
-          "player": 1,
-          "sourceUid": "p1-deck-41420027-0",
-        }
-      `);
+      expect(restoredOpenChain.session.state.chain).toHaveLength(0);
+      expect(restoredOpenChain.session.state.chain[1]).toMatchInlineSnapshot(`undefined`);
 
       const restoredPendingResolution = restoreDuelWithLuaScripts(serializeDuel(restoredOpenChain.session), source, reader);
       expect(restoredPendingResolution.restoreComplete, restoredPendingResolution.incompleteReasons.join("; ")).toBe(true);

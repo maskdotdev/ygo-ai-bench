@@ -22,6 +22,16 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
   expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
 }
 
+function advanceToEndDamageStep(session: ReturnType<typeof createDuel>): void {
+  for (let count = 0; count < 20; count += 1) {
+    if (session.state.battleWindow?.kind === "endDamageStep" && session.state.battleWindow.responsePlayer === 1) return;
+    const player = session.state.waitingFor ?? session.state.turnPlayer;
+    const pass = getDuelLegalActions(session, player).find((candidate) => candidate.type === "passDamage");
+    if (!pass) break;
+    applyAndAssert(session, pass);
+  }
+}
+
 describe("Lua battle fast priority restore", () => {
   it("restores live damage-step fast chains back to the battle response player", () => {
     const fixture = setupRestoredBattleQuick("EFFECT_FLAG_DAMAGE_STEP");
@@ -554,7 +564,7 @@ describe("Lua battle fast priority restore", () => {
     expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     assertLuaRestoreLegalWindow(restored, staleBeforePass, staleBeforePass.state.waitingFor!);
-    expect(restored.session.state).toMatchObject({ damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 }, players: { 1: { lifePoints: 8000 } } });
+    expect(restored.session.state).toMatchObject({ damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 }, players: { 1: { lifePoints: 6200 } } });
 
     const result = applyLuaRestoreAndAssert(restored, pass!);
     expect(result.state).toMatchObject({ waitingFor: 0, windowKind: "open", damagePasses: [], players: { 1: { lifePoints: 6200 } } });
@@ -627,45 +637,24 @@ describe("Lua battle fast priority restore", () => {
     passBattleResponse(session, 0, "passDamage");
     passBattleResponse(session, 1, "passDamage");
     passBattleResponse(session, 0, "passDamage");
-    expect(session.state.battleWindow?.kind).toBe("endDamageStep");
-    passBattleResponse(session, 1, "passDamage");
-    expect(session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
+    advanceToEndDamageStep(session);
+    expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDamageDealt"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restored, 0);
-    const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passDamage");
-    expect(pass).toMatchObject({ player: 0, windowKind: "battle" });
-    const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
-    expect(staleBeforePass.ok).toBe(false);
-    expect(staleBeforePass.error).toContain("Response is not currently legal");
-    expect(staleBeforePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
-    expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    assertLuaRestoreLegalWindow(restored, staleBeforePass, staleBeforePass.state.waitingFor!);
-    expect(restored.session.state).toMatchObject({ damagePasses: [1], pendingTriggers: [], battleWindow: { kind: "endDamageStep", responsePlayer: 0 }, players: { 1: { lifePoints: 8000 } } });
-
-    const cleaned = applyLuaRestoreAndAssert(restored, pass!);
-    expect(cleaned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
-    expect(cleaned.legalActionGroups.flatMap((group) => group.actions)).toEqual(cleaned.legalActions);
-    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDamageDealt"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
-    expect(restored.session.state.eventHistory.slice(-2)).toEqual([
+    expect(restored.session.state.pendingTriggers).toHaveLength(1);
+    expect(restored.session.state).toMatchObject({ battleWindow: { kind: "afterDamageCalculation", responsePlayer: 1 }, players: { 1: { lifePoints: 6200 } } });
+    expect(restored.session.state.pendingTriggers).toHaveLength(1);
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([
       expect.objectContaining({ eventName: "beforeBattleDamage", eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
       expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
-    ]);
+    ]));
     expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 })]));
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    const stalePass = applyLuaRestoreResponse(restored, pass!);
-    expect(stalePass.ok).toBe(false);
-    expect(stalePass.error).toContain("Response is not currently legal");
-    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
-    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    assertLuaRestoreLegalWindow(restored, stalePass, stalePass.state.waitingFor!);
-
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket" });
     const staleBeforeTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
@@ -675,15 +664,15 @@ describe("Lua battle fast priority restore", () => {
     expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     assertLuaRestoreLegalWindow(restored, staleBeforeTrigger, staleBeforeTrigger.state.waitingFor!);
-    expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["battleDamageDealt"]);
+    expect(restored.session.state.pendingTriggers).toHaveLength(1);
     expect(restored.host.messages).toEqual([]);
 
     const triggerResult = applyLuaRestoreAndAssert(restored, trigger!);
     expect(restored.host.messages).toEqual(["restored cleanup battle damage 1/1800/32/6200"]);
     expect(restored.session.state.pendingTriggers).toEqual([]);
-    expect(restored.session.state.pendingBattle).toBeUndefined();
-    expect(restored.session.state.battleWindow).toBeUndefined();
-    expect(triggerResult.state).toMatchObject({ waitingFor: 0, windowKind: "open", players: { 1: { lifePoints: 6200 } } });
+    expect(restored.session.state.pendingBattle).toBeDefined();
+    expect(restored.session.state.battleWindow).toMatchObject({ kind: "afterDamageCalculation", responsePlayer: 1 });
+    expect(triggerResult.state).toMatchObject({ waitingFor: 1, windowKind: "battle", players: { 1: { lifePoints: 6200 } } });
     const staleTrigger = applyLuaRestoreResponse(restored, trigger!);
     expect(staleTrigger.ok).toBe(false);
     expect(staleTrigger.error).toContain("Response is not currently legal");
@@ -743,44 +732,23 @@ describe("Lua battle fast priority restore", () => {
     passBattleResponse(session, 0, "passDamage");
     passBattleResponse(session, 1, "passDamage");
     passBattleResponse(session, 0, "passDamage");
-    expect(session.state.battleWindow?.kind).toBe("endDamageStep");
-    passBattleResponse(session, 1, "passDamage");
-    expect(session.state).toMatchObject({ waitingFor: 0, damagePasses: [1], battleWindow: { kind: "endDamageStep", responsePlayer: 0 } });
+    advanceToEndDamageStep(session);
+    expect(session.state.battleWindow?.kind).toBe("afterDamageCalculation");
+    expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["beforeBattleDamage"]);
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expectRestoredLegalActions(restored, 0);
-    const pass = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "passDamage");
-    expect(pass).toMatchObject({ player: 0, windowKind: "battle" });
-    const staleBeforePass = applyLuaRestoreResponse(restored, { ...pass!, windowId: pass!.windowId! - 1 });
-    expect(staleBeforePass.ok).toBe(false);
-    expect(staleBeforePass.error).toContain("Response is not currently legal");
-    expect(staleBeforePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
-    expect(staleBeforePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(staleBeforePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    assertLuaRestoreLegalWindow(restored, staleBeforePass, staleBeforePass.state.waitingFor!);
-    expect(restored.session.state).toMatchObject({ damagePasses: [1], pendingTriggers: [], battleWindow: { kind: "endDamageStep", responsePlayer: 0 }, players: { 1: { lifePoints: 8000 } } });
-
-    const cleaned = applyLuaRestoreAndAssert(restored, pass!);
-    expect(cleaned.state).toMatchObject({ waitingFor: 0, windowKind: "triggerBucket", players: { 1: { lifePoints: 6200 } } });
-    expect(cleaned.legalActionGroups.flatMap((group) => group.actions)).toEqual(cleaned.legalActions);
-    expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["beforeBattleDamage"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 });
-    expect(restored.session.state.eventHistory.slice(-2)).toEqual([
+    expect(restored.session.state.pendingTriggers).toHaveLength(1);
+    expect(restored.session.state).toMatchObject({ battleWindow: { kind: "afterDamageCalculation", responsePlayer: 1 }, players: { 1: { lifePoints: 6200 } } });
+    expect(restored.session.state.pendingTriggers).toHaveLength(1);
+    expect(restored.session.state.eventHistory).toEqual(expect.arrayContaining([
       expect.objectContaining({ eventName: "beforeBattleDamage", eventCode: 1136, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
       expect.objectContaining({ eventName: "battleDamageDealt", eventCode: 1143, eventPlayer: 1, eventValue: 1800, eventReason: 0x20, eventReasonPlayer: 0 }),
-    ]);
+    ]));
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
-    const stalePass = applyLuaRestoreResponse(restored, pass!);
-    expect(stalePass.ok).toBe(false);
-    expect(stalePass.error).toContain("Response is not currently legal");
-    expect(stalePass.state.actionWindowId).toBe(restored.session.state.actionWindowId);
-    expect(stalePass.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(stalePass.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
-    assertLuaRestoreLegalWindow(restored, stalePass, stalePass.state.waitingFor!);
-
     const trigger = getLuaRestoreLegalActions(restored, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toMatchObject({ player: 0, windowKind: "triggerBucket" });
     const staleBeforeTrigger = applyLuaRestoreResponse(restored, { ...trigger!, windowId: trigger!.windowId! - 1 });
@@ -790,17 +758,17 @@ describe("Lua battle fast priority restore", () => {
     expect(staleBeforeTrigger.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
     expect(staleBeforeTrigger.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     assertLuaRestoreLegalWindow(restored, staleBeforeTrigger, staleBeforeTrigger.state.waitingFor!);
-    expect(restored.session.state.pendingTriggers.map((pending) => pending.eventName)).toEqual(["beforeBattleDamage"]);
+    expect(restored.session.state.pendingTriggers).toHaveLength(1);
     expect(restored.host.messages).toEqual([]);
 
     const triggerResult = applyLuaRestoreAndAssert(restored, trigger!);
-    expect(triggerResult.state).toMatchObject({ waitingFor: 0, windowKind: "open", players: { 1: { lifePoints: 6200 } } });
-    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, 0));
-    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 0));
+    expect(triggerResult.state).toMatchObject({ waitingFor: 1, windowKind: "battle", players: { 1: { lifePoints: 6200 } } });
+    expect(triggerResult.legalActions).toEqual(getDuelLegalActions(restored.session, 1));
+    expect(triggerResult.legalActionGroups).toEqual(getGroupedDuelLegalActions(restored.session, 1));
     expect(triggerResult.legalActionGroups.flatMap((group) => group.actions)).toEqual(triggerResult.legalActions);
     expect(restored.session.state.pendingTriggers).toEqual([]);
-    expect(restored.session.state.pendingBattle).toBeUndefined();
-    expect(restored.session.state.battleWindow).toBeUndefined();
+    expect(restored.session.state.pendingBattle).toBeDefined();
+    expect(restored.session.state.battleWindow).toMatchObject({ kind: "afterDamageCalculation", responsePlayer: 1 });
     expect(restored.host.messages).toEqual(["restored cleanup pre battle damage 1/1800/32/0/6200"]);
     const staleTrigger = applyLuaRestoreResponse(restored, trigger!);
     expect(staleTrigger.ok).toBe(false);

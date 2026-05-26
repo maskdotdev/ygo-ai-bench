@@ -66,6 +66,32 @@ describe.skipIf(!hasUpstreamScripts || !hasGardnaScript)("Lua real script Big Sh
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));
     expect(restored.session.state.cards.find((card) => card.uid === gardna!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack", faceUp: true });
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: gardna!.uid,
+        eventPlayer: 0,
+        eventValue: 1600,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: gardna!.uid,
+        eventReasonPlayer: 1,
+        eventPreviousState: {
+          controller: 1,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 1,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpDefense",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restored.session.state.eventHistory.filter((event) => event.eventName === "damageStepEnded")).toEqual([
       {
         eventName: "damageStepEnded",

@@ -74,7 +74,7 @@ describe("bridge bundle checker", () => {
     const root = makeTempRoot();
     const bridge = path.join(root, "pvp-engine.js");
     fs.writeFileSync(bridge, [
-      "window.duelPvpPlaytest = { visibleBattlefield(){}, autoRunVisible(){}, runVisibleScript(){}, restore(){} };",
+      "window.duelPvpPlaytest = { preload(){}, start(){}, state(){}, legalActions(){}, action(){}, visibleBattlefield(){}, autoRunVisible(){}, runVisibleScript(){}, serialize(){}, restore(){}, clear(){} };",
       "x".repeat(140 * 1024),
     ].join("\n"));
 
@@ -87,13 +87,27 @@ describe("bridge bundle checker", () => {
       "--required",
       "window.duelPvpPlaytest",
       "--required",
+      "preload",
+      "--required",
+      "start",
+      "--required",
+      "state",
+      "--required",
+      "legalActions",
+      "--required",
+      "action",
+      "--required",
       "visibleBattlefield",
       "--required",
       "autoRunVisible",
       "--required",
       "runVisibleScript",
       "--required",
+      "serialize",
+      "--required",
       "restore",
+      "--required",
+      "clear",
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(0);

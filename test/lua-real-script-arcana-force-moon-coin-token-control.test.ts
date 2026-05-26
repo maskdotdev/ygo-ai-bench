@@ -182,6 +182,7 @@ function createResolvedCoinWindow({
   const trigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === moon.uid);
   expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
   applyRestoredActionAndAssert(restoredTrigger, trigger!);
+  expect(restoredTrigger.session.state.chain.map((link) => link.operationInfos)).toEqual([]);
 
   if (restoredTrigger.session.state.chain.length > 0) {
     expectRestoredLegalActions(restoredTrigger, 1);

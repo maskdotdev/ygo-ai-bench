@@ -151,6 +151,11 @@ function attackCostAndStatFixtureFiles(): Array<{
         "burden of the mighty attack 1000/1300/1800",
         "getLuaRestoreLegalActionGroups(restoredChain, 1)",
         "expect(restoredStat.session.state.battleDamage[0]).toBe(800)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 800",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: highAttacker!.uid",
+        "eventReasonPlayer: 1",
         "players[0].lifePoints).toBe(7200)",
       ],
     },
@@ -172,6 +177,8 @@ function attackCostAndStatFixtureFiles(): Array<{
         "targetRange: [0, 0x04]",
         'battleWindow?.kind).toBe("startDamageStep")',
         "expect(restored.session.state.battleDamage[1]).toBe(devourer!.data.attack)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: devourer!.uid",
       ],
     },
     {
@@ -285,6 +292,8 @@ function attackCostAndStatSemanticVariants(): Array<{
         "restores official field ATK update callback by monster Level",
         "burden of the mighty attack 1000/1300/1800",
         "expect(restoredStat.session.state.battleDamage[0]).toBe(800)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: highAttacker!.uid",
       ],
     },
     {
@@ -315,6 +324,8 @@ function attackCostAndStatSemanticVariants(): Array<{
         "restores and applies Fusion Devourer's targeted field ATK-final effect during battle",
         "targetRange: [0, 0x04]",
         'battleWindow?.kind).toBe("startDamageStep")',
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: devourer!.uid",
       ],
     },
     {

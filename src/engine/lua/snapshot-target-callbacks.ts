@@ -6,6 +6,7 @@ import { effectiveSpecialSummonTypeCode } from "#duel/summon-type-codes.js";
 import { locationMatchesCardMask } from "#lua/api-utils.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
 import { specialSummonTypeIsAnyTargetDescriptor, specialSummonTypeIsTargetDescriptor, specialSummonTypeNotTargetDescriptor } from "#lua/effect-target-descriptor.js";
+import { isKnownGagagaGirlXyzAttackZeroTriggerEffect } from "#lua/snapshot-xyz-material-gain.js";
 import type { DuelEffectDefinition, SerializedDuelEffect } from "#duel/types.js";
 
 const luaSetcodeOrCodeTypeTargetDescriptorPrefix = "target:setcode-or-code-type:";
@@ -22,11 +23,14 @@ const luaLocationMonsterZone = 0x4;
 const luaTypeSpecialSummon = 0x2000000;
 
 export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "targetCardPredicate"> {
+  if (isKnownGagagaGirlXyzAttackZeroTriggerEffect(effect)) return { targetCardPredicate: (ctx, card) => card.controller !== ctx.player && card.location === "monsterZone" && card.faceUp && card.summonType !== undefined && card.summonType !== "normal" && card.summonType !== "tribute" && card.summonType !== "flip" };
   if ((effect.code === 85 || effect.code === 86) && effect.label !== undefined && effect.targetRange?.[0] === luaLocationMonsterZone && effect.targetRange?.[1] === 0) return { targetCardPredicate: (_ctx, card) => cardFieldId(card) !== effect.label };
   if (effect.luaTargetDescriptor === "target:not-effect-owner") return { targetCardPredicate: (_ctx, card) => card.uid !== effect.sourceUid };
   const battleTargetType = effect.luaTargetDescriptor?.startsWith("target:source-battle-target-type:") ? Number(effect.luaTargetDescriptor.slice("target:source-battle-target-type:".length)) : undefined; if (battleTargetType !== undefined && Number.isSafeInteger(battleTargetType) && battleTargetType > 0) return { targetCardPredicate: (ctx, card) => { const source = ctx.duel.cards.find((candidate) => candidate.uid === effect.sourceUid); const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle; const battleTargetUid = source?.uid === battle?.attackerUid ? battle?.targetUid : source?.uid === battle?.targetUid ? battle?.attackerUid : undefined; return card.uid === battleTargetUid && (cardTypeFlags(card, ctx.duel) & battleTargetType) !== 0; } };
   if (effect.luaTargetDescriptor === "target:source-battle-target" || effect.luaTargetDescriptor === "target:source-or-battle-target") return { targetCardPredicate: (ctx, card) => { const source = ctx.duel.cards.find((candidate) => candidate.uid === effect.sourceUid); const battle = ctx.duel.currentAttack ?? ctx.duel.pendingBattle; const battleTargetUid = source?.uid === battle?.attackerUid ? battle?.targetUid : source?.uid === battle?.targetUid ? battle?.attackerUid : undefined; return card.uid === battleTargetUid || (effect.luaTargetDescriptor === "target:source-or-battle-target" && card.uid === source?.uid); } };
   if (effect.luaTargetDescriptor === "target:select-opponent-pzone-able-control") return { targetCardPredicate: (ctx, card) => card.controller !== ctx.player && card.location === "spellTrapZone" && card.sequence >= 0 && card.sequence <= 1 };
+  const tributeSummonSetcode = effect.luaTargetDescriptor?.startsWith("target:tribute-summon-setcode:") ? Number(effect.luaTargetDescriptor.slice("target:tribute-summon-setcode:".length)) : undefined;
+  if (tributeSummonSetcode !== undefined && Number.isSafeInteger(tributeSummonSetcode) && tributeSummonSetcode > 0) return { targetCardPredicate: (ctx, card) => currentCardMatchesSetcode(card, ctx.duel, tributeSummonSetcode) };
   const statusSummonLocation = statusSummonLocationDescriptor(effect.luaTargetDescriptor); if (statusSummonLocation) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & statusSummonLocation.status) !== 0 && Boolean(card.summonType && locationMatchesCardMask(card, statusSummonLocation.location, card.previousLocation, card.previousSequence)) };
   const notStatus = notStatusDescriptor(effect.luaTargetDescriptor); if (notStatus !== undefined) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & notStatus) === 0 };
   const status = statusDescriptor(effect.luaTargetDescriptor); if (status !== undefined) return { targetCardPredicate: (_ctx, card) => (targetCardStatusMask(card) & status) !== 0 };
@@ -57,6 +61,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   const notTypeRaceExtra = typeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notTypeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeRaceExtra.type) === 0 || (currentRace(card, ctx.duel) & notTypeRaceExtra.race) === 0) };
   const notTypeAttributeRaceExtra = typeAttributeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notTypeAttributeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((cardTypeFlags(card, ctx.duel) & notTypeAttributeRaceExtra.type) === 0 || (currentAttribute(card, ctx.duel) & notTypeAttributeRaceExtra.attribute) === 0 || (currentRace(card, ctx.duel) & notTypeAttributeRaceExtra.race) === 0) };
   const notRaceAttribute = raceAttributeDescriptor(effect.luaTargetDescriptor); if (notRaceAttribute) return { targetCardPredicate: (ctx, card) => (currentRace(card, ctx.duel) & notRaceAttribute.race) === 0 || (currentAttribute(card, ctx.duel) & notRaceAttribute.attribute) === 0 };
+  const attributeRace = attributeRaceDescriptor(effect.luaTargetDescriptor); if (attributeRace) return { targetCardPredicate: (ctx, card) => (currentAttribute(card, ctx.duel) & attributeRace.attribute) !== 0 && (currentRace(card, ctx.duel) & attributeRace.race) !== 0 };
   const notRaceTypeOrSetcode = raceTypeOrSetcodeDescriptor(effect.luaTargetDescriptor); if (notRaceTypeOrSetcode) return { targetCardPredicate: (ctx, card) => !currentCardMatchesSetcode(card, ctx.duel, notRaceTypeOrSetcode.setcode) && ((currentRace(card, ctx.duel) & notRaceTypeOrSetcode.race) === 0 || (cardTypeFlags(card, ctx.duel) & notRaceTypeOrSetcode.type) === 0) };
   const notAttributeRaceExtra = attributeRaceExtraDescriptor(effect.luaTargetDescriptor); if (notAttributeRaceExtra) return { targetCardPredicate: (ctx, card) => card.location === "extraDeck" && ((currentAttribute(card, ctx.duel) & notAttributeRaceExtra.attribute) === 0 || (currentRace(card, ctx.duel) & notAttributeRaceExtra.race) === 0) };
   const setcodeOrCodeType = setcodeOrCodeTypeTargetDescriptor(effect.luaTargetDescriptor);
@@ -71,6 +76,11 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
       (cardSetcodes(card).some((setcode) => isSetcodeMatch(setcodeTypeOrLevelAboveOriginalRace.setcode, setcode)) && (printedCardTypeFlags(card) & setcodeTypeOrLevelAboveOriginalRace.type) !== 0) ||
       (currentLevel(card, ctx.duel) >= setcodeTypeOrLevelAboveOriginalRace.level && ((card.data.race ?? 0) & setcodeTypeOrLevelAboveOriginalRace.race) !== 0),
   };
+  const nonEffectRace = effect.luaTargetDescriptor?.startsWith("target:non-effect-race:") ? Number(effect.luaTargetDescriptor.slice("target:non-effect-race:".length)) : undefined;
+  if (nonEffectRace !== undefined && Number.isSafeInteger(nonEffectRace) && nonEffectRace > 0) return { targetCardPredicate: (ctx, card) => {
+    const typeFlags = cardTypeFlags(card, ctx.duel);
+    return (typeFlags & 0x1) !== 0 && (typeFlags & 0x20) === 0 && (currentRace(card, ctx.duel) & nonEffectRace) !== 0;
+  } };
   const notCodeStatus = notCodeStatusDescriptor(effect.luaTargetDescriptor);
   if (notCodeStatus) return { targetCardPredicate: (ctx, card) => !currentCardMatchesCode(card, ctx.duel, String(notCodeStatus.code)) && (targetCardStatusMask(card) & notCodeStatus.status) !== 0 };
   const notSetcode = notSetcodeTargetDescriptor(effect.luaTargetDescriptor); const notSetcodeAny = notSetcodeAnyTargetDescriptor(effect.luaTargetDescriptor); const notRaceExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-race-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-race-extra:".length)) : undefined; const notAttributeExtra = effect.luaTargetDescriptor?.startsWith("special-summon-limit:not-attribute-extra:") ? Number(effect.luaTargetDescriptor.slice("special-summon-limit:not-attribute-extra:".length)) : undefined; const notAttribute = effect.luaTargetDescriptor?.startsWith("target:not-attribute:") ? Number(effect.luaTargetDescriptor.slice("target:not-attribute:".length)) : undefined; const attribute = effect.luaTargetDescriptor?.startsWith("target:attribute:") ? Number(effect.luaTargetDescriptor.slice("target:attribute:".length)) : undefined; const faceupAttribute = effect.luaTargetDescriptor?.startsWith(luaFaceupAttributeTargetDescriptorPrefix) ? Number(effect.luaTargetDescriptor.slice(luaFaceupAttributeTargetDescriptorPrefix.length)) : undefined; const race = effect.luaTargetDescriptor?.startsWith("target:race:") ? Number(effect.luaTargetDescriptor.slice("target:race:".length)) : undefined; const faceupRace = effect.luaTargetDescriptor?.startsWith(luaFaceupRaceTargetDescriptorPrefix) ? Number(effect.luaTargetDescriptor.slice(luaFaceupRaceTargetDescriptorPrefix.length)) : undefined; const notRace = effect.luaTargetDescriptor?.startsWith("target:not-race:") ? Number(effect.luaTargetDescriptor.slice("target:not-race:".length)) : undefined; const notCode = effect.luaTargetDescriptor?.startsWith("target:not-code:") ? Number(effect.luaTargetDescriptor.slice("target:not-code:".length)) : undefined; const code = effect.luaTargetDescriptor?.startsWith("target:code:") ? Number(effect.luaTargetDescriptor.slice("target:code:".length)) : undefined;
@@ -93,6 +103,8 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (originalSetcodeAny !== undefined) return { targetCardPredicate: (_ctx, card) => originalSetcodeAny.some((blocked) => cardSetcodes(card).some((setcode) => isSetcodeMatch(blocked, setcode))) };
   const setcode = setcodeTargetDescriptor(effect.luaTargetDescriptor);
   if (setcode !== undefined) return { targetCardPredicate: (ctx, card) => currentCardMatchesSetcode(card, ctx.duel, setcode) && (!effect.luaTargetDescriptor?.startsWith(luaFaceupSetcodeTargetDescriptorPrefix) || card.faceUp) };
+  const faceupRaceLevelAbove = faceupRaceLevelAboveDescriptor(effect.luaTargetDescriptor);
+  if (faceupRaceLevelAbove) return { targetCardPredicate: (ctx, card) => card.faceUp === true && (currentRace(card, ctx.duel) & faceupRaceLevelAbove.race) !== 0 && currentLevel(card, ctx.duel) >= faceupRaceLevelAbove.level };
   const setcodeAny = setcodeAnyTargetDescriptor(effect.luaTargetDescriptor);
   if (setcodeAny !== undefined) return { targetCardPredicate: (ctx, card) => setcodeAny.some((candidate) => currentCardMatchesSetcode(card, ctx.duel, candidate)) };
   if (effect.luaTargetDescriptor === "target:same-code-label" || effect.luaTargetDescriptor === "target:same-code-label-object-label") return { targetCardPredicate: (ctx, card) => effect.label !== undefined && currentCardMatchesCode(card, ctx.duel, String(effect.label)) };
@@ -142,6 +154,7 @@ export function restoredLuaTargetCallbacks(effect: SerializedDuelEffect): Pick<D
   if (notRelatedEffect !== undefined && Number.isSafeInteger(notRelatedEffect)) return { targetCardPredicate: (ctx) => ctx.relatedEffectId !== notRelatedEffect };
   if (effect.luaTargetDescriptor === "target:special-summon-position-facedown") return { targetCardPredicate: (ctx) => ctx.summonPosition === "faceDownDefense" };
   const xyzSummonNotRelatedSetcode = xyzSummonNotRelatedSetcodeDescriptor(effect.luaTargetDescriptor); if (xyzSummonNotRelatedSetcode !== undefined) return { targetCardPredicate: (ctx) => effectiveSpecialSummonTypeCode(ctx.summonTypeCode) === 0x49000000 && !relatedEffectHandlerMatchesSetcode(ctx, xyzSummonNotRelatedSetcode) };
+  const levelAboveSynchro = effect.luaTargetDescriptor?.startsWith("target:level-above-synchro:") ? Number(effect.luaTargetDescriptor.slice("target:level-above-synchro:".length)) : undefined; if (levelAboveSynchro !== undefined && Number.isSafeInteger(levelAboveSynchro) && levelAboveSynchro > 0) return { targetCardPredicate: (ctx, card) => currentLevel(card, ctx.duel) >= levelAboveSynchro && (cardTypeFlags(card, ctx.duel) & 0x2001) === 0x2001 };
   const levelAbove = effect.luaTargetDescriptor?.startsWith("target:level-above:") ? Number(effect.luaTargetDescriptor.slice("target:level-above:".length)) : undefined; if (levelAbove !== undefined && Number.isSafeInteger(levelAbove) && levelAbove > 0) return { targetCardPredicate: (ctx, card) => currentLevel(card, ctx.duel) >= levelAbove };
   const attackBelow = effect.luaTargetDescriptor?.startsWith("target:attack-below:") ? Number(effect.luaTargetDescriptor.slice("target:attack-below:".length)) : undefined; if (attackBelow !== undefined && Number.isSafeInteger(attackBelow) && attackBelow > 0) return { targetCardPredicate: (ctx, card) => currentAttack(card, ctx.duel) <= attackBelow };
   const notLinkBelow = effect.luaTargetDescriptor?.startsWith("target:not-link-below:") ? Number(effect.luaTargetDescriptor.slice("target:not-link-below:".length)) : undefined; if (notLinkBelow !== undefined && Number.isSafeInteger(notLinkBelow) && notLinkBelow > 0) return { targetCardPredicate: (ctx, card) => currentLink(card, ctx.duel) > notLinkBelow };
@@ -423,6 +436,12 @@ function raceAttributeDescriptor(descriptor: string | undefined): { race: number
   return race !== undefined && attribute !== undefined && [race, attribute].every((value) => Number.isSafeInteger(value) && value > 0) ? { race, attribute } : undefined;
 }
 
+function attributeRaceDescriptor(descriptor: string | undefined): { attribute: number; race: number } | undefined {
+  if (!descriptor?.startsWith("target:attribute-race:")) return undefined;
+  const [attribute, race] = descriptor.slice("target:attribute-race:".length).split(":").map(Number);
+  return attribute !== undefined && race !== undefined && [attribute, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { attribute, race } : undefined;
+}
+
 function originalTypeAttributeDescriptor(descriptor: string | undefined): { type: number; attribute: number } | undefined {
   if (!descriptor?.startsWith("target:not-original-type-attribute:")) return undefined;
   const [type, attribute] = descriptor.slice("target:not-original-type-attribute:".length).split(":").map(Number);
@@ -457,6 +476,12 @@ function originalAttributeRaceDescriptor(descriptor: string | undefined): { attr
   if (!descriptor?.startsWith("target:not-original-attribute-race:")) return undefined;
   const [attribute, race] = descriptor.slice("target:not-original-attribute-race:".length).split(":").map(Number);
   return attribute !== undefined && race !== undefined && [attribute, race].every((value) => Number.isSafeInteger(value) && value > 0) ? { attribute, race } : undefined;
+}
+
+function faceupRaceLevelAboveDescriptor(descriptor: string | undefined): { race: number; level: number } | undefined {
+  if (!descriptor?.startsWith("target:faceup-race-level-above:")) return undefined;
+  const [race, level] = descriptor.slice("target:faceup-race-level-above:".length).split(":").map(Number);
+  return race !== undefined && level !== undefined && [race, level].every((value) => Number.isSafeInteger(value) && value > 0) ? { race, level } : undefined;
 }
 
 function originalRaceTextAttackDescriptor(descriptor: string | undefined): { race: number; attack: number } | undefined {

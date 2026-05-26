@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelCardData, DuelCardInstance, DuelResponse, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -122,6 +123,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMordschlagScr
     passRestoredBattleResponses(restoredBattle);
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 1000 });
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(7000);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: normalTarget.uid,
+        eventPlayer: 1,
+        eventValue: 1000,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: normalTarget.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 2 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restoredBattle.session.state.cards.find((card) => card.uid === specialOpponent.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredBattle.session.state.cards.find((card) => card.uid === normalTarget.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
   });

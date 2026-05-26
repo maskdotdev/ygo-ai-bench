@@ -96,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSamuraiScript)("Lua real script Gagag
             "sequence": 1,
           },
           "eventName": "battleTargeted",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": false,

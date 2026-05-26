@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack, currentDefense } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -151,6 +152,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
     expect(restoredDamageCalculation.session.state.battleDamage).toEqual({ 0: 0, 1: 1600 });
     expect(restoredDamageCalculation.session.state.players[0].lifePoints).toBe(8000);
     expect(restoredDamageCalculation.session.state.players[1].lifePoints).toBe(6400);
+    expect(restoredDamageCalculation.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: dracoon!.uid,
+        eventPlayer: 1,
+        eventValue: 1600,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: dracoon!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredDamageCalculation.session.state.cards.find((card) => card.uid === attacker!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredDamageCalculation.session.state.cards.find((card) => card.uid === dracoon!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
   });

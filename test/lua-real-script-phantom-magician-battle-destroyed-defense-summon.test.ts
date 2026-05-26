@@ -106,6 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasPhantomMagicianScript)("Lua real scri
         eventName: "battleDestroyed",
         eventCode: 1140,
         eventCardUid: phantomMagician.uid,
+        eventPlayer: 0,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonPlayer: 1,
         eventReasonCardUid: attacker.uid,

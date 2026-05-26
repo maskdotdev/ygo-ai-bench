@@ -54,7 +54,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasKiwiScript)("
     loadDecks(session, { 0: { main: [kiwiCode, kiwiCode, targetCode, offSetCode] }, 1: { main: [] } });
     startDuel(session);
 
-    const [fieldKiwi, handKiwi] = requireCards(session, kiwiCode, 2);
+    const [fieldKiwi, handKiwi] = requireTwoCards(session, kiwiCode);
     const target = requireCard(session, targetCode);
     const offSet = requireCard(session, offSetCode);
     moveFaceUpAttack(session, fieldKiwi, 0, 0);
@@ -139,6 +139,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasKiwiScript)("
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceDown", sequence: 0 },
       },
     ]);
+    expect(restoredOpen.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 
@@ -148,10 +149,10 @@ function requireCard(session: DuelSession, code: string): DuelCardInstance {
   return card!;
 }
 
-function requireCards(session: DuelSession, code: string, count: number): DuelCardInstance[] {
+function requireTwoCards(session: DuelSession, code: string): [DuelCardInstance, DuelCardInstance] {
   const cards = session.state.cards.filter((candidate) => candidate.code === code);
-  expect(cards).toHaveLength(count);
-  return cards;
+  expect(cards).toHaveLength(2);
+  return [cards[0]!, cards[1]!];
 }
 
 function findCard(session: DuelSession, uid: string): DuelCardInstance {

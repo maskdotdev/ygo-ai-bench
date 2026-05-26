@@ -64,10 +64,10 @@ describe.skipIf(!hasUpstreamScripts || !hasSpeedWarriorScript)("Lua real script 
     expect(restoredSummon.session.state.flagEffects.map((flag) => ({
       code: flag.code,
       ownerType: flag.ownerType,
-      ownerUid: flag.ownerUid,
+      ownerId: flag.ownerId,
       reset: flag.reset,
     }))).toEqual([
-      { code: Number(speedWarriorCode), ownerType: "card", ownerUid: undefined, reset: 0x41fc1200 },
+      { code: Number(speedWarriorCode), ownerType: "card", ownerId: speedWarrior.uid, reset: 0x41fc1200 },
     ]);
 
     const restoredBattle = restoreDuelWithLuaScripts(serializeDuel(restoredSummon.session), workspace, reader);
@@ -107,6 +107,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSpeedWarriorScript)("Lua real script 
     expectCleanRestore(restoredStat);
     expectRestoredLegalActions(restoredStat, 0);
     expect(currentAttack(restoredStat.session.state.cards.find((card) => card.uid === speedWarrior.uid), restoredStat.session.state)).toBe(1800);
+    expect(restoredStat.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

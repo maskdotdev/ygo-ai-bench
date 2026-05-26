@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -67,6 +68,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     passRestoredBattleResponses(restoredAttacking);
     expect(restoredAttacking.session.state.battleDamage).toEqual({ 0: 0, 1: 300 });
     expect(restoredAttacking.session.state.players[1].lifePoints).toBe(7700);
+    expect(restoredAttacking.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: attacking.garadholg.uid,
+        eventPlayer: 1,
+        eventValue: 300,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: attacking.garadholg.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
 
     const defending = createGaradholgBattle({ garadholgCode, targetCode: lightTargetCode, cards, seed: 2578, attackerPlayer: 1 });
     const defendingHost = createLuaScriptHost(defending.session, workspace);
@@ -80,6 +95,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Al
     passRestoredBattleResponses(restoredDefending);
     expect(restoredDefending.session.state.battleDamage).toEqual({ 0: 0, 1: 300 });
     expect(restoredDefending.session.state.players[1].lifePoints).toBe(7700);
+    expect(restoredDefending.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: defending.garadholg.uid,
+        eventPlayer: 1,
+        eventValue: 300,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: defending.garadholg.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
 
     const unboosted = createGaradholgBattle({ garadholgCode, targetCode: darkTargetCode, cards, seed: 2579, attackerPlayer: 0 });
     const unboostedHost = createLuaScriptHost(unboosted.session, workspace);

@@ -95,6 +95,7 @@ function checkCardScriptsManifest(dir) {
   }
   if (manifest.copiedCount !== manifest.copied.length) fail(`Lua script manifest copiedCount ${manifest.copiedCount} does not match copied ${manifest.copied.length}`);
   if (manifest.missingCount !== manifest.missing.length) fail(`Lua script manifest missingCount ${manifest.missingCount} does not match missing ${manifest.missing.length}`);
+  if (manifest.missing.length) fail(`Lua script manifest lists missing exported scripts: ${manifest.missing.join(", ")}`);
   if (manifest.files.length !== manifest.copied.length) fail(`Lua script manifest files ${manifest.files.length} does not match copied ${manifest.copied.length}`);
   for (const name of [...manifest.copied, ...manifest.missing, ...manifest.files.map((file) => file.name)]) scriptCodeFromName(name);
   if (manifest.selectedCodes.length) {

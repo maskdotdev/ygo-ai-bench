@@ -9,6 +9,7 @@ import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId 
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
 import { createLuaScriptHost } from "#lua/host.js";
+import type { LuaPromptDecision } from "#lua/host-types.js";
 import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
 
 const upstreamRoot = path.resolve(".upstream/ignis");
@@ -87,7 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMaidenScript)("Lua real script Maiden
     expect(addCounter, JSON.stringify(getLuaRestoreLegalActions(restoredCounterChoice, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredCounterChoice, addCounter!);
     passRestoredChain(restoredCounterChoice);
-    expect(restoredCounterChoice.host.promptDecisions.filter((prompt) => prompt.api === "SelectEffect").map((prompt) => ({
+    expect(restoredCounterChoice.host.promptDecisions.filter(isSelectEffectPrompt).map((prompt) => ({
       api: prompt.api,
       player: prompt.player,
       options: prompt.options,
@@ -114,7 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMaidenScript)("Lua real script Maiden
     applyRestoredActionAndAssert(restoredControlChoice, takeControl!);
     passRestoredChain(restoredControlChoice);
 
-    expect(restoredControlChoice.host.promptDecisions.filter((prompt) => prompt.api === "SelectEffect").map((prompt) => ({
+    expect(restoredControlChoice.host.promptDecisions.filter(isSelectEffectPrompt).map((prompt) => ({
       api: prompt.api,
       player: prompt.player,
       options: prompt.options,
@@ -192,13 +193,17 @@ function prepareSecondBattle(session: DuelSession): void {
   session.state.waitingFor = 1;
   session.state.chain = [];
   session.state.pendingTriggers = [];
-  session.state.pendingBattle = undefined;
-  session.state.currentAttack = undefined;
-  session.state.battleStep = undefined;
-  session.state.battleWindow = undefined;
+  delete session.state.pendingBattle;
+  delete session.state.currentAttack;
+  delete session.state.battleStep;
+  delete session.state.battleWindow;
   session.state.attacksDeclared = [];
   session.state.attackPasses = [];
   session.state.damagePasses = [];
+}
+
+function isSelectEffectPrompt(prompt: LuaPromptDecision): prompt is Extract<LuaPromptDecision, { options: number[] }> {
+  return prompt.api === "SelectEffect";
 }
 
 function attackAndReachDamageEnd(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId, attackerUid: string, targetUid: string): void {

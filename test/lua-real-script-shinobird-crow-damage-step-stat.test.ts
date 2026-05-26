@@ -198,6 +198,32 @@ describe.skipIf(!hasUpstreamScripts || !hasCrowScript)("Lua real script Shinobir
     passBattleResponses(restoredBattle);
     expect(restoredBattle.session.state.battleDamage[1]).toBe(200);
     expect(restoredBattle.session.state.players[1].lifePoints).toBe(7800);
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: crow!.uid,
+        eventPlayer: 1,
+        eventValue: 200,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: crow!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 1,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredBattle.session.state.cards.find((card) => card.uid === crow!.uid)).toMatchObject({ location: "monsterZone", controller: 0 });
     expect(restoredBattle.session.state.cards.find((card) => card.uid === defender!.uid)).toMatchObject({ location: "graveyard", controller: 1 });
     expect(restoredBattle.host.messages).not.toContain("shinobird crow responder resolved");

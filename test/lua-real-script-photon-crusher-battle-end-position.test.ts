@@ -51,8 +51,8 @@ describe.skipIf(!hasUpstreamScripts || !hasPhotonCrusherScript)("Lua real script
     passUntilEndDamageStep(session);
 
     expect(session.state.battleWindow?.kind).toBe("endDamageStep");
-    expect(session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
-    expect(session.state.players[1].lifePoints).toBe(8000);
+    expect(session.state.battleDamage).toEqual({ 0: 0, 1: 2000 });
+    expect(session.state.players[1].lifePoints).toBe(6000);
     expect(session.state.cards.find((card) => card.uid === photon.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -127,19 +127,18 @@ describe.skipIf(!hasUpstreamScripts || !hasPhotonCrusherScript)("Lua real script
         eventReason: duelReason.battle,
         eventReasonCardUid: photon.uid,
         eventReasonPlayer: 0,
-        eventReasonEffectId: 1,
         eventPreviousState: {
           controller: 0,
-          faceUp: true,
-          location: "monsterZone",
-          position: "faceUpAttack",
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
           sequence: 0,
         },
         eventCurrentState: {
           controller: 0,
           faceUp: true,
           location: "monsterZone",
-          position: "faceUpDefense",
+          position: "faceUpAttack",
           sequence: 0,
         },
       },

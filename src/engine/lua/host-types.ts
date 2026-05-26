@@ -31,7 +31,7 @@ export interface LuaScriptHost {
   loadCardScript(cardCode: string | number, source: LuaScriptSource): LuaScriptLoadResult;
   registerInitialEffects(): number;
   registerInitialEffectsDetailed(): LuaInitialEffectRegistrationResult[];
-  restoreEffectMetadata(registryKey: string, metadata: { label?: number; labels?: number[]; labelObjectId?: number }): boolean;
+  restoreEffectMetadata(registryKey: string, metadata: { label?: number; labels?: number[]; labelObjectId?: number; labelObjectUid?: string; labelObjectUids?: string[] }): boolean;
   runStartupEffects(): number;
   restoreChainLimit(key: string, limit: ChainLimit): ChainLimit | undefined;
   getGlobalString(name: string): string | undefined;
@@ -111,6 +111,7 @@ export interface LuaEffectRecord {
   typeFlags: number;
   sourceUid?: string;
   ownerUid?: string;
+  scriptCode?: string;
   isGlobal?: boolean;
   ownerPlayer?: PlayerId;
   code?: number;

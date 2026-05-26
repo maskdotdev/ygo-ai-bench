@@ -4,13 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const protectionReplacementFixtureCount = 24;
+const protectionReplacementFixtureCount = 26;
 const protectionReplacementKindCounts = {
   activatedImmunity: 1,
   battleTargetRelationProtection: 1,
   continuousBattleIndestructible: 1,
   countLimitedBattleIndestructible: 3,
-  effectTargetProtection: 3,
+  effectTargetProtection: 5,
   fieldEffectIndestructible: 1,
   environmentImmunity: 1,
   equipBattleProtectionSelfDestroy: 1,
@@ -24,6 +24,7 @@ const protectionReplacementKindCounts = {
 } satisfies Record<ProtectionReplacementKind, number>;
 const protectionReplacementSemanticVariantCounts = {
   altergeistFifinellagBattleAndTargetProtection: 1,
+  blueEyesChaosOpponentProtection: 1,
   checksumDragonAttackPositionProtection: 1,
   darkFusionOpponentTargetProtection: 1,
   dForcePlasmaFieldTargetProtection: 1,
@@ -45,6 +46,7 @@ const protectionReplacementSemanticVariantCounts = {
   safeZoneLinkedTargetProtection: 1,
   sixSamuraiKamonDestroyReplace: 1,
   triBrigadeRendezvousGraveDestroyReplace: 1,
+  turboWarriorLevelTargetProtection: 1,
   wabokuTemporaryBattleProtection: 1,
   wildheartTrapImmunity: 1,
 } satisfies Record<ProtectionReplacementSemanticVariant, number>;
@@ -124,6 +126,7 @@ type ProtectionReplacementKind =
   | "trapImmunity";
 type ProtectionReplacementSemanticVariant =
   | "altergeistFifinellagBattleAndTargetProtection"
+  | "blueEyesChaosOpponentProtection"
   | "checksumDragonAttackPositionProtection"
   | "darkFusionOpponentTargetProtection"
   | "dForcePlasmaFieldTargetProtection"
@@ -145,6 +148,7 @@ type ProtectionReplacementSemanticVariant =
   | "safeZoneLinkedTargetProtection"
   | "sixSamuraiKamonDestroyReplace"
   | "triBrigadeRendezvousGraveDestroyReplace"
+  | "turboWarriorLevelTargetProtection"
   | "wabokuTemporaryBattleProtection"
   | "wildheartTrapImmunity";
 
@@ -304,6 +308,29 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
       ],
     },
     {
+      file: "lua-real-script-turbo-warrior-attack-target-protection-stat.test.ts",
+      kind: "effectTargetProtection",
+      required: [
+        'const turboCode = "46195773"',
+        "restores attack-announced Synchro ATK halve and Level-gated effect-target protection",
+        "e2:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "return re:GetHandler():IsLevelBelow(6)",
+        "turbo-warrior-target-probe.lua",
+        "turbo warrior target protection false/true",
+      ],
+    },
+    {
+      file: "lua-real-script-blue-eyes-chaos-ritual-position-pierce-stat.test.ts",
+      kind: "effectTargetProtection",
+      required: [
+        'const chaosCode = "20654247"',
+        "e2:SetCode(EFFECT_CANNOT_BE_EFFECT_TARGET)",
+        "e2:SetValue(aux.tgoval)",
+        "e3:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "blue-eyes chaos target protection false/true",
+      ],
+    },
+    {
       file: "lua-real-script-runick-slumber-indestructible-count-restore.test.ts",
       kind: "countLimitedBattleIndestructible",
       required: [
@@ -357,6 +384,11 @@ function realScriptProtectionReplacementFixtureFiles(): Array<{ file: string; ki
         "expect.objectContaining({ event: \"continuous\", code: 100, sourceUid: attacker!.uid, value: -800 })",
         "expect.objectContaining({ event: \"continuous\", code: 1, sourceUid: attacker!.uid })",
         "expect(restored.session.state.battleDamage[0]).toBe(300)",
+        "eventName: \"battleDamageDealt\"",
+        "eventValue: 300",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: defender!.uid",
+        "eventReasonPlayer: 1",
         "expect(restored.host.messages).not.toContain(\"forbidden lance responder resolved\")",
       ],
     },
@@ -512,6 +544,8 @@ function protectionReplacementSemanticVariants(): Array<{
         'const lanceCode = "27243130"',
         "restores Forbidden Lance's target and applies the ATK loss to battle calculation",
         "expect(restored.session.state.battleDamage[0]).toBe(300)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: defender!.uid",
       ],
     },
     {
@@ -639,6 +673,16 @@ function protectionReplacementSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-turbo-warrior-attack-target-protection-stat.test.ts",
+      kind: "turboWarriorLevelTargetProtection",
+      requiredSnippets: [
+        'const turboCode = "46195773"',
+        "Level-gated effect-target protection",
+        "return re:GetHandler():IsLevelBelow(6)",
+        "turbo warrior target protection false/true",
+      ],
+    },
+    {
       file: "test/lua-real-script-tri-brigade-rendezvous-linked-stat-replace.test.ts",
       kind: "triBrigadeRendezvousGraveDestroyReplace",
       requiredSnippets: [
@@ -648,6 +692,16 @@ function protectionReplacementSemanticVariants(): Array<{
         "Duel.Remove(e:GetHandler(),POS_FACEUP,REASON_EFFECT)",
         'api: "SelectEffectYesNo"',
         'action: "destroyReplace"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-blue-eyes-chaos-ritual-position-pierce-stat.test.ts",
+      kind: "blueEyesChaosOpponentProtection",
+      requiredSnippets: [
+        'const chaosCode = "20654247"',
+        "Blue-Eyes Chaos Dragon",
+        "blue-eyes chaos target protection false/true",
+        "return tp~=e:GetHandlerPlayer()",
       ],
     },
     {
@@ -709,6 +763,7 @@ function countProtectionReplacementSemanticVariants(
     {
       checksumDragonAttackPositionProtection: 0,
       altergeistFifinellagBattleAndTargetProtection: 0,
+      blueEyesChaosOpponentProtection: 0,
       darkFusionOpponentTargetProtection: 0,
       dForcePlasmaFieldTargetProtection: 0,
       deepseaWarriorUmiSpellImmunity: 0,
@@ -729,6 +784,7 @@ function countProtectionReplacementSemanticVariants(
       safeZoneLinkedTargetProtection: 0,
       sixSamuraiKamonDestroyReplace: 0,
       triBrigadeRendezvousGraveDestroyReplace: 0,
+      turboWarriorLevelTargetProtection: 0,
       wabokuTemporaryBattleProtection: 0,
       wildheartTrapImmunity: 0,
     },

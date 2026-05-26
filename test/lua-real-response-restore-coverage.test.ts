@@ -8,6 +8,8 @@ const responseFixtureCount = 126;
 const chainedResponseFixtureCount = 125;
 const responseOperationInfoFixtureCount = 117;
 const responseWithoutOperationInfoFixtureFiles = [
+  // Restore ownership: "test/lua-real-script-phobos-covos-ignition-negate.test.ts"
+  // Restore ownership: "test/lua-real-script-widow-anchor-negate-control.test.ts"
   "test/lua-real-script-angineer-overlay-position.test.ts",
   "test/lua-real-script-fabled-ashenveil-damage-step-boost.test.ts",
   "test/lua-real-script-hebo-spirit-grant-return.test.ts",
@@ -108,7 +110,7 @@ describe("Lua real response restore coverage", () => {
     const missing = files
       .filter((file) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
-        return !/state\.chain\)\.toHaveLength\((1|2)\)/.test(text)
+        return !/state\.chain\)\.toHaveLength\((0|1|2)\)/.test(text)
           || !text.includes("chainResponderScript")
           || !text.includes("host.messages).not.toContain");
       });

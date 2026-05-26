@@ -77,6 +77,7 @@ describe.skipIf(!hasUpstreamScripts || !hasScarrScript)("Lua real script Scarr m
         sourceUid: scarr.uid,
         triggerBucket: "opponentMandatory",
         eventName: "battleDestroyed",
+        eventPlayer: 0,
         eventCode: 1140,
         eventCardUid: scarr.uid,
         eventReason: duelReason.battle | duelReason.destroy,

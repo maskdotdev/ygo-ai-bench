@@ -177,6 +177,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
         "countLimit": 1,
         "event": "continuous",
         "id": "lua-3-4608",
+        "labelObjectUid": "p0-deck-36351-1",
         "luaTypeFlags": 2050,
         "oncePerTurn": true,
         "operation": [Function],
@@ -199,9 +200,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Hi
         },
         "sourceUid": "p0-deck-36350300-0",
         "target": [Function],
-        "triggerCode": 4608,
-        "triggerEvent": "phaseEnd",
-        "triggerTiming": "when",
       }
     `);
 

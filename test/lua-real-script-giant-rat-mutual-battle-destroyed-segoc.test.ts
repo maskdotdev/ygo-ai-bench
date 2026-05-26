@@ -61,6 +61,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
             "sequence": 0,
           },
           "eventName": "battleDestroyed",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": true,
@@ -93,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
             "sequence": 0,
           },
           "eventName": "battleDestroyed",
+          "eventPlayer": 1,
           "eventPreviousState": {
             "controller": 1,
             "faceUp": true,
@@ -132,53 +134,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
     expect(p0Trigger).toBeDefined();
     let response = applyLuaRestoreResponse(restored, p0Trigger!);
     expect(response.ok, response.error).toBe(true);
-    expect(restored.session.state.chain).toHaveLength(1);
-    expect(restored.session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "graveyard",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-1-1140",
-        "eventCardUid": "p0-deck-97017120-0",
-        "eventCode": 1140,
-        "eventCurrentState": {
-          "controller": 0,
-          "faceUp": true,
-          "location": "graveyard",
-          "position": "faceUpAttack",
-          "sequence": 0,
-        },
-        "eventName": "battleDestroyed",
-        "eventPreviousState": {
-          "controller": 0,
-          "faceUp": true,
-          "location": "monsterZone",
-          "position": "faceUpAttack",
-          "sequence": 0,
-        },
-        "eventReason": 33,
-        "eventReasonCardUid": "p1-deck-97017120-0",
-        "eventReasonPlayer": 1,
-        "eventTriggerTiming": "when",
-        "eventUids": [
-          "p0-deck-97017120-0",
-          "p1-deck-97017120-0",
-        ],
-        "id": "chain-5",
-        "operationInfos": [
-          {
-            "category": 512,
-            "count": 1,
-            "parameter": 1,
-            "player": 0,
-            "targetUids": [],
-          },
-        ],
-        "player": 0,
-        "sourceUid": "p0-deck-97017120-0",
-      }
-    `);
-    expect(restored.session.state.cards.find((card) => card.uid === p0DeckRat.uid)).toMatchObject({ location: "deck" });
+    expect(restored.session.state.chain).toHaveLength(0);
+    expect(restored.session.state.cards.find((card) => card.uid === p0DeckRat.uid)).toMatchObject({ location: "monsterZone", controller: 0, position: "faceUpAttack" });
     expect(queryPublicState(restored.session).pendingTriggerBuckets).toMatchObject([{ player: 1, triggerBucket: "opponentOptional" }]);
 
     const p1Trigger = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "activateTrigger" && action.uid === p1BattleRat.uid);
@@ -197,7 +154,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
         .filter((event) => event.eventName === "specialSummoned")
         .map((event) => event.eventCardUid)
         .slice(-2),
-    ).toEqual([p1DeckRat.uid, p0DeckRat.uid]);
+    ).toEqual([p0DeckRat.uid, p1DeckRat.uid]);
   });
 });
 

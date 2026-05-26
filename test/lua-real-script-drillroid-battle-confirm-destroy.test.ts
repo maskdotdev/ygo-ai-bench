@@ -76,6 +76,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
         eventUids: [drillroid.uid, target.uid],
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventPlayer: 0,
         eventTriggerTiming: "when",
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },

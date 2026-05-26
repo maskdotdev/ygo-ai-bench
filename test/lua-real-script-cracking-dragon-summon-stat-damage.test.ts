@@ -69,11 +69,19 @@ describe.skipIf(!hasUpstreamScripts || !hasCrackingScript)("Lua real script Crac
     const summon = getLegalActions(session, 1).find((action) => action.type === "normalSummon" && action.uid === summoned.uid);
     expect(summon, JSON.stringify(getLegalActions(session, 1), null, 2)).toBeDefined();
     applyAndAssert(session, summon!);
-    expect(session.state.pendingTriggers).toMatchObject([
+    expect(session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-2-1100",
         eventCardUid: summoned.uid,
         eventCode: 1100,
+        eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "normalSummoned",
+        eventPlayer: 1,
+        eventPreviousState: { controller: 1, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+        eventReason: duelReason.summon,
+        eventReasonPlayer: 1,
+        eventTriggerTiming: "when",
         player: 0,
         sourceUid: cracking.uid,
         triggerBucket: "opponentOptional",
@@ -100,6 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCrackingScript)("Lua real script Crac
         eventCardUid: summoned.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 1,
+        eventPlayer: 1,
         eventTriggerTiming: "when",
         eventPreviousState: { controller: 1, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },

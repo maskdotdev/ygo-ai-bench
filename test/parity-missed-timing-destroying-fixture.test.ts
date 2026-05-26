@@ -106,6 +106,13 @@ describe("EDOPro parity destroying missed timing fixtures", () => {
             waitingFor: 0,
             pendingTriggers: [{ player: 0, effectId: "destroying-optional-if", eventName: "destroying", eventCode: 1010, eventCardUid: "p0-deck-600-3", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 28601, eventTriggerTiming: "if" }],
             pendingTriggerBuckets: [{ player: 0, triggerBucket: "turnOptional" }],
+            eventHistory: [
+              { eventName: "chainActivating", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chaining", eventCardUid: "p0-deck-100-0" },
+              { eventName: "chainSolving", eventCardUid: "p0-deck-100-0" },
+              { eventName: "destroying", eventCode: 1010, eventCardUid: "p0-deck-600-3", eventReason: 0x40, eventReasonPlayer: 0, eventReasonCardUid: "p0-deck-100-0", eventReasonEffectId: 28601 },
+              { eventName: "chainSolved" },
+            ],
             legalActionCounts: { 0: 2, 1: 0 },
             legalActionGroupCounts: { 0: 2, 1: 0 },
             legalActions: [

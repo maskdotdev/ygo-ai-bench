@@ -128,6 +128,28 @@ describe("browser asset manifest checker", () => {
     expect(result.stderr).toContain("Lua script manifest selectedCodes 100,200 does not match copied/missing script codes 100");
   });
 
+  it("fails when a Lua script manifest carries missing exported scripts", () => {
+    const root = makeTempRoot();
+    const cardScriptsDir = path.join(root, "card-scripts");
+    writeScriptExport(cardScriptsDir, { "c100.lua": "c100={}\n" });
+    const manifestPath = path.join(cardScriptsDir, "manifest.json");
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8")) as {
+      copiedCount: number;
+      missingCount: number;
+      selectedCodes: string[];
+      missing: string[];
+    };
+    manifest.selectedCodes = ["100", "200"];
+    manifest.missing = ["c200.lua"];
+    manifest.missingCount = 1;
+    fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, "utf8");
+
+    const result = spawnSync(process.execPath, [checkerPath, "--card-scripts", cardScriptsDir], { encoding: "utf8" });
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("Lua script manifest lists missing exported scripts: c200.lua");
+  });
+
   it("fails when a Lua script manifest lists non-card-script filenames", () => {
     const root = makeTempRoot();
     const cardScriptsDir = path.join(root, "card-scripts");

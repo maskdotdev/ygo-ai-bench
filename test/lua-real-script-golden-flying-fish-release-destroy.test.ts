@@ -101,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Go
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [5],
         targetUids: [goldenFlyingFish.uid],
         operationInfos: [{ category: 0x1, targetUids: [goldenFlyingFish.uid], count: 1, player: 0, parameter: 0 }],
       },

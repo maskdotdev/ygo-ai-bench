@@ -59,12 +59,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sa
     passAttackResponsesUntilTrigger(restoredSetup);
 
     expect(restoredSetup.session.state.battleWindow?.kind).toBe("startDamageStep");
-    expect(restoredSetup.session.state.pendingTriggers).toMatchObject([
+    expect(restoredSetup.session.state.pendingTriggers).toEqual([
       {
+        effectId: "lua-1-1132",
         eventCardUid: sasuke!.uid,
         eventCode: 1132,
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
         eventName: "battleStarted",
+        eventPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         eventUids: [sasuke!.uid, target!.uid],
+        id: "trigger-3-1",
         player: 0,
         sourceUid: sasuke!.uid,
         triggerBucket: "turnMandatory",

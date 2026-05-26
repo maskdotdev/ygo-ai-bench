@@ -4,13 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const xyzMaterialGainFixtureCount = 2;
+const xyzMaterialGainFixtureCount = 3;
 const xyzMaterialGainKindCounts = {
+  raidraptorSkullEagleXyzGrantToHandStat: 1,
   synchroMaterialTargetAtkReduction: 1,
   xyzMaterialGrantsAttackAndType: 1,
 } satisfies Record<XyzMaterialGainKind, number>;
 
-type XyzMaterialGainKind = "synchroMaterialTargetAtkReduction" | "xyzMaterialGrantsAttackAndType";
+type XyzMaterialGainKind = "raidraptorSkullEagleXyzGrantToHandStat" | "synchroMaterialTargetAtkReduction" | "xyzMaterialGrantsAttackAndType";
 
 describe("Lua real Xyz material gain restore coverage", () => {
   it("requires Xyz material-gain fixtures to assert clean Lua registry restore and restored legal-action parity", () => {
@@ -54,6 +55,21 @@ describe("Lua real Xyz material gain restore coverage", () => {
 function xyzMaterialGainFixtureFiles(): Array<{ file: string; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-raidraptor-skull-eagle-material-detach-tohand-stat.test.ts",
+      required: [
+        "Lua real script Raidraptor Skull Eagle material detach to-hand stat",
+        'const skullEagleCode = "45184165"',
+        "e2:SetCode(EVENT_BE_MATERIAL)",
+        "return r==REASON_XYZ",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():IsXyzSummoned()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_ADD_TYPE)",
+        "effectId === \"lua-3\"",
+        "currentAttack(findCard(grant.restored.session, grant.xyz.uid), grant.restored.session.state)).toBe(2300)",
+      ],
+    },
+    {
       file: "test/lua-real-script-quick-span-knight-synchro-material-atk.test.ts",
       required: [
         "Lua real script Quick-Span Knight Synchro material ATK target",
@@ -63,6 +79,10 @@ function xyzMaterialGainFixtureFiles(): Array<{ file: string; required: string[]
         "Duel.SelectTarget(tp,Card.IsFaceup,tp,0,LOCATION_MZONE,1,1,nil)",
         "local tc=Duel.GetFirstTarget()",
         "synchroSummonDuelCard(restoredOpen.session.state",
+        "effectId: \"lua-1-1108\"",
+        "eventCode: eventBeMaterial",
+        'eventTriggerTiming: "when"',
+        'triggerBucket: "turnMandatory"',
         "currentAttack(restoredResolved.session.state.cards.find",
       ],
     },
@@ -83,6 +103,27 @@ function xyzMaterialGainFixtureFiles(): Array<{ file: string; required: string[]
 function xyzMaterialGainFixtures(): Array<{ file: string; kind: XyzMaterialGainKind; required: string[] }> {
   return [
     {
+      file: "test/lua-real-script-raidraptor-skull-eagle-material-detach-tohand-stat.test.ts",
+      kind: "raidraptorSkullEagleXyzGrantToHandStat",
+      required: [
+        "restores Xyz material granted ATK/type and detached self-banish GY recovery",
+        "e2:SetCode(EVENT_BE_MATERIAL)",
+        "return r==REASON_XYZ",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():IsXyzSummoned()",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(300)",
+        "e2:SetCode(EFFECT_ADD_TYPE)",
+        "e2:SetValue(TYPE_EFFECT)",
+        "effectAddType = 115",
+        "effectUpdateAttack = 100",
+        "eventBeMaterial = 1108",
+        "eventSpecialSummonSuccess = 1102",
+        "cardTypeFlags(findCard(grant.restored.session, grant.xyz.uid), grant.restored.session.state) & typeEffect",
+        "currentAttack(findCard(grant.restored.session, grant.xyz.uid), grant.restored.session.state)).toBe(2300)",
+      ],
+    },
+    {
       file: "test/lua-real-script-quick-span-knight-synchro-material-atk.test.ts",
       kind: "synchroMaterialTargetAtkReduction",
       required: [
@@ -95,6 +136,10 @@ function xyzMaterialGainFixtures(): Array<{ file: string; kind: XyzMaterialGainK
         "e1:SetReset(RESET_EVENT|RESETS_STANDARD)",
         "e1:SetValue(-500)",
         "eventBeMaterial = 1108",
+        "effectId: \"lua-1-1108\"",
+        "eventCode: eventBeMaterial",
+        "eventTriggerTiming: \"when\"",
+        "triggerBucket: \"turnMandatory\"",
         "eventReason: duelReason.synchro",
         "eventReasonCardUid: synchro.uid",
         "currentAttack(restoredTrigger.session.state.cards.find",
@@ -135,6 +180,7 @@ function countXyzMaterialGainKinds(fixtures: Array<{ kind: XyzMaterialGainKind }
       return counts;
     },
     {
+      raidraptorSkullEagleXyzGrantToHandStat: 0,
       synchroMaterialTargetAtkReduction: 0,
       xyzMaterialGrantsAttackAndType: 0,
     },
