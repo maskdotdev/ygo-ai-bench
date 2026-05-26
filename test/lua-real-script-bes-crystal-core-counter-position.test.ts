@@ -98,7 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCrystalScript)("Lua real script BES C
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         relatedEffectId: 6,
         eventChainDepth: 1,
-        eventChainLinkId: "chain-5",
+        eventChainLinkId: "chain-6",
       },
       {
         eventName: "positionChanged",
