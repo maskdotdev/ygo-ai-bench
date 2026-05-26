@@ -20,7 +20,7 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
   session: DuelSession,
   hostState: LuaCardApiState<EffectRecord>,
 ): void {
-  pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canLuaCardAttack(session.state, card)));
+  pushBooleanGetter(L, "CanAttack", session, (card) => Boolean(card && canLuaCardAttack(session.state, card, hostState)));
   lua.lua_pushcfunction(L, (state: unknown) => pushCanChainAttack(state, session));
   lua.lua_setfield(L, -2, to_luastring("CanChainAttack"));
   pushNumberGetter(L, "GetAttackAnnouncedCount", session, (card) => (card ? session.state.attacksDeclared.filter((uid) => uid === card.uid).length : 0));
@@ -48,10 +48,13 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
   pushNumberGetter(L, "GetAttackedCount", session, (card) => (card ? session.state.battlePairs.filter((pair) => pair.attackerUid === card.uid).length : 0));
 }
 
-function canLuaCardAttack(state: DuelState, card: DuelCardInstance): boolean {
+function canLuaCardAttack<EffectRecord extends LuaCardApiEffectRecord>(state: DuelState, card: DuelCardInstance, hostState: LuaCardApiState<EffectRecord>): boolean {
   const attack = state.currentAttack ?? state.pendingBattle;
   if (state.status === "resolving" && attack?.attackerUid === card.uid && card.location === "monsterZone" && !state.attackCanceledUids.includes(card.uid)) return true;
   if (canDuelCardAttack(state, card.uid)) return true;
+  if (state.status === "resolving" && state.phase === "battle" && card.location === "monsterZone") {
+    return canDuelCardAttack({ ...state, turnPlayer: card.controller }, card.uid);
+  }
   if ((state.phase === "main1" || state.phase === "main2") && card.controller === state.turnPlayer && canEnterBattlePhase(state)) {
     return canDuelCardAttack({ ...state, phase: "battle" }, card.uid);
   }
@@ -111,7 +114,8 @@ function battlePairTargetUid(session: DuelSession, card: DuelCardInstance | unde
 
 function pushAttackableTarget(L: unknown, session: DuelSession): number {
   const card = readCard(L, session);
-  const result = card ? getDuelAttackableTargets(session.state, card.uid) : { targets: [], directAttack: false };
+  const state = card && session.state.status === "resolving" && session.state.phase === "battle" ? { ...session.state, turnPlayer: card.controller } : session.state;
+  const result = card ? getDuelAttackableTargets(state, card.uid) : { targets: [], directAttack: false };
   pushGroupTable(L, result.targets.map((target) => target.uid));
   lua.lua_pushboolean(L, result.directAttack);
   return 2;

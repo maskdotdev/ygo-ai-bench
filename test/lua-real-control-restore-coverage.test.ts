@@ -112,9 +112,11 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-informer-spider-effect-grave-control.test.ts"
 // Restore ownership: "test/lua-real-script-locomotion-r-genex-synchro-level-control.test.ts"
 // Restore ownership: "test/lua-real-script-fire-fist-peacock-attack-control.test.ts"
-const controlFixtureCount = 69;
+// Restore ownership: "test/lua-real-script-mutant-mindmaster-attack-control-damage.test.ts"
+const controlFixtureCount = 70;
 const controlKindCounts = {
   attackAnnounceCostLinkedControlLock: 1,
+  attackTargetControlCalculateDamageLock: 1,
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
   damageStepBattleControlReplace: 1,
@@ -192,6 +194,7 @@ const controlSemanticVariantCounts = {
 
 type ControlKind =
   | "attackAnnounceCostLinkedControlLock"
+  | "attackTargetControlCalculateDamageLock"
   | "battleDestroyedTrapControlRace"
   | "battleStartPhaseControl"
   | "damageStepBattleControlReplace"
@@ -606,6 +609,30 @@ function realScriptControlFixtureFiles(): Array<{
         'eventName: "attackDeclared"',
         'eventName: "sentToGraveyard"',
         'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-mutant-mindmaster-attack-control-damage.test.ts",
+      kind: "attackTargetControlCalculateDamageLock",
+      required: [
+        "restores attack-target announcement control into direct lock, CalculateDamage, and handler attack lock",
+        "--Mutant Mindmaster",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "Duel.GetAttackTarget()~=nil and Duel.GetFieldGroupCount(tp,0,LOCATION_MZONE)>1",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "Duel.AdjustInstantly(tc)",
+        "Duel.GetControl(tc,tp,PHASE_BATTLE,1)",
+        "local ats=tc:GetAttackableTarget()",
+        "Duel.CalculateDamage(tc,g:GetFirst())",
+        "e2:SetCode(EFFECT_CANNOT_ATTACK)",
+        'eventName: "attackDeclared"',
+        'eventName: "controlChanged"',
+        'eventName: "battleDamageDealt"',
+        'eventName: "destroyed"',
         "previousController: 1",
       ],
     },
@@ -1513,6 +1540,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
     },
     {
       attackAnnounceCostLinkedControlLock: 0,
+      attackTargetControlCalculateDamageLock: 0,
       battleStartPhaseControl: 0,
       battleDestroyedTrapControlRace: 0,
       banishCostControlAttackLock: 0,

@@ -86,7 +86,7 @@ export function declareDuelAttack(
   }
 
   pushDuelLog(state, "attack", player, attacker.name, `Attacked ${target.name}`);
-  callbacks.collectEvent("attackDeclared", attacker);
+  callbacks.collectEvent("attackDeclared", [attacker, target]);
   callbacks.collectEvent("battleTargeted", target);
 }
 
