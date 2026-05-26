@@ -102,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCrimeScript || !hasPunishmentScript)(
           "controller": 1,
           "event": "continuous",
           "id": "lua-11-191",
+          "luaTypeFlags": 1,
           "oncePerTurn": false,
           "operation": [Function],
           "range": [
@@ -119,6 +120,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCrimeScript || !hasPunishmentScript)(
           "event": "continuous",
           "id": "lua-12-344",
           "label": 6,
+          "luaTypeFlags": 1,
           "oncePerTurn": false,
           "operation": [Function],
           "range": [
