@@ -136,8 +136,9 @@ function pushCheckReleaseGroup(L: unknown, session: DuelSession, hostState: LuaD
   const maximum = hasMax && lua.lua_isnumber(L, 4) ? Math.max(0, lua.lua_tointeger(L, 4)) : extendedShape ? Math.max(minimum, lua.lua_tointeger(L, 5)) : undefined;
   const excludedIndex = hasMax ? 5 : extendedShape ? 7 : 4;
   const excluded = readCardOrGroupUids(L, excludedIndex);
-  const selected = selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids);
-  const count = selected.length + releasableMonsterUids(L, session, filterRef, player, [...excluded, ...selected], readFilterArgs(L, excludedIndex + 1), false, hostState).length;
+  const includeOpponent = extendedShape;
+  const selected = selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids, false, includeOpponent);
+  const count = selected.length + releasableMonsterUids(L, session, filterRef, player, [...excluded, ...selected], readFilterArgs(L, excludedIndex + 1), false, hostState, includeOpponent).length;
   releaseOptionalFunctionRef(L, filterRef);
   lua.lua_pushboolean(L, count >= minimum && (maximum === undefined || selected.length <= maximum));
   return 1;
@@ -152,8 +153,9 @@ function pushSelectReleaseGroup(L: unknown, session: DuelSession, hostState: Lua
   const excludedIndex = extendedShape ? 8 : 5;
   const argsIndex = extendedShape ? 13 : excludedIndex + 1;
   const excluded = readCardOrGroupUids(L, excludedIndex);
-  const selected = selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids);
-  const uids = selected.length > max ? [] : [...selected, ...releasableMonsterUids(L, session, filterRef, player, [...excluded, ...selected], readFilterArgs(L, argsIndex), false, hostState)];
+  const includeOpponent = extendedShape;
+  const selected = selectedReleasableMonsterUids(session, player, excluded, hostState.selectedUids, false, includeOpponent);
+  const uids = selected.length > max ? [] : [...selected, ...releasableMonsterUids(L, session, filterRef, player, [...excluded, ...selected], readFilterArgs(L, argsIndex), false, hostState, includeOpponent)];
   releaseOptionalFunctionRef(L, filterRef);
   pushGroupTable(L, uids.slice(0, max > 0 ? max : Math.max(min, 1)));
   return 1;

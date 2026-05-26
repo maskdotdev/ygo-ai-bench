@@ -105,6 +105,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGolemScript)("Lua real script Gorgoni
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: facedownBackrow.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

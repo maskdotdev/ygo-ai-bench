@@ -94,7 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasZeroExtraLinkScript)("Lua real script
       eventChainLinkId: event.eventChainLinkId,
     }))).toEqual([
       { eventName: "chaining", eventCode: 1027, eventCardUid: zeroExtraLink.uid, eventPlayer: 0, eventValue: 1, relatedEffectId: 1, eventChainDepth: 1, eventChainLinkId: "chain-2" },
-      { eventName: "becameTarget", eventCode: 1028, eventCardUid: targetLink.uid, eventPlayer: undefined, eventValue: undefined, relatedEffectId: 1, eventChainDepth: 1, eventChainLinkId: "chain-2" },
+      { eventName: "becameTarget", eventCode: 1028, eventCardUid: targetLink.uid, eventPlayer: undefined, eventValue:  1, relatedEffectId: 1, eventChainDepth: 1, eventChainLinkId: "chain-2" },
       { eventName: "chainSolved", eventCode: 1022, eventCardUid: undefined, eventPlayer: 0, eventValue: 1, relatedEffectId: 1, eventChainDepth: 1, eventChainLinkId: "chain-2" },
     ]);
 

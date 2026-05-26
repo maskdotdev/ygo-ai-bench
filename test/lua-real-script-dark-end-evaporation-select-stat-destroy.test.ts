@@ -94,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDarkEndScript
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

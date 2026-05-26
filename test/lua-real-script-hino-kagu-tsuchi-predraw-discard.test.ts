@@ -80,6 +80,32 @@ describe.skipIf(!hasUpstreamScripts || !hasHinoScript)("Lua real script Hino-Kag
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredSetup, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredSetup, attack!);
     passBattleUntilTrigger(restoredSetup);
+    expect(restoredSetup.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: hino!.uid,
+        eventPlayer: 1,
+        eventValue: 1800,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: hino!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 0,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredSetup.session.state.pendingTriggers).toMatchInlineSnapshot(`
       [
         {
@@ -136,6 +162,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHinoScript)("Lua real script Hino-Kag
         "controller": 0,
         "event": "continuous",
         "id": "lua-8-1113",
+        "luaTypeFlags": 2050,
         "oncePerTurn": false,
         "operation": [Function],
         "ownerPlayer": 0,
@@ -156,7 +183,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHinoScript)("Lua real script Hino-Kag
         "sourceUid": "p0-deck-75745607-0",
         "triggerCode": 1113,
         "triggerEvent": "preDraw",
-        "triggerTiming": "when",
+        "triggerTiming": "if",
       }
     `);
     expect(restoredChain.session.state.cards.find((card) => card.uid === discardA!.uid)).toMatchObject({ location: "hand", controller: 1 });

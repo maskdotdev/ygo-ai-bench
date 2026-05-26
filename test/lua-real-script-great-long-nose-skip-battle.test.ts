@@ -186,6 +186,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGreatLongNoseScript)("Lua real script
         "description": 37711905,
         "event": "continuous",
         "id": "lua-8-183",
+        "luaTypeFlags": 2,
         "oncePerTurn": false,
         "operation": [Function],
         "ownerPlayer": 0,

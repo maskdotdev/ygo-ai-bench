@@ -189,6 +189,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fr
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: target.uid,
         eventChainDepth: 1,
         eventChainLinkId: "chain-5",
@@ -221,6 +222,32 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fr
     applyLuaRestoreAndAssert(restoredBattle, attack!);
     finishBattle(restoredBattle);
     expect(restoredBattle.session.state.battleDamage).toEqual({ 0: 0, 1: 1400 });
+    expect(restoredBattle.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: ownDecoy.uid,
+        eventPlayer: 1,
+        eventValue: 1400,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: ownDecoy.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 2,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 1,
+        },
+      },
+    ]);
   });
 });
 

@@ -127,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Re
         "controller": 0,
         "event": "continuous",
         "id": "lua-4-41",
+        "luaTypeFlags": 2,
         "luaValueDescriptor": "indestructible:opponent",
         "oncePerTurn": false,
         "operation": [Function],

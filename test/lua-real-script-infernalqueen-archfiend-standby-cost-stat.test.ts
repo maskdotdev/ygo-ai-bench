@@ -125,6 +125,7 @@ describe.skipIf(!hasUpstreamScripts || !hasInfernalqueenScript)("Lua real script
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
@@ -140,6 +141,7 @@ describe.skipIf(!hasUpstreamScripts || !hasInfernalqueenScript)("Lua real script
     expectCleanRestore(restoredStat);
     expectRestoredLegalActions(restoredStat, 0);
     expect(currentAttack(restoredStat.session.state.cards.find((card) => card.uid === queen.uid), restoredStat.session.state)).toBe(1900);
+    expect(restoredStat.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

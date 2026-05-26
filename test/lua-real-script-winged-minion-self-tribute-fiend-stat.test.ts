@@ -111,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasWingedMinionScript)("Lua real script 
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: fiendTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
