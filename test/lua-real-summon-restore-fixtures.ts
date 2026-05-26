@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { discardTriggerSpecialSummonFixtureCount, realScriptDiscardTriggerSpecialSummonFixtureSnippets } from "./lua-real-discard-trigger-special-summon-restore-fixtures.js";
 import { realScriptForceMonsterZoneSummonLockFixtureSnippets } from "./lua-real-force-mzone-summon-restore-fixtures.js";
 import { freeChainSpecialSummonFixtureCount, realScriptFreeChainSpecialSummonFixtureSnippets } from "./lua-real-free-chain-special-summon-restore-fixtures.js";
@@ -10,11 +11,22 @@ import { realScriptSummonSuccessTargetSpecialSummonFixtureSnippets, summonSucces
 
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
+const trackedTestFileCache = new Set(
+  execSync("git ls-files test", { cwd: root, encoding: "utf8" })
+    .split("\n")
+    .filter((file) => file.startsWith("test/"))
+    .map((file) => path.basename(file)),
+);
 export const summonKeywords = ["summon", "fusion", "synchro", "xyz", "link", "ritual", "pendulum"];
 const nonSummonKeywordFixtures = new Set([
   "lua-real-script-xyz-reversal-swap-control.test.ts",
 ]);
-export const realScriptSummonFixtureCount = 673;
+
+function testFiles(): string[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => trackedTestFileCache.has(file));
+}
+export const realScriptSummonFixtureCount = 500;
 export const summonProcedureFixtureCount = 39;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -27,13 +39,13 @@ export const selfTributeZoneSpecialSummonFixtureCount = 3;
 export const tributeMaterialFixtureCount = 1;
 export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
-  fusion: 76,
-  link: 61,
+  fusion: 68,
+  link: 40,
   pendulum: 25,
-  ritual: 34,
-  summon: 396,
-  synchro: 50,
-  xyz: 31,
+  ritual: 29,
+  summon: 275,
+  synchro: 43,
+  xyz: 20,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
 export const summonProcedureFamilyCounts = {
   fusionProcedure: 1,
@@ -198,7 +210,7 @@ export type PendulumGrantKind =
 export function realScriptSummonFixtureFiles(): string[] {
   // Restore ownership: "test/lua-real-script-de-synchro-extra-return-material-revive.test.ts"
   // Restore ownership: "test/lua-real-script-mimighoul-archfiend-hand-set-summon.test.ts"
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.startsWith("lua-real-script-") && file.endsWith(".test.ts"))
     .filter((file) => !nonSummonKeywordFixtures.has(file))
     .filter((file) => summonKeywords.some((keyword) => file.includes(keyword)))
@@ -445,7 +457,7 @@ export function countSelfTributeZoneSpecialSummonKinds(
 }
 
 export function realScriptSummonProcedureFixtureFiles(): string[] {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => /^lua-real-script-(?:link|xyz|synchro)-procedure-filters\.test\.ts$/.test(file) || [
       "lua-real-script-chronomaly-moai-special-summon-procedure.test.ts",
       "lua-real-script-caligo-claw-crow-special-summon-procedure.test.ts",

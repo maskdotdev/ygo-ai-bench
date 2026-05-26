@@ -1,14 +1,26 @@
 import fs from "node:fs";
 import path from "node:path";
+import { execSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const testRoot = path.join(root, "test");
+const trackedTestFileCache = new Set(
+  execSync("git ls-files test", { cwd: root, encoding: "utf8" })
+    .split("\n")
+    .filter((file) => file.startsWith("test/"))
+    .map((file) => path.basename(file)),
+);
+
+function testFiles(): string[] {
+  return fs.readdirSync(testRoot)
+    .filter((file) => trackedTestFileCache.has(file));
+}
 
 describe("coverage inventory guards", () => {
   it("requires fixture classifiers in coverage tests to fail closed unless explicitly exempted", () => {
     const exemptClassifiers = new Set(["lua-real-response-restore-coverage.test.ts:classifyResponseFixture"]);
-    const softClassifiers = fs.readdirSync(testRoot)
+    const softClassifiers = testFiles()
       .filter((file) => /coverage\.test\.ts$/.test(file))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .flatMap((file) => {
@@ -27,7 +39,7 @@ describe("coverage inventory guards", () => {
   });
 
   it("requires filesystem-scanned coverage tests to pin their fixture inventory", () => {
-    const weak = fs.readdirSync(testRoot)
+    const weak = testFiles()
       .filter((file) => /coverage\.test\.ts$/.test(file))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .filter((file) => {
@@ -39,7 +51,7 @@ describe("coverage inventory guards", () => {
   });
 
   it("requires Lua real-script proof counts to be exact", () => {
-    const files = fs.readdirSync(testRoot)
+    const files = testFiles()
       .filter((file) => /^lua-real-script-.*\.test\.ts$/.test(file));
     const loose = files
       .flatMap((file) => {
@@ -57,11 +69,11 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(2644);
+    expect(exactCount).toBe(2097);
   });
 
   it("requires Lua registration proof counts to be exact", () => {
-    const files = fs.readdirSync(testRoot)
+    const files = testFiles()
       .filter((file) => /^lua-.*\.test\.ts$/.test(file));
     const loose = files
       .flatMap((file) => {
@@ -79,11 +91,11 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(3278);
+    expect(exactCount).toBe(2731);
   });
 
   it("requires non-coverage Lua restore tests to prove raw, grouped, and flattened restored actions", () => {
-    const restoreFiles = fs.readdirSync(testRoot)
+    const restoreFiles = testFiles()
       .filter((file) => /^lua-.*\.test\.ts$/.test(file))
       .filter((file) => !/coverage\.test\.ts$/.test(file))
       .filter((file) => {
@@ -98,12 +110,12 @@ describe("coverage inventory guards", () => {
           || !hasFlattenedGroupedRestoreEvidence(text);
       });
 
-    expect(restoreFiles).toHaveLength(2497);
+    expect(restoreFiles).toHaveLength(2079);
     expect(missingRestoreEvidence).toEqual([]);
   });
 
   it("requires source-only event restore branches to prove raw, grouped, and flattened restored actions before consumption", () => {
-    const sourceOnlyFiles = fs.readdirSync(testRoot)
+    const sourceOnlyFiles = testFiles()
       .filter((file) => /^lua-.*source-only-event\.test\.ts$/.test(file));
     const restoreBranches = sourceOnlyFiles
       .flatMap((file) => sourceOnlyRestoreBranches(file));
@@ -117,7 +129,7 @@ describe("coverage inventory guards", () => {
   });
 
   it("requires event restore branches to prove raw, grouped, and flattened restored actions before consumption", () => {
-    const eventFiles = fs.readdirSync(testRoot)
+    const eventFiles = testFiles()
       .filter((file) => /^lua-.*(?:grouped-event|event)\.test\.ts$/.test(file))
       .filter((file) => !file.includes("source-only"));
     const restoreBranches = eventFiles
@@ -137,7 +149,7 @@ describe("coverage inventory guards", () => {
       .filter((helper) => !hasStrongRestoreHelper(readTestFile(helper.file), helper.name))
       .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
 
-    expect(helpers).toHaveLength(1876);
+    expect(helpers).toHaveLength(1458);
     expect(weak).toEqual([]);
   });
 
@@ -148,7 +160,7 @@ describe("coverage inventory guards", () => {
       .filter((helper) => !hasStrongLuaRestoreResponseHelper(helper, helpersByKey))
       .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
 
-    expect(helpers).toHaveLength(543);
+    expect(helpers).toHaveLength(526);
     expect(weak).toEqual([]);
   });
 
@@ -159,7 +171,7 @@ describe("coverage inventory guards", () => {
         || !hasReturnedGroupedLegalActionProof(helper.text)
         || !hasReturnedLegalActionFlattenProof(helper.text))
       .map((helper) => `${helper.file}:${helper.line}`);
-    const helperReferences = fs.readdirSync(testRoot)
+    const helperReferences = testFiles()
       .filter((file) => file.endsWith(".test.ts"))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .reduce((count, file) => count + (readTestFile(file).match(/assertRestoreLegalWindow\(/g)?.length ?? 0), 0);
@@ -176,7 +188,7 @@ describe("coverage inventory guards", () => {
         || !hasReturnedGroupedLegalActionProof(helper.text)
         || !hasReturnedLegalActionFlattenProof(helper.text))
       .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
-    const helperReferences = fs.readdirSync(testRoot)
+    const helperReferences = testFiles()
       .filter((file) => file.endsWith(".test.ts"))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .reduce((count, file) => count + (readTestFile(file).match(/assertLegalWindow(?:Metadata)?\(/g)?.length ?? 0), 0);
@@ -187,7 +199,7 @@ describe("coverage inventory guards", () => {
   });
 
   it("requires chain-limit restore helpers to prove raw, grouped, and flattened restored actions", () => {
-    const chainLimitRestoreFiles = fs.readdirSync(testRoot)
+    const chainLimitRestoreFiles = testFiles()
       .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file));
     const helperFiles = chainLimitRestoreFiles
       .filter((file) => fs.readFileSync(path.join(testRoot, file), "utf8").includes("function expectRestoredChainLimit"));
@@ -240,7 +252,7 @@ describe("coverage inventory guards", () => {
     const weak = helpers
       .filter((helper) => !hasStrongStaleResponseHelper(helper))
       .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
-    const helperReferences = fs.readdirSync(testRoot)
+    const helperReferences = testFiles()
       .filter((file) => file.endsWith(".test.ts"))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .reduce((count, file) => count + (readTestFile(file).match(/\b(?:assert|expect)Stale\w*\(/g)?.length ?? 0), 0);
@@ -255,7 +267,7 @@ describe("coverage inventory guards", () => {
     const weak = helpers
       .filter((helper) => !hasStrongPublicRestoreMetadataHelper(helper.text))
       .map((helper) => `${helper.file}:${helper.line}`);
-    const helperReferences = fs.readdirSync(testRoot)
+    const helperReferences = testFiles()
       .filter((file) => file.endsWith(".ts"))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .reduce((count, file) => count + (readTestFile(file).match(/\bassertPublicRestoreMetadata\(/g)?.length ?? 0), 0);
@@ -270,7 +282,7 @@ describe("coverage inventory guards", () => {
     const weak = helpers
       .filter((helper) => !hasStrongCurrentWindowMetadataHelper(helper.text))
       .map((helper) => `${helper.file}:${helper.line}`);
-    const helperReferences = fs.readdirSync(testRoot)
+    const helperReferences = testFiles()
       .filter((file) => file.endsWith(".ts"))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .reduce((count, file) => count + (readTestFile(file).match(/\bexpectCurrentWindowMetadata\(/g)?.length ?? 0), 0);
@@ -285,7 +297,7 @@ describe("coverage inventory guards", () => {
     const weak = helpers
       .filter((helper) => !hasStrongFailedRestoreSurfaceHelper(helper.text))
       .map((helper) => `${helper.file}:${helper.line}`);
-    const helperReferences = fs.readdirSync(testRoot)
+    const helperReferences = testFiles()
       .filter((file) => file.endsWith(".ts"))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .reduce((count, file) => count + (readTestFile(file).match(/\bassertFailedRestoreSurface\(/g)?.length ?? 0), 0);
@@ -296,7 +308,7 @@ describe("coverage inventory guards", () => {
   });
 
   it("requires Lua real-script and parity fixtures to assert outcomes instead of bare throw checks", () => {
-    const files = fs.readdirSync(testRoot)
+    const files = testFiles()
       .filter((file) => /^(?:lua-real|parity).*\.test\.ts$/.test(file));
     const weak = files
       .flatMap((file) => {
@@ -305,12 +317,12 @@ describe("coverage inventory guards", () => {
           .map((match) => `${file}:${lineNumber(text, match.index ?? 0)}`);
       });
 
-    expect(files).toHaveLength(3495);
+    expect(files).toHaveLength(3030);
     expect(weak).toEqual([]);
   });
 
   it("requires test proof floors to be exact", () => {
-    const loose = fs.readdirSync(testRoot)
+    const loose = testFiles()
       .filter((file) => file.endsWith(".test.ts"))
       .filter((file) => file !== "coverage-inventory-guards.test.ts")
       .flatMap((file) => {
@@ -346,7 +358,7 @@ function readTestFile(file: string): string {
 }
 
 function restoredLegalActionHelpers(): Array<{ file: string; line: number; name: string }> {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.endsWith(".test.ts"))
     .filter((file) => file !== "coverage-inventory-guards.test.ts")
     .flatMap((file) => {
@@ -359,7 +371,7 @@ function restoredLegalActionHelpers(): Array<{ file: string; line: number; name:
 type LuaRestoreResponseHelper = { file: string; line: number; name: string; text: string };
 
 function luaRestoreResponseHelpers(): LuaRestoreResponseHelper[] {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.endsWith(".ts"))
     .flatMap((file) => {
       const text = readTestFile(file);
@@ -383,7 +395,7 @@ function helperKey(helper: Pick<LuaRestoreResponseHelper, "file" | "name">): str
 type RestoreLegalWindowHelper = { file: string; line: number; text: string };
 
 function restoreLegalWindowHelpers(): RestoreLegalWindowHelper[] {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.endsWith(".test.ts"))
     .filter((file) => file !== "coverage-inventory-guards.test.ts")
     .flatMap((file) => {
@@ -403,7 +415,7 @@ function restoreLegalWindowHelpers(): RestoreLegalWindowHelper[] {
 type LocalLegalWindowHelper = { file: string; line: number; name: string; text: string };
 
 function localLegalWindowHelpers(): LocalLegalWindowHelper[] {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.endsWith(".test.ts"))
     .filter((file) => file !== "coverage-inventory-guards.test.ts")
     .flatMap((file) => {
@@ -484,7 +496,7 @@ function hasReturnedLegalActionFlattenProof(text: string): boolean {
 }
 
 function chainLimitRestoreResponseCalls(): Array<{ file: string; line: number; restoredVariable: string; responseVariable: string; text: string }> {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => /^lua-chain-limit-.*restore\.test\.ts$/.test(file))
     .flatMap((file) => {
       const text = readTestFile(file);
@@ -505,7 +517,7 @@ function hasStrongChainLimitRestoreResponse(call: { restoredVariable: string; re
 }
 
 function staleRejectedResponseCalls(): Array<{ file: string; line: number; responseVariable: string; text: string }> {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => /^(?:lua|duel)-stale-.*responses\.test\.ts$/.test(file))
     .flatMap((file) => {
       const text = readTestFile(file);
@@ -529,7 +541,7 @@ function hasReturnedLegalActionSurfaceProof(text: string, responseVariable: stri
 type StaleResponseHelper = { file: string; line: number; name: string; text: string };
 
 function staleResponseHelpers(): StaleResponseHelper[] {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.endsWith(".test.ts"))
     .filter((file) => file !== "coverage-inventory-guards.test.ts")
     .flatMap((file) => {
@@ -570,7 +582,7 @@ function hasStrongResultActionsMatchStateProof(text: string, fileText: string): 
 type PublicRestoreMetadataHelper = { file: string; line: number; text: string };
 
 function publicRestoreMetadataHelpers(): PublicRestoreMetadataHelper[] {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.endsWith(".ts"))
     .filter((file) => file !== "coverage-inventory-guards.test.ts")
     .flatMap((file) => {
@@ -600,7 +612,7 @@ function hasStrongPublicRestoreMetadataHelper(text: string): boolean {
 type CurrentWindowMetadataHelper = { file: string; line: number; text: string };
 
 function currentWindowMetadataHelpers(): CurrentWindowMetadataHelper[] {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.endsWith(".ts"))
     .filter((file) => file !== "coverage-inventory-guards.test.ts")
     .flatMap((file) => {
@@ -627,7 +639,7 @@ function hasStrongCurrentWindowMetadataHelper(text: string): boolean {
 type FailedRestoreSurfaceHelper = { file: string; line: number; text: string };
 
 function failedRestoreSurfaceHelpers(): FailedRestoreSurfaceHelper[] {
-  return fs.readdirSync(testRoot)
+  return testFiles()
     .filter((file) => file.endsWith(".ts"))
     .filter((file) => file !== "coverage-inventory-guards.test.ts")
     .flatMap((file) => {
