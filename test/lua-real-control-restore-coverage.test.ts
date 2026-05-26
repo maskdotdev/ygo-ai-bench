@@ -8,6 +8,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-metaphys-horus-synchro-material-control.test.ts"
 // Restore ownership: "test/lua-real-script-zombie-necronize-control-grave-set.test.ts"
 // Restore ownership: "test/lua-real-script-abduction-banish-control.test.ts"
+// Restore ownership: "test/lua-real-script-alien-hypno-gemini-counter-control.test.ts"
 // Restore ownership: "test/lua-real-script-altergeist-adminia-cost-control-setcode.test.ts"
 // Restore ownership: "test/lua-real-script-amanokujaki-quick-control-attribute.test.ts"
 // Restore ownership: "test/lua-real-script-amaze-attraction-viking-vortex-attack-control.test.ts"
@@ -91,7 +92,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 43;
+const controlFixtureCount = 44;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleCounterControl: 2,
@@ -100,6 +101,7 @@ const controlKindCounts = {
   cannotChangeControl: 1,
   confirmDamageGroupControl: 1,
   fusionSummonReleaseCostControl: 1,
+  geminiCounterControlEndDestroy: 1,
   detachControlReleaseDestroy: 1,
   discardCostTemporaryControl: 2,
   equipControl: 1,
@@ -151,6 +153,7 @@ type ControlKind =
   | "cannotChangeControl"
   | "confirmDamageGroupControl"
   | "fusionSummonReleaseCostControl"
+  | "geminiCounterControlEndDestroy"
   | "detachControlReleaseDestroy"
   | "discardCostTemporaryControl"
   | "equipControl"
@@ -367,6 +370,27 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.GetControl(tc,tp)",
         'eventName: "banished"',
         'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-alien-hypno-gemini-counter-control.test.ts",
+      kind: "geminiCounterControlEndDestroy",
+      required: [
+        'const alienHypnoCode = "38468214"',
+        "--Alien Hypno",
+        "Gemini.AddProcedure(c)",
+        "e1:SetCondition(Gemini.EffectStatusCondition)",
+        "return c:GetCounter(COUNTER_A)>0 and c:IsControlerCanBeChanged()",
+        "e1:SetCode(EFFECT_SET_CONTROL)",
+        "tc:RegisterEffect(e1)",
+        "e2:SetCode(EVENT_PHASE+PHASE_END)",
+        "c:RemoveCounter(tp,COUNTER_A,1,REASON_EFFECT)",
+        "Duel.RaiseEvent(c,EVENT_REMOVE_COUNTER+COUNTER_A,e,REASON_EFFECT,tp,tp,1)",
+        "e3:SetCode(EFFECT_SELF_DESTROY)",
+        'eventName: "controlChanged"',
+        'eventName: "counterRemoved"',
+        'eventName: "destroyed"',
         "previousController: 1",
       ],
     },
@@ -876,6 +900,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       flipGetControl: 0,
       flipSetControl: 0,
       fusionSummonReleaseCostControl: 0,
+      geminiCounterControlEndDestroy: 0,
       groupSwapControl: 0,
       linkedZoneControlRevive: 0,
       ownedControlAttackDrain: 0,

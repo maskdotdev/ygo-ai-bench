@@ -3,6 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
+import { getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, collectDuelTriggerEvent, damageDuelPlayer, destroyDuelCard, detachDuelOverlayMaterials, drawDuelCards, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState, recoverDuelPlayer, sendDuelCardToGraveyard } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelLocations } from "#duel/location-kinds.js";
@@ -52,6 +53,7 @@ const luaEffectPierce = 203;
 const luaPhotonTridentCode = 51589188;
 const luaCategoryDestroy = 0x1;
 const luaEventBattleDamage = 1143;
+const luaEffectSelfDestroy = 141;
 const luaEffectIndestructibleEffect = 41;
 const luaEffectIndestructibleBattle = 42;
 const luaEffectForceMonsterZone = 265;
@@ -102,6 +104,7 @@ const luaArcanaForceFoolCode = "62892347";
 const luaProtonBlastCode = "49511705";
 const luaOldEntityHastorrCode = "70913714";
 const luaArcanaForceMoonCode = "97452817";
+const luaAlienHypnoCode = "38468214";
 const luaCenterfrogCode = "47346782";
 const luaArmitylePhantomFuryCode = "60110982";
 const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
@@ -121,6 +124,7 @@ const luaResetEvent = 0x1000; const luaResetChain = 0x80000000; const luaResetTu
 const luaResetPhase = 0x40000000; const luaResetOpponentTurn = 0x20000000;
 const luaPhaseBattle = 0x80; const luaPhaseStandby = 0x2; const luaPhaseEnd = 0x200;
 const luaBattlePhaseEventCode = luaResetEvent | luaPhaseBattle; const luaPhaseDrawEventCode = luaResetEvent | 0x1; const luaPhaseStandbyEventCode = luaResetEvent | luaPhaseStandby; const luaPhaseEndEventCode = luaResetEvent | luaPhaseEnd;
+const luaCounterA = 0x100e;
 const luaHalfDamage = 0x80000001;
 const luaResetsStandardPhaseEnd = 0x41fe1200;
 const luaResetsStandardPhaseEndRuntime = luaResetsStandardPhaseEnd & ~luaResetEvent;
@@ -970,7 +974,7 @@ function restoreKnownLuaEffects(
   for (const effect of snapshotEffects) {
     if (!effect.registryKey) continue;
     const knownRestorable = isKnownRestorableLuaEffect(effect, snapshotEffects) || isKnownMagnificentMachineAngelBattleStartDisableEffect(effect);
-    if (!registryKeys.has(effect.registryKey) && !(knownRestorable && (isKnownSelfEndPhaseDestroyEffect(effect) || isKnownSelfEndPhaseBanishEffect(effect) || isKnownLimiterRemovalDelayedDestroyEffect(effect) || isKnownRagingMadPlantsDelayedDestroyEffect(effect) || isKnownRbLambdaBladeDelayedDestroyEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownEvolsaurCeratoBattleDestroyingSearchEffect(effect) || isKnownUtopiaEnvoyBattleDestroyingReviveEffect(effect) || isKnownByeByeDamageBattleDamageReflectEffect(effect) || isKnownByeByeDamageSyntheticBattleIndestructibleEffect(effect) || isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect) || isKnownOverdoomLineEndPhaseDestroyEffect(effect) || isKnownMagnificentMachineAngelBattleStartDisableEffect(effect) || isKnownGauntletWarriorDamageStepResetEffect(effect) || isKnownCyberOgreDamageStepResetEffect(effect) || isKnownCastleDarkIllusionsStandbyStatEffect(effect)))) continue;
+    if (!registryKeys.has(effect.registryKey) && !(knownRestorable && (isKnownSelfEndPhaseDestroyEffect(effect) || isKnownSelfEndPhaseBanishEffect(effect) || isKnownAlienHypnoCounterRemoveEffect(effect) || isKnownAlienHypnoSelfDestroyEffect(effect) || isKnownLimiterRemovalDelayedDestroyEffect(effect) || isKnownRagingMadPlantsDelayedDestroyEffect(effect) || isKnownRbLambdaBladeDelayedDestroyEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownEvolsaurCeratoBattleDestroyingSearchEffect(effect) || isKnownUtopiaEnvoyBattleDestroyingReviveEffect(effect) || isKnownByeByeDamageBattleDamageReflectEffect(effect) || isKnownByeByeDamageSyntheticBattleIndestructibleEffect(effect) || isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect) || isKnownOverdoomLineEndPhaseDestroyEffect(effect) || isKnownMagnificentMachineAngelBattleStartDisableEffect(effect) || isKnownGauntletWarriorDamageStepResetEffect(effect) || isKnownCyberOgreDamageStepResetEffect(effect) || isKnownCastleDarkIllusionsStandbyStatEffect(effect)))) continue;
     refreshKnownRestoredLuaEffect(session, effect);
     if (restored.has(effect.registryKey)) continue;
     if (!knownRestorable) continue;
@@ -1075,7 +1079,7 @@ function restoredLuaTriggerMetadata(effect: SerializedDuelEffect): Partial<Pick<
   if (isKnownCelestialMagicianEndSearchEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
   if (isKnownSpellbookPowerBattleDestroyingSearchEffect(effect)) return { triggerEvent: "battleDestroyed" as const, triggerCode: 1139, triggerTiming: "if" as const };
   if (isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect)) return { triggerEvent: "battleDamageDealt" as const, triggerCode: luaEventBattleDamage, triggerTiming: "when" as const };
-  if (isKnownSelfEndPhaseDestroyEffect(effect) || isKnownSelfEndPhaseSendEffect(effect) || isKnownSelfEndPhaseReturnToHandEffect(effect) || isKnownSelfEndPhaseBanishEffect(effect) || isKnownDelayedGroupSendToHandEffect(effect) || isKnownWakeCupMochaDelayedSendToGraveEffect(effect) || isKnownLimiterRemovalDelayedDestroyEffect(effect) || isKnownRagingMadPlantsDelayedDestroyEffect(effect) || isKnownRbLambdaBladeDelayedDestroyEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownPurushaddollAeonDelayedFlipEffect(effect) || isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownDelayedBattleDestroyPhaseEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
+  if (isKnownSelfEndPhaseDestroyEffect(effect) || isKnownSelfEndPhaseSendEffect(effect) || isKnownSelfEndPhaseReturnToHandEffect(effect) || isKnownSelfEndPhaseBanishEffect(effect) || isKnownAlienHypnoCounterRemoveEffect(effect) || isKnownDelayedGroupSendToHandEffect(effect) || isKnownWakeCupMochaDelayedSendToGraveEffect(effect) || isKnownLimiterRemovalDelayedDestroyEffect(effect) || isKnownRagingMadPlantsDelayedDestroyEffect(effect) || isKnownRbLambdaBladeDelayedDestroyEffect(effect) || isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) || isKnownPurushaddollAeonDelayedFlipEffect(effect) || isKnownTsumuhaKutsunagiDelayedShuffleEffect(effect) || isKnownTemporaryBanishReturnToFieldEffect(effect) || isKnownDelayedBattleDestroyPhaseEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
   if (isKnownArmitylePhantomFuryEndPhaseEffect(effect)) return { triggerEvent: "phaseEnd" as const, triggerCode: luaPhaseEndEventCode, triggerTiming: "if" as const };
   if (isKnownOuroborosSageAttackLimitWatcherEffect(effect) || isKnownOuroborosSageAttackDoubleEffect(effect)) return { triggerEvent: "attackDeclared" as const, triggerCode: 1130, triggerTiming: "when" as const };
   if (isKnownDoubleOrNothingBattleStartDoubleEffect(effect)) return { triggerEvent: "battleStarted" as const, triggerCode: 1132, triggerTiming: "when" as const };
@@ -1087,7 +1091,7 @@ function restoredLuaTriggerMetadata(effect: SerializedDuelEffect): Partial<Pick<
   return {}; }
 
 function refreshKnownRestoredLuaEffect(session: DuelSession, effect: SerializedDuelEffect): void {
-  if (!effect.registryKey || (!isKnownSelfEndPhaseDestroyEffect(effect) && !isKnownSelfEndPhaseSendEffect(effect) && !isKnownSelfEndPhaseReturnToHandEffect(effect) && !isKnownSelfEndPhaseBanishEffect(effect) && !isKnownDelayedBattleDestroyPhaseEffect(effect) && !isKnownWakeCupMochaDelayedSendToGraveEffect(effect) && !isKnownLimiterRemovalDelayedDestroyEffect(effect) && !isKnownRagingMadPlantsDelayedDestroyEffect(effect) && !isKnownRbLambdaBladeDelayedDestroyEffect(effect) && !isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) && !isKnownMetaphysRagnarokEndPhaseBanishEffect(effect) && !isKnownTemporaryBanishReturnToFieldEffect(effect))) return;
+  if (!effect.registryKey || (!isKnownSelfEndPhaseDestroyEffect(effect) && !isKnownSelfEndPhaseSendEffect(effect) && !isKnownSelfEndPhaseReturnToHandEffect(effect) && !isKnownSelfEndPhaseBanishEffect(effect) && !isKnownAlienHypnoCounterRemoveEffect(effect) && !isKnownAlienHypnoSelfDestroyEffect(effect) && !isKnownDelayedBattleDestroyPhaseEffect(effect) && !isKnownWakeCupMochaDelayedSendToGraveEffect(effect) && !isKnownLimiterRemovalDelayedDestroyEffect(effect) && !isKnownRagingMadPlantsDelayedDestroyEffect(effect) && !isKnownRbLambdaBladeDelayedDestroyEffect(effect) && !isKnownEngraverOfTheMarkDelayedDestroyEffect(effect) && !isKnownMetaphysRagnarokEndPhaseBanishEffect(effect) && !isKnownTemporaryBanishReturnToFieldEffect(effect))) return;
   const restored = session.state.effects.find((candidate) => candidate.registryKey === effect.registryKey);
   if (!restored) return;
   Object.assign(restored, {
@@ -1266,6 +1270,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownByeByeDamageSyntheticBattleIndestructibleEffect(effect) ||
     isKnownByeByeDamageSyntheticBattleDamageReflectEffect(effect) ||
     isKnownOverdoomLineEndPhaseDestroyEffect(effect) ||
+    isKnownAlienHypnoCounterRemoveEffect(effect) ||
+    isKnownAlienHypnoSelfDestroyEffect(effect) ||
     isKnownDoubleOrNothingBattleStartDoubleEffect(effect) ||
     isKnownMagnificentMachineAngelBattleStartDisableEffect(effect) ||
     isKnownMermailAbyssbalaenBattleStartDestroyEffect(effect) ||
@@ -1481,6 +1487,25 @@ function isKnownCenterfrogControlEffect(effect: SerializedDuelEffect): boolean {
     effect.sourceUid !== undefined &&
     effect.category === luaCategoryControl &&
     effect.property === 0x10 &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone";
+}
+function isKnownAlienHypnoCounterRemoveEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaAlienHypnoCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaPhaseEndEventCode &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.countLimit === 1 &&
+    effect.range.length === 1 &&
+    effect.range[0] === "monsterZone";
+}
+function isKnownAlienHypnoSelfDestroyEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaAlienHypnoCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === luaEffectSelfDestroy &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone";
 }
@@ -2382,6 +2407,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownArcanaForceMoonStandbyTokenEffect(effect)) return arcanaForceMoonStandbyTokenOperation(effect);
   if (isKnownArcanaForceMoonEndControlEffect(effect)) return arcanaForceMoonEndControlOperation(effect);
   if (isKnownCenterfrogControlEffect(effect)) return centerfrogControlOperation(effect);
+  if (isKnownAlienHypnoCounterRemoveEffect(effect)) return alienHypnoCounterRemoveOperation(effect);
   if (isKnownArmitylePhantomFuryEndPhaseEffect(effect)) return armitylePhantomFuryEndPhaseOperation(effect);
   if (isKnownWattcubeIgnitionAttackBoostEffect(effect)) return wattcubeIgnitionAttackBoostOperation(effect);
   if (isKnownClashingSoulsBattledFieldSendEffect(effect)) return clashingSoulsBattledFieldSendOperation(effect);
@@ -2418,6 +2444,30 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
     return luaTemporaryControlReturnOperation(returnPlayer);
   }
   return () => {}; }
+function alienHypnoCounterRemoveOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    if (!source || !removeDuelCardCounter(source, luaCounterA, 1)) return;
+    collectDuelTriggerEvent(ctx.duel, "counterRemoved", source, {
+      eventReason: duelReason.effect,
+      eventReasonPlayer: ctx.player,
+      eventReasonCardUid: effect.sourceUid,
+      eventReasonEffectId: Number(effect.id.match(/^lua-(\d+)/)?.[1]),
+    });
+    const selfDestroy = ctx.duel.effects.find((candidate) =>
+      candidate.sourceUid === source.uid &&
+      candidate.code === luaEffectSelfDestroy &&
+      candidate.event === "continuous" &&
+      candidate.registryKey?.startsWith(`lua:${luaAlienHypnoCode}:`) === true
+    );
+    if (selfDestroy && getDuelCardCounter(source, luaCounterA) === 0) {
+      destroyDuelCard(ctx.duel, source.uid, source.controller, duelReason.effect | duelReason.destroy, selfDestroy.controller, "graveyard", {
+        eventReasonCardUid: source.uid,
+        eventReasonEffectId: Number(selfDestroy.id.match(/^lua-(\d+)/)?.[1]),
+      });
+    }
+  };
+}
 function hunterSevenWeaponsPreDamageOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] { return (ctx) => { ctx.duel.effects.push({ id: `${effect.id}-attack-boost`, event: "continuous", code: 100, controller: effect.controller, sourceUid: effect.sourceUid, registryKey: `${effect.registryKey}:attack-boost`, range: ["monsterZone"], reset: { flags: luaResetPhase | 0x40 }, value: 1000, operation: () => {} }); }; }
 function isKnownByeByeDamagePreDamageEffect(effect: SerializedDuelEffect | undefined): effect is SerializedDuelEffect {
   return Boolean(effect?.registryKey?.startsWith("lua:20735371:") && effect.event === "quick" && effect.code === 1134 && effect.luaConditionDescriptor === "condition:attack-target-controller:self-no-player-flag:20735371");
@@ -3725,6 +3775,8 @@ function restoredLuaConditionCallbacks(effect: SerializedDuelEffect): Pick<DuelE
   if (isKnownBookOfEclipsePhaseEndEffect(effect)) return { canActivate: bookOfEclipsePhaseEndCanActivate(effect) };
   if (isKnownMaharaghiPredrawEffect(effect)) return { canActivate: (ctx) => ctx.duel.turnPlayer === effect.controller && topDeckCards(ctx.duel, effect.controller).length > 0 };
   if (isKnownLevelNormalEndPhaseDestroyEffect(effect)) return { canActivate: levelNormalEndPhaseDestroyCanActivate(effect) };
+  if (isKnownAlienHypnoCounterRemoveEffect(effect)) return { canActivate: (ctx) => ctx.duel.turnPlayer === ctx.source.controller && getDuelCardCounter(ctx.source, luaCounterA) > 0 };
+  if (isKnownAlienHypnoSelfDestroyEffect(effect)) return { canActivate: (ctx) => getDuelCardCounter(ctx.source, luaCounterA) === 0 };
   if (isKnownEngraverOfTheMarkDelayedDestroyEffect(effect)) return { canActivate: engraverOfTheMarkDelayedDestroyCanActivate(effect) };
   if (isKnownPurushaddollAeonDelayedFlipEffect(effect)) return { canActivate: purushaddollAeonDelayedFlipCanActivate(effect) };
   const temporaryBanishReturnCondition = temporaryBanishReturnToFieldCanActivate(effect);
