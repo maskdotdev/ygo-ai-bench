@@ -2,6 +2,7 @@ import { findCard, getCards, moveDuelCard, pushDuelLog, recordPreviousDuelCardSt
 import { duelActivity, recordFlipSummonActivity, recordNormalSetActivity, recordNormalSummonActivity, recordSpecialSummonActivity } from "#duel/activity.js";
 import { markProcedureComplete } from "#duel/procedure-status.js";
 import { duelReason } from "#duel/reasons.js";
+import { continuousEffectAppliesToCard } from "#duel/continuous-effects.js";
 import { availableForcedMonsterZoneCount, firstOpenForcedMonsterZoneSequence } from "#duel/forced-monster-zones.js";
 import { tributeUnitCount } from "#duel/double-tribute.js";
 import { canUseFusionSubstitute } from "#duel/fusion-substitute.js";
@@ -11,9 +12,10 @@ import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { cardCombinations, materialCodesMatch, selectMaterialUidsForCodes, type MaterialCodeMatchOptions } from "#duel/summon-materials.js";
 import { isSummonTypeMaskMatch, summonTypeMaskFromCard } from "#duel/summon-type-codes.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
-import type { CardPosition, DuelAction, DuelCardInstance, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
+import type { CardPosition, DuelAction, DuelCardInstance, DuelEffectContext, DuelEventName, DuelLocation, DuelState, PlayerId } from "#duel/types.js";
 
 const typeGemini = 0x800; const typeSpecialSummon = 0x2000000; const summonTypeGemini = 0x12000000;
+const effectExtraFusionMaterial = 352;
 
 export type DuelEventCollector = (eventName: DuelEventName, eventCard?: DuelCardInstance, payload?: DuelEventPayload) => void;
 export interface DuelMaterialMoveResult {
@@ -219,7 +221,7 @@ export function fusionSummonDuelCard(
   const { card, materials } = requireFusionSummonMaterials(state, player, uid, materialUids, canUseMaterial);
   for (const material of materials) {
     collectEvent("preUsedAsMaterial", material);
-    const result = moveMaterial(material.uid, player, duelReason.material | duelReason.fusion);
+    const result = moveMaterial(material.uid, player, duelReason.material | duelReason.fusion, card.uid);
     pushDuelLog(state, "fusionMaterial", player, material.name, `Used for ${card.name}`);
     collectSentToGraveyard(result, collectEvent);
     collectEvent("usedAsMaterial", result.card, { eventReason: duelReason.fusion, eventReasonPlayer: player, eventReasonCardUid: card.uid });
@@ -394,7 +396,11 @@ export function ritualSummonDuelCard(
 }
 
 function defaultMaterialMover(state: DuelState): DuelMaterialMover {
-  return (uid, controller, reason) => ({ card: moveDuelCard(state, uid, "graveyard", controller, reason) });
+  return (uid, controller, reason, targetUid) => {
+    const card = moveDuelCard(state, uid, "graveyard", controller, reason);
+    if (targetUid !== undefined) card.reasonCardUid = targetUid;
+    return { card };
+  };
 }
 
 function defaultOverlayMaterialMover(state: DuelState): DuelOverlayMaterialMover {
@@ -492,9 +498,7 @@ function canFlipSummonDuelCard(state: DuelState, player: PlayerId, card: DuelCar
 }
 
 export function fusionSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
-  const materialPool = getCards(state, player, "hand")
-    .filter((card) => card.kind === "monster" && canUseMaterial(card.uid))
-    .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid)));
+  const materialPool = fusionMaterialPool(state, player, canUseMaterial);
   const actions: DuelAction[] = [];
   for (const card of getCards(state, player, "extraDeck")) {
     if (!isMonsterLike(state, card)) continue;
@@ -504,6 +508,20 @@ export function fusionSummonActions(state: DuelState, player: PlayerId, canUseMa
     }
   }
   return actions;
+}
+
+function fusionMaterialPool(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate): DuelCardInstance[] {
+  const base = getCards(state, player, "hand")
+    .filter((card) => card.kind === "monster" && canUseMaterial(card.uid))
+    .concat(getCards(state, player, "monsterZone").filter((card) => isMonsterLike(state, card) && canUseMaterial(card.uid)));
+  const seen = new Set(base.map((card) => card.uid));
+  for (const card of state.cards.filter((candidate) => candidate.controller === player && isMonsterLike(state, candidate) && canUseMaterial(candidate.uid))) {
+    if (seen.has(card.uid)) continue;
+    if (!extraFusionMaterialEffectApplies(state, player, card)) continue;
+    base.push(card);
+    seen.add(card.uid);
+  }
+  return base;
 }
 
 export function synchroSummonActions(state: DuelState, player: PlayerId, canUseMaterial: DuelMaterialPredicate = () => true): DuelAction[] {
@@ -662,7 +680,7 @@ export function fusionRequiredMaterialPredicateMatches(state: DuelState, materia
 
 function fusionMaterialLocationMatches(material: DuelCardInstance, mask: number): boolean {
   const locationMask = material.location === "deck" ? 0x01 : material.location === "hand" ? 0x02 : material.location === "monsterZone" ? 0x04 : material.location === "spellTrapZone" ? 0x08 : material.location === "graveyard" ? 0x10 : material.location === "banished" ? 0x20 : material.location === "extraDeck" ? 0x40 : material.location === "overlay" ? 0x80 : 0;
-  return (mask & locationMask) !== 0 || (material.location === "spellTrapZone" && (mask & 0x400) !== 0) || (material.location === "monsterZone" && (((mask & 0x800) !== 0 && material.sequence >= 0 && material.sequence <= 4) || ((mask & 0x1000) !== 0 && material.sequence >= 5 && material.sequence <= 6)));
+  return (mask & locationMask) !== 0 || (material.location === "spellTrapZone" && (((mask & 0x200) !== 0 && (material.sequence === 0 || material.sequence === 1)) || (mask & 0x400) !== 0)) || (material.location === "monsterZone" && (((mask & 0x800) !== 0 && material.sequence >= 0 && material.sequence <= 4) || ((mask & 0x1000) !== 0 && material.sequence >= 5 && material.sequence <= 6)));
 }
 export function fusionMaterialSelectionMatches(state: DuelState, target: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const requiredCodes = target.data.fusionMaterials ?? [], requiredSetcodes = target.data.fusionRequiredMaterialSetcodes ?? [], requiredPredicates = target.data.fusionRequiredMaterialPredicates ?? [];
@@ -795,11 +813,44 @@ function requireFusionSummonMaterials(state: DuelState, player: PlayerId, uid: s
   const materials = materialUids.map((materialUid) => requireControlledCard(state, player, materialUid));
   if (!materials.length || !fusionMaterialSelectionMatches(state, card, materials)) throw new Error(`${card.name} fusion materials are not legal`);
   for (const material of materials) {
-    if (!["hand", "monsterZone"].includes(material.location) || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as fusion material`);
+    if (!canUseFusionMaterialFromLocation(state, player, material) || !isMonsterLike(state, material)) throw new Error(`${material.name} cannot be used as fusion material`);
     if (!canUseMaterial(material.uid, card.uid)) throw new Error(`${material.name} cannot be used as fusion material`);
   }
   requireSummonZoneAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.fusion, card);
   return { card, materials };
+}
+
+function canUseFusionMaterialFromLocation(state: DuelState, player: PlayerId, material: DuelCardInstance): boolean {
+  return material.location === "hand" || material.location === "monsterZone" || extraFusionMaterialEffectApplies(state, player, material);
+}
+
+function extraFusionMaterialEffectApplies(state: DuelState, player: PlayerId, material: DuelCardInstance): boolean {
+  if (material.controller !== player) return false;
+  for (const effect of state.effects) {
+    if (effect.event !== "continuous" || effect.code !== effectExtraFusionMaterial) continue;
+    const source = state.cards.find((card) => card.uid === effect.sourceUid);
+    if (!source || source.controller !== player) continue;
+    if (continuousEffectAppliesToCard(effect, source, material, materialCheckContext(state, effect, source))) return true;
+  }
+  return false;
+}
+
+function materialCheckContext(state: DuelState, effect: { controller?: PlayerId }, source: DuelCardInstance): DuelEffectContext {
+  return {
+    duel: state,
+    source,
+    player: effect.controller ?? source.controller,
+    targetUids: [],
+    log: () => {},
+    moveCard: () => {
+      throw new Error("Material predicates cannot move cards");
+    },
+    negateChainLink: () => false,
+    setTargets: () => {},
+    getTargets: () => [],
+    setTargetPlayer: () => {},
+    setTargetParam: () => {},
+  };
 }
 
 function requireSynchroSummonMaterials(state: DuelState, player: PlayerId, uid: string, materialUids: string[], canUseMaterial: DuelMaterialPredicate): { card: DuelCardInstance; materials: DuelCardInstance[] } {

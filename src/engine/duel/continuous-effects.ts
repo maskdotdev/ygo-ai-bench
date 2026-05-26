@@ -1020,6 +1020,7 @@ function continuousEffectTargetsCardLocation(effect: DuelEffectDefinition, sourc
 
 function locationMaskMatchesCard(card: DuelCardInstance, mask: number): boolean {
   if ((mask & locationMaskFromLocation(card.location)) !== 0) return true;
+  if ((mask & 0x200) !== 0 && card.location === "spellTrapZone" && (card.sequence === 0 || card.sequence === 1)) return true;
   if ((mask & 0x400) !== 0 && card.location === "spellTrapZone") return true;
   if ((mask & 0x800) !== 0 && card.location === "monsterZone" && card.sequence >= 0 && card.sequence <= 4) return true;
   return (mask & 0x1000) !== 0 && card.location === "monsterZone" && card.sequence >= 5 && card.sequence <= 6;
