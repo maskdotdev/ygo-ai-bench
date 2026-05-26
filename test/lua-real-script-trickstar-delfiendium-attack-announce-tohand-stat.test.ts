@@ -126,7 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDelfiendiumSc
       eventUids: event.eventUids,
       relatedEffectId: event.relatedEffectId,
     }))).toEqual([
-      { eventCardUid: delfiendium.uid, eventCode: eventAttackAnnounce, eventName: "attackDeclared", eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventUids: undefined, relatedEffectId: undefined },
+      { eventCardUid: delfiendium.uid, eventCode: eventAttackAnnounce, eventName: "attackDeclared", eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventUids: [delfiendium.uid, attackTarget.uid], relatedEffectId: undefined },
       { eventCardUid: banishedA.uid, eventCode: 1028, eventName: "becameTarget", eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventUids: undefined, relatedEffectId: 2 },
       { eventCardUid: banishedB.uid, eventCode: 1028, eventName: "becameTarget", eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventUids: undefined, relatedEffectId: 2 },
       { eventCardUid: banishedA.uid, eventCode: 1012, eventName: "sentToHand", eventReason: duelReason.effect, eventReasonCardUid: delfiendium.uid, eventReasonEffectId: 2, eventReasonPlayer: 0, eventUids: undefined, relatedEffectId: undefined },

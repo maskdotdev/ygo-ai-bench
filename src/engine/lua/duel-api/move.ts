@@ -196,9 +196,11 @@ function pushRemove(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiH
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     if (luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
+    const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer;
+    if (!canMoveDuelCardToLocation(session.state, uid, "banished", reason, reasonPlayer)) continue;
     const before = movementSnapshot(card);
     try {
-      const reasonPlayer = hostState.activeContext?.player ?? session.state.turnPlayer, result = banishDuelCard(session.state, uid, card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
+      const result = banishDuelCard(session.state, uid, card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       assignReasonCard(result, hostState);
       if (requestedPosition) applyLuaMovePosition(result, requestedPosition);
       if (didMove(result, before)) moved.push(uid);
@@ -308,7 +310,8 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
   }
   const returnPhaseMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   const returnCount = lua.lua_isnumber(L, 4) ? Math.max(1, lua.lua_tointeger(L, 4)) : 1;
-  const forcedMonsterZoneMask = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
+  const requestedMonsterZoneMask = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
+  const forcedMonsterZoneMask = requestedMonsterZoneMask === 0x04 ? 0 : requestedMonsterZoneMask;
   const controlled: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
   const triggerStart = session.state.pendingTriggers.length;
@@ -368,10 +371,20 @@ function pushSwapControl(L: unknown, session: DuelSession, hostState: LuaDuelMov
 function pushChangePosition(L: unknown, session: DuelSession, hostState: LuaDuelMoveApiHostState): number {
   const uids = readCardOrGroupUids(L, 1);
   const firstPositionMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : undefined;
-  if (firstPositionMask === undefined || !positionFromMask(firstPositionMask)) {
+  const usesPositionOverload = lua.lua_isnumber(L, 3) || lua.lua_isnumber(L, 4) || lua.lua_isnumber(L, 5);
+  const hasRequestedPosition = (mask: number | undefined) => mask !== undefined && positionFromMask(mask) !== undefined;
+  if (!usesPositionOverload && !hasRequestedPosition(firstPositionMask)) {
     setOperatedUids(hostState, []); lua.lua_pushinteger(L, 0); return 1;
   }
-  const usesPositionOverload = lua.lua_isnumber(L, 3) || lua.lua_isnumber(L, 4) || lua.lua_isnumber(L, 5);
+  if (
+    usesPositionOverload &&
+    !hasRequestedPosition(firstPositionMask) &&
+    !hasRequestedPosition(lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : undefined) &&
+    !hasRequestedPosition(lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : undefined) &&
+    !hasRequestedPosition(lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : undefined)
+  ) {
+    setOperatedUids(hostState, []); lua.lua_pushinteger(L, 0); return 1;
+  }
   const faceUpDefenseMask = lua.lua_isnumber(L, 4) ? lua.lua_tointeger(L, 4) : undefined, faceDownDefenseMask = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : undefined;
   beginLuaOperationMoveStep(session, hostState);
   const triggerStart = session.state.pendingTriggers.length;
@@ -888,10 +901,11 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
     if (!card) continue;
     const destination = sendToDeckDestination(card, location);
-    if (!canMoveDuelCardToLocation(session.state, uid, destination, reason) || luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
+    if (!canMoveDuelCardToLocation(session.state, uid, destination, reason, reasonPlayer) || luaMoveBlockedByImmunity(L, session, hostState, card, reason)) continue;
     const before = movementSnapshot(card);
     try {
-      const result = moveDuelCardWithRedirects(session.state, uid, destination, readOptionalPlayer(L, 2) ?? card.controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
+      const controller = readOptionalPlayer(L, 2) ?? privateLocationDefaultController(destination, card);
+      const result = moveDuelCardWithRedirects(session.state, uid, destination, controller, reason, reasonPlayer, luaEffectReasonPayload(hostState, reason ?? 0, reasonPlayer));
       assignReasonCard(result, hostState);
       if (didMove(result, before)) {
         applyDeckSequence(session, result, deckSequence);
@@ -916,6 +930,10 @@ function moveCardOrGroupToLocation(session: DuelSession, L: unknown, hostState: 
 
 function sendToDeckDestination(card: DuelCardInstance, requested: DuelLocation): DuelLocation {
   return requested === "deck" && card.kind === "extra" ? "extraDeck" : requested;
+}
+
+function privateLocationDefaultController(destination: DuelLocation, card: DuelCardInstance): PlayerId {
+  return destination === "hand" || destination === "deck" || destination === "extraDeck" ? card.owner : card.controller;
 }
 
 function regroupGenericDestinationEvents(session: DuelSession, triggerStart: number, moved: string[]): void {

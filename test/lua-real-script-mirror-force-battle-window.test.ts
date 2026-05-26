@@ -103,6 +103,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Mi
         },
         "eventReason": 0,
         "eventReasonPlayer": 0,
+        "eventUids": [
+          "p0-deck-100-0",
+          "p1-deck-200-1",
+        ],
         "id": "chain-3",
         "operationInfos": [
           {
