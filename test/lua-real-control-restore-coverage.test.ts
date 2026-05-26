@@ -50,6 +50,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-magi-magi-detach-banish-control.test.ts"
 // Restore ownership: "test/lua-real-script-magic-gate-miracles-position-control-protect.test.ts"
 // Restore ownership: "test/lua-real-script-mark-rose-equip-control.test.ts"
+// Restore ownership: "test/lua-real-script-mind-pollutant-discard-level-control.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-armor-battle-protect-control-summon.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-cerberus-flip-control.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-fairy-lock-control-summon.test.ts"
@@ -88,7 +89,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 40;
+const controlFixtureCount = 41;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleCounterControl: 2,
@@ -97,7 +98,7 @@ const controlKindCounts = {
   cannotChangeControl: 1,
   confirmDamageGroupControl: 1,
   detachControlReleaseDestroy: 1,
-  discardCostTemporaryControl: 1,
+  discardCostTemporaryControl: 2,
   equipControl: 1,
   flipDestroyControlSearch: 1,
   flipGetControl: 2,
@@ -571,6 +572,19 @@ function realScriptControlFixtureFiles(): Array<{
         "duelReason.cost | duelReason.discard",
         'luaValueDescriptor: "temporary-control-return"',
         "eventName: \"controlChanged\"",
+      ],
+    },
+    {
+      file: "lua-real-script-mind-pollutant-discard-level-control.test.ts",
+      kind: "discardCostTemporaryControl",
+      required: [
+        'const mindPollutantCode = "69257165"',
+        "Duel.SendtoGrave(sg,REASON_COST|REASON_DISCARD)",
+        "local lv=sg:GetFirst():GetLevel()",
+        "tc:GetLevel()==e:GetLabel()",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'eventName: "controlChanged"',
+        "previousController: 1",
       ],
     },
     {
