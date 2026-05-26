@@ -80,7 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasGoyoScript)("Lua real script Goyo Emp
       sourceUid: trigger.sourceUid,
       triggerBucket: trigger.triggerBucket,
     }))).toEqual([
-      { effectId: `lua-2-${eventBattleDestroying}`, eventName: "battleDestroyed", eventCode: eventBattleDestroyed, eventCardUid: goyo.uid, player: 0, sourceUid: goyo.uid, triggerBucket: "turnOptional" },
+      { effectId: `lua-2-${eventBattleDestroying}`, eventName: "battleDestroyed", eventCode: eventBattleDestroying, eventCardUid: goyo.uid, player: 0, sourceUid: goyo.uid, triggerBucket: "turnOptional" },
     ]);
 
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), workspace, reader);

@@ -55,7 +55,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script In
       {
         effectId: "lua-3-1139",
         eventCardUid: insectPrincess!.uid,
-        eventCode: 1140,
+        eventCode: 1139,
         eventCurrentState: {
           controller: 0,
           faceUp: true,
