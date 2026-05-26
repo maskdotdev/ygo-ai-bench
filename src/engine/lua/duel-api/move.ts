@@ -308,14 +308,14 @@ function pushGetControl(L: unknown, session: DuelSession, hostState: LuaDuelMove
   }
   const returnPhaseMask = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   const returnCount = lua.lua_isnumber(L, 4) ? Math.max(1, lua.lua_tointeger(L, 4)) : 1;
-  const allowedLocations = lua.lua_isnumber(L, 5) ? locationsFromMask(lua.lua_tointeger(L, 5)) : undefined;
+  const forcedMonsterZoneMask = lua.lua_isnumber(L, 5) ? lua.lua_tointeger(L, 5) : 0;
   const controlled: string[] = [];
   beginLuaOperationMoveStep(session, hostState);
   const triggerStart = session.state.pendingTriggers.length;
   for (const uid of readCardOrGroupUids(L, 1)) {
     const card = session.state.cards.find((candidate) => candidate.uid === uid);
-    if (!card || card.controller === targetPlayer || !canLuaChangeControl(session.state, card, allowedLocations, targetPlayer) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
-    const sequence = card.location === "monsterZone" ? firstLuaControlMonsterZoneSequence(session.state, targetPlayer, card) : undefined;
+    if (!card || card.controller === targetPlayer || !canLuaChangeControl(session.state, card, undefined, targetPlayer, [card.uid], forcedMonsterZoneMask) || luaMoveBlockedByImmunity(L, session, hostState, card, duelReason.effect)) continue;
+    const sequence = card.location === "monsterZone" ? firstLuaControlMonsterZoneSequence(session.state, targetPlayer, card, [card.uid], forcedMonsterZoneMask) : undefined;
     const existingMonsterSequences = card.location === "monsterZone" ? monsterZoneSequenceSnapshot(session, targetPlayer, uid) : undefined;
     const previousController = card.controller;
     try {

@@ -111,8 +111,10 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-ni-ni-mikanko-equipped-control.test.ts"
 // Restore ownership: "test/lua-real-script-informer-spider-effect-grave-control.test.ts"
 // Restore ownership: "test/lua-real-script-locomotion-r-genex-synchro-level-control.test.ts"
-const controlFixtureCount = 68;
+// Restore ownership: "test/lua-real-script-fire-fist-peacock-attack-control.test.ts"
+const controlFixtureCount = 69;
 const controlKindCounts = {
+  attackAnnounceCostLinkedControlLock: 1,
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
   damageStepBattleControlReplace: 1,
@@ -189,6 +191,7 @@ const controlSemanticVariantCounts = {
 } satisfies Record<ControlSemanticVariant, number>;
 
 type ControlKind =
+  | "attackAnnounceCostLinkedControlLock"
   | "battleDestroyedTrapControlRace"
   | "battleStartPhaseControl"
   | "damageStepBattleControlReplace"
@@ -576,6 +579,31 @@ function realScriptControlFixtureFiles(): Array<{
         "e3:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
         "e4:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
         'eventName: "specialSummoned"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-fire-fist-peacock-attack-control.test.ts",
+      kind: "attackAnnounceCostLinkedControlLock",
+      required: [
+        "restores attack-announce Fire Formation cost into linked-zone temporary control and attack lock",
+        "--Brotherhood of the Fire Fist - Peacock",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_FIRE_FIST),2,2)",
+        "e1:SetCode(EFFECT_CANNOT_BE_BATTLE_TARGET)",
+        "e1:SetProperty(EFFECT_FLAG_SINGLE_RANGE)",
+        "e1:SetValue(aux.imval1)",
+        "e2:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "e2:SetCost(Cost.Replaceable(s.ctcost,s.extracon))",
+        "Duel.GetMZoneCount(tp,c,tp,LOCATION_REASON_CONTROL,zones)>0",
+        "Duel.SelectMatchingCard(tp,s.ctcostfilter,tp,LOCATION_ONFIELD,0,1,1,nil,tp,zones)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "Duel.GetLocationCount(tp,LOCATION_MZONE,tp,LOCATION_REASON_CONTROL,zones)>0",
+        "Duel.SelectTarget(tp,Card.IsControlerCanBeChanged,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1,zone)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        'eventName: "attackDeclared"',
         'eventName: "sentToGraveyard"',
         'eventName: "controlChanged"',
         "previousController: 1",
@@ -1484,6 +1512,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       return counts;
     },
     {
+      attackAnnounceCostLinkedControlLock: 0,
       battleStartPhaseControl: 0,
       battleDestroyedTrapControlRace: 0,
       banishCostControlAttackLock: 0,

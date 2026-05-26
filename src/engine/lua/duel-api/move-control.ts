@@ -13,20 +13,20 @@ export const luaTemporaryControlReturnDescriptor = "temporary-control-return";
 const locationReasonControl = 0x2;
 type MonsterZoneSequenceSnapshot = Array<{ uid: string; sequence: number }>;
 
-export function canLuaChangeControl(state: DuelState, card: DuelCardInstance, allowedLocations: DuelLocation[] | undefined, targetPlayer?: PlayerId, excludedUids: readonly string[] = [card.uid]): boolean {
+export function canLuaChangeControl(state: DuelState, card: DuelCardInstance, allowedLocations: DuelLocation[] | undefined, targetPlayer?: PlayerId, excludedUids: readonly string[] = [card.uid], forcedMonsterZoneMask = 0): boolean {
   if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
   if (isControlChangePrevented(state, card, createLuaMaterialCheckContext(state))) return false;
   if (allowedLocations && !allowedLocations.includes(card.location)) return false;
-  return targetPlayer === undefined || hasLuaControlZoneSpace(state, targetPlayer, card, excludedUids);
+  return targetPlayer === undefined || hasLuaControlZoneSpace(state, targetPlayer, card, excludedUids, forcedMonsterZoneMask);
 }
 
-export function hasLuaControlZoneSpace(state: DuelState, targetPlayer: PlayerId, card: DuelCardInstance, excludedUids: readonly string[] = [card.uid]): boolean {
-  if (card.location === "monsterZone") return availableForcedMonsterZoneCount(state, targetPlayer, excludedUids, 0, locationReasonControl, card) > 0;
+export function hasLuaControlZoneSpace(state: DuelState, targetPlayer: PlayerId, card: DuelCardInstance, excludedUids: readonly string[] = [card.uid], forcedMonsterZoneMask = 0): boolean {
+  if (card.location === "monsterZone") return availableForcedMonsterZoneCount(state, targetPlayer, excludedUids, forcedMonsterZoneMask, locationReasonControl, card) > 0;
   return hasZoneSpace(state, targetPlayer, card.location);
 }
 
-export function firstLuaControlMonsterZoneSequence(state: DuelState, targetPlayer: PlayerId, card: DuelCardInstance, excludedUids: readonly string[] = [card.uid]): number | undefined {
-  return firstOpenForcedMonsterZoneSequence(state, targetPlayer, excludedUids, 0, locationReasonControl, card);
+export function firstLuaControlMonsterZoneSequence(state: DuelState, targetPlayer: PlayerId, card: DuelCardInstance, excludedUids: readonly string[] = [card.uid], forcedMonsterZoneMask = 0): number | undefined {
+  return firstOpenForcedMonsterZoneSequence(state, targetPlayer, excludedUids, forcedMonsterZoneMask, locationReasonControl, card);
 }
 
 export function canLuaSwapControlPair(state: DuelState, left: DuelCardInstance, right: DuelCardInstance): boolean {
