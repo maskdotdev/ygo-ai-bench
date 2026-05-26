@@ -105,7 +105,8 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 62;
+// Restore ownership: "test/lua-real-script-reeze-gusto-deck-cost-swap-control.test.ts"
+const controlFixtureCount = 63;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -136,6 +137,7 @@ const controlKindCounts = {
   pzoneDestroyControlDamage: 1,
   tunerGraveStatDiscardControl: 1,
   spellDiscardCostControl: 1,
+  deckCostTargetedSwapControl: 1,
   handMonsterCostDefenseControlPositionLock: 1,
   discardCostGroupControlLock: 1,
   releaseCostControl: 3,
@@ -206,6 +208,7 @@ type ControlKind =
   | "pzoneDestroyControlDamage"
   | "tunerGraveStatDiscardControl"
   | "spellDiscardCostControl"
+  | "deckCostTargetedSwapControl"
   | "handMonsterCostDefenseControlPositionLock"
   | "discardCostGroupControlLock"
   | "releaseCostControl"
@@ -940,6 +943,28 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-reeze-gusto-deck-cost-swap-control.test.ts",
+      kind: "deckCostTargetedSwapControl",
+      required: [
+        "restores hand bottom-deck cost into dual targeting and SwapControl",
+        "--Reeze, Whirlwind of Gusto",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "Duel.IsExistingMatchingCard(Card.IsAbleToDeckAsCost,tp,LOCATION_HAND,0,1,nil)",
+        "Duel.SelectMatchingCard(tp,Card.IsAbleToDeckAsCost,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoDeck(g,nil,SEQ_DECKBOTTOM,REASON_COST)",
+        "return c:IsFaceup() and c:IsSetCard(SET_GUSTO) and c:IsAbleToChangeControler()",
+        "Duel.SelectTarget(tp,s.filter1,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SelectTarget(tp,s.filter2,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g1,2,0,0)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_CARDS)",
+        "Duel.SwapControl(a,b)",
+        'eventName: "sentToDeck"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-rb-lambda-blade-send-control-delayed-destroy.test.ts",
       kind: "linkedLpCostControlDelayedDestroy",
       required: [
@@ -1366,6 +1391,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       pzoneDestroyControlDamage: 0,
       tunerGraveStatDiscardControl: 0,
       spellDiscardCostControl: 0,
+      deckCostTargetedSwapControl: 0,
       handMonsterCostDefenseControlPositionLock: 0,
       discardCostGroupControlLock: 0,
       releaseCostControl: 0,
