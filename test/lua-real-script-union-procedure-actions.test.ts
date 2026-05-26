@@ -100,7 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Un
     expectLuaUnionEquipStatProbe(restoredUnionState, xHeadCannonCode, zMetalTankCode, "union equip stat probe 64500000/2400/2100");
   });
 
-  it.fails("restores Union Driver equip and summon-back procedure windows", () => {
+  it("restores Union Driver equip and summon-back procedure windows", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const unionDriverCode = "99249638";
     const targetCode = "601005";

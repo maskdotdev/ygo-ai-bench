@@ -841,6 +841,7 @@ function canChooseEffect(state: DuelState, effect: DuelEffectDefinition, source:
 }
 
 function isRestoredEquippedIgnitionAction(effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
+  if (effect.canActivate || effect.cost || effect.target) return false;
   return effect.event === "ignition" && (effect.luaConditionDescriptor === undefined || effect.luaConditionDescriptor === "condition:source-equipped") && effect.range.includes("spellTrapZone") && source.location === "spellTrapZone" && source.equippedToUid !== undefined;
 }
 
