@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: counterTarget.uid,
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },

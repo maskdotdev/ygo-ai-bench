@@ -110,13 +110,21 @@ describe.skipIf(!hasUpstreamScripts || !hasMaharaghiScript)("Lua real script Mah
       getLuaRestoreLegalActions(restoredRegistrationChain, registrationPlayer),
     );
     drainRestoredChain(restoredRegistrationChain);
-    expect(restoredRegistrationChain.session.state.effects.find((effect) => effect.sourceUid === maharaghi!.uid && effect.event === "continuous" && effect.code === 1113 && effect.controller === 0)).toMatchInlineSnapshot(`
+    const restoredPredrawEffect = restoredRegistrationChain.session.state.effects.find((effect) => effect.sourceUid === maharaghi!.uid && effect.event === "continuous" && effect.code === 1113 && effect.controller === 0);
+    expect(restoredPredrawEffect).toMatchObject({
+      code: 1113,
+      triggerEvent: "preDraw",
+      triggerCode: 1113,
+      triggerTiming: "if",
+    });
+    expect(restoredPredrawEffect).toMatchInlineSnapshot(`
       {
         "canActivate": [Function],
         "code": 1113,
         "controller": 0,
         "event": "continuous",
         "id": "lua-9-1113",
+        "luaTypeFlags": 2050,
         "oncePerTurn": false,
         "operation": [Function],
         "ownerPlayer": 0,
@@ -138,7 +146,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMaharaghiScript)("Lua real script Mah
         "sourceUid": "p0-deck-40695128-0",
         "triggerCode": 1113,
         "triggerEvent": "preDraw",
-        "triggerTiming": "when",
+        "triggerTiming": "if",
       }
     `);
 
@@ -182,7 +190,11 @@ function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWit
   const result = applyLuaRestoreResponse(restored, action);
   expect(result.ok, result.error).toBe(true);
   const waitingFor = restored.session.state.waitingFor;
-  if (waitingFor !== undefined) expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  if (waitingFor !== undefined) {
+    expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+    expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+    expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+  }
 }
 
 function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
@@ -192,6 +204,12 @@ function drainRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScript
     expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
     const result = applyLuaRestoreResponse(restored, pass!);
     expect(result.ok, result.error).toBe(true);
+    const waitingFor = restored.session.state.waitingFor;
+    if (waitingFor !== undefined) {
+      expect(result.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+      expect(result.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+      expect(result.legalActionGroups.flatMap((group) => group.actions)).toEqual(result.legalActions);
+    }
   }
 }
 

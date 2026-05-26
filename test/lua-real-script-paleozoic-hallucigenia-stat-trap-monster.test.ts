@@ -94,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pa
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: statTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

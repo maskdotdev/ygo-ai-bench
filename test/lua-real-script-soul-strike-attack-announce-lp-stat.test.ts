@@ -99,7 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasStrikeScript)
       relatedEffectId: event.relatedEffectId,
     }))).toEqual([
       { eventCardUid: undefined, eventCode: 1201, eventName: "lifePointCostPaid", eventPlayer: 0, eventReason: duelReason.cost, eventReasonCardUid: strike.uid, eventReasonEffectId: 1, eventReasonPlayer: 0, eventValue: 2000, relatedEffectId: undefined },
-      { eventCardUid: attacker.uid, eventCode: 1028, eventName: "becameTarget", eventPlayer: undefined, eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventValue: undefined, relatedEffectId: 1 },
+      { eventCardUid: attacker.uid, eventCode: 1028, eventName: "becameTarget", eventPlayer: undefined, eventReason: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, eventReasonPlayer: 0, eventValue:  1, relatedEffectId: 1 },
     ]);
     expect(currentAttack(findCard(restoredOpen.session, attacker.uid), restoredOpen.session.state)).toBe(3000);
     expect(restoredOpen.session.state.effects.filter((effect) =>

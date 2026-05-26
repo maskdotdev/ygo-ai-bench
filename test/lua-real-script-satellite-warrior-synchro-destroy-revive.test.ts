@@ -233,6 +233,7 @@ function becameTargetEvent(card: DuelCardInstance, sourceUid: string, effectId: 
   return {
     eventName: "becameTarget",
     eventCode: 1028,
+        eventValue: 1,
     eventCardUid: card.uid,
     eventReason: 0,
     eventReasonPlayer: 0,

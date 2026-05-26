@@ -140,6 +140,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Aq
         player: 0,
         triggerBucket: "turnOptional",
         eventName: "sentToGraveyard",
+        eventPlayer: 0,
         eventCode: 1014,
         eventCardUid: graveLighting.uid,
         eventReason: duelReason.effect,
@@ -178,6 +179,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Aq
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: graveAqua.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

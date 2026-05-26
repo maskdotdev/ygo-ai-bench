@@ -85,7 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSalamanderScript)("Lua real script V 
     });
     expect(restoredTrigger.session.state.eventHistory.filter((event) => ["normalSummoned", "becameTarget", "specialSummoned"].includes(event.eventName)).map(slimEvent)).toEqual([
       { eventName: "normalSummoned", eventCode: 1100, eventCardUid: salamander.uid, eventPlayer: undefined, eventValue: undefined, eventUids: undefined, eventReason: duelReason.summon, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: undefined, previous: "hand", current: "monsterZone" },
-      { eventName: "becameTarget", eventCode: 1028, eventCardUid: utopia.uid, eventPlayer: undefined, eventValue: undefined, eventUids: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, previous: "deck", current: "graveyard" },
+      { eventName: "becameTarget", eventCode: 1028, eventCardUid: utopia.uid, eventPlayer: undefined, eventValue:  1, eventUids: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, previous: "deck", current: "graveyard" },
       { eventName: "specialSummoned", eventCode: 1102, eventCardUid: utopia.uid, eventPlayer: undefined, eventValue: undefined, eventUids: [utopia.uid], eventReason: duelReason.summon | duelReason.specialSummon, eventReasonPlayer: 0, eventReasonCardUid: salamander.uid, eventReasonEffectId: 1, relatedEffectId: undefined, previous: "graveyard", current: "monsterZone" },
     ]);
   });

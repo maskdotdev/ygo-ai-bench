@@ -156,6 +156,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBlackFangScript)("Lua real script Bla
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: opponentTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -179,6 +180,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBlackFangScript)("Lua real script Bla
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: graveSpellcaster.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
