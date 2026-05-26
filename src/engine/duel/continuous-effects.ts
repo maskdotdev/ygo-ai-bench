@@ -975,8 +975,8 @@ function isFieldLocation(location: DuelLocation): boolean {
 
 export function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
   if (!continuousEffectSourceIsActive(effect, source)) return false;
+  if (continuousEffectIsEquipType(effect)) return source.equippedToUid === card.uid;
   if (source.uid === card.uid) return true;
-  if (continuousEffectIsEquipType(effect) && source.equippedToUid === card.uid) return true;
   if (continuousEffectIsPlayerTarget(effect)) return continuousEffectTargetsPlayer(effect, source, card.controller);
   if (effect.targetRange !== undefined) return continuousEffectTargetsCardLocation(effect, source, card);
   return false;

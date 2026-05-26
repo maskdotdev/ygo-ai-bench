@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 25, equipRelationFixtureCount = 29, equipProbeFixtureCount = 22, equipOperationInfoFixtureCount = 20, equipCleanupFixtureCount = 13, equipInventoryFixtureCount = 32;
+const equipFixtureCount = 26, equipRelationFixtureCount = 30, equipProbeFixtureCount = 22, equipOperationInfoFixtureCount = 20, equipCleanupFixtureCount = 14, equipInventoryFixtureCount = 33;
 const equipKindCounts = {
   equipControl: 3,
   equipCost: 1,
   equipDamageLock: 1,
   equipGeminiStatus: 2,
   equipPierce: 2,
-  equipProcedure: 15,
+  equipProcedure: 16,
   equipReturn: 3,
   equipReviveBanish: 1,
   equipReviveDestroy: 2,
@@ -34,6 +34,7 @@ const equipSemanticVariantCounts = {
   fallingDownEquipStandbyDamage: 1,
   fulfillmentContractRitualReviveBanish: 1,
   gagagarevengeGraveEquipReviveStat: 1,
+  gergonnesEndLinkedDestroyBurn: 1,
   geminiBoosterStatus: 1,
   gravityAxePositionLock: 1,
   graydleEagleBattleDestroyStealEquip: 1,
@@ -98,6 +99,7 @@ type EquipSemanticVariant =
   | "fallingDownEquipStandbyDamage"
   | "fulfillmentContractRitualReviveBanish"
   | "gagagarevengeGraveEquipReviveStat"
+  | "gergonnesEndLinkedDestroyBurn"
   | "geminiBoosterStatus"
   | "gravityAxePositionLock"
   | "graydleEagleBattleDestroyStealEquip"
@@ -294,6 +296,7 @@ function realScriptEquipFixtureFiles(): string[] {
     "lua-real-script-falling-down-equip-standby-damage.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
+    "lua-real-script-gergonnes-end-equip-linked-destroy-burn.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
@@ -328,6 +331,7 @@ function realScriptEquipRelationFixtureFiles(): string[] {
     "lua-real-script-falling-down-equip-standby-damage.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
+    "lua-real-script-gergonnes-end-equip-linked-destroy-burn.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
@@ -415,6 +419,7 @@ function realScriptEquipCleanupFixtureFiles(): string[] {
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
+    "lua-real-script-gergonnes-end-equip-linked-destroy-burn.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
     "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts",
@@ -490,6 +495,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     {
       file: "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
       kind: "equipReviveDestroy",
+    },
+    {
+      file: "lua-real-script-gergonnes-end-equip-linked-destroy-burn.test.ts",
+      kind: "equipProcedure",
     },
     {
       file: "lua-real-script-magnum-excalibur-detach-equip-todeck.test.ts",
@@ -653,6 +662,21 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "Duel.Destroy(tc,REASON_EFFECT)",
         "gagagarevenge probe 90673413/906734130/true",
         "c:IsReason(REASON_LOST_TARGET) and c:IsReason(REASON_DESTROY) and tc:IsLocation(LOCATION_OVERLAY)",
+      ],
+    },
+    {
+      file: "lua-real-script-gergonnes-end-equip-linked-destroy-burn.test.ts",
+      kind: "gergonnesEndLinkedDestroyBurn",
+      required: [
+        "restores remain-field equip into linked-group destruction and equipped target attack damage",
+        'const gergonneCode = "59490397"',
+        "--Gergonne's End",
+        "e1:SetCode(EFFECT_REMAIN_FIELD)",
+        "return tc and tc:GetLinkedGroupCount()==tc:GetLink()",
+        "Duel.Destroy(lg,REASON_EFFECT)",
+        "Duel.Damage(1-tp,atk,REASON_EFFECT)",
+        "previousEquippedToUid: tindangle.uid",
+        "eventName: \"damageDealt\"",
       ],
     },
     {
@@ -1029,6 +1053,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       fallingDownEquipStandbyDamage: 0,
       fulfillmentContractRitualReviveBanish: 0,
       gagagarevengeGraveEquipReviveStat: 0,
+      gergonnesEndLinkedDestroyBurn: 0,
       geminiBoosterStatus: 0,
       gravityAxePositionLock: 0,
       graydleEagleBattleDestroyStealEquip: 0,
