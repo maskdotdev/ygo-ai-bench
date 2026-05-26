@@ -1024,7 +1024,11 @@ function resolveChain(state: DuelState): void {
       const finishLink = () => {
         sendResolvedActivatedSpellTrapToGraveyard(state, link, source, effect);
         const relatedEffectId = Number(link.effectId.match(/^lua-(\d+)/)?.[1]);
-        state.pendingTriggers = state.pendingTriggers.filter((trigger) => !(trigger.eventName === "customEvent" && trigger.eventTriggerTiming === "when" && trigger.relatedEffectId === relatedEffectId));
+        state.pendingTriggers = state.pendingTriggers.filter((trigger) => {
+          if (trigger.eventName !== "customEvent" || trigger.eventTriggerTiming !== "when" || trigger.relatedEffectId !== relatedEffectId) return true;
+          const triggerEffect = state.effects.find((candidate) => candidate.id === trigger.effectId && candidate.sourceUid === trigger.sourceUid);
+          return triggerEffect?.optional === false;
+        });
         collectDuelTriggerEffects(state, "chainSolved", undefined, chainPayload, link);
       };
       const result = link.operationOverride ? undefined : runPromptOperation(effect, ctx);
