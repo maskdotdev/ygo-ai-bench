@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 29;
-const chainResponseNegationFixtureCount = 24;
+const negationFixtureCount = 30;
+const chainResponseNegationFixtureCount = 25;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 33;
+const negationInventoryFixtureCount = 34;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 20,
+  chainNegateToGrave: 21,
   handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -32,6 +32,7 @@ const negationSemanticVariantCounts = {
   faceOffDamagePhaseCurrentPhaseNegateDestroy: 1,
   gagagarushTargetMonsterNegateDamage: 1,
   gustavRocketOverlayMonsterNegateDamage: 1,
+  guardMinesDamageStepTargetDestroyNegateBurn: 1,
   ghostOgreDestroyOnlyNoNegation: 1,
   gGolemDignifiedTargetedLinkNegateDestroy: 1,
   giltiGearfriedTargetedChainNegateDestroy: 1,
@@ -79,6 +80,7 @@ type NegationSemanticVariant =
   | "faceOffDamagePhaseCurrentPhaseNegateDestroy"
   | "gagagarushTargetMonsterNegateDamage"
   | "gustavRocketOverlayMonsterNegateDamage"
+  | "guardMinesDamageStepTargetDestroyNegateBurn"
   | "ghostOgreDestroyOnlyNoNegation"
   | "gGolemDignifiedTargetedLinkNegateDestroy"
   | "giltiGearfriedTargetedChainNegateDestroy"
@@ -231,6 +233,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-g-golem-dignified-trilithon-target-link-negate.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-gilti-gearfried-target-chain-negate.test.ts",
+    "lua-real-script-guard-mines-damage-step-negate-burn.test.ts",
     "lua-real-script-gustav-rocket-overlay-negate-damage.test.ts",
     "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
     "lua-real-script-iron-core-luster-confirm-negate.test.ts",
@@ -322,6 +325,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-gustav-rocket-overlay-negate-damage.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-guard-mines-damage-step-negate-burn.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -589,6 +596,28 @@ function negationSemanticVariants(): Array<{
         'eventName: "chainNegated"',
         'eventName: "damageDealt"',
         'host.messages).not.toContain("gustav rocket starter resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-guard-mines-damage-step-negate-burn.test.ts",
+      kind: "guardMinesDamageStepTargetDestroyNegateBurn",
+      required: [
+        'const guardMinesCode = "88928798"',
+        "restores Damage Step targeted destroy negation, source destruction, BreakEffect damage, and suppressed operation",
+        "--Guard Mines",
+        "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DAMAGE_CAL)",
+        "local g=Duel.GetChainInfo(ev,CHAININFO_TARGET_CARDS)",
+        "if not gc:IsControler(tp) or not gc:IsLocation(LOCATION_MZONE) then return false end",
+        "local ex,tg,tc=Duel.GetOperationInfo(ev,CATEGORY_DESTROY)",
+        "return ex and tg~=nil and #tg==1 and tg:GetFirst()==gc",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)>0",
+        "Duel.BreakEffect()",
+        "Duel.Damage(1-tp,500,REASON_EFFECT)",
+        'state.chain).toHaveLength(2)',
+        'eventName: "chainNegated"',
+        'eventName: "damageDealt"',
+        'host.messages).not.toContain("guard mines targeting monster resolved")',
       ],
     },
     {
@@ -918,6 +947,7 @@ function countNegationSemanticVariants(
       faceOffDamagePhaseCurrentPhaseNegateDestroy: 0,
       gagagarushTargetMonsterNegateDamage: 0,
       gustavRocketOverlayMonsterNegateDamage: 0,
+      guardMinesDamageStepTargetDestroyNegateBurn: 0,
       ghostOgreDestroyOnlyNoNegation: 0,
       gGolemDignifiedTargetedLinkNegateDestroy: 0,
       giltiGearfriedTargetedChainNegateDestroy: 0,
