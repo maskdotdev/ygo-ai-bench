@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 666; const statKindCounts = {
+const statFixtureCount = 667; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -136,6 +136,7 @@ const statFixtureCount = 666; const statKindCounts = {
   darkStringsCounterDestroyDrawDamageStat: 1,
   movingPointPendulumCounterColumnDamageStat: 1,
   cubicCausalityCounterBattleDamageStat: 1,
+  vaalmonicaDisarmoniaCounterToHandStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -620,6 +621,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   darkStringsCounterDestroyDrawDamageStat: 1,
   movingPointPendulumCounterColumnDamageStat: 1,
   cubicCausalityCounterBattleDamageStat: 1,
+  vaalmonicaDisarmoniaCounterToHandStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -1051,6 +1053,7 @@ type ExtraStatKind =
   | "darkStringsCounterDestroyDrawDamageStat"
   | "movingPointPendulumCounterColumnDamageStat"
   | "cubicCausalityCounterBattleDamageStat"
+  | "vaalmonicaDisarmoniaCounterToHandStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -1591,6 +1594,7 @@ type ExtraStatSemanticVariant =
   | "darkStringsCounterDestroyDrawDamageStat"
   | "movingPointPendulumCounterColumnDamageStat"
   | "cubicCausalityCounterBattleDamageStat"
+  | "vaalmonicaDisarmoniaCounterToHandStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -3139,6 +3143,35 @@ function statFixtureFiles(): Array<{
         "getDuelCardCounter",
         "eventName: \"becameTarget\"",
         "eventName: \"banished\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-vaalmonica-disarmonia-counter-tohand.test.ts",
+      kind: "vaalmonicaDisarmoniaCounterToHandStat",
+      required: [
+        'const disarmoniaCode = "65496951"',
+        "Vaalmonica Disarmonia",
+        "restores Resonance Counter placement, custom event raise, recover, and banished Vaalmonica return",
+        "CATEGORY_COUNTER+CATEGORY_RECOVER+CATEGORY_DAMAGE+CATEGORY_TOHAND",
+        "EFFECT_COUNT_CODE_OATH",
+        "Card.IsCanAddCounter",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_GRAVE|LOCATION_REMOVED)",
+        "Duel.SelectMatchingCard(tp,Card.IsCanAddCounter,tp,LOCATION_PZONE,0,1,1,nil,COUNTER_RESONANCE,1)",
+        "Duel.RaiseEvent(tc,EVENT_CUSTOM+39210885",
+        "Duel.SelectEffect(tp,",
+        "Duel.Recover(tp,500,REASON_EFFECT)",
+        "Duel.Damage(tp,500,REASON_EFFECT)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,3))",
+        "Duel.SendtoHand(sg,nil,REASON_EFFECT)",
+        "Duel.ConfirmCards(1-tp,sg)",
+        "c:EnableCounterPermit(COUNTER_RESONANCE,LOCATION_PZONE)",
+        "getDuelCardCounter",
+        "eventName: \"counterAdded\"",
+        "eventName: \"customEvent\"",
+        "eventName: \"recoveredLifePoints\"",
+        "eventName: \"damageDealt\"",
+        "eventName: \"sentToHandConfirmed\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
     {
@@ -13171,6 +13204,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       darkStringsCounterDestroyDrawDamageStat: 0,
       movingPointPendulumCounterColumnDamageStat: 0,
       cubicCausalityCounterBattleDamageStat: 0,
+      vaalmonicaDisarmoniaCounterToHandStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
@@ -14730,6 +14764,24 @@ function statSemanticVariants(): Array<{
         "EVENT_BATTLE_DESTROYING",
         "Duel.Damage(1-tp,atk,REASON_EFFECT)",
         "eventName: \"banished\"",
+      ],
+    },
+    {
+      file: "test/lua-real-script-vaalmonica-disarmonia-counter-tohand.test.ts",
+      kind: "vaalmonicaDisarmoniaCounterToHandStat",
+      required: [
+        'const disarmoniaCode = "65496951"',
+        "Vaalmonica Disarmonia",
+        "Duel.RaiseEvent(tc,EVENT_CUSTOM+39210885",
+        "Duel.SelectEffect(tp,",
+        "Duel.Recover(tp,500,REASON_EFFECT)",
+        "Duel.Damage(tp,500,REASON_EFFECT)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,3))",
+        "Duel.SendtoHand(sg,nil,REASON_EFFECT)",
+        "eventName: \"customEvent\"",
+        "eventName: \"recoveredLifePoints\"",
+        "eventName: \"damageDealt\"",
+        "eventName: \"sentToHandConfirmed\"",
       ],
     },
     {
@@ -20094,6 +20146,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       darkStringsCounterDestroyDrawDamageStat: 0,
       movingPointPendulumCounterColumnDamageStat: 0,
       cubicCausalityCounterBattleDamageStat: 0,
+      vaalmonicaDisarmoniaCounterToHandStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
