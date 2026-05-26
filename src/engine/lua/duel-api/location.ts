@@ -227,7 +227,11 @@ export function linkedGroupUidsForCard(session: DuelSession, card: DuelCardInsta
   const mask = linkedZoneMask(card, session.state);
   if (mask === 0) return [];
   return session.state.cards
-    .filter((candidate) => candidate.controller === card.controller && candidate.location === "monsterZone" && candidate.faceUp && ((1 << candidate.sequence) & mask) !== 0)
+    .filter((candidate) => {
+      if (candidate.location !== "monsterZone" || !candidate.faceUp) return false;
+      const zone = candidate.controller === card.controller ? 1 << candidate.sequence : 1 << (16 + candidate.sequence);
+      return (zone & mask) !== 0;
+    })
     .map((candidate) => candidate.uid);
 }
 

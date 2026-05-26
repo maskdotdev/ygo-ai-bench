@@ -39,6 +39,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-eye-illusion-select-control.test.ts"
 // Restore ownership: "test/lua-real-script-giant-ballgame-activate-summon-swap-race.test.ts"
 // Restore ownership: "test/lua-real-script-galaxy-eyes-cipher-dragon-detach-control-stat-code.test.ts"
+// Restore ownership: "test/lua-real-script-geonator-transverser-linked-swap-protect.test.ts"
 // Restore ownership: "test/lua-real-script-gladiator-taming-select-position-control.test.ts"
 // Restore ownership: "test/lua-real-script-gotterdammerung-control-end-banish.test.ts"
 // Restore ownership: "test/lua-real-script-goyo-emperor-battle-revive.test.ts"
@@ -97,7 +98,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 49;
+const controlFixtureCount = 50;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -119,6 +120,7 @@ const controlKindCounts = {
   flipSetControl: 1,
   groupSwapControl: 1,
   linkedZoneControlRevive: 1,
+  linkedGroupSwapProtect: 1,
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
@@ -176,6 +178,7 @@ type ControlKind =
   | "flipSetControl"
   | "groupSwapControl"
   | "linkedZoneControlRevive"
+  | "linkedGroupSwapProtect"
   | "ownedControlAttackDrain"
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
@@ -421,6 +424,28 @@ function realScriptControlFixtureFiles(): Array<{
         "e2:SetCode(EFFECT_CHANGE_CODE)",
         'eventName: "detachedMaterial"',
         'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-geonator-transverser-linked-swap-protect.test.ts",
+      kind: "linkedGroupSwapProtect",
+      required: [
+        'const geonatorCode = "52119435"',
+        "--Geonator Transverser",
+        "restores cross-controller linked group targeting into SwapControl and linked effect destruction protection",
+        "Link.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsType,TYPE_EFFECT),2)",
+        "e1:SetProperty(EFFECT_FLAG_SET_AVAILABLE)",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "e1:SetValue(aux.indoval)",
+        "e:GetHandler():GetLinkedGroupCount()==2",
+        "g:FilterCount(Card.IsAbleToChangeControler,nil)==2",
+        "Duel.SetTargetCard(g)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g,2,tp,0)",
+        "local g=Duel.GetTargetCards(e)",
+        "Duel.SwapControl(g:GetFirst(),g:GetNext())",
+        "destroyDuelCard(restoredOpen.session.state, restoredOwnLinked.uid",
+        'eventName": "controlChanged"',
         "previousController: 1",
       ],
     },
@@ -1040,6 +1065,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       geminiCounterControlEndDestroy: 0,
       groupSwapControl: 0,
       linkedZoneControlRevive: 0,
+      linkedGroupSwapProtect: 0,
       ownedControlAttackDrain: 0,
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
