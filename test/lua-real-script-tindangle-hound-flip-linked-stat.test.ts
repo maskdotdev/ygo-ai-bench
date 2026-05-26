@@ -136,6 +136,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHoundScript)("Lua real script Tindang
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: turnSetTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -224,6 +225,7 @@ describe.skipIf(!hasUpstreamScripts || !hasHoundScript)("Lua real script Tindang
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: gravePositionTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

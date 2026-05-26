@@ -100,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasDemiurgeScript)("Lua real script Demi
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [8, 9],
         targetUids: [ownSpell.uid, opponentTrap.uid],
         operationInfos: [
           { category: 0x1, targetUids: [ownSpell.uid, opponentTrap.uid], count: 2, player: 0, parameter: 0 },
@@ -221,6 +222,7 @@ function becameTargetEvent(cardUid: string, sourceUid: string, controller: Playe
   return {
     eventName: "becameTarget",
     eventCode: 1028,
+        eventValue: 1,
     eventCardUid: cardUid,
     eventReason: 0,
     eventReasonPlayer: 0,

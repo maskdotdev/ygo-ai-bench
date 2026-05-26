@@ -98,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBallistaScript)("Lua real script Anci
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: ownSpell.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -110,6 +111,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBallistaScript)("Lua real script Anci
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: opponentTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

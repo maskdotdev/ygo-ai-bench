@@ -79,6 +79,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDecisiveArmor
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: facedown.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

@@ -181,6 +181,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSpeleogeistScript)("Lua real script S
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: defender.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

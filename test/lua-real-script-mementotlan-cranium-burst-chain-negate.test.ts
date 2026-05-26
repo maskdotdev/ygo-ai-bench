@@ -110,6 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Me
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 2,
         eventCardUid: tecuhtlica.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

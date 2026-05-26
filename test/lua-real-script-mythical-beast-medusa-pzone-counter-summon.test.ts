@@ -96,6 +96,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMedusaScript)("Lua real script Mythic
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: revive.uid,
         eventChainDepth: 1,
         eventChainLinkId: "chain-2",
