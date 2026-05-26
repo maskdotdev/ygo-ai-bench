@@ -3910,6 +3910,7 @@ function restoredLuaCostCallbacks(effect: SerializedDuelEffect): Pick<DuelEffect
   if (effect.luaCostDescriptor === "cost:self-to-grave" || isKnownWattcubeIgnitionAttackBoostEffect(effect)) return { cost: (ctx) => luaSelfToGraveCost(ctx, effect) };
   if (effect.luaCostDescriptor === "cost:self-tribute") return { cost: (ctx) => luaSelfTributeCost(ctx, effect) };
   if (isKnownMachineKing3000BcAttackBoostEffect(effect)) return { cost: (ctx) => machineKing3000BcReleaseCost(ctx, effect) };
+  if (isKnownEldlichMadGoldenLordControlEffect(effect)) return { cost: (ctx) => eldlichMadGoldenLordReleaseCost(ctx, effect) };
   if (effect.luaCostDescriptor === "cost:release-linked-group-not-battle-destroyed") return { cost: (ctx) => releaseLinkedGroupNotBattleDestroyedCost(ctx, effect) }; if (isKnownAssaultSpiritsDamageStepEquipEffect(effect)) return { cost: assaultSpiritsDamageStepEquipCost(effect) };
   return {};
 }
@@ -3976,6 +3977,28 @@ function machineKing3000BcReleaseCost(ctx: DuelEffectContext, effect: Serialized
   if (!release) return false;
   if (ctx.checkOnly) return true;
   ctx.effectLabel = currentAttack(release, ctx.duel);
+  const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+  sendDuelCardToGraveyard(ctx.duel, release.uid, release.controller, duelReason.release | duelReason.cost, ctx.player, {
+    eventReasonCardUid: ctx.source.uid,
+    ...(Number.isSafeInteger(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+  });
+  return true;
+}
+
+function isKnownEldlichMadGoldenLordControlEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith("lua:74889525:")) && effect.event === "ignition" && effect.category === 0x2000;
+}
+
+function eldlichMadGoldenLordReleaseCost(ctx: DuelEffectContext, effect: SerializedDuelEffect): boolean {
+  const release = ctx.duel.cards.find((card) =>
+    card.uid !== ctx.source.uid &&
+    card.controller === ctx.player &&
+    card.location === "monsterZone" &&
+    (currentRace(card, ctx.duel) & luaRaceFiend) !== 0 &&
+    canMoveDuelCardToLocation(ctx.duel, card.uid, "graveyard", duelReason.release | duelReason.cost)
+  );
+  if (!release) return false;
+  if (ctx.checkOnly) return true;
   const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
   sendDuelCardToGraveyard(ctx.duel, release.uid, release.controller, duelReason.release | duelReason.cost, ctx.player, {
     eventReasonCardUid: ctx.source.uid,

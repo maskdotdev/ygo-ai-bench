@@ -34,6 +34,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-embrace-tistina-chain-set-control.test.ts"
 // Restore ownership: "test/lua-real-script-emperor-prophecy-banish-cost-control-lock.test.ts"
 // Restore ownership: "test/lua-real-script-enlilgirsu-banished-return-deck-control.test.ts"
+// Restore ownership: "test/lua-real-script-eldlich-mad-golden-lord-release-control-lock.test.ts"
 // Restore ownership: "test/lua-real-script-eternal-bond-revive-control-attack-lock.test.ts"
 // Restore ownership: "test/lua-real-script-eulers-circuit-field-control-search.test.ts"
 // Restore ownership: "test/lua-real-script-evil-eye-mesmerism-persistent-control.test.ts"
@@ -103,7 +104,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 55;
+const controlFixtureCount = 56;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -133,6 +134,7 @@ const controlKindCounts = {
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
   releaseCostControl: 3,
+  releaseCostControlLockProtectCode: 1,
   releaseCostActivityLockedControl: 1,
   restrictedTemporaryControl: 2,
   searchDestroyGraveControl: 1,
@@ -196,6 +198,7 @@ type ControlKind =
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
   | "releaseCostControl"
+  | "releaseCostControlLockProtectCode"
   | "releaseCostActivityLockedControl"
   | "restrictedTemporaryControl"
   | "searchDestroyGraveControl"
@@ -563,6 +566,31 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
         "Duel.GetControl(tc,tp,PHASE_END,1)",
         'eventName: "banished"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-eldlich-mad-golden-lord-release-control-lock.test.ts",
+      kind: "releaseCostControlLockProtectCode",
+      required: [
+        'const madLordCode = "74889525"',
+        "--Eldlich the Mad Golden Lord",
+        "Fusion.AddProcMix(c,true,true,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_ELDLICH),s.matfilter)",
+        "e1:SetCode(EFFECT_CHANGE_CODE)",
+        "e1:SetValue(CARD_GOLDEN_LORD)",
+        "e2:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e3:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        "e4:SetCategory(CATEGORY_CONTROL)",
+        "Duel.CheckReleaseGroupCost(tp,s.cfilter,1,false,nil,nil,dg,tp)",
+        "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,nil,nil,dg,tp)",
+        "Duel.Release(g,REASON_COST)",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e2:SetCode(EFFECT_CANNOT_TRIGGER)",
+        'eventName: "released"',
+        'eventName: "sentToGraveyard"',
         'eventName: "controlChanged"',
         "previousController: 1",
       ],
@@ -1203,6 +1231,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
       releaseCostControl: 0,
+      releaseCostControlLockProtectCode: 0,
       releaseCostActivityLockedControl: 0,
       restrictedTemporaryControl: 0,
       searchDestroyGraveControl: 0,
