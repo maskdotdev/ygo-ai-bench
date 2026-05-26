@@ -26,7 +26,7 @@ export function quickEffectEventContext(state: DuelState, effect: DuelEffectDefi
   if (effect.event !== "quick" || effect.triggerEvent === undefined) return undefined;
   if (state.chain.length > 0 && isChainLifecycleEvent(effect.triggerEvent)) return chainQuickEffectEventContext(state, effect);
   const firstLink = state.chain[0];
-  if (firstLink) return eventSourceMatchesTriggerEffect(firstLink, effect) ? eventContextFromSource(state, firstLink) : undefined;
+  if (firstLink) return eventSourceMatchesTriggerEffect(firstLink, effect) ? eventContextFromSource(state, firstLink) : chainEventHistoryQuickEffectEventContext(state, effect);
   return liveQuickEffectEventContext(state, effect);
 }
 
@@ -51,10 +51,11 @@ type DuelEffectEventSource = {
 
 function eventContextFromSource(state: DuelState, source: DuelEffectEventSource): DuelEffectEventContext {
   const eventCard = source.eventCardUid === undefined ? undefined : findCard(state, source.eventCardUid);
+  const eventPlayer = source.eventPlayer ?? (source.eventName === "attackDeclared" ? source.eventReasonPlayer : undefined);
   return {
     eventName: source.eventName,
     ...(source.eventCode === undefined ? {} : { eventCode: source.eventCode }),
-    ...(source.eventPlayer === undefined ? {} : { eventPlayer: source.eventPlayer }),
+    ...(eventPlayer === undefined ? {} : { eventPlayer }),
     ...(source.eventValue === undefined ? {} : { eventValue: source.eventValue }),
     ...(source.eventReason === undefined ? {} : { eventReason: source.eventReason }),
     ...(source.eventReasonPlayer === undefined ? {} : { eventReasonPlayer: source.eventReasonPlayer }),
@@ -87,6 +88,18 @@ function chainQuickEffectEventContext(state: DuelState, effect: DuelEffectDefini
     eventChainLinkId: link.id,
     eventCardUid: link.sourceUid,
   });
+}
+
+function chainEventHistoryQuickEffectEventContext(state: DuelState, effect: DuelEffectDefinition): DuelEffectEventContext | undefined {
+  const activeLinkIds = new Set(state.chain.map((link) => link.id));
+  for (let index = state.eventHistory.length - 1; index >= 0; index--) {
+    const event = state.eventHistory[index];
+    if (!event || !eventSourceMatchesTriggerEffect(event, effect)) continue;
+    if (event.eventChainLinkId === undefined || !activeLinkIds.has(event.eventChainLinkId)) continue;
+    if (event.eventChainDepth !== undefined && event.eventChainDepth > state.chain.length) continue;
+    return eventContextFromSource(state, event);
+  }
+  return undefined;
 }
 
 function liveQuickEffectEventContext(state: DuelState, effect: DuelEffectDefinition): DuelEffectEventContext | undefined {

@@ -4,9 +4,9 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const damageCalculationFixtureCount = 4;
+const damageCalculationFixtureCount = 5;
 const damageCalculationKindCounts = {
-  calculateDamageRetarget: 2,
+  calculateDamageRetarget: 3,
   effectDamageReflection: 1,
   persistentDamageCalculationDebuff: 1,
 } satisfies Record<DamageCalculationKind, number>;
@@ -14,6 +14,7 @@ const damageCalculationSemanticVariantCounts = {
   dispatchparazziCalculateDamageRetarget: 1,
   gagagaSamuraiCalculateDamageRetarget: 1,
   naturesReflectionEffectDamageReflect: 1,
+  rouletteSpiderDiceCalculateDamageRetarget: 1,
   shadowSpellGoatPersistentDamageCalculationDebuff: 1,
 } satisfies Record<DamageCalculationSemanticVariant, number>;
 
@@ -23,6 +24,7 @@ type DamageCalculationSemanticVariant =
   | "dispatchparazziCalculateDamageRetarget"
   | "gagagaSamuraiCalculateDamageRetarget"
   | "naturesReflectionEffectDamageReflect"
+  | "rouletteSpiderDiceCalculateDamageRetarget"
   | "shadowSpellGoatPersistentDamageCalculationDebuff";
 
 describe("Lua real damage calculation restore coverage", () => {
@@ -120,6 +122,18 @@ function damageCalculationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-roulette-spider-dice-calculate-damage.test.ts",
+      kind: "calculateDamageRetarget",
+      required: [
+        "Duel.TossDice(tp,1)",
+        "Duel.CalculateDamage(at,tc)",
+        "lastDiceResults).toEqual([3])",
+        "pendingBattle).toBeUndefined()",
+        "players[0].lifePoints).toBe(7600)",
+        'eventName: "battleDamageDealt"',
+      ],
+    },
+    {
       file: "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
       kind: "persistentDamageCalculationDebuff",
       required: [
@@ -199,6 +213,22 @@ function damageCalculationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-roulette-spider-dice-calculate-damage.test.ts",
+      kind: "rouletteSpiderDiceCalculateDamageRetarget",
+      required: [
+        'const rouletteSpiderCode = "36708764"',
+        "restores attack-announcement dice branch into selected alternate battle calculation",
+        "e1:SetCategory(CATEGORY_DICE+CATEGORY_DAMAGE+CATEGORY_DESTROY)",
+        "e1:SetCode(EVENT_ATTACK_ANNOUNCE)",
+        "return ep==1-tp",
+        "Duel.SetTargetCard(at)",
+        "local dc=Duel.TossDice(tp,1)",
+        "Duel.CalculateDamage(at,tc)",
+        "eventReasonPlayer: 1",
+        "players[0].lifePoints).toBe(7600)",
+      ],
+    },
+    {
       file: "test/lua-real-script-shadow-spell-goat-damage-calculation-persistent.test.ts",
       kind: "shadowSpellGoatPersistentDamageCalculationDebuff",
       required: [
@@ -229,6 +259,7 @@ function countDamageCalculationSemanticVariants(
       dispatchparazziCalculateDamageRetarget: 0,
       gagagaSamuraiCalculateDamageRetarget: 0,
       naturesReflectionEffectDamageReflect: 0,
+      rouletteSpiderDiceCalculateDamageRetarget: 0,
       shadowSpellGoatPersistentDamageCalculationDebuff: 0,
     },
   );
