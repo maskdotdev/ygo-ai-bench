@@ -85,8 +85,10 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vaylantz-duke-facedown-lock.test.ts"
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
-const controlFixtureCount = 37;
+// Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
+const controlFixtureCount = 38;
 const controlKindCounts = {
+  battleDestroyedTrapControlRace: 1,
   battleCounterControl: 2,
   chainControlSummon: 1,
   chainControlToken: 1,
@@ -135,6 +137,7 @@ const controlSemanticVariantCounts = {
 } satisfies Record<ControlSemanticVariant, number>;
 
 type ControlKind =
+  | "battleDestroyedTrapControlRace"
   | "battleCounterControl"
   | "chainControlSummon"
   | "chainControlToken"
@@ -232,6 +235,22 @@ function realScriptControlFixtureFiles(): Array<{
   required: string[];
 }> {
   return ([
+    {
+      file: "lua-real-script-alien-brain-battle-destroyed-control-race.test.ts",
+      kind: "battleDestroyedTrapControlRace",
+      required: [
+        "restores battle-destroyed Reptile trigger into destroyer control and race change",
+        "e1:SetCode(EVENT_BATTLE_DESTROYED)",
+        "ec==Duel.GetAttackTarget()",
+        "local tc=eg:GetFirst():GetReasonCard()",
+        "Duel.GetControl(tc,tp)",
+        "e1:SetCode(EFFECT_CHANGE_RACE)",
+        'eventName: "battleDestroyed"',
+        'eventName: "controlChanged"',
+        "currentRace(controlledAttacker, restoredTrigger.session.state)).toBe(raceReptile)",
+        "previousController: 1",
+      ],
+    },
     {
       file: "lua-real-script-borreload-liberator-linked-control-revive.test.ts",
       kind: "linkedZoneControlRevive",
@@ -763,6 +782,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       return counts;
     },
     {
+      battleDestroyedTrapControlRace: 0,
       battleCounterControl: 0,
       chainControlSummon: 0,
       chainControlToken: 0,
