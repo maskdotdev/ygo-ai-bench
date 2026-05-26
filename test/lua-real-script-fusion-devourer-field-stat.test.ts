@@ -3,6 +3,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelSession } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -82,10 +83,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
     expect(restored.session.state.effects.find((effect) => effect.event === "continuous" && effect.code === 102 && effect.sourceUid === devourer!.uid)).toMatchInlineSnapshot(`
       {
-        "canActivate": [Function],
         "code": 102,
         "controller": 0,
-        "cost": [Function],
         "event": "continuous",
         "id": "lua-1-102",
         "luaTargetDescriptor": "target:source-battle-target-type:64",
@@ -97,7 +96,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
         ],
         "registryKey": "lua:98336111:lua-1-102",
         "sourceUid": "p0-deck-98336111-0",
-        "target": [Function],
         "targetCardPredicate": [Function],
         "targetRange": [
           0,
@@ -110,6 +108,20 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fu
     passBattleResponses(restored.session);
     expect(restored.session.state.battleDamage[1]).toBe(devourer!.data.attack);
     expect(restored.session.state.players[1].lifePoints).toBe(8000 - (devourer!.data.attack ?? 0));
+    expect(restored.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: devourer!.uid,
+        eventPlayer: 1,
+        eventValue: devourer!.data.attack,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: devourer!.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
+      },
+    ]);
     expect(restored.session.state.cards.find((card) => card.uid === devourer!.uid)).toMatchObject({ location: "monsterZone" });
     expect(restored.session.state.cards.find((card) => card.uid === fusion!.uid)).toMatchObject({ location: "graveyard" });
   });

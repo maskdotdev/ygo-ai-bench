@@ -108,6 +108,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ts
             "sequence": 0,
           },
           "eventName": "normalSummoned",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -150,6 +151,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ts
             "sequence": 0,
           },
           "eventName": "normalSummoned",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -230,9 +232,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ts
         },
         "sourceUid": "p0-deck-78098950-0",
         "target": [Function],
-        "triggerCode": 4608,
-        "triggerEvent": "phaseEnd",
-        "triggerTiming": "when",
       }
     `);
     expect(restoredPrompt.session.state.eventHistory.filter((event) => event.eventReasonEffectId === 9 && ["sentToGraveyard", "cardsDrawn"].includes(event.eventName))).toEqual([
@@ -373,6 +372,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ts
           "countLimit": 1,
           "event": "continuous",
           "id": "lua-12-4608",
+          "luaTypeFlags": 2050,
           "oncePerTurn": true,
           "operation": [Function],
           "ownerPlayer": 0,
@@ -393,7 +393,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ts
           "sourceUid": "p0-deck-78098950-0",
           "triggerCode": 4608,
           "triggerEvent": "phaseEnd",
-          "triggerTiming": "when",
+          "triggerTiming": "if",
         },
       ]
     `);
