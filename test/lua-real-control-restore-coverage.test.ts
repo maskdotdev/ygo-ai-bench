@@ -74,6 +74,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-seleglare-no-tribute-control.test.ts"
 // Restore ownership: "test/lua-real-script-service-puppet-play-control-grave-summon.test.ts"
 // Restore ownership: "test/lua-real-script-shiens-spy-give-control-return.test.ts"
+// Restore ownership: "test/lua-real-script-splash-capture-xyz-banish-control.test.ts"
 // Restore ownership: "test/lua-real-script-spright-double-cross-overlay.test.ts"
 // Restore ownership: "test/lua-real-script-spyral-mission-recapture-activate-control-replace.test.ts"
 // Restore ownership: "test/lua-real-script-subterror-voltelluric-position-summon.test.ts"
@@ -90,7 +91,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 42;
+const controlFixtureCount = 43;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleCounterControl: 2,
@@ -121,6 +122,7 @@ const controlKindCounts = {
   swapControlLock: 1,
   targetedSwapControl: 4,
   temporaryControl: 1,
+  xyzSummonBanishCostControl: 1,
 } satisfies Record<ControlKind, number>;
 const controlSemanticVariantCounts = {
   allyEnemyCatcherSummonControlReturn: 1,
@@ -170,7 +172,8 @@ type ControlKind =
   | "linkedLpCostControlDelayedDestroy"
   | "swapControlLock"
   | "targetedSwapControl"
-  | "temporaryControl";
+  | "temporaryControl"
+  | "xyzSummonBanishCostControl";
 
 type ControlSemanticVariant =
   | "allyEnemyCatcherSummonControlReturn"
@@ -345,6 +348,24 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.SetTargetCard(eg)",
         "Duel.GetControl(tc,tp)",
         'eventName: "released"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-splash-capture-xyz-banish-control.test.ts",
+      kind: "xyzSummonBanishCostControl",
+      required: [
+        'const splashCaptureCode = "39765115"',
+        "--Splash Capture",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "tc:IsXyzSummoned()",
+        "aux.SpElimFilter(c,true)",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,2,2,nil)",
+        "Duel.Remove(g,POS_FACEUP,REASON_COST)",
+        "Duel.SetTargetCard(eg)",
+        "Duel.GetControl(tc,tp)",
+        'eventName: "banished"',
         'eventName: "controlChanged"',
         "previousController: 1",
       ],
@@ -871,6 +892,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       swapControlLock: 0,
       targetedSwapControl: 0,
       temporaryControl: 0,
+      xyzSummonBanishCostControl: 0,
     },
   );
 }
