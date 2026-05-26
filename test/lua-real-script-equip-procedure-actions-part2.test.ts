@@ -102,6 +102,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-8730435-0",
+          "targetFieldIds": [
+            6,
+          ],
           "targetUids": [
             "p0-deck-601009-1",
           ],
@@ -205,6 +208,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-97616504-0",
+          "targetFieldIds": [
+            7,
+          ],
           "targetUids": [
             "p1-deck-601013-0",
           ],
@@ -491,6 +497,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
               "sequence": 2,
             },
             "eventName": "sentToGraveyard",
+            "eventPlayer": 0,
             "eventPreviousState": {
               "controller": 0,
               "faceUp": true,
@@ -535,6 +542,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
             "sequence": 2,
           },
           "eventName": "sentToGraveyard",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": true,
@@ -559,6 +567,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-97616504-0",
+          "targetFieldIds": [
+            6,
+          ],
           "targetUids": [
             "p0-deck-601015-1",
           ],
@@ -675,6 +686,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           ],
           "player": 0,
           "sourceUid": "p0-deck-95638658-0",
+          "targetFieldIds": [
+            6,
+          ],
           "targetUids": [
             "p0-deck-601041-1",
           ],

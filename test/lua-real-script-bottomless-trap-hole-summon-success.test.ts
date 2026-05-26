@@ -89,6 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -125,6 +126,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -158,6 +160,9 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
         ],
         "player": 1,
         "sourceUid": "p1-deck-29401950-0",
+        "targetFieldIds": [
+          9,
+        ],
         "targetUids": [
           "p0-deck-872-0",
         ],
@@ -187,6 +192,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -220,6 +226,9 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
         ],
         "player": 1,
         "sourceUid": "p1-deck-29401950-0",
+        "targetFieldIds": [
+          9,
+        ],
         "targetUids": [
           "p0-deck-872-0",
         ],
@@ -303,6 +312,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
           "sequence": 0,
         },
         "eventName": "flipSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -455,6 +465,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
           "sequence": 0,
         },
         "eventName": "specialSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -497,6 +508,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
           "sequence": 0,
         },
         "eventName": "specialSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -538,6 +550,10 @@ describe.skipIf(!hasUpstreamScripts || !hasBottomlessScript)("Lua real script Bo
         ],
         "player": 1,
         "sourceUid": "p1-deck-29401950-0",
+        "targetFieldIds": [
+          13,
+          14,
+        ],
         "targetUids": [
           "p0-deck-876-3",
           "p0-deck-877-4",

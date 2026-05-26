@@ -82,6 +82,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
         "id": "chain-2",
         "player": 0,
         "sourceUid": "p0-deck-14235211-0",
+        "targetFieldIds": [
+          7,
+        ],
         "targetUids": [
           "p0-deck-14235-1",
         ],
@@ -135,6 +138,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
           "cost": [Function],
           "event": "continuous",
           "id": "lua-5-76",
+          "labelObjectUid": "p0-deck-14235-1",
           "lifePointValue": [Function],
           "luaTypeFlags": 1,
           "oncePerTurn": false,
@@ -302,6 +306,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ri
           "cost": [Function],
           "event": "continuous",
           "id": "lua-5-76",
+          "labelObjectUid": "p0-deck-14239-1",
           "lifePointValue": [Function],
           "luaTypeFlags": 1,
           "oncePerTurn": false,

@@ -113,8 +113,8 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
     expect(restoredIgnition.session.state.chain).toHaveLength(1);
     expect(restoredIgnition.session.state.chain[0]).toMatchInlineSnapshot(`
       {
-        "activationLocation": "graveyard",
-        "activationSequence": 1,
+        "activationLocation": "monsterZone",
+        "activationSequence": 0,
         "chainIndex": 1,
         "effectId": "lua-4",
         "id": "chain-4",
@@ -131,6 +131,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Bl
         ],
         "player": 0,
         "sourceUid": "p0-deck-16984449-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p0-deck-3918345-1",
         ],

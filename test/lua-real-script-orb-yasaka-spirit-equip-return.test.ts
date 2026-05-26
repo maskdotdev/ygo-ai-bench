@@ -115,6 +115,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
         ],
         "player": 0,
         "sourceUid": "p0-deck-74115234-0",
+        "targetFieldIds": [
+          9,
+        ],
         "targetUids": [
           "p0-deck-40473581-1",
         ],
@@ -190,32 +193,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
           "triggerCode": 1139,
           "triggerEvent": "battleDestroyed",
           "triggerTiming": "when",
-        },
-        {
-          "battleDamageValue": [Function],
-          "canActivate": [Function],
-          "code": 76,
-          "controller": 0,
-          "cost": [Function],
-          "event": "continuous",
-          "id": "lua-13-76",
-          "lifePointValue": [Function],
-          "luaTypeFlags": 1,
-          "oncePerTurn": false,
-          "operation": [Function],
-          "property": 1024,
-          "range": [
-            "spellTrapZone",
-          ],
-          "registryKey": "lua:74115234:lua-13-76",
-          "reset": {
-            "flags": 33427456,
-          },
-          "sourceUid": "p0-deck-74115234-0",
-          "statValue": [Function],
-          "target": [Function],
-          "valueCardPredicate": [Function],
-          "valuePredicate": [Function],
         },
       ]
     `);
@@ -456,6 +433,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
             "sequence": 0,
           },
           "eventName": "sentToGraveyard",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": true,
@@ -500,6 +478,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
           "sequence": 0,
         },
         "eventName": "sentToGraveyard",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": true,
