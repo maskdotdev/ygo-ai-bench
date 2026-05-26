@@ -38,13 +38,14 @@ import {
 } from "./lua-real-battle-restore-fixtures.js";
 
 const root = process.cwd();
-const scriptedCalculateDamageFixtureCount = 5;
+const scriptedCalculateDamageFixtureCount = 6;
 const scriptedCalculateDamageKindCounts = {
   attackNegationRecalculation: 3,
+  attackSwapControlRecalculation: 1,
   battleTargetRecalculation: 2,
 } satisfies Record<ScriptedCalculateDamageKind, number>;
 
-type ScriptedCalculateDamageKind = "attackNegationRecalculation" | "battleTargetRecalculation";
+type ScriptedCalculateDamageKind = "attackNegationRecalculation" | "attackSwapControlRecalculation" | "battleTargetRecalculation";
 type ScriptedCalculateDamageFixture = { file: string; kind: ScriptedCalculateDamageKind; required: string[] };
 
 describe("Lua real battle restore coverage", () => {
@@ -309,6 +310,7 @@ function realScriptCalculateDamageFixtures(): ScriptedCalculateDamageFixture[] {
     { file: "test/lua-real-script-gagaga-samurai-calculate-damage.test.ts", kind: "battleTargetRecalculation", required: ["Duel.CalculateDamage(at,c)", "pendingBattle).toBeUndefined()", "position: \"faceUpDefense\"", "players[1].lifePoints).toBe(8000)"] },
     { file: "test/lua-real-script-last-counter-negate-calculate-damage.test.ts", kind: "attackNegationRecalculation", required: ["Duel.NegateAttack()", "Duel.CalculateDamage(bc,sc)", "pendingBattle).toBeUndefined()", 'eventName: "battleDamageDealt"', "players[1].lifePoints).toBe(6800)"] },
     { file: "test/lua-real-script-magical-arm-shield-calculate-damage.test.ts", kind: "attackNegationRecalculation", required: ['battleWindow?.kind).toBe("attackNegationResponse")', 'eventName: "controlChanged"', "battleDamage).toEqual({ 0: 1500, 1: 0 })", 'eventName: "battleDamageDealt"'] },
+    { file: "test/lua-real-script-mirror-gate-swap-calculate-damage.test.ts", kind: "attackSwapControlRecalculation", required: ["Duel.SwapControl(a,at,RESET_PHASE|PHASE_END,1)", "Duel.CalculateDamage(a,at)", 'eventName: "controlChanged"', "battleDamage).toEqual({ 0: 0, 1: 800 })", "players[1].lifePoints).toBe(7200)"] },
     { file: "test/lua-real-script-super-junior-confrontation-calculate-damage.test.ts", kind: "attackNegationRecalculation", required: ['battleWindow?.kind).toBe("attackNegationResponse")', "skippedPhases).toEqual([{ player: 1, phase: \"battle\", remaining: 1 }])", "battleDamage).toEqual({ 0: 0, 1: 0 })", 'eventName: "attackDisabled"'] },
   ] satisfies ScriptedCalculateDamageFixture[]).sort((a, b) => a.file.localeCompare(b.file));
 }
@@ -317,5 +319,5 @@ function countScriptedCalculateDamageKinds(fixtures: Array<{ kind: ScriptedCalcu
   return fixtures.reduce<Record<ScriptedCalculateDamageKind, number>>((counts, fixture) => {
     counts[fixture.kind] += 1;
     return counts;
-  }, { attackNegationRecalculation: 0, battleTargetRecalculation: 0 });
+  }, { attackNegationRecalculation: 0, attackSwapControlRecalculation: 0, battleTargetRecalculation: 0 });
 }
