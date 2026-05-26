@@ -106,7 +106,8 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
 // Restore ownership: "test/lua-real-script-reeze-gusto-deck-cost-swap-control.test.ts"
-const controlFixtureCount = 63;
+// Restore ownership: "test/lua-real-script-terror-byte-detach-level-control.test.ts"
+const controlFixtureCount = 64;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -120,6 +121,7 @@ const controlKindCounts = {
   confirmDamageGroupControl: 1,
   detachGroupControlStatCode: 1,
   detachControlStatCode: 1,
+  detachLevelAttackControl: 1,
   fusionSummonReleaseCostControl: 1,
   geminiCounterControlEndDestroy: 1,
   detachControlReleaseDestroy: 1,
@@ -191,6 +193,7 @@ type ControlKind =
   | "confirmDamageGroupControl"
   | "detachGroupControlStatCode"
   | "detachControlStatCode"
+  | "detachLevelAttackControl"
   | "fusionSummonReleaseCostControl"
   | "geminiCounterControlEndDestroy"
   | "detachControlReleaseDestroy"
@@ -431,6 +434,27 @@ function realScriptControlFixtureFiles(): Array<{
         "e4:SetCode(EFFECT_SET_ATTACK_FINAL)",
         "e5:SetCode(EFFECT_CHANGE_CODE)",
         "e:GetHandler():GetCardEffect(EFFECT_SET_CONTROL)",
+        'eventName: "detachedMaterial"',
+        'eventName: "becameTarget"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-terror-byte-detach-level-control.test.ts",
+      kind: "detachLevelAttackControl",
+      required: [
+        "restores Xyz material detach into Level 4-or-lower attack-position temporary control",
+        "--Number 34: Terror-Byte",
+        "Xyz.AddProcedure(c,nil,3,3)",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e1:SetCost(Cost.DetachFromSelf(1))",
+        "return c:IsFaceup() and c:IsAttackPos() and c:IsLevelBelow(4) and c:IsControlerCanBeChanged()",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g,1,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
         'eventName: "detachedMaterial"',
         'eventName: "becameTarget"',
         'eventName: "controlChanged"',
@@ -1374,6 +1398,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       confirmDamageGroupControl: 0,
       detachGroupControlStatCode: 0,
       detachControlStatCode: 0,
+      detachLevelAttackControl: 0,
       detachControlReleaseDestroy: 0,
       discardCostTemporaryControl: 0,
       equipControl: 0,
