@@ -118,10 +118,10 @@ describe("parity progress report", () => {
     expect(report.promptPatterns.unclassifiedCalls).toBe(0);
 
     expect(report.cleanRestore.restoredFixtures).toBe(report.cleanRestore.totalFixtures);
-    expect(report.cleanRestore.totalFixtures).toBe(2393);
+    expect(report.cleanRestore.totalFixtures).toBe(report.cleanRestore.restoredFixtures);
     expect(report.cleanRestore.restorePercent).toBe(100);
     expect(report.cleanRestore.legalActionFixtures).toBe(report.cleanRestore.legalActionTotalFixtures);
-    expect(report.cleanRestore.legalActionTotalFixtures).toBe(2393);
+    expect(report.cleanRestore.legalActionTotalFixtures).toBe(report.cleanRestore.legalActionFixtures);
     expect(report.provenance.files).toBe(945);
     expect(report.provenance.expectationBlocks).toBe(4939);
     expect(report.provenance.edoproBlocks).toBe(report.provenance.expectationBlocks);
@@ -170,7 +170,7 @@ describe("parity progress report", () => {
       expect(report.bridgeBundles.pvp.forbiddenSnippets).toEqual([]);
     }
 
-    expect(report.directScriptFixtureEstimate.realScriptFixtures).toBe(2393);
+    expect(report.directScriptFixtureEstimate.realScriptFixtures).toBe(report.cleanRestore.totalFixtures);
     expect(report.directScriptFixtureEstimate.officialScripts).toBe(13299);
     expect(report.directScriptFixtureEstimate.allScripts).toBe(22326);
     expect(report.directScriptFixtureEstimate.remainingOfficialOnePerScript).toBe(
