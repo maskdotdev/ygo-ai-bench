@@ -1,3 +1,4 @@
+import "./browser-node-shims/process-global.js";
 import { createDuelPvpAgent } from "#playtest/duel-pvp-agent-bridge.js";
 
 declare global {

@@ -1,3 +1,4 @@
+import "../browser-node-shims/process-global.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
 import type { DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
@@ -310,6 +311,7 @@ export function PvpArena() {
   const cardImages = useRef(new Map<string, CardImageInfo>());
   const browserAssetCaches = useRef<BrowserPvpAssetCaches | undefined>(undefined);
   const visibleFixtureTimer = useRef<number | undefined>(undefined);
+  const initialBrowserBootStarted = useRef(false);
 
   const notify = useCallback((title: string, message: string, tone: ToastMessage["tone"] = "default") => {
     const id = Date.now() + Math.floor(Math.random() * 1000);
@@ -408,6 +410,12 @@ export function PvpArena() {
       notify("Could not start", error instanceof Error ? error.message : "Invalid deck", "error");
     }
   }, [deckP0, deckP1, handSizeDraft, notify, seedDraft, session]);
+
+  useEffect(() => {
+    if (initialBrowserBootStarted.current) return;
+    initialBrowserBootStarted.current = true;
+    void restartDuel();
+  }, [restartDuel]);
 
   const runVisibleFixture = useCallback(() => {
     try {

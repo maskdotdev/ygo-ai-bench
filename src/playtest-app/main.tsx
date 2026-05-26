@@ -1,3 +1,4 @@
+import "../browser-node-shims/process-global.js";
 import { createRoot } from "react-dom/client";
 import { Link, Outlet, RouterProvider, createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";

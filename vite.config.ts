@@ -2,6 +2,7 @@ import type { Plugin } from "vite";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
+import { resolve } from "node:path";
 
 /** TanStack routes that must resolve to the playtest SPA shell (direct URL / refresh). */
 const PLAYTEST_SPA_PATHS = ["/pvp"];
@@ -29,6 +30,10 @@ function playtestSpaFallback(): Plugin {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), playtestSpaFallback()],
+  define: {
+    process: "globalThis.__duelDeckStudioProcess",
+    global: "globalThis",
+  },
   resolve: {
     alias: {
       "#cards": "/src/cards",
@@ -36,6 +41,9 @@ export default defineConfig({
       "#engine": "/src/engine",
       "#lua": "/src/engine/lua",
       "#playtest": "/src/playtest",
+      "fs": resolve(__dirname, "src/browser-node-shims/fs.ts"),
+      "os": resolve(__dirname, "src/browser-node-shims/os.ts"),
+      "readline-sync": resolve(__dirname, "src/browser-node-shims/readline-sync.ts"),
     },
   },
   build: {

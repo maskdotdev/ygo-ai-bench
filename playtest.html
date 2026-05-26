@@ -11,6 +11,18 @@
 </head>
 <body>
   <div id="root"></div>
+  <script>
+    globalThis.__duelDeckStudioProcess = {
+      env: { FENGARICONF: "" },
+      versions: { node: "99" },
+      browser: true,
+      addListener() {},
+      removeListener() {},
+      on() {},
+      once() {},
+      binding() { return {}; }
+    };
+  </script>
   <script type="module" src="/src/playtest-app/main.tsx"></script>
 </body>
 </html>

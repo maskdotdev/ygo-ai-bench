@@ -56,7 +56,7 @@ function ZoneRow(props: {
             <button
               type="button"
               className="absolute inset-0.5 overflow-hidden rounded"
-              title={props.cardHasLegalActions(card.uid) ? `${card.name} — click to play, Shift+click to zoom` : card.name}
+              title={props.cardHasLegalActions(card.uid) ? `${card.name} — click for actions, Shift+click to zoom` : card.name}
               onClick={(event) => props.onCardClick(card, event)}
             >
               <DuelCardFace card={card} images={props.images} />
@@ -135,7 +135,7 @@ function HandFan(props: {
               type="button"
               style={{ zIndex: index + 1, marginLeft: index === 0 ? 0 : -10 }}
               className={`relative h-[min(9.5vh,58px)] w-[min(8.5vw,42px)] shrink-0 rounded-md border border-slate-600 shadow-md transition-transform hover:scale-105 ${rot} ${props.cardHasLegalActions(card.uid) ? "ring-2 ring-cyan-400 ring-2 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)] ring-offset-0" : ""}`}
-              title={props.cardHasLegalActions(card.uid) ? `${card.name} — click to play, Shift+click to zoom` : card.name}
+              title={props.cardHasLegalActions(card.uid) ? `${card.name} — click for actions, Shift+click to zoom` : card.name}
               onClick={(event) => props.onCardClick(card, event)}
             >
               <DuelCardFace card={card} images={props.images} />
@@ -284,12 +284,6 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
       }
       if (!props.onPlayAction) {
         props.onCardInspect(card);
-        return;
-      }
-      if (actions.length === 1) {
-        const only = actions[0];
-        if (only) props.onPlayAction(only);
-        setFlyout(null);
         return;
       }
       const el = event.currentTarget as HTMLElement;

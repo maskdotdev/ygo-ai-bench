@@ -1,3 +1,4 @@
+import "./browser-node-shims/process-global.js";
 import { createPlaytestAgent } from "#playtest/agent-bridge.js";
 
 declare global {
