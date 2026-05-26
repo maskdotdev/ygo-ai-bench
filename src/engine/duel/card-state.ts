@@ -45,6 +45,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
   }
   pruneResetEffectsAfterMove(state, card);
   pruneDuelFlagEffectsAfterMove(state, card);
+  clearCardTargetReferencesAfterLeave(state, card);
   return card;
 }
 
@@ -54,6 +55,13 @@ export function recordPreviousDuelCardState(state: DuelState, card: DuelCardInst
   card.previousSequence = card.sequence;
   card.previousPosition = card.position;
   card.previousFaceUp = card.faceUp;
+  if (card.counters === undefined) delete card.previousCounters;
+  else card.previousCounters = { ...card.counters };
+  if (card.counterBuckets === undefined) {
+    delete card.previousCounterBuckets;
+  } else {
+    card.previousCounterBuckets = Object.fromEntries(Object.entries(card.counterBuckets).map(([counter, buckets]) => [counter, { ...buckets }]));
+  }
   card.previousCodes = currentCardCodes(card, state);
   card.previousSetcodes = currentCardSetcodes(card, state);
   card.previousTypeFlags = cardTypeFlags(card, state);
@@ -128,4 +136,13 @@ function shouldClearCountersAfterMove(previous: DuelLocation | undefined, curren
 
 function isFieldLocation(location: DuelLocation | undefined): boolean {
   return location === "monsterZone" || location === "spellTrapZone";
+}
+
+function clearCardTargetReferencesAfterLeave(state: DuelState, card: DuelCardInstance): void {
+  if (!isFieldLocation(card.previousLocation) || isFieldLocation(card.location)) return;
+  for (const candidate of state.cards) {
+    if (!candidate.cardTargetUids?.includes(card.uid)) continue;
+    candidate.cardTargetUids = candidate.cardTargetUids.filter((uid) => uid !== card.uid);
+    if (candidate.cardTargetUids.length === 0) delete candidate.cardTargetUids;
+  }
 }
