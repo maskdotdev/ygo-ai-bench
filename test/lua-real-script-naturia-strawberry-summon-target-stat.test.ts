@@ -91,6 +91,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStrawberryScript)("Lua real script Na
         eventCardUid: summoned.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,
+        eventValue: 1,
         eventPreviousState: { controller: 1, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         relatedEffectId: 1,
@@ -98,6 +99,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStrawberryScript)("Lua real script Na
         eventChainLinkId: "chain-3",
       },
     ]);
+    expect(restoredTrigger.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

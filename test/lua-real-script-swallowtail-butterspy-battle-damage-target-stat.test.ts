@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasButterspyScript)("Lua real script Swa
         eventCardUid: statTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventValue: 1,
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
         relatedEffectId: 1,

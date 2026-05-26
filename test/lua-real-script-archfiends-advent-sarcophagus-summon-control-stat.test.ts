@@ -135,6 +135,7 @@ describe.skipIf(!hasUpstreamScripts || !hasAdventScript)("Lua real script Archfi
           },
           "eventReason": 0,
           "eventReasonPlayer": 0,
+          "eventValue": 1,
           "relatedEffectId": 2,
         },
         {
@@ -248,6 +249,7 @@ describe.skipIf(!hasUpstreamScripts || !hasAdventScript)("Lua real script Archfi
           },
           "eventReason": 0,
           "eventReasonPlayer": 0,
+          "eventValue": 1,
           "relatedEffectId": 3,
         },
         {

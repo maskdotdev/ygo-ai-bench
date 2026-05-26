@@ -98,6 +98,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cy
         eventCardUid: targetTrap.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventValue: 1,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
         eventCurrentState: { controller: 0, faceUp: false, location: "spellTrapZone", position: "faceDown", sequence: 0 },
         relatedEffectId: 1,

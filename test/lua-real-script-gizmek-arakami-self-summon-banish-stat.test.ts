@@ -165,6 +165,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Gi
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventValue: 1,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 3 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         relatedEffectId: 2,

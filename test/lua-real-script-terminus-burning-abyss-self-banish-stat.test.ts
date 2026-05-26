@@ -113,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasTerminusScript)("Lua real script Term
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventValue: 1,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 2 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         relatedEffectId: 2,
