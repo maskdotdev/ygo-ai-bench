@@ -207,51 +207,64 @@ function CardActionFlyout(props: {
   onClose: () => void;
 }) {
   const { flyout } = props;
-  const vw = typeof window !== "undefined" ? window.innerWidth : 800;
-  const vh = typeof window !== "undefined" ? window.innerHeight : 600;
-  const left = Math.min(vw - 292, Math.max(10, flyout.anchorX - 140));
-  const top = Math.min(vh - 240, Math.max(10, flyout.anchorY + 6));
+  const image = props.images.get(flyout.card.code);
+  const imageUrl = image?.large || image?.small;
 
   return createPortal(
     <>
       <button type="button" className="fixed inset-0 z-[100] cursor-default bg-black/45" aria-label="Dismiss" onClick={props.onClose} />
       <div
-        className="fixed z-[110] w-[min(92vw,280px)] rounded-xl border border-cyan-500/40 bg-slate-900/95 p-2 shadow-2xl backdrop-blur-md"
-        style={{ left, top }}
+        className="fixed left-1/2 top-1/2 z-[110] grid max-h-[min(92dvh,720px)] w-[min(94vw,760px)] -translate-x-1/2 -translate-y-1/2 grid-cols-1 overflow-hidden rounded-xl border border-cyan-500/40 bg-slate-900/95 shadow-2xl backdrop-blur-md sm:grid-cols-[minmax(220px,320px)_1fr]"
         role="dialog"
         aria-modal
         aria-labelledby="card-action-flyout-title"
       >
-        <div className="mb-2 flex gap-2 border-b border-cyan-500/20 pb-2">
-          <div className="h-12 w-9 shrink-0 overflow-hidden rounded border border-slate-600">
-            <DuelCardFace card={flyout.card} images={props.images} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p id="card-action-flyout-title" className="truncate text-xs font-bold text-white">
-              {flyout.card.name}
-            </p>
-            <p className="text-[10px] text-white/45">Choose an action</p>
+        <div className="border-b border-cyan-500/20 bg-slate-950/70 p-3 sm:border-b-0 sm:border-r">
+          <div className="mx-auto aspect-[59/86] max-h-[min(42dvh,460px)] w-full max-w-[260px] overflow-hidden rounded-lg border border-slate-600 bg-slate-950 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
+            {imageUrl ? (
+              <img className="h-full w-full object-contain" src={imageUrl} alt={flyout.card.name} />
+            ) : (
+              <DuelCardFace card={flyout.card} images={props.images} />
+            )}
           </div>
         </div>
-        <div className="max-h-[min(52vh,320px)] space-y-1 overflow-y-auto pr-0.5">
-          {flyout.actions.map((action) => (
+
+        <div className="flex min-h-0 flex-col p-3">
+          <div className="mb-3 border-b border-cyan-500/20 pb-3">
+            <p id="card-action-flyout-title" className="text-sm font-bold leading-snug text-white sm:text-base">{flyout.card.name}</p>
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/70">{flyout.card.kind} · choose an action</p>
+          </div>
+
+          <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+            {flyout.actions.map((action) => (
+              <button
+                key={duelActionUiKey(action)}
+                type="button"
+                className="action-button w-full rounded-lg px-3 py-3 text-left text-xs font-semibold leading-snug sm:text-sm"
+                onClick={() => props.onPick(action)}
+              >
+                <span className="line-clamp-4">{action.label}</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-2 border-t border-cyan-500/20 pt-3">
             <button
-              key={duelActionUiKey(action)}
               type="button"
-              className="action-button w-full rounded-md px-2 py-2 text-left text-[11px] font-semibold leading-snug"
-              onClick={() => props.onPick(action)}
+              className="rounded-md border border-slate-600 px-3 py-2 text-xs font-semibold text-slate-200 hover:bg-white/5"
+              onClick={props.onClose}
             >
-              <span className="line-clamp-4">{action.label}</span>
+              Cancel
             </button>
-          ))}
+            <button
+              type="button"
+              className="rounded-md border border-cyan-500/25 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/10"
+              onClick={props.onInspect}
+            >
+              Full zoom
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          className="mt-2 w-full rounded-md border border-cyan-500/20 py-1.5 text-[10px] font-semibold text-cyan-200/90 hover:bg-white/5"
-          onClick={props.onInspect}
-        >
-          Zoom card (Shift+click next time)
-        </button>
       </div>
     </>,
     document.body,
