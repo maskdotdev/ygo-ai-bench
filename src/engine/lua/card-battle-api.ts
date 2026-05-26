@@ -51,7 +51,11 @@ export function installCardBattleApi<EffectRecord extends LuaCardApiEffectRecord
 function canLuaCardAttack(state: DuelState, card: DuelCardInstance): boolean {
   const attack = state.currentAttack ?? state.pendingBattle;
   if (state.status === "resolving" && attack?.attackerUid === card.uid && card.location === "monsterZone" && !state.attackCanceledUids.includes(card.uid)) return true;
-  return canDuelCardAttack(state, card.uid);
+  if (canDuelCardAttack(state, card.uid)) return true;
+  if ((state.phase === "main1" || state.phase === "main2") && card.controller === state.turnPlayer && canEnterBattlePhase(state)) {
+    return canDuelCardAttack({ ...state, phase: "battle" }, card.uid);
+  }
+  return false;
 }
 
 function isDirectAttacked(state: DuelState, card: DuelCardInstance): boolean {

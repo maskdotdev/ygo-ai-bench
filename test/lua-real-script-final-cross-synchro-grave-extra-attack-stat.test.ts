@@ -27,7 +27,7 @@ const effectExtraAttack = 194;
 const effectUpdateAttack = 100;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinalCrossScript)("Lua real script Final Cross Synchro grave extra attack stat", () => {
-  it.fails("restores Synchro-to-Grave flag gating into extra attack and optional grave-Synchro ATK gain", () => {
+  it("restores Synchro-to-Grave flag gating into extra attack and optional grave-Synchro ATK gain", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     expectScriptShape(workspace.readScript(`official/c${finalCrossCode}.lua`));
     const reader = createCardReader(cards(workspace));
@@ -95,12 +95,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinalCrossScr
     });
     expect(findCard(restoredFlagged.session, target.uid)).toMatchObject({ attackModifier: 2300 });
     expect(currentAttack(findCard(restoredFlagged.session, target.uid), restoredFlagged.session.state)).toBe(4800);
-    expect(restoredOpen.host.promptDecisions.filter((prompt) => prompt.api === "SelectYesNo").map((prompt) => ({
+    expect(restoredFlagged.host.promptDecisions.filter((prompt) => prompt.api === "SelectYesNo").map((prompt) => ({
       api: prompt.api,
       player: prompt.player,
       returned: prompt.returned,
     }))).toEqual([{ api: "SelectYesNo", player: 0, returned: true }]);
-    expect(restoredOpen.session.state.effects.filter((effect) =>
+    expect(restoredFlagged.session.state.effects.filter((effect) =>
       effect.sourceUid === target.uid && [effectExtraAttack, effectUpdateAttack].includes(effect.code ?? -1)
     ).map((effect) => ({
       code: effect.code,
@@ -110,7 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinalCrossScr
       sourceUid: effect.sourceUid,
       value: effect.value,
     }))).toEqual([{ code: effectExtraAttack, description: 3201, property: 0x4000400, reset: { flags: 1107169792 }, sourceUid: target.uid, value: 1 }]);
-    expect(restoredOpen.session.state.eventHistory.filter((event) => ["becameTarget", "breakEffect"].includes(event.eventName)).map((event) => ({
+    expect(restoredFlagged.session.state.eventHistory.filter((event) => ["becameTarget", "breakEffect"].includes(event.eventName)).map((event) => ({
       eventCardUid: event.eventCardUid,
       eventCode: event.eventCode,
       eventName: event.eventName,
@@ -121,7 +121,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasFinalCrossScr
       { eventCardUid: target.uid, eventCode: 1028, eventName: "becameTarget", eventReason: 0, eventReasonPlayer: 0, relatedEffectId: 1 },
       { eventCardUid: undefined, eventCode: 1050, eventName: "breakEffect", eventReason: duelReason.effect, eventReasonPlayer: 0, relatedEffectId: undefined },
     ]);
-    expect(restoredOpen.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
+    expect(restoredFlagged.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 
