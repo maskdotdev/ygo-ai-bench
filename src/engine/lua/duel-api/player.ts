@@ -218,8 +218,13 @@ function pushIsCanAddCounter(L: unknown, session: DuelSession, hostState: LuaDue
     uids.length > 0
       ? uids.map((uid) => findCard(session.state, uid)).filter((card): card is DuelCardInstance => card !== undefined)
       : session.state.cards.filter((card) => card.controller === player && (card.location === "monsterZone" || card.location === "spellTrapZone"));
-  lua.lua_pushboolean(L, cards.some((card) => canLuaCardAddCounter(L, session, hostState, card, counterType, count)));
+  lua.lua_pushboolean(L, cards.some((card) => canLuaCardAddCounter(L, session, hostState, card, counterType, count, false, counterCheckLocationMask(session, card))));
   return 1;
+}
+
+function counterCheckLocationMask(session: DuelSession, card: DuelCardInstance): number {
+  if (card.location === "monsterZone" || card.location === "spellTrapZone") return 0;
+  return card.kind === "monster" || card.kind === "extra" || (cardTypeFlags(card, session.state) & 0x1) !== 0 ? 0x04 : 0x08;
 }
 
 function pushRemoveCounter(L: unknown, session: DuelSession, hostState: LuaDuelPlayerApiHostState): number {
