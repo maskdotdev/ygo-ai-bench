@@ -18,6 +18,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-brainwashing-beam-counter-control.test.ts"
 // Restore ownership: "test/lua-real-script-bystial-aluber-summon-discard-control-revive.test.ts"
 // Restore ownership: "test/lua-real-script-centerfrog-position-control.test.ts"
+// Restore ownership: "test/lua-real-script-chthonian-polymer-fusion-release-control.test.ts"
 // Restore ownership: "test/lua-real-script-comic-hand-toon-control.test.ts"
 // Restore ownership: "test/lua-real-script-crackdown-persistent-control-lock.test.ts"
 // Restore ownership: "test/lua-real-script-creature-seizure-normal-swap.test.ts"
@@ -89,7 +90,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 41;
+const controlFixtureCount = 42;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleCounterControl: 2,
@@ -97,6 +98,7 @@ const controlKindCounts = {
   chainControlToken: 1,
   cannotChangeControl: 1,
   confirmDamageGroupControl: 1,
+  fusionSummonReleaseCostControl: 1,
   detachControlReleaseDestroy: 1,
   discardCostTemporaryControl: 2,
   equipControl: 1,
@@ -146,6 +148,7 @@ type ControlKind =
   | "chainControlToken"
   | "cannotChangeControl"
   | "confirmDamageGroupControl"
+  | "fusionSummonReleaseCostControl"
   | "detachControlReleaseDestroy"
   | "discardCostTemporaryControl"
   | "equipControl"
@@ -325,6 +328,24 @@ function realScriptControlFixtureFiles(): Array<{
         'eventName: "controlChanged"',
         'eventName: "released"',
         'eventName: "destroyed"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-chthonian-polymer-fusion-release-control.test.ts",
+      kind: "fusionSummonReleaseCostControl",
+      required: [
+        'const chthonianPolymerCode = "72287557"',
+        "--Chthonian Polymer",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "tc:IsFusionSummoned()",
+        "Duel.GetMZoneCount(tp,c)>0",
+        "Duel.CheckReleaseGroupCost(tp,s.cfilter,1,false,nil,nil,tp,eg)",
+        "Duel.SelectReleaseGroupCost(tp,s.cfilter,1,1,false,nil,nil,tp,eg)",
+        "Duel.SetTargetCard(eg)",
+        "Duel.GetControl(tc,tp)",
+        'eventName: "released"',
+        'eventName: "controlChanged"',
         "previousController: 1",
       ],
     },
@@ -833,6 +854,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       flipDestroyControlSearch: 0,
       flipGetControl: 0,
       flipSetControl: 0,
+      fusionSummonReleaseCostControl: 0,
       groupSwapControl: 0,
       linkedZoneControlRevive: 0,
       ownedControlAttackDrain: 0,
