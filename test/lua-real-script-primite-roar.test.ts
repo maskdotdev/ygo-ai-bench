@@ -47,6 +47,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
     const activate = getLegalActions(session, 0).find((action) => action.type === "activateEffect" && action.uid === roar!.uid);
     expect(activate).toBeDefined();
     applyAndAssert(session, activate!);
+    drainDefaultLuaOperationPrompts(session);
     expect(session.state.players[0].lifePoints).toBe(6000);
 
     const restoredActivation = restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
@@ -69,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
         "event": "continuous",
         "id": "lua-3-42",
         "luaTargetDescriptor": "target:setcode-or-code-type:432:46986414:16",
+        "luaTypeFlags": 2,
         "oncePerTurn": false,
         "operation": [Function],
         "ownerPlayer": 0,
@@ -108,6 +110,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Pr
         "event": "continuous",
         "id": "lua-3-42",
         "luaTargetDescriptor": "target:setcode-or-code-type:432:46986414:16",
+        "luaTypeFlags": 2,
         "oncePerTurn": false,
         "operation": [Function],
         "ownerPlayer": 0,
@@ -177,4 +180,17 @@ function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithL
 function applyAndAssert(session: DuelSession, action: DuelAction): void {
   const response = applyResponse(session, action);
   expect(response.ok, response.error).toBe(true);
+}
+
+function drainDefaultLuaOperationPrompts(session: DuelSession): void {
+  for (let index = 0; index < 8 && session.state.prompt?.origin === "luaOperation"; index += 1) {
+    const prompt = session.state.prompt;
+    const response = getLegalActions(session, prompt.player).find((action) =>
+      prompt.type === "selectOption" ? action.type === "selectOption" && action.option === (prompt.options[0] ?? 0) : action.type === "selectYesNo" && action.yes,
+    );
+    expect(response).toBeDefined();
+    const result = applyResponse(session, response);
+    expect(result.ok, result.error).toBe(true);
+  }
+  expect(session.state.prompt?.origin).not.toBe("luaOperation");
 }

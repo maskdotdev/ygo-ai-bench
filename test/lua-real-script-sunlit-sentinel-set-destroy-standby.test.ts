@@ -115,6 +115,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
           "event": "trigger",
           "id": "lua-3-4098",
           "luaConditionDescriptor": "condition:source-turn-next",
+          "luaTypeFlags": 130,
           "oncePerTurn": true,
           "operation": [Function],
           "optional": true,
