@@ -4,27 +4,23 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 14;
-const equipRelationFixtureCount = 18;
-const equipProbeFixtureCount = 13;
-const equipOperationInfoFixtureCount = 14;
-const equipCleanupFixtureCount = 10;
-const equipInventoryFixtureCount = 21;
+const equipFixtureCount = 24, equipRelationFixtureCount = 28, equipProbeFixtureCount = 21, equipOperationInfoFixtureCount = 19, equipCleanupFixtureCount = 13, equipInventoryFixtureCount = 31;
 const equipKindCounts = {
-  equipControl: 2,
+  equipControl: 3,
   equipCost: 1,
   equipDamageLock: 1,
   equipGeminiStatus: 2,
   equipPierce: 2,
-  equipProcedure: 6,
+  equipProcedure: 14,
   equipReturn: 3,
   equipReviveBanish: 1,
-  equipReviveDestroy: 1,
+  equipReviveDestroy: 2,
   equipSelfDestroy: 1,
   equipStatLock: 1,
 } satisfies Record<EquipKind, number>;
 const equipSemanticVariantCounts = {
   axeProcedureStat: 1,
+  assaultSpiritsDamageStepEquipStat: 1,
   ancientGearTankDestroyDamage: 1,
   battleArchfiendShieldSetcode: 1,
   bigBangShotPierceBanish: 1,
@@ -34,7 +30,9 @@ const equipSemanticVariantCounts = {
   cestusBattleRecovery: 1,
   dragonTreasureRaceStat: 1,
   fairyMeteorCrushPierce: 1,
+  fallingDownEquipStandbyDamage: 1,
   fulfillmentContractRitualReviveBanish: 1,
+  gagagarevengeGraveEquipReviveStat: 1,
   geminiBoosterStatus: 1,
   gravityAxePositionLock: 1,
   graydleEagleBattleDestroyStealEquip: 1,
@@ -44,24 +42,31 @@ const equipSemanticVariantCounts = {
   herculesBattleLocks: 1,
   herculesGraveToDeck: 1,
   hornUnicornTopDeck: 1,
+  inzektorEarwigEquipLeaveStat: 1,
   magePowerDynamicStats: 1,
+  magnumExcaliburDetachEquipToDeck: 1,
   maskAccursedDamageLock: 1,
   megamorphLpAttack: 1,
   mordschlagImmunityPrecalcStat: 1,
   nuzzlerTopDeck: 1,
   orbYasakaSpiritReturn: 1,
   prematureBurialDestroy: 1,
+  powerUpAdapterCustomEquipStat: 1,
   riderPierce: 1,
+  robotBusterEquipActivationLockStat: 1,
   riderSubstitute: 1,
   salamandraFireAttack: 1,
   shootingStarBowDirect: 1,
   smokeGrenadeDiscard: 1,
   snatchStealControl: 1,
+  soulbangCannonSuperheavyEquipDefense: 1,
+  spiritIllusionEquipAttackAnnounceStat: 1,
   steelShellAttributeStat: 1,
   superviseGeminiRevive: 1,
   trainConnectionCost: 1,
   tryceExtraAttack: 1,
   unitedWeStandDynamicStats: 1,
+  zwSylphidWingEquipSummonStat: 1,
 } satisfies Record<EquipSemanticVariant, number>;
 
 type EquipKind =
@@ -78,6 +83,7 @@ type EquipKind =
   | "equipStatLock";
 type EquipSemanticVariant =
   | "axeProcedureStat"
+  | "assaultSpiritsDamageStepEquipStat"
   | "ancientGearTankDestroyDamage"
   | "battleArchfiendShieldSetcode"
   | "bigBangShotPierceBanish"
@@ -87,7 +93,9 @@ type EquipSemanticVariant =
   | "cestusBattleRecovery"
   | "dragonTreasureRaceStat"
   | "fairyMeteorCrushPierce"
+  | "fallingDownEquipStandbyDamage"
   | "fulfillmentContractRitualReviveBanish"
+  | "gagagarevengeGraveEquipReviveStat"
   | "geminiBoosterStatus"
   | "gravityAxePositionLock"
   | "graydleEagleBattleDestroyStealEquip"
@@ -97,24 +105,31 @@ type EquipSemanticVariant =
   | "herculesBattleLocks"
   | "herculesGraveToDeck"
   | "hornUnicornTopDeck"
+  | "inzektorEarwigEquipLeaveStat"
   | "magePowerDynamicStats"
+  | "magnumExcaliburDetachEquipToDeck"
   | "maskAccursedDamageLock"
   | "megamorphLpAttack"
   | "mordschlagImmunityPrecalcStat"
   | "nuzzlerTopDeck"
   | "orbYasakaSpiritReturn"
   | "prematureBurialDestroy"
+  | "powerUpAdapterCustomEquipStat"
   | "riderPierce"
+  | "robotBusterEquipActivationLockStat"
   | "riderSubstitute"
   | "salamandraFireAttack"
   | "shootingStarBowDirect"
   | "smokeGrenadeDiscard"
   | "snatchStealControl"
+  | "soulbangCannonSuperheavyEquipDefense"
+  | "spiritIllusionEquipAttackAnnounceStat"
   | "steelShellAttributeStat"
   | "superviseGeminiRevive"
   | "trainConnectionCost"
   | "tryceExtraAttack"
-  | "unitedWeStandDynamicStats";
+  | "unitedWeStandDynamicStats"
+  | "zwSylphidWingEquipSummonStat";
 
 describe("Lua real equip restore coverage", () => {
   it("keeps the combined equip restore fixture inventory explicit", () => {
@@ -270,19 +285,29 @@ function realScriptEquipInventoryFiles(): string[] {
 function realScriptEquipFixtureFiles(): string[] {
   return [
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
+    "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-falling-down-equip-standby-damage.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
+    "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+    "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts",
+    "lua-real-script-magnum-excalibur-detach-equip-todeck.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-mordschlag-equip-immunity-precalc-stat.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
+    "lua-real-script-power-up-adapter-custom-equip-stat.test.ts",
+    "lua-real-script-robot-buster-equip-activation-lock-stat.test.ts",
     "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
+    "lua-real-script-soulbang-cannon-equip-defense.test.ts",
+    "lua-real-script-spirit-illusion-equip-attack-announce-stat.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
+    "lua-real-script-zw-sylphid-wing-equip-spsummon-stat.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();
@@ -291,23 +316,33 @@ function realScriptEquipFixtureFiles(): string[] {
 function realScriptEquipRelationFixtureFiles(): string[] {
   return [
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
+    "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-falling-down-equip-standby-damage.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
+    "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+    "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts",
+    "lua-real-script-magnum-excalibur-detach-equip-todeck.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
     "lua-real-script-mordschlag-equip-immunity-precalc-stat.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
+    "lua-real-script-power-up-adapter-custom-equip-stat.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
+    "lua-real-script-robot-buster-equip-activation-lock-stat.test.ts",
     "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
+    "lua-real-script-soulbang-cannon-equip-defense.test.ts",
+    "lua-real-script-spirit-illusion-equip-attack-announce-stat.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
+    "lua-real-script-zw-sylphid-wing-equip-spsummon-stat.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();
@@ -318,16 +353,24 @@ function realScriptEquipProbeFixtureFiles(): string[] {
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
+    "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
+    "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
+    "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts",
+    "lua-real-script-magnum-excalibur-detach-equip-todeck.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
+    "lua-real-script-power-up-adapter-custom-equip-stat.test.ts",
+    "lua-real-script-robot-buster-equip-activation-lock-stat.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-mordschlag-equip-immunity-precalc-stat.test.ts",
     "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
     "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
+    "lua-real-script-soulbang-cannon-equip-defense.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
     "lua-real-script-train-connection-equip-cost.test.ts",
+    "lua-real-script-zw-sylphid-wing-equip-spsummon-stat.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();
@@ -336,14 +379,19 @@ function realScriptEquipProbeFixtureFiles(): string[] {
 function realScriptEquipOperationInfoFixtureFiles(): string[] {
   return [
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
+    "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
+    "lua-real-script-falling-down-equip-standby-damage.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
+    "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
     "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
+    "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts",
     "lua-real-script-mask-accursed-equip-lock-damage.test.ts",
+    "lua-real-script-power-up-adapter-custom-equip-stat.test.ts",
     "lua-real-script-salamandra-equip-fire-attack.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
@@ -360,10 +408,13 @@ function realScriptEquipCleanupFixtureFiles(): string[] {
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
+    "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
     "lua-real-script-graydle-eagle-battle-destroy-steal-equip.test.ts",
     "lua-real-script-heart-clear-water-equip-self-destroy.test.ts",
+    "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts",
     "lua-real-script-premature-burial-revive-destroy.test.ts",
     "lua-real-script-orb-yasaka-spirit-equip-return.test.ts",
+    "lua-real-script-robot-buster-equip-activation-lock-stat.test.ts",
     "lua-real-script-snatch-steal-equip-control.test.ts",
     "lua-real-script-supervise-gemini-equip-revive.test.ts",
   ]
@@ -384,6 +435,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
   return ([
     {
       file: "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
+      kind: "equipProcedure",
+    },
+    {
+      file: "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
       kind: "equipProcedure",
     },
     {
@@ -411,12 +466,24 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
       kind: "equipProcedure",
     },
     {
+      file: "lua-real-script-falling-down-equip-standby-damage.test.ts",
+      kind: "equipControl",
+    },
+    {
       file: "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
       kind: "equipPierce",
     },
     {
       file: "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
       kind: "equipReviveBanish",
+    },
+    {
+      file: "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
+      kind: "equipReviveDestroy",
+    },
+    {
+      file: "lua-real-script-magnum-excalibur-detach-equip-todeck.test.ts",
+      kind: "equipProcedure",
     },
     {
       file: "lua-real-script-gemini-booster-equip-destroy-status.test.ts",
@@ -446,6 +513,11 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
       file: "lua-real-script-premature-burial-revive-destroy.test.ts",
       kind: "equipReviveDestroy",
     },
+    { file: "lua-real-script-power-up-adapter-custom-equip-stat.test.ts", kind: "equipProcedure" },
+    { file: "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts", kind: "equipProcedure" },
+    { file: "lua-real-script-robot-buster-equip-activation-lock-stat.test.ts", kind: "equipProcedure" },
+    { file: "lua-real-script-spirit-illusion-equip-attack-announce-stat.test.ts", kind: "equipProcedure" },
+    { file: "lua-real-script-zw-sylphid-wing-equip-spsummon-stat.test.ts", kind: "equipProcedure" },
     {
       file: "lua-real-script-salamandra-equip-fire-attack.test.ts",
       kind: "equipProcedure",
@@ -457,6 +529,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     {
       file: "lua-real-script-snatch-steal-equip-control.test.ts",
       kind: "equipControl",
+    },
+    {
+      file: "lua-real-script-soulbang-cannon-equip-defense.test.ts",
+      kind: "equipProcedure",
     },
     {
       file: "lua-real-script-supervise-gemini-equip-revive.test.ts",
@@ -482,76 +558,32 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "Ancient Gear Tank Chain Responder",
       ],
     },
+    { file: "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts", kind: "assaultSpiritsDamageStepEquipStat", required: ["restores RemainFieldCost equip into Damage Step hand-cost attack gain", 'const assaultCode = "87043568"', "e1:SetCost(aux.RemainFieldCost)", "e1:SetProperty(EFFECT_FLAG_DAMAGE_STEP)", "e:SetLabel(g:GetFirst():GetAttack())", "Duel.SendtoGrave(g,REASON_COST)", "Duel.SetOperationInfo(0,CATEGORY_EQUIP,e:GetHandler(),1,0,0)", "assault spirits probe 87043568/870435680/true/1500"] },
+    { file: "lua-real-script-zw-sylphid-wing-equip-spsummon-stat.test.ts", kind: "zwSylphidWingEquipSummonStat", required: ["restores ZW self-equip, overlay replacement metadata, and opponent Special Summon ATK gain trigger", 'const sylphidCode = "95886782"', "aux.AddZWEquipLimit", "aux.EquipAndLimitRegister(c,e,tp,tc)", "e3:SetCode(EFFECT_OVERLAY_REMOVE_REPLACE)", "eg:IsExists(Card.IsSummonPlayer,1,nil,1-tp)", "ec:UpdateAttack(1600,nil,c)", "sylphid wing probe 95886782/958867820/true/3300"] },
+    { file: "lua-real-script-equip-procedure-actions.test.ts", kind: "axeProcedureStat", required: ["restores Axe of Despair equip procedure target and stat effect", "const axeCode = \"40619825\"", "Equip Procedure Target"] },
+    { file: "lua-real-script-equip-procedure-actions-part2.test.ts", kind: "battleArchfiendShieldSetcode", required: ["restores Battle Archfiend Shield equip procedure setcode target filtering", "const shieldCode = \"8730435\"", "Shield Gladiator Target"] },
+    { file: "lua-real-script-equip-stat-lock-actions.test.ts", kind: "bigBangShotPierceBanish", required: ["restores Big Bang Shot equip stat, piercing, and leave-field banish cleanup", "const bigBangCode = \"61127349\"", "Big Bang Shot Defense Target"] },
+    { file: "lua-real-script-equip-procedure-actions.test.ts", kind: "blackPendantSentDamage", required: ["restores Black Pendant equip stat and sent-from-field damage trigger", "const pendantCode = \"65169794\"", "Black Pendant Chain Responder"] },
+    { file: "lua-real-script-equip-return-actions-part2.test.ts", kind: "blastWithChainDestroyed", required: ["restores Blast with Chain remain-field Trap equip and destroyed trigger", "const blastCode = \"98239899\"", "Blast with Chain Target"] },
+    { file: "lua-real-script-equip-return-actions.test.ts", kind: "butterflyDaggerReturn", required: ["restores Butterfly Dagger leave-field return trigger with previous equip target", "const daggerCode = \"69243953\"", "Butterfly Dagger Target"] },
+    { file: "lua-real-script-equip-procedure-actions-part2.test.ts", kind: "cestusBattleRecovery", required: ["restores Cestus of Dagla equip Fairy filtering, attack boost, and battle-damage recovery", "const cestusCode = \"28106077\"", "Cestus Fairy Target"] },
+    { file: "lua-real-script-equip-procedure-actions.test.ts", kind: "dragonTreasureRaceStat", required: ["restores Dragon Treasure race-filtered equip target and attack/defense boosts", "const dragonTreasureCode = \"1435851\"", "Dragon Treasure Dragon Target"] },
     {
-      file: "lua-real-script-equip-procedure-actions.test.ts",
-      kind: "axeProcedureStat",
+      file: "lua-real-script-falling-down-equip-standby-damage.test.ts",
+      kind: "fallingDownEquipStandbyDamage",
       required: [
-        "restores Axe of Despair equip procedure target and stat effect",
-        "const axeCode = \"40619825\"",
-        "Equip Procedure Target",
-      ],
-    },
-    {
-      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
-      kind: "battleArchfiendShieldSetcode",
-      required: [
-        "restores Battle Archfiend Shield equip procedure setcode target filtering",
-        "const shieldCode = \"8730435\"",
-        "Shield Gladiator Target",
-      ],
-    },
-    {
-      file: "lua-real-script-equip-stat-lock-actions.test.ts",
-      kind: "bigBangShotPierceBanish",
-      required: [
-        "restores Big Bang Shot equip stat, piercing, and leave-field banish cleanup",
-        "const bigBangCode = \"61127349\"",
-        "Big Bang Shot Defense Target",
-      ],
-    },
-    {
-      file: "lua-real-script-equip-procedure-actions.test.ts",
-      kind: "blackPendantSentDamage",
-      required: [
-        "restores Black Pendant equip stat and sent-from-field damage trigger",
-        "const pendantCode = \"65169794\"",
-        "Black Pendant Chain Responder",
-      ],
-    },
-    {
-      file: "lua-real-script-equip-return-actions-part2.test.ts",
-      kind: "blastWithChainDestroyed",
-      required: [
-        "restores Blast with Chain remain-field Trap equip and destroyed trigger",
-        "const blastCode = \"98239899\"",
-        "Blast with Chain Target",
-      ],
-    },
-    {
-      file: "lua-real-script-equip-return-actions.test.ts",
-      kind: "butterflyDaggerReturn",
-      required: [
-        "restores Butterfly Dagger leave-field return trigger with previous equip target",
-        "const daggerCode = \"69243953\"",
-        "Butterfly Dagger Target",
-      ],
-    },
-    {
-      file: "lua-real-script-equip-procedure-actions-part2.test.ts",
-      kind: "cestusBattleRecovery",
-      required: [
-        "restores Cestus of Dagla equip Fairy filtering, attack boost, and battle-damage recovery",
-        "const cestusCode = \"28106077\"",
-        "Cestus Fairy Target",
-      ],
-    },
-    {
-      file: "lua-real-script-equip-procedure-actions.test.ts",
-      kind: "dragonTreasureRaceStat",
-      required: [
-        "restores Dragon Treasure race-filtered equip target and attack/defense boosts",
-        "const dragonTreasureCode = \"1435851\"",
-        "Dragon Treasure Dragon Target",
+        "restores steal equip control and opponent Standby CHAININFO damage",
+        "--Falling Down",
+        "aux.AddEquipProcedure(c,1,aux.CheckStealEquip,s.eqlimit,nil,s.target)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,tc,1,0,0)",
+        "Duel.SetTargetPlayer(tp)",
+        "Duel.SetTargetParam(800)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "Duel.Damage(p,d,REASON_EFFECT)",
+        "e5:SetCode(EFFECT_SET_CONTROL)",
+        'equippedToUid: stealTarget.uid',
+        'eventName: "controlChanged"',
+        'eventName: "damageDealt"',
       ],
     },
     {
@@ -575,6 +607,19 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "Duel.Equip(tp,c,tc)",
         "Duel.Remove(tc,POS_FACEUP,REASON_EFFECT)",
         "fulfillment probe 48206762/482067620/true",
+      ],
+    },
+    {
+      file: "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
+      kind: "gagagarevengeGraveEquipReviveStat",
+      required: [
+        "restores Gagaga grave revival into equip relation, leave-field destroy, and lost-target Xyz attack gain",
+        'const revengeCode = "90673413"',
+        "Duel.SpecialSummon(tc,0,tp,tp,false,false,POS_FACEUP)",
+        "Duel.Equip(tp,c,tc)",
+        "Duel.Destroy(tc,REASON_EFFECT)",
+        "gagagarevenge probe 90673413/906734130/true",
+        "c:IsReason(REASON_LOST_TARGET) and c:IsReason(REASON_DESTROY) and tc:IsLocation(LOCATION_OVERLAY)",
       ],
     },
     {
@@ -602,6 +647,10 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "restores its destroyed-to-Grave target prompt into equip control and leave-field return",
         'const graydleCode = "29834183"',
         "Duel.SelectTarget(tp,aux.CheckStealEquip,tp,0,LOCATION_MZONE,1,1,nil,e,tp)",
+        "expect(restoredOpen.session.state.pendingTriggers).toEqual",
+        'effectId: "lua-1-1014"',
+        "eventCode: eventToGrave",
+        'eventTriggerTiming: "if"',
         "EFFECT_SET_CONTROL",
         "EVENT_LEAVE_FIELD_P",
         "EVENT_LEAVE_FIELD",
@@ -662,13 +711,21 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "Horn of the Unicorn Target",
       ],
     },
+    { file: "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts", kind: "inzektorEarwigEquipLeaveStat", required: ["restores AddEREquipLimit ignition equip, equip ATK/DEF, and leave-field target ATK gain", 'const earwigCode = "38450736"', "aux.AddEREquipLimit(c,nil,s.eqval,s.equipop,e1)", "c:EquipByEffectAndLimitRegister(e,tp,tc,nil,true)", "e3:SetCode(EVENT_LEAVE_FIELD)", "Duel.SetTargetCard(ec)", "inzektor earwig probe 38450736/384507361/38450736/false/2000/2000"] },
+    { file: "lua-real-script-equip-procedure-actions.test.ts", kind: "magePowerDynamicStats", required: ["restores Mage Power dynamic Spell/Trap-count equip stat callbacks", "const magePowerCode = \"83746708\"", "Mage Power Extra Backrow"] },
     {
-      file: "lua-real-script-equip-procedure-actions.test.ts",
-      kind: "magePowerDynamicStats",
+      file: "lua-real-script-magnum-excalibur-detach-equip-todeck.test.ts",
+      kind: "magnumExcaliburDetachEquipToDeck",
       required: [
-        "restores Mage Power dynamic Spell/Trap-count equip stat callbacks",
-        "const magePowerCode = \"83746708\"",
-        "Mage Power Extra Backrow",
+        "restores Xyz material detach into damage-calculation final ATK doubling",
+        "restores Main Phase Quick equip into equip limit and +2000 ATK/DEF",
+        "restores grave Cost.SelfBanish into selecting three Warriors and shuffling them into the Deck",
+        'const magnumCode = "14301396"',
+        "Cost.DetachFromSelf(2)",
+        "Duel.Equip(tp,c,tc)",
+        "e0:SetCode(EFFECT_EQUIP_LIMIT)",
+        "Duel.SendtoDeck(g,nil,SEQ_DECKSHUFFLE,REASON_EFFECT)",
+        "magnum equip probe 14301396/143013962/true/3800/3200",
       ],
     },
     {
@@ -678,6 +735,11 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "restores equip target attack lock and Standby damage to the equipped monster controller",
         "Mask of the Accursed",
         "Standby damage",
+        "eventName: \"damageDealt\"",
+        "eventValue: 500",
+        "eventReason: duelReason.effect",
+        "eventReasonCardUid: mask!.uid",
+        "eventReasonEffectId: 4",
       ],
     },
     {
@@ -698,6 +760,8 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "te:GetOwnerPlayer()~=e:GetHandlerPlayer() and te:IsMonsterEffect() and te:IsActivated() and te:GetHandler():IsSpecialSummoned()",
         "mordschlag destroy result 0",
         "mordschlag probe 12760674/127606740/true",
+        "eventName: \"battleDamageDealt\"",
+        "eventReasonCardUid: normalTarget.uid",
       ],
     },
     {
@@ -728,6 +792,34 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
       ],
     },
     {
+      file: "lua-real-script-power-up-adapter-custom-equip-stat.test.ts",
+      kind: "powerUpAdapterCustomEquipStat",
+      required: [
+        "restores RemainFieldCost equip into custom-event target ATK gain and attack lock",
+        'const adapterCode = "78586116"',
+        "e1:SetCost(aux.RemainFieldCost)",
+        "Duel.RaiseSingleEvent(c,EVENT_CUSTOM+id,e,0,0,0,0,0)",
+        "e2:SetCode(EVENT_CUSTOM+id)",
+        "e1:SetCode(EFFECT_CANNOT_ATTACK)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "power-up adapter probe 78586116/785861160/true/2800",
+      ],
+    },
+    {
+      file: "lua-real-script-robot-buster-equip-activation-lock-stat.test.ts",
+      kind: "robotBusterEquipActivationLockStat",
+      required: [
+        "restores self-equip, opponent Spell/Trap activation lock, and grave cost ATK gain",
+        'const robotCode = "38601126"',
+        'const busterBladerCode = "78193831"',
+        "Duel.Equip(tp,c,tc,true)",
+        "e2:SetCode(EFFECT_CANNOT_ACTIVATE)",
+        "Duel.SetTargetCard(tc)",
+        "Duel.SendtoGrave(e:GetHandler(),REASON_COST)",
+        "robot buster probe 38601126/78193831/true/2600",
+      ],
+    },
+    {
       file: "lua-real-script-rider-storm-winds-equip-pierce.test.ts",
       kind: "riderPierce",
       required: [
@@ -752,6 +844,11 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
         "restores AddEquipProcedure Card.IsAttribute FIRE target filtering and equip-only ATK update",
         "const salamandraCode = \"32268901\"",
         "Salamandra FIRE Target",
+        "battleDamage[1]).toBe(200)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: restoredFireTarget.uid",
+        "eventReasonPlayer: 0",
       ],
     },
     {
@@ -782,12 +879,36 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
       ],
     },
     {
+      file: "lua-real-script-soulbang-cannon-equip-defense.test.ts",
+      kind: "soulbangCannonSuperheavyEquipDefense",
+      required: [
+        "restores hand equip targeting a Superheavy Samurai and grants the equipped monster 1000 DEF",
+        'const soulbangCode = "3064425"',
+        "--Superheavy Samurai Soulbang Cannon",
+        "e1:SetCategory(CATEGORY_EQUIP)",
+        "e1:SetRange(LOCATION_HAND|LOCATION_MZONE)",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,e:GetHandler())",
+        "Duel.Equip(tp,c,tc,true)",
+        "e1:SetCode(EFFECT_EQUIP_LIMIT)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetValue(1000)",
+        "equippedToUid: target.uid",
+        "soulbang probe 3064425/30644250/true/3000",
+      ],
+    },
+    { file: "lua-real-script-spirit-illusion-equip-attack-announce-stat.test.ts", kind: "spiritIllusionEquipAttackAnnounceStat", required: ["restores equipped attack-announcement target into opponent ATK loss", 'const spiritCode = "71939275"', "aux.AddEquipProcedure(c,nil,s.eqfilter)", "local ec=e:GetHandler():GetEquipTarget()", "Duel.SetTargetCard(bt)", "e1:SetCode(EFFECT_UPDATE_ATTACK)", "equippedToUid", "host.messages).not.toContain"] },
+    {
       file: "lua-real-script-steel-shell-equip-attribute-stat.test.ts",
       kind: "steelShellAttributeStat",
       required: [
         "restores AddEquipProcedure Card.IsAttribute target filtering and equip ATK/DEF updates into battle damage",
         "const steelShellCode = \"2370081\"",
         "Steel Shell WATER Target",
+        "battleDamage[1]).toBe(100)",
+        "eventName: \"battleDamageDealt\"",
+        "eventReason: duelReason.battle",
+        "eventReasonCardUid: restoredWaterTarget.uid",
+        "eventReasonPlayer: 0",
       ],
     },
     {
@@ -861,6 +982,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
     },
     {
       axeProcedureStat: 0,
+      assaultSpiritsDamageStepEquipStat: 0,
       ancientGearTankDestroyDamage: 0,
       battleArchfiendShieldSetcode: 0,
       bigBangShotPierceBanish: 0,
@@ -870,7 +992,9 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       cestusBattleRecovery: 0,
       dragonTreasureRaceStat: 0,
       fairyMeteorCrushPierce: 0,
+      fallingDownEquipStandbyDamage: 0,
       fulfillmentContractRitualReviveBanish: 0,
+      gagagarevengeGraveEquipReviveStat: 0,
       geminiBoosterStatus: 0,
       gravityAxePositionLock: 0,
       graydleEagleBattleDestroyStealEquip: 0,
@@ -880,24 +1004,31 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       herculesBattleLocks: 0,
       herculesGraveToDeck: 0,
       hornUnicornTopDeck: 0,
+      inzektorEarwigEquipLeaveStat: 0,
       magePowerDynamicStats: 0,
+      magnumExcaliburDetachEquipToDeck: 0,
       maskAccursedDamageLock: 0,
       megamorphLpAttack: 0,
       mordschlagImmunityPrecalcStat: 0,
       nuzzlerTopDeck: 0,
       orbYasakaSpiritReturn: 0,
       prematureBurialDestroy: 0,
+      powerUpAdapterCustomEquipStat: 0,
       riderPierce: 0,
+      robotBusterEquipActivationLockStat: 0,
       riderSubstitute: 0,
       salamandraFireAttack: 0,
       shootingStarBowDirect: 0,
       smokeGrenadeDiscard: 0,
       snatchStealControl: 0,
+      soulbangCannonSuperheavyEquipDefense: 0,
+      spiritIllusionEquipAttackAnnounceStat: 0,
       steelShellAttributeStat: 0,
       superviseGeminiRevive: 0,
       trainConnectionCost: 0,
       tryceExtraAttack: 0,
       unitedWeStandDynamicStats: 0,
+      zwSylphidWingEquipSummonStat: 0,
     },
   );
 }
