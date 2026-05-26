@@ -127,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSpiritScript)("Lua real script Spirit
         eventReason: 0,
         eventReasonPlayer: 0,
         eventCardUid: equipped.uid,
+        eventUids: [equipped.uid, defender.uid],
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventTriggerTiming: "when",

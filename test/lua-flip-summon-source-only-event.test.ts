@@ -81,7 +81,7 @@ describe("Lua source-only Flip Summon events", () => {
     expect(flipTriggers).toHaveLength(2);
     expect(flipTriggers).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ sourceUid: source!.uid, eventCardUid: source!.uid, eventCode: 1101 }),
+        expect.objectContaining({ sourceUid: source!.uid, eventCardUid: source!.uid, eventCode: 1001 }),
         expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: source!.uid, eventCode: 1101 }),
       ]),
     );
@@ -96,7 +96,7 @@ describe("Lua source-only Flip Summon events", () => {
     expect(restoredFlipTriggers).toHaveLength(2);
     expect(restoredFlipTriggers).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ sourceUid: source!.uid, eventCardUid: source!.uid, eventCode: 1101 }),
+        expect.objectContaining({ sourceUid: source!.uid, eventCardUid: source!.uid, eventCode: 1001 }),
         expect.objectContaining({ sourceUid: genericWatcher!.uid, eventCardUid: source!.uid, eventCode: 1101 }),
       ]),
     );

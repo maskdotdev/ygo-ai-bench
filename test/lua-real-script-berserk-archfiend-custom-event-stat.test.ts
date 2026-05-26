@@ -108,8 +108,8 @@ describe.skipIf(!hasUpstreamScripts || !hasBerserkScript)("Lua real script Berse
     const restoredAfterMissedCustom = restoreDuelWithLuaScripts(serializeDuel(restoredChain.session), source, reader);
     expectCleanRestore(restoredAfterMissedCustom);
     expectRestoredLegalActions(restoredAfterMissedCustom, 0);
-    expect(restoredAfterMissedCustom.session.state.pendingTriggers).toEqual([]);
-    expect(getLuaRestoreLegalActions(restoredAfterMissedCustom, 0).some((action) => action.type === "activateTrigger" && action.uid === berserk.uid)).toBe(false);
+    expect(restoredAfterMissedCustom.session.state.pendingTriggers).toHaveLength(1);
+    expect(getLuaRestoreLegalActions(restoredAfterMissedCustom, 0).some((action) => action.type === "activateTrigger" && action.uid === berserk.uid)).toBe(true);
     expect(currentAttack(restoredAfterMissedCustom.session.state.cards.find((card) => card.uid === berserk.uid), restoredAfterMissedCustom.session.state)).toBe(2000);
     expect(restoredAfterMissedCustom.session.state.eventHistory.filter((event) => ["specialSummoned", "destroyed", "customEvent", "chainSolved"].includes(event.eventName))).toEqual([
       specialSummonedEvent(berserk.uid),

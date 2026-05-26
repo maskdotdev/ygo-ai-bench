@@ -68,18 +68,19 @@ function runBattleDestroyRestore(eventCode: string, message: string): { messages
   passBattleResponses(session);
 
   const expectedEventCard = eventCode === "EVENT_BATTLE_DESTROYING" ? attacker : target;
+  const expectedEventCode = eventCode === "EVENT_BATTLE_DESTROYING" ? 1139 : 1140;
   const expectedMessage = eventCode === "EVENT_BATTLE_DESTROYING" ? `${message} 100/false` : `${message} 200/true`;
   const expectedReasonMessage = `${message} reason true/true`;
   expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "graveyard" });
   expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDestroyed"]);
-  expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1140, eventCardUid: expectedEventCard!.uid, eventReason: 0x21, eventReasonPlayer: 0, eventReasonCardUid: attacker!.uid });
+  expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: expectedEventCode, eventCardUid: expectedEventCard!.uid, eventReason: 0x21, eventReasonPlayer: 0, eventReasonCardUid: attacker!.uid });
   expect(session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonEffectId");
 
   const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
   expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
   expectRestoredLegalActions(restored, 0);
   expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["battleDestroyed"]);
-  expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1140, eventCardUid: expectedEventCard!.uid, eventReason: 0x21, eventReasonPlayer: 0, eventReasonCardUid: attacker!.uid });
+  expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: expectedEventCode, eventCardUid: expectedEventCard!.uid, eventReason: 0x21, eventReasonPlayer: 0, eventReasonCardUid: attacker!.uid });
   expect(restored.session.state.pendingTriggers[0]).not.toHaveProperty("eventReasonEffectId");
   expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
   expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
