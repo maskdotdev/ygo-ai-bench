@@ -7,6 +7,7 @@
   "test/lua-real-coin-restore-coverage.test.ts": 1500,
   "test/lua-real-recent-stat-restore-coverage.test.ts": 1201,
   "test/lua-real-summon-trigger-operation-restore-coverage.test.ts": 1347,
+  "test/lua-real-control-restore-coverage.test.ts": 1001,
   "test/lua-real-ritual-fusion-helper-restore-coverage.test.ts": 1131,
   "test/lua-real-battle-timing-restore-coverage.test.ts": 1280,
   "test/lua-real-summon-restore-fixtures.ts": 1065,
