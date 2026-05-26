@@ -4,14 +4,14 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const equipFixtureCount = 24, equipRelationFixtureCount = 28, equipProbeFixtureCount = 21, equipOperationInfoFixtureCount = 19, equipCleanupFixtureCount = 13, equipInventoryFixtureCount = 31;
+const equipFixtureCount = 25, equipRelationFixtureCount = 29, equipProbeFixtureCount = 22, equipOperationInfoFixtureCount = 20, equipCleanupFixtureCount = 13, equipInventoryFixtureCount = 32;
 const equipKindCounts = {
   equipControl: 3,
   equipCost: 1,
   equipDamageLock: 1,
   equipGeminiStatus: 2,
   equipPierce: 2,
-  equipProcedure: 14,
+  equipProcedure: 15,
   equipReturn: 3,
   equipReviveBanish: 1,
   equipReviveDestroy: 2,
@@ -29,6 +29,7 @@ const equipSemanticVariantCounts = {
   butterflyDaggerReturn: 1,
   cestusBattleRecovery: 1,
   dragonTreasureRaceStat: 1,
+  doomzCommandAdrasteiaGraveEquipDamage: 1,
   fairyMeteorCrushPierce: 1,
   fallingDownEquipStandbyDamage: 1,
   fulfillmentContractRitualReviveBanish: 1,
@@ -92,6 +93,7 @@ type EquipSemanticVariant =
   | "butterflyDaggerReturn"
   | "cestusBattleRecovery"
   | "dragonTreasureRaceStat"
+  | "doomzCommandAdrasteiaGraveEquipDamage"
   | "fairyMeteorCrushPierce"
   | "fallingDownEquipStandbyDamage"
   | "fulfillmentContractRitualReviveBanish"
@@ -286,6 +288,7 @@ function realScriptEquipFixtureFiles(): string[] {
   return [
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
+    "lua-real-script-doomz-command-adrasteia-grave-equip-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-fairy-meteor-crush-equip-pierce.test.ts",
     "lua-real-script-falling-down-equip-standby-damage.test.ts",
@@ -317,6 +320,7 @@ function realScriptEquipRelationFixtureFiles(): string[] {
   return [
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
+    "lua-real-script-doomz-command-adrasteia-grave-equip-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
@@ -354,6 +358,7 @@ function realScriptEquipProbeFixtureFiles(): string[] {
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
     "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
+    "lua-real-script-doomz-command-adrasteia-grave-equip-damage.test.ts",
     "lua-real-script-fulfillment-contract-ritual-revive-banish.test.ts",
     "lua-real-script-gagagarevenge-grave-equip-revive-stat.test.ts",
     "lua-real-script-inzektor-earwig-equip-leave-stat.test.ts",
@@ -380,6 +385,7 @@ function realScriptEquipOperationInfoFixtureFiles(): string[] {
   return [
     "lua-real-script-ancient-gear-tank-equip-destroy-damage.test.ts",
     "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
+    "lua-real-script-doomz-command-adrasteia-grave-equip-damage.test.ts",
     "lua-real-script-equip-procedure-actions.test.ts",
     "lua-real-script-equip-return-actions.test.ts",
     "lua-real-script-equip-stat-lock-actions.test.ts",
@@ -439,6 +445,10 @@ function realScriptEquipInventoryFixtures(): Array<{ file: string; kind: EquipKi
     },
     {
       file: "lua-real-script-assault-spirits-damage-step-equip-stat.test.ts",
+      kind: "equipProcedure",
+    },
+    {
+      file: "lua-real-script-doomz-command-adrasteia-grave-equip-damage.test.ts",
       kind: "equipProcedure",
     },
     {
@@ -568,6 +578,29 @@ function realScriptEquipSemanticVariants(): Array<{ file: string; kind: EquipSem
     { file: "lua-real-script-equip-return-actions.test.ts", kind: "butterflyDaggerReturn", required: ["restores Butterfly Dagger leave-field return trigger with previous equip target", "const daggerCode = \"69243953\"", "Butterfly Dagger Target"] },
     { file: "lua-real-script-equip-procedure-actions-part2.test.ts", kind: "cestusBattleRecovery", required: ["restores Cestus of Dagla equip Fairy filtering, attack boost, and battle-damage recovery", "const cestusCode = \"28106077\"", "Cestus Fairy Target"] },
     { file: "lua-real-script-equip-procedure-actions.test.ts", kind: "dragonTreasureRaceStat", required: ["restores Dragon Treasure race-filtered equip target and attack/defense boosts", "const dragonTreasureCode = \"1435851\"", "Dragon Treasure Dragon Target"] },
+    {
+      file: "lua-real-script-doomz-command-adrasteia-grave-equip-damage.test.ts",
+      kind: "doomzCommandAdrasteiaGraveEquipDamage",
+      required: [
+        "restores grave equip targeting, equip indestructible count, and level-scaled self damage",
+        'const adrasteiaCode = "84054556"',
+        '--DoomZ Command "A.D.R.A.S.T.E.I.A."',
+        "aux.AddEquipProcedure(c)",
+        "e1:SetCode(EFFECT_INDESTRUCTABLE_COUNT)",
+        "return (r&REASON_BATTLE)>0",
+        "e3:SetCategory(CATEGORY_EQUIP+CATEGORY_DAMAGE)",
+        "e3:SetRange(LOCATION_GRAVE)",
+        "Duel.SelectTarget(tp,Card.IsFaceup,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_EQUIP,e:GetHandler(),1,tp,0)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,tp,lv_rnk*100)",
+        "Duel.Equip(tp,c,tc)",
+        "Duel.BreakEffect()",
+        "Duel.Damage(tp,lv_rnk*100,REASON_EFFECT)",
+        "equippedToUid: target.uid",
+        "eventName: \"damageDealt\"",
+        "adrasteia probe 84054556/840545560/true/4",
+      ],
+    },
     {
       file: "lua-real-script-falling-down-equip-standby-damage.test.ts",
       kind: "fallingDownEquipStandbyDamage",
@@ -991,6 +1024,7 @@ function countEquipSemanticVariants(fixtures: Array<{ kind: EquipSemanticVariant
       butterflyDaggerReturn: 0,
       cestusBattleRecovery: 0,
       dragonTreasureRaceStat: 0,
+      doomzCommandAdrasteiaGraveEquipDamage: 0,
       fairyMeteorCrushPierce: 0,
       fallingDownEquipStandbyDamage: 0,
       fulfillmentContractRitualReviveBanish: 0,
