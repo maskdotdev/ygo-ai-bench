@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 28;
-const chainResponseNegationFixtureCount = 23;
+const negationFixtureCount = 29;
+const chainResponseNegationFixtureCount = 24;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 32;
+const negationInventoryFixtureCount = 33;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 19,
+  chainNegateToGrave: 20,
   handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -55,6 +55,7 @@ const negationSemanticVariantCounts = {
   twinTwistersMultiDestroyOnlyNoNegation: 1,
   tutanMaskTargetedZombieNegateDestroy: 1,
   wiretapTrapNegateReturnToDeck: 1,
+  xyzReflectTargetedXyzNegateBurn: 1,
 } satisfies Record<NegationSemanticVariant, number>;
 
 type NegationKind =
@@ -100,7 +101,8 @@ type NegationSemanticVariant =
   | "sprightRedLinkReleaseMonsterNegateDestroy"
   | "twinTwistersMultiDestroyOnlyNoNegation"
   | "tutanMaskTargetedZombieNegateDestroy"
-  | "wiretapTrapNegateReturnToDeck";
+  | "wiretapTrapNegateReturnToDeck"
+  | "xyzReflectTargetedXyzNegateBurn";
 
 describe("Lua real negation restore coverage", () => {
   it("keeps the combined negation restore fixture inventory explicit", () => {
@@ -157,7 +159,7 @@ describe("Lua real negation restore coverage", () => {
     const missing = files
       .filter((file) => {
         const text = coverageText(fs.readFileSync(path.join(root, file), "utf8"));
-        return !/state\.chain\)\.toHaveLength\(2\)/.test(text)
+        return !(/state\.chain\)\.toHaveLength\([02]\)/.test(text) || text.includes('action.type === "passChain"') || text.includes("type === \"passChain\""))
           || (!/eventName:\s*["']chainNegated["']/.test(text) && !text.includes('"chainNegated"'))
           || (!/eventName:\s*["']chainDisabled["']/.test(text) && !text.includes('"chainDisabled"'))
           || !/host\.messages\)\.not\.toContain/.test(text);
@@ -249,6 +251,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-tutan-mask-targeted-zombie-negate.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
+    "lua-real-script-xyz-reflect-target-negate-burn.test.ts",
   ]
     .map((file) => path.join("test", file))
     .sort();
@@ -384,6 +387,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     {
       file: "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
       kind: "chainNegateToDeck",
+    },
+    {
+      file: "lua-real-script-xyz-reflect-target-negate-burn.test.ts",
+      kind: "chainNegateToGrave",
     },
   ] satisfies Array<{ file: string; kind: NegationKind }>)
     .map(({ file, kind }) => ({ file: path.join("test", file), kind }))
@@ -829,6 +836,27 @@ function negationSemanticVariants(): Array<{
         'eventName: "chainNegated"',
       ],
     },
+    {
+      file: "lua-real-script-xyz-reflect-target-negate-burn.test.ts",
+      kind: "xyzReflectTargetedXyzNegateBurn",
+      required: [
+        'const xyzReflectCode = "2371506"',
+        "restores targeted Xyz chain response negation, source destruction, BreakEffect damage, and suppressed operation",
+        "--Xyz Reflect",
+        "if not re:IsHasProperty(EFFECT_FLAG_CARD_TARGET) then return end",
+        "local tg=Duel.GetChainInfo(ev,CHAININFO_TARGET_CARDS)",
+        "return tg and tg:IsExists(s.cfilter,1,nil) and Duel.IsChainNegatable(ev)",
+        "return c:IsLocation(LOCATION_MZONE) and c:IsFaceup() and c:IsType(TYPE_XYZ)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        "Duel.BreakEffect()",
+        "Duel.Damage(1-tp,800,REASON_EFFECT)",
+        'eventName: "becameTarget"',
+        'eventName: "chainNegated"',
+        'eventName: "damageDealt"',
+        'host.messages).not.toContain("xyz reflect targeting starter resolved")',
+      ],
+    },
   ] satisfies Array<{
     file: string;
     kind: NegationSemanticVariant;
@@ -913,6 +941,7 @@ function countNegationSemanticVariants(
       twinTwistersMultiDestroyOnlyNoNegation: 0,
       tutanMaskTargetedZombieNegateDestroy: 0,
       wiretapTrapNegateReturnToDeck: 0,
+      xyzReflectTargetedXyzNegateBurn: 0,
     },
   );
 }
