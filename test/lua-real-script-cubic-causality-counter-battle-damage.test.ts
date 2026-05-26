@@ -25,7 +25,7 @@ const raceFiend = 0x8;
 const attributeDark = 0x20;
 const setCubic = 0xe3;
 const cubicCounter = 0x1038;
-describe.skipIf(!hasUpstreamScripts || !hasCausalityScript || true)("Lua real script Cubic Causality counter battle damage", () => {
+describe.skipIf(!hasUpstreamScripts || !hasCausalityScript)("Lua real script Cubic Causality counter battle damage", () => {
   it("restores Cubic Counter placement, disable locks, grave SelfBanish targeting, and battle-destroy damage", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${causalityCode}.lua`);
@@ -90,10 +90,11 @@ describe.skipIf(!hasUpstreamScripts || !hasCausalityScript || true)("Lua real sc
       eventReasonEffectId: event.eventReasonEffectId,
       relatedEffectId: event.relatedEffectId,
     }))).toEqual([
-      { eventName: "becameTarget", eventCardUid: attacker.uid, eventPlayer: undefined, eventValue: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 2 },
       { eventName: "banished", eventCardUid: graveCausality.uid, eventPlayer: undefined, eventValue: undefined, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: graveCausality.uid, eventReasonEffectId: 2, relatedEffectId: undefined },
+      { eventName: "becameTarget", eventCardUid: attacker.uid, eventPlayer: undefined, eventValue: undefined, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 2 },
     ]);
     expect(getDuelCardCounter(restoredGrave.session.state.cards.find((card) => card.uid === victim.uid), cubicCounter)).toBe(1);
+    expect(restoredGrave.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
   });
 });
 

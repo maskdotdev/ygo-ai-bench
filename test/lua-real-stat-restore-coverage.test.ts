@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 665; const statKindCounts = {
+const statFixtureCount = 666; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -135,6 +135,7 @@ const statFixtureCount = 665; const statKindCounts = {
   signalWarriorCounterSelectEffectStat: 1,
   darkStringsCounterDestroyDrawDamageStat: 1,
   movingPointPendulumCounterColumnDamageStat: 1,
+  cubicCausalityCounterBattleDamageStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -618,6 +619,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   signalWarriorCounterSelectEffectStat: 1,
   darkStringsCounterDestroyDrawDamageStat: 1,
   movingPointPendulumCounterColumnDamageStat: 1,
+  cubicCausalityCounterBattleDamageStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -1048,6 +1050,7 @@ type ExtraStatKind =
   | "signalWarriorCounterSelectEffectStat"
   | "darkStringsCounterDestroyDrawDamageStat"
   | "movingPointPendulumCounterColumnDamageStat"
+  | "cubicCausalityCounterBattleDamageStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -1587,6 +1590,7 @@ type ExtraStatSemanticVariant =
   | "signalWarriorCounterSelectEffectStat"
   | "darkStringsCounterDestroyDrawDamageStat"
   | "movingPointPendulumCounterColumnDamageStat"
+  | "cubicCausalityCounterBattleDamageStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -3108,6 +3112,33 @@ function statFixtureFiles(): Array<{
         "eventName: \"destroyed\"",
         "eventName: \"damageDealt\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cubic-causality-counter-battle-damage.test.ts",
+      kind: "cubicCausalityCounterBattleDamageStat",
+      required: [
+        'const causalityCode = "38606913"',
+        "Cubic Causality",
+        "restores Cubic Counter placement, disable locks, grave SelfBanish targeting, and battle-destroy damage",
+        "s.counter_place_list={0x1038}",
+        "e1:SetCategory(CATEGORY_COUNTER)",
+        "Duel.GetMatchingGroupCount(s.cfilter,tp,LOCATION_MZONE,0,nil)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "ac:AddCounter(0x1038,1)",
+        "EFFECT_CANNOT_ATTACK",
+        "EFFECT_DISABLE",
+        "Cost.SelfBanish",
+        "Duel.SelectTarget(tp,s.tgfilter,tp,LOCATION_MZONE,0,1,1,nil)",
+        "Duel.RegisterEffect(e1,tp)",
+        "Duel.RegisterEffect(e2,tp)",
+        "EVENT_LEAVE_FIELD_P",
+        "EVENT_BATTLE_DESTROYING",
+        "local atk=bt:GetBaseAttack()",
+        "Duel.Damage(1-tp,atk,REASON_EFFECT)",
+        "getDuelCardCounter",
+        "eventName: \"becameTarget\"",
+        "eventName: \"banished\"",
       ],
     },
     {
@@ -13139,6 +13170,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       signalWarriorCounterSelectEffectStat: 0,
       darkStringsCounterDestroyDrawDamageStat: 0,
       movingPointPendulumCounterColumnDamageStat: 0,
+      cubicCausalityCounterBattleDamageStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
@@ -14683,6 +14715,21 @@ function statSemanticVariants(): Array<{
         "eventName: \"destroyed\"",
         "eventName: \"damageDealt\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-cubic-causality-counter-battle-damage.test.ts",
+      kind: "cubicCausalityCounterBattleDamageStat",
+      required: [
+        'const causalityCode = "38606913"',
+        "Cubic Causality",
+        "Duel.GetMatchingGroupCount(s.cfilter,tp,LOCATION_MZONE,0,nil)",
+        "ac:AddCounter(0x1038,1)",
+        "EFFECT_DISABLE",
+        "Cost.SelfBanish",
+        "EVENT_BATTLE_DESTROYING",
+        "Duel.Damage(1-tp,atk,REASON_EFFECT)",
+        "eventName: \"banished\"",
       ],
     },
     {
@@ -20046,6 +20093,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       signalWarriorCounterSelectEffectStat: 0,
       darkStringsCounterDestroyDrawDamageStat: 0,
       movingPointPendulumCounterColumnDamageStat: 0,
+      cubicCausalityCounterBattleDamageStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
