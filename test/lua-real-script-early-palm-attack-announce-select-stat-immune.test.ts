@@ -54,12 +54,23 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasEarlyPalmScri
     );
     expect(attack, JSON.stringify(getLuaRestoreLegalActions(restoredBattle, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredBattle, attack!);
-    expect(restoredBattle.session.state.pendingTriggers).toMatchObject([
+    expect(restoredBattle.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-3-1",
+        effectId: "lua-2-1130",
+        eventCardUid: attacker.uid,
+        eventCode: 1130,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 1 },
         eventName: "attackDeclared",
+        eventPlayer: 0,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
+        eventUids: [attacker.uid, defender.uid],
+        player: 0,
         sourceUid: earlyPalm.uid,
         triggerBucket: "turnOptional",
-        eventCardUid: attacker.uid,
       },
     ]);
 

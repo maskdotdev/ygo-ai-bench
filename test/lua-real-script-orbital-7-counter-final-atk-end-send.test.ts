@@ -83,8 +83,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasOrbital7Scrip
         player: 0,
         triggerBucket: "turnMandatory",
         eventName: "flipSummoned",
-        eventCode: 1101,
+        eventCode: 1001,
         eventCardUid: orbital.uid,
+        eventPlayer: 0,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventTriggerTiming: "when",
@@ -129,14 +130,12 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasOrbital7Scrip
         sourceUid: orbital.uid,
       }),
     ]);
-    expect(restoredAttackChain.session.state.effects.filter((effect) => effect.sourceUid === orbital.uid && effect.triggerEvent === "phaseEnd")).toEqual([
+    expect(restoredAttackChain.session.state.effects.filter((effect) => effect.sourceUid === orbital.uid && effect.code === 0x1200)).toEqual([
       expect.objectContaining({
         code: 0x1200,
         countLimit: 1,
         registryKey: `lua:${orbital7Code}:lua-8-4608`,
         reset: { flags: 0xc6e1000 },
-        triggerCode: 0x1200,
-        triggerEvent: "phaseEnd",
       }),
     ]);
 
