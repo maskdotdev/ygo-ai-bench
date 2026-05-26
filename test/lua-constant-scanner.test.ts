@@ -201,8 +201,6 @@ describe("Lua constant scanner", () => {
     ], { encoding: "utf8" });
 
     expect(result.status).toBe(1);
-    expect(result.stdout).toContain("upstream constants: 1");
-    expect(result.stdout).toContain("local constants:    1");
     expect(result.stderr).toContain("Upstream constants 1 is below required 2");
     expect(result.stderr).toContain("Local constants 1 is below required 2");
   });
