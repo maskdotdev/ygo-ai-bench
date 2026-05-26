@@ -55,6 +55,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-magic-gate-miracles-position-control-protect.test.ts"
 // Restore ownership: "test/lua-real-script-mark-rose-equip-control.test.ts"
 // Restore ownership: "test/lua-real-script-neo-galaxy-eyes-cipher-dragon-detach-group-control-stat-code.test.ts"
+// Restore ownership: "test/lua-real-script-missing-force-release-control-lock.test.ts"
 // Restore ownership: "test/lua-real-script-mind-pollutant-discard-level-control.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-armor-battle-protect-control-summon.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-cerberus-flip-control.test.ts"
@@ -96,7 +97,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 48;
+const controlFixtureCount = 49;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -122,6 +123,7 @@ const controlKindCounts = {
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
   releaseCostControl: 3,
+  releaseCostActivityLockedControl: 1,
   restrictedTemporaryControl: 2,
   searchDestroyGraveControl: 1,
   selectedPermanentControl: 1,
@@ -178,6 +180,7 @@ type ControlKind =
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
   | "releaseCostControl"
+  | "releaseCostActivityLockedControl"
   | "restrictedTemporaryControl"
   | "searchDestroyGraveControl"
   | "selectedPermanentControl"
@@ -435,6 +438,28 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.SetTargetCard(eg)",
         "Duel.GetControl(tc,tp)",
         'eventName: "released"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-missing-force-release-control-lock.test.ts",
+      kind: "releaseCostActivityLockedControl",
+      required: [
+        'const missingForceCode = "12836042"',
+        "--Missing Force",
+        "restores self release cost into Special Summon and Battle Phase locks plus temporary control",
+        "Duel.GetFieldGroupCount(tp,LOCATION_MZONE,0)<=1",
+        "Duel.GetActivityCount(tp,ACTIVITY_BATTLE_PHASE)==0",
+        "Duel.GetActivityCount(tp,ACTIVITY_SPSUMMON)==0",
+        "e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)",
+        "e2:SetCode(EFFECT_CANNOT_BP)",
+        "aux.RegisterClientHint(e:GetHandler(),nil,tp,1,0,aux.Stringid(id,1),nil)",
+        "Duel.Release(e:GetHandler(),REASON_COST)",
+        "Duel.SelectTarget(tp,Card.IsControlerCanBeChanged,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'eventName: "released"',
+        'eventName: "becameTarget"',
         'eventName: "controlChanged"',
         "previousController: 1",
       ],
@@ -1019,6 +1044,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
       releaseCostControl: 0,
+      releaseCostActivityLockedControl: 0,
       restrictedTemporaryControl: 0,
       searchDestroyGraveControl: 0,
       selectedPermanentControl: 0,
