@@ -113,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBeamScript)("Lua real script Brainwas
       eventReasonEffectId: event.eventReasonEffectId,
     }))).toEqual([
       { eventName: "counterRemoved", eventCardUid: opponentTarget.uid, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: beam.uid, eventReasonEffectId: 6 },
+      { eventName: "counterRemoved", eventCardUid: beam.uid, eventReason: duelReason.effect, eventReasonPlayer: 0, eventReasonCardUid: beam.uid, eventReasonEffectId: 6 },
     ]);
   });
 });

@@ -89,7 +89,7 @@ describe.skipIf(!hasUpstreamScripts || !hasViperScript)("Lua real script Victory
         player: 0,
         triggerBucket: "turnMandatory",
         eventName: "battleDestroyed",
-        eventCode: 1140,
+        eventCode: 1139,
         eventCardUid: viper.uid,
         eventReason: duelReason.battle | duelReason.destroy,
         eventPlayer: 1,
