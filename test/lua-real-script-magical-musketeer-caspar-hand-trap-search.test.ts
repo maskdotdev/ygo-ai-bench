@@ -21,7 +21,7 @@ const setMagicalMusket = 0x108;
 const typeTrap = 0x4;
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasCasparScript)("Lua real script Magical Musketeer Caspar hand trap search", () => {
-  it.fails("uses EFFECT_TRAP_ACT_IN_HAND to activate a Magical Musket Trap from hand and raise Caspar's custom search trigger", () => {
+  it("uses EFFECT_TRAP_ACT_IN_HAND to activate a Magical Musket Trap from hand and raise Caspar's custom search trigger", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${casparCode}.lua`);
     expect(script).toContain("e2:SetCode(EFFECT_TRAP_ACT_IN_HAND)");
@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasCasparScript)
     const restoredTrigger = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);
     expectCleanRestore(restoredTrigger);
     expectRestoredLegalActions(restoredTrigger, 0);
+    expect(restoredTrigger.session.state.pendingTriggers).toEqual(expect.arrayContaining([expect.objectContaining({ effectLabelObjectUids: [trap.uid] })]));
     const casparTrigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === caspar.uid);
     expect(casparTrigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, casparTrigger!);
