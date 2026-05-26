@@ -110,7 +110,8 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-possessed-dark-soul-self-tribute-group-control.test.ts"
 // Restore ownership: "test/lua-real-script-ni-ni-mikanko-equipped-control.test.ts"
 // Restore ownership: "test/lua-real-script-informer-spider-effect-grave-control.test.ts"
-const controlFixtureCount = 67;
+// Restore ownership: "test/lua-real-script-locomotion-r-genex-synchro-level-control.test.ts"
+const controlFixtureCount = 68;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -158,6 +159,7 @@ const controlKindCounts = {
   selfDiscardTemporaryControl: 1,
   selfToGraveAttributeControl: 1,
   summonTriggerTemporaryControl: 1,
+  synchroSummonHighestLevelControl: 1,
   summonAndGraveTriggerControlProtect: 1,
   summonProcControlAttackLockStat: 1,
   linkedLpCostControlDelayedDestroy: 1,
@@ -233,6 +235,7 @@ type ControlKind =
   | "selfDiscardTemporaryControl"
   | "selfToGraveAttributeControl"
   | "summonTriggerTemporaryControl"
+  | "synchroSummonHighestLevelControl"
   | "summonAndGraveTriggerControlProtect"
   | "summonProcControlAttackLockStat"
   | "linkedLpCostControlDelayedDestroy"
@@ -1118,6 +1121,26 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-locomotion-r-genex-synchro-level-control.test.ts",
+      kind: "synchroSummonHighestLevelControl",
+      required: [
+        "restores Synchro Summon success into highest-Level opponent control",
+        "--Locomotion R-Genex",
+        "Synchro.AddProcedure(c,aux.FilterBoolFunctionEx(Card.IsSetCard,SET_GENEX),1,1,Synchro.NonTunerEx(Card.IsAttribute,ATTRIBUTE_DARK),1,99)",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "return e:GetHandler():IsSynchroSummoned()",
+        "return c:IsFaceup() and c:HasLevel()",
+        "Duel.GetMatchingGroup(s.filter,tp,0,LOCATION_MZONE,nil)",
+        "local sg=g:GetMaxGroup(Card.GetLevel)",
+        "Duel.GetControl(tc,tp)",
+        'eventName: "specialSummoned"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-archfiends-advent-sarcophagus-summon-control-stat.test.ts",
       kind: "summonProcControlAttackLockStat",
       required: [
@@ -1507,6 +1530,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       selfDiscardTemporaryControl: 0,
       selfToGraveAttributeControl: 0,
       summonTriggerTemporaryControl: 0,
+      synchroSummonHighestLevelControl: 0,
       summonAndGraveTriggerControlProtect: 0,
       summonProcControlAttackLockStat: 0,
       linkedLpCostControlDelayedDestroy: 0,
