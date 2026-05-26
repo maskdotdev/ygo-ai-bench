@@ -70,6 +70,7 @@ describe.skipIf(!hasUpstreamScripts || !hasCurrentScript)("Lua real script Conce
         eventCardUid: target.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventUids: [target.uid, defender.uid],
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 2 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },

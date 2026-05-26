@@ -87,6 +87,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
         eventReason: 0,
         eventReasonPlayer: 1,
         eventTriggerTiming: "when",
+        eventUids: [attacker.uid, target.uid],
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
@@ -99,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fa
     expect(trigger, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     expect(JSON.stringify(trigger)).not.toContain("operationInfos");
     applyRestored(restoredTrigger, trigger!);
+    while (restoredTrigger.session.state.chain.length > 0) passChain(restoredTrigger, restoredTrigger.session.state.waitingFor ?? restoredTrigger.session.state.turnPlayer);
     expect(restoredTrigger.session.state.chain).toEqual([]);
     expect(restoredTrigger.session.state.lastCoinResults).toEqual([1]);
     expect(currentAttack(restoredTrigger.session.state.cards.find((card) => card.uid === attacker.uid), restoredTrigger.session.state)).toBe(0);
