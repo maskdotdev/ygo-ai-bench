@@ -125,9 +125,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
           },
           "sourceUid": "p0-deck-4906301-0",
           "target": [Function],
-          "triggerCode": 1130,
-          "triggerEvent": "attackDeclared",
-          "triggerTiming": "when",
         },
       ]
     `);
@@ -159,6 +156,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ne
         eventCardUid: attacker!.uid,
         eventReason: 0,
         eventReasonPlayer: 1,
+        eventUids: [attacker!.uid, target!.uid],
         eventPreviousState: {
           controller: 1,
           faceUp: false,

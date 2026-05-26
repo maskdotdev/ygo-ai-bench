@@ -112,6 +112,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Su
         eventCardUid: attacker!.uid,
         eventReason: 0,
         eventReasonPlayer: 1,
+        eventUids: [attacker!.uid, originalTarget!.uid],
         eventPreviousState: {
           controller: 1,
           faceUp: false,
