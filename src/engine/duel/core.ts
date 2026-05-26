@@ -936,7 +936,7 @@ function pushChainLink(
   for (const targetUid of targetUids) {
     const target = findCard(state, targetUid);
     if (target) {
-      const payload = { eventChainDepth: state.chain.length, eventChainLinkId: chainLinkId, eventReasonPlayer: player, ...relatedEffectPayload(effectId) };
+      const payload = { eventValue: state.chain.length, eventChainDepth: state.chain.length, eventChainLinkId: chainLinkId, eventReasonPlayer: player, ...relatedEffectPayload(effectId) };
       collectDuelTriggerEffects(state, "becameTarget", target, payload);
     }
   }
