@@ -342,7 +342,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Eq
           {
             "effectId": "lua-5-1139",
             "eventCardUid": "p1-deck-601015-0",
-            "eventCode": 1140,
+            "eventCode": 1139,
             "eventCurrentState": {
               "controller": 1,
               "faceUp": true,

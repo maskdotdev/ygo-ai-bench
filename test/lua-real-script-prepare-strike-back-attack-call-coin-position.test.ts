@@ -62,6 +62,7 @@ describe.skipIf(!hasUpstreamScripts || !hasPrepareScript)("Lua real script Prepa
         eventReason: 0,
         eventReasonPlayer: 1,
         eventTriggerTiming: "when",
+        eventUids: [attacker.uid, target.uid],
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },
@@ -95,13 +96,14 @@ describe.skipIf(!hasUpstreamScripts || !hasPrepareScript)("Lua real script Prepa
     });
     expect(restoredTrigger.session.state.pendingBattle).toMatchObject({ attackerUid: attacker.uid, targetUid: target.uid });
     expect(restoredTrigger.session.state.players[0].lifePoints).toBe(8000);
-    expect(restoredTrigger.session.state.eventHistory.filter((event) => ["attackDeclared", "coinTossed", "positionChanged"].includes(event.eventName))).toMatchObject([
+    expect(restoredTrigger.session.state.eventHistory.filter((event) => ["attackDeclared", "coinTossed", "positionChanged"].includes(event.eventName))).toEqual([
       {
         eventName: "attackDeclared",
         eventCode: 1130,
         eventCardUid: attacker.uid,
         eventReason: 0,
         eventReasonPlayer: 1,
+        eventUids: [attacker.uid, target.uid],
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
       },

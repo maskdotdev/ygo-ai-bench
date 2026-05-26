@@ -193,7 +193,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Da
         "activationSequence": 1,
         "chainIndex": 1,
         "effectId": "lua-7",
-        "id": "chain-5",
+        "id": "chain-6",
         "operationInfos": [
           {
             "category": 1,

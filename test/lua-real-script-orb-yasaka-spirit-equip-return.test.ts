@@ -220,7 +220,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
           "effectId": "lua-3-1139",
           "effectLabelObjectUid": "p1-deck-74115235-0",
           "eventCardUid": "p0-deck-40473581-1",
-          "eventCode": 1140,
+          "eventCode": 1139,
           "eventCurrentState": {
             "controller": 0,
             "faceUp": true,
@@ -265,7 +265,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Or
         "effectId": "lua-3-1139",
         "effectLabelObjectUid": "p1-deck-74115235-0",
         "eventCardUid": "p0-deck-40473581-1",
-        "eventCode": 1140,
+        "eventCode": 1139,
         "eventCurrentState": {
           "controller": 0,
           "faceUp": true,

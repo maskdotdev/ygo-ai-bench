@@ -252,6 +252,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script ZS
         eventReasonPlayer: 0,
         eventReasonCardUid: ouroborosSage.uid,
         eventReasonEffectId: 1,
+        eventUids: [numberTarget.uid, defender.uid],
         eventCode: 1130,
         eventPlayer: 0,
         eventPreviousState: {
