@@ -193,6 +193,41 @@ describe("Lua card relation state helpers", () => {
     expect(session.state.cards.find((card) => card.code === "100")?.effectRelationIds).toEqual([]);
   });
 
+  it("marks effect relation stale when the related card changes field identity", () => {
+    const cards: DuelCardData[] = [
+      { code: "100", name: "Relation Moving Target", kind: "monster" },
+    ];
+    const session = createDuel({ seed: 233, startingHandSize: 0, cardReader: createCardReader(cards) });
+    loadDecks(session, {
+      0: { main: ["100"] },
+      1: { main: [] },
+    });
+    startDuel(session);
+    const target = session.state.cards.find((card) => card.code === "100");
+    expect(target).toBeDefined();
+    moveDuelCard(session.state, target!.uid, "monsterZone", 0);
+    target!.faceUp = true;
+
+    const host = createLuaScriptHost(session);
+    const result = host.loadScript(
+      `
+      local c=Duel.SelectMatchingCard(0,aux.FilterBoolFunction(Card.IsCode,100),0,LOCATION_MZONE,0,1,1,nil):GetFirst()
+      local e=Effect.CreateEffect(c)
+      c:CreateEffectRelation(e)
+      Debug.Message("effect relation before move " .. tostring(c:IsRelateToEffect(e)))
+      Duel.SendtoGrave(c,REASON_EFFECT)
+      Debug.Message("effect relation after move " .. tostring(c:IsRelateToEffect(e)))
+      `,
+      "effect-relation-stale-after-move.lua",
+    );
+
+    expect(result.ok, result.error).toBe(true);
+    expect(host.messages).toEqual([
+      "effect relation before move true",
+      "effect relation after move false",
+    ]);
+  });
+
   it("stores Lua card target relation state on card instances", () => {
     const cards: DuelCardData[] = [
       { code: "100", name: "Card Target Source", kind: "monster" },
@@ -221,7 +256,7 @@ describe("Lua card relation state helpers", () => {
       Debug.Message("owner target first " .. first:GetOwnerTargetCount() .. "/" .. first:GetOwnerTarget():GetCount() .. "/" .. first:GetFirstOwnerTarget():GetCode())
       source:CancelCardTarget(first)
       Debug.Message("card target cancel " .. tostring(source:IsHasCardTarget(first)) .. "/" .. tostring(source:IsHasCardTarget(second)))
-      Debug.Message("card target group after " .. source:GetCardTargetCount() .. "/" .. source:GetCardTarget():GetCount() .. "/" .. source:GetFirstCardTarget():GetCode())
+      Debug.Message("card target group after " .. source:GetCardTargetCount() .. "/" .. source:GetCardTarget():GetCount() .. "/" .. tostring(source:GetFirstCardTarget()==nil))
       Debug.Message("owner target after " .. first:GetOwnerTargetCount() .. "/" .. first:GetOwnerTarget():GetCount() .. "/" .. tostring(first:GetFirstOwnerTarget()==nil))
       `,
       "card-target-relation.lua",
@@ -231,15 +266,18 @@ describe("Lua card relation state helpers", () => {
     expect(host.messages).toEqual([
       "card target before false",
       "card target set 0/true/false",
-      "card relation create 0/true",
+      "card relation create 0/false",
       "card relation related true/true",
-      "card target group 2/2/200",
+      "card target group 1/1/200",
       "owner target first 1/1/100",
-      "card target cancel false/true",
-      "card target group after 1/1/300",
+      "card target cancel false/false",
+      "card target group after 0/0/true",
       "owner target after 0/0/true",
     ]);
-    expect(session.state.cards.find((card) => card.code === "100")?.cardTargetUids).toHaveLength(1);
+    const source = session.state.cards.find((card) => card.code === "100");
+    const second = session.state.cards.find((card) => card.code === "300");
+    expect(source?.cardTargetUids).toBeUndefined();
+    expect(source?.cardRelationUids).toEqual([second?.uid]);
   });
 
   it("keeps card relation helpers from mutating ended duels", () => {

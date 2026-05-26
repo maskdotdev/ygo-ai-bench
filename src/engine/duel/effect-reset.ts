@@ -27,6 +27,7 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
     if (effect.sourceUid !== card.uid) return true;
     const flags = normalizeResetFlags(effect.reset?.flags ?? 0);
     if ((flags & resetEvent) === 0) return true;
+    if (isSourceOnlyLeaveFieldContinuousEffect(effect, card)) return true;
     if (matchesLeaveReset(flags, card)) return decrementOrRemoveResetEffect(state, effect);
     if (matchesMovementReset(flags, card)) return decrementOrRemoveResetEffect(state, effect);
     if ((flags & destinationResetFlags) !== 0) return matchesDestinationReset(flags, card) ? decrementOrRemoveResetEffect(state, effect) : true;
@@ -34,6 +35,17 @@ export function pruneResetEffectsAfterMove(state: DuelState, card: DuelCardInsta
     const previousLocation = card.previousLocation ?? card.location;
     return !effect.range.includes(previousLocation) || effect.range.includes(card.location) || decrementOrRemoveResetEffect(state, effect);
   });
+}
+
+function isSourceOnlyLeaveFieldContinuousEffect(effect: DuelEffectDefinition, card: DuelCardInstance): boolean {
+  return (
+    effect.event === "continuous" &&
+    ((effect.luaTypeFlags ?? 0) & effectTypeSingle) !== 0 &&
+    (effect.code === 1015 || effect.code === 1019) &&
+    card.previousLocation !== undefined &&
+    effect.range.includes(card.previousLocation) &&
+    !effect.range.includes(card.location)
+  );
 }
 
 export function pruneResetEffectsAfterPositionChange(state: DuelState, card: DuelCardInstance): void {

@@ -143,6 +143,7 @@ export interface DuelCardData {
   fusionMaterialRace?: number;
   fusionMaterialType?: number;
   fusionMaterialSetcode?: number;
+  fusionMaterialSetcodes?: number[];
   fusionMaterialLocation?: number;
   fusionRequiredMaterialPredicates?: FusionMaterialPredicateRequirement[];
   fusionRequiredMaterialSetcodes?: number[];
@@ -234,6 +235,8 @@ export interface DuelCardInstance {
   cancelToGrave?: boolean;
   customStatusMask?: number;
   effectRelationIds?: number[];
+  effectRelationFieldIds?: Record<number, number>;
+  cardRelationUids?: string[];
   cardTargetUids?: string[];
   turnId?: number;
   turnCounter?: number;
@@ -466,6 +469,7 @@ export interface ChainLink {
   eventCurrentState?: DuelEventCardState;
   eventTriggerTiming?: TriggerTiming;
   targetUids?: string[];
+  targetFieldIds?: number[];
   operationInfos?: DuelOperationInfo[];
   possibleOperationInfos?: DuelOperationInfo[];
   targetPlayer?: PlayerId;

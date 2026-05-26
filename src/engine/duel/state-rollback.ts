@@ -178,6 +178,8 @@ function copyCard(card: DuelCardInstance): DuelCardInstance {
     ...(card.counters ? { counters: { ...card.counters } } : {}),
     ...(card.counterBuckets ? { counterBuckets: copyCounterBuckets(card.counterBuckets) } : {}),
     ...(card.effectRelationIds ? { effectRelationIds: [...card.effectRelationIds] } : {}),
+    ...(card.effectRelationFieldIds ? { effectRelationFieldIds: { ...card.effectRelationFieldIds } } : {}),
+    ...(card.cardRelationUids ? { cardRelationUids: [...card.cardRelationUids] } : {}),
     ...(card.cardTargetUids ? { cardTargetUids: [...card.cardTargetUids] } : {}),
     ...(card.summonMaterialUids ? { summonMaterialUids: [...card.summonMaterialUids] } : {}),
     ...(card.previousCodes === undefined ? {} : { previousCodes: [...card.previousCodes] }),
@@ -196,6 +198,7 @@ function copyCardData(data: DuelCardData): DuelCardData {
     ...data,
     ...(data.setcodes ? { setcodes: [...data.setcodes] } : {}),
     ...(data.fusionMaterials ? { fusionMaterials: [...data.fusionMaterials] } : {}),
+    ...(data.fusionMaterialSetcodes ? { fusionMaterialSetcodes: [...data.fusionMaterialSetcodes] } : {}),
     ...(data.fusionRequiredMaterialPredicates ? { fusionRequiredMaterialPredicates: data.fusionRequiredMaterialPredicates.map((predicate) => ({ ...predicate })) } : {}),
     ...(data.fusionRequiredMaterialSetcodes ? { fusionRequiredMaterialSetcodes: [...data.fusionRequiredMaterialSetcodes] } : {}),
     ...(data.materialSetcodes ? { materialSetcodes: [...data.materialSetcodes] } : {}),
@@ -223,6 +226,7 @@ function copyChainLink(link: ChainLink): ChainLink {
   return {
     ...copyEventPayload(link),
     ...(link.targetUids ? { targetUids: [...link.targetUids] } : {}),
+    ...(link.targetFieldIds ? { targetFieldIds: [...link.targetFieldIds] } : {}),
     ...(link.operationInfos ? { operationInfos: copyOperationInfos(link.operationInfos) } : {}),
     ...(link.possibleOperationInfos ? { possibleOperationInfos: copyOperationInfos(link.possibleOperationInfos) } : {}),
   };

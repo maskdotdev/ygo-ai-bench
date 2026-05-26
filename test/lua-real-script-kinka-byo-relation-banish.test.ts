@@ -15,7 +15,7 @@ const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
 const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
 
 describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Kinka-byo relation banish", () => {
-  it.fails("restores its revive relation and banishes the revived monster when Kinka-byo leaves", () => {
+  it("restores its revive relation and banishes the revived monster when Kinka-byo leaves", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const kinkaCode = "45452224";
     const reviveCode = "45452225";

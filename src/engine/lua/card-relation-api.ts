@@ -40,7 +40,7 @@ export function installCardRelationApi<EffectRecord extends LuaCardApiEffectReco
   lua.lua_setfield(L, -2, to_luastring("CreateRelation"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetMarkedEffects(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetMarkedEffects"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToEffect(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToEffect(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsRelateToEffect"));
   lua.lua_pushcfunction(L, (state: unknown) => pushIsRelateToChain(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("IsRelateToChain"));
@@ -59,6 +59,10 @@ function pushCreateEffectRelation(L: unknown, session: DuelSession): number {
   if (card && effectId !== undefined) {
     card.effectRelationIds = card.effectRelationIds ?? [];
     if (!card.effectRelationIds.includes(effectId)) card.effectRelationIds.push(effectId);
+    if (card.fieldId !== undefined) {
+      card.effectRelationFieldIds = card.effectRelationFieldIds ?? {};
+      card.effectRelationFieldIds[effectId] = card.fieldId;
+    }
   }
   return 0;
 }
@@ -67,14 +71,21 @@ function pushReleaseEffectRelation(L: unknown, session: DuelSession): number {
   if (session.state.status === "ended") return 0;
   const card = readCard(L, session);
   const effectId = readTableNumberField(L, 2, "__effect_id");
-  if (card && effectId !== undefined) card.effectRelationIds = (card.effectRelationIds ?? []).filter((id) => id !== effectId);
+  if (card && effectId !== undefined) {
+    card.effectRelationIds = (card.effectRelationIds ?? []).filter((id) => id !== effectId);
+    delete card.effectRelationFieldIds?.[effectId];
+    if (card.effectRelationFieldIds && Object.keys(card.effectRelationFieldIds).length === 0) delete card.effectRelationFieldIds;
+  }
   return 0;
 }
 
 function pushClearEffectRelation(L: unknown, session: DuelSession): number {
   if (session.state.status === "ended") return 0;
   const card = readCard(L, session);
-  if (card) card.effectRelationIds = [];
+  if (card) {
+    card.effectRelationIds = [];
+    delete card.effectRelationFieldIds;
+  }
   return 0;
 }
 
@@ -90,7 +101,10 @@ function pushCancelCardTarget(L: unknown, session: DuelSession): number {
   if (session.state.status === "ended") return 0;
   const card = readCard(L, session, 1);
   const target = readCard(L, session, 2);
-  if (card && target) card.cardTargetUids = (card.cardTargetUids ?? []).filter((uid) => uid !== target.uid);
+  if (card && target) {
+    card.cardTargetUids = (card.cardTargetUids ?? []).filter((uid) => uid !== target.uid);
+    if (card.cardTargetUids.length === 0) delete card.cardTargetUids;
+  }
   return 0;
 }
 
@@ -149,7 +163,7 @@ function pushCreateRelation(L: unknown, session: DuelSession): number {
   if (session.state.status === "ended") return 0;
   const card = readCard(L, session, 1);
   const target = readCard(L, session, 2);
-  setCardTarget(card, target);
+  setCardRelation(card, target);
   return 0;
 }
 
@@ -168,11 +182,28 @@ function pushGetMarkedEffects<EffectRecord extends LuaCardApiEffectRecord>(L: un
   return 1;
 }
 
-function pushIsRelateToEffect(L: unknown, session: DuelSession): number {
+function pushIsRelateToEffect<EffectRecord extends LuaCardApiEffectRecord>(
+  L: unknown,
+  session: DuelSession,
+  hostState: LuaCardApiState<EffectRecord>,
+): number {
   const card = readCard(L, session, 1);
   const effectId = readTableNumberField(L, 2, "__effect_id");
+  if (card && effectId !== undefined && hostState.activeLuaEffectId === effectId && hostState.activeContext?.source.uid === card.uid) {
+    lua.lua_pushboolean(L, true);
+    return 1;
+  }
   if (card?.effectRelationIds !== undefined && effectId !== undefined) {
-    lua.lua_pushboolean(L, card.effectRelationIds.includes(effectId));
+    const relationFieldId = card.effectRelationFieldIds?.[effectId];
+    lua.lua_pushboolean(L, card.effectRelationIds.includes(effectId) && (relationFieldId === undefined || relationFieldId === card.fieldId));
+    return 1;
+  }
+  const chainLink = hostState.activeContext?.chainLink;
+  const chainEffectMatches = effectId !== undefined && (chainLink?.effectId === `lua-${effectId}` || chainLink?.effectId.startsWith(`lua-${effectId}-`));
+  const targetIndex = !chainEffectMatches ? -1 : (chainLink?.targetUids ?? []).indexOf(card?.uid ?? "");
+  if (card && targetIndex >= 0) {
+    const targetFieldId = chainLink?.targetFieldIds?.[targetIndex];
+    lua.lua_pushboolean(L, targetFieldId === undefined || targetFieldId === card.fieldId);
     return 1;
   }
   lua.lua_pushboolean(L, Boolean(card));
@@ -194,7 +225,7 @@ function pushIsRelateToChain<EffectRecord extends LuaCardApiEffectRecord>(
 function pushIsRelateToCard(L: unknown, session: DuelSession): number {
   const source = readCard(L, session, 1);
   const target = readCard(L, session, 2);
-  lua.lua_pushboolean(L, Boolean(source && target && (source.cardTargetUids?.includes(target.uid) || (isOnField(source) && isOnField(target)))));
+  lua.lua_pushboolean(L, Boolean(source && target && (source.cardRelationUids?.includes(target.uid) || source.cardTargetUids?.includes(target.uid) || (isOnField(source) && isOnField(target)))));
   return 1;
 }
 
@@ -242,6 +273,13 @@ function setCardTarget(card: DuelCardInstance | undefined, target: DuelCardInsta
   if (!card || !target) return false;
   card.cardTargetUids = card.cardTargetUids ?? [];
   if (!card.cardTargetUids.includes(target.uid)) card.cardTargetUids.push(target.uid);
+  return true;
+}
+
+function setCardRelation(card: DuelCardInstance | undefined, target: DuelCardInstance | undefined): boolean {
+  if (!card || !target) return false;
+  card.cardRelationUids = card.cardRelationUids ?? [];
+  if (!card.cardRelationUids.includes(target.uid)) card.cardRelationUids.push(target.uid);
   return true;
 }
 
