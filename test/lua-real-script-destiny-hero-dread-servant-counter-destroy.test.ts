@@ -131,7 +131,7 @@ function createRestoredSummonState(
   session.state.phase = "main1";
   session.state.turnPlayer = 0;
   session.state.waitingFor = 0;
-  registerDreadServant(session, workspace);
+  registerDreadServant(session, workspace, 3);
   return restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
 }
 
@@ -148,7 +148,7 @@ function createRestoredBattleState(
   session.state.phase = "battle";
   session.state.turnPlayer = 1;
   session.state.waitingFor = 1;
-  registerDreadServant(session, workspace);
+  registerDreadServant(session, workspace, 1);
   return restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
 }
 
@@ -165,11 +165,11 @@ function cards(workspace: ReturnType<typeof createUpstreamNodeWorkspace>): DuelC
   ];
 }
 
-function registerDreadServant(session: DuelSession, workspace: ReturnType<typeof createUpstreamNodeWorkspace>): void {
+function registerDreadServant(session: DuelSession, workspace: ReturnType<typeof createUpstreamNodeWorkspace>, expectedEffects: number): void {
   const host = createLuaScriptHost(session, workspace);
   expect(host.loadCardScript(Number(dreadServantCode), workspace).ok).toBe(true);
   expect(host.loadCardScript(Number(clockTowerCode), workspace).ok).toBe(true);
-  expect(host.registerInitialEffects()).toBeGreaterThanOrEqual(1);
+  expect(host.registerInitialEffects()).toBe(expectedEffects);
 }
 
 function expectScriptShape(script: string | undefined): void {
