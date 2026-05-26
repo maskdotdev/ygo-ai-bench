@@ -102,6 +102,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
             "sequence": 0,
           },
           "eventName": "attackDeclared",
+          "eventPlayer": 0,
           "eventPreviousState": {
             "controller": 0,
             "faceUp": false,
@@ -112,6 +113,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ul
           "eventReason": 0,
           "eventReasonPlayer": 0,
           "eventTriggerTiming": "when",
+          "eventUids": [
+            "p0-deck-3224-0",
+            "p1-deck-3227-3",
+          ],
           "id": "trigger-3-1",
           "player": 1,
           "sourceUid": "p1-deck-32247099-0",

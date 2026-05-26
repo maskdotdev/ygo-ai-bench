@@ -77,12 +77,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDarkDivinerSc
     expect(session.state.pendingTriggers).toEqual([
       {
         id: "trigger-3-1",
-        effectId: "lua-3-1130",
+        effectId: "lua-4-1130",
         eventName: "attackDeclared",
         eventCode: 1130,
         eventCardUid: diviner.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventPlayer: 0,
+        eventUids: [diviner.uid, defender.uid],
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventTriggerTiming: "when",
@@ -120,9 +122,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDarkDivinerSc
     expect(restoredAttack.session.state.pendingTriggers).toEqual([
       {
         id: "trigger-7-1",
-        effectId: "lua-4-1139",
+        effectId: "lua-5-1139",
         eventName: "battleDestroyed",
-        eventCode: 1140,
+        eventCode: 1139,
         eventCardUid: diviner.uid,
         eventPlayer: 1,
         eventReason: duelReason.battle | duelReason.destroy,
@@ -154,9 +156,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDarkDivinerSc
       reasonCardUid: card?.reasonCardUid,
       reasonEffectId: card?.reasonEffectId,
     }))).toEqual([
-      { location: "graveyard", controller: 1, reason: duelReason.effect, reasonPlayer: 0, reasonCardUid: diviner.uid, reasonEffectId: 4 },
-      { location: "graveyard", controller: 1, reason: duelReason.effect, reasonPlayer: 0, reasonCardUid: diviner.uid, reasonEffectId: 4 },
-      { location: "graveyard", controller: 1, reason: duelReason.effect, reasonPlayer: 0, reasonCardUid: diviner.uid, reasonEffectId: 4 },
+      { location: "graveyard", controller: 1, reason: duelReason.effect, reasonPlayer: 0, reasonCardUid: diviner.uid, reasonEffectId: 5 },
+      { location: "graveyard", controller: 1, reason: duelReason.effect, reasonPlayer: 0, reasonCardUid: diviner.uid, reasonEffectId: 5 },
+      { location: "graveyard", controller: 1, reason: duelReason.effect, reasonPlayer: 0, reasonCardUid: diviner.uid, reasonEffectId: 5 },
     ]);
     expect(restoredDestroying.session.state.eventHistory.filter((event) => ["battleDestroyed", "sentToGraveyard"].includes(event.eventName))).toEqual([
       {
@@ -186,7 +188,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDarkDivinerSc
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: diviner.uid,
-        eventReasonEffectId: 4,
+        eventReasonEffectId: 5,
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: index },
         eventCurrentState: { controller: 1, faceUp: true, location: "graveyard", position: "faceDown", sequence: index + 1 },
       })),
@@ -198,7 +200,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasDarkDivinerSc
         eventReason: duelReason.effect,
         eventReasonPlayer: 0,
         eventReasonCardUid: diviner.uid,
-        eventReasonEffectId: 4,
+        eventReasonEffectId: 5,
         eventPreviousState: { controller: 1, faceUp: false, location: "deck", position: "faceDown", sequence: 0 },
         eventCurrentState: { controller: 1, faceUp: true, location: "graveyard", position: "faceDown", sequence: 1 },
       },

@@ -133,7 +133,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBlackWingedScript)("Lua real script B
     expect(currentAttack(restoredIgnitionOpen.session.state.cards.find((card) => card.uid === dragon.uid), restoredIgnitionOpen.session.state)).toBe(2800);
     expect(restoredIgnitionOpen.session.state.chain).toEqual([
       {
-        id: "chain-5",
+        id: "chain-6",
         chainIndex: 1,
         effectId: "lua-8",
         effectLabel: 700,

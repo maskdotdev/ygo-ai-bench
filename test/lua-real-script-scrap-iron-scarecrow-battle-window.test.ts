@@ -95,6 +95,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
         },
         "eventReason": 0,
         "eventReasonPlayer": 0,
+        "eventUids": [
+          "p0-deck-100-0",
+          "p1-deck-200-1",
+        ],
         "id": "chain-3",
         "player": 1,
         "sourceUid": "p1-deck-98427577-0",
@@ -140,6 +144,10 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
         },
         "eventReason": 0,
         "eventReasonPlayer": 0,
+        "eventUids": [
+          "p0-deck-100-0",
+          "p1-deck-200-1",
+        ],
         "id": "chain-3",
         "player": 1,
         "sourceUid": "p1-deck-98427577-0",

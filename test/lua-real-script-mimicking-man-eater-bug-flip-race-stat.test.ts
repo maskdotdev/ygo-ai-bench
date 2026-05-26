@@ -73,7 +73,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasMimicScript)(
         sourceUid: mimic.uid,
         triggerBucket: "turnMandatory",
         eventName: "flipSummoned",
-        eventCode: 1101,
+        eventCode: 1001,
         eventPlayer: 0,
         eventCardUid: mimic.uid,
         eventReason: 0,
