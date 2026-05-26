@@ -105,7 +105,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 61;
+const controlFixtureCount = 62;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -135,6 +135,7 @@ const controlKindCounts = {
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
   tunerGraveStatDiscardControl: 1,
+  spellDiscardCostControl: 1,
   handMonsterCostDefenseControlPositionLock: 1,
   discardCostGroupControlLock: 1,
   releaseCostControl: 3,
@@ -204,6 +205,7 @@ type ControlKind =
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
   | "tunerGraveStatDiscardControl"
+  | "spellDiscardCostControl"
   | "handMonsterCostDefenseControlPositionLock"
   | "discardCostGroupControlLock"
   | "releaseCostControl"
@@ -920,6 +922,24 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-reshef-spell-discard-control.test.ts",
+      kind: "spellDiscardCostControl",
+      required: [
+        "restores spell-only discard cost into targeted temporary control",
+        "--Reshef the Dark Being",
+        "c:EnableReviveLimit()",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "return c:IsDiscardable() and c:IsSpell()",
+        "Duel.DiscardHand(tp,s.cfilter,1,1,REASON_COST|REASON_DISCARD)",
+        "Duel.SelectTarget(tp,Card.IsControlerCanBeChanged,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'eventName: "discarded"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-rb-lambda-blade-send-control-delayed-destroy.test.ts",
       kind: "linkedLpCostControlDelayedDestroy",
       required: [
@@ -1345,6 +1365,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
       tunerGraveStatDiscardControl: 0,
+      spellDiscardCostControl: 0,
       handMonsterCostDefenseControlPositionLock: 0,
       discardCostGroupControlLock: 0,
       releaseCostControl: 0,
