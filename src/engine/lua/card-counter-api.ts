@@ -25,7 +25,7 @@ type CounterEffectStore<EffectRecord extends LuaCardApiEffectRecord> = {
 };
 
 export function installCardCounterApi<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardCounterHostState<EffectRecord>): void {
-  lua.lua_pushcfunction(L, (state: unknown) => pushGetCounter(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushGetCounter(state, session, hostState));
   lua.lua_setfield(L, -2, to_luastring("GetCounter"));
   lua.lua_pushcfunction(L, (state: unknown) => pushGetAllCounters(state, session));
   lua.lua_setfield(L, -2, to_luastring("GetAllCounters"));
@@ -44,11 +44,30 @@ export function installCardCounterApi<EffectRecord extends LuaCardApiEffectRecor
   pushBooleanGetter(L, "HasCounters", session, (card) => Boolean(card && totalCounters(card) > 0));
 }
 
-function pushGetCounter(L: unknown, session: DuelSession): number {
+function pushGetCounter<EffectRecord extends LuaCardApiEffectRecord>(L: unknown, session: DuelSession, hostState: LuaCardCounterHostState<EffectRecord>): number {
   const card = readCard(L, session);
   const counterType = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
-  lua.lua_pushinteger(L, getDuelCardCounter(card, counterType));
+  lua.lua_pushinteger(L, getCounterForActiveContext(card, counterType, hostState));
   return 1;
+}
+
+function getCounterForActiveContext<EffectRecord extends LuaCardApiEffectRecord>(
+  card: DuelCardInstance | undefined,
+  counterType: number,
+  hostState: LuaCardCounterHostState<EffectRecord>,
+): number {
+  if (
+    card &&
+    hostState.activeContext?.eventName === "leftField" &&
+    hostState.activeContext.eventCard?.uid === card.uid &&
+    card.previousLocation !== undefined &&
+    card.location !== card.previousLocation
+  ) {
+    const previousBuckets = card.previousCounterBuckets?.[counterType];
+    if (previousBuckets) return (previousBuckets.permanent ?? 0) + (previousBuckets.resetWhileNegated ?? 0);
+    return card.previousCounters?.[counterType] ?? 0;
+  }
+  return getDuelCardCounter(card, counterType);
 }
 
 function pushGetAllCounters(L: unknown, session: DuelSession): number {

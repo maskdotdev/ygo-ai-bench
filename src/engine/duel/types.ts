@@ -215,6 +215,8 @@ export interface DuelCardInstance {
   previousSequence?: number;
   previousPosition?: CardPosition;
   previousFaceUp?: boolean;
+  previousCounters?: Record<number, number>;
+  previousCounterBuckets?: Record<number, DuelCardCounterBuckets>;
   previousCodes?: string[];
   previousSetcodes?: number[];
   previousTypeFlags?: number;
