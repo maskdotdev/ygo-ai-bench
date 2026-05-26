@@ -1,0 +1,216 @@
+import fs from "node:fs";
+import path from "node:path";
+import { describe, expect, it } from "vitest";
+import { currentAttack } from "#duel/card-stats.js";
+import { moveDuelCard } from "#duel/card-state.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
+import type { DuelAction, DuelCardData, DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
+import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
+import { createLuaScriptHost } from "#lua/host.js";
+import { applyLuaRestoreResponse, getLuaRestoreLegalActionGroups, getLuaRestoreLegalActions, restoreDuelWithLuaScripts } from "#lua/snapshot.js";
+
+const upstreamRoot = path.resolve(".upstream/ignis");
+const ghostsCode = "51099515";
+const firstCostCode = "510995150";
+const secondCostCode = "510995151";
+const targetCode = "510995152";
+const hasUpstreamScripts = fs.existsSync(path.join(upstreamRoot, "script"));
+const hasUpstreamDatabase = fs.existsSync(path.join(upstreamRoot, "cdb", "cards.cdb"));
+const hasGhostsScript = fs.existsSync(path.join(upstreamRoot, "script", "official", `c${ghostsCode}.lua`));
+const typeMonster = 0x1;
+const typeEffect = 0x20;
+const raceWarrior = 0x1;
+const raceZombie = 0x2;
+const attributeDark = 0x20;
+const attributeEarth = 0x10;
+const effectSetAttackFinal = 102;
+const resetStandardPhaseEnd = 1107169792;
+
+describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasGhostsScript)("Lua real script Ghosts From the Past SelectUnselect final attack", () => {
+  it("restores SelectUnselectGroup two-monster banish cost into targeted final ATK zero", () => {
+    const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
+    const script = workspace.readScript(`official/c${ghostsCode}.lua`);
+    expectScriptShape(script);
+    const reader = createCardReader(cards(workspace));
+
+    const restored = createRestoredField({ reader, workspace });
+    expectCleanRestore(restored);
+    expectRestoredLegalActions(restored, 0);
+    const ghosts = requireCard(restored.session, ghostsCode);
+    const firstCost = requireCard(restored.session, firstCostCode);
+    const secondCost = requireCard(restored.session, secondCostCode);
+    const target = requireCard(restored.session, targetCode);
+    const activate = getLuaRestoreLegalActions(restored, 0).find((action) =>
+      action.type === "activateEffect" && action.uid === ghosts.uid && action.effectId === "lua-1-1002"
+    );
+    expect(activate, JSON.stringify(getLuaRestoreLegalActions(restored, 0), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, activate!);
+    resolveRestoredChain(restored);
+
+    expect(findCard(restored.session, firstCost.uid)).toMatchObject({
+      location: "banished",
+      controller: 0,
+      faceUp: true,
+      reason: duelReason.cost,
+      reasonPlayer: 0,
+      reasonCardUid: ghosts.uid,
+      reasonEffectId: 1,
+    });
+    expect(findCard(restored.session, secondCost.uid)).toMatchObject({
+      location: "banished",
+      controller: 0,
+      faceUp: true,
+      reason: duelReason.cost,
+      reasonPlayer: 0,
+      reasonCardUid: ghosts.uid,
+      reasonEffectId: 1,
+    });
+    expect(currentAttack(findCard(restored.session, target.uid), restored.session.state)).toBe(0);
+    expect(restored.session.state.effects.filter((effect) => effect.sourceUid === target.uid && effect.code === effectSetAttackFinal).map((effect) => ({
+      code: effect.code,
+      reset: effect.reset,
+      sourceUid: effect.sourceUid,
+      value: effect.value,
+    }))).toEqual([
+      { code: effectSetAttackFinal, reset: { flags: resetStandardPhaseEnd }, sourceUid: target.uid, value: 0 },
+    ]);
+    const relevantEvents = restored.session.state.eventHistory.filter((event) => ["banished", "becameTarget"].includes(event.eventName)).map((event) => ({
+      eventName: event.eventName,
+      eventCardUid: event.eventCardUid,
+      eventReason: event.eventReason,
+      eventReasonPlayer: event.eventReasonPlayer,
+      eventReasonCardUid: event.eventReasonCardUid,
+      eventReasonEffectId: event.eventReasonEffectId,
+      relatedEffectId: event.relatedEffectId,
+      previous: event.eventPreviousState?.location,
+      current: event.eventCurrentState?.location,
+    }));
+    expect(relevantEvents).toEqual(expect.arrayContaining([
+      { eventName: "banished", eventCardUid: firstCost.uid, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: ghosts.uid, eventReasonEffectId: 1, relatedEffectId: undefined, previous: "graveyard", current: "banished" },
+      { eventName: "banished", eventCardUid: secondCost.uid, eventReason: duelReason.cost, eventReasonPlayer: 0, eventReasonCardUid: ghosts.uid, eventReasonEffectId: 1, relatedEffectId: undefined, previous: "graveyard", current: "banished" },
+      { eventName: "becameTarget", eventCardUid: target.uid, eventReason: 0, eventReasonPlayer: 0, eventReasonCardUid: undefined, eventReasonEffectId: undefined, relatedEffectId: 1, previous: "deck", current: "monsterZone" },
+    ]));
+    expect(restored.session.state.battleDamage).toEqual({ 0: 0, 1: 0 });
+  });
+});
+
+function cards(workspace: ReturnType<typeof createUpstreamNodeWorkspace>): DuelCardData[] {
+  const ghosts = workspace.readDatabaseCards("cards.cdb").find((card) => card.code === ghostsCode);
+  expect(ghosts).toBeDefined();
+  return [
+    { ...ghosts!, kind: "spell" },
+    { code: firstCostCode, name: "Ghosts From the Past Cost A", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceZombie, attribute: attributeDark, level: 4, attack: 1300, defense: 1000 },
+    { code: secondCostCode, name: "Ghosts From the Past Cost B", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceZombie, attribute: attributeDark, level: 4, attack: 1500, defense: 1200 },
+    { code: targetCode, name: "Ghosts From the Past Target", kind: "monster", typeFlags: typeMonster | typeEffect, race: raceWarrior, attribute: attributeEarth, level: 4, attack: 2400, defense: 1000 },
+  ];
+}
+
+function createRestoredField({
+  reader,
+  workspace,
+}: {
+  reader: ReturnType<typeof createCardReader>;
+  workspace: ReturnType<typeof createUpstreamNodeWorkspace>;
+}): ReturnType<typeof restoreDuelWithLuaScripts> {
+  const session = createDuel({ seed: 51099515, startingHandSize: 0, drawPerTurn: 0, cardReader: reader });
+  loadDecks(session, { 0: { main: [ghostsCode, firstCostCode, secondCostCode] }, 1: { main: [targetCode] } });
+  startDuel(session);
+  moveFaceDownSpellTrap(session, requireCard(session, ghostsCode), 0, 0);
+  moveFaceUpGraveyard(session, requireCard(session, firstCostCode), 0);
+  moveFaceUpGraveyard(session, requireCard(session, secondCostCode), 0);
+  moveFaceUpAttack(session, requireCard(session, targetCode), 1, 0);
+  session.state.phase = "main1";
+  session.state.turnPlayer = 0;
+  session.state.waitingFor = 0;
+  const host = createLuaScriptHost(session, workspace);
+  expect(host.loadCardScript(Number(ghostsCode), workspace).ok).toBe(true);
+  expect(host.registerInitialEffects()).toBe(1);
+  return restoreDuelWithLuaScripts(serializeDuel(session), workspace, reader);
+}
+
+function expectScriptShape(script: string | undefined): void {
+  expect(script).toBeDefined();
+  if (!script) return;
+  expect(script).toContain("Ghosts From the Past");
+  expect(script).toContain("e1:SetProperty(EFFECT_FLAG_CARD_TARGET+EFFECT_FLAG_DAMAGE_STEP)");
+  expect(script).toContain("e1:SetCondition(aux.StatChangeDamageStepCondition)");
+  expect(script).toContain("return c:IsMonster() and c:IsAbleToRemoveAsCost() and aux.SpElimFilter(c,true)");
+  expect(script).toContain("local cg=Duel.GetMatchingGroup(s.cfilter,tp,LOCATION_MZONE|LOCATION_GRAVE,0,nil)");
+  expect(script).toContain("aux.SelectUnselectGroup(cg,e,tp,2,2,s.rescon,0)");
+  expect(script).toContain("aux.SelectUnselectGroup(cg,e,tp,2,2,s.rescon,1,tp,HINTMSG_REMOVE)");
+  expect(script).toContain("Duel.Remove(rg,POS_FACEUP,REASON_COST)");
+  expect(script).toContain("return c:IsPosition(POS_FACEUP_ATTACK) and c:GetAttack()>0");
+  expect(script).toContain("Duel.SelectTarget(tp,s.tfilter,tp,LOCATION_MZONE,LOCATION_MZONE,1,1,nil)");
+  expect(script).toContain("Duel.GetFirstTarget()");
+  expect(script).toContain("e1:SetCode(EFFECT_SET_ATTACK_FINAL)");
+  expect(script).toContain("e1:SetValue(0)");
+  expect(script).toContain("e1:SetReset(RESETS_STANDARD_PHASE_END)");
+}
+
+function requireCard(session: DuelSession, code: string): DuelCardInstance {
+  const card = session.state.cards.find((candidate) => candidate.code === code);
+  expect(card).toBeDefined();
+  return card!;
+}
+
+function findCard(session: DuelSession, uid: string): DuelCardInstance {
+  const card = session.state.cards.find((candidate) => candidate.uid === uid);
+  expect(card).toBeDefined();
+  return card!;
+}
+
+function moveFaceUpAttack(session: DuelSession, card: DuelCardInstance, player: PlayerId, sequence: number): DuelCardInstance {
+  const moved = moveDuelCard(session.state, card.uid, "monsterZone", player);
+  moved.faceUp = true;
+  moved.position = "faceUpAttack";
+  moved.sequence = sequence;
+  return moved;
+}
+
+function moveFaceDownSpellTrap(session: DuelSession, card: DuelCardInstance, player: PlayerId, sequence: number): DuelCardInstance {
+  const moved = moveDuelCard(session.state, card.uid, "spellTrapZone", player);
+  moved.faceUp = false;
+  moved.sequence = sequence;
+  return moved;
+}
+
+function moveFaceUpGraveyard(session: DuelSession, card: DuelCardInstance, player: PlayerId): DuelCardInstance {
+  const moved = moveDuelCard(session.state, card.uid, "graveyard", player);
+  moved.faceUp = true;
+  return moved;
+}
+
+function expectCleanRestore(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
+  expect(restored.missingRegistryKeys).toEqual([]);
+  expect(restored.missingChainLimitRegistryKeys).toEqual([]);
+}
+
+function expectRestoredLegalActions(restored: ReturnType<typeof restoreDuelWithLuaScripts>, player: PlayerId): void {
+  expect(getLuaRestoreLegalActions(restored, player)).toEqual(getLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player)).toEqual(getGroupedDuelLegalActions(restored.session, player));
+  expect(getLuaRestoreLegalActionGroups(restored, player).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, player));
+}
+
+function applyRestoredActionAndAssert(restored: ReturnType<typeof restoreDuelWithLuaScripts>, action: DuelAction): void {
+  const response = applyLuaRestoreResponse(restored, action);
+  expect(response.ok, response.error).toBe(true);
+  const waitingFor = response.state.waitingFor;
+  if (waitingFor === undefined) return;
+  expect(response.legalActions).toEqual(getLuaRestoreLegalActions(restored, waitingFor));
+  expect(response.legalActionGroups).toEqual(getLuaRestoreLegalActionGroups(restored, waitingFor));
+  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+}
+
+function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScripts>): void {
+  let guard = 0;
+  while (restored.session.state.chain.length > 0) {
+    expect(++guard).toBeLessThan(10);
+    const player = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    const pass = getLuaRestoreLegalActions(restored, player).find((action) => action.type === "passChain");
+    expect(pass, JSON.stringify(getLuaRestoreLegalActions(restored, player), null, 2)).toBeDefined();
+    applyRestoredActionAndAssert(restored, pass!);
+  }
+}
