@@ -23,7 +23,7 @@ const typeFusion = 0x40;
 const effectDestroyReason = duelReason.effect | duelReason.destroy;
 
 describe.skipIf(!hasUpstreamScripts || !hasSwordsmanScript)("Lua real script Ultimate Flame Swordsman destroy battle start", () => {
-  it.fails("restores targeted monster destruction damage and battle-start final ATK delayed self-destroy", () => {
+  it("restores targeted monster destruction damage and battle-start final ATK delayed self-destroy", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${swordsmanCode}.lua`);
     expect(script).toContain("Fusion.AddProcMix(c,true,true,CARD_FLAME_SWORDSMAN,36319131)");
