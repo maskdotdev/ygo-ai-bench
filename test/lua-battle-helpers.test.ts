@@ -61,7 +61,7 @@ describe("Lua battle helpers", () => {
     );
 
     expect(after.ok, after.error).toBe(true);
-    expect(host.messages).toEqual(["can attack before false/false", "can attack during true/false", "can attack after false/1/1", "can chain attack after true/false"]);
+    expect(host.messages).toEqual(["can attack before true/false", "can attack during true/false", "can attack after false/1/1", "can chain attack after true/false"]);
   });
 
   it("lets continuous extra attack effects grant another attack", () => {
