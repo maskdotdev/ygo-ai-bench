@@ -19,8 +19,13 @@ const reasonSourceFixtureFiles = [
   "test/lua-level-up-event.test.ts",
   "test/lua-move-event.test.ts",
   "test/lua-raise-event-payload.test.ts",
+  "test/lua-real-script-berserk-archfiend-custom-event-stat.test.ts",
+  "test/lua-real-script-damage-mage-event-damage-summon-recover.test.ts",
   "test/lua-real-script-dark-room-nightmare-event-damage.test.ts",
   "test/lua-real-script-naturia-ragweed-event-draw-trigger.test.ts",
+  "test/lua-real-script-origami-goddess-toss-coin-custom-event.test.ts",
+  "test/lua-real-script-subterror-final-battle-reset-event.test.ts",
+  "test/lua-real-script-venom-serpent-counter-custom-event.test.ts",
   "test/lua-release-grouped-event.test.ts",
   "test/lua-remove-grouped-event.test.ts",
   "test/lua-return-to-grave-event.test.ts",
@@ -32,9 +37,9 @@ const reasonSourceFixtureFiles = [
 ] as const;
 const reasonSourceKindCounts = {
   battleAndTarget: 2,
-  chainCustom: 3,
+  chainCustom: 5,
   groupedMovement: 12,
-  stateChange: 4,
+  stateChange: 7,
   summon: 2,
 } satisfies Record<ReasonSourceKind, number>;
 
@@ -274,7 +279,13 @@ function countReasonSourceKinds(files: readonly string[]): Record<ReasonSourceKi
 function classifyReasonSourceKind(file: string): ReasonSourceKind {
   const basename = path.basename(file);
   if (basename === "lua-attack-negation-event-source.test.ts" || basename === "lua-become-target-event.test.ts") return "battleAndTarget";
-  if (basename === "lua-break-effect-event.test.ts" || basename === "lua-chain-event-helpers.test.ts" || basename === "lua-raise-event-payload.test.ts") return "chainCustom";
+  if (
+    basename === "lua-break-effect-event.test.ts" ||
+    basename === "lua-chain-event-helpers.test.ts" ||
+    basename === "lua-raise-event-payload.test.ts" ||
+    basename === "lua-real-script-berserk-archfiend-custom-event-stat.test.ts" ||
+    basename === "lua-real-script-origami-goddess-toss-coin-custom-event.test.ts"
+  ) return "chainCustom";
   if (
     basename === "lua-change-position-grouped-event.test.ts" ||
     basename === "lua-destroy-grouped-event.test.ts" ||
@@ -294,8 +305,11 @@ function classifyReasonSourceKind(file: string): ReasonSourceKind {
   if (
     basename === "lua-counter-event.test.ts" ||
     basename === "lua-level-up-event.test.ts" ||
+    basename === "lua-real-script-damage-mage-event-damage-summon-recover.test.ts" ||
     basename === "lua-real-script-dark-room-nightmare-event-damage.test.ts" ||
-    basename === "lua-real-script-naturia-ragweed-event-draw-trigger.test.ts"
+    basename === "lua-real-script-naturia-ragweed-event-draw-trigger.test.ts" ||
+    basename === "lua-real-script-subterror-final-battle-reset-event.test.ts" ||
+    basename === "lua-real-script-venom-serpent-counter-custom-event.test.ts"
   ) {
     return "stateChange";
   }
