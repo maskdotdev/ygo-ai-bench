@@ -140,6 +140,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase || !hasPhantomScript
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventReason: 0,
         eventReasonPlayer: 0,
         eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
