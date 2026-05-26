@@ -112,7 +112,7 @@ describe.skipIf(!hasUpstreamScripts || !hasResavengerScript)("Lua real script Ma
       sourceUid: trigger.sourceUid,
       triggerBucket: trigger.triggerBucket,
     }))).toEqual([
-      { effectId: "lua-2-1139", eventCode: 1140, eventName: "battleDestroyed", player: 0, sourceUid: recoverResavenger.uid, triggerBucket: "turnOptional" },
+      { effectId: "lua-2-1139", eventCode: 1139, eventName: "battleDestroyed", player: 0, sourceUid: recoverResavenger.uid, triggerBucket: "turnOptional" },
     ]);
     const returnTrigger = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) =>
       action.type === "activateTrigger" && action.uid === recoverResavenger.uid && action.effectId === "lua-2-1139"

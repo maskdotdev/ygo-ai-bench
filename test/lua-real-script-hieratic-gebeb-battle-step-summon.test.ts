@@ -79,13 +79,20 @@ describe.skipIf(!hasUpstreamScripts || !hasGebebScript)("Lua real script Hierati
       reasonPlayer: 0,
       reasonCardUid: gebeb.uid,
     });
-    expect(restoredOpen.session.state.pendingTriggers).toMatchObject([
+    expect(restoredOpen.session.state.pendingTriggers).toEqual([
       {
+        id: "trigger-6-1",
         effectId: "lua-1-1139",
+        eventCardUid: gebeb.uid,
+        eventCode: 1139,
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDestroyed",
+        eventPlayer: 1,
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 1 },
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonCardUid: gebeb.uid,
         eventReasonPlayer: 0,
+        eventTriggerTiming: "when",
         player: 0,
         sourceUid: gebeb.uid,
         triggerBucket: "turnMandatory",

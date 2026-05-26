@@ -47,12 +47,12 @@ describe("Lua Flip Summon restore helpers", () => {
 
     flipSummonDuelCard(session.state, 0, monster!.uid);
     expect(session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoned"]);
-    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1101, eventCardUid: monster!.uid });
+    expect(session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1001, eventCardUid: monster!.uid });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, createCardReader(cards));
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.session.state.pendingTriggers.map((trigger) => trigger.eventName)).toEqual(["flipSummoned"]);
-    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1101, eventCardUid: monster!.uid });
+    expect(restored.session.state.pendingTriggers[0]).toMatchObject({ eventCode: 1001, eventCardUid: monster!.uid });
     expect(getLuaRestoreLegalActions(restored, 0)).toEqual(getDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual(getGroupedDuelLegalActions(restored.session, 0));
     expect(getLuaRestoreLegalActionGroups(restored, 0).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 0));

@@ -47,7 +47,7 @@ describe.skipIf(!hasUpstreamScripts || !hasRaiderScript)("Lua real script Kaiser
       {
         effectId: "lua-2-1139",
         eventCardUid: raider.uid,
-        eventCode: 1140,
+        eventCode: 1139,
         eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpAttack", sequence: 0 },
         eventName: "battleDestroyed",
         eventPlayer: 1,

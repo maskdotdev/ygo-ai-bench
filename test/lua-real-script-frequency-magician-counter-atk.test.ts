@@ -80,6 +80,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fr
         triggerBucket: "turnMandatory",
         eventName: "normalSummoned",
         eventCode: 1100,
+        eventPlayer: 0,
         eventCardUid: magician!.uid,
         eventReason: duelReason.summon,
         eventReasonPlayer: 0,
@@ -109,13 +110,14 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Fr
     expect(restoredIgnitionWindow.session.state.cards.find((card) => card.uid === magician!.uid)?.counters?.[spellCounter] ?? 0).toBe(0);
     expect(restoredIgnitionWindow.session.state.chain).toEqual([
       {
-        id: "chain-5",
+        id: "chain-7",
         chainIndex: 1,
         effectId: "lua-4",
         sourceUid: magician!.uid,
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [5],
         targetUids: [magician!.uid],
       },
     ]);
