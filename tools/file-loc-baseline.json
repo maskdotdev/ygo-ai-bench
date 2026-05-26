@@ -12,7 +12,7 @@
   "test/lua-real-ritual-fusion-helper-restore-coverage.test.ts": 1131,
   "test/lua-real-battle-timing-restore-coverage.test.ts": 1280,
   "test/lua-real-battle-restore-fixtures.ts": 1564,
-  "test/lua-real-summon-restore-fixtures.ts": 1076,
+  "test/lua-real-summon-restore-fixtures.ts": 1077,
   "test/lua-real-summon-procedure-restore-coverage.test.ts": 1256,
   "src/engine/duel/summon.ts": 1026,
   "src/engine/lua/card-procedure-source-api.ts": 1017,
