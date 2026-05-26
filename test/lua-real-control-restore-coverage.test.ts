@@ -105,7 +105,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 60;
+const controlFixtureCount = 61;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -134,6 +134,7 @@ const controlKindCounts = {
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
+  tunerGraveStatDiscardControl: 1,
   handMonsterCostDefenseControlPositionLock: 1,
   discardCostGroupControlLock: 1,
   releaseCostControl: 3,
@@ -202,6 +203,7 @@ type ControlKind =
   | "ownedControlAttackDrain"
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
+  | "tunerGraveStatDiscardControl"
   | "handMonsterCostDefenseControlPositionLock"
   | "discardCostGroupControlLock"
   | "releaseCostControl"
@@ -900,6 +902,24 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-bird-paradise-lost-tuner-stat-control.test.ts",
+      kind: "tunerGraveStatDiscardControl",
+      required: [
+        "restores grave Tuner-count ATK/DEF and Tuner discard cost into temporary control",
+        "--Bird of Paradise Lost",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "Duel.GetMatchingGroupCount(Card.IsType,tp,LOCATION_GRAVE,0,nil,TYPE_TUNER)*100",
+        "return c:IsType(TYPE_TUNER) and c:IsAbleToGraveAsCost()",
+        "Duel.DiscardHand(tp,s.cfilter,1,1,REASON_COST,nil)",
+        "Duel.SelectTarget(tp,Card.IsControlerCanBeChanged,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-rb-lambda-blade-send-control-delayed-destroy.test.ts",
       kind: "linkedLpCostControlDelayedDestroy",
       required: [
@@ -1324,6 +1344,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       ownedControlAttackDrain: 0,
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
+      tunerGraveStatDiscardControl: 0,
       handMonsterCostDefenseControlPositionLock: 0,
       discardCostGroupControlLock: 0,
       releaseCostControl: 0,
