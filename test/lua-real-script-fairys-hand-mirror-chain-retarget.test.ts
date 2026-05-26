@@ -21,7 +21,7 @@ const typeTrap = 0x4;
 const typeQuickPlay = 0x10000;
 
 describe.skipIf(!hasUpstreamScripts || !hasFairyMirrorScript || !hasBookOfMoonScript)("Lua real script Fairy's Hand Mirror chain retarget", () => {
-  it.fails("restores CheckChainTarget and ChangeTargetCard retargeting Book of Moon to a new monster", () => {
+  it("restores CheckChainTarget and ChangeTargetCard retargeting Book of Moon to a new monster", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const originalTargetCode = "176537790";
     const replacementTargetCode = "176537791";

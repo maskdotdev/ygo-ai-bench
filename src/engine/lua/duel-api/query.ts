@@ -407,8 +407,17 @@ function changeDuelTargetCard(L: unknown, session: DuelSession, hostState: LuaDu
     const uids = uniqueUids(readCardOrGroupUids(L, 2));
     const link = chainLinkByLuaIndex(session, requestedIndex);
     if (!link) return;
-    if (uids.length) link.targetUids = [...uids];
-    else delete link.targetUids;
+    if (uids.length) {
+      link.targetUids = [...uids];
+      const fieldIds = uids.map((uid) => session.state.cards.find((card) => card.uid === uid)?.fieldId).filter((fieldId): fieldId is number => fieldId !== undefined);
+      if (fieldIds.length === uids.length) link.targetFieldIds = fieldIds;
+      else delete link.targetFieldIds;
+      for (const info of link.operationInfos ?? []) info.targetUids = [...uids];
+    } else {
+      delete link.targetUids;
+      delete link.targetFieldIds;
+      for (const info of link.operationInfos ?? []) info.targetUids = [];
+    }
     if (hostState.activeContext?.chainLink?.id === link.id) hostState.activeContext.setTargets(uids);
     return;
   }
