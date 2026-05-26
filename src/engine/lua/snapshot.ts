@@ -103,6 +103,7 @@ const luaArcanaForceDarkRulerCode = "69831560";
 const luaArcanaForceFoolCode = "62892347";
 const luaProtonBlastCode = "49511705";
 const luaOldEntityHastorrCode = "70913714";
+const luaPumprincessCode = "17601919";
 const luaArcanaForceMoonCode = "97452817";
 const luaInterplanetaryInvaderACode = "14729426";
 const luaAlienHypnoCode = "38468214";
@@ -117,7 +118,7 @@ const luaDinowrestlerMartialAnkyloCode = "35770983";
 const luaLeaveFieldLinkedDestroyCodes = new Set(["29013526", "29139104", "56524813"]);
 const luaSetMegalith = 0x138;
 const luaSetSpellbook = 0x106e; const luaSetEvoltile = 0x304e;
-const luaCategorySpecialSummon = 0x200; const luaCategoryToken = 0x400; const luaCategoryControl = 0x2000; const luaLocationDeck = 0x1;
+const luaCategorySpecialSummon = 0x200; const luaCategoryToken = 0x400; const luaCategoryControl = 0x2000; const luaCategoryCounter = 0x800000; const luaLocationDeck = 0x1;
 const luaSummonTypeGemini = 0x12000000; const luaLocationMonsterZone = 0x4; const luaLocationExtraDeck = 0x40;
 const luaTypeMonster = 0x1; const luaTypeSpell = 0x2; const luaTypeRitual = 0x80; const luaTypeSpirit = 0x200; const luaTypeTuner = 0x1000;
 const luaRaceFiend = 0x8; const luaRaceMachine = 0x200;
@@ -1090,6 +1091,7 @@ function restoredLuaTriggerMetadata(effect: SerializedDuelEffect): Partial<Pick<
   if (isKnownMaharaghiPredrawEffect(effect) || isKnownHinoKaguTsuchiPredrawDiscardEffect(effect)) return { triggerEvent: "preDraw" as const, triggerCode: 1113, triggerTiming: "if" as const };
   if (isKnownYellowAlertDelayedReturnEffect(effect)) return { triggerEvent: "phaseBattle" as const, triggerCode: 0x1080, triggerTiming: "if" as const };
   if (isKnownPrimePhotonDragonStandbyReviveEffect(effect)) return { triggerEvent: "phaseStandby" as const, triggerCode: luaPhaseStandbyEventCode, triggerTiming: "if" as const };
+  if (isKnownPumprincessStandbyCounterEffect(effect)) return { triggerEvent: "phaseStandby" as const, triggerCode: luaPhaseStandbyEventCode, triggerTiming: "when" as const };
   return {}; }
 
 function refreshKnownRestoredLuaEffect(session: DuelSession, effect: SerializedDuelEffect): void {
@@ -1287,6 +1289,8 @@ function isKnownRestorableLuaEffect(effect: SerializedDuelEffect, snapshotEffect
     isKnownShootingcodeTalkerBattlePhaseDrawEffect(effect) ||
     isKnownHunterSevenWeaponsPreDamageEffect(effect) ||
     isKnownPrimePhotonDragonStandbyReviveEffect(effect) ||
+    isKnownPumprincessStandbyCounterEffect(effect) ||
+    isKnownPumprincessOpponentStatDropEffect(effect) ||
     isKnownDinowrestlerMartialAnkyloEndPhaseSummonEffect(effect) ||
     isKnownTaiStrikeDamageStepEndEffect(effect) || isKnownAssaultSpiritsDamageStepEquipEffect(effect) ||
     isKnownGauntletWarriorDamageStepResetEffect(effect) || isKnownCyberOgreDamageStepResetEffect(effect) ||
@@ -1620,6 +1624,26 @@ function nextLuaEffectId(effect: SerializedDuelEffect, code: number): string {
 }
 function isKnownChangeCodeEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 114 && effect.value !== undefined && effect.sourceUid !== undefined && effect.targetRange === undefined; }
 function isKnownChangeTypeEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 117 && effect.value !== undefined && effect.sourceUid !== undefined && effect.targetRange === undefined; }
+function isKnownPumprincessStandbyCounterEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaPumprincessCode}:`)) &&
+    effect.event === "trigger" &&
+    effect.code === luaPhaseStandbyEventCode &&
+    effect.triggerEvent === "phaseStandby" &&
+    ((effect.category ?? 0) & luaCategoryCounter) !== 0 &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone";
+}
+function isKnownPumprincessOpponentStatDropEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaPumprincessCode}:`)) &&
+    effect.event === "continuous" &&
+    (effect.code === 100 || effect.code === 104) &&
+    effect.sourceUid !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone" &&
+    effect.targetRange?.[0] === 0 &&
+    effect.targetRange?.[1] === 4;
+}
 function isKnownSwapBaseAdEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === 110 && effect.sourceUid !== undefined && effect.range.length === 1 && effect.range[0] === "monsterZone" && effect.targetRange === undefined && effect.reset !== undefined; }
 function isKnownDharcProcedurePierceEffect(effect: SerializedDuelEffect): boolean { return Boolean(effect.registryKey?.startsWith(`lua:${luaFamiliarPossessedDharcCode}:`)) && effect.event === "continuous" && effect.code === luaEffectPierce && effect.sourceUid !== undefined && hasDefaultLuaFieldRange(effect) && effect.reset?.flags === 0xff1000; }
 function isKnownTemporaryPierceEffect(effect: SerializedDuelEffect): boolean { return effect.event === "continuous" && effect.code === luaEffectPierce && effect.sourceUid !== undefined && effect.reset !== undefined; }
@@ -2444,6 +2468,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownGauntletWarriorDamageStepResetEffect(effect)) return gauntletWarriorDamageStepResetOperation(effect, snapshotEffects);
   if (isKnownCyberOgreDamageStepResetEffect(effect)) return resetLabelObjectEffectOperation(effect, snapshotEffects);
   if (isKnownCastleDarkIllusionsStandbyStatEffect(effect)) return castleDarkIllusionsStandbyStatOperation(effect);
+  if (isKnownPumprincessStandbyCounterEffect(effect)) return pumprincessStandbyCounterOperation(effect);
   if (isKnownPenetrationFusionStage2QuickEffect(effect)) return penetrationFusionStage2AttackOperation(effect);
   if (isKnownParticleFusionCustomAttackEffect(effect)) return particleFusionCustomAttackOperation(effect);
   if (isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(effect)) return () => {};
@@ -2534,6 +2559,20 @@ function aCellIncubatorCounterRemovedOperation(effect: SerializedDuelEffect): Du
       eventReasonCardUid: effect.sourceUid,
       ...(Number.isFinite(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
       triggerEventCode: 0x10000 + luaCounterA,
+    });
+  };
+}
+function pumprincessStandbyCounterOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    if (!source || !addDuelCardCounter(source, 0x2f, 1)) return;
+    const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+    collectDuelTriggerEffects(ctx.duel, "counterAdded", source, {
+      eventReason: duelReason.effect,
+      eventReasonPlayer: ctx.player,
+      eventReasonCardUid: effect.sourceUid,
+      ...(Number.isFinite(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+      triggerEventCode: 0x10000 + 0x2f,
     });
   };
 }
@@ -3717,6 +3756,9 @@ function luaHandlerReturnToHandOperation(effect: SerializedDuelEffect): DuelEffe
 }
 
 function restoredLuaValueCallbacks(effect: SerializedDuelEffect): Pick<DuelEffectDefinition, "battleDamageValue" | "lifePointValue" | "statValue" | "valueCardPredicate" | "valuePredicate"> {
+  if (isKnownPumprincessOpponentStatDropEffect(effect)) {
+    return { statValue: (ctx) => getDuelCardCounter(ctx.duel.cards.find((card) => card.uid === effect.sourceUid), 0x2f) * -100 };
+  }
   const descriptorStatValue = luaValueDescriptorStatValue(effect.luaValueDescriptor, effect.id);
   if (descriptorStatValue) return { statValue: descriptorStatValue };
   if (effect.luaValueDescriptor === "cannot-be-effect-target:opponent") {
