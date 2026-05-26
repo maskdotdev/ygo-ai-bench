@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 27;
-const chainResponseNegationFixtureCount = 22;
+const negationFixtureCount = 28;
+const chainResponseNegationFixtureCount = 23;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 31;
+const negationInventoryFixtureCount = 32;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 18,
+  chainNegateToGrave: 19,
   handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -45,6 +45,7 @@ const negationSemanticVariantCounts = {
   pollinosisPlantReleaseActivationNegateDestroy: 1,
   raigekiBreakDiscardDestroyOnlyNoNegation: 1,
   sevenToolsLpCostTrapNegateDestroy: 1,
+  shiningSilverForceTrapDamageNegateDestroy: 1,
   sintoFireFormationOathNegateDestroy: 1,
   solemnJudgmentActivationNegateCostDestroy: 1,
   solemnStrikeSummonAndMonsterNegate: 1,
@@ -90,6 +91,7 @@ type NegationSemanticVariant =
   | "pollinosisPlantReleaseActivationNegateDestroy"
   | "raigekiBreakDiscardDestroyOnlyNoNegation"
   | "sevenToolsLpCostTrapNegateDestroy"
+  | "shiningSilverForceTrapDamageNegateDestroy"
   | "sintoFireFormationOathNegateDestroy"
   | "solemnJudgmentActivationNegateCostDestroy"
   | "solemnStrikeSummonAndMonsterNegate"
@@ -237,6 +239,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-pollinosis-release-activation-negate.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
+    "lua-real-script-shining-silver-force-damage-trap-negate.test.ts",
     "lua-real-script-sinto-oath-chain-negate.test.ts",
     "lua-real-script-solemn-judgment-summon-negate-part2.test.ts",
     "lua-real-script-solemn-strike-special-summon-negate.test.ts",
@@ -344,6 +347,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-seven-tools-trap-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-shining-silver-force-damage-trap-negate.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -703,6 +710,26 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-shining-silver-force-damage-trap-negate.test.ts",
+      kind: "shiningSilverForceTrapDamageNegateDestroy",
+      required: [
+        'const silverForceCode = "89563150"',
+        "restores Trap damage-operation negation and destroys opponent face-up backrow",
+        "--Shining Silver Force",
+        "re:IsTrapEffect()",
+        "Duel.GetOperationInfo(ev,CATEGORY_DAMAGE)",
+        "Duel.GetOperationInfo(ev,CATEGORY_RECOVER)",
+        "Duel.IsPlayerAffectedByEffect(cp,EFFECT_REVERSE_RECOVER)",
+        "Duel.GetMatchingGroup(s.dfilter,tp,0,LOCATION_ONFIELD,nil)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(g,REASON_EFFECT)",
+        "Silver Force Face-up Continuous Spell",
+        'host.messages).not.toContain("silver force burn resolved")',
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+      ],
+    },
+    {
       file: "lua-real-script-sinto-oath-chain-negate.test.ts",
       kind: "sintoFireFormationOathNegateDestroy",
       required: [
@@ -876,6 +903,7 @@ function countNegationSemanticVariants(
       pollinosisPlantReleaseActivationNegateDestroy: 0,
       raigekiBreakDiscardDestroyOnlyNoNegation: 0,
       sevenToolsLpCostTrapNegateDestroy: 0,
+      shiningSilverForceTrapDamageNegateDestroy: 0,
       sintoFireFormationOathNegateDestroy: 0,
       solemnJudgmentActivationNegateCostDestroy: 0,
       solemnStrikeSummonAndMonsterNegate: 0,
