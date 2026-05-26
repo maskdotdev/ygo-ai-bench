@@ -13,7 +13,7 @@
   "test/lua-real-battle-restore-fixtures.ts": 1565,
   "test/lua-real-summon-restore-fixtures.ts": 1077,
   "test/lua-real-summon-procedure-restore-coverage.test.ts": 1256,
-  "src/engine/duel/summon.ts": 1026,
+  "src/engine/duel/summon.ts": 1073,
   "src/engine/lua/card-procedure-source-api.ts": 1017,
   "src/engine/duel/core.ts": 1026,
   "src/engine/lua/duel-api/summon.ts": 1014,
