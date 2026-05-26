@@ -29,7 +29,7 @@ const eventSpecialSummonSuccess = 1102;
 const eventRecover = 1112;
 
 describe.skipIf(!hasUpstreamScripts || !hasEbonScript)("Lua real script Ebon Sun custom recover stat to hand", () => {
-  it.fails("restores custom destroyed recovery, grave Special Summon ATK gain, and discarded Spell return", () => {
+  it("restores custom destroyed recovery, grave Special Summon ATK gain, and discarded Spell return", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${ebonCode}.lua`);
     expectEbonSunScriptShape(script);
