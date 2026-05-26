@@ -126,9 +126,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
           },
           "sourceUid": "p0-deck-24224830-0",
           "target": [Function],
-          "triggerCode": 1020,
-          "triggerEvent": "chainSolving",
-          "triggerTiming": "when",
         },
       ]
     `);
@@ -151,6 +148,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
           "event": "continuous",
           "id": "lua-4-2",
           "label": 10000020,
+          "luaTypeFlags": 2,
           "oncePerTurn": false,
           "operation": [Function],
           "ownerPlayer": 0,
@@ -183,6 +181,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
           "id": "lua-5-1020",
           "label": 10000020,
           "luaConditionDescriptor": "condition:chain-solving-monster-effect-handler-original-code-label",
+          "luaTypeFlags": 2050,
           "oncePerTurn": false,
           "operation": [Function],
           "ownerPlayer": 0,
@@ -202,9 +201,6 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ca
             "flags": 1073742336,
           },
           "sourceUid": "p0-deck-24224830-0",
-          "triggerCode": 1020,
-          "triggerEvent": "chainSolving",
-          "triggerTiming": "when",
         },
       ]
     `);

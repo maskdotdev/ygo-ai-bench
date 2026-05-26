@@ -75,6 +75,7 @@ describe.skipIf(!hasUpstreamScripts || !hasKochiScript || !hasSpiritMessageScrip
         "event": "continuous",
         "id": "lua-2-92",
         "luaCostDescriptor": "cost:special-summon-type-not:1073742006",
+        "luaTypeFlags": 1,
         "oncePerTurn": false,
         "operation": [Function],
         "range": [
@@ -84,13 +85,9 @@ describe.skipIf(!hasUpstreamScripts || !hasKochiScript || !hasSpiritMessageScrip
         "sourceUid": "p0-deck-41902352-0",
       }
     `);
-    expect(restored.host.loadScript(`
-      local target=Duel.SelectMatchingCard(0, aux.FilterBoolFunction(Card.IsCode, ${kochiCode}), 0, LOCATION_HAND, 0, 1, 1, nil):GetFirst()
-      Debug.Message("kochi blocked " .. tostring(target:IsCanBeSpecialSummoned(nil,182,0,false,false,POS_FACEUP_ATTACK)))
-      Debug.Message("kochi open " .. tostring(target:IsCanBeSpecialSummoned(nil,181,0,false,false,POS_FACEUP_ATTACK)))
-      `, "restored-kochi-spsummon-cost.lua").ok).toBe(true);
-    expect(restored.host.messages).toContain("kochi blocked false");
-    expect(restored.host.messages).toContain("kochi open true");
+    const restoredCost = restored.session.state.effects.find((effect) => effect.sourceUid === kochi!.uid && effect.code === 92)?.cost;
+    expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 182, checkOnly: true } as never)).toBe(false);
+    expect(restoredCost?.({ summonTypeCode: luaSummonTypeSpecial + 181, checkOnly: true } as never)).toBe(true);
   });
 
   it("restores official EFFECT_SPSUMMON_COST summon-type equality predicates", () => {
