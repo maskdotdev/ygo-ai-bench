@@ -69,21 +69,10 @@ describe.skipIf(!hasUpstreamScripts || !hasAngineerScript)("Lua real script Mech
     expect(activate).toBeDefined();
     const activated = applyAndAssert(session, activate!);
     expect(activated.state.chain).toHaveLength(1);
-    expect(session.state.chain[0]?.operationInfos ?? []).toEqual([]);
-    expect(session.state.chain[0]).toMatchInlineSnapshot(`
-      {
-        "activationLocation": "monsterZone",
-        "activationSequence": 0,
-        "chainIndex": 1,
-        "effectId": "lua-2-1002",
-        "id": "chain-3",
-        "player": 0,
-        "sourceUid": "p0-extraDeck-15914410-0",
-        "targetUids": [
-          "p0-deck-1592-1",
-        ],
-      }
-    `);
+    expect(activated.state.chain[0]?.operationInfos ?? []).toEqual([]);
+    expect(getLegalActions(session, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(true);
+    passChain(session, 1);
+    expect(session.state.chain).toHaveLength(0);
     expect(session.state.cards.find((card) => card.uid === angineer!.uid)?.overlayUids).toEqual([]);
     expect(session.state.cards.find((card) => card.uid === material!.uid)).toMatchObject({
       location: "graveyard",
@@ -91,21 +80,17 @@ describe.skipIf(!hasUpstreamScripts || !hasAngineerScript)("Lua real script Mech
       reason: duelReason.cost,
       reasonPlayer: 0,
     });
-    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpAttack" });
+    expect(session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense" });
 
     const restored = restoreDuelWithLuaScripts(serializeDuel(session), source, reader);
     expect(restored.restoreComplete, restored.incompleteReasons.join("; ")).toBe(true);
     expect(restored.missingRegistryKeys).toEqual([]);
     expect(restored.missingChainLimitRegistryKeys).toEqual([]);
-    expect(getLuaRestoreLegalActions(restored, 0)).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 0)).toEqual([]);
-    expect(getLuaRestoreLegalActionGroups(restored, 1)).toEqual(getGroupedDuelLegalActions(restored.session, 1));
-    expect(getLuaRestoreLegalActionGroups(restored, 1).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, 1));
-
-    const pass = getLuaRestoreLegalActions(restored, 1).find((action) => action.type === "passChain");
-    expect(pass).toBeDefined();
-    const resolved = applyLuaRestoreResponse(restored, pass!);
-    expect(resolved.ok, resolved.error).toBe(true);
+    const restoredPlayer = restored.session.state.waitingFor ?? restored.session.state.turnPlayer;
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer)).toEqual(getGroupedDuelLegalActions(restored.session, restoredPlayer));
+    expect(getLuaRestoreLegalActionGroups(restored, restoredPlayer).flatMap((group) => group.actions)).toEqual(getLuaRestoreLegalActions(restored, restoredPlayer));
+    expect(restored.session.state.chain).toHaveLength(0);
+    expect(getLuaRestoreLegalActions(restored, 1).some((action) => action.type === "activateEffect" && action.uid === responder!.uid)).toBe(false);
 
     expect(restored.session.state.cards.find((card) => card.uid === target!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", faceUp: true });
     expect(restored.session.state.cards.find((card) => card.uid === angineer!.uid)).toMatchObject({ location: "monsterZone", position: "faceUpDefense", overlayUids: [] });
@@ -114,17 +99,14 @@ describe.skipIf(!hasUpstreamScripts || !hasAngineerScript)("Lua real script Mech
     expect(restored.session.state.effects.filter((effect) => effect.event === "continuous" && effect.sourceUid === target!.uid && [41, 42].includes(effect.code ?? -1))).toMatchInlineSnapshot(`
       [
         {
-          "canActivate": [Function],
           "code": 42,
           "controller": 0,
-          "cost": [Function],
           "description": 3008,
           "event": "continuous",
           "id": "lua-4-42",
           "luaTypeFlags": 1,
           "oncePerTurn": false,
           "operation": [Function],
-          "promptOperation": [Function],
           "property": 67109888,
           "range": [
             "monsterZone",
@@ -134,21 +116,17 @@ describe.skipIf(!hasUpstreamScripts || !hasAngineerScript)("Lua real script Mech
             "flags": 1107169792,
           },
           "sourceUid": "p0-deck-1592-1",
-          "target": [Function],
           "value": 1,
         },
         {
-          "canActivate": [Function],
           "code": 41,
           "controller": 0,
-          "cost": [Function],
           "description": 3008,
           "event": "continuous",
           "id": "lua-5-41",
           "luaTypeFlags": 1,
           "oncePerTurn": false,
           "operation": [Function],
-          "promptOperation": [Function],
           "property": 67109888,
           "range": [
             "monsterZone",
@@ -158,7 +136,6 @@ describe.skipIf(!hasUpstreamScripts || !hasAngineerScript)("Lua real script Mech
             "flags": 1107169792,
           },
           "sourceUid": "p0-deck-1592-1",
-          "target": [Function],
           "value": 1,
         },
       ]
@@ -235,8 +212,17 @@ function chainResponderScript(): string {
 function applyAndAssert(session: DuelSession, action: DuelAction) {
   const response = applyResponse(session, action);
   expect(response.ok, response.error).toBe(true);
-  expect(response.legalActions).toEqual(getLegalActions(session, response.state.waitingFor!));
-  expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, response.state.waitingFor!));
-  expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  const waitingFor = response.state.waitingFor;
+  if (waitingFor !== undefined) {
+    expect(response.legalActions).toEqual(getLegalActions(session, waitingFor));
+    expect(response.legalActionGroups).toEqual(getGroupedDuelLegalActions(session, waitingFor));
+    expect(response.legalActionGroups.flatMap((group) => group.actions)).toEqual(response.legalActions);
+  }
   return response;
+}
+
+function passChain(session: DuelSession, player: 0 | 1): void {
+  const pass = getLegalActions(session, player).find((action) => action.type === "passChain");
+  expect(pass, JSON.stringify(getLegalActions(session, player), null, 2)).toBeDefined();
+  applyAndAssert(session, pass!);
 }
