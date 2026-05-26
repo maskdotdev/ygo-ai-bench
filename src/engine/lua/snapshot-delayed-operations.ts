@@ -25,6 +25,7 @@ const luaPurushaddollAeonCode = "78942513";
 const luaDangersOfTheDivineCode = "22082432";
 const luaWakeCupMochaCode = "91818544";
 const luaRbLambdaBladeCode = "17188206";
+const luaTriBrigadeRugalCode = "52331012";
 
 export function isKnownYellowAlertDelayedReturnEffect(effect: SerializedDuelEffect): boolean {
   return (
@@ -113,7 +114,8 @@ export function delayedFlaggedSendToHandOperation(effect: SerializedDuelEffect):
 
 export function isKnownDelayedGroupSendToHandEffect(effect: SerializedDuelEffect): boolean {
   return (
-    Boolean(effect.registryKey?.startsWith(`lua:${luaDangersOfTheDivineCode}:`)) &&
+    (effect.registryKey?.startsWith(`lua:${luaDangersOfTheDivineCode}:`) === true ||
+      effect.registryKey?.startsWith(`lua:${luaTriBrigadeRugalCode}:`) === true) &&
     effect.event === "continuous" &&
     effect.code === luaPhaseEndEventCode &&
     (effect.triggerEvent === undefined || effect.triggerEvent === "phaseEnd") &&

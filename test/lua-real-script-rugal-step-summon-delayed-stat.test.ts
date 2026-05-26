@@ -27,7 +27,7 @@ const raceBeastWarrior = 0x8000;
 const phaseEndEventCode = 0x1200;
 
 describe.skipIf(!hasUpstreamScripts || !hasRugalScript)("Lua real script Tri-Brigade Rugal step summon delayed stat", () => {
-  it.fails("restores opponent-turn SpecialSummonStep negate/delayed return and TO_GRAVE race-count ATK loss", () => {
+  it("restores opponent-turn SpecialSummonStep negate/delayed return and TO_GRAVE race-count ATK loss", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${rugalCode}.lua`);
     expectScriptShape(script);
