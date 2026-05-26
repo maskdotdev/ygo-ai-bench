@@ -23,6 +23,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-creature-seizure-normal-swap.test.ts"
 // Restore ownership: "test/lua-real-script-cyber-angel-natasha-recover-negate-control.test.ts"
 // Restore ownership: "test/lua-real-script-dark-necrofear-procedure-equip.test.ts"
+// Restore ownership: "test/lua-real-script-darklord-enchantment-cost-control.test.ts"
 // Restore ownership: "test/lua-real-script-dd-guide-summon-control-end-banish.test.ts"
 // Restore ownership: "test/lua-real-script-ddd-headhunt-control-disable-setcode.test.ts"
 // Restore ownership: "test/lua-real-script-dummy-golem-flip-opponent-swap.test.ts"
@@ -86,7 +87,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 38;
+const controlFixtureCount = 39;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleCounterControl: 2,
@@ -105,7 +106,7 @@ const controlKindCounts = {
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
-  releaseCostControl: 1,
+  releaseCostControl: 2,
   restrictedTemporaryControl: 2,
   searchDestroyGraveControl: 1,
   selectedPermanentControl: 1,
@@ -613,6 +614,17 @@ function realScriptControlFixtureFiles(): Array<{
         "duelReason.release",
         "duelReason.cost",
         'luaValueDescriptor: "temporary-control-return"',
+      ],
+    },
+    {
+      file: "lua-real-script-darklord-enchantment-cost-control.test.ts",
+      kind: "releaseCostControl",
+      required: [
+        'const darklordEnchantmentCode = "87990236"',
+        "Duel.GetMZoneCount(tp,c,tp,LOCATION_REASON_CONTROL)>0",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        'eventName: "controlChanged"',
       ],
     },
     {
