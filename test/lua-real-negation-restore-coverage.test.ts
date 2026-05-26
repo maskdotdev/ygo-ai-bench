@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 25;
-const chainResponseNegationFixtureCount = 20;
+const negationFixtureCount = 26;
+const chainResponseNegationFixtureCount = 21;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 29;
+const negationInventoryFixtureCount = 30;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 17,
+  chainNegateToGrave: 18,
   handTrapChainNegate: 1,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -31,6 +31,7 @@ const negationSemanticVariantCounts = {
   effectVeilerHandQuickDisableChainLink: 1,
   faceOffDamagePhaseCurrentPhaseNegateDestroy: 1,
   gagagarushTargetMonsterNegateDamage: 1,
+  gustavRocketOverlayMonsterNegateDamage: 1,
   ghostOgreDestroyOnlyNoNegation: 1,
   gGolemDignifiedTargetedLinkNegateDestroy: 1,
   giltiGearfriedTargetedChainNegateDestroy: 1,
@@ -74,6 +75,7 @@ type NegationSemanticVariant =
   | "effectVeilerHandQuickDisableChainLink"
   | "faceOffDamagePhaseCurrentPhaseNegateDestroy"
   | "gagagarushTargetMonsterNegateDamage"
+  | "gustavRocketOverlayMonsterNegateDamage"
   | "ghostOgreDestroyOnlyNoNegation"
   | "gGolemDignifiedTargetedLinkNegateDestroy"
   | "giltiGearfriedTargetedChainNegateDestroy"
@@ -223,6 +225,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-g-golem-dignified-trilithon-target-link-negate.test.ts",
     "lua-real-script-ghost-ogre-chain-destroy.test.ts",
     "lua-real-script-gilti-gearfried-target-chain-negate.test.ts",
+    "lua-real-script-gustav-rocket-overlay-negate-damage.test.ts",
     "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
     "lua-real-script-iron-core-luster-confirm-negate.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
@@ -306,6 +309,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-gilti-gearfried-target-chain-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-gustav-rocket-overlay-negate-damage.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -542,6 +549,25 @@ function negationSemanticVariants(): Array<{
         'eventName: "becameTarget"',
         'eventName: "chainNegated"',
         'host.messages).not.toContain("gilti gearfried targeting starter resolved")',
+      ],
+    },
+    {
+      file: "lua-real-script-gustav-rocket-overlay-negate-damage.test.ts",
+      kind: "gustavRocketOverlayMonsterNegateDamage",
+      required: [
+        'const gustavRocketCode = "92359409"',
+        "restores overlay-gated monster-effect negation into destruction, BreakEffect, and 1000 damage",
+        "--Superdreadnought Rail Cannon Gustav Rocket",
+        "e1:SetCode(EVENT_CHAINING)",
+        "e:GetHandler():GetOverlayCount()>0",
+        "Duel.IsChainDisablable(ev)",
+        "Duel.NegateEffect(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        "Duel.BreakEffect()",
+        "Duel.Damage(1-tp,1000,REASON_EFFECT)",
+        'eventName: "chainNegated"',
+        'eventName: "damageDealt"',
+        'host.messages).not.toContain("gustav rocket starter resolved")',
       ],
     },
     {
@@ -810,6 +836,7 @@ function countNegationSemanticVariants(
       effectVeilerHandQuickDisableChainLink: 0,
       faceOffDamagePhaseCurrentPhaseNegateDestroy: 0,
       gagagarushTargetMonsterNegateDamage: 0,
+      gustavRocketOverlayMonsterNegateDamage: 0,
       ghostOgreDestroyOnlyNoNegation: 0,
       gGolemDignifiedTargetedLinkNegateDestroy: 0,
       giltiGearfriedTargetedChainNegateDestroy: 0,
