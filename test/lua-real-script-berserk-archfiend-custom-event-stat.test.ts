@@ -28,7 +28,7 @@ const attributeDark = 0x20;
 const attributeLight = 0x10;
 
 describe.skipIf(!hasUpstreamScripts || !hasBerserkScript)("Lua real script Berserk Archfiend custom event stat", () => {
-  it.fails("restores SelectUnselectGroup self summon into operated destroy count custom-event missed timing", () => {
+  it("restores SelectUnselectGroup self summon into operated destroy count custom-event missed timing", () => {
     const workspace = createUpstreamNodeWorkspace(createUpstreamSourceConfig(upstreamRoot));
     const script = workspace.readScript(`official/c${berserkCode}.lua`);
     expectScriptShape(script);
