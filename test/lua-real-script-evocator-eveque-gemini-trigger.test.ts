@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
           "sequence": 0,
         },
         "eventName": "normalSummoned",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": true,
@@ -112,6 +113,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ev
         ],
         "player": 0,
         "sourceUid": "p0-deck-16146511-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p0-deck-3918345-1",
         ],

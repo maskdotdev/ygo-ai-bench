@@ -88,6 +88,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStarLeonScript)("Lua real script Gold
         player: 0,
         activationLocation: "monsterZone",
         activationSequence: 0,
+        targetFieldIds: [5],
         targetUids: [target.uid],
         operationInfos: [{ category: 0x200000, targetUids: [starLeon.uid], count: 1, player: 0, parameter: 2100 }],
         possibleOperationInfos: [{ category: 0x1, targetUids: [target.uid], count: 1, player: 0, parameter: 0 }],

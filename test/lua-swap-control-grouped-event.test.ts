@@ -71,8 +71,10 @@ describe("Lua SwapControl grouped events", () => {
     applyAndAssert(session, action!);
 
     expect(host.messages).toEqual(expect.arrayContaining(["swap reason result true", "swap reason self true/true", "swap reason opponent true/true"]));
-    expect(selfTarget).toMatchObject({ controller: 1, reasonCardUid: source!.uid, reasonEffectId: 1 });
-    expect(opponentTarget).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    const movedSelfTarget = session.state.cards.find((card) => card.uid === selfTarget!.uid);
+    const movedOpponentTarget = session.state.cards.find((card) => card.uid === opponentTarget!.uid);
+    expect(movedSelfTarget).toMatchObject({ controller: 1, reasonCardUid: source!.uid, reasonEffectId: 1 });
+    expect(movedOpponentTarget).toMatchObject({ controller: 0, reasonCardUid: source!.uid, reasonEffectId: 1 });
     expect(session.state.pendingTriggers).toContainEqual(expect.objectContaining({ eventName: "controlChanged", eventCardUid: selfTarget!.uid, eventReasonCardUid: source!.uid, eventReasonEffectId: 1 }));
     const trigger = getDuelLegalActions(session, 0).find((candidate) => candidate.type === "activateTrigger");
     expect(trigger).toBeDefined();

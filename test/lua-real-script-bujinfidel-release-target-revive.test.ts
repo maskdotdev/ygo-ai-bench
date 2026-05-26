@@ -101,6 +101,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBujinfidelScript)("Lua real script Bu
         operationInfos: [{ category: 0x200, targetUids: [revive.uid], count: 1, player: 0, parameter: 0 }],
         player: 0,
         sourceUid: bujinfidel.uid,
+        targetFieldIds: [9],
         targetUids: [revive.uid],
       },
     ]);

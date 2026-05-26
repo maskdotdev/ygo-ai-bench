@@ -85,6 +85,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
         eventCardUid: crimsonNinja.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventPlayer: 0,
         eventTriggerTiming: "when",
         eventPreviousState: {
           controller: 0,
@@ -126,6 +127,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
         eventCardUid: crimsonNinja.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventPlayer: 0,
         eventTriggerTiming: "when",
         eventPreviousState: {
           controller: 0,
@@ -141,6 +143,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
           position: "faceUpAttack",
           sequence: 0,
         },
+        targetFieldIds: [5],
         targetUids: [trapTarget.uid],
       },
     ]);

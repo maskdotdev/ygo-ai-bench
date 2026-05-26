@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { currentAttack } from "#duel/card-stats.js";
 import { moveDuelCard } from "#duel/card-state.js";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, serializeDuel, startDuel } from "#duel/core.js";
+import { duelReason } from "#duel/reasons.js";
 import type { DuelAction, DuelCardData, DuelResponse, DuelSession, PlayerId } from "#duel/types.js";
 import { createCardReader, createUpstreamSourceConfig } from "#engine/data-loaders.js";
 import { createUpstreamNodeWorkspace } from "#engine/upstream-node.js";
@@ -94,6 +95,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSalamandraScript)("Lua real script Sa
       ],
       player: 0,
       sourceUid: salamandra.uid,
+      targetFieldIds: [7],
       targetUids: [fireTarget.uid],
     });
     expect(restoredEquipWindow.session.state.chain[0]?.targetUids).not.toContain(waterDecoy.uid);
@@ -133,6 +135,32 @@ describe.skipIf(!hasUpstreamScripts || !hasSalamandraScript)("Lua real script Sa
     passBattleResponses(restoredEquipState.session);
 
     expect(restoredEquipState.session.state.battleDamage[1]).toBe(200);
+    expect(restoredEquipState.session.state.eventHistory.filter((event) => event.eventName === "battleDamageDealt")).toEqual([
+      {
+        eventName: "battleDamageDealt",
+        eventCode: 1143,
+        eventCardUid: restoredFireTarget.uid,
+        eventPlayer: 1,
+        eventValue: 200,
+        eventReason: duelReason.battle,
+        eventReasonCardUid: restoredFireTarget.uid,
+        eventReasonPlayer: 0,
+        eventPreviousState: {
+          controller: 0,
+          faceUp: false,
+          location: "deck",
+          position: "faceDown",
+          sequence: 2,
+        },
+        eventCurrentState: {
+          controller: 0,
+          faceUp: true,
+          location: "monsterZone",
+          position: "faceUpAttack",
+          sequence: 0,
+        },
+      },
+    ]);
     expect(restoredEquipState.session.state.players[1].lifePoints).toBe(7800);
     expect(restoredEquipState.session.state.cards.find((card) => card.uid === restoredOpponentTarget.uid)).toMatchObject({ location: "graveyard" });
     expect(restoredEquipState.session.state.cards.find((card) => card.uid === restoredFireTarget.uid)).toMatchObject({ location: "monsterZone" });

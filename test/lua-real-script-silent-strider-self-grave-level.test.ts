@@ -92,6 +92,7 @@ describe.skipIf(!hasUpstreamScripts || !hasSilentStriderScript)("Lua real script
         player: 0,
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [6],
         targetUids: [target.uid],
       },
     ]);

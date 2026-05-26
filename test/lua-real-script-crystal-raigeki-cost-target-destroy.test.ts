@@ -113,6 +113,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Cr
         activationLocation: "spellTrapZone",
         activationSequence: 0,
         operationInfos: [{ category: 0x1, targetUids: [opponentTarget.uid], count: 1, player: 0, parameter: 0 }],
+        targetFieldIds: [10],
         targetUids: [opponentTarget.uid],
       },
     ]);

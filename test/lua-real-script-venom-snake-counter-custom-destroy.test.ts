@@ -93,6 +93,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
       operationInfos: [{ category: categoryCounter, count: 1, parameter: 0, player: 0, targetUids: [] }],
       player: 0,
       sourceUid: snake.uid,
+      targetFieldIds: [6],
       targetUids: [target.uid],
     });
     expect(restoredOpen.session.state.effects.filter((effect) => effect.sourceUid === snake.uid && effect.code === effectCannotAttackAnnounce)).toHaveLength(1);
@@ -146,6 +147,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ve
       player: 0,
       relatedEffectId: 1,
       sourceUid: swamp.uid,
+      targetFieldIds: [6],
       targetUids: [target.uid],
     });
     expectRestoredLegalActions(restoredTrigger, 1);

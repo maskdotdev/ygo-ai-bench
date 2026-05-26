@@ -112,6 +112,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
         eventCode: 1014,
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceDown", sequence: 0 },
         eventName: "sentToGraveyard",
+        eventPlayer: 0,
         eventPreviousState: { controller: 0, faceUp: false, location: "spellTrapZone", position: "faceDown", sequence: 1 },
         eventReason: duelReason.effect | duelReason.destroy,
         eventReasonCardUid: destroyer.uid,
@@ -144,6 +145,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
         eventCode: 1014,
         eventCurrentState: { controller: 0, faceUp: true, location: "graveyard", position: "faceDown", sequence: 0 },
         eventName: "sentToGraveyard",
+        eventPlayer: 0,
         eventPreviousState: { controller: 0, faceUp: false, location: "spellTrapZone", position: "faceDown", sequence: 1 },
         eventReason: duelReason.effect | duelReason.destroy,
         eventReasonCardUid: destroyer.uid,
@@ -154,6 +156,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Dr
         operationInfos: [{ category: 0x1, targetUids: [targetSpell.uid], count: 1, player: 0, parameter: 0 }],
         player: 0,
         sourceUid: drivingSnow.uid,
+        targetFieldIds: [10],
         targetUids: [targetSpell.uid],
       },
     ]);

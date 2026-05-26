@@ -90,6 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasRivalAppearsScript)("Lua real script 
         operationInfos: [{ category: 0x200, targetUids: [], count: 1, player: 0, parameter: 0x2 }],
         player: 0,
         sourceUid: rival.uid,
+        targetFieldIds: [7],
         targetUids: [opponent.uid],
       },
     ]);

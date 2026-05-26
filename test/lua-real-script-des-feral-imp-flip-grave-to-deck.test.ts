@@ -100,6 +100,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
         eventCardUid: imp.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventPlayer: 0,
         eventTriggerTiming: "when",
         eventPreviousState: {
           controller: 0,
@@ -139,6 +140,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
         eventCardUid: imp.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
+        eventPlayer: 0,
         eventTriggerTiming: "when",
         eventPreviousState: {
           controller: 0,
@@ -154,6 +156,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script De
           position: "faceUpAttack",
           sequence: 0,
         },
+        targetFieldIds: [5],
         targetUids: [target.uid],
         operationInfos: [{ category: 0x10, targetUids: [target.uid], count: 1, player: 0, parameter: 0 }],
       },

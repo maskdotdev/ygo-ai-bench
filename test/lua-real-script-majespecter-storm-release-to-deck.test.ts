@@ -106,6 +106,7 @@ describe.skipIf(!hasUpstreamScripts || !hasStormScript)("Lua real script Majespe
         effectId: "lua-1-1002",
         activationLocation: "hand",
         activationSequence: 0,
+        targetFieldIds: [10],
         targetUids: [deckTarget.uid],
         operationInfos: [{ category: 0x10, targetUids: [deckTarget.uid], count: 1, player: 0, parameter: 0 }],
       },

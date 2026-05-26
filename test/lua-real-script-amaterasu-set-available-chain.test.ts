@@ -100,6 +100,9 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
         ],
         "player": 1,
         "sourceUid": "p1-deck-71044499-0",
+        "targetFieldIds": [
+          5,
+        ],
         "targetUids": [
           "p0-deck-20073910-0",
         ],
@@ -130,6 +133,28 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Am
         "activationSequence": 0,
         "chainIndex": 2,
         "effectId": "lua-7-1027",
+        "eventCardUid": "p1-deck-71044499-0",
+        "eventChainDepth": 1,
+        "eventChainLinkId": "chain-2",
+        "eventCode": 1027,
+        "eventCurrentState": {
+          "controller": 1,
+          "faceUp": true,
+          "location": "spellTrapZone",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventName": "chaining",
+        "eventPlayer": 1,
+        "eventPreviousState": {
+          "controller": 1,
+          "faceUp": false,
+          "location": "hand",
+          "position": "faceDown",
+          "sequence": 0,
+        },
+        "eventReasonPlayer": 1,
+        "eventValue": 1,
         "id": "chain-4",
         "operationInfos": [
           {
