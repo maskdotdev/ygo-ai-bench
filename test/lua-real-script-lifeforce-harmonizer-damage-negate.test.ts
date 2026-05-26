@@ -79,9 +79,24 @@ describe.skipIf(!hasUpstreamScripts || !hasHarmonizerScript)("Lua real script Li
     expect(harmonizerAction, JSON.stringify(getLuaRestoreLegalActions(restoredOpenChain, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredOpenChain, harmonizerAction!);
     expect(restoredOpenChain.session.state.chain).toHaveLength(2);
-    expect(restoredOpenChain.session.state.chain[1]).toMatchObject({
+    expect(restoredOpenChain.session.state.chain[1]).toEqual({
+      id: "chain-4",
+      chainIndex: 2,
       effectId: "lua-1-1027",
       sourceUid: harmonizer.uid,
+      player: 0,
+      activationLocation: "hand",
+      activationSequence: 0,
+      eventName: "chaining",
+      eventCode: 1027,
+      eventCardUid: burnSpell.uid,
+      eventPlayer: 1,
+      eventValue: 1,
+      eventReasonPlayer: 1,
+      eventChainDepth: 1,
+      eventChainLinkId: "chain-2",
+      eventPreviousState: { controller: 1, faceUp: false, location: "hand", position: "faceDown", sequence: 0 },
+      eventCurrentState: { controller: 1, faceUp: true, location: "spellTrapZone", position: "faceDown", sequence: 0 },
       operationInfos: [
         { category: 0x10000000, targetUids: [burnSpell.uid], count: 1, player: 0, parameter: 0 },
         { category: 0x1, targetUids: [burnSpell.uid], count: 1, player: 0, parameter: 0 },

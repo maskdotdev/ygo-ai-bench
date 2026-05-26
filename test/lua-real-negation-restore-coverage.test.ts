@@ -4,17 +4,17 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 26;
-const chainResponseNegationFixtureCount = 21;
+const negationFixtureCount = 27;
+const chainResponseNegationFixtureCount = 22;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 30;
+const negationInventoryFixtureCount = 31;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
   chainNegateToGrave: 18,
-  handTrapChainNegate: 1,
+  handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
 const destroyOnlyResponseKindCounts = {
@@ -38,6 +38,7 @@ const negationSemanticVariantCounts = {
   heraldPerfectionDamageCalculationNegateDestroy: 1,
   ironCoreLusterConfirmCostNegateDestroy: 1,
   lightImprisoningMirrorContinuousChainActivatingNegate: 1,
+  lifeforceHarmonizerDamageOperationNegate: 1,
   magicJammerDiscardSpellNegateDestroy: 1,
   mysticalSpaceTyphoonDestroyOnlyNoNegation: 1,
   overwhelmTributeGateTrapNegateDestroy: 1,
@@ -82,6 +83,7 @@ type NegationSemanticVariant =
   | "heraldPerfectionDamageCalculationNegateDestroy"
   | "ironCoreLusterConfirmCostNegateDestroy"
   | "lightImprisoningMirrorContinuousChainActivatingNegate"
+  | "lifeforceHarmonizerDamageOperationNegate"
   | "magicJammerDiscardSpellNegateDestroy"
   | "mysticalSpaceTyphoonDestroyOnlyNoNegation"
   | "overwhelmTributeGateTrapNegateDestroy"
@@ -228,6 +230,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-gustav-rocket-overlay-negate-damage.test.ts",
     "lua-real-script-herald-perfection-damage-cal-negate.test.ts",
     "lua-real-script-iron-core-luster-confirm-negate.test.ts",
+    "lua-real-script-lifeforce-harmonizer-damage-negate.test.ts",
     "lua-real-script-magic-jammer-chain-negate.test.ts",
     "lua-real-script-mystical-space-typhoon-free-chain.test.ts",
     "lua-real-script-overwhelm-tribute-chain-negate.test.ts",
@@ -322,6 +325,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     {
       file: "lua-real-script-iron-core-luster-confirm-negate.test.ts",
       kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-lifeforce-harmonizer-damage-negate.test.ts",
+      kind: "handTrapChainNegate",
     },
     {
       file: "lua-real-script-magic-jammer-chain-negate.test.ts",
@@ -617,6 +624,25 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-lifeforce-harmonizer-damage-negate.test.ts",
+      kind: "lifeforceHarmonizerDamageOperationNegate",
+      required: [
+        'const harmonizerCode = "76214441"',
+        "restores hand SelfDiscard negation of a damage operation and suppresses the burn",
+        "--Lifeforce Harmonizer",
+        "e1:SetCost(Cost.SelfDiscard)",
+        "Duel.GetOperationInfo(ev,CATEGORY_DAMAGE)",
+        "Duel.GetOperationInfo(ev,CATEGORY_RECOVER)",
+        "Duel.IsPlayerAffectedByEffect(cp,EFFECT_REVERSE_RECOVER)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        "operationInfos: [{ category: 0x80000",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        'host.messages).not.toContain("lifeforce burn resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-magic-jammer-chain-negate.test.ts",
       kind: "magicJammerDiscardSpellNegateDestroy",
       required: [
@@ -843,6 +869,7 @@ function countNegationSemanticVariants(
       heraldPerfectionDamageCalculationNegateDestroy: 0,
       ironCoreLusterConfirmCostNegateDestroy: 0,
       lightImprisoningMirrorContinuousChainActivatingNegate: 0,
+      lifeforceHarmonizerDamageOperationNegate: 0,
       magicJammerDiscardSpellNegateDestroy: 0,
       mysticalSpaceTyphoonDestroyOnlyNoNegation: 0,
       overwhelmTributeGateTrapNegateDestroy: 0,
