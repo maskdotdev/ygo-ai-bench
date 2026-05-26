@@ -4,12 +4,13 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const directDamageFixtureCount = 16;
+const directDamageFixtureCount = 17;
 const directDamageKindCounts = {
   allPlayerDelayedDamage: 1,
   battleDestroyedChainInfoDamage: 1,
   chainSolvedActiveTypeDamage: 1,
   continuousCostTargetParamDamage: 1,
+  eventDestroyedChainInfoDamage: 1,
   eventToGraveChainInfoDamage: 3,
   fieldCountTargetPlayerDamage: 3,
   targetParamDamage: 4,
@@ -21,6 +22,7 @@ const directDamageSemanticVariantCounts = {
   backfireEventToGraveChainInfoDamage: 1,
   cannonSoldierReleaseCostTargetParamDamage: 1,
   elephantStatueOpponentEffectBurn: 1,
+  glacialBeastNarwhalDestroyedMonsterBurn: 1,
   duelAcademiaSpellChainSolvedDamage: 1,
   finalFlameTargetParamDamage: 1,
   hinotamaTargetParamDamage: 1,
@@ -40,6 +42,7 @@ type DirectDamageKind =
   | "battleDestroyedChainInfoDamage"
   | "chainSolvedActiveTypeDamage"
   | "continuousCostTargetParamDamage"
+  | "eventDestroyedChainInfoDamage"
   | "eventToGraveChainInfoDamage"
   | "fieldCountTargetPlayerDamage"
   | "lpConditionTargetParamDamage"
@@ -51,6 +54,7 @@ type DirectDamageSemanticVariant =
   | "cannonSoldierReleaseCostTargetParamDamage"
   | "duelAcademiaSpellChainSolvedDamage"
   | "elephantStatueOpponentEffectBurn"
+  | "glacialBeastNarwhalDestroyedMonsterBurn"
   | "finalFlameTargetParamDamage"
   | "hinotamaTargetParamDamage"
   | "justDessertsMonsterCountResolutionDamage"
@@ -165,6 +169,22 @@ function directDamageFixtureFiles(): Array<{ file: string; kind: DirectDamageKin
         "targetParam: 2000",
         "targetPlayer: 1",
         "players[1].lifePoints).toBe(6000)",
+      ],
+    },
+    {
+      file: "test/lua-real-script-glacial-beast-narwhal-destroyed-burn.test.ts",
+      kind: "eventDestroyedChainInfoDamage",
+      required: [
+        'const narwhalCode = "6568731"',
+        "restores its opponent-effect destroyed monster trigger and burns the targeted opponent for 600",
+        "e1:SetCode(EVENT_DESTROYED)",
+        "c:IsPreviousControler(tp) and c:IsPreviousLocation(LOCATION_MZONE) and c:IsReason(REASON_DESTROY)",
+        "c:IsReason(REASON_EFFECT) and c:GetReasonPlayer()==1-tp",
+        "Duel.SetTargetPlayer(1-tp)",
+        "Duel.SetTargetParam(600)",
+        "Duel.GetChainInfo(0,CHAININFO_TARGET_PLAYER,CHAININFO_TARGET_PARAM)",
+        "Duel.SetOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,600)",
+        "players[1].lifePoints).toBe(7400)",
       ],
     },
     {
@@ -381,6 +401,17 @@ function directDamageSemanticVariants(): Array<{ file: string; kind: DirectDamag
       ],
     },
     {
+      file: "test/lua-real-script-glacial-beast-narwhal-destroyed-burn.test.ts",
+      kind: "glacialBeastNarwhalDestroyedMonsterBurn",
+      required: [
+        "eventName: \"destroyed\"",
+        "eventName: \"damageDealt\"",
+        "eventValue: 600",
+        "eventReasonCardUid: narwhal.uid",
+        "narwhal starter resolved",
+      ],
+    },
+    {
       file: "test/lua-real-script-final-flame-direct-damage.test.ts",
       kind: "finalFlameTargetParamDamage",
       required: [
@@ -526,6 +557,7 @@ function countDirectDamageKinds(fixtures: Array<{ kind: DirectDamageKind }>): Re
       battleDestroyedChainInfoDamage: 0,
       chainSolvedActiveTypeDamage: 0,
       continuousCostTargetParamDamage: 0,
+      eventDestroyedChainInfoDamage: 0,
       eventToGraveChainInfoDamage: 0,
       fieldCountTargetPlayerDamage: 0,
       targetParamDamage: 0,
@@ -547,6 +579,7 @@ function countDirectDamageSemanticVariants(fixtures: Array<{ kind: DirectDamageS
       cannonSoldierReleaseCostTargetParamDamage: 0,
       duelAcademiaSpellChainSolvedDamage: 0,
       elephantStatueOpponentEffectBurn: 0,
+      glacialBeastNarwhalDestroyedMonsterBurn: 0,
       finalFlameTargetParamDamage: 0,
       hinotamaTargetParamDamage: 0,
       justDessertsMonsterCountResolutionDamage: 0,
