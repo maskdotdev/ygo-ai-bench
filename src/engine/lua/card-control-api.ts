@@ -26,17 +26,18 @@ function pushCanChangeControler(L: unknown, fieldName: string, session: DuelSess
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const targetPlayer = lua.lua_isnumber(state, 2) ? normalizePlayer(lua.lua_tointeger(state, 2)) : card ? otherPlayer(card.controller) : undefined;
-    lua.lua_pushboolean(state, Boolean(card && targetPlayer !== undefined && canChangeControl(session.state, card, targetPlayer)));
+    const ignoreMonsterZoneAvailability = lua.lua_isboolean(state, 2) && lua.lua_toboolean(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && targetPlayer !== undefined && canChangeControl(session.state, card, targetPlayer, ignoreMonsterZoneAvailability)));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring(fieldName));
 }
 
-function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer: PlayerId): boolean {
+function canChangeControl(state: DuelState, card: DuelCardInstance, targetPlayer: PlayerId, ignoreMonsterZoneAvailability = false): boolean {
   if (card.controller === targetPlayer) return false;
   if (card.location !== "monsterZone" && card.location !== "spellTrapZone") return false;
   if (isControlChangePrevented(state, card, createLuaMaterialCheckContext(state))) return false;
-  if (card.location === "monsterZone") return availableForcedMonsterZoneCount(state, targetPlayer, [card.uid], 0, locationReasonControl, card) > 0;
+  if (card.location === "monsterZone") return ignoreMonsterZoneAvailability || availableForcedMonsterZoneCount(state, targetPlayer, [card.uid], 0, locationReasonControl, card) > 0;
   return hasZoneSpace(state, targetPlayer, card.location);
 }
 
