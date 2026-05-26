@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 341;
+export const operationFixtureCount = 342;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -10,6 +10,7 @@ export const operationKindCounts = {
   attackAnnounceSelectEffectStatImmune: 1,
   handSummonOptionalDrawQuickFinalHalve: 1,
   equipCountTargetNegateStat: 1,
+  equipTargetDefense: 1,
   loadedScriptEquipQuickNegateFinalStat: 1,
   fusionSummonTriggerAttributeNegateStat: 1,
   handProcedureBaseStatDirectAttack: 1,
@@ -284,6 +285,7 @@ export type OperationKind =
   | "attackAnnounceSelectEffectStatImmune"
   | "handSummonOptionalDrawQuickFinalHalve"
   | "equipCountTargetNegateStat"
+  | "equipTargetDefense"
   | "loadedScriptEquipQuickNegateFinalStat"
   | "fusionSummonTriggerAttributeNegateStat"
   | "handProcedureBaseStatDirectAttack"
@@ -3357,6 +3359,27 @@ export function operationFixtureFiles(): Array<{
         'api: "SelectOption"',
         'eventName: "lifePointCostPaid"',
         'eventName: "sentToDeck"',
+      ],
+    },
+    {
+      file: "test/lua-real-script-soulbang-cannon-equip-defense.test.ts",
+      kind: "equipTargetDefense",
+      required: [
+        "restores hand equip targeting a Superheavy Samurai and grants the equipped monster 1000 DEF",
+        "--Superheavy Samurai Soulbang Cannon",
+        "e1:SetCategory(CATEGORY_EQUIP)",
+        "e1:SetRange(LOCATION_HAND|LOCATION_MZONE)",
+        "return c:IsFaceup() and c:IsSetCard(SET_SUPERHEAVY_SAMURAI)",
+        "Duel.GetLocationCount(tp,LOCATION_SZONE)>0",
+        "Duel.SelectTarget(tp,s.filter,tp,LOCATION_MZONE,0,1,1,e:GetHandler())",
+        "Duel.Equip(tp,c,tc,true)",
+        "e1:SetCode(EFFECT_EQUIP_LIMIT)",
+        "e2:SetCode(EFFECT_UPDATE_DEFENSE)",
+        "e2:SetValue(1000)",
+        "targetUids: [target.uid]",
+        "equippedToUid: target.uid",
+        "currentDefense(restoredTarget, restoredEquipState.session.state)).toBe(3000)",
+        "soulbang probe 3064425/30644250/true/3000",
       ],
     },
     {
@@ -6777,6 +6800,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       attackAnnounceSelectEffectStatImmune: 0,
       handSummonOptionalDrawQuickFinalHalve: 0,
       equipCountTargetNegateStat: 0,
+      equipTargetDefense: 0,
       loadedScriptEquipQuickNegateFinalStat: 0,
       fusionSummonTriggerAttributeNegateStat: 0,
       handProcedureBaseStatDirectAttack: 0,
