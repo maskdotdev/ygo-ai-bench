@@ -59,6 +59,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-mark-rose-equip-control.test.ts"
 // Restore ownership: "test/lua-real-script-neo-galaxy-eyes-cipher-dragon-detach-group-control-stat-code.test.ts"
 // Restore ownership: "test/lua-real-script-missing-force-release-control-lock.test.ts"
+// Restore ownership: "test/lua-real-script-mind-castlin-synchro-swap-control.test.ts"
 // Restore ownership: "test/lua-real-script-mind-pollutant-discard-level-control.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-armor-battle-protect-control-summon.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-cerberus-flip-control.test.ts"
@@ -101,7 +102,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 53;
+const controlFixtureCount = 54;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -125,6 +126,7 @@ const controlKindCounts = {
   groupSwapControl: 1,
   linkedZoneControlRevive: 1,
   linkedGroupSwapProtect: 1,
+  synchroGraveSwapControl: 1,
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
@@ -186,6 +188,7 @@ type ControlKind =
   | "groupSwapControl"
   | "linkedZoneControlRevive"
   | "linkedGroupSwapProtect"
+  | "synchroGraveSwapControl"
   | "ownedControlAttackDrain"
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
@@ -534,6 +537,27 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.SetTargetCard(eg)",
         "Duel.GetControl(tc,tp)",
         'eventName: "banished"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-mind-castlin-synchro-swap-control.test.ts",
+      kind: "synchroGraveSwapControl",
+      required: [
+        'const mindCastlinCode = "12172567"',
+        "--Mind Castlin",
+        "Synchro.AddProcedure(c,nil,1,1,Synchro.NonTuner(nil),1,99)",
+        "e1:SetType(EFFECT_TYPE_IGNITION)",
+        "Duel.SelectTarget(tp,s.ctfilter,tp,0,LOCATION_MZONE,1,1,nil,tp)",
+        "Duel.SwapControl(c,tc)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "return c:IsPreviousLocation(LOCATION_MZONE) and c:IsSynchroSummoned()",
+        "aux.SelectUnselectGroup(g,e,tp,2,2,aux.dpcheck(Card.GetControler),1,tp,HINTMSG_CONTROL)",
+        "Duel.SetTargetCard(tg)",
+        "Duel.GetTargetCards(e)",
+        "Duel.SwapControl(tg:GetFirst(),tg:GetNext())",
+        'eventName: "sentToGraveyard"',
         'eventName: "controlChanged"',
         "previousController: 1",
       ],
@@ -1147,6 +1171,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       groupSwapControl: 0,
       linkedZoneControlRevive: 0,
       linkedGroupSwapProtect: 0,
+      synchroGraveSwapControl: 0,
       ownedControlAttackDrain: 0,
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
