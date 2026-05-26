@@ -54,6 +54,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-magi-magi-detach-banish-control.test.ts"
 // Restore ownership: "test/lua-real-script-magic-gate-miracles-position-control-protect.test.ts"
 // Restore ownership: "test/lua-real-script-mark-rose-equip-control.test.ts"
+// Restore ownership: "test/lua-real-script-neo-galaxy-eyes-cipher-dragon-detach-group-control-stat-code.test.ts"
 // Restore ownership: "test/lua-real-script-mind-pollutant-discard-level-control.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-armor-battle-protect-control-summon.test.ts"
 // Restore ownership: "test/lua-real-script-mimighoul-cerberus-flip-control.test.ts"
@@ -95,7 +96,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 47;
+const controlFixtureCount = 48;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -105,6 +106,7 @@ const controlKindCounts = {
   chainControlToken: 1,
   cannotChangeControl: 1,
   confirmDamageGroupControl: 1,
+  detachGroupControlStatCode: 1,
   detachControlStatCode: 1,
   fusionSummonReleaseCostControl: 1,
   geminiCounterControlEndDestroy: 1,
@@ -160,6 +162,7 @@ type ControlKind =
   | "chainControlToken"
   | "cannotChangeControl"
   | "confirmDamageGroupControl"
+  | "detachGroupControlStatCode"
   | "detachControlStatCode"
   | "fusionSummonReleaseCostControl"
   | "geminiCounterControlEndDestroy"
@@ -390,6 +393,30 @@ function realScriptControlFixtureFiles(): Array<{
         "e:GetHandler():GetCardEffect(EFFECT_SET_CONTROL)",
         'eventName: "detachedMaterial"',
         'eventName: "becameTarget"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-neo-galaxy-eyes-cipher-dragon-detach-group-control-stat-code.test.ts",
+      kind: "detachGroupControlStatCode",
+      required: [
+        "restores variable detach count into operated-group control, negate, final ATK, code change, and direct-attack lock",
+        'const neoCipherCode = "12632096"',
+        "--Neo Galaxy-Eyes Cipher Dragon",
+        "Xyz.AddProcedure(c,nil,9,3)",
+        "e:GetHandler():GetOverlayGroup():IsExists(Card.IsSetCard,1,nil,SET_CIPHER)",
+        "e1:SetCost(Cost.DetachFromSelf(1,s.ctcostmax,function(e,og) e:SetLabel(#og) end))",
+        "Duel.GetMatchingGroupCount(aux.FaceupFilter(Card.IsAbleToChangeControler),tp,0,LOCATION_MZONE,nil)",
+        "Duel.GetLocationCount(tp,LOCATION_MZONE,tp,LOCATION_REASON_CONTROL)",
+        "Duel.SelectMatchingCard(tp,aux.FaceupFilter(Card.IsAbleToChangeControler),tp,0,LOCATION_MZONE,ct,ct,nil)",
+        "Duel.GetControl(g,tp,PHASE_END,1)",
+        "Duel.GetOperatedGroup()",
+        "tc:NegateEffects(c,RESET_CONTROL)",
+        "e1:SetCode(EFFECT_CANNOT_DIRECT_ATTACK)",
+        "e1:SetCode(EFFECT_SET_ATTACK_FINAL)",
+        "e2:SetCode(EFFECT_CHANGE_CODE)",
+        'eventName: "detachedMaterial"',
         'eventName: "controlChanged"',
         "previousController: 1",
       ],
@@ -976,6 +1003,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       chainControlToken: 0,
       cannotChangeControl: 0,
       confirmDamageGroupControl: 0,
+      detachGroupControlStatCode: 0,
       detachControlStatCode: 0,
       detachControlReleaseDestroy: 0,
       discardCostTemporaryControl: 0,
