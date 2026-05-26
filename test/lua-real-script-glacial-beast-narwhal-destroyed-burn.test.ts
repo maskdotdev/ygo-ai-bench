@@ -98,6 +98,9 @@ describe.skipIf(!hasUpstreamScripts || !hasNarwhalScript)("Lua real script Glaci
     const burn = getLuaRestoreLegalActions(restoredTrigger, 0).find((action) => action.type === "activateTrigger" && action.uid === narwhal.uid);
     expect(burn, JSON.stringify(getLuaRestoreLegalActions(restoredTrigger, 0), null, 2)).toBeDefined();
     applyRestoredActionAndAssert(restoredTrigger, burn!);
+    expect(restoredTrigger.session.state.chain[0]?.operationInfos).toEqual([
+      { category: 0x80000, targetUids: [], count: 0, player: 1, parameter: 600 },
+    ]);
     passRestoredChain(restoredTrigger);
 
     expect(restoredTrigger.session.state.chain).toHaveLength(0);

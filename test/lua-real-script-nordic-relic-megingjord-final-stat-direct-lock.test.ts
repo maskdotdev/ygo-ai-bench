@@ -94,6 +94,7 @@ describe.skipIf(!hasUpstreamScripts || !hasMegingjordScript)("Lua real script No
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: nordicTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

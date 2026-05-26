@@ -167,6 +167,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script To
           "event": "continuous",
           "id": "lua-9-82",
           "lifePointValue": [Function],
+          "luaTypeFlags": 2,
           "luaValueDescriptor": "change-damage:effect-double",
           "oncePerTurn": false,
           "operation": [Function],

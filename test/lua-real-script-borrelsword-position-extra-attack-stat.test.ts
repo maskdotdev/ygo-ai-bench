@@ -183,6 +183,7 @@ describe.skipIf(!hasUpstreamScripts || !hasBorrelswordScript)("Lua real script B
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: positionTarget.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

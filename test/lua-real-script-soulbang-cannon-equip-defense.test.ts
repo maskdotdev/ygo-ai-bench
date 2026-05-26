@@ -79,7 +79,23 @@ describe.skipIf(!hasUpstreamScripts || !hasSoulbangScript)("Lua real script Supe
         targetUids: [target.uid],
       },
     ]);
+    expect(restoredOpen.session.state.chain.flatMap((link) => link.operationInfos ?? [])).toEqual([]);
     expect(restoredOpen.session.state.chain[0]?.targetUids).not.toContain(decoy.uid);
+    expect(restoredOpen.session.state.eventHistory.filter((event) => event.eventName === "becameTarget")).toEqual([
+      {
+        eventName: "becameTarget",
+        eventCode: 1028,
+        eventValue: 1,
+        eventCardUid: target.uid,
+        eventReason: 0,
+        eventReasonPlayer: 0,
+        relatedEffectId: 1,
+        eventChainDepth: 1,
+        eventChainLinkId: "chain-2",
+        eventPreviousState: { controller: 0, faceUp: false, location: "deck", position: "faceDown", sequence: 2 },
+        eventCurrentState: { controller: 0, faceUp: true, location: "monsterZone", position: "faceUpDefense", sequence: 0 },
+      },
+    ]);
     expect(getLuaRestoreLegalActions(restoredOpen, 1).some((action) => action.type === "activateEffect" && action.uid === responder.uid)).toBe(true);
 
     const restoredChain = restoreDuelWithLuaScripts(serializeDuel(restoredOpen.session), source, reader);

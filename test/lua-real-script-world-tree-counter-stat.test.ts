@@ -201,6 +201,7 @@ function resolveRestoredChain(restored: ReturnType<typeof restoreDuelWithLuaScri
 function becameTargetEvent(cardUid: string) {
   return {
     eventName: "becameTarget",
+    eventValue: 1,
     eventCode: 1028,
     eventCardUid: cardUid,
     eventReason: 0,

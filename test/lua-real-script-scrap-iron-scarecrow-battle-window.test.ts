@@ -86,6 +86,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
           "sequence": 0,
         },
         "eventName": "attackDeclared",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
@@ -135,6 +136,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Sc
           "sequence": 0,
         },
         "eventName": "attackDeclared",
+        "eventPlayer": 0,
         "eventPreviousState": {
           "controller": 0,
           "faceUp": false,
