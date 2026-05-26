@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const statFixtureCount = 663; const statKindCounts = {
+const statFixtureCount = 664; const statKindCounts = {
   battleAttackerTargetSwing: 1,
   battleTargetHandSummonRevealSpellAttackSetStat: 1,
   battleStartOverlayExtraAttackUpdate: 1,
@@ -133,6 +133,7 @@ const statFixtureCount = 663; const statKindCounts = {
   amazementAbominationArlekinoSummonSearchToDeckStat: 1,
   gatewaySixCounterSearchSummonStat: 1,
   signalWarriorCounterSelectEffectStat: 1,
+  darkStringsCounterDestroyDrawDamageStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -614,6 +615,7 @@ const statSemanticVariantCounts = { aForcesMatchingRaceCountStat: 1,
   amazementAbominationArlekinoSummonSearchToDeckStat: 1,
   gatewaySixCounterSearchSummonStat: 1,
   signalWarriorCounterSelectEffectStat: 1,
+  darkStringsCounterDestroyDrawDamageStat: 1,
   filiaDiabellSearchSummonBanishAttackStat: 1,
   maleficParadigmShiftHandFieldSummonStat: 1,
   lunalightPerfumeDancerFusionSearchBounceStat: 1,
@@ -1042,6 +1044,7 @@ type ExtraStatKind =
   | "amazementAbominationArlekinoSummonSearchToDeckStat"
   | "gatewaySixCounterSearchSummonStat"
   | "signalWarriorCounterSelectEffectStat"
+  | "darkStringsCounterDestroyDrawDamageStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -1579,6 +1582,7 @@ type ExtraStatSemanticVariant =
   | "amazementAbominationArlekinoSummonSearchToDeckStat"
   | "gatewaySixCounterSearchSummonStat"
   | "signalWarriorCounterSelectEffectStat"
+  | "darkStringsCounterDestroyDrawDamageStat"
   | "filiaDiabellSearchSummonBanishAttackStat"
   | "maleficParadigmShiftHandFieldSummonStat"
   | "lunalightPerfumeDancerFusionSearchBounceStat"
@@ -3042,6 +3046,34 @@ function statFixtureFiles(): Array<{
         "eventName: \"damageDealt\"",
         "eventName === \"destroyed\"",
         "api: \"SelectEffect\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-strings-counter-destroy-draw-damage.test.ts",
+      kind: "darkStringsCounterDestroyDrawDamageStat",
+      required: [
+        'const darkStringsCode = "69170557"',
+        "Number C40: Gimmick Puppet of Dark Strings",
+        "restores detach counter placement and Special Summon destroy-draw-damage trigger",
+        "Xyz.AddProcedure(c,nil,9,3)",
+        "CATEGORY_DESTROY+CATEGORY_DRAW+CATEGORY_DAMAGE",
+        "EVENT_SPSUMMON_SUCCESS",
+        "Duel.SetOperationInfo(0,CATEGORY_DESTROY,g,#g,0,0)",
+        "Duel.GetOperatedGroup():Filter(Card.IsLocation,nil,LOCATION_GRAVE)",
+        "Duel.Draw(tp,1,REASON_EFFECT)",
+        "Duel.BreakEffect()",
+        "og:GetMaxGroup(Card.GetBaseAttack)",
+        "Duel.Damage(1-tp,matk,REASON_EFFECT)",
+        "Cost.DetachFromSelf(1)",
+        "Duel.GetMatchingGroup(Card.IsFaceup,tp,0,LOCATION_MZONE,nil)",
+        "tc:AddCounter(0x1024,1)",
+        "getDuelCardCounter",
+        "eventName: \"detachedMaterial\"",
+        "eventName: \"counterAdded\"",
+        "eventName: \"cardsDrawn\"",
+        "eventName: \"breakEffect\"",
+        "eventName: \"damageDealt\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -13072,6 +13104,7 @@ function countStatKinds(fixtures: Array<{ kind: CoveredStatKind }>): Record<Cove
       amazementAbominationArlekinoSummonSearchToDeckStat: 0,
       gatewaySixCounterSearchSummonStat: 0,
       signalWarriorCounterSelectEffectStat: 0,
+      darkStringsCounterDestroyDrawDamageStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
@@ -14578,6 +14611,25 @@ function statSemanticVariants(): Array<{
         "eventName: \"damageDealt\"",
         "eventName === \"destroyed\"",
         "api: \"SelectEffect\"",
+        "battleDamage).toEqual({ 0: 0, 1: 0 })",
+      ],
+    },
+    {
+      file: "test/lua-real-script-dark-strings-counter-destroy-draw-damage.test.ts",
+      kind: "darkStringsCounterDestroyDrawDamageStat",
+      required: [
+        'const darkStringsCode = "69170557"',
+        "Number C40: Gimmick Puppet of Dark Strings",
+        "EVENT_SPSUMMON_SUCCESS",
+        "Duel.GetOperatedGroup():Filter(Card.IsLocation,nil,LOCATION_GRAVE)",
+        "Duel.Draw(tp,1,REASON_EFFECT)",
+        "Duel.BreakEffect()",
+        "og:GetMaxGroup(Card.GetBaseAttack)",
+        "Duel.Damage(1-tp,matk,REASON_EFFECT)",
+        "Cost.DetachFromSelf(1)",
+        "eventName: \"counterAdded\"",
+        "eventName: \"cardsDrawn\"",
+        "eventName: \"damageDealt\"",
         "battleDamage).toEqual({ 0: 0, 1: 0 })",
       ],
     },
@@ -19940,6 +19992,7 @@ function countStatSemanticVariants(fixtures: Array<{ kind: CoveredStatSemanticVa
       amazementAbominationArlekinoSummonSearchToDeckStat: 0,
       gatewaySixCounterSearchSummonStat: 0,
       signalWarriorCounterSelectEffectStat: 0,
+      darkStringsCounterDestroyDrawDamageStat: 0,
       filiaDiabellSearchSummonBanishAttackStat: 0,
       maleficParadigmShiftHandFieldSummonStat: 0,
       lunalightPerfumeDancerFusionSearchBounceStat: 0,
