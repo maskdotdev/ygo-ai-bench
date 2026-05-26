@@ -396,7 +396,7 @@ function fusionSummonSelectedMaterials(
   const materials = materialUids.map((uid) => session.state.cards.find((candidate) => candidate.uid === uid));
   if (
     availableMonsterZoneCount(session, summonPlayer, materialUids) <= 0 ||
-    !canPlayerSpecialSummon(session.state, summonPlayer, target, luaSummonTypeFusion) ||
+    !canPlayerSpecialSummon(session.state, summonPlayer, target, luaSummonTypeFusion, hostState.activeLuaEffectId) ||
     !canMoveDuelCardToLocation(session.state, target.uid, "monsterZone", duelReason.summon | duelReason.specialSummon | duelReason.fusion) ||
     !selectedFusionMaterialsMatch(session, target, materials)
   ) {

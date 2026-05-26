@@ -978,7 +978,7 @@ function isDestinationRedirectCode(code: number | undefined, destination: DuelLo
 }
 
 function isFieldLocation(location: DuelLocation): boolean {
-  return location === "monsterZone" || location === "spellTrapZone";
+  return location === "monsterZone" || location === "spellTrapZone" || location === "fieldZone";
 }
 
 export function continuousEffectAffectsCard(effect: DuelEffectDefinition, source: DuelCardInstance, card: DuelCardInstance): boolean {
@@ -1028,6 +1028,7 @@ function continuousEffectTargetsCardLocation(effect: DuelEffectDefinition, sourc
 
 function locationMaskMatchesCard(card: DuelCardInstance, mask: number): boolean {
   if ((mask & locationMaskFromLocation(card.location)) !== 0) return true;
+  if ((mask & 0x100) !== 0 && card.location === "fieldZone") return true;
   if ((mask & 0x200) !== 0 && card.location === "spellTrapZone" && (card.sequence === 0 || card.sequence === 1)) return true;
   if ((mask & 0x400) !== 0 && card.location === "spellTrapZone") return true;
   if ((mask & 0x800) !== 0 && card.location === "monsterZone" && card.sequence >= 0 && card.sequence <= 4) return true;
@@ -1039,6 +1040,7 @@ function locationMaskFromLocation(location: DuelLocation): number {
   if (location === "hand") return 0x02;
   if (location === "monsterZone") return 0x04;
   if (location === "spellTrapZone") return 0x08;
+  if (location === "fieldZone") return 0x08;
   if (location === "graveyard") return 0x10;
   if (location === "banished") return 0x20;
   if (location === "extraDeck") return 0x40;

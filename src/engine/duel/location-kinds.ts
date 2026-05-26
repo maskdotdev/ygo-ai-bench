@@ -1,6 +1,6 @@
 import type { DuelLocation } from "#duel/types.js";
 
-export const duelLocations: readonly DuelLocation[] = ["deck", "hand", "monsterZone", "spellTrapZone", "graveyard", "banished", "extraDeck", "overlay"];
+export const duelLocations: readonly DuelLocation[] = ["deck", "hand", "monsterZone", "spellTrapZone", "fieldZone", "graveyard", "banished", "extraDeck", "overlay"];
 
 const duelLocationSet = new Set<DuelLocation>(duelLocations);
 

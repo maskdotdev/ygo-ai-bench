@@ -37,26 +37,75 @@ function triggerOrderPromptLabel(state: PublicDuelState): string | undefined {
 const ZONE =
   "relative flex aspect-[59/86] h-[min(14vh,96px)] min-h-[60px] max-h-[110px] w-[min(12vw,66px)] shrink-0 items-center justify-center rounded-md border border-cyan-500/20 bg-slate-900/60 shadow-[inset_0_0_10px_rgba(34,211,238,0.05)] backdrop-blur-sm";
 
+type CardActionGlow = "none" | "activation" | "summonSet";
+
+function cardActionGlowClass(glow: CardActionGlow): string {
+  switch (glow) {
+    case "activation":
+      return "ring-2 ring-yellow-300 drop-shadow-[0_0_10px_rgba(250,204,21,0.65)]";
+    case "summonSet":
+      return "ring-2 ring-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)]";
+    case "none":
+      return "";
+  }
+}
+
+function cardActionGlow(actions: readonly DuelAction[] | undefined): CardActionGlow {
+  if (!actions?.length) return "none";
+  if (actions.some(isActivationAction)) return "activation";
+  if (actions.some(isSummonOrSetAction)) return "summonSet";
+  return "activation";
+}
+
+function isActivationAction(action: DuelAction): boolean {
+  return action.type === "activateEffect" || action.type === "activateTrigger";
+}
+
+function isSummonOrSetAction(action: DuelAction): boolean {
+  return action.type === "normalSummon" ||
+    action.type === "tributeSummon" ||
+    action.type === "tributeSet" ||
+    action.type === "setMonster" ||
+    action.type === "setSpellTrap" ||
+    action.type === "fusionSummon" ||
+    action.type === "synchroSummon" ||
+    action.type === "xyzSummon" ||
+    action.type === "linkSummon" ||
+    action.type === "ritualSummon" ||
+    action.type === "pendulumSummon" ||
+    action.type === "specialSummonProcedure" ||
+    action.type === "flipSummon";
+}
+
 function ZoneRow(props: {
+  player: PlayerId;
+  location: DuelLocation;
   cards: PublicDuelCard[];
   images: Map<string, CardImageInfo>;
   onCardClick: (card: PublicDuelCard, event: MouseEvent) => void;
+  onEmptyZoneClick: (player: PlayerId, location: DuelLocation, sequence: number) => void;
   emptyHint: string;
-  cardHasLegalActions: (uid: string) => boolean;
+  cardGlowForUid: (uid: string) => CardActionGlow;
+  emptyZoneIsTarget?: (player: PlayerId, location: DuelLocation, sequence: number) => boolean;
 }) {
-  const slots = Array.from({ length: 5 }, (_, i) => props.cards[i]);
+  const bySequence = new Map(props.cards.map((card) => [card.sequence, card]));
+  const slots = Array.from({ length: 5 }, (_, i) => bySequence.get(i));
+  const hasEmptyTarget = slots.some((card, i) => !card && props.emptyZoneIsTarget?.(props.player, props.location, i));
   return (
-    <div className="flex w-full max-w-[min(92vw,720px)] items-center justify-center gap-[min(1.2vw,8px)]">
-      {slots.map((card, i) => (
+    <div className={`flex w-full max-w-[min(92vw,720px)] items-center justify-center gap-[min(1.2vw,8px)] ${hasEmptyTarget ? "relative z-50" : ""}`}>
+      {slots.map((card, i) => {
+        const isEmptyTarget = !card && props.emptyZoneIsTarget?.(props.player, props.location, i);
+        const glow = card ? props.cardGlowForUid(card.uid) : "none";
+        return (
         <div
           key={i}
-          className={`${ZONE} ${card && props.cardHasLegalActions(card.uid) ? "ring-2 ring-cyan-400 ring-2 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]" : ""}`}
+          className={`${ZONE} ${isEmptyTarget ? "z-30" : ""} ${cardActionGlowClass(glow)}`}
         >
           {card ? (
             <button
               type="button"
               className="absolute inset-0.5 overflow-hidden rounded"
-              title={props.cardHasLegalActions(card.uid) ? `${card.name} — click for actions, Shift+click to zoom` : card.name}
+              title={glow !== "none" ? `${card.name} — click for actions, Shift+click to zoom` : card.name}
               onClick={(event) => props.onCardClick(card, event)}
             >
               <DuelCardFace card={card} images={props.images} />
@@ -66,11 +115,46 @@ function ZoneRow(props: {
                 </span>
               ) : null}
             </button>
+          ) : isEmptyTarget ? (
+            <button
+              type="button"
+              className="absolute inset-0 z-30 rounded-md border border-cyan-300/70 bg-cyan-400/10 text-[8px] font-black uppercase tracking-[0.12em] text-cyan-100 shadow-[0_0_14px_rgba(34,211,238,0.3)]"
+              onClick={() => props.onEmptyZoneClick(props.player, props.location, i)}
+            >
+              Zone {i + 1}
+            </button>
           ) : (
             <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/15">{props.emptyHint}</span>
           )}
         </div>
-      ))}
+        );
+      })}
+    </div>
+  );
+}
+
+function SingleZoneSlot(props: {
+  label: string;
+  card: PublicDuelCard | undefined;
+  images: Map<string, CardImageInfo>;
+  onCardClick: (card: PublicDuelCard, event: MouseEvent) => void;
+  cardGlowForUid: (uid: string) => CardActionGlow;
+}) {
+  const glow = props.card ? props.cardGlowForUid(props.card.uid) : "none";
+  return (
+    <div className={`${ZONE} ${cardActionGlowClass(glow)}`}>
+      {props.card ? (
+        <button
+          type="button"
+          className="absolute inset-0.5 overflow-hidden rounded"
+          title={glow !== "none" ? `${props.card.name} — click for actions, Shift+click to zoom` : props.card.name}
+          onClick={(event) => props.onCardClick(props.card!, event)}
+        >
+          <DuelCardFace card={props.card} images={props.images} />
+        </button>
+      ) : (
+        <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/15">{props.label}</span>
+      )}
     </div>
   );
 }
@@ -102,7 +186,7 @@ function HandFan(props: {
   hidden: boolean;
   onCardClick: (card: PublicDuelCard, event: MouseEvent) => void;
   align: "top" | "bottom";
-  cardHasLegalActions: (uid: string) => boolean;
+  cardGlowForUid: (uid: string) => CardActionGlow;
 }) {
   if (props.hidden) {
     return (
@@ -129,13 +213,14 @@ function HandFan(props: {
       <div className="flex max-w-[min(96vw,820px)] items-end justify-center px-1">
         {props.cards.map((card, index) => {
           const rot = props.align === "bottom" ? (index % 2 === 0 ? "-rotate-6" : "rotate-6") : index % 2 === 0 ? "rotate-6" : "-rotate-6";
+          const glow = props.cardGlowForUid(card.uid);
           return (
             <button
               key={card.uid}
               type="button"
               style={{ zIndex: index + 1, marginLeft: index === 0 ? 0 : -10 }}
-              className={`relative h-[min(9.5vh,58px)] w-[min(8.5vw,42px)] shrink-0 rounded-md border border-slate-600 shadow-md transition-transform hover:scale-105 ${rot} ${props.cardHasLegalActions(card.uid) ? "ring-2 ring-cyan-400 ring-2 drop-shadow-[0_0_8px_rgba(34,211,238,0.6)] ring-offset-0" : ""}`}
-              title={props.cardHasLegalActions(card.uid) ? `${card.name} — click for actions, Shift+click to zoom` : card.name}
+              className={`relative h-[min(9.5vh,58px)] w-[min(8.5vw,42px)] shrink-0 rounded-md border border-slate-600 shadow-md transition-transform hover:scale-105 ${rot} ${cardActionGlowClass(glow)} ring-offset-0`}
+              title={glow !== "none" ? `${card.name} — click for actions, Shift+click to zoom` : card.name}
               onClick={(event) => props.onCardClick(card, event)}
             >
               <DuelCardFace card={card} images={props.images} />
@@ -198,6 +283,7 @@ export interface DuelBattlefieldProps {
 }
 
 type ActionFlyout = { card: PublicDuelCard; actions: DuelAction[]; anchorX: number; anchorY: number };
+type PendingSummonZone = { action: Extract<DuelAction, { summonSequence?: number }>; player: PlayerId };
 
 function CardActionFlyout(props: {
   flyout: ActionFlyout;
@@ -274,6 +360,7 @@ function CardActionFlyout(props: {
 export function DuelBattlefield(props: DuelBattlefieldProps) {
   const { state, viewer } = props;
   const [flyout, setFlyout] = useState<ActionFlyout | null>(null);
+  const [pendingSummonZone, setPendingSummonZone] = useState<PendingSummonZone | null>(null);
   const opponent = opposite(viewer);
   const hideOppHand = true;
 
@@ -282,7 +369,15 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
     return duelBattlefieldActionView(state, viewer, legal, props.legalActionGroups, hideOppHand);
   }, [hideOppHand, props.legalActionGroups, props.legalActions, state, viewer]);
 
-  const cardHasLegalActions = useCallback((uid: string) => (actionByUid.get(uid)?.length ?? 0) > 0, [actionByUid]);
+  const cardGlowForUid = useCallback((uid: string) => cardActionGlow(actionByUid.get(uid)), [actionByUid]);
+  const emptyZoneIsTarget = useCallback((player: PlayerId, location: DuelLocation, _sequence: number) => (
+    pendingSummonZone !== null && player === pendingSummonZone.player && location === "monsterZone"
+  ), [pendingSummonZone]);
+  const handleEmptyZoneClick = useCallback((player: PlayerId, location: DuelLocation, sequence: number) => {
+    if (!pendingSummonZone || player !== pendingSummonZone.player || location !== "monsterZone") return;
+    props.onPlayAction?.({ ...pendingSummonZone.action, summonSequence: sequence });
+    setPendingSummonZone(null);
+  }, [pendingSummonZone, props]);
 
   const handleCardInteraction = useCallback(
     (card: PublicDuelCard, event: MouseEvent) => {
@@ -317,6 +412,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
   useEffect(() => {
     setFlyout(null);
+    setPendingSummonZone(null);
   }, [props.legalActions]);
 
   const triggerOrderLabel = triggerOrderPromptLabel(state);
@@ -327,6 +423,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
   const oppMz = cardsInZone(state, opponent, "monsterZone");
   const oppSt = cardsInZone(state, opponent, "spellTrapZone");
+  const oppField = cardsInZone(state, opponent, "fieldZone")[0];
   const oppHand = cardsInZone(state, opponent, "hand");
   const oppGy = cardsInZone(state, opponent, "graveyard");
   const oppX = cardsInZone(state, opponent, "extraDeck");
@@ -335,6 +432,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
   const myMz = cardsInZone(state, viewer, "monsterZone");
   const mySt = cardsInZone(state, viewer, "spellTrapZone");
+  const myField = cardsInZone(state, viewer, "fieldZone")[0];
   const myHand = cardsInZone(state, viewer, "hand");
   const myGy = cardsInZone(state, viewer, "graveyard");
   const myX = cardsInZone(state, viewer, "extraDeck");
@@ -416,31 +514,48 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
             hidden={hideOppHand}
             onCardClick={handleCardInteraction}
             align="top"
-            cardHasLegalActions={cardHasLegalActions}
+            cardGlowForUid={cardGlowForUid}
           />
 
-          <div className="flex w-full flex-col items-center gap-1 [transform:rotateX(4deg)]">
+          <div className="flex w-full flex-col items-center gap-1">
             <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/35">Spell / Trap</span>
-            <ZoneRow
-              cards={oppSt}
-              images={props.cardImages}
-              onCardClick={handleCardInteraction}
-              emptyHint="S/T"
-              cardHasLegalActions={cardHasLegalActions}
-            />
+            <div className="flex w-full items-center justify-center gap-[min(1.2vw,8px)]">
+              <SingleZoneSlot
+                label="Field"
+                card={oppField}
+                images={props.cardImages}
+                onCardClick={handleCardInteraction}
+                cardGlowForUid={cardGlowForUid}
+              />
+              <ZoneRow
+                cards={oppSt}
+                player={opponent}
+                location="spellTrapZone"
+                images={props.cardImages}
+                onCardClick={handleCardInteraction}
+                onEmptyZoneClick={handleEmptyZoneClick}
+                emptyHint="S/T"
+                cardGlowForUid={cardGlowForUid}
+                emptyZoneIsTarget={emptyZoneIsTarget}
+              />
+            </div>
             <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.25em] text-white/35">Monsters</span>
             <ZoneRow
               cards={oppMz}
+              player={opponent}
+              location="monsterZone"
               images={props.cardImages}
               onCardClick={handleCardInteraction}
+              onEmptyZoneClick={handleEmptyZoneClick}
               emptyHint="M"
-              cardHasLegalActions={cardHasLegalActions}
+              cardGlowForUid={cardGlowForUid}
+              emptyZoneIsTarget={emptyZoneIsTarget}
             />
           </div>
         </div>
 
         {/* ----- EMZ + turn strip ----- */}
-        <div className="flex shrink-0 flex-col items-center gap-0.5 py-1">
+        <div className={`flex shrink-0 flex-col items-center gap-0.5 py-1 ${pendingSummonZone ? "pointer-events-none" : ""}`}>
           <div className="flex items-center gap-3">
             <div className={ZONE}>
               <span className="text-[9px] font-bold text-white/20">EMZ</span>
@@ -465,7 +580,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
             </div>
           ) : null}
           {triggerOrderView && props.onPlayAction ? (
-            <div className="flex max-w-[min(96vw,820px)] justify-center px-1">
+            <div className="relative z-50 flex max-w-[min(96vw,820px)] justify-center px-1">
               <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-fuchsia-400/35 bg-fuchsia-950/55 px-2.5 py-1.5 shadow-lg shadow-fuchsia-950/30 [scrollbar-width:thin]">
                 <div className="min-w-[150px] shrink-0 self-center pr-1">
                   <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-fuchsia-100">{triggerOrderView.label}</p>
@@ -487,7 +602,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
             </div>
           ) : null}
           {promptView && props.onPlayAction ? (
-            <div className="flex max-w-[min(96vw,760px)] justify-center px-1">
+            <div className="relative z-50 flex max-w-[min(96vw,760px)] justify-center px-1">
               <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-950/55 px-2.5 py-1.5 shadow-lg shadow-violet-950/30">
                 <div className="min-w-[140px] max-w-[260px] flex-1">
                   <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-violet-100">{promptView.label}</p>
@@ -518,8 +633,8 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
               </div>
             </div>
           ) : null}
-          {globalOrphanGroups.length > 0 && props.onPlayAction ? (
-            <div className="flex max-w-[min(96vw,860px)] justify-center px-1">
+          {globalOrphanGroups.length > 0 && !pendingSummonZone && props.onPlayAction ? (
+            <div className="relative z-50 flex max-w-[min(96vw,860px)] justify-center px-1">
               <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-cyan-500/20 bg-slate-900/60 px-2 py-1.5 [scrollbar-width:thin]">
                 {globalOrphanGroups.map((group) => (
                   <div key={group.key} className="flex shrink-0 items-center gap-1">
@@ -543,23 +658,40 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
         {/* ----- Player half (near) ----- */}
         <div className="flex min-h-0 flex-[1.15] flex-col items-center justify-start gap-0.5">
-          <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-1 overflow-hidden [transform:rotateX(-4deg)]">
+          <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-1 overflow-visible">
             <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/35">Monsters</span>
             <ZoneRow
               cards={myMz}
+              player={viewer}
+              location="monsterZone"
               images={props.cardImages}
               onCardClick={handleCardInteraction}
+              onEmptyZoneClick={handleEmptyZoneClick}
               emptyHint="M"
-              cardHasLegalActions={cardHasLegalActions}
+              cardGlowForUid={cardGlowForUid}
+              emptyZoneIsTarget={emptyZoneIsTarget}
             />
             <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.25em] text-white/35">Spell / Trap</span>
-            <ZoneRow
-              cards={mySt}
-              images={props.cardImages}
-              onCardClick={handleCardInteraction}
-              emptyHint="S/T"
-              cardHasLegalActions={cardHasLegalActions}
-            />
+            <div className="flex w-full items-center justify-center gap-[min(1.2vw,8px)]">
+              <SingleZoneSlot
+                label="Field"
+                card={myField}
+                images={props.cardImages}
+                onCardClick={handleCardInteraction}
+                cardGlowForUid={cardGlowForUid}
+              />
+              <ZoneRow
+                cards={mySt}
+                player={viewer}
+                location="spellTrapZone"
+                images={props.cardImages}
+                onCardClick={handleCardInteraction}
+                onEmptyZoneClick={handleEmptyZoneClick}
+                emptyHint="S/T"
+                cardGlowForUid={cardGlowForUid}
+                emptyZoneIsTarget={emptyZoneIsTarget}
+              />
+            </div>
           </div>
 
           <div className="shrink-0 pt-0.5">
@@ -569,7 +701,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
               hidden={false}
               onCardClick={handleCardInteraction}
               align="bottom"
-              cardHasLegalActions={cardHasLegalActions}
+              cardGlowForUid={cardGlowForUid}
             />
           </div>
 
@@ -630,7 +762,11 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
         flyout={flyout}
         images={props.cardImages}
         onPick={(action) => {
-          props.onPlayAction?.(action);
+          if (isMonsterZoneSummonAction(action)) {
+            setPendingSummonZone({ action, player: action.player });
+          } else {
+            props.onPlayAction?.(action);
+          }
           setFlyout(null);
         }}
         onInspect={() => {
@@ -642,6 +778,19 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
     ) : null}
     </>
   );
+}
+
+function isMonsterZoneSummonAction(action: DuelAction): action is Extract<DuelAction, { summonSequence?: number }> {
+  return action.type === "normalSummon" ||
+    action.type === "tributeSummon" ||
+    action.type === "tributeSet" ||
+    action.type === "fusionSummon" ||
+    action.type === "synchroSummon" ||
+    action.type === "xyzSummon" ||
+    action.type === "linkSummon" ||
+    action.type === "ritualSummon" ||
+    action.type === "setMonster" ||
+    action.type === "specialSummonProcedure";
 }
 
 export function DuelLogList(props: { entries: DuelLogEntry[] }) {

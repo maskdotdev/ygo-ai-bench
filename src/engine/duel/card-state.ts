@@ -36,7 +36,7 @@ export function moveDuelCard(state: DuelState, uid: string, to: DuelLocation, co
     card.faceUp = isPendulumCard(card);
     card.position = "faceDown";
   }
-  if (to === "graveyard" || to === "banished" || ((to === "monsterZone" || to === "spellTrapZone") && card.previousLocation !== to)) card.faceUp = true;
+  if (to === "graveyard" || to === "banished" || ((to === "monsterZone" || to === "spellTrapZone" || to === "fieldZone") && card.previousLocation !== to)) card.faceUp = true;
   if (shouldClearCountersAfterMove(card.previousLocation, card.location)) removeAllDuelCardCounters(card);
   resequence(state, card.controller, to);
   if ((to === "monsterZone" || to === "spellTrapZone") && isFieldZoneDisabled(state, card.controller, to, card.sequence)) {
@@ -98,6 +98,7 @@ export function requireControlledCard(state: DuelState, player: PlayerId, uid: s
 }
 
 export function hasZoneSpace(state: DuelState, player: PlayerId, location: DuelLocation): boolean {
+  if (location === "fieldZone") return true;
   if (location !== "monsterZone" && location !== "spellTrapZone") return true;
   return availableFieldZoneCount(state, player, location) > 0;
 }
@@ -120,6 +121,7 @@ export function pushDuelLog(state: DuelState, action: string, player: PlayerId |
 }
 
 function nextSequence(state: DuelState, player: PlayerId, location: DuelLocation, movingUid?: string): number {
+  if (location === "fieldZone") return 5;
   if (location === "monsterZone" || location === "spellTrapZone") return firstOpenFieldZoneSequence(state, player, location, movingUid === undefined ? [] : [movingUid]) ?? getCards(state, player, location).length;
   return getCards(state, player, location).length;
 }
@@ -130,12 +132,12 @@ function isPendulumCard(card: DuelCardInstance): boolean {
 
 function shouldClearCountersAfterMove(previous: DuelLocation | undefined, current: DuelLocation): boolean {
   if (current === "deck" || current === "extraDeck" || current === "hand" || current === "graveyard" || current === "banished" || current === "overlay") return true;
-  if (current === "monsterZone" || current === "spellTrapZone") return !isFieldLocation(previous) || previous !== current;
+  if (current === "monsterZone" || current === "spellTrapZone" || current === "fieldZone") return !isFieldLocation(previous) || previous !== current;
   return false;
 }
 
 function isFieldLocation(location: DuelLocation | undefined): boolean {
-  return location === "monsterZone" || location === "spellTrapZone";
+  return location === "monsterZone" || location === "spellTrapZone" || location === "fieldZone";
 }
 
 function clearCardTargetReferencesAfterLeave(state: DuelState, card: DuelCardInstance): void {

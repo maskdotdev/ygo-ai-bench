@@ -193,7 +193,7 @@ function matchingStatEffects(card: DuelCardInstance | undefined, state: DuelStat
 function statEffectSourceIsDisabled(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance): boolean {
   if (((effect.property ?? 0) & effectFlagCannotDisable) !== 0) return false;
   if (!statEffectDependsOnEnabledSource(effect)) return false;
-  if (source.location !== "monsterZone" && source.location !== "spellTrapZone") return false;
+  if (source.location !== "monsterZone" && source.location !== "spellTrapZone" && source.location !== "fieldZone") return false;
   if (statDisabledSourceChecks.has(source.uid)) return false;
   statDisabledSourceChecks.add(source.uid);
   try {

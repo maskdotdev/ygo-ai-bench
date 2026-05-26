@@ -61,7 +61,7 @@ function visibleInteractiveUids(
     const visibleHand =
       (card.location === "hand" && card.controller === viewer) ||
       (card.location === "hand" && card.controller === opponent && !hideOpponentHand);
-    const onField = card.location === "monsterZone" || card.location === "spellTrapZone";
+    const onField = card.location === "monsterZone" || card.location === "spellTrapZone" || card.location === "fieldZone";
     if (visibleHand || onField) uids.add(card.uid);
   }
   return uids;

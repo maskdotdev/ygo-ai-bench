@@ -291,7 +291,7 @@ function pushFieldCard(L: unknown, session: DuelSession): number {
   const locationMask = lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : 0;
   const sequence = lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 0;
   const card = fieldLocationMaskUsesExactSequence(locationMask)
-    ? session.state.cards.find((candidate) => candidate.controller === player && candidate.sequence === sequence && locationMatchesCardMask(candidate, locationMask))
+    ? session.state.cards.find((candidate) => candidate.controller === player && exactFieldSequenceMatches(candidate, locationMask, sequence))
     : session.state.cards.find((candidate) => candidate.uid === matchingCardUids(session, player, locationMask)[sequence]);
   if (!card) {
     lua.lua_pushnil(L);
@@ -303,6 +303,11 @@ function pushFieldCard(L: unknown, session: DuelSession): number {
 
 function fieldLocationMaskUsesExactSequence(locationMask: number): boolean {
   return (locationMask & (0x04 | 0x08 | 0x100 | 0x200 | 0x400 | 0x800 | 0x1000)) !== 0;
+}
+
+function exactFieldSequenceMatches(card: DuelCardInstance, locationMask: number, sequence: number): boolean {
+  if ((locationMask & 0x100) !== 0 && card.location === "fieldZone") return sequence === 0 || sequence === 5;
+  return card.sequence === sequence && locationMatchesCardMask(card, locationMask);
 }
 
 function pushCardFromCardId(L: unknown, session: DuelSession): number {
@@ -640,9 +645,8 @@ function environmentPlayers(L: unknown, session: DuelSession, index: number): Pl
 }
 
 function environmentLocations(L: unknown, index: number): DuelLocation[] {
-  if (!lua.lua_isnumber(L, index)) return ["spellTrapZone"];
+  if (!lua.lua_isnumber(L, index)) return ["spellTrapZone", "fieldZone"];
   const mask = lua.lua_tointeger(L, index);
-  if ((mask & 0x100) !== 0) return ["spellTrapZone"];
   return locationsFromMask(mask);
 }
 

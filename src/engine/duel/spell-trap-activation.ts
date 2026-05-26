@@ -13,16 +13,18 @@ export function placeActivatedSpellTrapCard(state: DuelState, player: PlayerId, 
   if (!isSpellTrapCardActivation(source, effect)) return;
   if (source.location === "hand") {
     if (isPendulumCard(source) && !hasPendulumZoneSpace(state, player)) throw new Error(`${source.name} cannot be activated because the Pendulum Zones are full`);
-    if (!hasZoneSpace(state, player, "spellTrapZone")) throw new Error(`${source.name} cannot be activated because the Spell & Trap Zone is full`);
-    moveDuelCard(state, source.uid, "spellTrapZone", player, duelReason.rule, player);
+    const targetLocation = isFieldSpell(source) ? "fieldZone" : "spellTrapZone";
+    if (!hasZoneSpace(state, player, targetLocation)) throw new Error(`${source.name} cannot be activated because the ${targetLocation === "fieldZone" ? "Field Zone" : "Spell & Trap Zone"} is full`);
+    if (targetLocation === "fieldZone") sendExistingFieldSpellToGraveyard(state, player, source.uid);
+    moveDuelCard(state, source.uid, targetLocation, player, duelReason.rule, player);
     return;
   }
-  if (source.location === "spellTrapZone") source.faceUp = true;
+  if (source.location === "spellTrapZone" || source.location === "fieldZone") source.faceUp = true;
 }
 
 export function shouldSendActivatedSpellTrapToGraveyard(state: DuelState, source: DuelCardInstance, effect: DuelEffectDefinition, activationNegated = false): boolean {
   return (
-    source.location === "spellTrapZone" &&
+    (source.location === "spellTrapZone" || source.location === "fieldZone") &&
     !source.cancelToGrave &&
     isSpellTrapCardActivation(source, effect) &&
     !isPersistentSpellTrap(source) &&
@@ -33,10 +35,10 @@ export function shouldSendActivatedSpellTrapToGraveyard(state: DuelState, source
 export function canActivateSpellTrapCardEffect(state: DuelState, player: PlayerId, source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
   if (!isSpellTrapCardActivation(source, effect)) return true;
   if (source.location === "hand") {
-    if (!hasZoneSpace(state, player, "spellTrapZone")) return false;
+    if (!hasZoneSpace(state, player, isFieldSpell(source) ? "fieldZone" : "spellTrapZone")) return false;
     return !isPendulumCard(source) || hasPendulumZoneSpace(state, player);
   }
-  return source.location !== "spellTrapZone" || !source.faceUp;
+  return (source.location !== "spellTrapZone" && source.location !== "fieldZone") || !source.faceUp;
 }
 
 function isSpellTrapCardActivation(source: DuelCardInstance, effect: DuelEffectDefinition): boolean {
@@ -49,6 +51,15 @@ function hasRemainFieldEffect(state: DuelState, source: DuelCardInstance): boole
 
 function isPersistentSpellTrap(source: DuelCardInstance): boolean {
   return isPendulumCard(source) || ((source.data.typeFlags ?? 0) & (typeContinuous | typeEquip | typeField)) !== 0;
+}
+
+function isFieldSpell(source: DuelCardInstance): boolean {
+  return source.kind === "spell" && ((source.data.typeFlags ?? 0) & typeField) !== 0;
+}
+
+function sendExistingFieldSpellToGraveyard(state: DuelState, player: PlayerId, incomingUid: string): void {
+  const existing = state.cards.find((card) => card.controller === player && card.location === "fieldZone" && card.uid !== incomingUid);
+  if (existing) moveDuelCard(state, existing.uid, "graveyard", player, duelReason.rule, player);
 }
 
 function isPendulumCard(source: DuelCardInstance): boolean {

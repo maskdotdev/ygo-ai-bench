@@ -73,7 +73,7 @@ export function matchesTurnReset(flags: number, owner: 0 | 1, turnPlayer: 0 | 1)
 }
 
 function isFieldLocation(location: DuelCardInstance["location"] | undefined): boolean {
-  return location === "monsterZone" || location === "spellTrapZone";
+  return location === "monsterZone" || location === "spellTrapZone" || location === "fieldZone";
 }
 
 function enteredField(card: DuelCardInstance): boolean {

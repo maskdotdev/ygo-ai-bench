@@ -88,7 +88,7 @@ export function createBrowserDuelCardDataCache(loader?: BrowserDuelCardDataLoade
   return {
     async preload(codes) {
       const requested = normalizedCodes(codes);
-      const needLoad = requested.filter((code) => !builtins.has(code) && !dynamicCards.has(code));
+      const needLoad = requested.filter((code) => !dynamicCards.has(code));
       if (needLoad.length && loader) {
         const loaded = await loader(needLoad);
         const requestedSet = new Set(needLoad);

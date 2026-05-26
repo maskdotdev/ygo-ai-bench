@@ -74,12 +74,12 @@ export function locationsFromMask(mask: number): DuelLocation[] {
   if ((mask & 0x01) !== 0) locations.push("deck");
   if ((mask & 0x02) !== 0) locations.push("hand");
   if ((mask & 0x04) !== 0) locations.push("monsterZone");
-  if ((mask & 0x08) !== 0) locations.push("spellTrapZone");
+  if ((mask & 0x08) !== 0) locations.push("spellTrapZone", "fieldZone");
   if ((mask & 0x10) !== 0) locations.push("graveyard");
   if ((mask & 0x20) !== 0) locations.push("banished");
   if ((mask & 0x40) !== 0) locations.push("extraDeck");
   if ((mask & 0x80) !== 0) locations.push("overlay");
-  if ((mask & 0x100) !== 0) locations.push("spellTrapZone");
+  if ((mask & 0x100) !== 0) locations.push("fieldZone");
   if ((mask & 0x200) !== 0) locations.push("spellTrapZone");
   if ((mask & 0x400) !== 0) locations.push("spellTrapZone");
   if ((mask & 0x800) !== 0) locations.push("monsterZone");
@@ -90,6 +90,7 @@ export function locationsFromMask(mask: number): DuelLocation[] {
 export function locationMatchesMask(location: DuelLocation | undefined, sequence: number | undefined, mask: number): boolean {
   if (!location) return false;
   if ((mask & locationMaskFromLocation(location)) !== 0) return true;
+  if ((mask & 0x08) !== 0 && location === "fieldZone") return true;
   if ((mask & 0x400) !== 0 && location === "spellTrapZone") return true;
   if ((mask & 0x800) !== 0 && location === "monsterZone" && sequence !== undefined && sequence >= 0 && sequence <= 4) return true;
   return (mask & 0x1000) !== 0 && location === "monsterZone" && sequence !== undefined && sequence >= 5 && sequence <= 6;
@@ -106,17 +107,13 @@ export function locationMatchesCardMask(card: DuelCardInstance | undefined, mask
 
 export function symbolicLocationMask(card: DuelCardInstance | undefined, location = card?.location, sequence = card?.sequence): number {
   if (!card || !location) return 0;
+  if (location === "fieldZone") return 0x100;
   if (location === "spellTrapZone") {
-    if (isFieldSpell(card)) return 0x100;
     if (isPendulumZoneCard(card, sequence)) return 0x200;
     return 0x400;
   }
   if (location === "monsterZone" && sequence !== undefined) return sequence >= 5 ? 0x1000 : 0x800;
   return locationMaskFromLocation(location);
-}
-
-function isFieldSpell(card: DuelCardInstance): boolean {
-  return card.kind === "spell" && ((card.data.typeFlags ?? 0) & 0x80000) !== 0;
 }
 
 function isPendulumZoneCard(card: DuelCardInstance, sequence: number | undefined): boolean {
@@ -128,6 +125,7 @@ function locationMaskFromLocation(location: DuelLocation): number {
   if (location === "hand") return 0x02;
   if (location === "monsterZone") return 0x04;
   if (location === "spellTrapZone") return 0x08;
+  if (location === "fieldZone") return 0x08;
   if (location === "graveyard") return 0x10;
   if (location === "banished") return 0x20;
   if (location === "extraDeck") return 0x40;

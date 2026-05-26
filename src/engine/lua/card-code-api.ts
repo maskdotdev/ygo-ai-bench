@@ -39,26 +39,27 @@ export function installCardCodeApi<EffectRecord extends LuaCardApiEffectRecord>(
   lua.lua_setfield(L, -2, to_luastring("IsNotCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    lua.lua_pushboolean(state, Boolean(card && listedCodes(card).some((code) => readRequestedCodes(state, 2).includes(code))));
+    const requested = readRequestedCodes(state, 2);
+    lua.lua_pushboolean(state, Boolean(card && allListedCodes(state, card).some((code) => requested.includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ListsCode"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
     const requested = readRequestedNumbers(state, 2);
-    lua.lua_pushboolean(state, Boolean(card && listedCodes(card).some((code) => listedCodeSetcodes(session, code).some((setcode) => requested.some((wanted) => isSetcodeMatch(wanted, setcode))))));
+    lua.lua_pushboolean(state, Boolean(card && allListedCodes(state, card).some((code) => listedCodeSetcodes(session, code).some((setcode) => requested.some((wanted) => isSetcodeMatch(wanted, setcode))))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ListsCodeWithArchetype"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    lua.lua_pushboolean(state, Boolean(card && materialCodes(card).some((code) => readRequestedCodes(state, 2).includes(code))));
+    lua.lua_pushboolean(state, Boolean(card && allMaterialCodes(state, card).some((code) => readRequestedCodes(state, 2).includes(code))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ListsCodeAsMaterial"));
   lua.lua_pushcfunction(L, (state: unknown) => {
     const card = readCard(state, session);
-    lua.lua_pushboolean(state, Boolean(card && materialSetcodes(card).some((setcode) => readRequestedNumbers(state, 2).some((requested) => isSetcodeMatch(requested, setcode)))));
+    lua.lua_pushboolean(state, Boolean(card && allMaterialSetcodes(state, card).some((setcode) => readRequestedNumbers(state, 2).some((requested) => isSetcodeMatch(requested, setcode)))));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("ListsArchetypeAsMaterial"));
@@ -126,6 +127,44 @@ function pushNumberGetter(L: unknown, fieldName: string, session: DuelSession, g
 function readCard(L: unknown, session: DuelSession): DuelCardInstance | undefined {
   const uid = readCardUid(L, 1) ?? readTableStringField(L, 1, "__duel_uid");
   return uid ? session.state.cards.find((candidate) => candidate.uid === uid) : undefined;
+}
+
+function allListedCodes(L: unknown, card: DuelCardInstance): string[] {
+  return [...new Set([...listedCodes(card), ...scriptListedCodes(L, card.code)])];
+}
+
+function allMaterialCodes(L: unknown, card: DuelCardInstance): string[] {
+  return [...new Set([...materialCodes(card), ...scriptNumberListField(L, card.code, "material").map(String)])];
+}
+
+function allMaterialSetcodes(L: unknown, card: DuelCardInstance): number[] {
+  return [...new Set([...materialSetcodes(card), ...scriptNumberListField(L, card.code, "material_setcode")])];
+}
+
+function scriptListedCodes(L: unknown, code: string): string[] {
+  return scriptNumberListField(L, code, "listed_names").map(String);
+}
+
+function scriptNumberListField(L: unknown, code: string, fieldName: string): number[] {
+  const result: number[] = [];
+  lua.lua_getglobal(L, to_luastring(`c${code}`));
+  if (!lua.lua_istable(L, -1)) {
+    lua.lua_pop(L, 1);
+    return result;
+  }
+  lua.lua_getfield(L, -1, to_luastring(fieldName));
+  if (lua.lua_istable(L, -1)) {
+    const length = lua.lua_rawlen(L, -1);
+    for (let index = 1; index <= length; index += 1) {
+      lua.lua_rawgeti(L, -1, index);
+      if (lua.lua_isnumber(L, -1)) result.push(lua.lua_tointeger(L, -1));
+      lua.lua_pop(L, 1);
+    }
+  } else if (lua.lua_isnumber(L, -1)) {
+    result.push(lua.lua_tointeger(L, -1));
+  }
+  lua.lua_pop(L, 2);
+  return result;
 }
 
 function pushCardScriptTable(L: unknown, code: string): void {

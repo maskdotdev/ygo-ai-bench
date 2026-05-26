@@ -1,7 +1,7 @@
 import "../browser-node-shims/process-global.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
-import type { DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { LuaInitialEffectRegistrationResult, LuaScriptHost, LuaScriptLoadResult } from "#lua/host.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { createBrowserCdbCardDataLoader, createBrowserCdbJsonManifestLoader, createBrowserCdbJsonRowsLoader, createBrowserDuelCardDataCache, getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
@@ -16,6 +16,7 @@ import type { CardImageInfo, ToastMessage } from "./ui.js";
 import { hydrateCardImagesByPasscode } from "./card-images.js";
 
 const NO_LEGAL_ACTIONS: DuelAction[] = [];
+const MAX_AUTO_PASSES = 8;
 
 export const pvpVisibleBattleFixtureYdk = `#created by Duel Deck Studio
 #deck Visible Battle Fixture
@@ -89,6 +90,20 @@ export interface BrowserPvpBootSummary {
   missingCards: string[];
   missingScripts: string[];
   registrationFailures: { code: string; uid: string; error?: string }[];
+}
+
+export function applyPvpAction(session: DuelSession, action: DuelAction): ApplyDuelResponseResult {
+  let result = applyResponse(session, action);
+  if (!result.ok) return result;
+  for (let i = 0; i < MAX_AUTO_PASSES; i += 1) {
+    const waiting = result.state.waitingFor;
+    if (result.state.status !== "awaiting" || waiting === undefined || result.state.windowKind !== "chainResponse") break;
+    const legal = getLegalActions(session, waiting);
+    if (legal.length !== 1 || legal[0]?.type !== "passChain") break;
+    result = applyResponse(session, legal[0]);
+    if (!result.ok) return result;
+  }
+  return result;
 }
 
 export interface BrowserPvpAssetCacheOptions {
@@ -453,7 +468,7 @@ export function PvpArena() {
   const apply = useCallback(
     (action: DuelAction) => {
       const previousEventCount = session.state.eventHistory.length;
-      const result = applyResponse(session, action);
+      const result = applyPvpAction(session, action);
       setRevision((current) => current + 1);
       if (!result.ok) {
         notify("Action blocked", result.error ?? "Illegal response.", "error");
@@ -577,7 +592,6 @@ export function PvpArena() {
             </p>
             <div className="min-h-0 flex-1 overflow-hidden pt-1">
               <DuelBattlefield
-                key={imageRevision}
                 state={publicState}
                 viewer={viewer}
                 cardImages={cardImages.current}

@@ -6,6 +6,7 @@ import {
   bootstrapPvpDuelWithCardData,
   bootstrapPvpDuelWithLuaScripts,
   createBrowserPvpAssetCaches,
+  applyPvpAction,
   pvpVisibleBattleFixtureScript,
   pvpVisibleBattleFixtureYdk,
   runPvpArenaVisibleScript,
@@ -14,6 +15,7 @@ import {
 } from "../src/playtest-app/pvp-arena.js";
 import { createBrowserDuelCardDataCache } from "../src/playtest-app/duel-pvp-card-reader.js";
 import { createBrowserLuaScriptCache } from "../src/playtest-app/duel-pvp-script-cache.js";
+import { applyResponse, getLegalActions } from "../src/engine/duel/core.js";
 
 const lazyLoadedYdk = `#created by test
 #main
@@ -84,7 +86,7 @@ describe("PvP arena visible scripts", () => {
       cardDataCache: cache,
     });
 
-    expect(requestedBatches).toEqual([["90000003"]]);
+    expect(requestedBatches).toEqual([["7084129", "90000003"]]);
     expect(result.preload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
     expect(result.session.state.cards).toContainEqual(expect.objectContaining({
       code: "90000003",
@@ -123,6 +125,282 @@ describe("PvP arena visible scripts", () => {
     expect(result.luaHost.messages).toContain("pvp script loaded 90000003");
   });
 
+  it("uses Lua script listed_names metadata so Magician's Rod can search after summon", async () => {
+    const ydk = `#created by test
+#main
+7084129
+47222536
+46986414
+#extra
+!side`;
+    const cardCache = createBrowserDuelCardDataCache(async () => [
+      { code: "47222536", name: "Dark Magical Circle", kind: "spell", typeFlags: 0x20002 },
+      { code: "46986414", name: "Dark Magician", kind: "monster", typeFlags: 0x11 },
+    ]);
+    const scriptCache = createBrowserLuaScriptCache(async (names) => Object.fromEntries(names.map((name) => [name, ({
+      "c47222536.lua": `
+        local s,id=GetID()
+        s.listed_names={CARD_DARK_MAGICIAN}
+      `,
+      "c7084129.lua": `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e1=Effect.CreateEffect(c)
+          e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)
+          e1:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_O)
+          e1:SetCode(EVENT_SUMMON_SUCCESS)
+          e1:SetCountLimit(1,id)
+          e1:SetTarget(s.thtg)
+          e1:SetOperation(s.thop)
+          c:RegisterEffect(e1)
+        end
+        s.listed_names={CARD_DARK_MAGICIAN}
+        function s.thfilter(c)
+          return c:ListsCode(CARD_DARK_MAGICIAN) and c:IsSpellTrap() and c:IsAbleToHand()
+        end
+        function s.thtg(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.IsExistingMatchingCard(s.thfilter,tp,LOCATION_DECK,0,1,nil) end
+          Duel.SetOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)
+        end
+        function s.thop(e,tp,eg,ep,ev,re,r,rp)
+          local g=Duel.SelectMatchingCard(tp,s.thfilter,tp,LOCATION_DECK,0,1,1,nil)
+          if #g>0 then Duel.SendtoHand(g,nil,REASON_EFFECT) end
+        end
+      `,
+    } as Record<string, string | undefined>)[name]])));
+
+    const result = await bootstrapPvpDuelWithBrowserData(ydk, ydk, "rod-search", 1, {
+      cardDataCache: cardCache,
+      luaScriptCache: scriptCache,
+    });
+    const summon = getLegalActions(result.session, 0).find((action) => action.type === "normalSummon" && action.uid.includes("7084129"));
+    expect(summon).toBeDefined();
+    expect(applyResponse(result.session, summon).ok).toBe(true);
+    const trigger = getLegalActions(result.session, 0).find((action) => action.type === "activateTrigger" && action.uid.includes("7084129"));
+    expect(trigger).toBeDefined();
+
+    expect(applyResponse(result.session, trigger).ok).toBe(true);
+
+    expect(result.session.state.cards.find((card) => card.code === "47222536" && card.controller === 0)).toMatchObject({
+      location: "hand",
+    });
+  });
+
+  it("surfaces Red-Eyes Fusion as an activatable spell when its Fusion target lists Red-Eyes material", async () => {
+    const redEyesFusion = "6172122";
+    const redEyesBlackDragon = "74677422";
+    const darkMagician = "46986414";
+    const dragoon = "37818794";
+    const ydk = `#created by test
+#main
+${redEyesFusion}
+${redEyesBlackDragon}
+${darkMagician}
+#extra
+${dragoon}
+!side`;
+    const cardCache = createBrowserDuelCardDataCache(async () => [
+      { code: redEyesFusion, name: "Red-Eyes Fusion", kind: "spell", typeFlags: 0x2, setcodes: [0x3b, 0x46] },
+      { code: redEyesBlackDragon, name: "Red-Eyes Black Dragon", kind: "monster", typeFlags: 0x11, setcodes: [0x3b], race: 0x2000 },
+      { code: darkMagician, name: "Dark Magician", kind: "monster", typeFlags: 0x11, setcodes: [0x10a2], race: 0x800 },
+      { code: dragoon, name: "Red-Eyes Dark Dragoon", kind: "extra", typeFlags: 0x61, setcodes: [0x3b, 0x6e], race: 0x2000 },
+    ]);
+    const scriptCache = createBrowserLuaScriptCache(async (names) => Object.fromEntries(names.map((name) => [name, ({
+      "c6172122.lua": `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e1=Fusion.CreateSummonEff({handler=c,fusfilter=aux.FilterBoolFunction(Card.ListsArchetypeAsMaterial,SET_RED_EYES)})
+          e1:SetCost(s.cost)
+          c:RegisterEffect(e1)
+        end
+        function s.cost(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.GetActivityCount(tp,ACTIVITY_SUMMON)==0 and Duel.GetActivityCount(tp,ACTIVITY_SPSUMMON)==0 end
+          local e1=Effect.CreateEffect(e:GetHandler())
+          e1:SetType(EFFECT_TYPE_FIELD)
+          e1:SetCode(EFFECT_CANNOT_SPECIAL_SUMMON)
+          e1:SetProperty(EFFECT_FLAG_PLAYER_TARGET+EFFECT_FLAG_OATH)
+          e1:SetTargetRange(1,0)
+          e1:SetReset(RESET_PHASE|PHASE_END)
+          e1:SetLabelObject(e)
+          e1:SetTarget(s.splimit)
+          Duel.RegisterEffect(e1,tp)
+        end
+        function s.splimit(e,c,sump,sumtype,sumpos,targetp,se)
+          return se~=e:GetLabelObject()
+        end
+      `,
+      "c37818794.lua": `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          c:EnableReviveLimit()
+          Fusion.AddProcMix(c,true,true,CARD_DARK_MAGICIAN,{CARD_REDEYES_B_DRAGON,s.ffilter})
+        end
+        s.material={CARD_DARK_MAGICIAN,CARD_REDEYES_B_DRAGON}
+        s.material_setcode={SET_RED_EYES,SET_DARK_MAGICIAN}
+        function s.ffilter(c,fc,sumtype,tp)
+          return c:IsRace(RACE_DRAGON,fc,sumtype,tp) and c:IsType(TYPE_EFFECT,fc,sumtype,tp)
+        end
+      `,
+    } as Record<string, string | undefined>)[name]])));
+
+    const result = await bootstrapPvpDuelWithBrowserData(ydk, ydk, "red-eyes-fusion-activation", 3, {
+      cardDataCache: cardCache,
+      luaScriptCache: scriptCache,
+    });
+    const spell = result.session.state.cards.find((card) => card.code === redEyesFusion && card.controller === 0);
+    const fusion = result.session.state.cards.find((card) => card.code === dragoon && card.controller === 0);
+    const redEyes = result.session.state.cards.find((card) => card.code === redEyesBlackDragon && card.controller === 0);
+    const magician = result.session.state.cards.find((card) => card.code === darkMagician && card.controller === 0);
+
+    expect(fusion?.data).toMatchObject({
+      fusionMaterials: [darkMagician, redEyesBlackDragon],
+      materialSetcodes: [0x3b, 0x10a2],
+    });
+    const actions = getLegalActions(result.session, 0);
+    expect(actions).toContainEqual(expect.objectContaining({ type: "activateEffect", uid: spell?.uid }));
+    expect(actions).toContainEqual(expect.objectContaining({
+      type: "fusionSummon",
+      uid: fusion?.uid,
+      materialUids: [magician?.uid, redEyes?.uid],
+    }));
+
+    const activate = actions.find((action) => action.type === "activateEffect" && action.uid === spell?.uid);
+    expect(activate).toBeDefined();
+    expect(applyResponse(result.session, activate!).ok).toBe(true);
+    expect(result.session.state.cards.find((card) => card.uid === fusion?.uid)).toMatchObject({
+      location: "monsterZone",
+      summonType: "fusion",
+      summonMaterialUids: [magician?.uid, redEyes?.uid],
+    });
+    expect(result.session.state.cards.find((card) => card.uid === magician?.uid)).toMatchObject({ location: "graveyard" });
+    expect(result.session.state.cards.find((card) => card.uid === redEyes?.uid)).toMatchObject({ location: "graveyard" });
+  });
+
+  it("places Field Spells in the Field Zone without consuming normal Spell/Trap slots", async () => {
+    const fieldSpell = "90000050";
+    const backrow = "90000051";
+    const ydk = `#created by test
+#main
+${fieldSpell}
+${backrow}
+${backrow}
+${backrow}
+${backrow}
+${backrow}
+#extra
+!side`;
+    const cardCache = createBrowserDuelCardDataCache(async () => [
+      { code: fieldSpell, name: "PvP Field Spell", kind: "spell", typeFlags: 0x80002 },
+      { code: backrow, name: "PvP Normal Trap", kind: "trap", typeFlags: 0x4 },
+    ]);
+    const scriptCache = createBrowserLuaScriptCache(async (names) => Object.fromEntries(names.map((name) => [name, name === `c${fieldSpell}.lua` ? `
+      local s,id=GetID()
+      function s.initial_effect(c)
+        local e1=Effect.CreateEffect(c)
+        e1:SetType(EFFECT_TYPE_ACTIVATE)
+        e1:SetCode(EVENT_FREE_CHAIN)
+        c:RegisterEffect(e1)
+      end
+    ` : undefined])));
+
+    const result = await bootstrapPvpDuelWithBrowserData(ydk, ydk, "field-zone-slot", 6, {
+      cardDataCache: cardCache,
+      luaScriptCache: scriptCache,
+    });
+    const field = result.session.state.cards.find((card) => card.code === fieldSpell && card.controller === 0);
+    const activate = getLegalActions(result.session, 0).find((action) => action.type === "activateEffect" && action.uid === field?.uid);
+    expect(activate).toBeDefined();
+    expect(applyResponse(result.session, activate!).ok).toBe(true);
+
+    expect(result.session.state.cards.find((card) => card.uid === field?.uid)).toMatchObject({
+      location: "fieldZone",
+      sequence: 5,
+      faceUp: true,
+    });
+    expect(result.session.state.cards.filter((card) => card.controller === 0 && card.location === "spellTrapZone")).toHaveLength(0);
+    expect(getLegalActions(result.session, 0).filter((action) => action.type === "setSpellTrap" && result.session.state.cards.find((card) => card.uid === action.uid)?.code === backrow)).toHaveLength(5);
+  });
+
+  it("surfaces Dark Magical Circle's Lua activation prompt and resolves the search", async () => {
+    const ydk = `#created by test
+#main
+47222536
+47222536
+47222536
+47222536
+47222536
+47222536
+47222536
+47222536
+47222536
+47222536
+46986414
+46986414
+46986414
+7084129
+7084129
+7084129
+#extra
+!side`;
+    const cardCache = createBrowserDuelCardDataCache(async () => [
+      { code: "47222536", name: "Dark Magical Circle", kind: "spell", typeFlags: 0x20002 },
+      { code: "46986414", name: "Dark Magician", kind: "monster", typeFlags: 0x11, attack: 2500, defense: 2100 },
+      { code: "7084129", name: "Magician's Rod", kind: "monster", typeFlags: 0x21, attack: 1600, defense: 100 },
+    ]);
+    const scriptCache = createBrowserLuaScriptCache(async (names) => Object.fromEntries(names.map((name) => [name, ({
+      "c47222536.lua": `
+        local s,id=GetID()
+        function s.initial_effect(c)
+          local e1=Effect.CreateEffect(c)
+          e1:SetCategory(CATEGORY_TOHAND+CATEGORY_SEARCH)
+          e1:SetType(EFFECT_TYPE_ACTIVATE)
+          e1:SetCode(EVENT_FREE_CHAIN)
+          e1:SetCountLimit(1,id)
+          e1:SetTarget(s.target)
+          e1:SetOperation(s.activate)
+          c:RegisterEffect(e1)
+        end
+        s.listed_names={CARD_DARK_MAGICIAN}
+        function s.target(e,tp,eg,ep,ev,re,r,rp,chk)
+          if chk==0 then return Duel.GetFieldGroupCount(tp,LOCATION_DECK,0)>2 end
+          Duel.SetPossibleOperationInfo(0,CATEGORY_TOHAND,nil,1,tp,LOCATION_DECK)
+        end
+        function s.filter(c)
+          return ((c:ListsCode(CARD_DARK_MAGICIAN) and c:IsSpellTrap()) or c:IsCode(CARD_DARK_MAGICIAN)) and c:IsAbleToHand()
+        end
+        function s.activate(e,tp,eg,ep,ev,re,r,rp)
+          if Duel.GetFieldGroupCount(tp,LOCATION_DECK,0)<3 then return end
+          local g=Duel.GetDecktopGroup(tp,3)
+          Duel.ConfirmCards(tp,g)
+          if g:IsExists(s.filter,1,nil) and Duel.SelectYesNo(tp,aux.Stringid(id,0)) then
+            Duel.Hint(HINT_SELECTMSG,tp,HINTMSG_ATOHAND)
+            local sg=g:FilterSelect(tp,s.filter,1,1,nil)
+            Duel.SendtoHand(sg,nil,REASON_EFFECT)
+          end
+        end
+      `,
+      "c7084129.lua": "local s,id=GetID() s.listed_names={CARD_DARK_MAGICIAN}",
+    } as Record<string, string | undefined>)[name]])));
+
+    const result = await bootstrapPvpDuelWithBrowserData(ydk, ydk, "circle-search", 1, {
+      cardDataCache: cardCache,
+      luaScriptCache: scriptCache,
+    });
+    const circle = getLegalActions(result.session, 0).find((action) => action.type === "activateEffect" && action.uid.includes("47222536"));
+    expect(circle).toBeDefined();
+    const deckCountBefore = result.session.state.cards.filter((card) => card.controller === 0 && card.location === "deck").length;
+
+    const activated = applyPvpAction(result.session, circle!);
+
+    expect(activated.ok).toBe(true);
+    expect(activated.state.prompt).toEqual(expect.objectContaining({ type: "selectYesNo", player: 0 }));
+    const yes = getLegalActions(result.session, 0).find((action) => action.type === "selectYesNo" && action.yes);
+    expect(yes).toBeDefined();
+
+    expect(applyResponse(result.session, yes).ok).toBe(true);
+    expect(result.session.state.cards.filter((card) => card.controller === 0 && card.location === "deck")).toHaveLength(deckCountBefore - 1);
+  });
+
   it("preloads PvP card data and Lua scripts before browser bootstrap", async () => {
     const cardBatches: string[][] = [];
     const scriptBatches: string[][] = [];
@@ -149,7 +427,7 @@ describe("PvP arena visible scripts", () => {
       luaScriptCache,
     });
 
-    expect(cardBatches).toEqual([["90000003"]]);
+    expect(cardBatches).toEqual([["7084129", "90000003"]]);
     expect(scriptBatches).toEqual([["c7084129.lua", "c90000003.lua"]]);
     expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000003"], missing: [] });
     expect(result.scriptPreload).toEqual({ loaded: ["c90000003.lua"], missing: ["c7084129.lua"] });
@@ -193,7 +471,7 @@ describe("PvP arena visible scripts", () => {
       luaScriptCache,
     });
 
-    expect(cardBatches).toEqual([["90000021"]]);
+    expect(cardBatches).toEqual([["7084129", "90000021"]]);
     expect(scriptBatches).toEqual([["c7084129.lua", "c90000020.lua", "c90000021.lua"]]);
     expect(result.cardPreload).toEqual({ loaded: ["7084129", "90000021"], missing: [] });
     expect(result.scriptPreload).toEqual({ loaded: ["c90000020.lua"], missing: ["c7084129.lua", "c90000021.lua"] });
@@ -208,7 +486,7 @@ describe("PvP arena visible scripts", () => {
     globalThis.fetch = (async (input: string | URL | Request) => {
       const url = String(input);
       requestedUrls.push(url);
-      if (url === "/card-data/cdb-rows.json?codes=90000003") {
+      if (url === "/card-data/cdb-rows.json?codes=7084129,90000003") {
         return {
           ok: true,
           status: 200,
@@ -288,7 +566,7 @@ describe("PvP arena visible scripts", () => {
       expect(requestedUrls).toEqual([
         "/card-data/manifest.json",
         "/card-scripts/manifest.json",
-        "/card-data/cdb-rows.json?codes=90000003",
+        "/card-data/cdb-rows.json?codes=7084129,90000003",
         "/card-scripts/c7084129.lua",
         "/card-scripts/c90000003.lua",
       ]);

@@ -15,8 +15,12 @@ const CARD_CODE_EXPRESSION = String.raw`(?:\d+|CARD_[A-Z0-9_]+)`;
 const XYZ_INFINITE_MATERIAL_MAX = 99;
 
 export function applyLuaExtraDeckProcedureMetadata(L: unknown, card: DuelCardInstance, source?: string): void {
-  const fusionMaterials = [...readFusionAddProcMixMaterials(L, card, source), ...readFusionAddProcCodeFunMaterials(source)];
+  const scriptMaterials = readProcedureNumberListField(L, card, "material", 1).map(String);
+  const helperMaterials = [...readFusionAddProcMixMaterials(L, card, source), ...readFusionAddProcCodeFunMaterials(source)];
+  const fusionMaterials = scriptMaterials.length > helperMaterials.length ? scriptMaterials : helperMaterials;
   if (fusionMaterials.length > 0) card.data.fusionMaterials = fusionMaterials;
+  const scriptMaterialSetcodes = readProcedureNumberListField(L, card, "material_setcode", 1);
+  if (scriptMaterialSetcodes.length > 0) card.data.materialSetcodes = [...new Set([...(card.data.materialSetcodes ?? []), ...scriptMaterialSetcodes])];
   const fusionRequiredPredicates = [...readFusionAddProcMixPredicateMaterials(source), ...readFusionAddProcFun2PredicateMaterials(source), ...readFusionAddProcCodeFunPredicateMaterials(source)];
   if (fusionRequiredPredicates.length > 0) card.data.fusionRequiredMaterialPredicates = fusionRequiredPredicates;
   const fusionRepeatedMaterials = readFusionAddProcMixRepMaterials(source) ?? readFusionAddProcMixNRepeatedMaterials(source) ?? readFusionAddProcFunRepMaterials(source);

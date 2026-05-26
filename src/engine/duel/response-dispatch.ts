@@ -15,17 +15,17 @@ import type {
 
 export interface DuelResponseHandlers {
   getLegalActions(session: DuelSession, player: PlayerId): DuelAction[];
-  normalSummon(state: DuelState, player: PlayerId, uid: string): void;
-  tributeSummon(session: DuelSession, player: PlayerId, uid: string, tributeUids: string[], effectId?: string): void;
-  tributeSet(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void;
-  fusionSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
-  synchroSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
-  xyzSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
-  linkSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
-  ritualSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): void;
+  normalSummon(state: DuelState, player: PlayerId, uid: string, summonSequence?: number): void;
+  tributeSummon(session: DuelSession, player: PlayerId, uid: string, tributeUids: string[], effectId?: string, summonSequence?: number): void;
+  tributeSet(state: DuelState, player: PlayerId, uid: string, tributeUids: string[], summonSequence?: number): void;
+  fusionSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): void;
+  synchroSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): void;
+  xyzSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): void;
+  linkSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): void;
+  ritualSummon(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): void;
   pendulumSummon(state: DuelState, player: PlayerId, summonUids: string[]): void;
-  specialSummonProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string): void;
-  setMonster(state: DuelState, player: PlayerId, uid: string): void;
+  specialSummonProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string, summonSequence?: number): void;
+  setMonster(state: DuelState, player: PlayerId, uid: string, summonSequence?: number): void;
   setSpellTrap(state: DuelState, player: PlayerId, uid: string): void;
   activateEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string): void;
   passChain(state: DuelState, player: PlayerId): void;
@@ -67,7 +67,23 @@ function responseForDispatch(canonicalResponse: DuelResponse, response: unknown)
   if (canonicalResponse.type === "pendulumSummon" && isRecord(response) && Array.isArray(response.summonUids)) {
     return { ...canonicalResponse, summonUids: response.summonUids.filter((uid): uid is string => typeof uid === "string") };
   }
+  if (isSummonResponse(canonicalResponse) && isRecord(response) && typeof response.summonSequence === "number") {
+    return { ...canonicalResponse, summonSequence: response.summonSequence };
+  }
   return canonicalResponse;
+}
+
+function isSummonResponse(response: DuelResponse): response is Extract<DuelResponse, { summonSequence?: number }> {
+  return response.type === "normalSummon" ||
+    response.type === "tributeSummon" ||
+    response.type === "tributeSet" ||
+    response.type === "fusionSummon" ||
+    response.type === "synchroSummon" ||
+    response.type === "xyzSummon" ||
+    response.type === "linkSummon" ||
+    response.type === "ritualSummon" ||
+    response.type === "setMonster" ||
+    response.type === "specialSummonProcedure";
 }
 
 function responsePlayer(response: unknown): PlayerId | undefined {
@@ -80,17 +96,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function dispatchDuelResponse(session: DuelSession, response: DuelResponse, handlers: DuelResponseHandlers): void {
-  if (response.type === "normalSummon") handlers.normalSummon(session.state, response.player, response.uid);
-  else if (response.type === "tributeSummon") handlers.tributeSummon(session, response.player, response.uid, response.tributeUids, response.effectId);
-  else if (response.type === "tributeSet") handlers.tributeSet(session.state, response.player, response.uid, response.tributeUids);
-  else if (response.type === "fusionSummon") handlers.fusionSummon(session.state, response.player, response.uid, response.materialUids);
-  else if (response.type === "synchroSummon") handlers.synchroSummon(session.state, response.player, response.uid, response.materialUids);
-  else if (response.type === "xyzSummon") handlers.xyzSummon(session.state, response.player, response.uid, response.materialUids);
-  else if (response.type === "linkSummon") handlers.linkSummon(session.state, response.player, response.uid, response.materialUids);
-  else if (response.type === "ritualSummon") handlers.ritualSummon(session.state, response.player, response.uid, response.materialUids);
+  if (response.type === "normalSummon") handlers.normalSummon(session.state, response.player, response.uid, response.summonSequence);
+  else if (response.type === "tributeSummon") handlers.tributeSummon(session, response.player, response.uid, response.tributeUids, response.effectId, response.summonSequence);
+  else if (response.type === "tributeSet") handlers.tributeSet(session.state, response.player, response.uid, response.tributeUids, response.summonSequence);
+  else if (response.type === "fusionSummon") handlers.fusionSummon(session.state, response.player, response.uid, response.materialUids, response.summonSequence);
+  else if (response.type === "synchroSummon") handlers.synchroSummon(session.state, response.player, response.uid, response.materialUids, response.summonSequence);
+  else if (response.type === "xyzSummon") handlers.xyzSummon(session.state, response.player, response.uid, response.materialUids, response.summonSequence);
+  else if (response.type === "linkSummon") handlers.linkSummon(session.state, response.player, response.uid, response.materialUids, response.summonSequence);
+  else if (response.type === "ritualSummon") handlers.ritualSummon(session.state, response.player, response.uid, response.materialUids, response.summonSequence);
   else if (response.type === "pendulumSummon") handlers.pendulumSummon(session.state, response.player, response.summonUids);
-  else if (response.type === "specialSummonProcedure") handlers.specialSummonProcedure(session, response.player, response.uid, response.effectId);
-  else if (response.type === "setMonster") handlers.setMonster(session.state, response.player, response.uid);
+  else if (response.type === "specialSummonProcedure") handlers.specialSummonProcedure(session, response.player, response.uid, response.effectId, response.summonSequence);
+  else if (response.type === "setMonster") handlers.setMonster(session.state, response.player, response.uid, response.summonSequence);
   else if (response.type === "setSpellTrap") handlers.setSpellTrap(session.state, response.player, response.uid);
   else if (response.type === "activateEffect") handlers.activateEffect(session, response.player, response.uid, response.effectId);
   else if (response.type === "passChain") handlers.passChain(session.state, response.player);

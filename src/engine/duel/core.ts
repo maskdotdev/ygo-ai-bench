@@ -190,7 +190,7 @@ const activationHandlers: DuelActivationHandlers = {
   resolveChain,
   canAttemptSpecialSummonProcedure,
   canSpecialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition, relatedEffectId, summonPosition) => canSpecialSummonDuelCard(state, uid, player, summonTypeCode, relatedEffectId, allowUnconditionalSpecialSummonCondition, summonPosition),
-  specialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition, relatedEffectId, summonPosition) => specialSummonDuelCard(state, uid, player, undefined, {}, summonTypeCode, true, allowUnconditionalSpecialSummonCondition, summonPosition, relatedEffectId),
+  specialSummonCard: (state, uid, player, summonTypeCode, allowUnconditionalSpecialSummonCondition, relatedEffectId, summonPosition, summonSequence) => specialSummonDuelCard(state, uid, player, undefined, {}, summonTypeCode, true, allowUnconditionalSpecialSummonCondition, summonPosition, relatedEffectId, summonSequence),
 };
 const battleContinuationHandlers: BattleContinuationHandlers = {
   additionalBattleDamagePlayers: (state, player, battleCards) => getCoreAdditionalBattleDamagePlayers(state, player, battleCards, coreBattleHandlers),
@@ -233,36 +233,38 @@ const coreMovementHandlers: CoreMovementHandlers = {
 
 const responseHandlers: DuelResponseHandlers = {
   getLegalActions,
-  normalSummon(state, player, uid) {
+  normalSummon(state, player, uid, summonSequence) {
     const card = findCard(state, uid);
     if (card && isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Normal Summoned`);
     if (card) paySummonOrSetCosts(state, player, card, [91]);
-    normalSummon(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), () => isNoTributeSummonAllowed(state, player));
+    normalSummon(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), () => isNoTributeSummonAllowed(state, player), undefined, summonSequence);
   },
-  tributeSummon(session, player, uid, tributeUids, effectId) {
+  tributeSummon(session, player, uid, tributeUids, effectId, summonSequence) {
     if (effectId !== undefined) {
       const card = findCard(session.state, uid);
       if (card) paySummonOrSetCosts(session.state, player, card, [91]);
-      normalSummonDuelByProcedure(session.state, player, uid, effectId, (eventName, eventCard) => collectTriggerEffects(session.state, eventName, eventCard));
+      normalSummonDuelByProcedure(session.state, player, uid, effectId, (eventName, eventCard) => collectTriggerEffects(session.state, eventName, eventCard), summonSequence);
       return;
     }
-    tributeSummonDuelCard(session.state, player, uid, tributeUids);
+    tributeSummonDuelCard(session.state, player, uid, tributeUids, summonSequence);
   },
   tributeSet: tributeSetDuelCard,
   fusionSummon: fusionSummonDuelCard,
   synchroSummon: synchroSummonDuelCard,
   xyzSummon: xyzSummonDuelCard,
   linkSummon: linkSummonDuelCard,
-  ritualSummon: ritualSummonDuelCard,
-  pendulumSummon: pendulumSummonDuelCards,
-  specialSummonProcedure(session, player, uid, effectId) {
-    specialSummonDuelByProcedure(session, player, uid, effectId, activationHandlers);
+  ritualSummon: (state, player, uid, materialUids, summonSequence) => {
+    ritualSummonDuelCard(state, player, uid, materialUids, undefined, summonSequence);
   },
-  setMonster(state, player, uid) {
+  pendulumSummon: pendulumSummonDuelCards,
+  specialSummonProcedure(session, player, uid, effectId, summonSequence) {
+    specialSummonDuelByProcedure(session, player, uid, effectId, activationHandlers, summonSequence);
+  },
+  setMonster(state, player, uid, summonSequence) {
     const card = findCard(state, uid);
     if (card && isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
     if (card) paySummonOrSetCosts(state, player, card, [94]);
-    setMonster(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload));
+    setMonster(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), undefined, summonSequence);
   },
   setSpellTrap(state, player, uid) {
     const card = findCard(state, uid);
@@ -402,11 +404,11 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
     actions.push(...ritualSummonActions(state, player, hand, createMaterialUsePredicate(state, "ritual")).filter((action) => canPerformTypedSpecialSummonAction(state, player, action, luaSummonTypeRitual)));
     actions.push(...pendulumSummonActions(state, player, (uid) => canSpecialSummonDuelCard(state, uid, player, luaSummonTypePendulum)));
     actions.push(...specialSummonProcedureActions(state, player, (effect, source, actionPlayer) => canChooseEffect(state, effect, source, actionPlayer), (uid, summonTypeCode, relatedEffectId) => canAttemptSpecialSummonProcedure(state, uid, summonTypeCode, relatedEffectId)));
-    if (hasZoneSpace(state, player, "spellTrapZone")) {
-      for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
-        if (isSpellTrapSetPrevented(state, player, card, createContinuousEffectContext(state))) continue;
-        actions.push({ type: "setSpellTrap", player, uid: card.uid, label: `Set ${card.name}` });
-      }
+    for (const card of hand.filter((candidate) => candidate.kind === "spell" || candidate.kind === "trap")) {
+      const setLocation = card.kind === "spell" && ((card.data.typeFlags ?? 0) & 0x80000) !== 0 ? "fieldZone" : "spellTrapZone";
+      if (!hasZoneSpace(state, player, setLocation)) continue;
+      if (isSpellTrapSetPrevented(state, player, card, createContinuousEffectContext(state))) continue;
+      actions.push({ type: "setSpellTrap", player, uid: card.uid, label: `Set ${card.name}` });
     }
     for (const effect of state.effects) {
       if (effect.controller !== player) continue;
@@ -458,11 +460,12 @@ export function runScriptedDuelResponses(session: DuelSession, steps: ScriptedRe
   return runScriptedDuelResponsesWithHandlers(session, steps, { getLegalActions, applyResponse });
 }
 
-export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}, summonTypeCode?: number, collectSuccess = true, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition, relatedEffectId?: number): DuelCardInstance {
+export function specialSummonDuelCard(state: DuelState, uid: string, controller?: PlayerId, reasonPlayer?: PlayerId, payload: Pick<DuelEventPayload, "eventReasonCardUid" | "eventReasonEffectId"> = {}, summonTypeCode?: number, collectSuccess = true, allowUnconditionalSpecialSummonCondition = false, summonPosition?: CardPosition, relatedEffectId?: number, summonSequence?: number): DuelCardInstance {
   const card = findCard(state, uid);
   if (!card) throw new Error(`Card ${uid} is not in the duel`);
   const summonController = controller ?? card.controller;
-  const sequence = firstOpenForcedMonsterZoneSequence(state, summonController, [], 0, duelReason.summon | duelReason.specialSummon, card);
+  const zoneMask = summonSequence === undefined ? 0 : zoneMaskForRequestedMonsterSequence(summonSequence);
+  const sequence = firstOpenForcedMonsterZoneSequence(state, summonController, [], zoneMask, duelReason.summon | duelReason.specialSummon, card);
   if (sequence === undefined) throw new Error(`monsterZone is full for player ${summonController}`);
   if (!canSpecialSummonDuelCard(state, uid, summonController, summonTypeCode, relatedEffectId ?? payload.eventReasonEffectId, allowUnconditionalSpecialSummonCondition, summonPosition)) throw new Error(`${card.name} cannot be Special Summoned`);
   applySpecialSummonCosts(state, summonController, createContinuousEffectContext(state), card, summonTypeCode);
@@ -500,6 +503,11 @@ export function canSpecialSummonDuelCard(state: DuelState, uid: string, controll
   if (availableForcedMonsterZoneCount(state, summonController, [], 0, duelReason.summon | duelReason.specialSummon, card) <= 0) return false;
   if (card.location === "extraDeck" && !isFaceUpPendulumExtraDeckCard(card) && !isFaceDownExtraDeckSummonTypeCode(summonTypeCode) && relatedEffectId === undefined) return false;
   return canMoveDuelCardToLocation(state, uid, "monsterZone");
+}
+
+function zoneMaskForRequestedMonsterSequence(sequence: number): number {
+  if (!Number.isSafeInteger(sequence) || sequence < 0 || sequence > 4) throw new Error(`Invalid monster zone ${sequence}`);
+  return 1 << sequence;
 }
 
 function canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number, relatedEffectId?: number): boolean {
@@ -546,16 +554,16 @@ export function setDuelAttackCostPaid(state: DuelState, status: number): number 
 
 export function getDuelAttackCostPaid(state: DuelState): number { return getDuelAttackCostPaidRule(state); }
 
-export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
+export function tributeSummonDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[], summonSequence?: number): void {
   const card = findCard(state, uid);
   if (card && isNormalSummonPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Tribute Summoned`);
   if (card) paySummonOrSetCosts(state, player, card, [91]);
   const summonTypeCode = card ? luaLimitNormalSummonProcedureValue(state, player, card.uid) : undefined;
   tributeSummonDuelCardWithEvents(state, player, uid, tributeUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload),
-    createMaterialMover(state), createReleasePredicate(state, duelReason.release | duelReason.summon), undefined, summonTypeCode);
+    createMaterialMover(state), createReleasePredicate(state, duelReason.release | duelReason.summon), undefined, summonTypeCode, summonSequence);
 }
 
-export function tributeSetDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[]): void {
+export function tributeSetDuelCard(state: DuelState, player: PlayerId, uid: string, tributeUids: string[], summonSequence?: number): void {
   const card = findCard(state, uid);
   if (card && isMonsterSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
   if (card) paySummonOrSetCosts(state, player, card, [94]);
@@ -563,6 +571,8 @@ export function tributeSetDuelCard(state: DuelState, player: PlayerId, uid: stri
     createMaterialMover(state),
     createReleasePredicate(state, duelReason.release | duelReason.summon),
     (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload),
+    undefined,
+    summonSequence,
   );
 }
 
@@ -573,29 +583,29 @@ export function flipSummonDuelCard(state: DuelState, player: PlayerId, uid: stri
   return flipSummonDuelCardWithEvents(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload));
 }
 
-export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+export function fusionSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeFusion, "Fusion Summoned");
-  return fusionSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "fusion"));
+  return fusionSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "fusion"), summonSequence);
 }
 
-export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+export function synchroSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeSynchro, "Synchro Summoned");
-  return synchroSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "synchro"));
+  return synchroSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "synchro"), summonSequence);
 }
 
-export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+export function xyzSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeXyz, "Xyz Summoned");
-  return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createOverlayMaterialMover(state), createMaterialUsePredicate(state, "xyz"));
+  return xyzSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createOverlayMaterialMover(state), createMaterialUsePredicate(state, "xyz"), summonSequence);
 }
 
-export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[]): DuelCardInstance {
+export function linkSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], summonSequence?: number): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeLink, "Link Summoned");
-  return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "link"));
+  return linkSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "link"), summonSequence);
 }
 
-export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], position?: CardPosition): DuelCardInstance {
+export function ritualSummonDuelCard(state: DuelState, player: PlayerId, uid: string, materialUids: string[], position?: CardPosition, summonSequence?: number): DuelCardInstance {
   requireTypedSpecialSummonAllowed(state, player, uid, luaSummonTypeRitual, "Ritual Summoned");
-  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"), position);
+  return ritualSummonDuelCardWithEvents(state, player, uid, materialUids, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), createMaterialMover(state), createMaterialUsePredicate(state, "ritual"), position, summonSequence);
 }
 
 export function pendulumSummonDuelCards(state: DuelState, player: PlayerId, summonUids: string[]): DuelCardInstance[] {

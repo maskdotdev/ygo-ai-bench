@@ -13,6 +13,7 @@ import { hasNormalSummonCountAvailable } from "#duel/extra-normal-summon.js";
 import { captureDuelState, restoreDuelState } from "#duel/state-rollback.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import { luaSummonTypeNormal, luaSummonTypeTribute, normalSummonProcedureTypeCodeFromValue, summonProcedureTypeCodeFromValue } from "#duel/summon-type-codes.js";
+import { firstOpenForcedMonsterZoneSequence } from "#duel/forced-monster-zones.js";
 import type {
   DuelCardInstance,
   DuelEffectContext,
@@ -98,7 +99,7 @@ export interface DuelActivationHandlers {
   resolveChain(state: DuelState): void;
   canAttemptSpecialSummonProcedure(state: DuelState, uid: string, summonTypeCode?: number, relatedEffectId?: number): boolean;
   canSpecialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number, summonPosition?: CardPosition): boolean;
-  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number, summonPosition?: CardPosition): DuelCardInstance;
+  specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number, summonPosition?: CardPosition, summonSequence?: number): DuelCardInstance;
 }
 
 export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers): void {
@@ -193,7 +194,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
   }
 }
 
-export function specialSummonDuelByProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers): void {
+export function specialSummonDuelByProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers, summonSequence?: number): void {
   const effect = session.state.effects.find((candidate) => candidate.id === effectId && candidate.sourceUid === uid && candidate.event === "summonProcedure");
   if (!effect) throw new Error(`Summon procedure ${effectId} is not registered`);
   const source = requireControlledCard(session.state, player, uid);
@@ -214,7 +215,7 @@ export function specialSummonDuelByProcedure(session: DuelSession, player: Playe
     if (!handlers.canSpecialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId, summonPosition)) throw new Error(`${source.name} cannot be Special Summoned`);
     const presetMaterialUids = summonTypeCode !== undefined ? [...(currentSource.summonMaterialUids ?? [])] : [];
     markEffectUsed(session.state, effect);
-    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId, summonPosition);
+    const summoned = handlers.specialSummonCard(session.state, uid, player, summonTypeCode, true, relatedEffectId, summonPosition, summonSequence);
     if (presetMaterialUids.length > 0) summoned.summonMaterialUids = presetMaterialUids;
     markProcedureComplete(summoned);
   } catch (error) {
@@ -237,6 +238,7 @@ export function normalSummonDuelByProcedure(
   uid: string,
   effectId: string,
   collectEvent: (eventName: DuelEventName, eventCard?: DuelCardInstance) => void,
+  summonSequence?: number,
 ): void {
   const effect = state.effects.find((candidate) => candidate.id === effectId && isNormalSummonProcedureCode(candidate.code));
   if (!effect) throw new Error(`Normal Summon procedure ${effectId} is not registered`);
@@ -254,8 +256,11 @@ export function normalSummonDuelByProcedure(
     const currentSource = requireControlledCard(state, player, uid, "hand");
     if (!hasZoneSpace(state, player, "monsterZone")) throw new Error(`${source.name} cannot be Normal Summoned`);
     const materialUids = [...(currentSource.summonMaterialUids ?? [])];
+    const sequence = firstOpenForcedMonsterZoneSequence(state, player, materialUids, summonSequence === undefined ? 0 : zoneMaskForRequestedMonsterSequence(summonSequence), duelReason.summon, currentSource);
+    if (sequence === undefined) throw new Error(`${source.name} cannot be Normal Summoned to that zone`);
     collectEvent("normalSummoning", currentSource);
     moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
+    currentSource.sequence = sequence;
     currentSource.position = "faceUpAttack";
     currentSource.faceUp = true;
     currentSource.summonType = normalProcedureSummonType(effect.value);
@@ -273,6 +278,11 @@ export function normalSummonDuelByProcedure(
     restoreDuelState(state, rollback);
     throw error;
   }
+}
+
+function zoneMaskForRequestedMonsterSequence(sequence: number): number {
+  if (!Number.isSafeInteger(sequence) || sequence < 0 || sequence > 4) throw new Error(`Invalid monster zone ${sequence}`);
+  return 1 << sequence;
 }
 
 function summonProcedureTypeCode(effect: DuelEffectDefinition): number | undefined {

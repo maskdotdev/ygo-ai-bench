@@ -29,7 +29,7 @@ export type DuelNormalSummonPredicate = (card: DuelCardInstance) => boolean;
 type ExtraDeckSummonType = "fusion" | "synchro" | "Xyz" | "Link";
 type SynchroMaterialCodes = { tuner: string; nonTuners: string[] };
 
-export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector, canSummonWithoutTribute: DuelNormalSummonPredicate = () => false, canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card)): void {
+export function normalSummon(state: DuelState, player: PlayerId, uid: string, collectEvent: DuelEventCollector, canSummonWithoutTribute: DuelNormalSummonPredicate = () => false, canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card), summonSequence?: number): void {
   const fieldCard = findCard(state, uid);
   if (fieldCard?.location === "monsterZone") {
     geminiNormalSummon(state, player, fieldCard, collectEvent, canUseNormalSummonCount);
@@ -40,7 +40,7 @@ export function normalSummon(state: DuelState, player: PlayerId, uid: string, co
   if (!isNormalSummonableMonster(state, card)) throw new Error(`${card.name} cannot be Normal Summoned`);
   if (tributeRangeForNormalSummon(card).min > 0 && !canSummonWithoutTribute(card)) throw new Error(`${card.name} requires a Tribute Summon`);
   if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
-  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.summon, card);
+  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.summon, card, summonSequence);
   collectEvent("normalSummoning", card);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
   card.sequence = sequence;
@@ -72,12 +72,12 @@ function geminiNormalSummon(state: DuelState, player: PlayerId, card: DuelCardIn
   collectEvent("normalSummoned", card);
 }
 
-export function setMonster(state: DuelState, player: PlayerId, uid: string, collectEvent?: DuelEventCollector, canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card)): void {
+export function setMonster(state: DuelState, player: PlayerId, uid: string, collectEvent?: DuelEventCollector, canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card), summonSequence?: number): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (tributeRangeForNormalSummon(card).min > 0) throw new Error(`${card.name} requires tributes to Set`);
   if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
-  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.rule, card);
+  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.rule, card, summonSequence);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
   card.sequence = sequence;
   card.position = "faceDownDefense";
@@ -97,13 +97,14 @@ export function tributeSetDuelCard(
   canReleaseMaterial: DuelMaterialPredicate = () => true,
   collectEvent?: DuelEventCollector,
   canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card),
+  summonSequence?: number,
 ): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
   if (!canUseNormalSummonCount(card)) throw new Error("Normal Summon is not available");
   const { uniqueTributes, tributeUnits } = validateNormalTributes(state, player, card, tributeUids, canReleaseMaterial);
   releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed to Set ${card.name}`, collectEvent);
-  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.rule, card);
+  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.rule, card, summonSequence);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.rule);
   card.sequence = sequence;
   card.position = "faceDownDefense";
@@ -129,6 +130,7 @@ export function tributeSummonDuelCard(
   canReleaseMaterial: DuelMaterialPredicate = () => true,
   canUseNormalSummonCount: DuelNormalSummonPredicate = (card) => hasNormalSummonCountAvailable(state, player, card),
   summonTypeCode?: number,
+  summonSequence?: number,
 ): void {
   const card = requireControlledCard(state, player, uid, "hand");
   if (card.kind !== "monster") throw new Error(`${card.name} is not a monster`);
@@ -137,7 +139,7 @@ export function tributeSummonDuelCard(
   releaseNormalTributes(state, player, card, uniqueTributes, moveMaterial, `Tributed for ${card.name}`, collectEvent);
 
   collectEvent("normalSummoning", card);
-  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.summon, card);
+  const sequence = requireForcedMonsterZoneSequence(state, player, duelReason.summon, card, summonSequence);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon);
   card.sequence = sequence;
   card.position = "faceUpAttack";
@@ -217,6 +219,7 @@ export function fusionSummonDuelCard(
   collectEvent: DuelEventCollector,
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canUseMaterial: DuelMaterialPredicate = () => true,
+  summonSequence?: number,
 ): DuelCardInstance {
   const { card, materials } = requireFusionSummonMaterials(state, player, uid, materialUids, canUseMaterial);
   for (const material of materials) {
@@ -228,7 +231,7 @@ export function fusionSummonDuelCard(
   }
 
   collectEvent("specialSummoning", card);
-  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.fusion, card);
+  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.fusion, card, summonSequence);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.fusion);
   card.sequence = sequence;
   card.position = "faceUpAttack";
@@ -252,6 +255,7 @@ export function synchroSummonDuelCard(
   collectEvent: DuelEventCollector,
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canUseMaterial: DuelMaterialPredicate = () => true,
+  summonSequence?: number,
 ): DuelCardInstance {
   const { card, materials } = requireSynchroSummonMaterials(state, player, uid, materialUids, canUseMaterial);
   for (const material of materials) {
@@ -263,7 +267,7 @@ export function synchroSummonDuelCard(
   }
 
   collectEvent("specialSummoning", card);
-  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.synchro, card);
+  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.synchro, card, summonSequence);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.synchro);
   card.sequence = sequence;
   card.position = "faceUpAttack";
@@ -287,6 +291,7 @@ export function xyzSummonDuelCard(
   collectEvent: DuelEventCollector,
   moveMaterial: DuelOverlayMaterialMover = defaultOverlayMaterialMover(state),
   canUseMaterial: DuelMaterialPredicate = () => true,
+  summonSequence?: number,
 ): DuelCardInstance {
   const { card, materials } = requireXyzSummonMaterials(state, player, uid, materialUids, canUseMaterial);
   card.overlayUids = [];
@@ -299,7 +304,7 @@ export function xyzSummonDuelCard(
   }
 
   collectEvent("specialSummoning", card);
-  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.xyz, card);
+  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.xyz, card, summonSequence);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.xyz);
   card.sequence = sequence; card.position = "faceUpAttack"; card.faceUp = true; card.summonType = "xyz";
   card.summonPlayer = player; card.summonPhase = state.phase; card.summonMaterialUids = [...materialUids];
@@ -319,6 +324,7 @@ export function linkSummonDuelCard(
   collectEvent: DuelEventCollector,
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canUseMaterial: DuelMaterialPredicate = () => true,
+  summonSequence?: number,
 ): DuelCardInstance {
   const { card, materials } = requireLinkSummonMaterials(state, player, uid, materialUids, canUseMaterial);
   for (const material of materials) {
@@ -330,7 +336,7 @@ export function linkSummonDuelCard(
   }
 
   collectEvent("specialSummoning", card);
-  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.link, card);
+  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.link, card, summonSequence);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.link);
   card.sequence = sequence;
   card.position = "faceUpAttack";
@@ -355,6 +361,7 @@ export function ritualSummonDuelCard(
   moveMaterial: DuelMaterialMover = defaultMaterialMover(state),
   canUseMaterial: DuelMaterialPredicate = () => true,
   position: CardPosition = "faceUpAttack",
+  summonSequence?: number,
 ): DuelCardInstance {
   const card = requireControlledCard(state, player, uid, "hand");
   const requiredMaterials = card.data.ritualMaterials ?? [];
@@ -379,7 +386,7 @@ export function ritualSummonDuelCard(
   }
 
   collectEvent("specialSummoning", card);
-  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.ritual, card);
+  const sequence = requireForcedMonsterZoneSequenceAfterMaterials(state, player, materialUids, duelReason.summon | duelReason.specialSummon | duelReason.ritual, card, summonSequence);
   moveDuelCard(state, uid, "monsterZone", player, duelReason.summon | duelReason.specialSummon | duelReason.ritual);
   card.sequence = sequence;
   card.position = position;
@@ -427,8 +434,9 @@ export function normalSummonActions(state: DuelState, player: PlayerId, hand: Du
   return actions;
 }
 
-function requireForcedMonsterZoneSequence(state: DuelState, player: PlayerId, reason: number, card: DuelCardInstance): number {
-  const sequence = firstOpenForcedMonsterZoneSequence(state, player, [], 0, reason, card);
+function requireForcedMonsterZoneSequence(state: DuelState, player: PlayerId, reason: number, card: DuelCardInstance, requestedSequence?: number): number {
+  const zoneMask = requestedSequence === undefined ? 0 : zoneMaskForRequestedMonsterSequence(requestedSequence);
+  const sequence = firstOpenForcedMonsterZoneSequence(state, player, [], zoneMask, reason, card);
   if (sequence === undefined) throw new Error(`monsterZone is full for player ${player}`);
   return sequence;
 }
@@ -679,8 +687,8 @@ export function fusionMaterialMatches(state: DuelState, target: DuelCardInstance
 export function fusionRequiredMaterialPredicateMatches(state: DuelState, material: DuelCardInstance, predicate: NonNullable<DuelCardInstance["data"]["fusionRequiredMaterialPredicates"]>[number]): boolean { return (predicate.attribute === undefined || (currentAttribute(material, state) & predicate.attribute) !== 0) && (predicate.attackMax === undefined || currentAttack(material, state) <= predicate.attackMax) && (predicate.attackMin === undefined || currentAttack(material, state) >= predicate.attackMin) && (predicate.levelMax === undefined || currentLevel(material, state) <= predicate.levelMax) && (predicate.levelMin === undefined || currentLevel(material, state) >= predicate.levelMin) && (predicate.location === undefined || fusionMaterialLocationMatches(material, predicate.location)) && (predicate.race === undefined || (currentRace(material, state) & predicate.race) !== 0) && (predicate.setcode === undefined || currentCardMatchesSetcode(material, state, predicate.setcode)) && (predicate.type === undefined || (cardTypeFlags(material, state) & predicate.type) !== 0); }
 
 function fusionMaterialLocationMatches(material: DuelCardInstance, mask: number): boolean {
-  const locationMask = material.location === "deck" ? 0x01 : material.location === "hand" ? 0x02 : material.location === "monsterZone" ? 0x04 : material.location === "spellTrapZone" ? 0x08 : material.location === "graveyard" ? 0x10 : material.location === "banished" ? 0x20 : material.location === "extraDeck" ? 0x40 : material.location === "overlay" ? 0x80 : 0;
-  return (mask & locationMask) !== 0 || (material.location === "spellTrapZone" && (((mask & 0x200) !== 0 && (material.sequence === 0 || material.sequence === 1)) || (mask & 0x400) !== 0)) || (material.location === "monsterZone" && (((mask & 0x800) !== 0 && material.sequence >= 0 && material.sequence <= 4) || ((mask & 0x1000) !== 0 && material.sequence >= 5 && material.sequence <= 6)));
+  const locationMask = material.location === "deck" ? 0x01 : material.location === "hand" ? 0x02 : material.location === "monsterZone" ? 0x04 : material.location === "spellTrapZone" || material.location === "fieldZone" ? 0x08 : material.location === "graveyard" ? 0x10 : material.location === "banished" ? 0x20 : material.location === "extraDeck" ? 0x40 : material.location === "overlay" ? 0x80 : 0;
+  return (mask & locationMask) !== 0 || (material.location === "fieldZone" && (mask & 0x100) !== 0) || (material.location === "spellTrapZone" && (((mask & 0x200) !== 0 && (material.sequence === 0 || material.sequence === 1)) || (mask & 0x400) !== 0)) || (material.location === "monsterZone" && (((mask & 0x800) !== 0 && material.sequence >= 0 && material.sequence <= 4) || ((mask & 0x1000) !== 0 && material.sequence >= 5 && material.sequence <= 6)));
 }
 export function fusionMaterialSelectionMatches(state: DuelState, target: DuelCardInstance, materials: DuelCardInstance[]): boolean {
   const requiredCodes = target.data.fusionMaterials ?? [], requiredSetcodes = target.data.fusionRequiredMaterialSetcodes ?? [], requiredPredicates = target.data.fusionRequiredMaterialPredicates ?? [];
@@ -769,10 +777,16 @@ function requireSummonZoneAfterMaterials(state: DuelState, player: PlayerId, mat
   if (!hasSummonZoneAfterMaterials(state, player, materialUids, reason, card)) throw new Error(`monsterZone is full for player ${player}`);
 }
 
-function requireForcedMonsterZoneSequenceAfterMaterials(state: DuelState, player: PlayerId, materialUids: string[], reason: number, card: DuelCardInstance): number {
-  const sequence = firstOpenForcedMonsterZoneSequence(state, player, materialUids, 0, reason, card);
+function requireForcedMonsterZoneSequenceAfterMaterials(state: DuelState, player: PlayerId, materialUids: string[], reason: number, card: DuelCardInstance, requestedSequence?: number): number {
+  const zoneMask = requestedSequence === undefined ? 0 : zoneMaskForRequestedMonsterSequence(requestedSequence);
+  const sequence = firstOpenForcedMonsterZoneSequence(state, player, materialUids, zoneMask, reason, card);
   if (sequence === undefined) throw new Error(`monsterZone is full for player ${player}`);
   return sequence;
+}
+
+function zoneMaskForRequestedMonsterSequence(sequence: number): number {
+  if (!Number.isSafeInteger(sequence) || sequence < 0 || sequence > 4) throw new Error(`Invalid monster zone ${sequence}`);
+  return 1 << sequence;
 }
 
 function extraDeckSummonReason(summonType: ExtraDeckSummonType): number {

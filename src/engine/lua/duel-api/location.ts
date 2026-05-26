@@ -100,6 +100,7 @@ export function availableMonsterZoneCount(session: DuelSession, player: PlayerId
 
 function availableLocationCount(session: DuelSession, player: PlayerId, locationMask: number, zoneMask: number, reason: number): number {
   const locations = locationsFromMask(locationMask);
+  if ((locationMask & 0x100) !== 0) return hasFieldZoneSpace(session, player) ? 1 : 0;
   if (locations.includes("monsterZone")) return availableMonsterZoneCountInMask(session, player, [], zoneMask, reason);
   if ((locationMask & 0x200) !== 0) return availablePendulumZoneCount(session, player);
   if (locations.includes("spellTrapZone")) return availableSpellTrapZoneCountInMask(session, player, zoneMask);
@@ -116,6 +117,7 @@ function availableSpellTrapZoneCountInMask(session: DuelSession, player: PlayerI
 
 function isLocationSequenceOpen(session: DuelSession, player: PlayerId, locationMask: number, sequence: number): boolean {
   if ((locationMask & 0x200) !== 0) return isPendulumZoneOpen(session, player, sequence);
+  if ((locationMask & 0x100) !== 0) return sequence === 0 || sequence === 5 ? hasFieldZoneSpace(session, player) : false;
   const location = (locationMask & 0x04) !== 0 ? "monsterZone" : (locationMask & 0x08) !== 0 ? "spellTrapZone" : undefined;
   if (!location) return true;
   if (sequence < 0 || sequence >= 5) return false;
@@ -132,6 +134,10 @@ function pushCheckPendulumZones(L: unknown, session: DuelSession): number {
 
 function availablePendulumZoneCount(session: DuelSession, player: PlayerId): number {
   return [0, 1].filter((sequence) => isPendulumZoneOpen(session, player, sequence)).length;
+}
+
+function hasFieldZoneSpace(session: DuelSession, player: PlayerId): boolean {
+  return !session.state.cards.some((card) => card.controller === player && card.location === "fieldZone");
 }
 
 function isPendulumZoneOpen(session: DuelSession, player: PlayerId, sequence: number): boolean {

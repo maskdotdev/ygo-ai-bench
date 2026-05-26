@@ -4,7 +4,7 @@ export type DuelWinner = PlayerId | "draw";
 export type DuelPhase = "draw" | "standby" | "main1" | "battle" | "main2" | "end";
 export type DuelStatus = "setup" | "awaiting" | "resolving" | "ended";
 export type CardPosition = "faceDownDefense" | "faceUpAttack" | "faceUpDefense" | "faceDown";
-export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "graveyard" | "banished" | "extraDeck" | "overlay";
+export type DuelLocation = "deck" | "hand" | "monsterZone" | "spellTrapZone" | "fieldZone" | "graveyard" | "banished" | "extraDeck" | "overlay";
 export type DuelCardKind = "monster" | "spell" | "trap" | "extra";
 export interface FusionMaterialPredicateRequirement {
   attribute?: number;
@@ -677,19 +677,19 @@ export interface DuelSession {
 export type DuelCardReader = (code: string) => DuelCardData | undefined;
 
 export type DuelAction = (
-  | { type: "normalSummon"; player: PlayerId; uid: string; label: string }
-  | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; effectId?: string; label: string }
-  | { type: "tributeSet"; player: PlayerId; uid: string; tributeUids: string[]; label: string }
-  | { type: "fusionSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
-  | { type: "synchroSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
-  | { type: "xyzSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
-  | { type: "linkSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
-  | { type: "ritualSummon"; player: PlayerId; uid: string; materialUids: string[]; label: string }
+  | { type: "normalSummon"; player: PlayerId; uid: string; summonSequence?: number; label: string }
+  | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; effectId?: string; summonSequence?: number; label: string }
+  | { type: "tributeSet"; player: PlayerId; uid: string; tributeUids: string[]; summonSequence?: number; label: string }
+  | { type: "fusionSummon"; player: PlayerId; uid: string; materialUids: string[]; summonSequence?: number; label: string }
+  | { type: "synchroSummon"; player: PlayerId; uid: string; materialUids: string[]; summonSequence?: number; label: string }
+  | { type: "xyzSummon"; player: PlayerId; uid: string; materialUids: string[]; summonSequence?: number; label: string }
+  | { type: "linkSummon"; player: PlayerId; uid: string; materialUids: string[]; summonSequence?: number; label: string }
+  | { type: "ritualSummon"; player: PlayerId; uid: string; materialUids: string[]; summonSequence?: number; label: string }
   | { type: "pendulumSummon"; player: PlayerId; summonUids: string[]; maxSummons: number; label: string }
-  | { type: "setMonster"; player: PlayerId; uid: string; label: string }
+  | { type: "setMonster"; player: PlayerId; uid: string; summonSequence?: number; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
   | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
-  | { type: "specialSummonProcedure"; player: PlayerId; uid: string; effectId: string; label: string }
+  | { type: "specialSummonProcedure"; player: PlayerId; uid: string; effectId: string; summonSequence?: number; label: string }
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "passAttack"; player: PlayerId; label: string }
   | { type: "passDamage"; player: PlayerId; label: string }
