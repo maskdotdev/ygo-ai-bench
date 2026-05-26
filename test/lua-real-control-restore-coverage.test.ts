@@ -36,6 +36,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-eternal-bond-revive-control-attack-lock.test.ts"
 // Restore ownership: "test/lua-real-script-eulers-circuit-field-control-search.test.ts"
 // Restore ownership: "test/lua-real-script-evil-eye-mesmerism-persistent-control.test.ts"
+// Restore ownership: "test/lua-real-script-evil-hero-neos-lord-summon-grave-control-protect.test.ts"
 // Restore ownership: "test/lua-real-script-evil-twin-present-swap-todeck.test.ts"
 // Restore ownership: "test/lua-real-script-eye-illusion-select-control.test.ts"
 // Restore ownership: "test/lua-real-script-giant-ballgame-activate-summon-swap-race.test.ts"
@@ -100,7 +101,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 52;
+const controlFixtureCount = 53;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -135,6 +136,7 @@ const controlKindCounts = {
   selfDiscardTemporaryControl: 1,
   selfToGraveAttributeControl: 1,
   summonTriggerTemporaryControl: 1,
+  summonAndGraveTriggerControlProtect: 1,
   summonProcControlAttackLockStat: 1,
   linkedLpCostControlDelayedDestroy: 1,
   swapControlLock: 1,
@@ -195,6 +197,7 @@ type ControlKind =
   | "selfDiscardTemporaryControl"
   | "selfToGraveAttributeControl"
   | "summonTriggerTemporaryControl"
+  | "summonAndGraveTriggerControlProtect"
   | "summonProcControlAttackLockStat"
   | "linkedLpCostControlDelayedDestroy"
   | "swapControlLock"
@@ -491,6 +494,28 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.GetControl(tc,tp,PHASE_END,1)",
         'eventName: "released"',
         'eventName: "becameTarget"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-evil-hero-neos-lord-summon-grave-control-protect.test.ts",
+      kind: "summonAndGraveTriggerControlProtect",
+      required: [
+        'const neosLordCode = "13708888"',
+        "--Evil HERO Neos Lord",
+        "Fusion.AddProcMix(c,true,true,{CARD_NEOS,s.neosfusionmatfilter},s.effectmatfilter)",
+        "c:AddMustBeSpecialSummonedByDarkFusion()",
+        "e1:SetCode(EVENT_SPSUMMON_SUCCESS)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "EFFECT_FLAG2_CHECK_SIMULTANEOUS",
+        "return eg:IsExists(s.ctrlconfilter,1,nil,tp)",
+        "Duel.SelectTarget(tp,aux.FaceupFilter(Card.IsControlerCanBeChanged),tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp)",
+        "e3:SetCode(EFFECT_INDESTRUCTABLE_BATTLE)",
+        "e4:SetCode(EFFECT_INDESTRUCTABLE_EFFECT)",
+        'eventName: "specialSummoned"',
+        'eventName: "sentToGraveyard"',
         'eventName: "controlChanged"',
         "previousController: 1",
       ],
@@ -1133,6 +1158,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       selfDiscardTemporaryControl: 0,
       selfToGraveAttributeControl: 0,
       summonTriggerTemporaryControl: 0,
+      summonAndGraveTriggerControlProtect: 0,
       summonProcControlAttackLockStat: 0,
       linkedLpCostControlDelayedDestroy: 0,
       swapControlLock: 0,
