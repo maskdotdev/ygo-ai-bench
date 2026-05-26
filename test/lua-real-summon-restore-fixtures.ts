@@ -198,7 +198,6 @@ export type PendulumGrantKind =
 export function realScriptSummonFixtureFiles(): string[] {
   // Restore ownership: "test/lua-real-script-de-synchro-extra-return-material-revive.test.ts"
   // Restore ownership: "test/lua-real-script-mimighoul-archfiend-hand-set-summon.test.ts"
-  // Restore ownership: "test/lua-real-script-mythical-beast-jackal-counter-summon.test.ts"
   return fs.readdirSync(testRoot)
     .filter((file) => file.startsWith("lua-real-script-") && file.endsWith(".test.ts"))
     .filter((file) => !nonSummonKeywordFixtures.has(file))

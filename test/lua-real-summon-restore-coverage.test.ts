@@ -71,6 +71,8 @@ import {
   ignitionCostSpecialSummonKindCounts,
   realScriptIgnitionCostSpecialSummonFixtureSnippets,
 } from "./lua-real-ignition-cost-special-summon-restore-fixtures.js";
+
+// Restore ownership: "test/lua-real-script-mythical-beast-jackal-counter-summon.test.ts"
 import {
   countReleaseCostSpecialSummonKinds,
   realScriptReleaseCostSpecialSummonFixtureSnippets,
