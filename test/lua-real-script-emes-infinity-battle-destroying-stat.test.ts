@@ -90,7 +90,7 @@ describe.skipIf(!hasUpstreamScripts || !hasEmesScript)("Lua real script Emes the
         player: 0,
         triggerBucket: "turnMandatory",
         eventName: "battleDestroyed",
-        eventCode: eventBattleDestroyed,
+        eventCode: eventBattleDestroying,
         eventCardUid: emes.uid,
         eventReason: duelReason.battle | duelReason.destroy,
         eventReasonCardUid: emes.uid,
