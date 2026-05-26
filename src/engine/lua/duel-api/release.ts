@@ -163,12 +163,11 @@ function pushCheckReleaseGroupCost(L: unknown, session: DuelSession, hostState: 
   const query = readReleaseCostQuery(L, session, false);
   const selected = selectedReleasableMonsterUids(session, query.player, query.excluded, hostState.selectedUids, query.useHand);
   const available = releasableMonsterUids(L, session, query.filterRef, query.player, [...query.excluded, ...selected], query.args, query.useHand, hostState);
-  const candidate = [...selected, ...available].slice(0, query.maximum);
+  const candidate = releaseCostSelection(L, query, selected, available, "check");
   releaseOptionalFunctionRef(L, query.filterRef);
-  const matchesCheck = candidate.length >= query.minimum && releaseCostCheckMatches(L, query.checkRef, candidate, query.player, query.excluded, query.args);
   releaseOptionalFunctionRef(L, query.checkRef);
   const count = selected.length + available.length;
-  lua.lua_pushboolean(L, count >= query.minimum && selected.length <= query.maximum && matchesCheck);
+  lua.lua_pushboolean(L, count >= query.minimum && selected.length <= query.maximum && candidate.length >= query.minimum);
   return 1;
 }
 
@@ -176,13 +175,46 @@ function pushSelectReleaseGroupCost(L: unknown, session: DuelSession, hostState:
   const query = readReleaseCostQuery(L, session, true);
   const selected = selectedReleasableMonsterUids(session, query.player, query.excluded, hostState.selectedUids, query.useHand);
   const candidates = selected.length > query.maximum ? [] : [...selected, ...releasableMonsterUids(L, session, query.filterRef, query.player, [...query.excluded, ...selected], query.args, query.useHand, hostState)];
-  const limit = query.maximum > 0 ? query.maximum : Math.max(query.minimum, 1);
-  const uids = candidates.slice(0, limit);
   releaseOptionalFunctionRef(L, query.filterRef);
-  const checked = uids.length >= query.minimum && releaseCostCheckMatches(L, query.checkRef, uids, query.player, query.excluded, query.args) ? uids : [];
+  const checked = releaseCostSelection(L, query, selected, candidates.slice(selected.length), "select");
   releaseOptionalFunctionRef(L, query.checkRef);
   pushGroupTable(L, checked);
   return 1;
+}
+
+function releaseCostSelection(L: unknown, query: ReleaseCostQuery, selected: string[], available: string[], mode: "check" | "select"): string[] {
+  if (selected.length > query.maximum) return [];
+  const minimumExtra = Math.max(0, query.minimum - selected.length);
+  const maximumExtra = Math.max(0, query.maximum - selected.length);
+  const legacy = [...selected, ...available.slice(0, maximumExtra)];
+  if (legacy.length >= query.minimum && releaseCostCheckMatches(L, query.checkRef, legacy, query.player, query.excluded, query.args)) return legacy;
+  if (mode === "check" && query.minimum < 2) return [];
+  for (let extraCount = Math.min(maximumExtra, available.length); extraCount >= minimumExtra; extraCount -= 1) {
+    for (const extra of releaseCombinations(available, extraCount)) {
+      const uids = [...selected, ...extra];
+      if (uids.length >= query.minimum && releaseCostCheckMatches(L, query.checkRef, uids, query.player, query.excluded, query.args)) return uids;
+    }
+  }
+  return [];
+}
+
+function releaseCombinations(values: string[], count: number): string[][] {
+  if (count === 0) return [[]];
+  if (count > values.length) return [];
+  const combinations: string[][] = [];
+  const visit = (start: number, picked: string[]): void => {
+    if (picked.length === count) {
+      combinations.push([...picked]);
+      return;
+    }
+    for (let index = start; index <= values.length - (count - picked.length); index += 1) {
+      picked.push(values[index]!);
+      visit(index + 1, picked);
+      picked.pop();
+    }
+  };
+  visit(0, []);
+  return combinations;
 }
 
 function pushCheckReleaseGroupSummon(L: unknown, session: DuelSession, hostState: LuaDuelReleaseApiHostState): number {
