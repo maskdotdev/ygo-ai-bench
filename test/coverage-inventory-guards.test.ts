@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 
 const root = process.cwd();
 const testRoot = path.join(root, "test");
-const trackedTestFileCache = new Set(
-  execSync("git ls-files test", { cwd: root, encoding: "utf8" })
+const committedTestFileCache = new Set(
+  execSync("git ls-tree -r --name-only HEAD -- test", { cwd: root, encoding: "utf8" })
     .split("\n")
     .filter((file) => file.startsWith("test/"))
     .map((file) => path.basename(file)),
@@ -14,7 +14,7 @@ const trackedTestFileCache = new Set(
 
 function testFiles(): string[] {
   return fs.readdirSync(testRoot)
-    .filter((file) => trackedTestFileCache.has(file));
+    .filter((file) => committedTestFileCache.has(file));
 }
 
 describe("coverage inventory guards", () => {
@@ -69,7 +69,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(2097);
+    expect(exactCount).toBe(2099);
   });
 
   it("requires Lua registration proof counts to be exact", () => {
@@ -91,7 +91,7 @@ describe("coverage inventory guards", () => {
       }, 0);
 
     expect(loose).toEqual([]);
-    expect(exactCount).toBe(2731);
+    expect(exactCount).toBe(2733);
   });
 
   it("requires non-coverage Lua restore tests to prove raw, grouped, and flattened restored actions", () => {
@@ -110,7 +110,7 @@ describe("coverage inventory guards", () => {
           || !hasFlattenedGroupedRestoreEvidence(text);
       });
 
-    expect(restoreFiles).toHaveLength(2079);
+    expect(restoreFiles).toHaveLength(2081);
     expect(missingRestoreEvidence).toEqual([]);
   });
 
@@ -149,7 +149,7 @@ describe("coverage inventory guards", () => {
       .filter((helper) => !hasStrongRestoreHelper(readTestFile(helper.file), helper.name))
       .map((helper) => `${helper.file}:${helper.line}:${helper.name}`);
 
-    expect(helpers).toHaveLength(1458);
+    expect(helpers).toHaveLength(1460);
     expect(weak).toEqual([]);
   });
 
@@ -317,7 +317,7 @@ describe("coverage inventory guards", () => {
           .map((match) => `${file}:${lineNumber(text, match.index ?? 0)}`);
       });
 
-    expect(files).toHaveLength(3030);
+    expect(files).toHaveLength(3034);
     expect(weak).toEqual([]);
   });
 

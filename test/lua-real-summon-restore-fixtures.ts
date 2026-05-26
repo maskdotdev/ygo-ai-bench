@@ -11,8 +11,8 @@ import { realScriptSummonSuccessTargetSpecialSummonFixtureSnippets, summonSucces
 
 export const root = process.cwd();
 export const testRoot = path.join(root, "test");
-const trackedTestFileCache = new Set(
-  execSync("git ls-files test", { cwd: root, encoding: "utf8" })
+const committedTestFileCache = new Set(
+  execSync("git ls-tree -r --name-only HEAD -- test", { cwd: root, encoding: "utf8" })
     .split("\n")
     .filter((file) => file.startsWith("test/"))
     .map((file) => path.basename(file)),
@@ -24,9 +24,9 @@ const nonSummonKeywordFixtures = new Set([
 
 function testFiles(): string[] {
   return fs.readdirSync(testRoot)
-    .filter((file) => trackedTestFileCache.has(file));
+    .filter((file) => committedTestFileCache.has(file));
 }
-export const realScriptSummonFixtureCount = 500;
+export const realScriptSummonFixtureCount = 502;
 export const summonProcedureFixtureCount = 39;
 export const typedSummonProcedureFixtureCount = 6;
 export const pendulumGrantFixtureCount = 4;
@@ -40,10 +40,10 @@ export const tributeMaterialFixtureCount = 1;
 export const unsummonableSummonSetLockFixtureCount = 1;
 export const realScriptSummonKeywordFamilyCounts = {
   fusion: 68,
-  link: 40,
+  link: 41,
   pendulum: 25,
   ritual: 29,
-  summon: 275,
+  summon: 276,
   synchro: 43,
   xyz: 20,
 } satisfies Record<RealScriptSummonKeywordFamily, number>;
