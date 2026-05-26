@@ -107,7 +107,8 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
 // Restore ownership: "test/lua-real-script-reeze-gusto-deck-cost-swap-control.test.ts"
 // Restore ownership: "test/lua-real-script-terror-byte-detach-level-control.test.ts"
-const controlFixtureCount = 64;
+// Restore ownership: "test/lua-real-script-possessed-dark-soul-self-tribute-group-control.test.ts"
+const controlFixtureCount = 65;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -140,6 +141,7 @@ const controlKindCounts = {
   tunerGraveStatDiscardControl: 1,
   spellDiscardCostControl: 1,
   deckCostTargetedSwapControl: 1,
+  selfTributeGroupControl: 1,
   handMonsterCostDefenseControlPositionLock: 1,
   discardCostGroupControlLock: 1,
   releaseCostControl: 3,
@@ -212,6 +214,7 @@ type ControlKind =
   | "tunerGraveStatDiscardControl"
   | "spellDiscardCostControl"
   | "deckCostTargetedSwapControl"
+  | "selfTributeGroupControl"
   | "handMonsterCostDefenseControlPositionLock"
   | "discardCostGroupControlLock"
   | "releaseCostControl"
@@ -1220,6 +1223,25 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-possessed-dark-soul-self-tribute-group-control.test.ts",
+      kind: "selfTributeGroupControl",
+      required: [
+        "restores SelfTribute cost into non-targeting Level 3-or-lower group control",
+        "--Possessed Dark Soul",
+        "e1:SetCategory(CATEGORY_CONTROL)",
+        "e1:SetCost(Cost.SelfTribute)",
+        "return c:IsLevelBelow(3) and c:IsFaceup() and c:IsControlerCanBeChanged(true)",
+        "Duel.GetMZoneCount(tp,e:GetHandler())>0",
+        "Duel.IsExistingMatchingCard(s.controlfilter,tp,0,LOCATION_MZONE,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,nil,1,1-tp,LOCATION_MZONE)",
+        "Duel.GetMatchingGroup(s.controlfilter,tp,0,LOCATION_MZONE,nil)",
+        "Duel.GetControl(g,tp)",
+        'eventName: "released"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-mind-control-restrictions.test.ts",
       kind: "restrictedTemporaryControl",
       required: [
@@ -1417,6 +1439,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       tunerGraveStatDiscardControl: 0,
       spellDiscardCostControl: 0,
       deckCostTargetedSwapControl: 0,
+      selfTributeGroupControl: 0,
       handMonsterCostDefenseControlPositionLock: 0,
       discardCostGroupControlLock: 0,
       releaseCostControl: 0,
