@@ -39,7 +39,7 @@ export function collectDuelGroupedTriggerEffectsWithChooser(
   const triggerCode = eventOptions.triggerEventCode ?? eventCode;
   const triggerOptions = triggerCode === undefined ? eventOptions : { ...eventOptions, eventCode: triggerCode };
   recordDuelEvent(state, eventName, eventCard, eventCode, eventRecordPayload(eventCard, groupedOptions));
-  if (eventCode !== undefined) executeContinuousEvent?.(state, eventName, eventCode, uniqueEventCards, triggerOptions, continuousChainLink);
+  if (triggerCode !== undefined) executeContinuousEvent?.(state, eventName, triggerCode, uniqueEventCards, triggerOptions, continuousChainLink);
   const chooser = (
     duel: DuelState,
     effect: DuelEffectDefinition,

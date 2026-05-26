@@ -3,7 +3,7 @@ import { fallbackCardReader } from "#duel/card-reader.js";
 import { createActionWindowToken } from "#duel/action-window-token.js";
 import { currentCardMatchesCode, currentCardMatchesSetcode } from "#duel/card-code-state.js";
 import { cardTypeFlags, currentAttack, currentAttackWithoutEffect, currentAttribute, currentLevel, currentRace } from "#duel/card-stats.js";
-import { getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
+import { addDuelCardCounter, getDuelCardCounter, removeDuelCardCounter } from "#duel/counters.js";
 import { addDuelChainLimit, applyResponse, banishDuelCard, canMoveDuelCardToLocation, canPlayerSpecialSummon, collectDuelGroupedTriggerEffects, collectDuelTriggerEffects, collectDuelTriggerEvent, damageDuelPlayer, destroyDuelCard, detachDuelOverlayMaterials, drawDuelCards, getGroupedDuelLegalActions, getLegalActions, moveDuelCardWithRedirects, queryPublicState, recoverDuelPlayer, sendDuelCardToGraveyard } from "#duel/core.js"; import { isControlChangePrevented } from "#duel/continuous-effects.js"; import { currentBattleStep } from "#duel/battle-window-state.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import { duelLocations } from "#duel/location-kinds.js";
@@ -106,6 +106,7 @@ const luaOldEntityHastorrCode = "70913714";
 const luaArcanaForceMoonCode = "97452817";
 const luaInterplanetaryInvaderACode = "14729426";
 const luaAlienHypnoCode = "38468214";
+const luaACellIncubatorCode = "64163367";
 const luaCenterfrogCode = "47346782";
 const luaArmitylePhantomFuryCode = "60110982";
 const luaBlazeCannonCode = "4059313"; const luaPenetrationFusionCode = "8778267"; const luaBattlinBoxerLeadYokeCode = "23232295"; const luaParticleFusionCode = "39261576"; const luaGauntletWarriorCode = "79337169";
@@ -400,7 +401,7 @@ function mergeRestoredLuaEffectMetadata(effect: DuelEffectDefinition, snapshotEf
   if (!snapshotEffect) return effect;
   return {
     ...effect, ...((isKnownOverdoomLineAttackBoostEffect(snapshotEffect) || isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || snapshotEffect.luaConditionDescriptor?.startsWith("condition:attack-target-controller:self-no-player-flag:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:battle-phase-own-code-battler:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-battle-target") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-status-summon-type:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-relate-battle-target") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:normal-summon-proc-own-faceup:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:normal-summon-proc-opponent-mzone-count-at-least:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:controller-has-faceup-setcode:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:event-player:") === true || snapshotEffect.luaConditionDescriptor === "condition:event-group-opponent-extra-deck-special-summon" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:event-previous-controller-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor === "condition:damage-source-relate-battle-target" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason-all:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-location-reason-all-player:") === true || snapshotEffect.luaConditionDescriptor === "condition:source-previous-controller-reason-player:opponent" || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-reason-player-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-side-previous-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location-reason-player:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-position-location-reason-player-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-controller-previous-position-location-reason:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-position-location:") === true || snapshotEffect.luaConditionDescriptor?.startsWith("condition:source-previous-position-position:") === true) ? restoredLuaConditionCallbacks(snapshotEffect) : {}),
-    ...(isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || isKnownByeByeDamagePreDamageEffect(snapshotEffect) || isKnownWattcubeIgnitionAttackBoostEffect(snapshotEffect) || isKnownPenetrationFusionStage2QuickEffect(snapshotEffect) || isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(snapshotEffect) || isKnownParticleFusionCustomAttackEffect(snapshotEffect) || isKnownCenterfrogControlEffect(snapshotEffect) || isKnownSelfEndPhaseDestroyEffect(snapshotEffect) ? { operation: restoredLuaOperation(snapshotEffect) } : {}),
+    ...(isKnownShootingcodeTalkerBattlePhaseDrawEffect(snapshotEffect) || isKnownByeByeDamagePreDamageEffect(snapshotEffect) || isKnownWattcubeIgnitionAttackBoostEffect(snapshotEffect) || isKnownPenetrationFusionStage2QuickEffect(snapshotEffect) || isKnownBattlinBoxerLeadYokeDestroyReplacementEffect(snapshotEffect) || isKnownParticleFusionCustomAttackEffect(snapshotEffect) || isKnownCenterfrogControlEffect(snapshotEffect) || isKnownSelfEndPhaseDestroyEffect(snapshotEffect) || isKnownACellIncubatorCounterRemovedEffect(snapshotEffect) ? { operation: restoredLuaOperation(snapshotEffect) } : {}),
     ...(snapshotEffect.property === undefined ? {} : { property: snapshotEffect.property }),
     ...(snapshotEffect.reset === undefined ? {} : { reset: { ...snapshotEffect.reset } }),
     ...(snapshotEffect.label === undefined ? {} : { label: snapshotEffect.label }),
@@ -1523,6 +1524,15 @@ function isKnownAlienHypnoSelfDestroyEffect(effect: SerializedDuelEffect): boole
     effect.range.length === 1 &&
     effect.range[0] === "monsterZone";
 }
+function isKnownACellIncubatorCounterRemovedEffect(effect: SerializedDuelEffect): boolean {
+  return Boolean(effect.registryKey?.startsWith(`lua:${luaACellIncubatorCode}:`)) &&
+    effect.event === "continuous" &&
+    effect.code === 0x20000 + luaCounterA &&
+    effect.sourceUid !== undefined &&
+    effect.controller !== undefined &&
+    effect.range.length === 1 &&
+    effect.range[0] === "spellTrapZone";
+}
 function isKnownArmitylePhantomFuryEndPhaseEffect(effect: SerializedDuelEffect): boolean {
   return Boolean(effect.registryKey?.startsWith(`lua:${luaArmitylePhantomFuryCode}:`)) &&
     effect.event === "trigger" &&
@@ -2423,6 +2433,7 @@ function restoredLuaOperation(effect: SerializedDuelEffect, snapshotEffects: Ser
   if (isKnownCenterfrogControlEffect(effect)) return centerfrogControlOperation(effect);
   if (isKnownInterplanetaryInvaderBattleControlEffect(effect)) return interplanetaryInvaderBattleControlOperation(effect);
   if (isKnownAlienHypnoCounterRemoveEffect(effect)) return alienHypnoCounterRemoveOperation(effect);
+  if (isKnownACellIncubatorCounterRemovedEffect(effect)) return aCellIncubatorCounterRemovedOperation(effect);
   if (isKnownArmitylePhantomFuryEndPhaseEffect(effect)) return armitylePhantomFuryEndPhaseOperation(effect);
   if (isKnownWattcubeIgnitionAttackBoostEffect(effect)) return wattcubeIgnitionAttackBoostOperation(effect);
   if (isKnownClashingSoulsBattledFieldSendEffect(effect)) return clashingSoulsBattledFieldSendOperation(effect);
@@ -2510,6 +2521,20 @@ function alienHypnoCounterRemoveOperation(effect: SerializedDuelEffect): DuelEff
         eventReasonEffectId: Number(selfDestroy.id.match(/^lua-(\d+)/)?.[1]),
       });
     }
+  };
+}
+function aCellIncubatorCounterRemovedOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] {
+  return (ctx) => {
+    const source = ctx.duel.cards.find((card) => card.uid === effect.sourceUid);
+    if (!source || !addDuelCardCounter(source, luaCounterA, 1)) return;
+    const reasonEffectId = Number(effect.id.match(/^lua-(\d+)/)?.[1]);
+    collectDuelTriggerEffects(ctx.duel, "counterAdded", source, {
+      eventReason: duelReason.effect,
+      eventReasonPlayer: ctx.player,
+      eventReasonCardUid: effect.sourceUid,
+      ...(Number.isFinite(reasonEffectId) ? { eventReasonEffectId: reasonEffectId } : {}),
+      triggerEventCode: 0x10000 + luaCounterA,
+    });
   };
 }
 function hunterSevenWeaponsPreDamageOperation(effect: SerializedDuelEffect): DuelEffectDefinition["operation"] { return (ctx) => { ctx.duel.effects.push({ id: `${effect.id}-attack-boost`, event: "continuous", code: 100, controller: effect.controller, sourceUid: effect.sourceUid, registryKey: `${effect.registryKey}:attack-boost`, range: ["monsterZone"], reset: { flags: luaResetPhase | 0x40 }, value: 1000, operation: () => {} }); }; }

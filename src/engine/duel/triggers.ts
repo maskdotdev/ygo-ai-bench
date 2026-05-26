@@ -52,7 +52,7 @@ export function collectTriggerEffects(state: DuelState, eventName: DuelEventName
     if (!triggerSourceInRange(effect, source, eventName, candidate.eventCard)) continue;
     if (isTriggerPrevented(state, source)) continue;
     if (!shouldDeferCustomEventChoice(state, eventName) && !canChooseEffect(state, effect, source, eventName, candidate.eventCard, candidate.options)) continue;
-    collected.push({ effect, source, index, eventCard: candidate.eventCard, options: candidate.options });
+    collected.push({ effect, source, index, eventCard: candidate.eventCard, options: triggerMatchedOptions(effect, candidate.options) });
   }
   collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
   for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, trigger.eventCard, trigger.options));
@@ -81,7 +81,7 @@ export function collectGroupedTriggerEffects(state: DuelState, eventName: DuelEv
     const candidate = shouldDeferCustomEventChoice(state, eventName) ? { eventCard: uniqueEventCards[0], options: groupedOptions } : firstTriggerEventCandidate(state, effect, source, eventName, uniqueEventCards, groupedOptions, canChooseEffect);
     if (!candidate.eventCard) continue;
     if (!triggerSourceInRange(effect, source, eventName, candidate.eventCard)) continue;
-    collected.push({ effect, source, index, eventCard: candidate.eventCard, options: candidate.options });
+    collected.push({ effect, source, index, eventCard: candidate.eventCard, options: triggerMatchedOptions(effect, candidate.options) });
   }
   collected.sort((a, b) => triggerPriority(state, a.effect) - triggerPriority(state, b.effect) || a.index - b.index);
   for (const trigger of collected) state.pendingTriggers.push(createPendingTrigger(state, trigger.effect, trigger.source, eventName, trigger.eventCard, trigger.options));
@@ -215,8 +215,15 @@ function triggerPriority(state: DuelState, effect: DuelEffectDefinition): number
 
 function triggerCodeMatchesEvent(eventName: DuelEventName, triggerCode: number, eventCode: number): boolean {
   if (triggerCode === eventCode) return true;
+  if (eventName === "counterAdded" && triggerCode === 0x10000 && eventCode > 0x10000 && eventCode < 0x20000) return true;
+  if (eventName === "counterRemoved" && triggerCode === 0x20000 && eventCode > 0x20000 && eventCode < 0x30000) return true;
   if (eventName === "flipSummoned" && triggerCode === 1001 && eventCode === 1101) return true;
   return eventName === "battleDestroyed" && (triggerCode === 1139 || triggerCode === 1140) && (eventCode === 1139 || eventCode === 1140);
+}
+
+function triggerMatchedOptions(effect: DuelEffectDefinition, options: DuelTriggerCollectOptions): DuelTriggerCollectOptions {
+  if (effect.triggerCode === undefined || options.eventCode === undefined || effect.triggerCode === options.eventCode) return options;
+  return { ...options, eventCode: effect.triggerCode };
 }
 
 function createPendingTrigger(state: DuelState, effect: DuelEffectDefinition, source: DuelCardInstance, eventName: DuelEventName, eventCard: DuelCardInstance | undefined, options: DuelTriggerCollectOptions): PendingTrigger {
