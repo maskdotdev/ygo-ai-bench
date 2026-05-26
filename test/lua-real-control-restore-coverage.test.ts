@@ -31,6 +31,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-ddd-headhunt-control-disable-setcode.test.ts"
 // Restore ownership: "test/lua-real-script-double-magical-arm-bind-release-control.test.ts"
 // Restore ownership: "test/lua-real-script-dummy-golem-flip-opponent-swap.test.ts"
+// Restore ownership: "test/lua-real-script-earthbound-immortal-uru-release-control-direct.test.ts"
 // Restore ownership: "test/lua-real-script-embrace-tistina-chain-set-control.test.ts"
 // Restore ownership: "test/lua-real-script-emperor-prophecy-banish-cost-control-lock.test.ts"
 // Restore ownership: "test/lua-real-script-enlilgirsu-banished-return-deck-control.test.ts"
@@ -104,7 +105,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 56;
+const controlFixtureCount = 57;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -135,6 +136,7 @@ const controlKindCounts = {
   pzoneDestroyControlDamage: 1,
   releaseCostControl: 3,
   releaseCostControlLockProtectCode: 1,
+  releaseCostControlDirectSelfDestroy: 1,
   releaseCostActivityLockedControl: 1,
   restrictedTemporaryControl: 2,
   searchDestroyGraveControl: 1,
@@ -199,6 +201,7 @@ type ControlKind =
   | "pzoneDestroyControlDamage"
   | "releaseCostControl"
   | "releaseCostControlLockProtectCode"
+  | "releaseCostControlDirectSelfDestroy"
   | "releaseCostActivityLockedControl"
   | "restrictedTemporaryControl"
   | "searchDestroyGraveControl"
@@ -589,6 +592,29 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.GetControl(tc,tp)",
         "e1:SetCode(EFFECT_CANNOT_ATTACK)",
         "e2:SetCode(EFFECT_CANNOT_TRIGGER)",
+        'eventName: "released"',
+        'eventName: "sentToGraveyard"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-earthbound-immortal-uru-release-control-direct.test.ts",
+      kind: "releaseCostControlDirectSelfDestroy",
+      required: [
+        'const uruCode = "15187079"',
+        "--Earthbound Immortal Uru",
+        "c:SetUniqueOnField(1,1,aux.FilterBoolFunction(Card.IsSetCard,SET_EARTHBOUND_IMMORTAL),LOCATION_MZONE)",
+        "e1:SetCode(EFFECT_SELF_DESTROY)",
+        "return not Duel.IsExistingMatchingCard(Card.IsFaceup,0,LOCATION_FZONE,LOCATION_FZONE,1,nil)",
+        "e2:SetCode(EFFECT_CANNOT_BE_BATTLE_TARGET)",
+        "e2:SetValue(aux.imval2)",
+        "e3:SetCode(EFFECT_DIRECT_ATTACK)",
+        "Duel.CheckReleaseGroupCost(tp,nil,1,false,aux.ReleaseCheckTarget,e:GetHandler(),dg)",
+        "Duel.SelectReleaseGroupCost(tp,nil,1,1,false,aux.ReleaseCheckTarget,e:GetHandler(),dg)",
+        "Duel.Release(g,REASON_COST)",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
         'eventName: "released"',
         'eventName: "sentToGraveyard"',
         'eventName: "controlChanged"',
@@ -1232,6 +1258,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       pzoneDestroyControlDamage: 0,
       releaseCostControl: 0,
       releaseCostControlLockProtectCode: 0,
+      releaseCostControlDirectSelfDestroy: 0,
       releaseCostActivityLockedControl: 0,
       restrictedTemporaryControl: 0,
       searchDestroyGraveControl: 0,
