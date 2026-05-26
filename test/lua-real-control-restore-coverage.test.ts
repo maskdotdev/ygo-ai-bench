@@ -85,7 +85,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vaylantz-duke-facedown-lock.test.ts"
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
-const controlFixtureCount = 36;
+const controlFixtureCount = 37;
 const controlKindCounts = {
   battleCounterControl: 2,
   chainControlSummon: 1,
@@ -98,6 +98,7 @@ const controlKindCounts = {
   flipDestroyControlSearch: 1,
   flipGetControl: 2,
   flipSetControl: 1,
+  groupSwapControl: 1,
   linkedZoneControlRevive: 1,
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
@@ -145,6 +146,7 @@ type ControlKind =
   | "flipDestroyControlSearch"
   | "flipGetControl"
   | "flipSetControl"
+  | "groupSwapControl"
   | "linkedZoneControlRevive"
   | "ownedControlAttackDrain"
   | "phaseEndSelfControl"
@@ -662,6 +664,16 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-switcheroroo-group-swap.test.ts",
+      kind: "groupSwapControl",
+      required: [
+        "Duel.SwapControl(g1,g2)",
+        "restores same-size field groups into grouped SwapControl events",
+        "eventUids: [ownFirst!.uid, opponentFirst!.uid, ownSecond!.uid, opponentSecond!.uid]",
+        "eventReasonCardUid: switcheroroo!.uid",
+      ],
+    },
+    {
       file: "lua-real-script-full-armor-master-counter-control-end-destroy.test.ts",
       kind: "phaseEndSelfControl",
       required: [
@@ -762,6 +774,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       flipDestroyControlSearch: 0,
       flipGetControl: 0,
       flipSetControl: 0,
+      groupSwapControl: 0,
       linkedZoneControlRevive: 0,
       ownedControlAttackDrain: 0,
       phaseEndSelfControl: 0,
