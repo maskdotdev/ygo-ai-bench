@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 32;
-const chainResponseNegationFixtureCount = 27;
+const negationFixtureCount = 33;
+const chainResponseNegationFixtureCount = 28;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 36;
+const negationInventoryFixtureCount = 37;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 23,
+  chainNegateToGrave: 24,
   handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -25,6 +25,7 @@ const negationSemanticVariantCounts = {
   adamancipatorResonanceDamageCalculationNegateDestroy: 1,
   armorBreakEquipActiveTypeNegateDestroy: 1,
   ashBlossomHandTrapDeckSearchNegate: 1,
+  cyberAngelVrashDestroyOperationNegateCost: 1,
   darkBribeNegateDestroyOpponentDraw: 1,
   disarmGladiatorCostToDeckSpellNegateDestroy: 1,
   divineWrathDiscardMonsterNegateDestroy: 1,
@@ -75,6 +76,7 @@ type NegationSemanticVariant =
   | "adamancipatorResonanceDamageCalculationNegateDestroy"
   | "armorBreakEquipActiveTypeNegateDestroy"
   | "ashBlossomHandTrapDeckSearchNegate"
+  | "cyberAngelVrashDestroyOperationNegateCost"
   | "darkBribeNegateDestroyOpponentDraw"
   | "disarmGladiatorCostToDeckSpellNegateDestroy"
   | "divineWrathDiscardMonsterNegateDestroy"
@@ -228,6 +230,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-adamancipator-resonance-damage-cal-negate.test.ts",
     "lua-real-script-ash-blossom-chain-negate.test.ts",
     "lua-real-script-armor-break-equip-active-type-negate.test.ts",
+    "lua-real-script-cyber-angel-vrash-destroy-op-negate-cost.test.ts",
     "lua-real-script-dark-bribe-negate-draw.test.ts",
     "lua-real-script-disarm-gladiator-negate-to-deck-cost.test.ts",
     "lua-real-script-divine-wrath-monster-negate.test.ts",
@@ -295,6 +298,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-armor-break-equip-active-type-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-cyber-angel-vrash-destroy-op-negate-cost.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -478,6 +485,26 @@ function negationSemanticVariants(): Array<{
         'const ashBlossomCode = "14558127"',
         "restores its hand response to a Deck search and suppresses the negated operation",
         'eventName: "chainNegated"',
+      ],
+    },
+    {
+      file: "lua-real-script-cyber-angel-vrash-destroy-op-negate-cost.test.ts",
+      kind: "cyberAngelVrashDestroyOperationNegateCost",
+      required: [
+        'const vrashCode = "78316184"',
+        "restores destroy-operation chain negation with Ritual GY return-to-deck cost and suppressed Spell",
+        "--Cyber Angel Vrash",
+        "e2:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DAMAGE_CAL)",
+        "local ex,tg,tc=Duel.GetOperationInfo(ev,CATEGORY_DESTROY)",
+        "return ex and tg~=nil and tc+tg:FilterCount(Card.IsOnField,nil)-#tg>0",
+        "return c:IsRitualMonster() and c:IsAbleToDeckAsCost()",
+        "Duel.SelectMatchingCard(tp,s.costfilter,tp,LOCATION_GRAVE,0,1,1,nil)",
+        "Duel.SendtoDeck(g,nil,SEQ_DECKSHUFFLE,REASON_COST)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        'eventName: "chainNegated"',
+        'eventName: "moved"',
+        'host.messages).not.toContain("cyber angel vrash starter resolved")',
       ],
     },
     {
@@ -994,6 +1021,7 @@ function countNegationSemanticVariants(
       adamancipatorResonanceDamageCalculationNegateDestroy: 0,
       armorBreakEquipActiveTypeNegateDestroy: 0,
       ashBlossomHandTrapDeckSearchNegate: 0,
+      cyberAngelVrashDestroyOperationNegateCost: 0,
       darkBribeNegateDestroyOpponentDraw: 0,
       disarmGladiatorCostToDeckSpellNegateDestroy: 0,
       divineWrathDiscardMonsterNegateDestroy: 0,
