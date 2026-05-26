@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 30;
-const chainResponseNegationFixtureCount = 25;
+const negationFixtureCount = 31;
+const chainResponseNegationFixtureCount = 26;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 34;
+const negationInventoryFixtureCount = 35;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 21,
+  chainNegateToGrave: 22,
   handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -55,6 +55,7 @@ const negationSemanticVariantCounts = {
   sprightRedLinkReleaseMonsterNegateDestroy: 1,
   twinTwistersMultiDestroyOnlyNoNegation: 1,
   tutanMaskTargetedZombieNegateDestroy: 1,
+  vanquishSoulCalamityCaesarTargetNegateBurn: 1,
   wiretapTrapNegateReturnToDeck: 1,
   xyzReflectTargetedXyzNegateBurn: 1,
 } satisfies Record<NegationSemanticVariant, number>;
@@ -103,6 +104,7 @@ type NegationSemanticVariant =
   | "sprightRedLinkReleaseMonsterNegateDestroy"
   | "twinTwistersMultiDestroyOnlyNoNegation"
   | "tutanMaskTargetedZombieNegateDestroy"
+  | "vanquishSoulCalamityCaesarTargetNegateBurn"
   | "wiretapTrapNegateReturnToDeck"
   | "xyzReflectTargetedXyzNegateBurn";
 
@@ -253,6 +255,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-spright-red-release-link2-negate.test.ts",
     "lua-real-script-twin-twisters-discard-cost.test.ts",
     "lua-real-script-tutan-mask-targeted-zombie-negate.test.ts",
+    "lua-real-script-vanquish-soul-calamity-caesar-negate-burn.test.ts",
     "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
     "lua-real-script-xyz-reflect-target-negate-burn.test.ts",
   ]
@@ -369,6 +372,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-tutan-mask-targeted-zombie-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-vanquish-soul-calamity-caesar-negate-burn.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -857,6 +864,27 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-vanquish-soul-calamity-caesar-negate-burn.test.ts",
+      kind: "vanquishSoulCalamityCaesarTargetNegateBurn",
+      required: [
+        'const calamityCaesarCode = "80738884"',
+        "restores targeted opponent-chain negation, OATH source destruction, selected Vanquish Soul damage, and suppressed operation",
+        "--Vanquish Soul Calamity Caesar",
+        "e1:SetCountLimit(1,id,EFFECT_COUNT_CODE_OATH)",
+        "aux.FaceupFilter(Card.IsSetCard,SET_VANQUISH_SOUL)",
+        "if not re:IsHasProperty(EFFECT_FLAG_CARD_TARGET) then return false end",
+        "local tg=Duel.GetChainInfo(ev,CHAININFO_TARGET_CARDS)",
+        "Duel.SetPossibleOperationInfo(0,CATEGORY_DAMAGE,nil,0,1-tp,0)",
+        "Duel.SelectYesNo(tp,aux.Stringid(id,1))",
+        "Duel.HintSelection(tc,true)",
+        "Duel.Damage(1-tp,dam,REASON_EFFECT)",
+        'api: "SelectYesNo"',
+        'eventName: "chainNegated"',
+        'eventName: "damageDealt"',
+        'host.messages).not.toContain("calamity caesar targeting starter resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-wiretap-trap-negate-to-deck.test.ts",
       kind: "wiretapTrapNegateReturnToDeck",
       required: [
@@ -970,6 +998,7 @@ function countNegationSemanticVariants(
       sprightRedLinkReleaseMonsterNegateDestroy: 0,
       twinTwistersMultiDestroyOnlyNoNegation: 0,
       tutanMaskTargetedZombieNegateDestroy: 0,
+      vanquishSoulCalamityCaesarTargetNegateBurn: 0,
       wiretapTrapNegateReturnToDeck: 0,
       xyzReflectTargetedXyzNegateBurn: 0,
     },
