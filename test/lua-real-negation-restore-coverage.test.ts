@@ -4,16 +4,16 @@ import { describe, expect, it } from "vitest";
 import { coverageText, hasCoverageSnippet } from "./coverage-text.js";
 
 const root = process.cwd();
-const negationFixtureCount = 33;
-const chainResponseNegationFixtureCount = 28;
+const negationFixtureCount = 34;
+const chainResponseNegationFixtureCount = 29;
 const destroyOnlyResponseFixtureCount = 4;
-const negationInventoryFixtureCount = 37;
+const negationInventoryFixtureCount = 38;
 const negationKindCounts = {
   chainDisable: 1,
   chainNegateCostToDeck: 1,
   chainNegateDraw: 1,
   chainNegateToDeck: 1,
-  chainNegateToGrave: 24,
+  chainNegateToGrave: 25,
   handTrapChainNegate: 2,
   summonNegateContinuation: 3,
 } satisfies Record<NegationKind, number>;
@@ -46,6 +46,7 @@ const negationSemanticVariantCounts = {
   overwhelmTributeGateTrapNegateDestroy: 1,
   pollinosisPlantReleaseActivationNegateDestroy: 1,
   raigekiBreakDiscardDestroyOnlyNoNegation: 1,
+  redEyesDarkDragoonDiscardNegateStat: 1,
   sevenToolsLpCostTrapNegateDestroy: 1,
   shiningSilverForceTrapDamageNegateDestroy: 1,
   sintoFireFormationOathNegateDestroy: 1,
@@ -97,6 +98,7 @@ type NegationSemanticVariant =
   | "overwhelmTributeGateTrapNegateDestroy"
   | "pollinosisPlantReleaseActivationNegateDestroy"
   | "raigekiBreakDiscardDestroyOnlyNoNegation"
+  | "redEyesDarkDragoonDiscardNegateStat"
   | "sevenToolsLpCostTrapNegateDestroy"
   | "shiningSilverForceTrapDamageNegateDestroy"
   | "sintoFireFormationOathNegateDestroy"
@@ -250,6 +252,7 @@ function realScriptNegationInventoryFiles(): string[] {
     "lua-real-script-overwhelm-tribute-chain-negate.test.ts",
     "lua-real-script-pollinosis-release-activation-negate.test.ts",
     "lua-real-script-raigeki-break-discard-cost.test.ts",
+    "lua-real-script-red-eyes-dark-dragoon-discard-negate-stat.test.ts",
     "lua-real-script-seven-tools-trap-negate.test.ts",
     "lua-real-script-shining-silver-force-damage-trap-negate.test.ts",
     "lua-real-script-sinto-oath-chain-negate.test.ts",
@@ -366,6 +369,10 @@ function realScriptNegationFixtures(): Array<{ file: string; kind: NegationKind 
     },
     {
       file: "lua-real-script-pollinosis-release-activation-negate.test.ts",
+      kind: "chainNegateToGrave",
+    },
+    {
+      file: "lua-real-script-red-eyes-dark-dragoon-discard-negate-stat.test.ts",
       kind: "chainNegateToGrave",
     },
     {
@@ -778,6 +785,26 @@ function negationSemanticVariants(): Array<{
       ],
     },
     {
+      file: "lua-real-script-red-eyes-dark-dragoon-discard-negate-stat.test.ts",
+      kind: "redEyesDarkDragoonDiscardNegateStat",
+      required: [
+        'const dragoonCode = "37818794"',
+        "restores discard-cost activation negation, source destruction, suppressed Spell, and Dragoon attack gain",
+        "--Red-Eyes Dark Dragoon",
+        "Fusion.AddProcMix(c,true,true,CARD_DARK_MAGICIAN,{CARD_REDEYES_B_DRAGON,s.ffilter})",
+        "e4:SetProperty(EFFECT_FLAG_DAMAGE_STEP+EFFECT_FLAG_DAMAGE_CAL)",
+        "Duel.IsExistingMatchingCard(Card.IsDiscardable,tp,LOCATION_HAND,0,1,nil)",
+        "Duel.DiscardHand(tp,Card.IsDiscardable,1,1,REASON_COST|REASON_DISCARD)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        "e1:SetCode(EFFECT_UPDATE_ATTACK)",
+        "e1:SetValue(1000)",
+        'eventName: "discarded"',
+        'eventName: "chainNegated"',
+        'host.messages).not.toContain("dragoon starter resolved")',
+      ],
+    },
+    {
       file: "lua-real-script-seven-tools-trap-negate.test.ts",
       kind: "sevenToolsLpCostTrapNegateDestroy",
       required: [
@@ -1042,6 +1069,7 @@ function countNegationSemanticVariants(
       overwhelmTributeGateTrapNegateDestroy: 0,
       pollinosisPlantReleaseActivationNegateDestroy: 0,
       raigekiBreakDiscardDestroyOnlyNoNegation: 0,
+      redEyesDarkDragoonDiscardNegateStat: 0,
       sevenToolsLpCostTrapNegateDestroy: 0,
       shiningSilverForceTrapDamageNegateDestroy: 0,
       sintoFireFormationOathNegateDestroy: 0,
