@@ -105,7 +105,7 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-vera-control-earth-summon.test.ts"
 // Restore ownership: "test/lua-real-script-vs-hollie-sue-reveal-control.test.ts"
 // Restore ownership: "test/lua-real-script-alien-brain-battle-destroyed-control-race.test.ts"
-const controlFixtureCount = 58;
+const controlFixtureCount = 59;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -134,6 +134,7 @@ const controlKindCounts = {
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
+  handMonsterCostDefenseControlPositionLock: 1,
   discardCostGroupControlLock: 1,
   releaseCostControl: 3,
   releaseCostControlLockProtectCode: 1,
@@ -200,6 +201,7 @@ type ControlKind =
   | "ownedControlAttackDrain"
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
+  | "handMonsterCostDefenseControlPositionLock"
   | "discardCostGroupControlLock"
   | "releaseCostControl"
   | "releaseCostControlLockProtectCode"
@@ -854,6 +856,27 @@ function realScriptControlFixtureFiles(): Array<{
       ],
     },
     {
+      file: "lua-real-script-ape-magician-cost-control-position-lock.test.ts",
+      kind: "handMonsterCostDefenseControlPositionLock",
+      required: [
+        "restores special summon restriction, hand monster cost, defense control, and position-change lock",
+        "--Ape Magician",
+        "e1:SetCode(EFFECT_SPSUMMON_CONDITION)",
+        "e2:SetCategory(CATEGORY_CONTROL)",
+        "return e:GetHandler():IsAttackPos()",
+        "return c:IsMonster() and c:IsAbleToGraveAsCost()",
+        "Duel.SelectMatchingCard(tp,s.cfilter,tp,LOCATION_HAND,0,1,1,nil)",
+        "Duel.SendtoGrave(g,REASON_COST)",
+        "return c:IsPosition(POS_FACEUP_DEFENSE) and c:IsControlerCanBeChanged()",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.GetControl(tc,tp,PHASE_END,1)",
+        "e1:SetCode(EFFECT_CANNOT_CHANGE_POSITION)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
       file: "lua-real-script-rb-lambda-blade-send-control-delayed-destroy.test.ts",
       kind: "linkedLpCostControlDelayedDestroy",
       required: [
@@ -1278,6 +1301,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       ownedControlAttackDrain: 0,
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
+      handMonsterCostDefenseControlPositionLock: 0,
       discardCostGroupControlLock: 0,
       releaseCostControl: 0,
       releaseCostControlLockProtectCode: 0,
