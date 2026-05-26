@@ -109,7 +109,8 @@ const root = process.cwd();
 // Restore ownership: "test/lua-real-script-terror-byte-detach-level-control.test.ts"
 // Restore ownership: "test/lua-real-script-possessed-dark-soul-self-tribute-group-control.test.ts"
 // Restore ownership: "test/lua-real-script-ni-ni-mikanko-equipped-control.test.ts"
-const controlFixtureCount = 66;
+// Restore ownership: "test/lua-real-script-informer-spider-effect-grave-control.test.ts"
+const controlFixtureCount = 67;
 const controlKindCounts = {
   battleDestroyedTrapControlRace: 1,
   battleStartPhaseControl: 1,
@@ -136,6 +137,7 @@ const controlKindCounts = {
   linkedZoneControlRevive: 1,
   linkedGroupSwapProtect: 1,
   synchroGraveSwapControl: 1,
+  effectGraveDefenseControl: 1,
   ownedControlAttackDrain: 1,
   phaseEndSelfControl: 5,
   pzoneDestroyControlDamage: 1,
@@ -210,6 +212,7 @@ type ControlKind =
   | "linkedZoneControlRevive"
   | "linkedGroupSwapProtect"
   | "synchroGraveSwapControl"
+  | "effectGraveDefenseControl"
   | "ownedControlAttackDrain"
   | "phaseEndSelfControl"
   | "pzoneDestroyControlDamage"
@@ -681,6 +684,28 @@ function realScriptControlFixtureFiles(): Array<{
         "Duel.GetTargetCards(e)",
         "Duel.SwapControl(tg:GetFirst(),tg:GetNext())",
         'eventName: "sentToGraveyard"',
+        'eventName: "controlChanged"',
+        "previousController: 1",
+      ],
+    },
+    {
+      file: "lua-real-script-informer-spider-effect-grave-control.test.ts",
+      kind: "effectGraveDefenseControl",
+      required: [
+        "restores effect-sent field trigger into defense-position permanent control",
+        "--Informer Spider",
+        "e2:SetCategory(CATEGORY_CONTROL)",
+        "e2:SetType(EFFECT_TYPE_SINGLE+EFFECT_TYPE_TRIGGER_F)",
+        "e2:SetProperty(EFFECT_FLAG_CARD_TARGET)",
+        "e2:SetCode(EVENT_TO_GRAVE)",
+        "return c:IsPreviousLocation(LOCATION_ONFIELD) and c:IsReason(REASON_EFFECT)",
+        "return c:IsDefensePos() and c:IsControlerCanBeChanged()",
+        "Duel.SelectTarget(tp,s.filter,tp,0,LOCATION_MZONE,1,1,nil)",
+        "Duel.SetOperationInfo(0,CATEGORY_CONTROL,g,#g,0,0)",
+        "Duel.GetFirstTarget()",
+        "Duel.GetControl(tc,tp)",
+        'eventName: "sentToGraveyard"',
+        'eventName: "becameTarget"',
         'eventName: "controlChanged"',
         "previousController: 1",
       ],
@@ -1461,6 +1486,7 @@ function countControlKinds(fixtures: Array<{ kind: ControlKind }>): Record<Contr
       linkedZoneControlRevive: 0,
       linkedGroupSwapProtect: 0,
       synchroGraveSwapControl: 0,
+      effectGraveDefenseControl: 0,
       ownedControlAttackDrain: 0,
       phaseEndSelfControl: 0,
       pzoneDestroyControlDamage: 0,
