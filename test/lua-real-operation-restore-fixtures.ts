@@ -1,6 +1,6 @@
 import path from "node:path";
 
-export const operationFixtureCount = 342;
+export const operationFixtureCount = 343;
 export const operationKindCounts = {
   battledBackrowDestroyGroupStat: 1,
   handProcedureSynchroSummonSelectDestroy: 1,
@@ -66,6 +66,7 @@ export const operationKindCounts = {
   costBanishDraw: 2, costDiscardDraw: 1,
   costStatToGraveTrigger: 1,
   copyNegateDamage: 1,
+  damageOperationNegate: 1,
   counterBoostBattleTargetLock: 1,
   counterCostTargetPlantStat: 1,
   counterDamageReplaceStatBurn: 1,
@@ -341,6 +342,7 @@ export type OperationKind =
   | "costBanishDraw" | "costDiscardDraw"
   | "costStatToGraveTrigger"
   | "copyNegateDamage"
+  | "damageOperationNegate"
   | "counterBoostBattleTargetLock"
   | "counterCostTargetPlantStat"
   | "counterDamageReplaceStatBurn"
@@ -4274,6 +4276,29 @@ export function operationFixtureFiles(): Array<{
       ],
     },
     {
+      file: "test/lua-real-script-lifeforce-harmonizer-damage-negate.test.ts",
+      kind: "damageOperationNegate",
+      required: [
+        "restores hand SelfDiscard negation of a damage operation and suppresses the burn",
+        "--Lifeforce Harmonizer",
+        "e1:SetCategory(CATEGORY_NEGATE+CATEGORY_DESTROY)",
+        "e1:SetType(EFFECT_TYPE_QUICK_O)",
+        "e1:SetCode(EVENT_CHAINING)",
+        "e1:SetCost(Cost.SelfDiscard)",
+        "Duel.GetOperationInfo(ev,CATEGORY_DAMAGE)",
+        "Duel.GetOperationInfo(ev,CATEGORY_RECOVER)",
+        "Duel.IsPlayerAffectedByEffect(cp,EFFECT_REVERSE_RECOVER)",
+        "Duel.NegateActivation(ev)",
+        "Duel.Destroy(eg,REASON_EFFECT)",
+        "operationInfos: [{ category: 0x80000",
+        "{ category: 0x10000000, targetUids: [burnSpell.uid]",
+        'eventName: "chainNegated"',
+        'eventName: "chainDisabled"',
+        "eventName === \"damageDealt\")).toEqual([])",
+        "host.messages).not.toContain(\"lifeforce burn resolved\")",
+      ],
+    },
+    {
       file: "test/lua-real-script-combat-wheel-counter-boost-lock.test.ts",
       kind: "counterBoostBattleTargetLock",
       required: [
@@ -6854,6 +6879,7 @@ export function countOperationKinds(fixtures: Array<{ kind: OperationKind }>): R
       coinNegateControl: 0,
       costBanishDraw: 0, costDiscardDraw: 0,
       copyNegateDamage: 0,
+      damageOperationNegate: 0,
       counterBoostBattleTargetLock: 0,
       counterCostTargetPlantStat: 0,
       counterDamageReplaceStatBurn: 0,
