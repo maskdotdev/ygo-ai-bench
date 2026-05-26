@@ -104,6 +104,7 @@ describe.skipIf(!hasUpstreamScripts || !hasOrcustrionScript)("Lua real script Or
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: machines[0]!.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -116,6 +117,7 @@ describe.skipIf(!hasUpstreamScripts || !hasOrcustrionScript)("Lua real script Or
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: machines[1]!.uid,
         eventReason: 0,
         eventReasonPlayer: 0,
@@ -128,6 +130,7 @@ describe.skipIf(!hasUpstreamScripts || !hasOrcustrionScript)("Lua real script Or
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: machines[2]!.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

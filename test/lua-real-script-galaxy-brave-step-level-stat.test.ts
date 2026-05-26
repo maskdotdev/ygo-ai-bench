@@ -114,6 +114,7 @@ describe.skipIf(!hasUpstreamScripts || !hasUpstreamDatabase)("Lua real script Ga
       {
         eventName: "becameTarget",
         eventCode: 1028,
+        eventValue: 1,
         eventCardUid: galaxyStat.uid,
         eventReason: 0,
         eventReasonPlayer: 0,

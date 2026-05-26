@@ -430,6 +430,7 @@ function becameTargetEvent(cardUid: string, sourceUid: string) {
   return {
     eventName: "becameTarget",
     eventCode: 1028,
+        eventValue: 1,
     eventCardUid: cardUid,
     eventReason: 0,
     eventReasonPlayer: 0,
