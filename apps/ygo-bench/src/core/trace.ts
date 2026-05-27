@@ -1,4 +1,5 @@
 import { mkdir, writeFile } from "node:fs/promises";
+import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import type { ScenarioScore, TraceFrame } from "./types.js";
 
@@ -24,4 +25,29 @@ export class TraceWriter {
 export async function writeTextFile(path: string, content: string): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   await writeFile(path, content);
+}
+
+export function traceHash(frames: TraceFrame[]): string {
+  const stable = frames.map((frame) => stableFrame(frame));
+  return createHash("sha256").update(JSON.stringify(stable)).digest("hex");
+}
+
+function stableFrame(frame: TraceFrame): unknown {
+  if (frame.type === "decision") {
+    return {
+      type: frame.type,
+      player: frame.player,
+      scenarioId: frame.observation.scenarioId,
+      prompt: frame.observation.prompt,
+      legalActions: frame.legalActions,
+      chosen: frame.chosen,
+    };
+  }
+  return {
+    type: frame.type,
+    event: frame.event,
+    player: frame.player,
+    text: frame.text,
+    payload: frame.payload,
+  };
 }
