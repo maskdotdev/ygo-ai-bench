@@ -20,6 +20,7 @@ describe("normalizeMessages", () => {
           from: { controller: 0, location: 2, sequence: 0, position: 10 },
           to: { controller: 0, location: 4, sequence: 2, position: 1 },
         },
+        { type: 91, player: 1, amount: 1850 },
         { type: 5, player: 0, reason: 0 },
       ],
       ocg: testRuntime,
@@ -31,7 +32,7 @@ describe("normalizeMessages", () => {
       },
     });
 
-    expect(events.map((event) => event.event)).toEqual(["NEW_TURN", "NEW_PHASE", "DRAW", "CARD_MOVED", "WIN"]);
+    expect(events.map((event) => event.event)).toEqual(["NEW_TURN", "NEW_PHASE", "DRAW", "CARD_MOVED", "DAMAGE", "WIN"]);
     expect(state.turn).toBe(1);
     expect(state.phase).toBe("MAIN1");
     expect(state.players[0].handCount).toBe(0);
@@ -46,6 +47,7 @@ describe("normalizeMessages", () => {
         position: 1,
       },
     ]);
+    expect(state.players[1].lp).toBe(6150);
     expect(state.winner).toBe(0);
   });
 });
@@ -62,5 +64,6 @@ const testRuntime = {
     NEW_PHASE: 41,
     MOVE: 50,
     DRAW: 90,
+    DAMAGE: 91,
   },
 } as OcgRuntime;

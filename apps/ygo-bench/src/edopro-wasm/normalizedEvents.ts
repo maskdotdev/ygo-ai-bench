@@ -79,6 +79,14 @@ export function applyRealEvent(state: RealReducedState, event: RealNormalizedEve
     const lp = typeof event.payload.lp === "number" ? event.payload.lp : undefined;
     if (player !== null && lp !== undefined) state.players[player].lp = lp;
   }
+  if (event.event === "DAMAGE" && event.player !== undefined && isRecord(event.payload)) {
+    const amount = typeof event.payload.amount === "number" ? event.payload.amount : 0;
+    state.players[event.player].lp = Math.max(0, state.players[event.player].lp - amount);
+  }
+  if (event.event === "RECOVER" && event.player !== undefined && isRecord(event.payload)) {
+    const amount = typeof event.payload.amount === "number" ? event.payload.amount : 0;
+    state.players[event.player].lp += amount;
+  }
   if (event.event === "DRAW" && event.player !== undefined && isRecord(event.payload)) {
     const count = typeof event.payload.count === "number" ? event.payload.count : 0;
     state.players[event.player].handCount += count;
@@ -174,6 +182,18 @@ function normalizeMessage(
       event: "DAMAGE",
       player: player ?? undefined,
       text: player === null ? `${amount} damage.` : `Player ${player} took ${amount} damage.`,
+      payload: message,
+    };
+  }
+
+  if (message.type === ocg.OcgMessageType.RECOVER) {
+    const player = toPlayer(message.player);
+    const amount = typeof message.amount === "number" ? message.amount : 0;
+    return {
+      ...eventBase,
+      event: "RECOVER",
+      player: player ?? undefined,
+      text: player === null ? `${amount} LP recovered.` : `Player ${player} recovered ${amount} LP.`,
       payload: message,
     };
   }

@@ -78,6 +78,46 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
     return actions;
   }
 
+  if (prompt.type === ocg.OcgMessageType.SELECT_BATTLECMD) {
+    const actions: RealLegalAction[] = [];
+    const chains = arrayOfRecords(prompt.chains);
+    const attacks = arrayOfRecords(prompt.attacks);
+
+    for (const [index, card] of chains.entries()) {
+      actions.push({
+        id: nextActionId(actions.length),
+        type: "activate_effect",
+        label: `Activate ${cardName(card.code, cardDb)}`,
+        response: { type: ocg.OcgResponseType.SELECT_BATTLECMD, action: ocg.SelectBattleCMDAction.SELECT_CHAIN, index },
+      });
+    }
+    for (const [index, card] of attacks.entries()) {
+      actions.push({
+        id: nextActionId(actions.length),
+        type: "attack",
+        label: `Attack with ${cardName(card.code, cardDb)}`,
+        response: { type: ocg.OcgResponseType.SELECT_BATTLECMD, action: ocg.SelectBattleCMDAction.SELECT_BATTLE, index },
+      });
+    }
+    if (prompt.to_m2 === true) {
+      actions.push({
+        id: nextActionId(actions.length),
+        type: "to_main2",
+        label: "Go to Main Phase 2",
+        response: { type: ocg.OcgResponseType.SELECT_BATTLECMD, action: ocg.SelectBattleCMDAction.TO_M2, index: null },
+      });
+    }
+    if (prompt.to_ep === true) {
+      actions.push({
+        id: nextActionId(actions.length),
+        type: "end_phase",
+        label: "End Phase",
+        response: { type: ocg.OcgResponseType.SELECT_BATTLECMD, action: ocg.SelectBattleCMDAction.TO_EP, index: null },
+      });
+    }
+    return actions;
+  }
+
   if (prompt.type === ocg.OcgMessageType.SELECT_PLACE) {
     const count = typeof prompt.count === "number" ? prompt.count : 1;
     const mask = typeof prompt.field_mask === "number" ? prompt.field_mask : 0xffffffff;
@@ -88,6 +128,26 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
       label: `Place card in monster zone ${place.sequence + 1}`,
       response: { type: ocg.OcgResponseType.SELECT_PLACE, places: [place] },
     }));
+  }
+
+  if (prompt.type === ocg.OcgMessageType.SELECT_CARD) {
+    const selects = arrayOfRecords(prompt.selects);
+    const canCancel = prompt.can_cancel === true;
+    const actions: RealLegalAction[] = selects.map((card, index) => ({
+      id: nextActionId(index),
+      type: "select_card",
+      label: `Select ${cardName(card.code, cardDb)}`,
+      response: { type: ocg.OcgResponseType.SELECT_CARD, indicies: [index] },
+    }));
+    if (canCancel) {
+      actions.push({
+        id: nextActionId(actions.length),
+        type: "cancel",
+        label: "Cancel selection",
+        response: { type: ocg.OcgResponseType.SELECT_CARD, indicies: null },
+      });
+    }
+    return actions;
   }
 
   return [];

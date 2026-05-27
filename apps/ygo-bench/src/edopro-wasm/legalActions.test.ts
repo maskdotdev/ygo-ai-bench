@@ -43,6 +43,72 @@ describe("buildRealLegalActions", () => {
       },
     ]);
   });
+
+  it("maps SELECT_BATTLECMD to attack and phase actions", () => {
+    const actions = buildRealLegalActions(
+      {
+        type: 10,
+        player: 0,
+        chains: [],
+        attacks: [{ code: 49003308, controller: 0, location: 4, sequence: 0 }],
+        to_m2: true,
+        to_ep: true,
+      },
+      testRuntime,
+      testCards,
+    );
+
+    expect(actions).toEqual([
+      {
+        id: "a_001",
+        type: "attack",
+        label: "Attack with Gagagigo",
+        response: { type: 0, action: 1, index: 0 },
+      },
+      {
+        id: "a_002",
+        type: "to_main2",
+        label: "Go to Main Phase 2",
+        response: { type: 0, action: 2, index: null },
+      },
+      {
+        id: "a_003",
+        type: "end_phase",
+        label: "End Phase",
+        response: { type: 0, action: 3, index: null },
+      },
+    ]);
+  });
+
+  it("maps SELECT_CARD to card choices and cancel", () => {
+    const actions = buildRealLegalActions(
+      {
+        type: 15,
+        player: 1,
+        can_cancel: true,
+        min: 1,
+        max: 1,
+        selects: [{ code: 49003308, controller: 0, location: 4, sequence: 0, position: 1 }],
+      },
+      testRuntime,
+      testCards,
+    );
+
+    expect(actions).toEqual([
+      {
+        id: "a_001",
+        type: "select_card",
+        label: "Select Gagagigo",
+        response: { type: 5, indicies: [0] },
+      },
+      {
+        id: "a_002",
+        type: "cancel",
+        label: "Cancel selection",
+        response: { type: 5, indicies: null },
+      },
+    ]);
+  });
 });
 
 const testCards: CardDatabase = {
@@ -53,11 +119,15 @@ const testCards: CardDatabase = {
 const testRuntime = {
   OcgMessageType: {
     SELECT_IDLECMD: 11,
+    SELECT_BATTLECMD: 10,
+    SELECT_CARD: 15,
     SELECT_CHAIN: 16,
     SELECT_PLACE: 18,
   },
   OcgResponseType: {
     SELECT_IDLECMD: 1,
+    SELECT_BATTLECMD: 0,
+    SELECT_CARD: 5,
     SELECT_CHAIN: 8,
     SELECT_PLACE: 10,
   },
@@ -67,5 +137,11 @@ const testRuntime = {
     SELECT_ACTIVATE: 5,
     TO_BP: 6,
     TO_EP: 7,
+  },
+  SelectBattleCMDAction: {
+    SELECT_CHAIN: 0,
+    SELECT_BATTLE: 1,
+    TO_M2: 2,
+    TO_EP: 3,
   },
 } as OcgRuntime;

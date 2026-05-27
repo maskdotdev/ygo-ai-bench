@@ -183,6 +183,8 @@ function addDeckCard(core: OcgCoreSync, handle: OcgDuelHandle, player: 0 | 1, co
 function chooseRealAction(actions: RealLegalAction[], agentId: "random" | "greedy"): RealLegalAction {
   if (agentId === "random") return actions[Math.floor(Math.random() * actions.length)] ?? actions[0]!;
   return (
+    actions.find((action) => action.type === "select_card") ??
+    actions.find((action) => action.type === "attack") ??
     actions.find((action) => action.type === "normal_summon") ??
     actions.find((action) => action.type === "to_battle") ??
     actions.find((action) => action.type === "end_phase") ??
