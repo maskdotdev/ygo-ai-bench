@@ -128,3 +128,37 @@ await runPvpAgentLoop(session, {
 ```
 
 The bundled first-legal policy is only a smoke-test policy. Real gameplay agents should inspect `legalActions`, prompts, chain state, and board zones before choosing.
+
+## Multi-Step Model Evaluation
+
+Use `runPvpModelMatch` when evaluating model strategy across multiple actions. It passes the model:
+
+- current `PvpAgentObservation`
+- compact current-turn and recent public history
+- per-player private memory
+- compact legal action views without raw engine actions
+
+The model returns an `actionId`, optional placement params, updated memory, and a reason. The runner validates the decision before applying it through the rule-enforced engine.
+
+```ts
+import { runPvpModelMatch, placementAwareModelClient } from "../src/playtest-app/pvp-model-agent.js";
+
+const result = await runPvpModelMatch({
+  session,
+  agents: { 0: placementAwareModelClient, 1: placementAwareModelClient },
+  maxSteps: 80,
+});
+```
+
+For CLI smoke runs:
+
+```bash
+bun tools/run-pvp-model-match.ts \
+  --p0-deck top_tier_dark_magician_primite_azamina.ydk \
+  --p1-deck labrynth-2026.ydk \
+  --seed model-smoke-001 \
+  --max-steps 40 \
+  --out reports/pvp-model-runs/model-smoke-001.json
+```
+
+The CLI currently uses the deterministic placement-aware mock client. A real model adapter should implement `PvpModelClient` and keep API credentials in server-side environment variables only.
