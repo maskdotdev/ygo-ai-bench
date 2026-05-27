@@ -32,6 +32,7 @@ export interface RealNormalizedEvent {
 export interface RealReducedPlayer {
   lp: number;
   handCount: number;
+  hand: RealCardView[];
   monsters: RealCardView[];
   spellsTraps: RealCardView[];
   graveyard: RealCardView[];
@@ -91,6 +92,18 @@ export function applyRealEvent(state: RealReducedState, event: RealNormalizedEve
     const count = typeof event.payload.count === "number" ? event.payload.count : 0;
     state.players[event.player].handCount += count;
     state.players[event.player].deckCount = Math.max(0, state.players[event.player].deckCount - count);
+    const cards = Array.isArray(event.payload.cards) ? event.payload.cards : [];
+    for (const card of cards) {
+      if (!isRecord(card) || typeof card.code !== "number") continue;
+      state.players[event.player].hand.push({
+        code: card.code,
+        name: eventCardName(card.code, event),
+        controller: event.player,
+        location: "HAND",
+        sequence: state.players[event.player].hand.length,
+        position: typeof card.position === "number" ? card.position : undefined,
+      });
+    }
   }
   if (event.event === "CARD_MOVED" && isRecord(event.payload)) {
     moveCardInReducedState(state, event.payload, event.card?.name);
@@ -137,12 +150,15 @@ function normalizeMessage(
   if (message.type === ocg.OcgMessageType.DRAW) {
     const player = toPlayer(message.player);
     const drawn = Array.isArray(message.drawn) ? message.drawn : [];
+    const cards = drawn.map((card) =>
+      isRecord(card) && typeof card.code === "number" ? { ...card, name: cardName(card.code, cardDb) } : card,
+    );
     return {
       ...eventBase,
       event: "DRAW",
       player: player ?? undefined,
       text: player === null ? `Drew ${drawn.length} card(s).` : `Player ${player} drew ${drawn.length} card(s).`,
-      payload: { count: drawn.length, cards: drawn },
+      payload: { count: drawn.length, cards },
     };
   }
 
@@ -275,7 +291,16 @@ function addCardToKnownZone(player: RealReducedPlayer, card: RealCardView): void
   zone.push(card);
 }
 
+function eventCardName(code: number, event: RealNormalizedEvent): string {
+  if (isRecord(event.payload) && Array.isArray(event.payload.cards)) {
+    const card = event.payload.cards.find((candidate) => isRecord(candidate) && candidate.code === code);
+    if (isRecord(card) && typeof card.name === "string") return card.name;
+  }
+  return `#${code}`;
+}
+
 function zoneForLocation(player: RealReducedPlayer, location: number): RealCardView[] | null {
+  if (location === 2) return player.hand;
   if (location === 4) return player.monsters;
   if (location === 8) return player.spellsTraps;
   if (location === 16) return player.graveyard;
@@ -287,6 +312,7 @@ function initialPlayer(): RealReducedPlayer {
   return {
     lp: 8000,
     handCount: 0,
+    hand: [],
     monsters: [],
     spellsTraps: [],
     graveyard: [],

@@ -10,8 +10,22 @@ describe("buildRealModelObservation", () => {
     state.phase = "MAIN1";
     state.players[0].lp = 8000;
     state.players[0].handCount = 5;
+    state.players[0].hand.push({
+      code: 49003308,
+      name: "Gagagigo",
+      controller: 0,
+      location: "HAND",
+      sequence: 0,
+    });
     state.players[1].lp = 3000;
     state.players[1].handCount = 2;
+    state.players[1].hand.push({
+      code: 222,
+      name: "Opponent Hidden Card",
+      controller: 1,
+      location: "HAND",
+      sequence: 0,
+    });
     state.players[1].monsters.push({
       code: 89631139,
       name: "Blue-Eyes White Dragon",
@@ -54,8 +68,12 @@ describe("buildRealModelObservation", () => {
       },
     ]);
     expect(rendered).not.toContain("hidden");
+    expect(rendered).toContain("Gagagigo");
+    expect(rendered).not.toContain("Opponent Hidden Card");
     expect(rendered).toContain("Blue-Eyes White Dragon");
     expect(observation.opponent.handCount).toBe(2);
+    expect(observation.you.hand).toEqual([{ name: "Gagagigo", code: 49003308, sequence: 0 }]);
+    expect(observation.opponent.hand).toBeUndefined();
   });
 
   it("masks opponent face-down cards by position", () => {

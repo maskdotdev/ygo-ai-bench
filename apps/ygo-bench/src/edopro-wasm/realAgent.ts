@@ -40,6 +40,7 @@ export interface RealModelObservation {
 interface RealPlayerObservation {
   lp: number;
   handCount: number;
+  hand?: Array<{ name: string; code: number; sequence: number }>;
   deckCount: number;
   monsters: Array<{ name: string; code?: number; sequence: number; revealed: boolean }>;
   spellsTraps: Array<{ name: string; code?: number; sequence: number; revealed: boolean }>;
@@ -226,6 +227,7 @@ function playerObservation(state: RealReducedState, player: 0 | 1, isSelf: boole
   return {
     lp: view.lp,
     handCount: view.handCount,
+    ...(isSelf ? { hand: view.hand.map((card) => ({ name: card.name, code: card.code, sequence: card.sequence })) } : {}),
     deckCount: view.deckCount,
     monsters: view.monsters.map((card) => publicCardView(card, isSelf)),
     spellsTraps: view.spellsTraps.map((card) => publicCardView(card, isSelf)),

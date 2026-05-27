@@ -15,8 +15,8 @@ describe("stringifyRealPrompt", () => {
         phase: "MAIN1",
         winner: null,
         players: [
-          { lp: 8000, handCount: 5, monsters: [], spellsTraps: [], graveyard: [], banished: [], deckCount: 3 },
-          { lp: 8000, handCount: 5, monsters: [], spellsTraps: [], graveyard: [], banished: [], deckCount: 3 },
+          { lp: 8000, handCount: 5, hand: [], monsters: [], spellsTraps: [], graveyard: [], banished: [], deckCount: 3 },
+          { lp: 8000, handCount: 5, hand: [], monsters: [], spellsTraps: [], graveyard: [], banished: [], deckCount: 3 },
         ],
       },
       legalActions: [

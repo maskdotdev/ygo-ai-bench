@@ -36,6 +36,7 @@ describe("normalizeMessages", () => {
     expect(state.turn).toBe(1);
     expect(state.phase).toBe("MAIN1");
     expect(state.players[0].handCount).toBe(0);
+    expect(state.players[0].hand).toEqual([]);
     expect(state.players[0].deckCount).toBe(1);
     expect(state.players[0].monsters).toEqual([
       {
