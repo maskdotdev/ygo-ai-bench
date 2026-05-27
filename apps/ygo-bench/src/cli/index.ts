@@ -9,6 +9,7 @@ import { evalRealSuite } from "../edopro-wasm/realEval.js";
 import { getFirstRealPrompt, stringifyRealPrompt } from "../edopro-wasm/realPrompt.js";
 import { runRealDuel } from "../edopro-wasm/realRunner.js";
 import { validateRealSuite } from "../edopro-wasm/realValidate.js";
+import { startTraceViewerServer } from "../viewer/liveServer.js";
 
 async function main(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
@@ -85,6 +86,24 @@ async function main(argv: string[]): Promise<void> {
       cardDataPath: "../../public/card-data/cdb-rows.json",
       scriptRoot: "../../.upstream/ignis/script",
     });
+    return;
+  }
+  if (command === "serve-trace") {
+    const tracePath = rest[0];
+    if (!tracePath) throw new Error("Missing trace path");
+    const server = await startTraceViewerServer({
+      tracePath,
+      port: Number(readFlag(rest, "--port") ?? 0),
+    });
+    console.log(`Trace viewer: ${server.url}`);
+    console.log("Press Ctrl-C to stop.");
+    const shutdown = async () => {
+      await server.close();
+      process.exit(0);
+    };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+    await new Promise(() => {});
     return;
   }
   if (command === "run") {
@@ -169,7 +188,8 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer
   pnpm --filter @ygo-bench/app bench validate suites/mvp.json
-  pnpm --filter @ygo-bench/app bench inspect benchmark-runs/<run>/trace.jsonl`);
+  pnpm --filter @ygo-bench/app bench inspect benchmark-runs/<run>/trace.jsonl
+  pnpm --filter @ygo-bench/app bench serve-trace benchmark-runs/<run>/trace.jsonl --port 4173`);
 }
 
 main(process.argv.slice(2)).catch((error: unknown) => {
