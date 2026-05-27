@@ -6,6 +6,7 @@ import { validateSuite } from "./validate.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
 import { evalRealSuite } from "../edopro-wasm/realEval.js";
 import { runRealDuel } from "../edopro-wasm/realRunner.js";
+import { validateRealSuite } from "../edopro-wasm/realValidate.js";
 
 async function main(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
@@ -36,12 +37,14 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
   if (command === "real-run") {
+    const scenarioPath = readFlag(rest, "--scenario") ?? "scenarios/real/smoke-duel.json";
     const result = await runRealDuel({
       agentId: (readFlag(rest, "--agent") as "random" | "greedy" | undefined) ?? "greedy",
       cardDataPath: "../../public/card-data/cdb-rows.json",
       scriptRoot: "../../.upstream/ignis/script",
       maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 12),
       viewer: rest.includes("--viewer"),
+      scenarioPath,
     });
     printRunResult(result);
     return;
@@ -54,6 +57,7 @@ async function main(argv: string[]): Promise<void> {
       scriptRoot: "../../.upstream/ignis/script",
       maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 20),
       viewer: rest.includes("--viewer"),
+      suitePath: readFlag(rest, "--suite") ?? "suites/real-mvp.json",
     });
     for (const row of summary.aggregate) {
       console.log(
@@ -61,6 +65,14 @@ async function main(argv: string[]): Promise<void> {
       );
     }
     console.log("Summary: benchmark-runs/real-mvp-summary.json");
+    return;
+  }
+  if (command === "real-validate") {
+    await validateRealSuite({
+      suitePath: rest[0] ?? "suites/real-mvp.json",
+      cardDataPath: "../../public/card-data/cdb-rows.json",
+      scriptRoot: "../../.upstream/ignis/script",
+    });
     return;
   }
   if (command === "run") {
@@ -119,8 +131,9 @@ function printHelp(): void {
   console.log(`Usage:
   pnpm --filter @ygo-bench/app bench smoke
   pnpm --filter @ygo-bench/app bench real-smoke
-  pnpm --filter @ygo-bench/app bench real-run --agent greedy --viewer
+  pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent greedy --viewer
   pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy --runs 1 --viewer
+  pnpm --filter @ygo-bench/app bench real-validate suites/real-mvp.json
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer
   pnpm --filter @ygo-bench/app bench validate suites/mvp.json

@@ -6,6 +6,7 @@ import { buildRealLegalActions, type RealLegalAction } from "./legalActions.js";
 import { loadOcgRuntime } from "./loadOcgRuntime.js";
 import { initialRealReducedState, normalizeMessages } from "./normalizedEvents.js";
 import type { OcgCoreSync, OcgDuelHandle, OcgMessage, OcgRuntime } from "./ocgTypes.js";
+import { loadRealScenario, type RealScenario } from "./realScenario.js";
 import { writeRealViewerHtml } from "./realViewer.js";
 import { buildRealRunMetadata } from "./runMetadata.js";
 import { createScriptReader } from "./scriptReader.js";
@@ -16,6 +17,7 @@ export interface RealRunOptions {
   scriptRoot: string;
   maxDecisions: number;
   viewer: boolean;
+  scenarioPath?: string;
 }
 
 export interface RealRunResult {
@@ -25,19 +27,23 @@ export interface RealRunResult {
 
 export async function runRealDuel(options: RealRunOptions): Promise<RealRunResult> {
   const cardDb = await loadBrowserCardDatabase(options.cardDataPath);
+  const scenario = await loadRealScenario(options.scenarioPath ?? "scenarios/real/smoke-duel.json");
   const ocg = await loadOcgRuntime();
   const errors: string[] = [];
   const core = await ocg.createCore({
     sync: true,
     printErr: (line: string) => errors.push(line),
   });
-  const handle = createTinyDuel(core, ocg, cardDb, options.scriptRoot, errors);
-  const runDir = resolve("benchmark-runs", `real-run-${new Date().toISOString().replaceAll(":", "-")}-${options.agentId}`);
+  const handle = createScenarioDuel(core, ocg, scenario, cardDb, options.scriptRoot, errors);
+  const maxDecisions = options.maxDecisions || scenario.maxDecisions;
+  const runDir = resolve("benchmark-runs", `real-run-${new Date().toISOString().replaceAll(":", "-")}-${scenario.id}-${options.agentId}`);
   const trace: unknown[] = [];
-  const transcript: string[] = ["# Real ocgcore-wasm duel", ""];
+  const transcript: string[] = [`# ${scenario.name}`, ""];
   const reducedState = initialRealReducedState();
-  reducedState.players[0].deckCount = 8;
-  reducedState.players[1].deckCount = 8;
+  reducedState.players[0].lp = scenario.players[0].lp;
+  reducedState.players[1].lp = scenario.players[1].lp;
+  reducedState.players[0].deckCount = scenario.players[0].deck.length;
+  reducedState.players[1].deckCount = scenario.players[1].deck.length;
   let decisionsTaken = 0;
   let winner: 0 | 1 | null = null;
   let frameId = 0;
@@ -96,7 +102,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
       });
       core.duelSetResponse(handle, chosen.response);
 
-      if (decisionsTaken >= options.maxDecisions) break;
+      if (decisionsTaken >= maxDecisions) break;
     }
   } finally {
     core.destroyDuel(handle);
@@ -104,7 +110,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
 
   await mkdir(runDir, { recursive: true });
   const score: ScenarioScore = {
-    scenarioId: "real-smoke-duel",
+    scenarioId: scenario.id,
     agentId: options.agentId,
     won: winner === 0,
     turnsTaken: reducedState.turn,
@@ -113,7 +119,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     invalidJson: 0,
     repeatedActions: 0,
     finalLpDelta: reducedState.players[0].lp - reducedState.players[1].lp,
-    objectiveScore: winner === 0 ? 1 : 0,
+    objectiveScore: scoreObjective(scenario, winner, reducedState.players[0].lp - reducedState.players[1].lp),
     notes: errors,
   };
   await writeFile(join(runDir, "trace.jsonl"), trace.map((line) => JSON.stringify(line, jsonReplacer)).join("\n") + "\n");
@@ -127,7 +133,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         scriptRoot: options.scriptRoot,
         scenarioId: score.scenarioId,
         agentId: options.agentId,
-        maxDecisions: options.maxDecisions,
+        maxDecisions,
       }),
       null,
       2,
@@ -140,9 +146,10 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   return { runDir, score };
 }
 
-function createTinyDuel(
+function createScenarioDuel(
   core: OcgCoreSync,
   ocg: OcgRuntime,
+  scenario: RealScenario,
   cardDb: Awaited<ReturnType<typeof loadBrowserCardDatabase>>,
   scriptRoot: string,
   errors: string[],
@@ -152,19 +159,25 @@ function createTinyDuel(
       requiredBigInt(ocg.OcgDuelMode.MODE_MR5, "MODE_MR5") |
       requiredBigInt(ocg.OcgDuelMode.PSEUDO_SHUFFLE, "PSEUDO_SHUFFLE") |
       requiredBigInt(ocg.OcgDuelMode.FIRST_TURN_DRAW, "FIRST_TURN_DRAW"),
-    seed: [1n, 1n, 1n, 1n],
-    team1: { startingLP: 8000, startingDrawCount: 5, drawCountPerTurn: 1 },
-    team2: { startingLP: 8000, startingDrawCount: 5, drawCountPerTurn: 1 },
+    seed: scenario.seed.map((value) => BigInt(value)) as [bigint, bigint, bigint, bigint],
+    team1: {
+      startingLP: scenario.players[0].lp,
+      startingDrawCount: scenario.players[0].startingDrawCount,
+      drawCountPerTurn: scenario.players[0].drawCountPerTurn,
+    },
+    team2: {
+      startingLP: scenario.players[1].lp,
+      startingDrawCount: scenario.players[1].startingDrawCount,
+      drawCountPerTurn: scenario.players[1].drawCountPerTurn,
+    },
     cardReader: (code) => cardDb.cards.get(code) ?? null,
     scriptReader: createScriptReader(scriptRoot),
     errorHandler: (type, text) => errors.push(`${type}: ${text}`),
   });
   if (!handle) throw new Error("ocgcore-wasm failed to create a duel");
 
-  const playerDeck = [89631139, 46986414, 49003308, 70781052, 89631139, 46986414, 49003308, 70781052];
-  const opponentDeck = [70781052, 49003308, 46986414, 89631139, 70781052, 49003308, 46986414, 89631139];
-  for (const [sequence, code] of playerDeck.entries()) addDeckCard(core, handle, 0, code, sequence);
-  for (const [sequence, code] of opponentDeck.entries()) addDeckCard(core, handle, 1, code, sequence);
+  for (const [sequence, code] of scenario.players[0].deck.entries()) addDeckCard(core, handle, 0, code, sequence);
+  for (const [sequence, code] of scenario.players[1].deck.entries()) addDeckCard(core, handle, 1, code, sequence);
   return handle;
 }
 
@@ -228,4 +241,11 @@ function requiredBigInt(value: bigint | undefined, name: string): bigint {
 
 function jsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
+}
+
+function scoreObjective(scenario: RealScenario, winner: 0 | 1 | null, lpDelta: number): number {
+  if (winner === 0) return 1;
+  if (winner === 1) return 0;
+  if (scenario.scoring?.primary === "lpDelta") return Math.max(0, Math.min(0.75, lpDelta / 8000));
+  return 0;
 }

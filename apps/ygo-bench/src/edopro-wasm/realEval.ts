@@ -2,6 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { ScenarioScore } from "../core/types.js";
 import { runRealDuel } from "./realRunner.js";
+import { loadRealSuite } from "./realSuite.js";
 
 export interface RealEvalOptions {
   agentIds: Array<"random" | "greedy">;
@@ -10,6 +11,7 @@ export interface RealEvalOptions {
   viewer: boolean;
   cardDataPath: string;
   scriptRoot: string;
+  suitePath: string;
 }
 
 export interface RealEvalSummary {
@@ -28,17 +30,23 @@ export interface RealEvalSummary {
 
 export async function evalRealSuite(options: RealEvalOptions): Promise<RealEvalSummary> {
   const scores: ScenarioScore[] = [];
+  const suite = await loadRealSuite(options.suitePath);
   for (const agentId of options.agentIds) {
-    for (let run = 0; run < options.runsPerAgent; run += 1) {
-      const result = await runRealDuel({
-        agentId,
-        cardDataPath: options.cardDataPath,
-        scriptRoot: options.scriptRoot,
-        maxDecisions: options.maxDecisions,
-        viewer: options.viewer,
-      });
-      scores.push(result.score);
-      console.log(`real-mvp ${agentId} run ${run + 1}: score=${result.score.objectiveScore.toFixed(2)} decisions=${result.score.decisionsTaken}`);
+    for (const scenarioPath of suite.scenarios) {
+      for (let run = 0; run < options.runsPerAgent; run += 1) {
+        const result = await runRealDuel({
+          agentId,
+          cardDataPath: options.cardDataPath,
+          scriptRoot: options.scriptRoot,
+          maxDecisions: options.maxDecisions,
+          viewer: options.viewer,
+          scenarioPath,
+        });
+        scores.push(result.score);
+        console.log(
+          `real-mvp ${agentId} ${result.score.scenarioId} run ${run + 1}: score=${result.score.objectiveScore.toFixed(2)} decisions=${result.score.decisionsTaken}`,
+        );
+      }
     }
   }
 
