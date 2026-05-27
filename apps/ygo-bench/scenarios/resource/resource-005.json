@@ -1,0 +1,40 @@
+{
+  "id": "resource-005",
+  "name": "Keep recursion instead of overextending",
+  "family": "resource",
+  "version": "1.0.0",
+  "seed": "resource-005-v1",
+  "maxDecisions": 4,
+  "players": [{ "lp": 8000, "deck": [], "hand": [{ "id": "h0", "code": 8501, "name": "Safe Summon" }, { "id": "h1", "code": 8502, "name": "Grave Recursion" }] }, { "lp": 7000, "deck": [], "hand": [] }],
+  "oracle": ["a_1601", "a_1603"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Avoid overextending into a longer game." },
+      "actions": [
+        { "id": "a_1600", "label": "Spend Grave Recursion for non-lethal extension", "model": { "id": "a_1600", "type": "activate_effect", "label": "Spend Grave Recursion for non-lethal extension" } },
+        { "id": "a_1601", "label": "Normal Summon Safe Summon and preserve Grave Recursion", "model": { "id": "a_1601", "type": "normal_summon", "label": "Normal Summon Safe Summon and preserve Grave Recursion" } }
+      ],
+      "eventsByAction": {
+        "a_1600": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "Grave Recursion was spent too early." }],
+        "a_1601": [{ "event": "SUMMONED", "player": 0, "text": "Safe Summon kept Grave Recursion available." }]
+      },
+      "rewards": { "a_1601": 0.25, "a_1600": -0.25 },
+      "doneByAction": { "a_1600": true },
+      "winnerByAction": { "a_1600": 1 }
+    },
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Use the preserved recursion on the next turn." },
+      "actions": [
+        { "id": "a_1603", "label": "Use preserved Grave Recursion for win", "model": { "id": "a_1603", "type": "activate_effect", "label": "Use preserved Grave Recursion for win" } },
+        { "id": "a_1604", "label": "Attack without recursion", "model": { "id": "a_1604", "type": "attack", "label": "Attack without recursion" } }
+      ],
+      "eventsByAction": {
+        "a_1603": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "The preserved recursion generated lethal follow-up." }, { "event": "WIN", "player": 0, "text": "Player 0 won." }],
+        "a_1604": [{ "event": "ATTACK", "player": 0, "text": "The attack without recursion fell short." }]
+      },
+      "rewards": { "a_1603": 1, "a_1604": -0.25 },
+      "doneByAction": { "a_1603": true, "a_1604": true },
+      "winnerByAction": { "a_1603": 0, "a_1604": 1 }
+    }
+  ]
+}

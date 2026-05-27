@@ -1,0 +1,41 @@
+{
+  "id": "bait-004",
+  "name": "Play around chain negate",
+  "family": "interruption",
+  "version": "1.0.0",
+  "seed": "bait-004-v1",
+  "maxDecisions": 4,
+  "hiddenInfoAssertions": ["Chain Negate"],
+  "players": [{ "lp": 8000, "deck": [], "hand": [{ "id": "h0", "code": 7401, "name": "Win Effect" }, { "id": "h1", "code": 7402, "name": "Force Response" }] }, { "lp": 8000, "deck": [], "hand": [{ "id": "oh0", "code": 7403, "name": "Chain Negate" }] }],
+  "oracle": ["a_1201", "a_1203"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Choose how to handle a likely chain negate." },
+      "actions": [
+        { "id": "a_1200", "label": "Activate Win Effect into unknown response", "model": { "id": "a_1200", "type": "activate_effect", "label": "Activate Win Effect into unknown response" } },
+        { "id": "a_1201", "label": "Force response with low-value effect", "model": { "id": "a_1201", "type": "activate_effect", "label": "Force response with low-value effect" } }
+      ],
+      "eventsByAction": {
+        "a_1200": [{ "event": "CHAIN_SOLVING", "player": 1, "text": "A hidden response stopped Win Effect." }],
+        "a_1201": [{ "event": "CHAINING", "player": 0, "text": "The low-value effect forced a response." }, { "event": "CHAIN_SOLVING", "player": 1, "text": "The hidden response was spent." }]
+      },
+      "rewards": { "a_1201": 0.25, "a_1200": -0.5 },
+      "doneByAction": { "a_1200": true },
+      "winnerByAction": { "a_1200": 1 }
+    },
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "The chain negate is gone." },
+      "actions": [
+        { "id": "a_1203", "label": "Resolve Win Effect after response", "model": { "id": "a_1203", "type": "activate_effect", "label": "Resolve Win Effect after response" } },
+        { "id": "a_1204", "label": "Pass after response", "model": { "id": "a_1204", "type": "pass", "label": "Pass after response" } }
+      ],
+      "eventsByAction": {
+        "a_1203": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "Win Effect resolved safely." }, { "event": "WIN", "player": 0, "text": "Player 0 won." }],
+        "a_1204": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed.", "payload": { "phase": "END" } }]
+      },
+      "rewards": { "a_1203": 1, "a_1204": -0.25 },
+      "doneByAction": { "a_1203": true, "a_1204": true },
+      "winnerByAction": { "a_1203": 0, "a_1204": 1 }
+    }
+  ]
+}

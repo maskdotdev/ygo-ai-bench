@@ -1,0 +1,41 @@
+{
+  "id": "bait-005",
+  "name": "Adapt after opponent responds",
+  "family": "interruption",
+  "version": "1.0.0",
+  "seed": "bait-005-v1",
+  "maxDecisions": 4,
+  "hiddenInfoAssertions": ["Opponent Hand Trap"],
+  "players": [{ "lp": 8000, "deck": [], "hand": [{ "id": "h0", "code": 7501, "name": "Probe Starter" }, { "id": "h1", "code": 7502, "name": "Backup Line" }] }, { "lp": 8000, "deck": [], "hand": [{ "id": "oh0", "code": 7503, "name": "Opponent Hand Trap" }] }],
+  "oracle": ["a_1301", "a_1303"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Open with a probe or commit your backup." },
+      "actions": [
+        { "id": "a_1300", "label": "Commit Backup Line immediately", "model": { "id": "a_1300", "type": "activate_effect", "label": "Commit Backup Line immediately" } },
+        { "id": "a_1301", "label": "Bait response with Probe Starter", "model": { "id": "a_1301", "type": "activate_effect", "label": "Bait response with Probe Starter" } }
+      ],
+      "eventsByAction": {
+        "a_1300": [{ "event": "CHAIN_SOLVING", "player": 1, "text": "A hidden response stopped Backup Line." }],
+        "a_1301": [{ "event": "CHAINING", "player": 0, "text": "Probe Starter was activated." }, { "event": "CHAINING", "player": 1, "text": "Opponent responded with a hidden card." }]
+      },
+      "rewards": { "a_1301": 0.25, "a_1300": -0.5 },
+      "doneByAction": { "a_1300": true },
+      "winnerByAction": { "a_1300": 1 }
+    },
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Adapt after the opponent spent the response." },
+      "actions": [
+        { "id": "a_1303", "label": "Use Backup Line after bait", "model": { "id": "a_1303", "type": "activate_effect", "label": "Use Backup Line after bait" } },
+        { "id": "a_1304", "label": "Repeat Probe Starter", "model": { "id": "a_1304", "type": "activate_effect", "label": "Repeat Probe Starter" } }
+      ],
+      "eventsByAction": {
+        "a_1303": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "Backup Line resolved after adaptation." }, { "event": "WIN", "player": 0, "text": "Player 0 won." }],
+        "a_1304": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "Repeating the probe lost tempo." }]
+      },
+      "rewards": { "a_1303": 1, "a_1304": -0.25 },
+      "doneByAction": { "a_1303": true, "a_1304": true },
+      "winnerByAction": { "a_1303": 0, "a_1304": 1 }
+    }
+  ]
+}

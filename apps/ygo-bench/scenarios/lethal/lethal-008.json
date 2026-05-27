@@ -1,0 +1,40 @@
+{
+  "id": "lethal-008",
+  "name": "Use spell removal before attack",
+  "family": "lethal",
+  "version": "1.0.0",
+  "seed": "lethal-008-v1",
+  "maxDecisions": 3,
+  "players": [{ "lp": 8000, "deck": [], "hand": [{ "id": "h0", "code": 6801, "name": "Backrow Removal" }] }, { "lp": 3000, "deck": [], "hand": [], "spellsTraps": [{ "id": "os0", "code": 6802, "name": "Set battle trap", "position": "set" }] }],
+  "oracle": ["a_801", "a_803"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Remove the set interruption before attacking." },
+      "actions": [
+        { "id": "a_800", "label": "Go directly to battle into set trap", "model": { "id": "a_800", "type": "pass", "label": "Go directly to battle into set trap" } },
+        { "id": "a_801", "label": "Activate Backrow Removal for lethal", "model": { "id": "a_801", "type": "activate_effect", "label": "Activate Backrow Removal for lethal" } }
+      ],
+      "eventsByAction": {
+        "a_800": [{ "event": "CHAINING", "player": 1, "text": "The set trap stopped the attack." }],
+        "a_801": [{ "event": "CARD_MOVED", "player": 1, "text": "The set trap was removed." }, { "event": "NEW_PHASE", "player": 0, "text": "Player 0 moved to Battle Phase.", "payload": { "phase": "BATTLE" } }]
+      },
+      "rewards": { "a_801": 0.25, "a_800": -0.25 },
+      "doneByAction": { "a_800": true },
+      "winnerByAction": { "a_800": 1 }
+    },
+    {
+      "prompt": { "type": "battle_command", "player": 0, "message": "The trap is gone." },
+      "actions": [
+        { "id": "a_803", "label": "Attack for game after removing trap", "model": { "id": "a_803", "type": "attack", "label": "Attack for game after removing trap" } },
+        { "id": "a_804", "label": "Pass battle", "model": { "id": "a_804", "type": "pass", "label": "Pass battle" } }
+      ],
+      "eventsByAction": {
+        "a_803": [{ "event": "ATTACK", "player": 0, "text": "The attack connected for lethal." }, { "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 0.", "payload": { "player": 1, "lp": 0 } }, { "event": "WIN", "player": 0, "text": "Player 0 won." }],
+        "a_804": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed battle.", "payload": { "phase": "END" } }]
+      },
+      "rewards": { "a_803": 1, "a_804": -0.5 },
+      "doneByAction": { "a_803": true, "a_804": true },
+      "winnerByAction": { "a_803": 0, "a_804": 1 }
+    }
+  ]
+}

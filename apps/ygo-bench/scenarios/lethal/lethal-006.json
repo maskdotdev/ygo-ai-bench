@@ -1,0 +1,40 @@
+{
+  "id": "lethal-006",
+  "name": "Force battle phase after setup",
+  "family": "lethal",
+  "version": "1.0.0",
+  "seed": "lethal-006-v1",
+  "maxDecisions": 3,
+  "players": [{ "lp": 8000, "deck": [], "hand": [{ "id": "h0", "code": 6601, "name": "Battle Setup" }] }, { "lp": 2000, "deck": [], "hand": [] }],
+  "oracle": ["a_601", "a_603"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Set up lethal and enter battle." },
+      "actions": [
+        { "id": "a_600", "label": "End Main Phase without setup", "model": { "id": "a_600", "type": "pass", "label": "End Main Phase without setup" } },
+        { "id": "a_601", "label": "Activate Battle Setup for lethal", "model": { "id": "a_601", "type": "activate_effect", "label": "Activate Battle Setup for lethal" } }
+      ],
+      "eventsByAction": {
+        "a_600": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 ended without pressure.", "payload": { "phase": "END" } }],
+        "a_601": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "Battle Setup created lethal damage." }, { "event": "NEW_PHASE", "player": 0, "text": "Player 0 moved to Battle Phase.", "payload": { "phase": "BATTLE" } }]
+      },
+      "rewards": { "a_601": 0.25, "a_600": -0.25 },
+      "doneByAction": { "a_600": true },
+      "winnerByAction": { "a_600": 1 }
+    },
+    {
+      "prompt": { "type": "battle_command", "player": 0, "message": "Attack now." },
+      "actions": [
+        { "id": "a_603", "label": "Attack for game after Battle Setup", "model": { "id": "a_603", "type": "attack", "label": "Attack for game after Battle Setup" } },
+        { "id": "a_604", "label": "Pass battle", "model": { "id": "a_604", "type": "pass", "label": "Pass battle" } }
+      ],
+      "eventsByAction": {
+        "a_603": [{ "event": "ATTACK", "player": 0, "text": "The setup attack ended the duel." }, { "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 0.", "payload": { "player": 1, "lp": 0 } }, { "event": "WIN", "player": 0, "text": "Player 0 won." }],
+        "a_604": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed battle.", "payload": { "phase": "END" } }]
+      },
+      "rewards": { "a_603": 1, "a_604": -0.5 },
+      "doneByAction": { "a_603": true, "a_604": true },
+      "winnerByAction": { "a_603": 0, "a_604": 1 }
+    }
+  ]
+}

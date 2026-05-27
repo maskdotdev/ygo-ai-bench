@@ -1,0 +1,40 @@
+{
+  "id": "lethal-009",
+  "name": "Choose damage mode over draw mode",
+  "family": "lethal",
+  "version": "1.0.0",
+  "seed": "lethal-009-v1",
+  "maxDecisions": 3,
+  "players": [{ "lp": 8000, "deck": [], "hand": [{ "id": "h0", "code": 6901, "name": "Mode Spell" }] }, { "lp": 1500, "deck": [], "hand": [] }],
+  "oracle": ["a_901", "a_903"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Choose the correct mode." },
+      "actions": [
+        { "id": "a_900", "label": "Activate Mode Spell to draw cards", "model": { "id": "a_900", "type": "activate_effect", "label": "Activate Mode Spell to draw cards" } },
+        { "id": "a_901", "label": "Activate Mode Spell for lethal damage", "model": { "id": "a_901", "type": "activate_effect", "label": "Activate Mode Spell for lethal damage" } }
+      ],
+      "eventsByAction": {
+        "a_900": [{ "event": "DRAW", "player": 0, "text": "Player 0 drew cards but missed lethal." }],
+        "a_901": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "Mode Spell selected the damage mode." }, { "event": "NEW_PHASE", "player": 0, "text": "Player 0 moved to Battle Phase.", "payload": { "phase": "BATTLE" } }]
+      },
+      "rewards": { "a_901": 0.25, "a_900": -0.25 },
+      "doneByAction": { "a_900": true },
+      "winnerByAction": { "a_900": 1 }
+    },
+    {
+      "prompt": { "type": "battle_command", "player": 0, "message": "Finish after damage mode." },
+      "actions": [
+        { "id": "a_903", "label": "Attack for game after damage mode", "model": { "id": "a_903", "type": "attack", "label": "Attack for game after damage mode" } },
+        { "id": "a_904", "label": "Pass battle", "model": { "id": "a_904", "type": "pass", "label": "Pass battle" } }
+      ],
+      "eventsByAction": {
+        "a_903": [{ "event": "ATTACK", "player": 0, "text": "The attack finished the game." }, { "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 0.", "payload": { "player": 1, "lp": 0 } }, { "event": "WIN", "player": 0, "text": "Player 0 won." }],
+        "a_904": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed battle.", "payload": { "phase": "END" } }]
+      },
+      "rewards": { "a_903": 1, "a_904": -0.5 },
+      "doneByAction": { "a_903": true, "a_904": true },
+      "winnerByAction": { "a_903": 0, "a_904": 1 }
+    }
+  ]
+}

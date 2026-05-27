@@ -1,0 +1,41 @@
+{
+  "id": "bait-003",
+  "name": "Force response before normal summon",
+  "family": "interruption",
+  "version": "1.0.0",
+  "seed": "bait-003-v1",
+  "maxDecisions": 4,
+  "hiddenInfoAssertions": ["Hidden Trap"],
+  "players": [{ "lp": 8000, "deck": [], "hand": [{ "id": "h0", "code": 7301, "name": "Normal Summon Payoff" }, { "id": "h1", "code": 7302, "name": "Bait Spell" }] }, { "lp": 8000, "deck": [], "hand": [{ "id": "oh0", "code": 7303, "name": "Hidden Trap" }] }],
+  "oracle": ["a_1101", "a_1103"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "A hidden trap punishes the first important monster." },
+      "actions": [
+        { "id": "a_1100", "label": "Normal Summon Payoff immediately", "model": { "id": "a_1100", "type": "normal_summon", "label": "Normal Summon Payoff immediately" } },
+        { "id": "a_1101", "label": "Bait hidden trap with Bait Spell", "model": { "id": "a_1101", "type": "activate_effect", "label": "Bait hidden trap with Bait Spell" } }
+      ],
+      "eventsByAction": {
+        "a_1100": [{ "event": "CHAIN_SOLVING", "player": 1, "text": "The hidden trap removed the payoff monster." }],
+        "a_1101": [{ "event": "CHAINING", "player": 0, "text": "Bait Spell forced the hidden trap." }, { "event": "CHAIN_SOLVING", "player": 1, "text": "The hidden trap was spent." }]
+      },
+      "rewards": { "a_1101": 0.25, "a_1100": -0.5 },
+      "doneByAction": { "a_1100": true },
+      "winnerByAction": { "a_1100": 1 }
+    },
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Summon the payoff after the trap is gone." },
+      "actions": [
+        { "id": "a_1103", "label": "Normal Summon Payoff after bait", "model": { "id": "a_1103", "type": "normal_summon", "label": "Normal Summon Payoff after bait" } },
+        { "id": "a_1104", "label": "Pass after bait", "model": { "id": "a_1104", "type": "pass", "label": "Pass after bait" } }
+      ],
+      "eventsByAction": {
+        "a_1103": [{ "event": "SUMMONED", "player": 0, "text": "The payoff monster resolved safely." }, { "event": "WIN", "player": 0, "text": "Player 0 won." }],
+        "a_1104": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed.", "payload": { "phase": "END" } }]
+      },
+      "rewards": { "a_1103": 1, "a_1104": -0.25 },
+      "doneByAction": { "a_1103": true, "a_1104": true },
+      "winnerByAction": { "a_1103": 0, "a_1104": 1 }
+    }
+  ]
+}

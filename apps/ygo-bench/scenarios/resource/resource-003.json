@@ -1,0 +1,40 @@
+{
+  "id": "resource-003",
+  "name": "Preserve negate for opponent turn",
+  "family": "resource",
+  "version": "1.0.0",
+  "seed": "resource-003-v1",
+  "maxDecisions": 4,
+  "players": [{ "lp": 8000, "deck": [], "hand": [{ "id": "h0", "code": 8301, "name": "Board Body" }, { "id": "h1", "code": 8302, "name": "Defensive Negate" }] }, { "lp": 8000, "deck": [], "hand": [] }],
+  "oracle": ["a_1401", "a_1403"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Build a board without spending defensive interaction." },
+      "actions": [
+        { "id": "a_1400", "label": "Spend Defensive Negate for extra damage", "model": { "id": "a_1400", "type": "activate_effect", "label": "Spend Defensive Negate for extra damage" } },
+        { "id": "a_1401", "label": "Normal Summon Board Body and preserve Defensive Negate", "model": { "id": "a_1401", "type": "normal_summon", "label": "Normal Summon Board Body and preserve Defensive Negate" } }
+      ],
+      "eventsByAction": {
+        "a_1400": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "The negate was spent for minor damage." }],
+        "a_1401": [{ "event": "SUMMONED", "player": 0, "text": "Board Body was summoned while Defensive Negate stayed available." }]
+      },
+      "rewards": { "a_1401": 0.25, "a_1400": -0.25 },
+      "doneByAction": { "a_1400": true },
+      "winnerByAction": { "a_1400": 1 }
+    },
+    {
+      "prompt": { "type": "chain_response", "player": 0, "message": "Opponent starts a comeback. Use the saved negate." },
+      "actions": [
+        { "id": "a_1403", "label": "Use preserved Defensive Negate to survive", "model": { "id": "a_1403", "type": "respond", "label": "Use preserved Defensive Negate to survive" } },
+        { "id": "a_1404", "label": "Decline response", "model": { "id": "a_1404", "type": "respond", "label": "Decline response" } }
+      ],
+      "eventsByAction": {
+        "a_1403": [{ "event": "CHAIN_SOLVING", "player": 0, "text": "The preserved negate stopped the comeback." }, { "event": "WIN", "player": 0, "text": "Player 0 won." }],
+        "a_1404": [{ "event": "CHAIN_SOLVING", "player": 1, "text": "Opponent resolved the comeback line." }]
+      },
+      "rewards": { "a_1403": 1, "a_1404": -0.5 },
+      "doneByAction": { "a_1403": true, "a_1404": true },
+      "winnerByAction": { "a_1403": 0, "a_1404": 1 }
+    }
+  ]
+}
