@@ -112,7 +112,7 @@ export async function writeRealViewerHtml(path: string, trace: unknown[], state:
     }
 
     function renderPlayer(player, index) {
-      return '<section class="player"><div class="player-head"><h2>Player ' + index + '</h2><span>LP ' + player.lp + ' | Hand ' + player.handCount + ' | Deck ' + player.deckCount + '</span></div><div class="zones">' +
+      return '<section class="player"><div class="player-head"><h2>Player ' + index + '</h2><span>LP ' + player.lp + ' | Hand ' + player.handCount + ' | Deck ' + player.deckCount + ' | Extra ' + (player.extraDeckCount || 0) + '</span></div><div class="zones">' +
         renderZone("Monsters", player.monsters) +
         renderZone("Spells/Traps", player.spellsTraps) +
         renderZone("Graveyard", player.graveyard) +

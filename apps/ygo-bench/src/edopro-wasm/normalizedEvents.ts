@@ -38,6 +38,7 @@ export interface RealReducedPlayer {
   graveyard: RealCardView[];
   banished: RealCardView[];
   deckCount: number;
+  extraDeckCount: number;
 }
 
 export interface RealReducedState {
@@ -265,8 +266,10 @@ function moveCardInReducedState(state: RealReducedState, payload: Record<string,
   const toPlayerId = toPlayer(to.controller);
   if (fromPlayer !== null) removeCardFromKnownZones(state.players[fromPlayer], code, from.location, from.sequence);
   if (fromPlayer !== null && from.location === 2) state.players[fromPlayer].handCount = Math.max(0, state.players[fromPlayer].handCount - 1);
+  if (fromPlayer !== null && from.location === 64) state.players[fromPlayer].extraDeckCount = Math.max(0, state.players[fromPlayer].extraDeckCount - 1);
   if (toPlayerId !== null) {
     if (to.location === 2) state.players[toPlayerId].handCount += 1;
+    if (to.location === 64) state.players[toPlayerId].extraDeckCount += 1;
     addCardToKnownZone(state.players[toPlayerId], {
       code,
       name: name ?? `#${code}`,
@@ -318,6 +321,7 @@ function initialPlayer(): RealReducedPlayer {
     graveyard: [],
     banished: [],
     deckCount: 0,
+    extraDeckCount: 0,
   };
 }
 

@@ -10,6 +10,7 @@ describe("buildRealModelObservation", () => {
     state.phase = "MAIN1";
     state.players[0].lp = 8000;
     state.players[0].handCount = 5;
+    state.players[0].extraDeckCount = 1;
     state.players[0].hand.push({
       code: 49003308,
       name: "Gagagigo",
@@ -19,6 +20,7 @@ describe("buildRealModelObservation", () => {
     });
     state.players[1].lp = 3000;
     state.players[1].handCount = 2;
+    state.players[1].extraDeckCount = 2;
     state.players[1].hand.push({
       code: 222,
       name: "Opponent Hidden Card",
@@ -72,6 +74,8 @@ describe("buildRealModelObservation", () => {
     expect(rendered).not.toContain("Opponent Hidden Card");
     expect(rendered).toContain("Blue-Eyes White Dragon");
     expect(observation.opponent.handCount).toBe(2);
+    expect(observation.you.extraDeckCount).toBe(1);
+    expect(observation.opponent.extraDeckCount).toBe(2);
     expect(observation.you.hand).toEqual([{ name: "Gagagigo", code: 49003308, sequence: 0 }]);
     expect(observation.opponent.hand).toBeUndefined();
   });

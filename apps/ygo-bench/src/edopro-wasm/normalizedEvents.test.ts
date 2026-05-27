@@ -7,6 +7,7 @@ describe("normalizeMessages", () => {
   it("updates phase, hand counts, zones, and winner from real ocg messages", () => {
     const state = initialRealReducedState();
     state.players[0].deckCount = 2;
+    state.players[0].extraDeckCount = 1;
     let frame = 0;
 
     const events = normalizeMessages({
@@ -20,6 +21,12 @@ describe("normalizeMessages", () => {
           from: { controller: 0, location: 2, sequence: 0, position: 10 },
           to: { controller: 0, location: 4, sequence: 2, position: 1 },
         },
+        {
+          type: 50,
+          card: 49003308,
+          from: { controller: 0, location: 64, sequence: 0, position: 8 },
+          to: { controller: 0, location: 16, sequence: 0, position: 1 },
+        },
         { type: 91, player: 1, amount: 1850 },
         { type: 5, player: 0, reason: 0 },
       ],
@@ -32,12 +39,13 @@ describe("normalizeMessages", () => {
       },
     });
 
-    expect(events.map((event) => event.event)).toEqual(["NEW_TURN", "NEW_PHASE", "DRAW", "CARD_MOVED", "DAMAGE", "WIN"]);
+    expect(events.map((event) => event.event)).toEqual(["NEW_TURN", "NEW_PHASE", "DRAW", "CARD_MOVED", "CARD_MOVED", "DAMAGE", "WIN"]);
     expect(state.turn).toBe(1);
     expect(state.phase).toBe("MAIN1");
     expect(state.players[0].handCount).toBe(0);
     expect(state.players[0].hand).toEqual([]);
     expect(state.players[0].deckCount).toBe(1);
+    expect(state.players[0].extraDeckCount).toBe(0);
     expect(state.players[0].monsters).toEqual([
       {
         code: 49003308,

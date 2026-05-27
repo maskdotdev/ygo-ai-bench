@@ -54,6 +54,8 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   reducedState.players[1].lp = scenario.players[1].lp;
   reducedState.players[0].deckCount = scenario.players[0].deck.length;
   reducedState.players[1].deckCount = scenario.players[1].deck.length;
+  reducedState.players[0].extraDeckCount = scenario.players[0].extra?.length ?? 0;
+  reducedState.players[1].extraDeckCount = scenario.players[1].extra?.length ?? 0;
   let decisionsTaken = 0;
   let invalidJson = 0;
   let illegalActions = 0;
@@ -269,6 +271,8 @@ export function createScenarioDuel(
 
   for (const [sequence, code] of scenario.players[0].deck.entries()) addDeckCard(core, handle, 0, code, sequence);
   for (const [sequence, code] of scenario.players[1].deck.entries()) addDeckCard(core, handle, 1, code, sequence);
+  for (const [sequence, code] of (scenario.players[0].extra ?? []).entries()) addExtraDeckCard(core, handle, 0, code, sequence);
+  for (const [sequence, code] of (scenario.players[1].extra ?? []).entries()) addExtraDeckCard(core, handle, 1, code, sequence);
   return handle;
 }
 
@@ -279,6 +283,18 @@ function addDeckCard(core: OcgCoreSync, handle: OcgDuelHandle, player: 0 | 1, co
     code,
     controller: player,
     location: 1,
+    sequence,
+    position: 8,
+  });
+}
+
+function addExtraDeckCard(core: OcgCoreSync, handle: OcgDuelHandle, player: 0 | 1, code: number, sequence: number): void {
+  core.duelNewCard(handle, {
+    team: player,
+    duelist: 0,
+    code,
+    controller: player,
+    location: 64,
     sequence,
     position: 8,
   });

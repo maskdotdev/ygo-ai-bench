@@ -244,7 +244,7 @@ export function renderLiveViewerHtml(): string {
     }
     function renderState(state) {
       const players = state.players || [];
-      return players.map((player, index) => '<div class="player"><h2>Player ' + index + ' - LP ' + player.lp + ' | Hand ' + (player.handCount || 0) + ' | Deck ' + (player.deckCount || 0) + '</h2><div class="zones">' + renderZone("Monsters", player.monsters) + renderZone("Spells/Traps", player.spellsTraps) + renderZone("Graveyard", player.graveyard) + renderZone("Banished", player.banished) + '</div></div>').join("");
+      return players.map((player, index) => '<div class="player"><h2>Player ' + index + ' - LP ' + player.lp + ' | Hand ' + (player.handCount || 0) + ' | Deck ' + (player.deckCount || 0) + ' | Extra ' + (player.extraDeckCount || 0) + '</h2><div class="zones">' + renderZone("Monsters", player.monsters) + renderZone("Spells/Traps", player.spellsTraps) + renderZone("Graveyard", player.graveyard) + renderZone("Banished", player.banished) + '</div></div>').join("");
     }
     function renderZone(label, cards) {
       const body = cards && cards.length ? cards.map((card) => '<div class="card">' + escapeHtml(card.name || String(card.code || "card")) + '</div>').join("") : '<div class="empty">Empty</div>';

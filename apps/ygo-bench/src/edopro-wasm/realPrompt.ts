@@ -42,6 +42,8 @@ export async function getFirstRealPrompt(options: RealPromptOptions): Promise<Re
   state.players[1].lp = scenario.players[1].lp;
   state.players[0].deckCount = scenario.players[0].deck.length;
   state.players[1].deckCount = scenario.players[1].deck.length;
+  state.players[0].extraDeckCount = scenario.players[0].extra?.length ?? 0;
+  state.players[1].extraDeckCount = scenario.players[1].extra?.length ?? 0;
   let frameId = 0;
 
   try {
