@@ -11,8 +11,8 @@ export function SuiteSummaryView({ summary, onSelectRun }: { summary: SuiteSumma
         {summary.aggregate.map((row) => (
           <div className="score-card" key={row.agentId}>
             <span>{row.agentId}</span>
-            <strong>{row.weightedObjectiveScore.toFixed(3)}</strong>
-            <small>win {(row.winRate * 100).toFixed(0)}% | avg {row.averageDecisions.toFixed(1)} decisions</small>
+            <strong>{summaryScore(row).toFixed(3)}</strong>
+            <small>win {percent(row.winRate)} | avg {number(row.averageDecisions, 1)} decisions</small>
           </div>
         ))}
       </div>
@@ -25,10 +25,22 @@ export function SuiteSummaryView({ summary, onSelectRun }: { summary: SuiteSumma
           >
             <span>{record.score.scenarioId.replace("real-", "")}</span>
             <b>{record.score.agentId}</b>
-            <strong>{record.score.objectiveScore.toFixed(2)}</strong>
+            <strong>{number(record.score.objectiveScore, 2)}</strong>
           </button>
         ))}
       </div>
     </section>
   );
+}
+
+function summaryScore(row: SuiteSummary["aggregate"][number]): number {
+  return row.weightedObjectiveScore ?? row.averageScore ?? 0;
+}
+
+function percent(value: number | undefined): string {
+  return `${(((value ?? 0) * 100)).toFixed(0)}%`;
+}
+
+function number(value: number | undefined, digits: number): string {
+  return (value ?? 0).toFixed(digits);
 }

@@ -1,7 +1,7 @@
 import type { SuiteSummary } from "../types";
 
 export function AgentComparison({ summary }: { summary: SuiteSummary }) {
-  const max = Math.max(...summary.aggregate.map((row) => row.weightedObjectiveScore), 0.01);
+  const max = Math.max(...summary.aggregate.map((row) => summaryScore(row)), 0.01);
   return (
     <section className="panel">
       <div className="section-head">
@@ -16,12 +16,16 @@ export function AgentComparison({ summary }: { summary: SuiteSummary }) {
               <span>WR {(row.winRate * 100).toFixed(0)}%</span>
             </div>
             <div className="bar-track">
-              <div className="bar-fill" style={{ width: `${(row.weightedObjectiveScore / max) * 100}%` }} />
+              <div className="bar-fill" style={{ width: `${(summaryScore(row) / max) * 100}%` }} />
             </div>
-            <b>{row.weightedObjectiveScore.toFixed(3)}</b>
+            <b>{summaryScore(row).toFixed(3)}</b>
           </div>
         ))}
       </div>
     </section>
   );
+}
+
+function summaryScore(row: SuiteSummary["aggregate"][number]): number {
+  return row.weightedObjectiveScore ?? row.averageScore ?? 0;
 }

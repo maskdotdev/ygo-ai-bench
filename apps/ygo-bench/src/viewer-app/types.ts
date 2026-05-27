@@ -61,7 +61,7 @@ export interface SuiteSummary {
     runs: number;
     winRate: number;
     averageScore: number;
-    weightedObjectiveScore: number;
+    weightedObjectiveScore?: number;
     averageDecisions: number;
     averageLpDelta: number;
     modelErrorRate: number;

@@ -21,7 +21,7 @@ describe("viewer artifact index", () => {
         generatedAt: "2026-05-27T00:00:00.000Z",
         records: [{ score: score("real-lethal-001", "greedy", 1), runDir }],
         scores: [score("real-lethal-001", "greedy", 1)],
-        aggregate: [],
+        aggregate: [{ agentId: "greedy", averageScore: 0.75 }],
       }),
     );
 
@@ -37,7 +37,10 @@ describe("viewer artifact index", () => {
     expect(trace).toHaveLength(2);
 
     expect(await listSummaryArtifacts(root)).toEqual(["mvp"]);
-    expect(await readSummaryArtifact("mvp", root)).toMatchObject({ suiteId: "mvp" });
+    expect(await readSummaryArtifact("mvp", root)).toMatchObject({
+      suiteId: "mvp",
+      aggregate: [{ agentId: "greedy", averageScore: 0.75, weightedObjectiveScore: 0.75 }],
+    });
   });
 
   it("rejects unsafe run ids", async () => {

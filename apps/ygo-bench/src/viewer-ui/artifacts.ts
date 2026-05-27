@@ -98,7 +98,8 @@ export async function listSummaryArtifacts(root = "benchmark-runs"): Promise<str
 
 export async function readSummaryArtifact(id: string, root = "benchmark-runs"): Promise<unknown | null> {
   if (!isSafeId(id)) return null;
-  return readJson(resolve(root, `${id}-summary.json`));
+  const summary = await readJson(resolve(root, `${id}-summary.json`));
+  return normalizeSummary(summary);
 }
 
 export async function readRunTrace(id: string, root = "benchmark-runs"): Promise<unknown[] | null> {
@@ -169,4 +170,20 @@ function timestampFromRunId(id: string): string | undefined {
   const match = /^real-run-(\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}\.\d{3}Z)-/.exec(id);
   const value = match?.[1];
   return value ? value.replace(/T(\d{2})-(\d{2})-(\d{2})\./, "T$1:$2:$3.") : undefined;
+}
+
+function normalizeSummary(summary: unknown): unknown {
+  if (!summary || typeof summary !== "object" || !("aggregate" in summary) || !Array.isArray(summary.aggregate)) return summary;
+  return {
+    ...summary,
+    aggregate: summary.aggregate.map((row: unknown) => {
+      if (!row || typeof row !== "object") return row;
+      const candidate = row as { weightedObjectiveScore?: unknown; averageScore?: unknown };
+      if (typeof candidate.weightedObjectiveScore === "number") return row;
+      return {
+        ...candidate,
+        weightedObjectiveScore: typeof candidate.averageScore === "number" ? candidate.averageScore : 0,
+      };
+    }),
+  };
 }
