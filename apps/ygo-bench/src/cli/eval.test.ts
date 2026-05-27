@@ -24,6 +24,7 @@ describe("evalSuite", () => {
           runs: scores.length,
           winRate: 1,
           averageScore: 1,
+          weightedObjectiveScore: 1,
           averageDecisions: 2,
           illegalActionRate: 0,
           invalidJsonRate: 0,

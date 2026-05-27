@@ -154,6 +154,7 @@ export interface Agent {
 export interface ScenarioScore {
   scenarioId: string;
   agentId: string;
+  family: "lethal" | "interruption" | "resource" | "smoke";
   won: boolean;
   turnsTaken: number;
   decisionsTaken: number;

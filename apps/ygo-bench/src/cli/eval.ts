@@ -24,6 +24,7 @@ export interface EvalSuiteSummary {
     runs: number;
     winRate: number;
     averageScore: number;
+    weightedObjectiveScore: number;
     averageDecisions: number;
     illegalActionRate: number;
     invalidJsonRate: number;
@@ -69,6 +70,7 @@ function aggregateScores(scores: ScenarioScore[]): EvalSuiteSummary["aggregate"]
       runs: agentScores.length,
       winRate: average(agentScores.map((score) => (score.won ? 1 : 0))),
       averageScore: average(agentScores.map((score) => score.objectiveScore)),
+      weightedObjectiveScore: weightedObjectiveScore(agentScores),
       averageDecisions: average(agentScores.map((score) => score.decisionsTaken)),
       illegalActionRate: average(agentScores.map((score) => score.illegalActions)),
       invalidJsonRate: average(agentScores.map((score) => score.invalidJson)),
@@ -85,6 +87,7 @@ function renderCsv(summary: EvalSuiteSummary): string {
       "agentId",
       "scenarioId",
       "won",
+      "family",
       "objectiveScore",
       "decisionsTaken",
       "illegalActions",
@@ -98,6 +101,7 @@ function renderCsv(summary: EvalSuiteSummary): string {
       record.score.agentId,
       record.score.scenarioId,
       String(record.score.won),
+      record.score.family,
       record.score.objectiveScore.toFixed(4),
       String(record.score.decisionsTaken),
       String(record.score.illegalActions),
@@ -138,14 +142,14 @@ function renderHtmlReport(summary: EvalSuiteSummary): string {
     <section>
       <h2>Aggregate</h2>
       <table>
-        <thead><tr><th>Agent</th><th>Runs</th><th>Win Rate</th><th>Avg Score</th><th>Avg Decisions</th><th>Illegal</th><th>Invalid JSON</th><th>Repeated</th><th>Avg Latency</th><th>Avg Tokens</th></tr></thead>
+        <thead><tr><th>Agent</th><th>Runs</th><th>Win Rate</th><th>Avg Score</th><th>Weighted Score</th><th>Avg Decisions</th><th>Illegal</th><th>Invalid JSON</th><th>Repeated</th><th>Avg Latency</th><th>Avg Tokens</th></tr></thead>
         <tbody>${summary.aggregate.map(renderAggregateRow).join("")}</tbody>
       </table>
     </section>
     <section>
       <h2>Runs</h2>
       <table>
-        <thead><tr><th>Agent</th><th>Scenario</th><th>Won</th><th>Score</th><th>Decisions</th><th>Latency</th><th>Tokens</th><th>Viewer</th></tr></thead>
+        <thead><tr><th>Agent</th><th>Scenario</th><th>Family</th><th>Won</th><th>Score</th><th>Decisions</th><th>Latency</th><th>Tokens</th><th>Viewer</th></tr></thead>
         <tbody>${summary.records.map(renderRunRow).join("")}</tbody>
       </table>
     </section>
@@ -155,12 +159,12 @@ function renderHtmlReport(summary: EvalSuiteSummary): string {
 }
 
 function renderAggregateRow(row: EvalSuiteSummary["aggregate"][number]): string {
-  return `<tr><td>${escapeHtml(row.agentId)}</td><td>${row.runs}</td><td>${row.winRate.toFixed(2)}</td><td>${row.averageScore.toFixed(2)}</td><td>${row.averageDecisions.toFixed(1)}</td><td>${row.illegalActionRate.toFixed(2)}</td><td>${row.invalidJsonRate.toFixed(2)}</td><td>${row.repeatedActionRate.toFixed(2)}</td><td>${row.averageLatencyMs.toFixed(0)} ms</td><td>${row.averageTokenCount === null ? "" : row.averageTokenCount.toFixed(0)}</td></tr>`;
+  return `<tr><td>${escapeHtml(row.agentId)}</td><td>${row.runs}</td><td>${row.winRate.toFixed(2)}</td><td>${row.averageScore.toFixed(2)}</td><td>${row.weightedObjectiveScore.toFixed(2)}</td><td>${row.averageDecisions.toFixed(1)}</td><td>${row.illegalActionRate.toFixed(2)}</td><td>${row.invalidJsonRate.toFixed(2)}</td><td>${row.repeatedActionRate.toFixed(2)}</td><td>${row.averageLatencyMs.toFixed(0)} ms</td><td>${row.averageTokenCount === null ? "" : row.averageTokenCount.toFixed(0)}</td></tr>`;
 }
 
 function renderRunRow(record: EvalRunRecord): string {
   const viewer = record.viewerPath ? `<a href="${escapeHtml(record.viewerPath)}">viewer</a>` : "";
-  return `<tr><td>${escapeHtml(record.score.agentId)}</td><td>${escapeHtml(record.score.scenarioId)}</td><td>${record.score.won ? "yes" : "no"}</td><td>${record.score.objectiveScore.toFixed(2)}</td><td>${record.score.decisionsTaken}</td><td>${record.score.latencyMs} ms</td><td>${record.score.tokenCount ?? ""}</td><td>${viewer}</td></tr>`;
+  return `<tr><td>${escapeHtml(record.score.agentId)}</td><td>${escapeHtml(record.score.scenarioId)}</td><td>${escapeHtml(record.score.family)}</td><td>${record.score.won ? "yes" : "no"}</td><td>${record.score.objectiveScore.toFixed(2)}</td><td>${record.score.decisionsTaken}</td><td>${record.score.latencyMs} ms</td><td>${record.score.tokenCount ?? ""}</td><td>${viewer}</td></tr>`;
 }
 
 function average(values: number[]): number {
@@ -171,6 +175,21 @@ function average(values: number[]): number {
 function averageNullable(values: Array<number | null>): number | null {
   const concrete = values.filter((value): value is number => value !== null);
   return concrete.length === 0 ? null : average(concrete);
+}
+
+function weightedObjectiveScore(scores: ScenarioScore[]): number {
+  const weights = { lethal: 0.3, interruption: 0.3, resource: 0.3, smoke: 0.1 } as const;
+  const presentFamilies = Object.keys(weights).filter((family) =>
+    scores.some((score) => score.family === family),
+  ) as Array<keyof typeof weights>;
+  const totalWeight = presentFamilies.reduce((sum, family) => sum + weights[family], 0);
+  if (totalWeight === 0) return 0;
+  return (
+    presentFamilies.reduce((sum, family) => {
+      const familyScores = scores.filter((score) => score.family === family);
+      return sum + average(familyScores.map((score) => score.objectiveScore)) * weights[family];
+    }, 0) / totalWeight
+  );
 }
 
 function csvCell(value: string): string {

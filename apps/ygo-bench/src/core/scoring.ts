@@ -20,6 +20,7 @@ export function scoreRun(args: {
   return {
     scenarioId: args.scenario.id,
     agentId: args.agentId,
+    family: args.scenario.family,
     won,
     turnsTaken: args.finalResult.observation.turn,
     decisionsTaken: args.decisionsTaken,

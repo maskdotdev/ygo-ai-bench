@@ -139,6 +139,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   const score: ScenarioScore = {
     scenarioId: scenario.id,
     agentId: options.agentId,
+    family: scenario.family,
     won: winner === 0,
     turnsTaken: reducedState.turn,
     decisionsTaken,
