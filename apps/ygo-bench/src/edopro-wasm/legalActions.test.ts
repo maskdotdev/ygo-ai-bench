@@ -109,6 +109,44 @@ describe("buildRealLegalActions", () => {
       },
     ]);
   });
+
+  it("maps SELECT_YESNO to explicit yes and no actions", () => {
+    const actions = buildRealLegalActions({ type: 13, player: 0, code: 49003308 }, testRuntime, testCards);
+
+    expect(actions).toEqual([
+      {
+        id: "a_001",
+        type: "yes",
+        label: "Yes for Gagagigo",
+        response: { type: 3, yes: true },
+      },
+      {
+        id: "a_002",
+        type: "no",
+        label: "No for Gagagigo",
+        response: { type: 3, yes: false },
+      },
+    ]);
+  });
+
+  it("maps SELECT_OPTION to stable option actions", () => {
+    const actions = buildRealLegalActions({ type: 14, player: 0, options: [49003308, "Draw card"] }, testRuntime, testCards);
+
+    expect(actions).toEqual([
+      {
+        id: "a_001",
+        type: "select_option",
+        label: "Gagagigo",
+        response: { type: 4, index: 0 },
+      },
+      {
+        id: "a_002",
+        type: "select_option",
+        label: "Draw card",
+        response: { type: 4, index: 1 },
+      },
+    ]);
+  });
 });
 
 const testCards: CardDatabase = {
@@ -123,6 +161,8 @@ const testRuntime = {
     SELECT_CARD: 15,
     SELECT_CHAIN: 16,
     SELECT_PLACE: 18,
+    SELECT_YESNO: 13,
+    SELECT_OPTION: 14,
   },
   OcgResponseType: {
     SELECT_IDLECMD: 1,
@@ -130,6 +170,8 @@ const testRuntime = {
     SELECT_CARD: 5,
     SELECT_CHAIN: 8,
     SELECT_PLACE: 10,
+    SELECT_YESNO: 3,
+    SELECT_OPTION: 4,
   },
   SelectIdleCMDAction: {
     SELECT_SUMMON: 0,

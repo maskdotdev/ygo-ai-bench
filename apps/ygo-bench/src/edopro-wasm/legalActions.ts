@@ -150,6 +150,33 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
     return actions;
   }
 
+  if (prompt.type === ocg.OcgMessageType.SELECT_YESNO) {
+    const cardLabel = typeof prompt.code === "number" ? ` for ${cardName(prompt.code, cardDb)}` : "";
+    return [
+      {
+        id: "a_001",
+        type: "yes",
+        label: `Yes${cardLabel}`,
+        response: { type: ocg.OcgResponseType.SELECT_YESNO, yes: true },
+      },
+      {
+        id: "a_002",
+        type: "no",
+        label: `No${cardLabel}`,
+        response: { type: ocg.OcgResponseType.SELECT_YESNO, yes: false },
+      },
+    ];
+  }
+
+  if (prompt.type === ocg.OcgMessageType.SELECT_OPTION) {
+    return arrayOfUnknown(prompt.options).map((option, index) => ({
+      id: nextActionId(index),
+      type: "select_option",
+      label: optionLabel(option, index, cardDb),
+      response: { type: ocg.OcgResponseType.SELECT_OPTION, index },
+    }));
+  }
+
   return [];
 }
 
@@ -173,4 +200,19 @@ function cardName(code: unknown, cardDb: CardDatabase): string {
 
 function arrayOfRecords(value: unknown): Array<Record<string, unknown>> {
   return Array.isArray(value) ? value.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null) : [];
+}
+
+function arrayOfUnknown(value: unknown): unknown[] {
+  return Array.isArray(value) ? value : [];
+}
+
+function optionLabel(option: unknown, index: number, cardDb: CardDatabase): string {
+  if (typeof option === "string") return option;
+  if (typeof option === "number") return cardDb.names.get(option) ?? `Option ${index + 1}: ${option}`;
+  if (typeof option === "bigint") return `Option ${index + 1}: ${option.toString()}`;
+  if (typeof option === "object" && option !== null && "code" in option) {
+    const code = (option as { code?: unknown }).code;
+    return `Select ${cardName(code, cardDb)}`;
+  }
+  return `Option ${index + 1}`;
 }

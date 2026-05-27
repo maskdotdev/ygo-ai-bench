@@ -161,7 +161,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   return { runDir, score };
 }
 
-function createScenarioDuel(
+export function createScenarioDuel(
   core: OcgCoreSync,
   ocg: OcgRuntime,
   scenario: RealScenario,
@@ -208,7 +208,7 @@ function addDeckCard(core: OcgCoreSync, handle: OcgDuelHandle, player: 0 | 1, co
   });
 }
 
-function autoRespond(core: OcgCoreSync, handle: OcgDuelHandle, messages: OcgMessage[], ocg: OcgRuntime): boolean {
+export function autoRespond(core: OcgCoreSync, handle: OcgDuelHandle, messages: OcgMessage[], ocg: OcgRuntime): boolean {
   const prompt = [...messages].reverse().find((message) => isPromptMessage(message.type, ocg));
   if (!prompt) return false;
   if (prompt.type === ocg.OcgMessageType.SELECT_CHAIN) {
@@ -225,7 +225,7 @@ function autoRespond(core: OcgCoreSync, handle: OcgDuelHandle, messages: OcgMess
   return false;
 }
 
-function isPromptMessage(type: number, ocg: OcgRuntime): boolean {
+export function isPromptMessage(type: number, ocg: OcgRuntime): boolean {
   return (
     type === ocg.OcgMessageType.SELECT_IDLECMD ||
     type === ocg.OcgMessageType.SELECT_BATTLECMD ||
@@ -242,7 +242,7 @@ function requiredBigInt(value: bigint | undefined, name: string): bigint {
   return value;
 }
 
-function jsonReplacer(_key: string, value: unknown): unknown {
+export function jsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
 }
 

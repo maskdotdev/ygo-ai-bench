@@ -6,6 +6,7 @@ import { validateSuite } from "./validate.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
 import type { RealAgentId } from "../edopro-wasm/realAgent.js";
 import { evalRealSuite } from "../edopro-wasm/realEval.js";
+import { getFirstRealPrompt, stringifyRealPrompt } from "../edopro-wasm/realPrompt.js";
 import { runRealDuel } from "../edopro-wasm/realRunner.js";
 import { validateRealSuite } from "../edopro-wasm/realValidate.js";
 
@@ -48,6 +49,16 @@ async function main(argv: string[]): Promise<void> {
       scenarioPath,
     });
     printRunResult(result);
+    return;
+  }
+  if (command === "real-prompt") {
+    const scenarioPath = readFlag(rest, "--scenario") ?? rest[0] ?? "scenarios/real/smoke-duel.json";
+    const result = await getFirstRealPrompt({
+      scenarioPath,
+      cardDataPath: "../../public/card-data/cdb-rows.json",
+      scriptRoot: "../../.upstream/ignis/script",
+    });
+    console.log(stringifyRealPrompt(result));
     return;
   }
   if (command === "real-eval") {
@@ -150,6 +161,7 @@ function printHelp(): void {
   console.log(`Usage:
   pnpm --filter @ygo-bench/app bench smoke
   pnpm --filter @ygo-bench/app bench real-smoke
+  pnpm --filter @ygo-bench/app bench real-prompt --scenario scenarios/real/smoke-duel.json
   pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent greedy --viewer
   pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent openai --viewer
   pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --runs 1 --viewer
