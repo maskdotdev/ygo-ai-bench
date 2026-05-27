@@ -57,6 +57,42 @@ describe("buildRealModelObservation", () => {
     expect(rendered).toContain("Blue-Eyes White Dragon");
     expect(observation.opponent.handCount).toBe(2);
   });
+
+  it("masks opponent face-down cards by position", () => {
+    const state = initialRealReducedState();
+    state.turn = 1;
+    state.phase = "MAIN1";
+    state.players[0].spellsTraps.push({
+      code: 111,
+      name: "Own Set Trap",
+      controller: 0,
+      location: "SZONE",
+      sequence: 0,
+      position: 0x8,
+    });
+    state.players[1].spellsTraps.push({
+      code: 222,
+      name: "Opponent Secret Trap",
+      controller: 1,
+      location: "SZONE",
+      sequence: 0,
+      position: 0x8,
+    });
+
+    const observation = buildRealModelObservation({
+      scenario: scenario(),
+      state,
+      prompt: { type: 0, player: 0 },
+      promptTypeName: "SELECT_IDLECMD",
+      legalActions: [],
+      recentEvents: [],
+    });
+    const rendered = renderRealObservationJson(observation);
+
+    expect(rendered).toContain("Own Set Trap");
+    expect(rendered).not.toContain("Opponent Secret Trap");
+    expect(observation.opponent.spellsTraps).toEqual([{ name: "Set card", sequence: 0, revealed: false }]);
+  });
 });
 
 function scenario(): RealScenario {

@@ -38,8 +38,8 @@ interface RealPlayerObservation {
   lp: number;
   handCount: number;
   deckCount: number;
-  monsters: Array<{ name: string; code: number; sequence: number }>;
-  spellsTraps: Array<{ name: string; code: number; sequence: number }>;
+  monsters: Array<{ name: string; code?: number; sequence: number; revealed: boolean }>;
+  spellsTraps: Array<{ name: string; code?: number; sequence: number; revealed: boolean }>;
   graveyard: Array<{ name: string; code: number }>;
   banished: Array<{ name: string; code: number }>;
 }
@@ -117,8 +117,8 @@ export function buildRealModelObservation(args: {
       type: args.promptTypeName,
       player,
     },
-    you: playerObservation(args.state, player),
-    opponent: playerObservation(args.state, opponent),
+    you: playerObservation(args.state, player, true),
+    opponent: playerObservation(args.state, opponent, false),
     legalActions: args.legalActions.map((action) => ({
       id: action.id,
       type: action.type,
@@ -143,17 +143,34 @@ function chooseGreedyAction(actions: RealLegalAction[]): RealLegalAction {
   );
 }
 
-function playerObservation(state: RealReducedState, player: 0 | 1): RealPlayerObservation {
+function playerObservation(state: RealReducedState, player: 0 | 1, isSelf: boolean): RealPlayerObservation {
   const view = state.players[player];
   return {
     lp: view.lp,
     handCount: view.handCount,
     deckCount: view.deckCount,
-    monsters: view.monsters.map((card) => ({ name: card.name, code: card.code, sequence: card.sequence })),
-    spellsTraps: view.spellsTraps.map((card) => ({ name: card.name, code: card.code, sequence: card.sequence })),
+    monsters: view.monsters.map((card) => publicCardView(card, isSelf)),
+    spellsTraps: view.spellsTraps.map((card) => publicCardView(card, isSelf)),
     graveyard: view.graveyard.map((card) => ({ name: card.name, code: card.code })),
     banished: view.banished.map((card) => ({ name: card.name, code: card.code })),
   };
+}
+
+function publicCardView(
+  card: { name: string; code: number; sequence: number; position?: number | undefined },
+  isSelf: boolean,
+): { name: string; code?: number; sequence: number; revealed: boolean } {
+  const revealed = isSelf || !isFaceDown(card.position);
+  return {
+    name: revealed ? card.name : "Set card",
+    ...(revealed ? { code: card.code } : {}),
+    sequence: card.sequence,
+    revealed,
+  };
+}
+
+function isFaceDown(position: number | undefined): boolean {
+  return typeof position === "number" && (position & 0x8) !== 0;
 }
 
 function isJsonFailure(error: unknown): boolean {
