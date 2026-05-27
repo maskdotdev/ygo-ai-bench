@@ -1,11 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { ScenarioScore } from "../core/types.js";
-import { writeViewerHtml } from "../viewer/html.js";
 import { loadBrowserCardDatabase } from "./cardDb.js";
 import { buildRealLegalActions, type RealLegalAction } from "./legalActions.js";
 import { loadOcgRuntime } from "./loadOcgRuntime.js";
+import { initialRealReducedState, normalizeMessages } from "./normalizedEvents.js";
 import type { OcgCoreSync, OcgDuelHandle, OcgMessage, OcgRuntime } from "./ocgTypes.js";
+import { writeRealViewerHtml } from "./realViewer.js";
 import { createScriptReader } from "./scriptReader.js";
 
 export interface RealRunOptions {
@@ -33,8 +34,12 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   const runDir = resolve("benchmark-runs", `real-run-${new Date().toISOString().replaceAll(":", "-")}-${options.agentId}`);
   const trace: unknown[] = [];
   const transcript: string[] = ["# Real ocgcore-wasm duel", ""];
+  const reducedState = initialRealReducedState();
+  reducedState.players[0].deckCount = 8;
+  reducedState.players[1].deckCount = 8;
   let decisionsTaken = 0;
   let winner: 0 | 1 | null = null;
+  let frameId = 0;
 
   try {
     core.startDuel(handle);
@@ -48,9 +53,21 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
           typeName: String(ocg.OcgMessageType[message.type]),
         })),
       );
+      const events = normalizeMessages({
+        messages,
+        ocg,
+        cardDb,
+        state: reducedState,
+        nextFrame: () => {
+          frameId += 1;
+          return frameId;
+        },
+      });
+      trace.push(...events);
 
       const win = messages.find((message) => message.type === ocg.OcgMessageType.WIN);
       if (win?.player === 0 || win?.player === 1) winner = win.player;
+      if (reducedState.winner !== null) winner = reducedState.winner;
 
       if (status === ocg.OcgProcessResult.END) break;
       if (status === ocg.OcgProcessResult.CONTINUE) continue;
@@ -74,6 +91,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
           actionId: chosen.id,
           reason: `${options.agentId} selected ${chosen.label}`,
         },
+        reducedState: structuredClone(reducedState),
       });
       core.duelSetResponse(handle, chosen.response);
 
@@ -88,20 +106,21 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     scenarioId: "real-smoke-duel",
     agentId: options.agentId,
     won: winner === 0,
-    turnsTaken: 0,
+    turnsTaken: reducedState.turn,
     decisionsTaken,
     illegalActions: 0,
     invalidJson: 0,
     repeatedActions: 0,
-    finalLpDelta: 0,
+    finalLpDelta: reducedState.players[0].lp - reducedState.players[1].lp,
     objectiveScore: winner === 0 ? 1 : 0,
     notes: errors,
   };
   await writeFile(join(runDir, "trace.jsonl"), trace.map((line) => JSON.stringify(line, jsonReplacer)).join("\n") + "\n");
   await writeFile(join(runDir, "final-score.json"), JSON.stringify(score, null, 2) + "\n");
+  await writeFile(join(runDir, "reduced-state.json"), JSON.stringify(reducedState, null, 2) + "\n");
   await writeFile(join(runDir, "model-transcript.md"), transcript.join("\n"));
   await writeFile(join(runDir, "engine-messages.bin"), Buffer.from(JSON.stringify(trace, jsonReplacer)));
-  if (options.viewer) await writeViewerHtml(join(runDir, "viewer.html"), [], score);
+  if (options.viewer) await writeRealViewerHtml(join(runDir, "viewer.html"), trace, reducedState, score);
   return { runDir, score };
 }
 

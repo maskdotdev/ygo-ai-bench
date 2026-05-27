@@ -7,6 +7,7 @@
     "build": "tsc -p tsconfig.json",
     "bench": "node dist/cli/index.js",
     "smoke": "node dist/cli/index.js smoke",
+    "test": "vitest run src/**/*.test.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
