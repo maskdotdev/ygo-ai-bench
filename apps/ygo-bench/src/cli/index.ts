@@ -7,7 +7,10 @@ import type { RealAgentId } from "../edopro-wasm/realAgent.js";
 import { evalRealSuite } from "../edopro-wasm/realEval.js";
 import { getFirstRealPrompt, stringifyRealPrompt } from "../edopro-wasm/realPrompt.js";
 import { runRealDuel } from "../edopro-wasm/realRunner.js";
+import { loadRealScenario } from "../edopro-wasm/realScenario.js";
+import { loadRealSuite } from "../edopro-wasm/realSuite.js";
 import { validateRealSuite } from "../edopro-wasm/realValidate.js";
+import type { ScenarioScore } from "../core/types.js";
 import { startTraceViewerServer } from "../viewer/liveServer.js";
 
 async function main(argv: string[]): Promise<void> {
@@ -115,6 +118,19 @@ async function main(argv: string[]): Promise<void> {
     const agentId = readFlag(rest, "--agent") ?? "random";
     const model = readFlag(rest, "--model");
     const viewer = rest.includes("--viewer");
+    if (await isRealScenario(scenarioPath)) {
+      const result = await runRealDuel({
+        agentId: readRealAgentValue(agentId),
+        cardDataPath: "../../public/card-data/cdb-rows.json",
+        scriptRoot: "../../.upstream/ignis/script",
+        maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 12),
+        viewer,
+        scenarioPath,
+        ...(model ? { model } : {}),
+      });
+      printRunResult(result);
+      return;
+    }
     const result = await runScenario({ scenarioPath, agentId, viewer, ...(model ? { model } : {}) });
     printRunResult(result);
     return;
@@ -125,12 +141,34 @@ async function main(argv: string[]): Promise<void> {
     const agentIds = (readFlag(rest, "--agents") ?? "random").split(",").filter(Boolean);
     const model = readFlag(rest, "--model");
     const viewer = rest.includes("--viewer");
+    if (await isRealSuite(suitePath)) {
+      const summary = await evalRealSuite({
+        agentIds: agentIds.map((agentId) => readRealAgentValue(agentId)),
+        runsPerAgent: Number(readFlag(rest, "--runs") ?? 1),
+        cardDataPath: "../../public/card-data/cdb-rows.json",
+        scriptRoot: "../../.upstream/ignis/script",
+        maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 20),
+        viewer,
+        suitePath,
+        ...(model ? { model } : {}),
+      });
+      console.log(`Wrote ${summary.scores.length} scores.`);
+      return;
+    }
     const scores = await evalSuite(suitePath, agentIds, viewer, model ? { model } : undefined);
     console.log(`Wrote ${scores.length} scores.`);
     return;
   }
   if (command === "validate") {
     const suitePath = rest[0] ?? "suites/mvp.json";
+    if (await isRealSuite(suitePath)) {
+      await validateRealSuite({
+        suitePath,
+        cardDataPath: "../../public/card-data/cdb-rows.json",
+        scriptRoot: "../../.upstream/ignis/script",
+      });
+      return;
+    }
     await validateSuite(suitePath);
     return;
   }
@@ -162,11 +200,30 @@ function readRealAgentList(args: string[], name: string, fallback: RealAgentId[]
 }
 
 function readRealAgentValue(value: string): RealAgentId {
+  if (value === "llm") return "openai";
   if (value === "random" || value === "greedy" || value === "openai") return value;
   throw new Error(`Unsupported real agent: ${value}`);
 }
 
-function printRunResult(result: Awaited<ReturnType<typeof runScenario>>): void {
+async function isRealScenario(scenarioPath: string): Promise<boolean> {
+  try {
+    await loadRealScenario(scenarioPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isRealSuite(suitePath: string): Promise<boolean> {
+  try {
+    await loadRealSuite(suitePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function printRunResult(result: { score: ScenarioScore; runDir: string }): void {
   console.log(`Scenario: ${result.score.scenarioId}`);
   console.log(`Agent: ${result.score.agentId}`);
   console.log(`Won: ${result.score.won}`);
@@ -186,8 +243,11 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --model gpt-4o-mini --runs 1 --viewer
   pnpm --filter @ygo-bench/app bench real-validate suites/real-mvp.json
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
+  pnpm --filter @ygo-bench/app bench run scenarios/real/smoke-duel.json --agent greedy --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
+  pnpm --filter @ygo-bench/app bench eval suites/real-mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench validate suites/mvp.json
+  pnpm --filter @ygo-bench/app bench validate suites/real-mvp.json
   pnpm --filter @ygo-bench/app bench inspect benchmark-runs/<run>/trace.jsonl
   pnpm --filter @ygo-bench/app bench serve-trace benchmark-runs/<run>/trace.jsonl --port 4173`);
 }
