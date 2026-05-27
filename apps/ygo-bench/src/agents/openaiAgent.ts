@@ -1,0 +1,134 @@
+import { renderObservationJson } from "../core/renderObservation.js";
+import type { Agent, AgentDecision, Observation } from "../core/types.js";
+
+interface ResponsesApiResult {
+  output_text?: string;
+  output?: Array<{
+    type?: string;
+    content?: Array<{
+      type?: string;
+      text?: string;
+      refusal?: string;
+    }>;
+  }>;
+}
+
+export class OpenAiAgent implements Agent {
+  id = "openai";
+
+  constructor(
+    private readonly options: {
+      apiKey: string;
+      model: string;
+      endpoint?: string;
+    },
+  ) {}
+
+  async chooseAction(observation: Observation): Promise<AgentDecision> {
+    const result = await callResponsesApi({
+      apiKey: this.options.apiKey,
+      model: this.options.model,
+      endpoint: this.options.endpoint ?? "https://api.openai.com/v1/responses",
+      observation,
+    });
+    const decision = parseAgentDecision(extractResponseText(result));
+    const legalIds = new Set(observation.legalActions.map((action) => action.id));
+    if (!legalIds.has(decision.actionId)) {
+      throw new Error(`OpenAI agent returned illegal action id: ${decision.actionId}`);
+    }
+    return decision;
+  }
+}
+
+export function createOpenAiAgentFromEnv(): OpenAiAgent {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("OPENAI_API_KEY is required for --agent openai");
+  return new OpenAiAgent({
+    apiKey,
+    model: process.env.YGO_BENCH_OPENAI_MODEL ?? "gpt-4o-mini",
+  });
+}
+
+export function parseAgentDecision(text: string): AgentDecision {
+  const parsed = JSON.parse(text) as unknown;
+  if (!isRecord(parsed) || typeof parsed.actionId !== "string") {
+    throw new Error("Model response must include string actionId");
+  }
+  return {
+    actionId: parsed.actionId,
+    reason: typeof parsed.reason === "string" ? parsed.reason : "",
+  };
+}
+
+function extractResponseText(result: ResponsesApiResult): string {
+  if (typeof result.output_text === "string" && result.output_text.length > 0) return result.output_text;
+  for (const output of result.output ?? []) {
+    for (const content of output.content ?? []) {
+      if (content.type === "refusal" && content.refusal) throw new Error(`Model refused: ${content.refusal}`);
+      if (typeof content.text === "string") return content.text;
+    }
+  }
+  throw new Error("OpenAI response did not contain text output");
+}
+
+async function callResponsesApi(args: {
+  apiKey: string;
+  model: string;
+  endpoint: string;
+  observation: Observation;
+}): Promise<ResponsesApiResult> {
+  const response = await fetch(args.endpoint, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${args.apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: args.model,
+      input: [
+        {
+          role: "system",
+          content: "You are playing Yu-Gi-Oh. Choose exactly one legal action ID. Return JSON only.",
+        },
+        {
+          role: "developer",
+          content: 'You must return JSON only: { "actionId": string, "reason": string }.',
+        },
+        {
+          role: "user",
+          content: renderObservationJson(args.observation),
+        },
+      ],
+      text: {
+        format: {
+          type: "json_schema",
+          name: "ygo_bench_action",
+          strict: true,
+          schema: {
+            type: "object",
+            additionalProperties: false,
+            required: ["actionId", "reason"],
+            properties: {
+              actionId: {
+                type: "string",
+                enum: args.observation.legalActions.map((action) => action.id),
+              },
+              reason: {
+                type: "string",
+              },
+            },
+          },
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`OpenAI Responses API failed: ${response.status} ${await response.text()}`);
+  }
+  return (await response.json()) as ResponsesApiResult;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}

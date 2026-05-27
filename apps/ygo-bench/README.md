@@ -19,3 +19,5 @@ pnpm --filter @ygo-bench/app bench validate suites/mvp.json
 Run artifacts are written to `apps/ygo-bench/benchmark-runs/`.
 
 `real-smoke` uses `@n1xx1/ocgcore-wasm` with local Project Ignis exports from `../../.upstream/ignis/script` and `../../public/card-data/cdb-rows.json`.
+
+Use `--agent openai` with the mock scenario harness by setting `OPENAI_API_KEY`. The model defaults to `gpt-4o-mini`; override with `YGO_BENCH_OPENAI_MODEL`.
