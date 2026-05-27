@@ -1,0 +1,13 @@
+{
+  "name": "@ygo-bench/app",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "bench": "node dist/cli/index.js",
+    "smoke": "node dist/cli/index.js smoke",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {}
+}

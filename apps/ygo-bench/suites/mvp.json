@@ -1,0 +1,6 @@
+{
+  "id": "mvp",
+  "scenarios": [
+    "scenarios/lethal/lethal-001.json"
+  ]
+}

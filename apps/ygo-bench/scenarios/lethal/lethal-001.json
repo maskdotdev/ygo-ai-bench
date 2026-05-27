@@ -1,0 +1,121 @@
+{
+  "id": "lethal-001",
+  "name": "Simple lethal through one monster",
+  "family": "lethal",
+  "version": "1.0.0",
+  "seed": "lethal-001-v1",
+  "maxDecisions": 3,
+  "players": [
+    {
+      "lp": 8000,
+      "deck": [],
+      "hand": [
+        { "id": "h0", "code": 44444444, "name": "Bench Warrior", "atk": 2000 },
+        { "id": "h1", "code": 55555555, "name": "Benchmark Power Spell" }
+      ]
+    },
+    {
+      "lp": 3000,
+      "deck": [],
+      "hand": [],
+      "monsters": [
+        { "id": "om0", "code": 88888888, "name": "Training Defender", "atk": 1000, "position": "attack" }
+      ]
+    }
+  ],
+  "oracle": ["a_002", "a_004"],
+  "steps": [
+    {
+      "prompt": {
+        "type": "idle_command",
+        "player": 0,
+        "message": "Choose a Main Phase action."
+      },
+      "actions": [
+        {
+          "id": "a_001",
+          "label": "Normal Summon Bench Warrior",
+          "model": {
+            "id": "a_001",
+            "type": "normal_summon",
+            "label": "Normal Summon Bench Warrior",
+            "card": { "id": "h0", "name": "Bench Warrior", "zone": "HAND" }
+          },
+          "tags": ["summon"]
+        },
+        {
+          "id": "a_002",
+          "label": "Activate Benchmark Power Spell to enable lethal",
+          "model": {
+            "id": "a_002",
+            "type": "activate_effect",
+            "label": "Activate Benchmark Power Spell to enable lethal",
+            "card": { "id": "h1", "name": "Benchmark Power Spell", "zone": "HAND" }
+          },
+          "tags": ["lethal", "activate"]
+        },
+        {
+          "id": "a_003",
+          "label": "End Main Phase",
+          "model": { "id": "a_003", "type": "pass", "label": "End Main Phase" },
+          "tags": ["pass"]
+        }
+      ],
+      "eventsByAction": {
+        "a_001": [
+          { "event": "SUMMONED", "player": 0, "text": "Player 0 normal summoned Bench Warrior." }
+        ],
+        "a_002": [
+          { "event": "CHAINING", "player": 0, "text": "Player 0 activated Benchmark Power Spell." },
+          { "event": "CHAIN_SOLVING", "player": 0, "text": "Benchmark Power Spell resolved and opened a lethal attack." },
+          { "event": "NEW_PHASE", "player": 0, "text": "Player 0 moved to Battle Phase.", "payload": { "phase": "BATTLE" } }
+        ],
+        "a_003": [
+          { "event": "NEW_PHASE", "player": 0, "text": "Player 0 ended the turn.", "payload": { "phase": "END" } }
+        ]
+      },
+      "rewards": { "a_002": 0.25, "a_001": 0, "a_003": -0.25 },
+      "doneByAction": { "a_003": true },
+      "winnerByAction": { "a_003": 1 }
+    },
+    {
+      "prompt": {
+        "type": "battle_command",
+        "player": 0,
+        "message": "Choose a Battle Phase action."
+      },
+      "actions": [
+        {
+          "id": "a_004",
+          "label": "Attack for game with powered Bench Warrior",
+          "model": {
+            "id": "a_004",
+            "type": "attack",
+            "label": "Attack for game with powered Bench Warrior",
+            "card": { "id": "h0", "name": "Bench Warrior", "zone": "MZONE" }
+          },
+          "tags": ["lethal", "attack"]
+        },
+        {
+          "id": "a_005",
+          "label": "Pass battle",
+          "model": { "id": "a_005", "type": "pass", "label": "Pass battle" },
+          "tags": ["pass"]
+        }
+      ],
+      "eventsByAction": {
+        "a_004": [
+          { "event": "ATTACK", "player": 0, "text": "Bench Warrior attacked for lethal damage." },
+          { "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 0.", "payload": { "player": 1, "lp": 0 } },
+          { "event": "WIN", "player": 0, "text": "Player 0 won." }
+        ],
+        "a_005": [
+          { "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed battle.", "payload": { "phase": "END" } }
+        ]
+      },
+      "rewards": { "a_004": 1, "a_005": -0.5 },
+      "doneByAction": { "a_004": true, "a_005": true },
+      "winnerByAction": { "a_004": 0, "a_005": 1 }
+    }
+  ]
+}
