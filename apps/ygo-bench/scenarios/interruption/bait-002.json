@@ -1,0 +1,77 @@
+{
+  "id": "bait-002",
+  "name": "Do not commit into unknown negate",
+  "family": "interruption",
+  "version": "1.0.0",
+  "seed": "bait-002-v1",
+  "maxDecisions": 4,
+  "hiddenInfoAssertions": ["Hidden Negate"],
+  "players": [
+    {
+      "lp": 8000,
+      "deck": [],
+      "hand": [
+        { "id": "h0", "code": 7101, "name": "Main Combo" },
+        { "id": "h1", "code": 7102, "name": "Low-Value Probe" }
+      ]
+    },
+    {
+      "lp": 8000,
+      "deck": [],
+      "hand": [{ "id": "oh0", "code": 7103, "name": "Hidden Negate" }]
+    }
+  ],
+  "oracle": ["a_301", "a_303"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "One hidden response is likely. Choose the first effect." },
+      "actions": [
+        {
+          "id": "a_300",
+          "label": "Commit Main Combo immediately",
+          "model": { "id": "a_300", "type": "activate_effect", "label": "Commit Main Combo immediately" }
+        },
+        {
+          "id": "a_301",
+          "label": "Bait hidden response with Low-Value Probe",
+          "model": { "id": "a_301", "type": "activate_effect", "label": "Bait hidden response with Low-Value Probe" }
+        }
+      ],
+      "eventsByAction": {
+        "a_300": [{ "event": "CHAIN_SOLVING", "player": 1, "text": "The hidden response stopped Main Combo." }],
+        "a_301": [
+          { "event": "CHAINING", "player": 0, "text": "Low-Value Probe was activated." },
+          { "event": "CHAIN_SOLVING", "player": 1, "text": "The hidden response was spent on the probe." }
+        ]
+      },
+      "rewards": { "a_301": 0.25, "a_300": -0.5 },
+      "doneByAction": { "a_300": true },
+      "winnerByAction": { "a_300": 1 }
+    },
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "The response is spent." },
+      "actions": [
+        {
+          "id": "a_303",
+          "label": "Resolve Main Combo after bait",
+          "model": { "id": "a_303", "type": "activate_effect", "label": "Resolve Main Combo after bait" }
+        },
+        {
+          "id": "a_304",
+          "label": "Pass after bait",
+          "model": { "id": "a_304", "type": "pass", "label": "Pass after bait" }
+        }
+      ],
+      "eventsByAction": {
+        "a_303": [
+          { "event": "CHAIN_SOLVING", "player": 0, "text": "Main Combo resolved after the negate was spent." },
+          { "event": "WIN", "player": 0, "text": "Player 0 won." }
+        ],
+        "a_304": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed.", "payload": { "phase": "END" } }]
+      },
+      "rewards": { "a_303": 1, "a_304": -0.25 },
+      "doneByAction": { "a_303": true, "a_304": true },
+      "winnerByAction": { "a_303": 0, "a_304": 1 }
+    }
+  ]
+}

@@ -1,0 +1,73 @@
+{
+  "id": "lethal-003",
+  "name": "Sequence pump before attack",
+  "family": "lethal",
+  "version": "1.0.0",
+  "seed": "lethal-003-v1",
+  "maxDecisions": 3,
+  "players": [
+    {
+      "lp": 8000,
+      "deck": [],
+      "hand": [
+        { "id": "h0", "code": 6201, "name": "Measured Attacker", "atk": 1800 },
+        { "id": "h1", "code": 6202, "name": "Exact Damage Boost" }
+      ]
+    },
+    { "lp": 3200, "deck": [], "hand": [] }
+  ],
+  "oracle": ["a_201", "a_203"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Find exact damage." },
+      "actions": [
+        {
+          "id": "a_200",
+          "label": "Normal Summon Measured Attacker without boost",
+          "model": { "id": "a_200", "type": "normal_summon", "label": "Normal Summon Measured Attacker without boost" }
+        },
+        {
+          "id": "a_201",
+          "label": "Activate Exact Damage Boost for lethal",
+          "model": { "id": "a_201", "type": "activate_effect", "label": "Activate Exact Damage Boost for lethal" }
+        }
+      ],
+      "eventsByAction": {
+        "a_200": [{ "event": "SUMMONED", "player": 0, "text": "Measured Attacker was summoned without enough damage." }],
+        "a_201": [
+          { "event": "CHAIN_SOLVING", "player": 0, "text": "Exact Damage Boost resolved." },
+          { "event": "NEW_PHASE", "player": 0, "text": "Player 0 moved to Battle Phase.", "payload": { "phase": "BATTLE" } }
+        ]
+      },
+      "rewards": { "a_201": 0.25, "a_200": -0.25 },
+      "doneByAction": { "a_200": true },
+      "winnerByAction": { "a_200": 1 }
+    },
+    {
+      "prompt": { "type": "battle_command", "player": 0, "message": "Attack with boosted damage." },
+      "actions": [
+        {
+          "id": "a_203",
+          "label": "Attack for game with boosted Measured Attacker",
+          "model": { "id": "a_203", "type": "attack", "label": "Attack for game with boosted Measured Attacker" }
+        },
+        {
+          "id": "a_204",
+          "label": "Pass battle",
+          "model": { "id": "a_204", "type": "pass", "label": "Pass battle" }
+        }
+      ],
+      "eventsByAction": {
+        "a_203": [
+          { "event": "ATTACK", "player": 0, "text": "Measured Attacker dealt exact lethal." },
+          { "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 0.", "payload": { "player": 1, "lp": 0 } },
+          { "event": "WIN", "player": 0, "text": "Player 0 won." }
+        ],
+        "a_204": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed battle.", "payload": { "phase": "END" } }]
+      },
+      "rewards": { "a_203": 1, "a_204": -0.5 },
+      "doneByAction": { "a_203": true, "a_204": true },
+      "winnerByAction": { "a_203": 0, "a_204": 1 }
+    }
+  ]
+}

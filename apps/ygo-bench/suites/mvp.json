@@ -2,7 +2,11 @@
   "id": "mvp",
   "scenarios": [
     "scenarios/lethal/lethal-001.json",
+    "scenarios/lethal/lethal-002.json",
+    "scenarios/lethal/lethal-003.json",
     "scenarios/interruption/bait-001.json",
-    "scenarios/resource/resource-001.json"
+    "scenarios/interruption/bait-002.json",
+    "scenarios/resource/resource-001.json",
+    "scenarios/resource/resource-002.json"
   ]
 }

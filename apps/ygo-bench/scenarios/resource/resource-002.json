@@ -1,0 +1,69 @@
+{
+  "id": "resource-002",
+  "name": "Hold extender instead of chasing damage",
+  "family": "resource",
+  "version": "1.0.0",
+  "seed": "resource-002-v1",
+  "maxDecisions": 4,
+  "players": [
+    {
+      "lp": 8000,
+      "deck": [],
+      "hand": [
+        { "id": "h0", "code": 8101, "name": "Stable Summon" },
+        { "id": "h1", "code": 8102, "name": "Follow-Up Extender" }
+      ]
+    },
+    { "lp": 6000, "deck": [], "hand": [] }
+  ],
+  "oracle": ["a_401", "a_403"],
+  "steps": [
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Choose whether to preserve the extender." },
+      "actions": [
+        {
+          "id": "a_400",
+          "label": "Spend Follow-Up Extender for non-lethal damage",
+          "model": { "id": "a_400", "type": "activate_effect", "label": "Spend Follow-Up Extender for non-lethal damage" }
+        },
+        {
+          "id": "a_401",
+          "label": "Normal Summon Stable Summon and preserve Follow-Up Extender",
+          "model": { "id": "a_401", "type": "normal_summon", "label": "Normal Summon Stable Summon and preserve Follow-Up Extender" }
+        }
+      ],
+      "eventsByAction": {
+        "a_400": [{ "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 2000.", "payload": { "player": 1, "lp": 2000 } }],
+        "a_401": [{ "event": "SUMMONED", "player": 0, "text": "Stable Summon was summoned while the extender stayed available." }]
+      },
+      "rewards": { "a_401": 0.25, "a_400": -0.25 },
+      "doneByAction": { "a_400": true },
+      "winnerByAction": { "a_400": 1 }
+    },
+    {
+      "prompt": { "type": "idle_command", "player": 0, "message": "Convert the preserved extender." },
+      "actions": [
+        {
+          "id": "a_403",
+          "label": "Use preserved Follow-Up Extender for win",
+          "model": { "id": "a_403", "type": "activate_effect", "label": "Use preserved Follow-Up Extender for win" }
+        },
+        {
+          "id": "a_404",
+          "label": "Pass with extender unused",
+          "model": { "id": "a_404", "type": "pass", "label": "Pass with extender unused" }
+        }
+      ],
+      "eventsByAction": {
+        "a_403": [
+          { "event": "CHAIN_SOLVING", "player": 0, "text": "The preserved extender won the resource race." },
+          { "event": "WIN", "player": 0, "text": "Player 0 won." }
+        ],
+        "a_404": [{ "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed.", "payload": { "phase": "END" } }]
+      },
+      "rewards": { "a_403": 1, "a_404": -0.25 },
+      "doneByAction": { "a_403": true, "a_404": true },
+      "winnerByAction": { "a_403": 0, "a_404": 1 }
+    }
+  ]
+}
