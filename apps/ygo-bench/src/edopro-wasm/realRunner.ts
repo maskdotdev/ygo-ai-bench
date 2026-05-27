@@ -19,6 +19,7 @@ export interface RealRunOptions {
   maxDecisions: number;
   viewer: boolean;
   scenarioPath?: string;
+  model?: string;
 }
 
 export interface RealRunResult {
@@ -106,6 +107,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         promptTypeName: prompt ? String(ocg.OcgMessageType[prompt.type]) : "UNKNOWN",
         legalActions,
         recentEvents: events,
+        ...(options.model ? { model: options.model } : {}),
       });
       invalidJson += chosen.invalidJson;
       illegalActions += chosen.illegalActions;

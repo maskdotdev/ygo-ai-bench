@@ -52,6 +52,7 @@ export async function chooseRealAgentAction(args: {
   promptTypeName: string;
   legalActions: RealLegalAction[];
   recentEvents: RealNormalizedEvent[];
+  model?: string;
 }): Promise<RealAgentChoice> {
   const observation = buildRealModelObservation(args);
   if (args.agentId === "random") {
@@ -68,7 +69,7 @@ export async function chooseRealAgentAction(args: {
   try {
     const decision = await chooseOpenAiLegalAction({
       apiKey,
-      model: process.env.YGO_BENCH_OPENAI_MODEL ?? "gpt-4o-mini",
+      model: args.model ?? process.env.YGO_BENCH_OPENAI_MODEL ?? "gpt-4o-mini",
       observationText: renderRealObservationJson(observation),
       legalActionIds: args.legalActions.map((action) => action.id),
     });

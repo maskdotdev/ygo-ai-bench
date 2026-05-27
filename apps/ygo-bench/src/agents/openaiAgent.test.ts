@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { chooseOpenAiLegalAction, parseAgentDecision } from "./openaiAgent.js";
+import { OpenAiAgent, chooseOpenAiLegalAction, parseAgentDecision } from "./openaiAgent.js";
 
 describe("parseAgentDecision", () => {
   it("accepts actionId and reason JSON", () => {
@@ -50,6 +50,36 @@ describe("chooseOpenAiLegalAction", () => {
       }),
     ).rejects.toThrow(/illegal action id/);
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("OpenAiAgent", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("uses the configured model", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(responseWithText('{"actionId":"a_001","reason":"ok"}'));
+    const agent = new OpenAiAgent({ apiKey: "test-key", model: "configured-model", endpoint: "https://example.test/responses" });
+
+    await agent.chooseAction({
+      scenarioId: "test",
+      player: 0,
+      turn: 1,
+      phase: "MAIN1",
+      prompt: { type: "idle_command", player: 0, message: "Choose." },
+      publicState: {
+        players: [
+          { lp: 8000, handCount: 1, revealedHand: [], monsters: [], spellsTraps: [], graveyard: [], banished: [], deckCount: 0, extraDeckCount: 0 },
+          { lp: 8000, handCount: 0, revealedHand: [], monsters: [], spellsTraps: [], graveyard: [], banished: [], deckCount: 0, extraDeckCount: 0 },
+        ],
+      },
+      privateState: { hand: [] },
+      legalActions: [{ id: "a_001", type: "pass", label: "Pass" }],
+      transcript: [],
+    });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({ model: "configured-model" });
   });
 });
 

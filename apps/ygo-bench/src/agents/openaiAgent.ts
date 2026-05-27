@@ -66,12 +66,12 @@ export async function chooseOpenAiLegalAction(args: {
   throw lastJsonError instanceof Error ? lastJsonError : new Error("OpenAI agent returned invalid JSON");
 }
 
-export function createOpenAiAgentFromEnv(): OpenAiAgent {
+export function createOpenAiAgentFromEnv(model?: string): OpenAiAgent {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY is required for --agent openai");
   return new OpenAiAgent({
     apiKey,
-    model: process.env.YGO_BENCH_OPENAI_MODEL ?? "gpt-4o-mini",
+    model: model ?? process.env.YGO_BENCH_OPENAI_MODEL ?? "gpt-4o-mini",
   });
 }
 

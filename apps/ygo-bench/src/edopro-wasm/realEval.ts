@@ -13,6 +13,7 @@ export interface RealEvalOptions {
   cardDataPath: string;
   scriptRoot: string;
   suitePath: string;
+  model?: string;
 }
 
 export interface RealEvalSummary {
@@ -47,6 +48,7 @@ export async function evalRealSuite(options: RealEvalOptions): Promise<RealEvalS
           maxDecisions: options.maxDecisions,
           viewer: options.viewer,
           scenarioPath,
+          ...(options.model ? { model: options.model } : {}),
         });
         records.push({
           score: result.score,

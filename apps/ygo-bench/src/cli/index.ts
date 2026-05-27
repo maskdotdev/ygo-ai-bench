@@ -41,6 +41,7 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === "real-run") {
     const scenarioPath = readFlag(rest, "--scenario") ?? "scenarios/real/smoke-duel.json";
+    const model = readFlag(rest, "--model");
     const result = await runRealDuel({
       agentId: readRealAgentFlag(rest, "--agent", "greedy"),
       cardDataPath: "../../public/card-data/cdb-rows.json",
@@ -48,6 +49,7 @@ async function main(argv: string[]): Promise<void> {
       maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 12),
       viewer: rest.includes("--viewer"),
       scenarioPath,
+      ...(model ? { model } : {}),
     });
     printRunResult(result);
     return;
@@ -63,6 +65,7 @@ async function main(argv: string[]): Promise<void> {
     return;
   }
   if (command === "real-eval") {
+    const model = readFlag(rest, "--model");
     const summary = await evalRealSuite({
       agentIds: readRealAgentList(rest, "--agents", ["random", "greedy"]),
       runsPerAgent: Number(readFlag(rest, "--runs") ?? 1),
@@ -71,6 +74,7 @@ async function main(argv: string[]): Promise<void> {
       maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 20),
       viewer: rest.includes("--viewer"),
       suitePath: readFlag(rest, "--suite") ?? "suites/real-mvp.json",
+      ...(model ? { model } : {}),
     });
     for (const row of summary.aggregate) {
       console.log(
@@ -110,8 +114,9 @@ async function main(argv: string[]): Promise<void> {
     const scenarioPath = rest[0];
     if (!scenarioPath) throw new Error("Missing scenario path");
     const agentId = readFlag(rest, "--agent") ?? "random";
+    const model = readFlag(rest, "--model");
     const viewer = rest.includes("--viewer");
-    const result = await runScenario({ scenarioPath, agentId, viewer });
+    const result = await runScenario({ scenarioPath, agentId, viewer, ...(model ? { model } : {}) });
     printRunResult(result);
     return;
   }
@@ -119,8 +124,9 @@ async function main(argv: string[]): Promise<void> {
     const suitePath = rest[0];
     if (!suitePath) throw new Error("Missing suite path");
     const agentIds = (readFlag(rest, "--agents") ?? "random").split(",").filter(Boolean);
+    const model = readFlag(rest, "--model");
     const viewer = rest.includes("--viewer");
-    const scores = await evalSuite(suitePath, agentIds, viewer);
+    const scores = await evalSuite(suitePath, agentIds, viewer, model ? { model } : undefined);
     console.log(`Wrote ${scores.length} scores.`);
     return;
   }
@@ -182,11 +188,11 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench real-smoke
   pnpm --filter @ygo-bench/app bench real-prompt --scenario scenarios/real/smoke-duel.json
   pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent greedy --viewer
-  pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent openai --viewer
-  pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --runs 1 --viewer
+  pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent openai --model gpt-4o-mini --viewer
+  pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --model gpt-4o-mini --runs 1 --viewer
   pnpm --filter @ygo-bench/app bench real-validate suites/real-mvp.json
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
-  pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer
+  pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench validate suites/mvp.json
   pnpm --filter @ygo-bench/app bench inspect benchmark-runs/<run>/trace.jsonl
   pnpm --filter @ygo-bench/app bench serve-trace benchmark-runs/<run>/trace.jsonl --port 4173`);

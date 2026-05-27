@@ -31,12 +31,12 @@ export interface EvalSuiteSummary {
   }>;
 }
 
-export async function evalSuite(suitePath: string, agentIds: string[], viewer: boolean): Promise<ScenarioScore[]> {
+export async function evalSuite(suitePath: string, agentIds: string[], viewer: boolean, options?: { model?: string }): Promise<ScenarioScore[]> {
   const suite = JSON.parse(await readFile(resolve(suitePath), "utf8")) as SuiteFile;
   const records: EvalRunRecord[] = [];
   for (const agentId of agentIds) {
     for (const scenarioPath of suite.scenarios) {
-      const result = await runScenario({ scenarioPath, agentId, viewer });
+      const result = await runScenario({ scenarioPath, agentId, viewer, ...(options?.model ? { model: options.model } : {}) });
       records.push({
         score: result.score,
         runDir: result.runDir,

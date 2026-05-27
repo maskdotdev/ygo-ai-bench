@@ -1,12 +1,12 @@
 import type { Agent, AgentDecision, Observation, Scenario } from "../core/types.js";
 import { createOpenAiAgentFromEnv } from "./openaiAgent.js";
 
-export function createAgent(id: string, scenario?: Scenario): Agent {
+export function createAgent(id: string, scenario?: Scenario, options?: { model?: string }): Agent {
   if (id === "random") return new RandomAgent();
   if (id === "greedy") return new GreedyAgent();
   if (id === "oracle") return new OracleAgent(scenario);
   if (id === "llm") return new LlmStubAgent();
-  if (id === "openai") return createOpenAiAgentFromEnv();
+  if (id === "openai") return createOpenAiAgentFromEnv(options?.model);
   throw new Error(`Unknown agent: ${id}`);
 }
 

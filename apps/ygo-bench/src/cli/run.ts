@@ -13,6 +13,7 @@ export interface RunOptions {
   scenarioPath: string;
   agentId: string;
   viewer: boolean;
+  model?: string;
 }
 
 export async function runScenario(options: RunOptions): Promise<{ runDir: string; score: ScenarioScore }> {
@@ -20,7 +21,7 @@ export async function runScenario(options: RunOptions): Promise<{ runDir: string
   const runDir = resolve("benchmark-runs", `run-${new Date().toISOString().replaceAll(":", "-")}-${scenario.id}-${options.agentId}`);
   const trace = new TraceWriter(runDir);
   const env = new MockYugiohEnv();
-  const agent = createAgent(options.agentId, scenario);
+  const agent = createAgent(options.agentId, scenario, options.model ? { model: options.model } : undefined);
   let observation = await env.reset(scenario);
   assertNoHiddenInfoLeak(scenario, observation);
   let decisionsTaken = 0;
