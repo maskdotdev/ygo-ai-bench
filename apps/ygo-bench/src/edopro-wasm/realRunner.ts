@@ -2,17 +2,18 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { ScenarioScore } from "../core/types.js";
 import { loadBrowserCardDatabase } from "./cardDb.js";
-import { buildRealLegalActions, type RealLegalAction } from "./legalActions.js";
+import { buildRealLegalActions } from "./legalActions.js";
 import { loadOcgRuntime } from "./loadOcgRuntime.js";
 import { initialRealReducedState, normalizeMessages } from "./normalizedEvents.js";
 import type { OcgCoreSync, OcgDuelHandle, OcgMessage, OcgRuntime } from "./ocgTypes.js";
+import { chooseRealAgentAction, type RealAgentId } from "./realAgent.js";
 import { loadRealScenario, type RealScenario } from "./realScenario.js";
 import { writeRealViewerHtml } from "./realViewer.js";
 import { buildRealRunMetadata } from "./runMetadata.js";
 import { createScriptReader } from "./scriptReader.js";
 
 export interface RealRunOptions {
-  agentId: "random" | "greedy";
+  agentId: RealAgentId;
   cardDataPath: string;
   scriptRoot: string;
   maxDecisions: number;
@@ -45,6 +46,8 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   reducedState.players[0].deckCount = scenario.players[0].deck.length;
   reducedState.players[1].deckCount = scenario.players[1].deck.length;
   let decisionsTaken = 0;
+  let invalidJson = 0;
+  let illegalActions = 0;
   let winner: 0 | 1 | null = null;
   let frameId = 0;
 
@@ -87,20 +90,32 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         break;
       }
 
-      const chosen = chooseRealAction(legalActions, options.agentId);
+      const chosen = await chooseRealAgentAction({
+        agentId: options.agentId,
+        scenario,
+        state: reducedState,
+        prompt,
+        promptTypeName: prompt ? String(ocg.OcgMessageType[prompt.type]) : "UNKNOWN",
+        legalActions,
+        recentEvents: events,
+      });
+      invalidJson += chosen.invalidJson;
+      illegalActions += chosen.illegalActions;
       decisionsTaken += 1;
-      transcript.push(`## Decision ${decisionsTaken}`, "", `Chosen: \`${chosen.id}\``, "", chosen.label, "");
+      transcript.push(`## Decision ${decisionsTaken}`, "", `Chosen: \`${chosen.action.id}\``, "", chosen.action.label, "", chosen.reason, "");
       trace.push({
         type: "decision",
         player: typeof prompt?.player === "number" ? prompt.player : 0,
         legalActions: legalActions.map(({ response: _response, ...action }) => action),
         chosen: {
-          actionId: chosen.id,
-          reason: `${options.agentId} selected ${chosen.label}`,
+          actionId: chosen.action.id,
+          reason: chosen.reason,
         },
+        observation: chosen.observation,
+        error: chosen.rawError,
         reducedState: structuredClone(reducedState),
       });
-      core.duelSetResponse(handle, chosen.response);
+      core.duelSetResponse(handle, chosen.action.response);
 
       if (decisionsTaken >= maxDecisions) break;
     }
@@ -115,8 +130,8 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     won: winner === 0,
     turnsTaken: reducedState.turn,
     decisionsTaken,
-    illegalActions: 0,
-    invalidJson: 0,
+    illegalActions,
+    invalidJson,
     repeatedActions: 0,
     finalLpDelta: reducedState.players[0].lp - reducedState.players[1].lp,
     objectiveScore: scoreObjective(scenario, winner, reducedState.players[0].lp - reducedState.players[1].lp),
@@ -191,18 +206,6 @@ function addDeckCard(core: OcgCoreSync, handle: OcgDuelHandle, player: 0 | 1, co
     sequence,
     position: 8,
   });
-}
-
-function chooseRealAction(actions: RealLegalAction[], agentId: "random" | "greedy"): RealLegalAction {
-  if (agentId === "random") return actions[Math.floor(Math.random() * actions.length)] ?? actions[0]!;
-  return (
-    actions.find((action) => action.type === "select_card") ??
-    actions.find((action) => action.type === "attack") ??
-    actions.find((action) => action.type === "normal_summon") ??
-    actions.find((action) => action.type === "to_battle") ??
-    actions.find((action) => action.type === "end_phase") ??
-    actions[0]!
-  );
 }
 
 function autoRespond(core: OcgCoreSync, handle: OcgDuelHandle, messages: OcgMessage[], ocg: OcgRuntime): boolean {

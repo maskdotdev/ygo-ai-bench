@@ -25,19 +25,36 @@ export class OpenAiAgent implements Agent {
   ) {}
 
   async chooseAction(observation: Observation): Promise<AgentDecision> {
-    const result = await callResponsesApi({
+    return chooseOpenAiLegalAction({
       apiKey: this.options.apiKey,
       model: this.options.model,
       endpoint: this.options.endpoint ?? "https://api.openai.com/v1/responses",
-      observation,
+      observationText: renderObservationJson(observation),
+      legalActionIds: observation.legalActions.map((action) => action.id),
     });
-    const decision = parseAgentDecision(extractResponseText(result));
-    const legalIds = new Set(observation.legalActions.map((action) => action.id));
-    if (!legalIds.has(decision.actionId)) {
-      throw new Error(`OpenAI agent returned illegal action id: ${decision.actionId}`);
-    }
-    return decision;
   }
+}
+
+export async function chooseOpenAiLegalAction(args: {
+  apiKey: string;
+  model: string;
+  observationText: string;
+  legalActionIds: string[];
+  endpoint?: string;
+}): Promise<AgentDecision> {
+  const result = await callResponsesApi({
+    apiKey: args.apiKey,
+    model: args.model,
+    endpoint: args.endpoint ?? "https://api.openai.com/v1/responses",
+    observationText: args.observationText,
+    legalActionIds: args.legalActionIds,
+  });
+  const decision = parseAgentDecision(extractResponseText(result));
+  const legalIds = new Set(args.legalActionIds);
+  if (!legalIds.has(decision.actionId)) {
+    throw new Error(`OpenAI agent returned illegal action id: ${decision.actionId}`);
+  }
+  return decision;
 }
 
 export function createOpenAiAgentFromEnv(): OpenAiAgent {
@@ -75,7 +92,8 @@ async function callResponsesApi(args: {
   apiKey: string;
   model: string;
   endpoint: string;
-  observation: Observation;
+  observationText: string;
+  legalActionIds: string[];
 }): Promise<ResponsesApiResult> {
   const response = await fetch(args.endpoint, {
     method: "POST",
@@ -96,7 +114,7 @@ async function callResponsesApi(args: {
         },
         {
           role: "user",
-          content: renderObservationJson(args.observation),
+          content: args.observationText,
         },
       ],
       text: {
@@ -111,7 +129,7 @@ async function callResponsesApi(args: {
             properties: {
               actionId: {
                 type: "string",
-                enum: args.observation.legalActions.map((action) => action.id),
+                enum: args.legalActionIds,
               },
               reason: {
                 type: "string",

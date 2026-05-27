@@ -4,6 +4,7 @@ import { evalSuite } from "./eval.js";
 import { runScenario } from "./run.js";
 import { validateSuite } from "./validate.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
+import type { RealAgentId } from "../edopro-wasm/realAgent.js";
 import { evalRealSuite } from "../edopro-wasm/realEval.js";
 import { runRealDuel } from "../edopro-wasm/realRunner.js";
 import { validateRealSuite } from "../edopro-wasm/realValidate.js";
@@ -39,7 +40,7 @@ async function main(argv: string[]): Promise<void> {
   if (command === "real-run") {
     const scenarioPath = readFlag(rest, "--scenario") ?? "scenarios/real/smoke-duel.json";
     const result = await runRealDuel({
-      agentId: (readFlag(rest, "--agent") as "random" | "greedy" | undefined) ?? "greedy",
+      agentId: readRealAgentFlag(rest, "--agent", "greedy"),
       cardDataPath: "../../public/card-data/cdb-rows.json",
       scriptRoot: "../../.upstream/ignis/script",
       maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 12),
@@ -51,7 +52,7 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === "real-eval") {
     const summary = await evalRealSuite({
-      agentIds: ((readFlag(rest, "--agents") ?? "random,greedy").split(",").filter(Boolean) as Array<"random" | "greedy">),
+      agentIds: readRealAgentList(rest, "--agents", ["random", "greedy"]),
       runsPerAgent: Number(readFlag(rest, "--runs") ?? 1),
       cardDataPath: "../../public/card-data/cdb-rows.json",
       scriptRoot: "../../.upstream/ignis/script",
@@ -117,6 +118,24 @@ function readFlag(args: string[], name: string): string | undefined {
   return index === -1 ? undefined : args[index + 1];
 }
 
+function readRealAgentFlag(args: string[], name: string, fallback: RealAgentId): RealAgentId {
+  const value = readFlag(args, name);
+  if (!value) return fallback;
+  if (value === "random" || value === "greedy" || value === "openai") return value;
+  throw new Error(`Unsupported real agent: ${value}`);
+}
+
+function readRealAgentList(args: string[], name: string, fallback: RealAgentId[]): RealAgentId[] {
+  const value = readFlag(args, name);
+  if (!value) return fallback;
+  return value.split(",").filter(Boolean).map((agentId) => readRealAgentValue(agentId));
+}
+
+function readRealAgentValue(value: string): RealAgentId {
+  if (value === "random" || value === "greedy" || value === "openai") return value;
+  throw new Error(`Unsupported real agent: ${value}`);
+}
+
 function printRunResult(result: Awaited<ReturnType<typeof runScenario>>): void {
   console.log(`Scenario: ${result.score.scenarioId}`);
   console.log(`Agent: ${result.score.agentId}`);
@@ -132,7 +151,8 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench smoke
   pnpm --filter @ygo-bench/app bench real-smoke
   pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent greedy --viewer
-  pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy --runs 1 --viewer
+  pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent openai --viewer
+  pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --runs 1 --viewer
   pnpm --filter @ygo-bench/app bench real-validate suites/real-mvp.json
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer

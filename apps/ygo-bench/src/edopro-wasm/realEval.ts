@@ -1,11 +1,12 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { ScenarioScore } from "../core/types.js";
+import type { RealAgentId } from "./realAgent.js";
 import { runRealDuel } from "./realRunner.js";
 import { loadRealSuite } from "./realSuite.js";
 
 export interface RealEvalOptions {
-  agentIds: Array<"random" | "greedy">;
+  agentIds: RealAgentId[];
   runsPerAgent: number;
   maxDecisions: number;
   viewer: boolean;
