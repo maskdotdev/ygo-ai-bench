@@ -47,6 +47,23 @@ describe("buildRealLegalActions", () => {
     ]);
   });
 
+  it("maps SELECT_PLACE spell/trap masks to spell/trap zone responses", () => {
+    const actions = buildRealLegalActions(
+      { type: 18, player: 0, count: 1, field_mask: 0xffffe0ff },
+      testRuntime,
+      testCards,
+    );
+
+    expect(actions).toEqual([
+      {
+        id: "a_001",
+        type: "select_place",
+        label: "Place card in spell/trap zone 1",
+        response: { type: 10, places: [{ player: 0, location: 8, sequence: 0 }] },
+      },
+    ]);
+  });
+
   it("maps SELECT_BATTLECMD to attack and phase actions", () => {
     const actions = buildRealLegalActions(
       {
@@ -244,6 +261,10 @@ const testRuntime = {
     FACEDOWN_ATTACK: 2,
     FACEUP_DEFENSE: 4,
     FACEDOWN_DEFENSE: 8,
+  },
+  OcgLocation: {
+    MZONE: 4,
+    SZONE: 8,
   },
   SelectIdleCMDAction: {
     SELECT_SUMMON: 0,

@@ -139,11 +139,11 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
   if (prompt.type === ocg.OcgMessageType.SELECT_PLACE) {
     const count = typeof prompt.count === "number" ? prompt.count : 1;
     const mask = typeof prompt.field_mask === "number" ? prompt.field_mask : 0xffffffff;
-    const places = firstOpenMonsterZones(mask, typeof prompt.player === "number" ? prompt.player : 0, count);
+    const places = firstOpenZones(mask, typeof prompt.player === "number" ? prompt.player : 0, count, ocg);
     return places.map((place, index) => ({
       id: nextActionId(index),
       type: "select_place",
-      label: `Place card in monster zone ${place.sequence + 1}`,
+      label: `Place card in ${place.location === ocg.OcgLocation.SZONE ? "spell/trap" : "monster"} zone ${place.sequence + 1}`,
       response: { type: ocg.OcgResponseType.SELECT_PLACE, places: [place] },
     }));
   }
@@ -210,11 +210,18 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
   return [];
 }
 
-function firstOpenMonsterZones(fieldMask: number, player: number, count: number): Array<{ player: number; location: number; sequence: number }> {
+function firstOpenZones(fieldMask: number, player: number, count: number, ocg: OcgRuntime): Array<{ player: number; location: number; sequence: number }> {
   const places: Array<{ player: number; location: number; sequence: number }> = [];
+  const monsterZone = ocg.OcgLocation.MZONE ?? 4;
+  const spellTrapZone = ocg.OcgLocation.SZONE ?? 8;
   for (let sequence = 0; sequence < 5 && places.length < count; sequence += 1) {
     if ((fieldMask & (1 << sequence)) === 0) {
-      places.push({ player, location: 4, sequence });
+      places.push({ player, location: monsterZone, sequence });
+    }
+  }
+  for (let sequence = 0; sequence < 5 && places.length < count; sequence += 1) {
+    if ((fieldMask & (1 << (sequence + 8))) === 0) {
+      places.push({ player, location: spellTrapZone, sequence });
     }
   }
   return places;

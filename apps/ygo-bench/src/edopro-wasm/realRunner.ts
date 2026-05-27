@@ -10,7 +10,7 @@ import { chooseRealAgentAction, type RealAgentId } from "./realAgent.js";
 import { loadRealScenario, type RealScenario } from "./realScenario.js";
 import { writeRealViewerHtml } from "./realViewer.js";
 import { buildRealRunMetadata } from "./runMetadata.js";
-import { createScriptReader } from "./scriptReader.js";
+import { createScriptReader, readScriptFile } from "./scriptReader.js";
 
 export interface RealRunOptions {
   agentId: RealAgentId;
@@ -265,6 +265,7 @@ export function createScenarioDuel(
     errorHandler: (type, text) => errors.push(`${type}: ${text}`),
   });
   if (!handle) throw new Error("ocgcore-wasm failed to create a duel");
+  preloadProjectIgnisScripts(core, handle, scriptRoot, errors);
 
   for (const [sequence, code] of scenario.players[0].deck.entries()) addDeckCard(core, handle, 0, code, sequence);
   for (const [sequence, code] of scenario.players[1].deck.entries()) addDeckCard(core, handle, 1, code, sequence);
@@ -283,12 +284,24 @@ function addDeckCard(core: OcgCoreSync, handle: OcgDuelHandle, player: 0 | 1, co
   });
 }
 
+function preloadProjectIgnisScripts(core: OcgCoreSync, handle: OcgDuelHandle, scriptRoot: string, errors: string[]): void {
+  for (const name of ["constant.lua", "utility.lua"]) {
+    const content = readScriptFile(scriptRoot, name);
+    if (content === null) {
+      errors.push(`Missing Project Ignis preload script: ${name}`);
+      continue;
+    }
+    const loaded = core.loadScript(handle, name, content);
+    if (!loaded) errors.push(`ocgcore-wasm failed to load Project Ignis preload script: ${name}`);
+  }
+}
+
 export function autoRespond(core: OcgCoreSync, handle: OcgDuelHandle, messages: OcgMessage[], ocg: OcgRuntime): boolean {
   const prompt = [...messages].reverse().find((message) => isPromptMessage(message.type, ocg));
   if (!prompt) return false;
   if (prompt.type === ocg.OcgMessageType.SELECT_CHAIN) {
     const selects = Array.isArray(prompt.selects) ? prompt.selects : [];
-    if (prompt.forced !== true || selects.length === 0) {
+    if (selects.length === 0) {
       core.duelSetResponse(handle, { type: ocg.OcgResponseType.SELECT_CHAIN, index: null });
       return true;
     }

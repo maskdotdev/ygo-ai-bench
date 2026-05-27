@@ -47,6 +47,7 @@ export interface OcgCoreSync {
   duelProcess(handle: OcgDuelHandle): number;
   duelGetMessage(handle: OcgDuelHandle): OcgMessage[];
   duelSetResponse(handle: OcgDuelHandle, response: unknown): void;
+  loadScript(handle: OcgDuelHandle, name: string, content: string): boolean;
 }
 
 export interface OcgRuntime {
