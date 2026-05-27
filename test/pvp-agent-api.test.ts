@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { moveDuelCard } from "#duel/card-state.js";
+import { runDuelBattlefieldScript } from "../src/playtest-app/duel-battlefield-script.js";
 import { applyPvpAgentAction, firstLegalPvpAgentPolicy, observePvpAgent, replayPvpAgentActions, runPvpAgentLoop } from "../src/playtest-app/pvp-agent-api.js";
 import { bootstrapPvpDuel } from "../src/playtest-app/pvp-arena.js";
 import type { DuelCardData } from "#duel/types.js";
@@ -115,6 +116,25 @@ describe("PvP agent API", () => {
 
     expect(result.steps).toHaveLength(1);
     expect(session.state.cards.some((card) => card.location !== "hand" && card.owner === 0)).toBe(true);
+  });
+
+  it("lets visible scripts specify summon and spell/trap placement sequences", () => {
+    const session = duel();
+
+    const result = runDuelBattlefieldScript(session, [
+      { player: 0, type: "setSpellTrap", labelIncludes: "Agent Trap", spellTrapSequence: 3 },
+      { player: 0, type: "normalSummon", labelIncludes: "Agent Monster", summonSequence: 4 },
+    ]);
+
+    expect(result.ok).toBe(true);
+    expect(session.state.cards.find((card) => card.code === "200" && card.owner === 0)).toMatchObject({
+      location: "spellTrapZone",
+      sequence: 3,
+    });
+    expect(session.state.cards.find((card) => card.code === "100" && card.owner === 0)).toMatchObject({
+      location: "monsterZone",
+      sequence: 4,
+    });
   });
 });
 

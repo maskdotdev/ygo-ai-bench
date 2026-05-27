@@ -18,6 +18,16 @@ import { hydrateCardImagesByPasscode } from "./card-images.js";
 const NO_LEGAL_ACTIONS: DuelAction[] = [];
 const MAX_AUTO_PASSES = 8;
 
+declare global {
+  interface Window {
+    __YGO_PVP_AGENT__?: {
+      observe(player: PlayerId): unknown;
+      act(player: PlayerId, actionId: string, params?: unknown): unknown;
+      state(): PublicDuelState;
+    };
+  }
+}
+
 export const pvpVisibleBattleFixtureYdk = `#created by Duel Deck Studio
 #deck Visible Battle Fixture
 #main
@@ -446,6 +456,31 @@ export function PvpArena() {
     void restartDuel();
   }, [restartDuel]);
 
+  useEffect(() => {
+    if (!import.meta.env.DEV) return;
+    let active = true;
+    void import("./pvp-agent-api.js").then((agentApi) => {
+      if (!active) return;
+      window.__YGO_PVP_AGENT__ = {
+        observe(player: PlayerId) {
+          return agentApi.observePvpAgent(session, player);
+        },
+        act(player: PlayerId, actionId: string, params?: unknown) {
+          const result = agentApi.applyPvpAgentAction(session, player, actionId, isAgentActionParams(params) ? params : {});
+          setRevision((current) => current + 1);
+          return result;
+        },
+        state() {
+          return queryPublicState(session);
+        },
+      };
+    });
+    return () => {
+      active = false;
+      if (window.__YGO_PVP_AGENT__) delete window.__YGO_PVP_AGENT__;
+    };
+  }, [session]);
+
   const runVisibleFixture = useCallback(() => {
     try {
       if (visibleFixtureTimer.current !== undefined) {
@@ -750,5 +785,16 @@ export function PvpArena() {
         />
       ) : null}
     </div>
+  );
+}
+
+function isAgentActionParams(value: unknown): value is { summonSequence?: number; spellTrapSequence?: number; summonUids?: string[] } {
+  if (value === undefined) return true;
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    (record.summonSequence === undefined || typeof record.summonSequence === "number") &&
+    (record.spellTrapSequence === undefined || typeof record.spellTrapSequence === "number") &&
+    (record.summonUids === undefined || (Array.isArray(record.summonUids) && record.summonUids.every((uid) => typeof uid === "string")))
   );
 }

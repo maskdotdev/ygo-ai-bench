@@ -23,6 +23,8 @@ export interface DuelBattlefieldActionSelector {
   tributeUids?: readonly string[];
   materialUids?: readonly string[];
   summonUids?: readonly string[];
+  summonSequence?: number;
+  spellTrapSequence?: number;
   attackerUid?: string;
   targetUid?: string;
   directAttack?: boolean;
@@ -247,6 +249,8 @@ function selectVisibleBattlefieldAction(
   });
   const selected = matches[selector.occurrence ?? 0];
   if (selected?.type === "pendulumSummon" && selector.summonUids !== undefined) return { ...selected, summonUids: [...selector.summonUids] };
+  if (selected && isSummonZoneAction(selected) && selector.summonSequence !== undefined) return { ...selected, summonSequence: selector.summonSequence };
+  if (selected && isSpellTrapZoneAction(selected) && selector.spellTrapSequence !== undefined) return { ...selected, spellTrapSequence: selector.spellTrapSequence };
   return selected;
 }
 
@@ -262,6 +266,8 @@ function describeBattlefieldSelector(selector: DuelBattlefieldActionSelector): s
     selector.tributeUids !== undefined ? `tributeUids=${selector.tributeUids.join(",")}` : undefined,
     selector.materialUids !== undefined ? `materialUids=${selector.materialUids.join(",")}` : undefined,
     selector.summonUids !== undefined ? `summonUids=${selector.summonUids.join(",")}` : undefined,
+    selector.summonSequence !== undefined ? `summonSequence=${selector.summonSequence}` : undefined,
+    selector.spellTrapSequence !== undefined ? `spellTrapSequence=${selector.spellTrapSequence}` : undefined,
     selector.attackerUid !== undefined ? `attackerUid=${selector.attackerUid}` : undefined,
     selector.targetUid !== undefined ? `targetUid=${selector.targetUid}` : undefined,
     selector.directAttack !== undefined ? `directAttack=${selector.directAttack}` : undefined,
@@ -284,6 +290,23 @@ function describeBattlefieldSelector(selector: DuelBattlefieldActionSelector): s
 
 function isMaterialSelectionAction(action: DuelAction): action is Extract<DuelAction, { materialUids: string[] }> {
   return action.type === "fusionSummon" || action.type === "synchroSummon" || action.type === "xyzSummon" || action.type === "linkSummon" || action.type === "ritualSummon";
+}
+
+function isSummonZoneAction(action: DuelAction): action is Extract<DuelAction, { summonSequence?: number }> {
+  return action.type === "normalSummon" ||
+    action.type === "tributeSummon" ||
+    action.type === "tributeSet" ||
+    action.type === "fusionSummon" ||
+    action.type === "synchroSummon" ||
+    action.type === "xyzSummon" ||
+    action.type === "linkSummon" ||
+    action.type === "ritualSummon" ||
+    action.type === "setMonster" ||
+    action.type === "specialSummonProcedure";
+}
+
+function isSpellTrapZoneAction(action: DuelAction): action is Extract<DuelAction, { spellTrapSequence?: number }> {
+  return action.type === "setSpellTrap" || action.type === "activateEffect";
 }
 
 function actionSelectionKind(action: DuelAction): DuelActionUiSelectionKind | undefined {
