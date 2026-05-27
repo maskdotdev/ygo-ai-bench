@@ -1,6 +1,6 @@
 import "../browser-node-shims/process-global.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { applyResponse, createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
+import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
 import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { LuaInitialEffectRegistrationResult, LuaScriptHost, LuaScriptLoadResult } from "#lua/host.js";
 import { parseYdk } from "#playtest/ydk.js";
@@ -11,12 +11,15 @@ import type { BrowserLuaScriptCache, BrowserLuaScriptManifest, BrowserLuaScriptP
 import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
 import { runDuelBattlefieldScript, runDuelBattlefieldScriptStep, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult, type DuelBattlefieldScriptStepResult } from "./duel-battlefield-script.js";
 import { duelActionAnchorUids } from "./duel-action-anchors.js";
+import { applyPvpAction } from "./pvp-apply-action.js";
+import { applyPvpAgentAction, observePvpAgent } from "./pvp-agent-api.js";
 import { CardZoom, ToastStack, readBuilderDeck, starterYdk } from "./ui.js";
 import type { CardImageInfo, ToastMessage } from "./ui.js";
 import { hydrateCardImagesByPasscode } from "./card-images.js";
 
 const NO_LEGAL_ACTIONS: DuelAction[] = [];
-const MAX_AUTO_PASSES = 8;
+
+export { applyPvpAction };
 
 declare global {
   interface Window {
@@ -100,20 +103,6 @@ export interface BrowserPvpBootSummary {
   missingCards: string[];
   missingScripts: string[];
   registrationFailures: { code: string; uid: string; error?: string }[];
-}
-
-export function applyPvpAction(session: DuelSession, action: DuelAction): ApplyDuelResponseResult {
-  let result = applyResponse(session, action);
-  if (!result.ok) return result;
-  for (let i = 0; i < MAX_AUTO_PASSES; i += 1) {
-    const waiting = result.state.waitingFor;
-    if (result.state.status !== "awaiting" || waiting === undefined || result.state.windowKind !== "chainResponse") break;
-    const legal = getLegalActions(session, waiting);
-    if (legal.length !== 1 || legal[0]?.type !== "passChain") break;
-    result = applyResponse(session, legal[0]);
-    if (!result.ok) return result;
-  }
-  return result;
 }
 
 export interface BrowserPvpAssetCacheOptions {
@@ -456,30 +445,38 @@ export function PvpArena() {
     void restartDuel();
   }, [restartDuel]);
 
+  const agentBridge = useMemo(() => ({
+      observe(player: PlayerId) {
+        return observePvpAgent(session, player);
+      },
+      act(player: PlayerId, actionId: string, params?: unknown) {
+        const result = applyPvpAgentAction(session, player, actionId, isAgentActionParams(params) ? params : {});
+        setRevision((current) => current + 1);
+        return result;
+      },
+      state() {
+        return queryPublicState(session);
+      },
+    }), [session]);
+
   useEffect(() => {
-    if (!import.meta.env.DEV) return;
-    let active = true;
-    void import("./pvp-agent-api.js").then((agentApi) => {
-      if (!active) return;
-      window.__YGO_PVP_AGENT__ = {
-        observe(player: PlayerId) {
-          return agentApi.observePvpAgent(session, player);
-        },
-        act(player: PlayerId, actionId: string, params?: unknown) {
-          const result = agentApi.applyPvpAgentAction(session, player, actionId, isAgentActionParams(params) ? params : {});
-          setRevision((current) => current + 1);
-          return result;
-        },
-        state() {
-          return queryPublicState(session);
-        },
-      };
-    });
-    return () => {
-      active = false;
-      if (window.__YGO_PVP_AGENT__) delete window.__YGO_PVP_AGENT__;
+    window.__YGO_PVP_AGENT__ = agentBridge;
+    document.documentElement.dataset.ygoPvpAgent = "ready";
+    const onAgentRequest = (event: Event) => {
+      const request = (event as CustomEvent).detail;
+      const result = handleAgentBridgeRequest(agentBridge, request);
+      document.dispatchEvent(new CustomEvent("ygo-pvp-agent-response", { detail: { id: requestId(request), result } }));
     };
-  }, [session]);
+    document.addEventListener("ygo-pvp-agent-request", onAgentRequest);
+    return () => {
+      if (window.__YGO_PVP_AGENT__ === agentBridge) delete window.__YGO_PVP_AGENT__;
+      document.removeEventListener("ygo-pvp-agent-request", onAgentRequest);
+      if (document.documentElement.dataset.ygoPvpAgent === "ready") delete document.documentElement.dataset.ygoPvpAgent;
+    };
+  }, [agentBridge]);
+
+  window.__YGO_PVP_AGENT__ = agentBridge;
+  document.documentElement.dataset.ygoPvpAgent = "ready";
 
   const runVisibleFixture = useCallback(() => {
     try {
@@ -797,4 +794,26 @@ function isAgentActionParams(value: unknown): value is { summonSequence?: number
     (record.spellTrapSequence === undefined || typeof record.spellTrapSequence === "number") &&
     (record.summonUids === undefined || (Array.isArray(record.summonUids) && record.summonUids.every((uid) => typeof uid === "string")))
   );
+}
+
+function handleAgentBridgeRequest(
+  bridge: NonNullable<Window["__YGO_PVP_AGENT__"]>,
+  request: unknown,
+): unknown {
+  if (typeof request !== "object" || request === null) return { ok: false, error: "Malformed agent bridge request" };
+  const record = request as Record<string, unknown>;
+  const player = record.player === 0 || record.player === 1 ? record.player : undefined;
+  if (record.method === "state") return bridge.state();
+  if (player === undefined) return { ok: false, error: "Agent bridge request requires player 0 or 1" };
+  if (record.method === "observe") return bridge.observe(player);
+  if (record.method === "act") {
+    if (typeof record.actionId !== "string") return { ok: false, error: "Agent bridge act request requires actionId" };
+    return bridge.act(player, record.actionId, isAgentActionParams(record.params) ? record.params : {});
+  }
+  return { ok: false, error: `Unknown agent bridge method ${String(record.method)}` };
+}
+
+function requestId(request: unknown): unknown {
+  if (typeof request !== "object" || request === null) return undefined;
+  return (request as Record<string, unknown>).id;
 }

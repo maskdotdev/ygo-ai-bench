@@ -1,4 +1,4 @@
-import { applyPvpAction } from "./pvp-arena.js";
+import { applyPvpAction } from "./pvp-apply-action.js";
 import { copyDuelAction } from "#duel/action-copy.js";
 import { getGroupedDuelLegalActions, getLegalActions, queryPublicState } from "#duel/core.js";
 import { duelActionUiGroupLabel } from "./duel-action-anchors.js";

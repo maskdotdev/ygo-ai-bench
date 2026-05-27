@@ -102,7 +102,19 @@ window.__YGO_PVP_AGENT__.act(player, actionId, params)
 window.__YGO_PVP_AGENT__.state()
 ```
 
-This is intended for local browser automation and debugging. Production code should import the module API directly.
+The page also sets `document.documentElement.dataset.ygoPvpAgent = "ready"` and listens for DOM requests:
+
+```ts
+document.dispatchEvent(new CustomEvent("ygo-pvp-agent-request", {
+  detail: { id: "1", method: "observe", player: 0 },
+}));
+
+document.addEventListener("ygo-pvp-agent-response", (event) => {
+  console.log(event.detail.id, event.detail.result);
+});
+```
+
+Supported methods are `observe`, `act`, and `state`. This event bridge is intended for browser extension and automation contexts where page-owned `window` properties may be isolated. Production code should import the module API directly.
 
 ## Minimal Policy Loop
 
