@@ -133,7 +133,7 @@ export function buildRealModelObservation(args: {
       label: action.label,
       ...(typeof action.attack === "number" ? { attack: action.attack } : {}),
     })),
-    recentEvents: args.recentEvents.slice(-12).map((event) => event.text),
+    recentEvents: args.recentEvents.slice(-12).map((event) => renderRecentEventForPlayer(event, player)),
   };
 }
 
@@ -188,6 +188,46 @@ function publicCardView(
 
 function isFaceDown(position: number | undefined): boolean {
   return typeof position === "number" && (position & 0x8) !== 0;
+}
+
+function renderRecentEventForPlayer(event: RealNormalizedEvent, player: 0 | 1): string {
+  if (event.event !== "CARD_MOVED" || !event.card || !isRecord(event.payload)) return event.text;
+
+  const from = eventLocation(event.payload.from);
+  const to = eventLocation(event.payload.to);
+  const hidden =
+    isHiddenLocationForPlayer(from, player) ||
+    isHiddenLocationForPlayer(to, player) ||
+    (to?.controller !== player && isFaceDown(to?.position));
+  if (!hidden) return event.text;
+
+  return event.text.replaceAll(event.card.name, "a hidden card");
+}
+
+function isHiddenLocationForPlayer(location: EventLocation | null, player: 0 | 1): boolean {
+  if (!location || location.controller === player) return false;
+  return location.location === 1 || location.location === 2 || location.location === 64;
+}
+
+interface EventLocation {
+  controller: 0 | 1;
+  location: number;
+  position?: number | undefined;
+}
+
+function eventLocation(value: unknown): EventLocation | null {
+  if (!isRecord(value) || typeof value.location !== "number") return null;
+  const controller = value.controller === 1 ? 1 : value.controller === 0 ? 0 : null;
+  if (controller === null) return null;
+  return {
+    controller,
+    location: value.location,
+    position: typeof value.position === "number" ? value.position : undefined,
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 function isJsonFailure(error: unknown): boolean {

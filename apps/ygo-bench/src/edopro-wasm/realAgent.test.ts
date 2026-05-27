@@ -93,6 +93,43 @@ describe("buildRealModelObservation", () => {
     expect(rendered).not.toContain("Opponent Secret Trap");
     expect(observation.opponent.spellsTraps).toEqual([{ name: "Set card", sequence: 0, revealed: false }]);
   });
+
+  it("redacts hidden opponent card names from recent events", () => {
+    const state = initialRealReducedState();
+    state.turn = 2;
+    state.phase = "MAIN1";
+
+    const observation = buildRealModelObservation({
+      scenario: scenario(),
+      state,
+      prompt: { type: 0, player: 0 },
+      promptTypeName: "SELECT_IDLECMD",
+      legalActions: [],
+      recentEvents: [
+        {
+          frame: 3,
+          type: "event",
+          event: "CARD_MOVED",
+          player: 1,
+          turn: 2,
+          phase: "MAIN1",
+          text: "Opponent Secret Trap moved from P1:HAND:0 to P1:SZONE:0.",
+          card: { code: 222, name: "Opponent Secret Trap" },
+          from: "P1:HAND:0",
+          to: "P1:SZONE:0",
+          payload: {
+            card: 222,
+            from: { controller: 1, location: 2, sequence: 0 },
+            to: { controller: 1, location: 8, sequence: 0, position: 0x8 },
+          },
+        },
+      ],
+    });
+    const rendered = renderRealObservationJson(observation);
+
+    expect(rendered).toContain("a hidden card moved from P1:HAND:0 to P1:SZONE:0.");
+    expect(rendered).not.toContain("Opponent Secret Trap");
+  });
 });
 
 function scenario(): RealScenario {
