@@ -5,6 +5,7 @@ import { BoardView } from "./BoardView";
 import { DecisionPanel } from "./DecisionPanel";
 import { MetadataPanel } from "./MetadataPanel";
 import { PromptPanel } from "./PromptPanel";
+import { RunOverview } from "./RunOverview";
 import { ScorePanel } from "./ScorePanel";
 import { Timeline } from "./Timeline";
 import { TranscriptDrawer } from "./TranscriptDrawer";
@@ -48,6 +49,7 @@ export function ReplayView({ details, trace, transcript }: { details: RunDetails
             </button>
           </div>
         </div>
+        <RunOverview details={details} frames={frames} />
         <BoardView state={current?.state ?? details.reducedState} player={currentFrame?.player} />
         <div className="lower-grid">
           <DecisionPanel frame={currentFrame} />

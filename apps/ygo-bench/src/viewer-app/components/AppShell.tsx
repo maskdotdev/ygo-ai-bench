@@ -28,7 +28,7 @@ export function AppShell(props: {
               ))}
             </select>
           </label>
-          <Metric label="Run" value={props.selectedRun?.scenarioId ?? "none"} />
+          <Metric label="Scenario" value={props.selectedRun?.scenarioId ?? "none"} />
           <Metric label="Agent" value={props.selectedRun?.agentId ?? "-"} />
           <Metric label="Score" value={props.selectedRun ? props.selectedRun.score.toFixed(2) : "-"} />
           <Metric label="Trace" value={props.liveStatus} />

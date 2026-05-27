@@ -51,6 +51,7 @@ export function RunList(props: { runs: RunIndexItem[]; selectedRunId: string | n
             <span>{run.agentId}</span>
             <span>{run.family}</span>
             <strong>{run.score.toFixed(2)}</strong>
+            <span className="open-run-label">Replay</span>
             {run.modelErrors || run.invalidJson || run.illegalActions ? <b className="warning-dot">!</b> : null}
           </button>
         ))}

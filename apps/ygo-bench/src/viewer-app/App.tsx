@@ -90,15 +90,17 @@ export function App() {
     >
       <aside className="left-rail">
         <RunList runs={runs} selectedRunId={selectedRunId} onSelectRun={setSelectedRunId} />
-        {summary ? <AgentComparison summary={summary} /> : <div className="empty-block">No suite summary loaded.</div>}
       </aside>
       <main className="workspace">
-        {summary ? <SuiteSummaryView summary={summary} onSelectRun={setSelectedRunId} /> : null}
         {runDetails ? (
           <ReplayView details={runDetails} trace={trace} transcript={transcript} />
         ) : (
           <div className="empty-block">Select a run to inspect its trace.</div>
         )}
+        <div className="summary-columns">
+          {summary ? <AgentComparison summary={summary} /> : <div className="empty-block">No suite summary loaded.</div>}
+          {summary ? <SuiteSummaryView summary={summary} onSelectRun={setSelectedRunId} /> : null}
+        </div>
       </main>
     </AppShell>
   );

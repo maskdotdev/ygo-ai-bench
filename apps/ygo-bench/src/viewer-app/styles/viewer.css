@@ -100,7 +100,8 @@ small {
 .left-rail,
 .right-rail,
 .workspace,
-.replay-main {
+.replay-main,
+.summary-columns {
   display: grid;
   gap: 14px;
   align-content: start;
@@ -154,7 +155,7 @@ small {
 
 .run-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto auto;
   gap: 8px;
   align-items: center;
   padding: 9px;
@@ -184,6 +185,17 @@ small {
   color: #fff;
 }
 
+.open-run-label {
+  color: #285f7f;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.summary-columns {
+  grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.3fr);
+}
+
 .summary-grid,
 .metric-grid {
   display: grid;
@@ -195,11 +207,65 @@ small {
 .score-card,
 .metric,
 .chosen-action,
+.brief,
 .action-row {
   border: 1px solid #d5d8d0;
   border-radius: 6px;
   background: #fff;
   padding: 10px;
+}
+
+.metric,
+.brief {
+  display: grid;
+  gap: 2px;
+}
+
+.metric span,
+.brief span {
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.metric strong,
+.brief strong {
+  line-height: 1.15;
+}
+
+.brief-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.run-story {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  color: #343b38;
+}
+
+.run-story p,
+.decision-callout p {
+  margin: 0;
+}
+
+.decision-callout {
+  margin-top: 10px;
+  border-left: 4px solid #32746d;
+  border-radius: 6px;
+  background: #edf5f0;
+  padding: 10px;
+}
+
+.decision-callout span {
+  display: block;
+  margin-bottom: 4px;
+  color: #535c58;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
 }
 
 .score-card {
@@ -410,12 +476,13 @@ pre {
 
 @media (max-width: 1180px) {
   .main-grid,
-  .replay-layout {
+  .replay-layout,
+  .summary-columns {
     grid-template-columns: 1fr;
   }
 
   .left-rail {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 
