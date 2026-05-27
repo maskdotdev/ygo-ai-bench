@@ -5,7 +5,7 @@ import { assertNoHiddenInfoLeak } from "../core/hiddenInfo.js";
 import { loadScenario } from "../core/scenario.js";
 import { scoreRun } from "../core/scoring.js";
 import { TraceWriter } from "../core/trace.js";
-import type { AgentDecision, DecisionFrame, ScenarioScore, StepResult } from "../core/types.js";
+import type { Agent, AgentDecision, DecisionFrame, Observation, ScenarioScore, StepResult } from "../core/types.js";
 import { MockYugiohEnv } from "../env/YugiohEnv.js";
 import { writeViewerHtml } from "../viewer/html.js";
 
@@ -14,6 +14,7 @@ export interface RunOptions {
   agentId: string;
   viewer: boolean;
   model?: string;
+  agent?: Agent;
 }
 
 export async function runScenario(options: RunOptions): Promise<{ runDir: string; score: ScenarioScore }> {
@@ -21,7 +22,7 @@ export async function runScenario(options: RunOptions): Promise<{ runDir: string
   const runDir = resolve("benchmark-runs", `run-${new Date().toISOString().replaceAll(":", "-")}-${scenario.id}-${options.agentId}`);
   const trace = new TraceWriter(runDir);
   const env = new MockYugiohEnv();
-  const agent = createAgent(options.agentId, scenario, options.model ? { model: options.model } : undefined);
+  const agent = options.agent ?? createAgent(options.agentId, scenario, options.model ? { model: options.model } : undefined);
   let observation = await env.reset(scenario);
   assertNoHiddenInfoLeak(scenario, observation);
   let decisionsTaken = 0;
@@ -33,7 +34,8 @@ export async function runScenario(options: RunOptions): Promise<{ runDir: string
   let finalResult: StepResult | null = null;
 
   while (decisionsTaken < scenario.maxDecisions) {
-    const decision = await agent.chooseAction(observation);
+    const decision = await chooseActionWithFallback(agent, observation);
+    if (decision.fallbackReason) invalidJson += 1;
     decisionsTaken += 1;
     if (seen.has(decision.actionId)) repeatedActions += 1;
     seen.add(decision.actionId);
@@ -50,6 +52,7 @@ export async function runScenario(options: RunOptions): Promise<{ runDir: string
     };
     trace.push(decisionFrame);
     transcript.push(`## Decision ${decisionsTaken}`, "", `Chosen: \`${decision.actionId}\``, "", decision.reason, "");
+    if (decision.fallbackReason) transcript.push("", `Fallback: ${decision.fallbackReason}`, "");
 
     const result = await env.step(decision.actionId);
     for (const frame of result.info.engineFrames) trace.push(frame);
@@ -84,7 +87,23 @@ export async function runScenario(options: RunOptions): Promise<{ runDir: string
   return { runDir, score };
 }
 
-function normalizeDecision(decision: AgentDecision): AgentDecision {
+type AgentDecisionWithFallback = AgentDecision & { fallbackReason?: string };
+
+async function chooseActionWithFallback(agent: Agent, observation: Observation): Promise<AgentDecisionWithFallback> {
+  try {
+    return await agent.chooseAction(observation);
+  } catch (error) {
+    const fallback = observation.legalActions[0];
+    if (!fallback) throw error;
+    return {
+      actionId: fallback.id,
+      reason: `Agent returned invalid output; fell back to first legal action ${fallback.id}.`,
+      fallbackReason: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function normalizeDecision(decision: AgentDecisionWithFallback): AgentDecision {
   if (!decision || typeof decision.actionId !== "string") {
     return { actionId: "", reason: "Invalid agent response." };
   }
