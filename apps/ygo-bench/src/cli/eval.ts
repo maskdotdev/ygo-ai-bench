@@ -28,6 +28,8 @@ export interface EvalSuiteSummary {
     illegalActionRate: number;
     invalidJsonRate: number;
     repeatedActionRate: number;
+    averageLatencyMs: number;
+    averageTokenCount: number | null;
   }>;
 }
 
@@ -71,13 +73,27 @@ function aggregateScores(scores: ScenarioScore[]): EvalSuiteSummary["aggregate"]
       illegalActionRate: average(agentScores.map((score) => score.illegalActions)),
       invalidJsonRate: average(agentScores.map((score) => score.invalidJson)),
       repeatedActionRate: average(agentScores.map((score) => score.repeatedActions)),
+      averageLatencyMs: average(agentScores.map((score) => score.latencyMs)),
+      averageTokenCount: averageNullable(agentScores.map((score) => score.tokenCount)),
     };
   });
 }
 
 function renderCsv(summary: EvalSuiteSummary): string {
   const rows = [
-    ["agentId", "scenarioId", "won", "objectiveScore", "decisionsTaken", "illegalActions", "invalidJson", "repeatedActions", "viewerPath"],
+    [
+      "agentId",
+      "scenarioId",
+      "won",
+      "objectiveScore",
+      "decisionsTaken",
+      "illegalActions",
+      "invalidJson",
+      "repeatedActions",
+      "latencyMs",
+      "tokenCount",
+      "viewerPath",
+    ],
     ...summary.records.map((record) => [
       record.score.agentId,
       record.score.scenarioId,
@@ -87,6 +103,8 @@ function renderCsv(summary: EvalSuiteSummary): string {
       String(record.score.illegalActions),
       String(record.score.invalidJson),
       String(record.score.repeatedActions),
+      String(record.score.latencyMs),
+      record.score.tokenCount === null ? "" : String(record.score.tokenCount),
       record.viewerPath ?? "",
     ]),
   ];
@@ -120,14 +138,14 @@ function renderHtmlReport(summary: EvalSuiteSummary): string {
     <section>
       <h2>Aggregate</h2>
       <table>
-        <thead><tr><th>Agent</th><th>Runs</th><th>Win Rate</th><th>Avg Score</th><th>Avg Decisions</th><th>Illegal</th><th>Invalid JSON</th><th>Repeated</th></tr></thead>
+        <thead><tr><th>Agent</th><th>Runs</th><th>Win Rate</th><th>Avg Score</th><th>Avg Decisions</th><th>Illegal</th><th>Invalid JSON</th><th>Repeated</th><th>Avg Latency</th><th>Avg Tokens</th></tr></thead>
         <tbody>${summary.aggregate.map(renderAggregateRow).join("")}</tbody>
       </table>
     </section>
     <section>
       <h2>Runs</h2>
       <table>
-        <thead><tr><th>Agent</th><th>Scenario</th><th>Won</th><th>Score</th><th>Decisions</th><th>Viewer</th></tr></thead>
+        <thead><tr><th>Agent</th><th>Scenario</th><th>Won</th><th>Score</th><th>Decisions</th><th>Latency</th><th>Tokens</th><th>Viewer</th></tr></thead>
         <tbody>${summary.records.map(renderRunRow).join("")}</tbody>
       </table>
     </section>
@@ -137,17 +155,22 @@ function renderHtmlReport(summary: EvalSuiteSummary): string {
 }
 
 function renderAggregateRow(row: EvalSuiteSummary["aggregate"][number]): string {
-  return `<tr><td>${escapeHtml(row.agentId)}</td><td>${row.runs}</td><td>${row.winRate.toFixed(2)}</td><td>${row.averageScore.toFixed(2)}</td><td>${row.averageDecisions.toFixed(1)}</td><td>${row.illegalActionRate.toFixed(2)}</td><td>${row.invalidJsonRate.toFixed(2)}</td><td>${row.repeatedActionRate.toFixed(2)}</td></tr>`;
+  return `<tr><td>${escapeHtml(row.agentId)}</td><td>${row.runs}</td><td>${row.winRate.toFixed(2)}</td><td>${row.averageScore.toFixed(2)}</td><td>${row.averageDecisions.toFixed(1)}</td><td>${row.illegalActionRate.toFixed(2)}</td><td>${row.invalidJsonRate.toFixed(2)}</td><td>${row.repeatedActionRate.toFixed(2)}</td><td>${row.averageLatencyMs.toFixed(0)} ms</td><td>${row.averageTokenCount === null ? "" : row.averageTokenCount.toFixed(0)}</td></tr>`;
 }
 
 function renderRunRow(record: EvalRunRecord): string {
   const viewer = record.viewerPath ? `<a href="${escapeHtml(record.viewerPath)}">viewer</a>` : "";
-  return `<tr><td>${escapeHtml(record.score.agentId)}</td><td>${escapeHtml(record.score.scenarioId)}</td><td>${record.score.won ? "yes" : "no"}</td><td>${record.score.objectiveScore.toFixed(2)}</td><td>${record.score.decisionsTaken}</td><td>${viewer}</td></tr>`;
+  return `<tr><td>${escapeHtml(record.score.agentId)}</td><td>${escapeHtml(record.score.scenarioId)}</td><td>${record.score.won ? "yes" : "no"}</td><td>${record.score.objectiveScore.toFixed(2)}</td><td>${record.score.decisionsTaken}</td><td>${record.score.latencyMs} ms</td><td>${record.score.tokenCount ?? ""}</td><td>${viewer}</td></tr>`;
 }
 
 function average(values: number[]): number {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function averageNullable(values: Array<number | null>): number | null {
+  const concrete = values.filter((value): value is number => value !== null);
+  return concrete.length === 0 ? null : average(concrete);
 }
 
 function csvCell(value: string): string {

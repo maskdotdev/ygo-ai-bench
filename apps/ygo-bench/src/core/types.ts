@@ -162,5 +162,7 @@ export interface ScenarioScore {
   repeatedActions: number;
   finalLpDelta: number;
   objectiveScore: number;
+  latencyMs: number;
+  tokenCount: number | null;
   notes: string[];
 }

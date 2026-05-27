@@ -28,6 +28,8 @@ export function scoreRun(args: {
     repeatedActions: args.repeatedActions,
     finalLpDelta,
     objectiveScore,
+    latencyMs: 0,
+    tokenCount: null,
     notes: args.finalResult.info.reason ? [args.finalResult.info.reason] : [],
   };
 }

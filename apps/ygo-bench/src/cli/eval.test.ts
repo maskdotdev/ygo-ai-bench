@@ -28,6 +28,8 @@ describe("evalSuite", () => {
           illegalActionRate: 0,
           invalidJsonRate: 0,
           repeatedActionRate: 0,
+          averageLatencyMs: 0,
+          averageTokenCount: null,
         },
       ]);
       expect(summary.records.every((record) => record.viewerPath?.endsWith("/viewer.html"))).toBe(true);

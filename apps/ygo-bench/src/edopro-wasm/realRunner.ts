@@ -59,6 +59,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   let illegalActions = 0;
   let winner: 0 | 1 | null = null;
   let frameId = 0;
+  let latencyMs = 0;
 
   try {
     core.startDuel(handle);
@@ -99,6 +100,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         break;
       }
 
+      const decisionStartedAt = Date.now();
       const chosen = await chooseRealAgentAction({
         agentId: options.agentId,
         scenario,
@@ -109,6 +111,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         recentEvents: events,
         ...(options.model ? { model: options.model } : {}),
       });
+      latencyMs += Date.now() - decisionStartedAt;
       invalidJson += chosen.invalidJson;
       illegalActions += chosen.illegalActions;
       decisionsTaken += 1;
@@ -144,6 +147,8 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     repeatedActions: 0,
     finalLpDelta: reducedState.players[0].lp - reducedState.players[1].lp,
     objectiveScore: scoreObjective(scenario, winner, reducedState.players[0].lp - reducedState.players[1].lp),
+    latencyMs,
+    tokenCount: null,
     notes: errors,
   };
   await writeFile(join(runDir, "final-score.json"), JSON.stringify(score, null, 2) + "\n");
