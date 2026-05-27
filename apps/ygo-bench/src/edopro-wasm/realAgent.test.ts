@@ -62,6 +62,7 @@ describe("buildRealModelObservation", () => {
     });
 
     const rendered = renderRealObservationJson(observation);
+    expect(observation.objective).toContain("Win as player 0");
     expect(observation.legalActions).toEqual([
       {
         id: "a_001",

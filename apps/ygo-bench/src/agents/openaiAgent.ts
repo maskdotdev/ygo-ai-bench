@@ -151,7 +151,8 @@ async function callResponsesApi(args: {
         },
         {
           role: "developer",
-          content: 'You must return JSON only: { "actionId": string, "reason": string }.',
+          content:
+            'You must return JSON only: { "actionId": string, "reason": string }. Play to win the current scenario, not merely to develop. If you already control an attacker and can go to battle, usually choose the battle action before summoning or setting more cards. If an attack is legal and profitable, usually attack.',
         },
         {
           role: "user",

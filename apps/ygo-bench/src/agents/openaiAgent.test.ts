@@ -81,6 +81,21 @@ describe("OpenAiAgent", () => {
 
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({ model: "configured-model" });
   });
+
+  it("sends strategic legal-action guidance to the model", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(responseWithText('{"actionId":"a_001","reason":"ok"}'));
+
+    await chooseOpenAiLegalAction({
+      apiKey: "test-key",
+      model: "test-model",
+      endpoint: "https://example.test/responses",
+      observationText: "{}",
+      legalActionIds: ["a_001"],
+    });
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { input: Array<{ role: string; content: string }> };
+    expect(body.input.find((message) => message.role === "developer")?.content).toContain("If an attack is legal and profitable");
+  });
 });
 
 describe("checkOpenAiConnectivity", () => {

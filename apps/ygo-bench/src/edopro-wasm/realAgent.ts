@@ -19,6 +19,7 @@ export interface RealAgentChoice {
 
 export interface RealModelObservation {
   scenarioId: string;
+  objective: string;
   player: 0 | 1;
   turn: number;
   phase: string;
@@ -124,6 +125,7 @@ export function buildRealModelObservation(args: {
   const opponent = player === 0 ? 1 : 0;
   return {
     scenarioId: args.scenario.id,
+    objective: realScenarioObjective(args.scenario),
     player,
     turn: args.state.turn,
     phase: args.state.phase,
@@ -141,6 +143,13 @@ export function buildRealModelObservation(args: {
     })),
     recentEvents: args.recentEvents.slice(-12).map((event) => renderRecentEventForPlayer(event, player)),
   };
+}
+
+function realScenarioObjective(scenario: RealScenario): string {
+  if (scenario.family === "lethal") return "Win as player 0 as quickly as possible; prioritize battle damage when lethal or near-lethal is available.";
+  if (scenario.family === "interruption") return "Win as player 0 while navigating response windows and using available interruptions when they help.";
+  if (scenario.family === "resource") return "Win as player 0 while preserving enough board and cards to carry the line across multiple turns.";
+  return "Win as player 0 using only legal action IDs.";
 }
 
 export function renderRealObservationJson(observation: RealModelObservation): string {
