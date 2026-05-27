@@ -9,5 +9,5 @@
     { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [89631139, 46986414, 89631139, 49003308, 46986414, 89631139, 70781052, 49003308] },
     { "lp": 2800, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [49003308, 46986414, 70781052, 49003308, 46986414, 70781052, 49003308, 46986414] }
   ],
-  "scoring": { "primary": "lpDelta" }
+  "scoring": { "primary": "lpDelta", "lineQualityWeight": 0.4, "preferredActionTypes": ["normal_summon", "attack", "to_battle"], "preferHighestAttack": true }
 }

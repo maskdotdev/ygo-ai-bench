@@ -5,6 +5,8 @@ export interface RealLegalAction {
   id: string;
   type: string;
   label: string;
+  cardCode?: number;
+  attack?: number;
   response: unknown;
 }
 
@@ -22,6 +24,7 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
         id: nextActionId(actions.length),
         type: "normal_summon",
         label: `Normal Summon ${cardName(card.code, cardDb)}`,
+        ...cardActionFields(card.code, cardDb),
         response: { type: ocg.OcgResponseType.SELECT_IDLECMD, action: ocg.SelectIdleCMDAction.SELECT_SUMMON, index },
       });
     }
@@ -30,6 +33,7 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
         id: nextActionId(actions.length),
         type: "set_monster",
         label: `Set ${cardName(card.code, cardDb)}`,
+        ...cardActionFields(card.code, cardDb),
         response: { type: ocg.OcgResponseType.SELECT_IDLECMD, action: ocg.SelectIdleCMDAction.SELECT_MONSTER_SET, index },
       });
     }
@@ -38,6 +42,7 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
         id: nextActionId(actions.length),
         type: "activate_effect",
         label: `Activate ${cardName(card.code, cardDb)}`,
+        ...cardActionFields(card.code, cardDb),
         response: { type: ocg.OcgResponseType.SELECT_IDLECMD, action: ocg.SelectIdleCMDAction.SELECT_ACTIVATE, index },
       });
     }
@@ -65,6 +70,7 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
       id: nextActionId(index),
       type: "respond",
       label: `Chain ${cardName(card.code, cardDb)}`,
+      ...cardActionFields(card.code, cardDb),
       response: { type: ocg.OcgResponseType.SELECT_CHAIN, index },
     }));
     if (prompt.forced !== true) {
@@ -88,6 +94,7 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
         id: nextActionId(actions.length),
         type: "activate_effect",
         label: `Activate ${cardName(card.code, cardDb)}`,
+        ...cardActionFields(card.code, cardDb),
         response: { type: ocg.OcgResponseType.SELECT_BATTLECMD, action: ocg.SelectBattleCMDAction.SELECT_CHAIN, index },
       });
     }
@@ -96,6 +103,7 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
         id: nextActionId(actions.length),
         type: "attack",
         label: `Attack with ${cardName(card.code, cardDb)}`,
+        ...cardActionFields(card.code, cardDb),
         response: { type: ocg.OcgResponseType.SELECT_BATTLECMD, action: ocg.SelectBattleCMDAction.SELECT_BATTLE, index },
       });
     }
@@ -137,6 +145,7 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
       id: nextActionId(index),
       type: "select_card",
       label: `Select ${cardName(card.code, cardDb)}`,
+      ...cardActionFields(card.code, cardDb),
       response: { type: ocg.OcgResponseType.SELECT_CARD, indicies: [index] },
     }));
     if (canCancel) {
@@ -207,6 +216,15 @@ function nextActionId(index: number): string {
 
 function cardName(code: unknown, cardDb: CardDatabase): string {
   return typeof code === "number" ? (cardDb.names.get(code) ?? `#${code}`) : "unknown card";
+}
+
+function cardActionFields(code: unknown, cardDb: CardDatabase): { cardCode?: number; attack?: number } {
+  if (typeof code !== "number") return {};
+  const card = cardDb.cards.get(code);
+  return {
+    cardCode: code,
+    ...(card && card.attack >= 0 ? { attack: card.attack } : {}),
+  };
 }
 
 function arrayOfRecords(value: unknown): Array<Record<string, unknown>> {

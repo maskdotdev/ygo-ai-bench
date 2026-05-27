@@ -19,7 +19,5 @@
       "deck": [49003308, 89631139, 46986414, 70781052, 49003308, 89631139, 46986414, 70781052]
     }
   ],
-  "scoring": {
-    "primary": "lpDelta"
-  }
+  "scoring": { "primary": "lpDelta", "lineQualityWeight": 0.4, "preferredActionTypes": ["normal_summon", "attack", "to_battle"], "preferHighestAttack": true }
 }

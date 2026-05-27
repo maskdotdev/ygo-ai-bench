@@ -19,6 +19,9 @@ export interface RealScenario {
   players: [RealScenarioPlayer, RealScenarioPlayer];
   scoring?: {
     primary?: "win" | "lpDelta";
+    lineQualityWeight?: number;
+    preferredActionTypes?: string[];
+    preferHighestAttack?: boolean;
   };
 }
 
@@ -43,5 +46,12 @@ export function validateRealScenario(scenario: RealScenario, path = "real scenar
     if (player.deck.length < player.startingDrawCount) {
       throw new Error(`${path}: player ${index} deck is smaller than starting draw count`);
     }
+  }
+  const weight = scenario.scoring?.lineQualityWeight;
+  if (weight !== undefined && (typeof weight !== "number" || weight < 0 || weight > 1)) {
+    throw new Error(`${path}: scoring.lineQualityWeight must be between 0 and 1`);
+  }
+  if (scenario.scoring?.preferredActionTypes !== undefined && !Array.isArray(scenario.scoring.preferredActionTypes)) {
+    throw new Error(`${path}: scoring.preferredActionTypes must be an array`);
   }
 }

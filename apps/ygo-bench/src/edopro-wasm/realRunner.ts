@@ -60,6 +60,8 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   let winner: 0 | 1 | null = null;
   let frameId = 0;
   let latencyMs = 0;
+  let lineQuality = 0;
+  let lineQualityDecisions = 0;
 
   try {
     core.startDuel(handle);
@@ -115,6 +117,11 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
       invalidJson += chosen.invalidJson;
       illegalActions += chosen.illegalActions;
       decisionsTaken += 1;
+      const decisionLineQuality = scoreLineQuality(scenario, chosen.action, legalActions);
+      if (decisionLineQuality !== null) {
+        lineQuality += decisionLineQuality;
+        lineQualityDecisions += 1;
+      }
       transcript.push(`## Decision ${decisionsTaken}`, "", `Chosen: \`${chosen.action.id}\``, "", chosen.action.label, "", chosen.reason, "");
       await pushTrace({
         type: "decision",
@@ -125,6 +132,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
           reason: chosen.reason,
         },
         observation: chosen.observation,
+        lineQuality: decisionLineQuality,
         error: chosen.rawError,
         reducedState: structuredClone(reducedState),
       });
@@ -147,10 +155,18 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     invalidJson,
     repeatedActions: 0,
     finalLpDelta: reducedState.players[0].lp - reducedState.players[1].lp,
-    objectiveScore: scoreObjective(scenario, winner, reducedState.players[0].lp - reducedState.players[1].lp),
+    objectiveScore: scoreObjective(
+      scenario,
+      winner,
+      reducedState.players[0].lp - reducedState.players[1].lp,
+      lineQualityDecisions === 0 ? null : lineQuality / lineQualityDecisions,
+    ),
     latencyMs,
     tokenCount: null,
-    notes: errors,
+    notes: [
+      ...errors,
+      ...(lineQualityDecisions === 0 ? [] : [`lineQuality=${(lineQuality / lineQualityDecisions).toFixed(3)}`]),
+    ],
   };
   await writeFile(join(runDir, "final-score.json"), JSON.stringify(score, null, 2) + "\n");
   await writeFile(
@@ -262,9 +278,36 @@ export function jsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
-function scoreObjective(scenario: RealScenario, winner: 0 | 1 | null, lpDelta: number): number {
+function scoreObjective(scenario: RealScenario, winner: 0 | 1 | null, lpDelta: number, lineQuality: number | null): number {
+  const base = baseObjective(scenario, winner, lpDelta);
+  const weight = scenario.scoring?.lineQualityWeight ?? 0;
+  if (weight === 0 || lineQuality === null) return base;
+  return Math.max(0, Math.min(1, base * (1 - weight) + lineQuality * weight));
+}
+
+function baseObjective(scenario: RealScenario, winner: 0 | 1 | null, lpDelta: number): number {
   if (winner === 0) return 1;
   if (winner === 1) return 0;
   if (scenario.scoring?.primary === "lpDelta") return Math.max(0, Math.min(0.75, lpDelta / 8000));
   return 0;
+}
+
+function scoreLineQuality(scenario: RealScenario, action: { type: string; attack?: number }, legalActions: Array<{ type: string; attack?: number }>): number | null {
+  const scoring = scenario.scoring;
+  if (!scoring?.lineQualityWeight) return null;
+  let score = 0;
+  let components = 0;
+  if (scoring.preferredActionTypes?.length) {
+    components += 1;
+    score += scoring.preferredActionTypes.includes(action.type) ? 1 : 0;
+  }
+  if (scoring.preferHighestAttack) {
+    const attackActions = legalActions.filter((candidate) => typeof candidate.attack === "number");
+    if (attackActions.length > 0 && typeof action.attack === "number") {
+      const highest = Math.max(...attackActions.map((candidate) => candidate.attack ?? 0));
+      components += 1;
+      score += highest <= 0 ? 0 : action.attack / highest;
+    }
+  }
+  return components === 0 ? null : score / components;
 }

@@ -201,7 +201,7 @@ function readRealAgentList(args: string[], name: string, fallback: RealAgentId[]
 
 function readRealAgentValue(value: string): RealAgentId {
   if (value === "llm") return "openai";
-  if (value === "random" || value === "greedy" || value === "openai") return value;
+  if (value === "random" || value === "greedy" || value === "oracle" || value === "openai") return value;
   throw new Error(`Unsupported real agent: ${value}`);
 }
 

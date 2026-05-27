@@ -30,6 +30,7 @@ export interface RealModelObservation {
     id: string;
     type: string;
     label: string;
+    attack?: number;
   }>;
   recentEvents: string[];
 }
@@ -124,6 +125,7 @@ export function buildRealModelObservation(args: {
       id: action.id,
       type: action.type,
       label: action.label,
+      ...(typeof action.attack === "number" ? { attack: action.attack } : {}),
     })),
     recentEvents: args.recentEvents.slice(-12).map((event) => event.text),
   };

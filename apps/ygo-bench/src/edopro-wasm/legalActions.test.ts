@@ -63,6 +63,8 @@ describe("buildRealLegalActions", () => {
         id: "a_001",
         type: "attack",
         label: "Attack with Gagagigo",
+        cardCode: 49003308,
+        attack: 1850,
         response: { type: 0, action: 1, index: 0 },
       },
       {
@@ -99,6 +101,8 @@ describe("buildRealLegalActions", () => {
         id: "a_001",
         type: "select_card",
         label: "Select Gagagigo",
+        cardCode: 49003308,
+        attack: 1850,
         response: { type: 5, indicies: [0] },
       },
       {
@@ -169,7 +173,25 @@ describe("buildRealLegalActions", () => {
 });
 
 const testCards: CardDatabase = {
-  cards: new Map(),
+  cards: new Map([
+    [
+      49003308,
+      {
+        code: 49003308,
+        alias: 0,
+        setcodes: [],
+        type: 17,
+        level: 4,
+        attribute: 4,
+        race: 8192n,
+        attack: 1850,
+        defense: 1000,
+        lscale: 0,
+        rscale: 0,
+        link_marker: 0,
+      },
+    ],
+  ]),
   names: new Map([[49003308, "Gagagigo"]]),
 };
 
