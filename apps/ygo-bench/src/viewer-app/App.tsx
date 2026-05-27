@@ -23,6 +23,7 @@ export function App() {
   const [transcript, setTranscript] = useState("");
   const [summary, setSummary] = useState<SuiteSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [liveStatus, setLiveStatus] = useState("offline");
 
   useEffect(() => {
     Promise.all([listRuns(), listSummaries()])
@@ -37,13 +38,35 @@ export function App() {
 
   useEffect(() => {
     if (!selectedRunId) return;
+    let cancelled = false;
+    const seen = new Set<string>();
     Promise.all([getRun(selectedRunId), getRunTrace(selectedRunId), getRunTranscript(selectedRunId)])
       .then(([details, nextTrace, nextTranscript]) => {
+        if (cancelled) return;
         setRunDetails(details);
+        for (const frame of nextTrace) seen.add(JSON.stringify(frame));
         setTrace(nextTrace);
         setTranscript(nextTranscript);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const socket = new WebSocket(`${protocol}//${window.location.host}/api/runs/${encodeURIComponent(selectedRunId)}/live`);
+    setLiveStatus("connecting");
+    socket.addEventListener("open", () => setLiveStatus("live"));
+    socket.addEventListener("close", () => setLiveStatus("offline"));
+    socket.addEventListener("error", () => setLiveStatus("offline"));
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(event.data) as { type?: string; payload?: TraceFrame };
+      if (message.type !== "trace" || !message.payload) return;
+      const key = JSON.stringify(message.payload);
+      if (seen.has(key)) return;
+      seen.add(key);
+      setTrace((current) => [...current, message.payload as TraceFrame]);
+    });
+    return () => {
+      cancelled = true;
+      socket.close();
+    };
   }, [selectedRunId]);
 
   useEffect(() => {
@@ -61,6 +84,7 @@ export function App() {
       selectedSummaryId={selectedSummaryId}
       onSelectSummary={setSelectedSummaryId}
       selectedRun={selectedRun}
+      liveStatus={liveStatus}
       error={error}
     >
       <aside className="left-rail">

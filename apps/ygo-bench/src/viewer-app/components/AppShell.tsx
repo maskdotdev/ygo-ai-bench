@@ -6,6 +6,7 @@ export function AppShell(props: {
   summaryIds: string[];
   selectedSummaryId: string | null;
   selectedRun: RunIndexItem | null;
+  liveStatus: string;
   error: string | null;
   onSelectSummary: (id: string) => void;
 }) {
@@ -30,6 +31,7 @@ export function AppShell(props: {
           <Metric label="Run" value={props.selectedRun?.scenarioId ?? "none"} />
           <Metric label="Agent" value={props.selectedRun?.agentId ?? "-"} />
           <Metric label="Score" value={props.selectedRun ? props.selectedRun.score.toFixed(2) : "-"} />
+          <Metric label="Trace" value={props.liveStatus} />
         </div>
       </header>
       {props.error ? <div className="error-banner">{props.error}</div> : null}
