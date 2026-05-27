@@ -26,6 +26,7 @@ export function scoreRun(args: {
     decisionsTaken: args.decisionsTaken,
     illegalActions: args.illegalActions,
     invalidJson: args.invalidJson,
+    modelErrors: 0,
     repeatedActions: args.repeatedActions,
     finalLpDelta,
     objectiveScore,

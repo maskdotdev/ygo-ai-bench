@@ -57,6 +57,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   let decisionsTaken = 0;
   let invalidJson = 0;
   let illegalActions = 0;
+  let modelErrors = 0;
   let winner: 0 | 1 | null = null;
   let frameId = 0;
   let latencyMs = 0;
@@ -118,6 +119,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
       latencyMs += Date.now() - decisionStartedAt;
       invalidJson += chosen.invalidJson;
       illegalActions += chosen.illegalActions;
+      modelErrors += chosen.modelErrors;
       if (chosen.tokenCount !== null) {
         tokenCount += chosen.tokenCount;
         tokenCountSeen = true;
@@ -160,6 +162,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     decisionsTaken,
     illegalActions,
     invalidJson,
+    modelErrors,
     repeatedActions: 0,
     finalLpDelta: reducedState.players[0].lp - reducedState.players[1].lp,
     objectiveScore: scoreObjective(
@@ -172,6 +175,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     tokenCount: tokenCountSeen ? tokenCount : null,
     notes: [
       ...errors,
+      ...(modelErrors === 0 ? [] : [`modelErrors=${modelErrors}`]),
       ...(lineQualityDecisions === 0 ? [] : [`lineQuality=${(lineQuality / lineQualityDecisions).toFixed(3)}`]),
     ],
   };

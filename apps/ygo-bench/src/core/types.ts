@@ -160,6 +160,7 @@ export interface ScenarioScore {
   decisionsTaken: number;
   illegalActions: number;
   invalidJson: number;
+  modelErrors: number;
   repeatedActions: number;
   finalLpDelta: number;
   objectiveScore: number;

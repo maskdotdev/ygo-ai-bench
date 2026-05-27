@@ -28,6 +28,7 @@ describe("evalSuite", () => {
           averageDecisions: 2,
           illegalActionRate: 0,
           invalidJsonRate: 0,
+          modelErrorRate: 0,
           repeatedActionRate: 0,
           averageLatencyMs: 0,
           averageTokenCount: null,

@@ -33,6 +33,7 @@ export interface RealEvalSummary {
     weightedObjectiveScore: number;
     averageDecisions: number;
     averageLpDelta: number;
+    modelErrorRate: number;
     averageLatencyMs: number;
     averageTokenCount: number | null;
   }>;
@@ -91,6 +92,7 @@ function aggregateScores(scores: ScenarioScore[]): RealEvalSummary["aggregate"] 
       weightedObjectiveScore: weightedObjectiveScore(agentScores),
       averageDecisions: average(agentScores.map((score) => score.decisionsTaken)),
       averageLpDelta: average(agentScores.map((score) => score.finalLpDelta)),
+      modelErrorRate: average(agentScores.map((score) => score.modelErrors)),
       averageLatencyMs: average(agentScores.map((score) => score.latencyMs)),
       averageTokenCount: averageNullable(agentScores.map((score) => score.tokenCount)),
     };
@@ -118,6 +120,7 @@ function renderCsv(summary: RealEvalSummary): string {
       "decisionsTaken",
       "illegalActions",
       "invalidJson",
+      "modelErrors",
       "finalLpDelta",
       "latencyMs",
       "tokenCount",
@@ -132,6 +135,7 @@ function renderCsv(summary: RealEvalSummary): string {
       String(record.score.decisionsTaken),
       String(record.score.illegalActions),
       String(record.score.invalidJson),
+      String(record.score.modelErrors),
       String(record.score.finalLpDelta),
       String(record.score.latencyMs),
       record.score.tokenCount === null ? "" : String(record.score.tokenCount),
@@ -168,7 +172,7 @@ function renderHtmlReport(summary: RealEvalSummary): string {
     <section>
       <h2>Aggregate</h2>
       <table>
-        <thead><tr><th>Agent</th><th>Runs</th><th>Win Rate</th><th>Avg Score</th><th>Weighted Score</th><th>Avg Decisions</th><th>Avg LP Delta</th><th>Avg Latency</th><th>Avg Tokens</th></tr></thead>
+        <thead><tr><th>Agent</th><th>Runs</th><th>Win Rate</th><th>Avg Score</th><th>Weighted Score</th><th>Avg Decisions</th><th>Avg LP Delta</th><th>Model Errors</th><th>Avg Latency</th><th>Avg Tokens</th></tr></thead>
         <tbody>${summary.aggregate.map(renderAggregateRow).join("")}</tbody>
       </table>
     </section>
@@ -185,7 +189,7 @@ function renderHtmlReport(summary: RealEvalSummary): string {
 }
 
 function renderAggregateRow(row: RealEvalSummary["aggregate"][number]): string {
-  return `<tr><td>${escapeHtml(row.agentId)}</td><td>${row.runs}</td><td>${row.winRate.toFixed(2)}</td><td>${row.averageScore.toFixed(2)}</td><td>${row.weightedObjectiveScore.toFixed(2)}</td><td>${row.averageDecisions.toFixed(1)}</td><td>${row.averageLpDelta.toFixed(0)}</td><td>${row.averageLatencyMs.toFixed(0)} ms</td><td>${row.averageTokenCount === null ? "" : row.averageTokenCount.toFixed(0)}</td></tr>`;
+  return `<tr><td>${escapeHtml(row.agentId)}</td><td>${row.runs}</td><td>${row.winRate.toFixed(2)}</td><td>${row.averageScore.toFixed(2)}</td><td>${row.weightedObjectiveScore.toFixed(2)}</td><td>${row.averageDecisions.toFixed(1)}</td><td>${row.averageLpDelta.toFixed(0)}</td><td>${row.modelErrorRate.toFixed(2)}</td><td>${row.averageLatencyMs.toFixed(0)} ms</td><td>${row.averageTokenCount === null ? "" : row.averageTokenCount.toFixed(0)}</td></tr>`;
 }
 
 function renderRunRow(record: RealEvalSummary["records"][number]): string {
