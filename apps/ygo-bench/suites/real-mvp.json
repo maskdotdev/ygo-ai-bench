@@ -1,6 +1,9 @@
 {
   "id": "real-mvp",
   "scenarios": [
-    "scenarios/real/smoke-duel.json"
+    "scenarios/real/smoke-duel.json",
+    "scenarios/real/low-lp-race.json",
+    "scenarios/real/big-monster-race.json",
+    "scenarios/real/symmetric-race-alt-seed.json"
   ]
 }

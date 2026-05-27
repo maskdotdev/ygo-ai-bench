@@ -1,0 +1,25 @@
+{
+  "id": "real-low-lp-race",
+  "name": "Real engine low-LP normal monster race",
+  "family": "lethal",
+  "version": "1.0.0",
+  "seed": [2, 3, 5, 7],
+  "maxDecisions": 16,
+  "players": [
+    {
+      "lp": 8000,
+      "startingDrawCount": 5,
+      "drawCountPerTurn": 1,
+      "deck": [89631139, 89631139, 46986414, 49003308, 70781052, 89631139, 46986414, 49003308]
+    },
+    {
+      "lp": 2500,
+      "startingDrawCount": 5,
+      "drawCountPerTurn": 1,
+      "deck": [49003308, 70781052, 46986414, 49003308, 70781052, 46986414, 49003308, 70781052]
+    }
+  ],
+  "scoring": {
+    "primary": "lpDelta"
+  }
+}

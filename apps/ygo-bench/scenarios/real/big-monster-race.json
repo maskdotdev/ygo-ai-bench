@@ -1,0 +1,25 @@
+{
+  "id": "real-big-monster-race",
+  "name": "Real engine big monster pressure race",
+  "family": "resource",
+  "version": "1.0.0",
+  "seed": [11, 13, 17, 19],
+  "maxDecisions": 18,
+  "players": [
+    {
+      "lp": 8000,
+      "startingDrawCount": 5,
+      "drawCountPerTurn": 1,
+      "deck": [89631139, 89631139, 89631139, 46986414, 49003308, 70781052, 46986414, 49003308]
+    },
+    {
+      "lp": 8000,
+      "startingDrawCount": 5,
+      "drawCountPerTurn": 1,
+      "deck": [46986414, 49003308, 70781052, 46986414, 49003308, 70781052, 46986414, 49003308]
+    }
+  ],
+  "scoring": {
+    "primary": "lpDelta"
+  }
+}
