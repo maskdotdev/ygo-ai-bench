@@ -13,6 +13,7 @@
   },
   "scripts": {
     "test": "vitest run --reporter=dot --pool=forks --shard=1/16 && vitest run --reporter=dot --pool=forks --shard=2/16 && vitest run --reporter=dot --pool=forks --shard=3/16 && vitest run --reporter=dot --pool=forks --shard=4/16 && vitest run --reporter=dot --pool=forks --shard=5/16 && vitest run --reporter=dot --pool=forks --shard=6/16 && vitest run --reporter=dot --pool=forks --shard=7/16 && vitest run --reporter=dot --pool=forks --shard=8/16 && vitest run --reporter=dot --pool=forks --shard=9/16 && vitest run --reporter=dot --pool=forks --shard=10/16 && vitest run --reporter=dot --pool=forks --shard=11/16 && vitest run --reporter=dot --pool=forks --shard=12/16 && vitest run --reporter=dot --pool=forks --shard=13/16 && vitest run --reporter=dot --pool=forks --shard=14/16 && vitest run --reporter=dot --pool=forks --shard=15/16 && vitest run --reporter=dot --pool=forks --shard=16/16",
+    "bench": "pnpm --filter @ygo-bench/app bench",
     "typecheck": "tsc --noEmit",
     "build": "vite build && vite build --config vite.bridge.config.ts && vite build --config vite.pvp-bridge.config.ts",
     "check:loc": "node tools/check-file-loc.mjs --baseline tools/file-loc-baseline.json",
