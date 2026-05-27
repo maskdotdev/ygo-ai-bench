@@ -155,6 +155,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         cardDataPath: options.cardDataPath,
         scriptRoot: options.scriptRoot,
         scenarioId: score.scenarioId,
+        scenarioPath: options.scenarioPath ?? "scenarios/real/smoke-duel.json",
         agentId: options.agentId,
         maxDecisions,
       }),

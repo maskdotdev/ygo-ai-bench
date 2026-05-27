@@ -15,9 +15,14 @@ export interface RealRunMetadata {
     cardScriptsPath: string;
     cardScriptsCommit: string | null;
     babelCdbCommit: string | null;
+    lfListsPath: string;
+    lfListsCommit: string | null;
+    banlistHash: string | null;
   };
   run: {
     scenarioId: string;
+    scenarioPath: string | null;
+    scenarioHash: string | null;
     agentId: string;
     maxDecisions: number;
     createdAt: string;
@@ -29,6 +34,7 @@ export async function buildRealRunMetadata(args: {
   cardDataPath: string;
   scriptRoot: string;
   scenarioId: string;
+  scenarioPath?: string;
   agentId: string;
   maxDecisions: number;
 }): Promise<RealRunMetadata> {
@@ -37,6 +43,8 @@ export async function buildRealRunMetadata(args: {
   ) as { version?: string };
   const cardDataPath = resolve(args.cardDataPath);
   const scriptRoot = resolve(args.scriptRoot);
+  const lfListsPath = resolve("../../.upstream/ignis/lflists");
+  const scenarioPath = args.scenarioPath ? resolve(args.scenarioPath) : null;
 
   return {
     engine: {
@@ -50,9 +58,14 @@ export async function buildRealRunMetadata(args: {
       cardScriptsPath: scriptRoot,
       cardScriptsCommit: gitCommit(scriptRoot),
       babelCdbCommit: gitCommit(resolve("../../.upstream/ignis/babelcdb")),
+      lfListsPath,
+      lfListsCommit: gitCommit(lfListsPath),
+      banlistHash: await optionalSha256File(resolve("data/banlists/custom-mvp.lflist.conf")),
     },
     run: {
       scenarioId: args.scenarioId,
+      scenarioPath,
+      scenarioHash: scenarioPath ? await optionalSha256File(scenarioPath) : null,
       agentId: args.agentId,
       maxDecisions: args.maxDecisions,
       createdAt: new Date().toISOString(),
@@ -62,6 +75,14 @@ export async function buildRealRunMetadata(args: {
 
 async function sha256File(path: string): Promise<string> {
   return createHash("sha256").update(await readFile(path)).digest("hex");
+}
+
+async function optionalSha256File(path: string): Promise<string | null> {
+  try {
+    return await sha256File(path);
+  } catch {
+    return null;
+  }
 }
 
 function gitCommit(path: string): string | null {
