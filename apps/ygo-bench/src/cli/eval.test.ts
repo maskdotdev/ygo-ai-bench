@@ -1,6 +1,6 @@
 import { mkdir, mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { evalSuite } from "./eval.js";
 
@@ -10,7 +10,7 @@ describe("evalSuite", () => {
     const temp = await mkdtemp(join(tmpdir(), "ygo-bench-eval-"));
     await mkdir(join(temp, "benchmark-runs"));
     try {
-      process.chdir(join(cwd, "apps/ygo-bench"));
+      process.chdir(appCwd(cwd));
       const scores = await evalSuite("suites/mock-mvp.json", ["oracle"], true);
       expect(scores.length).toBeGreaterThanOrEqual(7);
 
@@ -41,3 +41,7 @@ describe("evalSuite", () => {
     }
   });
 });
+
+function appCwd(cwd: string): string {
+  return basename(cwd) === "ygo-bench" ? cwd : join(cwd, "apps/ygo-bench");
+}

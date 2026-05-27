@@ -1,6 +1,6 @@
 import { mkdtemp, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { runScenario } from "./run.js";
 import { traceHash } from "../core/trace.js";
@@ -11,7 +11,7 @@ describe("runScenario", () => {
     const cwd = process.cwd();
     const temp = await mkdtemp(join(tmpdir(), "ygo-bench-run-"));
     try {
-      process.chdir(join(cwd, "apps/ygo-bench"));
+      process.chdir(appCwd(cwd));
       const first = await runScenario({ scenarioPath: "scenarios/lethal/lethal-001.json", agentId: "oracle", viewer: false });
       const second = await runScenario({ scenarioPath: "scenarios/lethal/lethal-001.json", agentId: "oracle", viewer: false });
       expect(traceHash(await readTrace(first.runDir))).toBe(traceHash(await readTrace(second.runDir)));
@@ -23,7 +23,7 @@ describe("runScenario", () => {
   it("falls back to a legal action and counts invalid agent output", async () => {
     const cwd = process.cwd();
     try {
-      process.chdir(join(cwd, "apps/ygo-bench"));
+      process.chdir(appCwd(cwd));
       const result = await runScenario({
         scenarioPath: "scenarios/lethal/lethal-001.json",
         agentId: "broken",
@@ -59,4 +59,8 @@ async function readTrace(runDir: string) {
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line));
+}
+
+function appCwd(cwd: string): string {
+  return basename(cwd) === "ygo-bench" ? cwd : join(cwd, "apps/ygo-bench");
 }
