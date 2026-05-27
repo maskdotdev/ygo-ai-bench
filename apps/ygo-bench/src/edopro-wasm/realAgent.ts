@@ -4,7 +4,7 @@ import type { RealNormalizedEvent, RealReducedState } from "./normalizedEvents.j
 import type { OcgMessage, OcgRuntime } from "./ocgTypes.js";
 import type { RealScenario } from "./realScenario.js";
 
-export type RealAgentId = "random" | "greedy" | "openai";
+export type RealAgentId = "random" | "greedy" | "oracle" | "openai";
 
 export interface RealAgentChoice {
   action: RealLegalAction;
@@ -59,9 +59,9 @@ export async function chooseRealAgentAction(args: {
     const action = args.legalActions[Math.floor(Math.random() * args.legalActions.length)] ?? args.legalActions[0]!;
     return { action, reason: `random selected ${action.label}`, invalidJson: 0, illegalActions: 0, observation };
   }
-  if (args.agentId === "greedy") {
+  if (args.agentId === "greedy" || args.agentId === "oracle") {
     const action = chooseGreedyAction(args.legalActions);
-    return { action, reason: `greedy selected ${action.label}`, invalidJson: 0, illegalActions: 0, observation };
+    return { action, reason: `${args.agentId} selected ${action.label}`, invalidJson: 0, illegalActions: 0, observation };
   }
 
   const apiKey = process.env.OPENAI_API_KEY;

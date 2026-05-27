@@ -11,7 +11,7 @@ export async function validateRealSuite(args: {
 
   for (const scenarioPath of suite.scenarios) {
     const result = await runRealDuel({
-      agentId: "greedy",
+      agentId: "oracle",
       cardDataPath: args.cardDataPath,
       scriptRoot: args.scriptRoot,
       maxDecisions: 4,

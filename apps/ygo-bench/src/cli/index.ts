@@ -189,7 +189,7 @@ function readFlag(args: string[], name: string): string | undefined {
 function readRealAgentFlag(args: string[], name: string, fallback: RealAgentId): RealAgentId {
   const value = readFlag(args, name);
   if (!value) return fallback;
-  if (value === "random" || value === "greedy" || value === "openai") return value;
+  if (value === "random" || value === "greedy" || value === "oracle" || value === "openai") return value;
   throw new Error(`Unsupported real agent: ${value}`);
 }
 
