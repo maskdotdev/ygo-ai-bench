@@ -106,7 +106,7 @@ export async function writeRealViewerHtml(path: string, trace: unknown[], state:
       document.getElementById("board").innerHTML = state.players.map(renderPlayer).join("");
       document.getElementById("prompt").textContent = line.observation ? line.observation.prompt.type + " for player " + line.observation.player : line.text || "No prompt at this frame.";
       document.getElementById("actions").innerHTML = renderActions(line);
-      document.getElementById("chosen").textContent = line.chosen ? line.chosen.actionId + ": " + line.chosen.reason : "No model decision at this frame.";
+      document.getElementById("chosen").innerHTML = line.chosen ? renderChosen(line) : "No model decision at this frame.";
       document.getElementById("observation").textContent = line.observation ? JSON.stringify(line.observation, null, 2) : "";
       renderTimeline();
     }
@@ -132,6 +132,16 @@ export async function writeRealViewerHtml(path: string, trace: unknown[], state:
         const className = line.chosen && line.chosen.actionId === action.id ? "action chosen" : "action";
         return '<div class="' + className + '">' + escapeHtml(action.id + " - " + action.label) + '</div>';
       }).join("");
+    }
+
+    function renderChosen(line) {
+      const details = [
+        line.chosen.actionId + ": " + line.chosen.reason,
+        line.chosen.tokenCount == null ? "" : "Tokens: " + line.chosen.tokenCount,
+        line.error ? "Error: " + line.error : "",
+        line.lineQuality == null ? "" : "Line quality: " + Number(line.lineQuality).toFixed(2)
+      ].filter(Boolean);
+      return details.map((detail) => '<div>' + escapeHtml(detail) + '</div>').join("");
     }
 
     function renderTimeline() {

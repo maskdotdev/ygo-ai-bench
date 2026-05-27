@@ -234,7 +234,7 @@ export function renderLiveViewerHtml(): string {
       if (lastDecision) {
         const obs = lastDecision.observation || {};
         promptBox.textContent = obs.prompt ? obs.prompt.type + " for player " + obs.player : "Decision frame";
-        actionsBox.innerHTML = (lastDecision.legalActions || []).map((action) => '<div class="action ' + (lastDecision.chosen && lastDecision.chosen.actionId === action.id ? "chosen" : "") + '">' + escapeHtml(action.id + " - " + action.label) + '</div>').join("");
+        actionsBox.innerHTML = renderDecisionDetails(lastDecision) + (lastDecision.legalActions || []).map((action) => '<div class="action ' + (lastDecision.chosen && lastDecision.chosen.actionId === action.id ? "chosen" : "") + '">' + escapeHtml(action.id + " - " + action.label) + '</div>').join("");
         observationBox.textContent = JSON.stringify(obs, null, 2);
       }
       timeline.innerHTML = visible.map((frame) => {
@@ -249,6 +249,17 @@ export function renderLiveViewerHtml(): string {
     function renderZone(label, cards) {
       const body = cards && cards.length ? cards.map((card) => '<div class="card">' + escapeHtml(card.name || String(card.code || "card")) + '</div>').join("") : '<div class="empty">Empty</div>';
       return '<div class="zone"><h3>' + escapeHtml(label) + '</h3>' + body + '</div>';
+    }
+    function renderDecisionDetails(frame) {
+      const chosen = frame.chosen || {};
+      const details = [
+        chosen.actionId ? "Chosen: " + chosen.actionId : "",
+        chosen.reason ? "Reason: " + chosen.reason : "",
+        chosen.tokenCount == null ? "" : "Tokens: " + chosen.tokenCount,
+        frame.error ? "Error: " + frame.error : "",
+        frame.lineQuality == null ? "" : "Line quality: " + Number(frame.lineQuality).toFixed(2)
+      ].filter(Boolean);
+      return details.length ? '<div class="action chosen">' + details.map(escapeHtml).join("<br>") + '</div>' : "";
     }
     function escapeHtml(value) {
       return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
