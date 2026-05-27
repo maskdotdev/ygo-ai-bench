@@ -4,6 +4,7 @@ import { evalSuite } from "./eval.js";
 import { runScenario } from "./run.js";
 import { validateSuite } from "./validate.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
+import { evalRealSuite } from "../edopro-wasm/realEval.js";
 import { runRealDuel } from "../edopro-wasm/realRunner.js";
 
 async function main(argv: string[]): Promise<void> {
@@ -43,6 +44,23 @@ async function main(argv: string[]): Promise<void> {
       viewer: rest.includes("--viewer"),
     });
     printRunResult(result);
+    return;
+  }
+  if (command === "real-eval") {
+    const summary = await evalRealSuite({
+      agentIds: ((readFlag(rest, "--agents") ?? "random,greedy").split(",").filter(Boolean) as Array<"random" | "greedy">),
+      runsPerAgent: Number(readFlag(rest, "--runs") ?? 1),
+      cardDataPath: "../../public/card-data/cdb-rows.json",
+      scriptRoot: "../../.upstream/ignis/script",
+      maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 20),
+      viewer: rest.includes("--viewer"),
+    });
+    for (const row of summary.aggregate) {
+      console.log(
+        `${row.agentId}: runs=${row.runs} winRate=${row.winRate.toFixed(2)} avgScore=${row.averageScore.toFixed(2)} avgDecisions=${row.averageDecisions.toFixed(1)} avgLpDelta=${row.averageLpDelta.toFixed(0)}`,
+      );
+    }
+    console.log("Summary: benchmark-runs/real-mvp-summary.json");
     return;
   }
   if (command === "run") {
@@ -102,6 +120,7 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench smoke
   pnpm --filter @ygo-bench/app bench real-smoke
   pnpm --filter @ygo-bench/app bench real-run --agent greedy --viewer
+  pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy --runs 1 --viewer
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer
   pnpm --filter @ygo-bench/app bench validate suites/mvp.json

@@ -11,6 +11,7 @@ pnpm --filter @ygo-bench/app build
 pnpm --filter @ygo-bench/app bench smoke
 pnpm --filter @ygo-bench/app bench real-smoke
 pnpm --filter @ygo-bench/app bench real-run --agent greedy --viewer
+pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy --runs 1 --viewer
 pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
 pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer
 pnpm --filter @ygo-bench/app bench validate suites/mvp.json
