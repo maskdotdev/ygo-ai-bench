@@ -14,12 +14,15 @@ export async function validateRealSuite(args: {
       agentId: "oracle",
       cardDataPath: args.cardDataPath,
       scriptRoot: args.scriptRoot,
-      maxDecisions: 4,
+      maxDecisions: 80,
       viewer: false,
       scenarioPath,
     });
     if (result.score.decisionsTaken === 0) {
       failures.push(`${result.score.scenarioId}: real engine did not reach a decision prompt`);
+    }
+    if (!result.score.won) {
+      failures.push(`${result.score.scenarioId}: oracle did not win within validation cap`);
     }
     if (result.score.illegalActions > 0) {
       failures.push(`${result.score.scenarioId}: illegal action count was non-zero`);

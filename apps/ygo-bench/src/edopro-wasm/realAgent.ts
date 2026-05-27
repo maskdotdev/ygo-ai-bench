@@ -58,6 +58,10 @@ export async function chooseRealAgentAction(args: {
   model?: string;
 }): Promise<RealAgentChoice> {
   const observation = buildRealModelObservation(args);
+  if (observation.player === 1) {
+    const action = chooseScriptedOpponentAction(args.legalActions);
+    return { action, reason: `scripted opponent selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
+  }
   if (args.agentId === "random") {
     const action = args.legalActions[Math.floor(Math.random() * args.legalActions.length)] ?? args.legalActions[0]!;
     return { action, reason: `random selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
@@ -191,9 +195,30 @@ function chooseOracleAction(args: {
   return chooseGreedyAction(actions);
 }
 
+function chooseScriptedOpponentAction(actions: RealLegalAction[]): RealLegalAction {
+  const forcedFollowUp = actions.find((action) =>
+    ["select_place", "select_card", "select_position", "select_option", "yes"].includes(action.type),
+  );
+  if (forcedFollowUp) return forcedFollowUp;
+
+  return (
+    actions.find((action) => action.type === "decline_chain") ??
+    actions.find((action) => action.type === "end_phase") ??
+    actions.find((action) => action.type === "to_main2") ??
+    actions.find((action) => action.type === "to_battle") ??
+    lowestAttackAction(actions.filter((action) => action.type === "normal_summon")) ??
+    actions[0]!
+  );
+}
+
 function highestAttackAction(actions: RealLegalAction[]): RealLegalAction | undefined {
   if (actions.length === 0) return undefined;
   return actions.reduce((best, action) => ((action.attack ?? -1) > (best.attack ?? -1) ? action : best), actions[0]!);
+}
+
+function lowestAttackAction(actions: RealLegalAction[]): RealLegalAction | undefined {
+  if (actions.length === 0) return undefined;
+  return actions.reduce((best, action) => ((action.attack ?? Number.POSITIVE_INFINITY) < (best.attack ?? Number.POSITIVE_INFINITY) ? action : best), actions[0]!);
 }
 
 function playerObservation(state: RealReducedState, player: 0 | 1, isSelf: boolean): RealPlayerObservation {

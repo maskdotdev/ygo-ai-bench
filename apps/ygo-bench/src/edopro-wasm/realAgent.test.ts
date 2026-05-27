@@ -234,6 +234,39 @@ describe("chooseRealAgentAction", () => {
 
     expect(choice.action.id).toBe("a_002");
   });
+
+  it("uses a scripted opponent policy for player 1 prompts", async () => {
+    const state = initialRealReducedState();
+    state.turn = 2;
+    state.phase = "MAIN1";
+
+    const choice = await chooseRealAgentAction({
+      agentId: "openai",
+      scenario: scenario(),
+      state,
+      prompt: { type: 0, player: 1 },
+      promptTypeName: "SELECT_IDLECMD",
+      recentEvents: [],
+      legalActions: [
+        {
+          id: "a_001",
+          type: "normal_summon",
+          label: "Normal Summon Gagagigo",
+          attack: 1850,
+          response: {},
+        },
+        {
+          id: "a_002",
+          type: "end_phase",
+          label: "End Phase",
+          response: {},
+        },
+      ],
+    });
+
+    expect(choice.action.id).toBe("a_002");
+    expect(choice.reason).toContain("scripted opponent");
+  });
 });
 
 function scenario(): RealScenario {
