@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import type { ScenarioScore } from "../core/types.js";
 import { loadBrowserCardDatabase } from "./cardDb.js";
@@ -38,7 +38,15 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   const handle = createScenarioDuel(core, ocg, scenario, cardDb, options.scriptRoot, errors);
   const maxDecisions = options.maxDecisions || scenario.maxDecisions;
   const runDir = resolve("benchmark-runs", `real-run-${new Date().toISOString().replaceAll(":", "-")}-${scenario.id}-${options.agentId}`);
+  const tracePath = join(runDir, "trace.jsonl");
+  await mkdir(runDir, { recursive: true });
+  await writeFile(tracePath, "");
   const trace: unknown[] = [];
+  const pushTrace = async (...lines: unknown[]) => {
+    if (lines.length === 0) return;
+    trace.push(...lines);
+    await appendFile(tracePath, lines.map((line) => JSON.stringify(line, jsonReplacer)).join("\n") + "\n");
+  };
   const transcript: string[] = [`# ${scenario.name}`, ""];
   const reducedState = initialRealReducedState();
   reducedState.players[0].lp = scenario.players[0].lp;
@@ -56,7 +64,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     for (let frame = 0; frame < 1000; frame += 1) {
       const status = core.duelProcess(handle);
       const messages = core.duelGetMessage(handle);
-      trace.push(
+      await pushTrace(
         ...messages.map((message) => ({
           type: "engine",
           message,
@@ -73,7 +81,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
           return frameId;
         },
       });
-      trace.push(...events);
+      await pushTrace(...events);
 
       const win = messages.find((message) => message.type === ocg.OcgMessageType.WIN);
       if (win?.player === 0 || win?.player === 1) winner = win.player;
@@ -86,7 +94,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
       const prompt = [...messages].reverse().find((message) => isPromptMessage(message.type, ocg));
       const legalActions = buildRealLegalActions(prompt, ocg, cardDb);
       if (legalActions.length === 0) {
-        trace.push({ type: "error", message: "Core requested a response, but no MVP legal action builder matched the prompt." });
+        await pushTrace({ type: "error", message: "Core requested a response, but no MVP legal action builder matched the prompt." });
         break;
       }
 
@@ -103,7 +111,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
       illegalActions += chosen.illegalActions;
       decisionsTaken += 1;
       transcript.push(`## Decision ${decisionsTaken}`, "", `Chosen: \`${chosen.action.id}\``, "", chosen.action.label, "", chosen.reason, "");
-      trace.push({
+      await pushTrace({
         type: "decision",
         player: typeof prompt?.player === "number" ? prompt.player : 0,
         legalActions: legalActions.map(({ response: _response, ...action }) => action),
@@ -123,7 +131,6 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     core.destroyDuel(handle);
   }
 
-  await mkdir(runDir, { recursive: true });
   const score: ScenarioScore = {
     scenarioId: scenario.id,
     agentId: options.agentId,
@@ -137,7 +144,6 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     objectiveScore: scoreObjective(scenario, winner, reducedState.players[0].lp - reducedState.players[1].lp),
     notes: errors,
   };
-  await writeFile(join(runDir, "trace.jsonl"), trace.map((line) => JSON.stringify(line, jsonReplacer)).join("\n") + "\n");
   await writeFile(join(runDir, "final-score.json"), JSON.stringify(score, null, 2) + "\n");
   await writeFile(
     join(runDir, "metadata.json"),
