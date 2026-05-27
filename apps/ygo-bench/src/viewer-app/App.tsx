@@ -10,6 +10,7 @@ import type { RunDetails, RunIndexItem, SuiteSummary, TraceFrame } from "./types
 declare global {
   interface Window {
     __YGO_BENCH_OPEN_RUN__?: string;
+    __YGO_BENCH_OPEN_SUMMARY__?: string;
   }
 }
 
@@ -31,7 +32,7 @@ export function App() {
         setRuns(runItems);
         setSummaryIds(summaries);
         setSelectedRunId((current) => current ?? window.__YGO_BENCH_OPEN_RUN__ ?? runItems[0]?.id ?? null);
-        setSelectedSummaryId((current) => current ?? summaries[0] ?? null);
+        setSelectedSummaryId((current) => current ?? window.__YGO_BENCH_OPEN_SUMMARY__ ?? summaries[0] ?? null);
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : String(err)));
   }, []);

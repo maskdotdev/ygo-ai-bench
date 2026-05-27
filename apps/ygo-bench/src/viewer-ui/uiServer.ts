@@ -15,7 +15,7 @@ export interface BenchUiServer {
   close(): Promise<void>;
 }
 
-export async function startBenchUiServer(options: { port?: number; host?: string; root?: string; staticDir?: string; openRunId?: string }): Promise<BenchUiServer> {
+export async function startBenchUiServer(options: { port?: number; host?: string; root?: string; staticDir?: string; openRunId?: string; openSummaryId?: string }): Promise<BenchUiServer> {
   const host = options.host ?? "127.0.0.1";
   const root = options.root ?? "benchmark-runs";
   const staticDir = resolve(options.staticDir ?? "dist-viewer");
@@ -40,7 +40,7 @@ export async function startBenchUiServer(options: { port?: number; host?: string
       if (url.pathname === "/api/summaries") return sendJson(response, await listSummaryArtifacts(root));
       const summaryMatch = /^\/api\/summaries\/([^/]+)$/.exec(url.pathname);
       if (summaryMatch) return sendNullableJson(response, await readSummaryArtifact(decodeURIComponent(summaryMatch[1] ?? ""), root));
-      return await sendStatic(response, staticDir, url.pathname, options.openRunId);
+      return await sendStatic(response, staticDir, url.pathname, options.openRunId, options.openSummaryId);
     } catch (error) {
       response.writeHead(500, { "content-type": "application/json" });
       response.end(JSON.stringify({ error: error instanceof Error ? error.message : String(error) }));
@@ -100,10 +100,15 @@ export async function startBenchUiServer(options: { port?: number; host?: string
   };
 }
 
-async function sendStatic(response: ServerResponse, staticDir: string, pathName: string, openRunId?: string): Promise<void> {
+async function sendStatic(response: ServerResponse, staticDir: string, pathName: string, openRunId?: string, openSummaryId?: string): Promise<void> {
   const relative = pathName === "/" ? "index.html" : decodeURIComponent(pathName.slice(1));
   const filePath = resolve(staticDir, relative);
   if (!filePath.startsWith(`${staticDir}/`) && filePath !== staticDir) return notFound(response);
+  if (relative === "index.html" && existsSync(filePath) && statSync(filePath).isFile()) {
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(await renderIndex(filePath, openRunId, openSummaryId));
+    return;
+  }
   if (existsSync(filePath) && statSync(filePath).isFile()) {
     response.writeHead(200, { "content-type": contentType(filePath) });
     createReadStream(filePath).pipe(response);
@@ -115,10 +120,19 @@ async function sendStatic(response: ServerResponse, staticDir: string, pathName:
     response.end("Viewer bundle is missing. Run `pnpm --filter @ygo-bench/app viewer:build` first.");
     return;
   }
-  let html = await readFile(indexPath, "utf8");
-  if (openRunId) html = html.replace("</head>", `<script>window.__YGO_BENCH_OPEN_RUN__=${JSON.stringify(openRunId)}</script></head>`);
   response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
-  response.end(html);
+  response.end(await renderIndex(indexPath, openRunId, openSummaryId));
+}
+
+async function renderIndex(indexPath: string, openRunId?: string, openSummaryId?: string): Promise<string> {
+  let html = await readFile(indexPath, "utf8");
+  if (openRunId || openSummaryId) {
+    html = html.replace(
+      "</head>",
+      `<script>window.__YGO_BENCH_OPEN_RUN__=${JSON.stringify(openRunId ?? null)};window.__YGO_BENCH_OPEN_SUMMARY__=${JSON.stringify(openSummaryId ?? null)}</script></head>`,
+    );
+  }
+  return html;
 }
 
 function sendJson(response: ServerResponse, value: unknown): void {

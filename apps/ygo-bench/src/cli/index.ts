@@ -124,9 +124,11 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === "ui") {
     const openRunId = readFlag(rest, "--run");
+    const openSummaryId = readFlag(rest, "--summary");
     const server = await startBenchUiServer({
       port: Number(readFlag(rest, "--port") ?? 0),
-      ...(openRunId ? { openRunId } : {}),
+      ...(openRunId ? { openRunId: artifactIdFromPath(openRunId, "run") } : {}),
+      ...(openSummaryId ? { openSummaryId: artifactIdFromPath(openSummaryId, "summary") } : {}),
     });
     console.log(`YGO Bench UI: ${server.url}`);
     console.log("Press Ctrl-C to stop.");
@@ -258,6 +260,12 @@ function printRunResult(result: { score: ScenarioScore; runDir: string }): void 
   console.log(`Trace: ${result.runDir}/trace.jsonl`);
   console.log(`Score: ${result.runDir}/final-score.json`);
   console.log(`Viewer: ${result.runDir}/viewer.html`);
+}
+
+function artifactIdFromPath(value: string, type: "run" | "summary"): string {
+  const normalized = value.replace(/\\/g, "/").replace(/\/$/, "");
+  const name = normalized.split("/").pop() ?? normalized;
+  return type === "summary" ? name.replace(/-summary\.json$/, "") : name;
 }
 
 function printHelp(): void {
