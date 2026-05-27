@@ -147,6 +147,25 @@ describe("buildRealLegalActions", () => {
       },
     ]);
   });
+
+  it("maps SELECT_POSITION bitmask to position actions", () => {
+    const actions = buildRealLegalActions({ type: 19, player: 0, code: 49003308, positions: 5 }, testRuntime, testCards);
+
+    expect(actions).toEqual([
+      {
+        id: "a_001",
+        type: "select_position",
+        label: "Face-up attack Gagagigo",
+        response: { type: 11, position: 1 },
+      },
+      {
+        id: "a_002",
+        type: "select_position",
+        label: "Face-up defense Gagagigo",
+        response: { type: 11, position: 4 },
+      },
+    ]);
+  });
 });
 
 const testCards: CardDatabase = {
@@ -163,6 +182,7 @@ const testRuntime = {
     SELECT_PLACE: 18,
     SELECT_YESNO: 13,
     SELECT_OPTION: 14,
+    SELECT_POSITION: 19,
   },
   OcgResponseType: {
     SELECT_IDLECMD: 1,
@@ -172,6 +192,13 @@ const testRuntime = {
     SELECT_PLACE: 10,
     SELECT_YESNO: 3,
     SELECT_OPTION: 4,
+    SELECT_POSITION: 11,
+  },
+  OcgPosition: {
+    FACEUP_ATTACK: 1,
+    FACEDOWN_ATTACK: 2,
+    FACEUP_DEFENSE: 4,
+    FACEDOWN_DEFENSE: 8,
   },
   SelectIdleCMDAction: {
     SELECT_SUMMON: 0,

@@ -177,6 +177,17 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
     }));
   }
 
+  if (prompt.type === ocg.OcgMessageType.SELECT_POSITION) {
+    const code = typeof prompt.code === "number" ? prompt.code : undefined;
+    const positions = positionChoices(prompt.positions, ocg);
+    return positions.map((position, index) => ({
+      id: nextActionId(index),
+      type: "select_position",
+      label: `${positionLabel(position, ocg)}${code ? ` ${cardName(code, cardDb)}` : ""}`,
+      response: { type: ocg.OcgResponseType.SELECT_POSITION, position },
+    }));
+  }
+
   return [];
 }
 
@@ -215,4 +226,26 @@ function optionLabel(option: unknown, index: number, cardDb: CardDatabase): stri
     return `Select ${cardName(code, cardDb)}`;
   }
   return `Option ${index + 1}`;
+}
+
+function positionChoices(value: unknown, ocg: OcgRuntime): number[] {
+  if (Array.isArray(value)) return value.filter((position): position is number => typeof position === "number");
+  if (typeof value === "number") {
+    const choices = [
+      ocg.OcgPosition.FACEUP_ATTACK,
+      ocg.OcgPosition.FACEDOWN_ATTACK,
+      ocg.OcgPosition.FACEUP_DEFENSE,
+      ocg.OcgPosition.FACEDOWN_DEFENSE,
+    ].filter((position): position is number => typeof position === "number");
+    return choices.filter((position) => (value & position) !== 0);
+  }
+  return [];
+}
+
+function positionLabel(position: number, ocg: OcgRuntime): string {
+  if (position === ocg.OcgPosition.FACEUP_ATTACK) return "Face-up attack";
+  if (position === ocg.OcgPosition.FACEDOWN_ATTACK) return "Face-down attack";
+  if (position === ocg.OcgPosition.FACEUP_DEFENSE) return "Face-up defense";
+  if (position === ocg.OcgPosition.FACEDOWN_DEFENSE) return "Face-down defense";
+  return `Position ${position}`;
 }
