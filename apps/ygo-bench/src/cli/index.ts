@@ -1,6 +1,5 @@
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
 import { evalSuite } from "./eval.js";
+import { inspectTrace } from "./inspect.js";
 import { runScenario } from "./run.js";
 import { validateSuite } from "./validate.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
@@ -138,12 +137,7 @@ async function main(argv: string[]): Promise<void> {
   if (command === "inspect") {
     const tracePath = rest[0];
     if (!tracePath) throw new Error("Missing trace path");
-    const raw = await readFile(resolve(tracePath), "utf8");
-    for (const line of raw.trim().split("\n")) {
-      const frame = JSON.parse(line) as { type: string; text?: string; chosen?: { actionId: string; reason: string } };
-      if (frame.type === "engine") console.log(frame.text);
-      if (frame.type === "decision") console.log(`Decision: ${frame.chosen?.actionId} - ${frame.chosen?.reason}`);
-    }
+    for (const line of await inspectTrace(tracePath)) console.log(line);
     return;
   }
   throw new Error(`Unknown command: ${command}`);
