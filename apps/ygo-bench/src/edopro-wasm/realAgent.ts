@@ -63,7 +63,7 @@ export async function chooseRealAgentAction(args: {
     return { action, reason: `random selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
   }
   if (args.agentId === "greedy" || args.agentId === "oracle") {
-    const action = args.agentId === "oracle" ? chooseOracleAction(args.scenario, args.legalActions) : chooseGreedyAction(args.legalActions);
+    const action = args.agentId === "oracle" ? chooseOracleAction(args) : chooseGreedyAction(args.legalActions);
     return { action, reason: `${args.agentId} selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
   }
 
@@ -152,12 +152,48 @@ function chooseGreedyAction(actions: RealLegalAction[]): RealLegalAction {
   );
 }
 
-function chooseOracleAction(scenario: RealScenario, actions: RealLegalAction[]): RealLegalAction {
-  for (const preferredType of scenario.scoring?.preferredActionTypes ?? []) {
-    const preferred = actions.find((action) => action.type === preferredType);
-    if (preferred) return preferred;
+function chooseOracleAction(args: {
+  scenario: RealScenario;
+  state: RealReducedState;
+  prompt: OcgMessage | undefined;
+  legalActions: RealLegalAction[];
+}): RealLegalAction {
+  const { scenario, legalActions: actions } = args;
+  const player = args.prompt?.player === 1 ? 1 : 0;
+  const hasMonster = args.state.players[player].monsters.length > 0;
+  const forcedFollowUp = actions.find((action) =>
+    ["select_place", "select_card", "select_position", "select_option", "yes"].includes(action.type),
+  );
+  if (forcedFollowUp) return forcedFollowUp;
+
+  if (scenario.scoring?.preferredActionTypes?.includes("set_spell_trap")) {
+    const trapSet = actions.find((action) => action.type === "set_spell_trap");
+    if (trapSet) return trapSet;
   }
+
+  const response = actions.find((action) => action.type === "respond");
+  if (response) return response;
+
+  const attack = highestAttackAction(actions.filter((action) => action.type === "attack"));
+  if (attack) return attack;
+
+  const summon = highestAttackAction(actions.filter((action) => action.type === "normal_summon"));
+  if (!hasMonster && summon) return summon;
+
+  const battle = actions.find((action) => action.type === "to_battle");
+  if (battle) return battle;
+
+  if (summon) return summon;
+
+  const preferred = actions.find((action) => scenario.scoring?.preferredActionTypes?.includes(action.type));
+  if (preferred) return preferred;
+
   return chooseGreedyAction(actions);
+}
+
+function highestAttackAction(actions: RealLegalAction[]): RealLegalAction | undefined {
+  if (actions.length === 0) return undefined;
+  return actions.reduce((best, action) => ((action.attack ?? -1) > (best.attack ?? -1) ? action : best), actions[0]!);
 }
 
 function playerObservation(state: RealReducedState, player: 0 | 1, isSelf: boolean): RealPlayerObservation {

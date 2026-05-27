@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildRealModelObservation, renderRealObservationJson } from "./realAgent.js";
+import { buildRealModelObservation, chooseRealAgentAction, renderRealObservationJson } from "./realAgent.js";
 import { initialRealReducedState } from "./normalizedEvents.js";
 import type { RealScenario } from "./realScenario.js";
 
@@ -129,6 +129,110 @@ describe("buildRealModelObservation", () => {
 
     expect(rendered).toContain("a hidden card moved from P1:HAND:0 to P1:SZONE:0.");
     expect(rendered).not.toContain("Opponent Secret Trap");
+  });
+});
+
+describe("chooseRealAgentAction", () => {
+  it("uses a context-aware oracle policy for battle progress", async () => {
+    const state = initialRealReducedState();
+    state.turn = 1;
+    state.phase = "MAIN1";
+    state.players[0].monsters.push({
+      code: 49003308,
+      name: "Gagagigo",
+      controller: 0,
+      location: "MZONE",
+      sequence: 0,
+    });
+
+    const choice = await chooseRealAgentAction({
+      agentId: "oracle",
+      scenario: scenario(),
+      state,
+      prompt: { type: 0, player: 0 },
+      promptTypeName: "SELECT_IDLECMD",
+      recentEvents: [],
+      legalActions: [
+        {
+          id: "a_001",
+          type: "normal_summon",
+          label: "Normal Summon Gagagigo",
+          attack: 1850,
+          response: {},
+        },
+        {
+          id: "a_002",
+          type: "to_battle",
+          label: "Go to Battle Phase",
+          response: {},
+        },
+      ],
+    });
+
+    expect(choice.action.id).toBe("a_002");
+  });
+
+  it("summons before entering battle when the oracle has no monster", async () => {
+    const state = initialRealReducedState();
+    state.turn = 1;
+    state.phase = "MAIN1";
+
+    const choice = await chooseRealAgentAction({
+      agentId: "oracle",
+      scenario: scenario(),
+      state,
+      prompt: { type: 0, player: 0 },
+      promptTypeName: "SELECT_IDLECMD",
+      recentEvents: [],
+      legalActions: [
+        {
+          id: "a_001",
+          type: "normal_summon",
+          label: "Normal Summon Gagagigo",
+          attack: 1850,
+          response: {},
+        },
+        {
+          id: "a_002",
+          type: "to_battle",
+          label: "Go to Battle Phase",
+          response: {},
+        },
+      ],
+    });
+
+    expect(choice.action.id).toBe("a_001");
+  });
+
+  it("lets trap-focused oracle scenarios set traps before battle", async () => {
+    const state = initialRealReducedState();
+    state.turn = 1;
+    state.phase = "MAIN1";
+
+    const choice = await chooseRealAgentAction({
+      agentId: "oracle",
+      scenario: { ...scenario(), scoring: { preferredActionTypes: ["set_spell_trap"] } },
+      state,
+      prompt: { type: 0, player: 0 },
+      promptTypeName: "SELECT_IDLECMD",
+      recentEvents: [],
+      legalActions: [
+        {
+          id: "a_001",
+          type: "to_battle",
+          label: "Go to Battle Phase",
+          response: {},
+        },
+        {
+          id: "a_002",
+          type: "set_spell_trap",
+          label: "Set Mirror Force",
+          response: {},
+        },
+      ],
+    });
+
+    expect(choice.action.id).toBe("a_002");
   });
 });
 
