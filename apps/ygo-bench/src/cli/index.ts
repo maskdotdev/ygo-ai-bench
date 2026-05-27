@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { evalSuite } from "./eval.js";
 import { runScenario } from "./run.js";
 import { validateSuite } from "./validate.js";
+import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
 
 async function main(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
@@ -17,6 +18,19 @@ async function main(argv: string[]): Promise<void> {
       viewer: true,
     });
     printRunResult(result);
+    return;
+  }
+  if (command === "real-smoke") {
+    const result = await runRealEngineSmoke({
+      cardDataPath: "../../public/card-data/cdb-rows.json",
+      scriptRoot: "../../.upstream/ignis/script",
+      outPath: "benchmark-runs/real-smoke-messages.json",
+    });
+    console.log(`Loaded ocgcore ${result.version.join(".")}`);
+    console.log(`Processed ${result.messageCount} messages`);
+    console.log(`Status: ${result.status}`);
+    console.log(`Prompt: ${result.promptType ?? "none"}`);
+    console.log(`Messages: ${result.outPath}`);
     return;
   }
   if (command === "run") {
@@ -74,6 +88,7 @@ function printRunResult(result: Awaited<ReturnType<typeof runScenario>>): void {
 function printHelp(): void {
   console.log(`Usage:
   pnpm --filter @ygo-bench/app bench smoke
+  pnpm --filter @ygo-bench/app bench real-smoke
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer
   pnpm --filter @ygo-bench/app bench validate suites/mvp.json

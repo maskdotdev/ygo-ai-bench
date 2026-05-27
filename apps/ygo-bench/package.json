@@ -9,5 +9,7 @@
     "smoke": "node dist/cli/index.js smoke",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": {}
+  "dependencies": {
+    "@n1xx1/ocgcore-wasm": "npm:@jsr/n1xx1__ocgcore-wasm@^0.1.3"
+  }
 }
