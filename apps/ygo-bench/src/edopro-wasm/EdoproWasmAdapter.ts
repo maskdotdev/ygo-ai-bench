@@ -4,6 +4,7 @@ import { loadBrowserCardDatabase, type CardDatabase } from "./cardDb.js";
 import { buildRealLegalActions } from "./legalActions.js";
 import { loadOcgRuntime } from "./loadOcgRuntime.js";
 import type { OcgCoreSync, OcgDuelHandle, OcgMessage, OcgRuntime } from "./ocgTypes.js";
+import { buildRealRunMetadata } from "./runMetadata.js";
 import { createScriptReader } from "./scriptReader.js";
 
 export interface RealSmokeOptions {
@@ -83,6 +84,21 @@ export async function runRealEngineSmoke(options: RealSmokeOptions): Promise<Rea
           messages: messages.map((message) => annotateMessage(message, cardDb, ocg)),
         },
         (_, value: unknown) => (typeof value === "bigint" ? value.toString() : value),
+        2,
+      ) + "\n",
+    );
+    await writeFile(
+      resolve("benchmark-runs/real-smoke-metadata.json"),
+      JSON.stringify(
+        await buildRealRunMetadata({
+          ocgcoreVersion: core.getVersion(),
+          cardDataPath: options.cardDataPath,
+          scriptRoot: options.scriptRoot,
+          scenarioId: "real-smoke",
+          agentId: "none",
+          maxDecisions: 0,
+        }),
+        null,
         2,
       ) + "\n",
     );

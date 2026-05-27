@@ -7,6 +7,7 @@ import { loadOcgRuntime } from "./loadOcgRuntime.js";
 import { initialRealReducedState, normalizeMessages } from "./normalizedEvents.js";
 import type { OcgCoreSync, OcgDuelHandle, OcgMessage, OcgRuntime } from "./ocgTypes.js";
 import { writeRealViewerHtml } from "./realViewer.js";
+import { buildRealRunMetadata } from "./runMetadata.js";
 import { createScriptReader } from "./scriptReader.js";
 
 export interface RealRunOptions {
@@ -117,6 +118,21 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   };
   await writeFile(join(runDir, "trace.jsonl"), trace.map((line) => JSON.stringify(line, jsonReplacer)).join("\n") + "\n");
   await writeFile(join(runDir, "final-score.json"), JSON.stringify(score, null, 2) + "\n");
+  await writeFile(
+    join(runDir, "metadata.json"),
+    JSON.stringify(
+      await buildRealRunMetadata({
+        ocgcoreVersion: core.getVersion(),
+        cardDataPath: options.cardDataPath,
+        scriptRoot: options.scriptRoot,
+        scenarioId: score.scenarioId,
+        agentId: options.agentId,
+        maxDecisions: options.maxDecisions,
+      }),
+      null,
+      2,
+    ) + "\n",
+  );
   await writeFile(join(runDir, "reduced-state.json"), JSON.stringify(reducedState, null, 2) + "\n");
   await writeFile(join(runDir, "model-transcript.md"), transcript.join("\n"));
   await writeFile(join(runDir, "engine-messages.bin"), Buffer.from(JSON.stringify(trace, jsonReplacer)));
