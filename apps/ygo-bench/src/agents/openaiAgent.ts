@@ -42,19 +42,28 @@ export async function chooseOpenAiLegalAction(args: {
   legalActionIds: string[];
   endpoint?: string;
 }): Promise<AgentDecision> {
-  const result = await callResponsesApi({
-    apiKey: args.apiKey,
-    model: args.model,
-    endpoint: args.endpoint ?? "https://api.openai.com/v1/responses",
-    observationText: args.observationText,
-    legalActionIds: args.legalActionIds,
-  });
-  const decision = parseAgentDecision(extractResponseText(result));
-  const legalIds = new Set(args.legalActionIds);
-  if (!legalIds.has(decision.actionId)) {
-    throw new Error(`OpenAI agent returned illegal action id: ${decision.actionId}`);
+  let lastJsonError: unknown;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const result = await callResponsesApi({
+      apiKey: args.apiKey,
+      model: args.model,
+      endpoint: args.endpoint ?? "https://api.openai.com/v1/responses",
+      observationText: args.observationText,
+      legalActionIds: args.legalActionIds,
+    });
+    try {
+      const decision = parseAgentDecision(extractResponseText(result));
+      const legalIds = new Set(args.legalActionIds);
+      if (!legalIds.has(decision.actionId)) {
+        throw new Error(`OpenAI agent returned illegal action id: ${decision.actionId}`);
+      }
+      return decision;
+    } catch (error) {
+      if (!isInvalidJsonError(error)) throw error;
+      lastJsonError = error;
+    }
   }
-  return decision;
+  throw lastJsonError instanceof Error ? lastJsonError : new Error("OpenAI agent returned invalid JSON");
 }
 
 export function createOpenAiAgentFromEnv(): OpenAiAgent {
@@ -149,4 +158,8 @@ async function callResponsesApi(args: {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function isInvalidJsonError(error: unknown): boolean {
+  return error instanceof SyntaxError || (error instanceof Error && error.message.includes("Model response must include"));
 }
