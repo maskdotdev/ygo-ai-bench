@@ -11,6 +11,7 @@ export interface RealAgentChoice {
   reason: string;
   invalidJson: number;
   illegalActions: number;
+  tokenCount: number | null;
   observation: RealModelObservation;
   rawError?: string | undefined;
 }
@@ -58,11 +59,11 @@ export async function chooseRealAgentAction(args: {
   const observation = buildRealModelObservation(args);
   if (args.agentId === "random") {
     const action = args.legalActions[Math.floor(Math.random() * args.legalActions.length)] ?? args.legalActions[0]!;
-    return { action, reason: `random selected ${action.label}`, invalidJson: 0, illegalActions: 0, observation };
+    return { action, reason: `random selected ${action.label}`, invalidJson: 0, illegalActions: 0, tokenCount: null, observation };
   }
   if (args.agentId === "greedy" || args.agentId === "oracle") {
     const action = chooseGreedyAction(args.legalActions);
-    return { action, reason: `${args.agentId} selected ${action.label}`, invalidJson: 0, illegalActions: 0, observation };
+    return { action, reason: `${args.agentId} selected ${action.label}`, invalidJson: 0, illegalActions: 0, tokenCount: null, observation };
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -82,10 +83,11 @@ export async function chooseRealAgentAction(args: {
         reason: `openai returned illegal action ${decision.actionId}; fell back to ${fallback.id}`,
         invalidJson: 0,
         illegalActions: 1,
+        tokenCount: decision.tokenCount,
         observation,
       };
     }
-    return { action, reason: decision.reason, invalidJson: 0, illegalActions: 0, observation };
+    return { action, reason: decision.reason, invalidJson: 0, illegalActions: 0, tokenCount: decision.tokenCount, observation };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const fallback = args.legalActions[0]!;
@@ -94,6 +96,7 @@ export async function chooseRealAgentAction(args: {
       reason: `openai failed (${message}); fell back to ${fallback.id}`,
       invalidJson: isJsonFailure(error) ? 1 : 0,
       illegalActions: message.includes("illegal action id") ? 1 : 0,
+      tokenCount: null,
       observation,
       rawError: message,
     };

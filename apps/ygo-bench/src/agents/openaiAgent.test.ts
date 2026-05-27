@@ -23,7 +23,7 @@ describe("chooseOpenAiLegalAction", () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(responseWithText("not-json"))
-      .mockResolvedValueOnce(responseWithText('{"actionId":"a_002","reason":"Recovered."}'));
+      .mockResolvedValueOnce(responseWithText('{"actionId":"a_002","reason":"Recovered."}', { total_tokens: 42 }));
 
     await expect(
       chooseOpenAiLegalAction({
@@ -33,7 +33,7 @@ describe("chooseOpenAiLegalAction", () => {
         observationText: "{}",
         legalActionIds: ["a_001", "a_002"],
       }),
-    ).resolves.toEqual({ actionId: "a_002", reason: "Recovered." });
+    ).resolves.toEqual({ actionId: "a_002", reason: "Recovered.", tokenCount: 42 });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
@@ -83,9 +83,9 @@ describe("OpenAiAgent", () => {
   });
 });
 
-function responseWithText(outputText: string): Response {
+function responseWithText(outputText: string, usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number }): Response {
   return {
     ok: true,
-    json: async () => ({ output_text: outputText }),
+    json: async () => ({ output_text: outputText, ...(usage ? { usage } : {}) }),
   } as Response;
 }

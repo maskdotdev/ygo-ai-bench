@@ -3,6 +3,11 @@ import type { Agent, AgentDecision, Observation } from "../core/types.js";
 
 interface ResponsesApiResult {
   output_text?: string;
+  usage?: {
+    input_tokens?: number;
+    output_tokens?: number;
+    total_tokens?: number;
+  };
   output?: Array<{
     type?: string;
     content?: Array<{
@@ -11,6 +16,10 @@ interface ResponsesApiResult {
       refusal?: string;
     }>;
   }>;
+}
+
+export interface OpenAiAgentDecision extends AgentDecision {
+  tokenCount: number | null;
 }
 
 export class OpenAiAgent implements Agent {
@@ -41,7 +50,7 @@ export async function chooseOpenAiLegalAction(args: {
   observationText: string;
   legalActionIds: string[];
   endpoint?: string;
-}): Promise<AgentDecision> {
+}): Promise<OpenAiAgentDecision> {
   let lastJsonError: unknown;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const result = await callResponsesApi({
@@ -57,7 +66,7 @@ export async function chooseOpenAiLegalAction(args: {
       if (!legalIds.has(decision.actionId)) {
         throw new Error(`OpenAI agent returned illegal action id: ${decision.actionId}`);
       }
-      return decision;
+      return { ...decision, tokenCount: responseTokenCount(result) };
     } catch (error) {
       if (!isInvalidJsonError(error)) throw error;
       lastJsonError = error;
@@ -95,6 +104,14 @@ function extractResponseText(result: ResponsesApiResult): string {
     }
   }
   throw new Error("OpenAI response did not contain text output");
+}
+
+function responseTokenCount(result: ResponsesApiResult): number | null {
+  const total = result.usage?.total_tokens;
+  if (typeof total === "number") return total;
+  const input = result.usage?.input_tokens;
+  const output = result.usage?.output_tokens;
+  return typeof input === "number" && typeof output === "number" ? input + output : null;
 }
 
 async function callResponsesApi(args: {
