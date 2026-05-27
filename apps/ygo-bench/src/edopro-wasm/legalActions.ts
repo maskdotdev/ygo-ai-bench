@@ -17,6 +17,7 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
     const actions: RealLegalAction[] = [];
     const summons = arrayOfRecords(prompt.summons);
     const monsterSets = arrayOfRecords(prompt.monster_sets);
+    const spellSets = arrayOfRecords(prompt.spell_sets);
     const activates = arrayOfRecords(prompt.activates);
 
     for (const [index, card] of summons.entries()) {
@@ -44,6 +45,15 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
         label: `Activate ${cardName(card.code, cardDb)}`,
         ...cardActionFields(card.code, cardDb),
         response: { type: ocg.OcgResponseType.SELECT_IDLECMD, action: ocg.SelectIdleCMDAction.SELECT_ACTIVATE, index },
+      });
+    }
+    for (const [index, card] of spellSets.entries()) {
+      actions.push({
+        id: nextActionId(actions.length),
+        type: "set_spell_trap",
+        label: `Set ${cardName(card.code, cardDb)}`,
+        ...cardActionFields(card.code, cardDb),
+        response: { type: ocg.OcgResponseType.SELECT_IDLECMD, action: ocg.SelectIdleCMDAction.SELECT_SPELL_SET, index },
       });
     }
     if (prompt.to_bp === true) {

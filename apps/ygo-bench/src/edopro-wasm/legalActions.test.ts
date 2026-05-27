@@ -11,6 +11,7 @@ describe("buildRealLegalActions", () => {
         player: 0,
         summons: [{ code: 49003308, controller: 0, location: 2, sequence: 1 }],
         monster_sets: [{ code: 49003308, controller: 0, location: 2, sequence: 1 }],
+        spell_sets: [{ code: 44095762, controller: 0, location: 2, sequence: 2 }],
         activates: [],
         to_bp: false,
         to_ep: true,
@@ -22,9 +23,11 @@ describe("buildRealLegalActions", () => {
     expect(actions.map((action) => ({ id: action.id, type: action.type, label: action.label }))).toEqual([
       { id: "a_001", type: "normal_summon", label: "Normal Summon Gagagigo" },
       { id: "a_002", type: "set_monster", label: "Set Gagagigo" },
-      { id: "a_003", type: "end_phase", label: "End Phase" },
+      { id: "a_003", type: "set_spell_trap", label: "Set Mirror Force" },
+      { id: "a_004", type: "end_phase", label: "End Phase" },
     ]);
     expect(actions[0]?.response).toEqual({ type: 1, action: 0, index: 0 });
+    expect(actions[2]?.response).toEqual({ type: 1, action: 2, index: 0 });
   });
 
   it("maps SELECT_PLACE to a concrete zone response", () => {
@@ -191,8 +194,28 @@ const testCards: CardDatabase = {
         link_marker: 0,
       },
     ],
+    [
+      44095762,
+      {
+        code: 44095762,
+        alias: 0,
+        setcodes: [],
+        type: 4,
+        level: 0,
+        attribute: 0,
+        race: 0n,
+        attack: 0,
+        defense: 0,
+        lscale: 0,
+        rscale: 0,
+        link_marker: 0,
+      },
+    ],
   ]),
-  names: new Map([[49003308, "Gagagigo"]]),
+  names: new Map([
+    [49003308, "Gagagigo"],
+    [44095762, "Mirror Force"],
+  ]),
 };
 
 const testRuntime = {
@@ -226,6 +249,7 @@ const testRuntime = {
     SELECT_SUMMON: 0,
     SELECT_MONSTER_SET: 3,
     SELECT_ACTIVATE: 5,
+    SELECT_SPELL_SET: 2,
     TO_BP: 6,
     TO_EP: 7,
   },

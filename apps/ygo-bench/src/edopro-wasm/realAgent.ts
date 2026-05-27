@@ -63,7 +63,7 @@ export async function chooseRealAgentAction(args: {
     return { action, reason: `random selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
   }
   if (args.agentId === "greedy" || args.agentId === "oracle") {
-    const action = chooseGreedyAction(args.legalActions);
+    const action = args.agentId === "oracle" ? chooseOracleAction(args.scenario, args.legalActions) : chooseGreedyAction(args.legalActions);
     return { action, reason: `${args.agentId} selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
   }
 
@@ -150,6 +150,14 @@ function chooseGreedyAction(actions: RealLegalAction[]): RealLegalAction {
     actions.find((action) => action.type === "end_phase") ??
     actions[0]!
   );
+}
+
+function chooseOracleAction(scenario: RealScenario, actions: RealLegalAction[]): RealLegalAction {
+  for (const preferredType of scenario.scoring?.preferredActionTypes ?? []) {
+    const preferred = actions.find((action) => action.type === preferredType);
+    if (preferred) return preferred;
+  }
+  return chooseGreedyAction(actions);
 }
 
 function playerObservation(state: RealReducedState, player: 0 | 1, isSelf: boolean): RealPlayerObservation {
