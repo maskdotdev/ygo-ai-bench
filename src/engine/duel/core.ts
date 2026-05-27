@@ -266,19 +266,19 @@ const responseHandlers: DuelResponseHandlers = {
     if (card) paySummonOrSetCosts(state, player, card, [94]);
     setMonster(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), undefined, summonSequence);
   },
-  setSpellTrap(state, player, uid) {
+  setSpellTrap(state, player, uid, spellTrapSequence) {
     const card = findCard(state, uid);
     if (card && isSpellTrapSetPrevented(state, player, card, createContinuousEffectContext(state))) throw new Error(`${card.name} cannot be Set`);
     if (card) paySummonOrSetCosts(state, player, card, [95]);
-    setSpellTrap(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload));
+    setSpellTrap(state, player, uid, (eventName, eventCard, payload) => collectTriggerEffects(state, eventName, eventCard, payload), spellTrapSequence);
   },
-  activateEffect(session, player, uid, effectId) {
+  activateEffect(session, player, uid, effectId, spellTrapSequence) {
     const activation = findActivationEffectForSource(session.state, player, uid, effectId);
     const source = activation?.source ?? findCard(session.state, uid);
     const effect = activation?.effect;
     if (source && isEffectActivationPrevented(session.state, player, source, createContinuousEffectContext(session.state), effect)) throw new Error(`${source.name} cannot activate effects`);
     if (source) applyActivationCosts(session.state, player, createContinuousEffectContext(session.state), source, effect);
-    activateDuelEffect(session, player, uid, effectId, activationHandlers);
+    activateDuelEffect(session, player, uid, effectId, activationHandlers, spellTrapSequence);
   },
   passChain,
   passAttack: (state, player) => passAttackResponseWindow(state, player, battleContinuationHandlers),

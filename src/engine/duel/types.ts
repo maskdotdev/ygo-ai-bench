@@ -687,8 +687,8 @@ export type DuelAction = (
   | { type: "ritualSummon"; player: PlayerId; uid: string; materialUids: string[]; summonSequence?: number; label: string }
   | { type: "pendulumSummon"; player: PlayerId; summonUids: string[]; maxSummons: number; label: string }
   | { type: "setMonster"; player: PlayerId; uid: string; summonSequence?: number; label: string }
-  | { type: "setSpellTrap"; player: PlayerId; uid: string; label: string }
-  | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; label: string }
+  | { type: "setSpellTrap"; player: PlayerId; uid: string; spellTrapSequence?: number; label: string }
+  | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; spellTrapSequence?: number; label: string }
   | { type: "specialSummonProcedure"; player: PlayerId; uid: string; effectId: string; summonSequence?: number; label: string }
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "passAttack"; player: PlayerId; label: string }
@@ -715,6 +715,7 @@ export interface PublicDuelCard {
   code: string;
   name: string;
   kind: DuelCardKind;
+  typeFlags?: number;
   owner: PlayerId;
   controller: PlayerId;
   location: DuelLocation;

@@ -123,6 +123,7 @@ function toPublicCard(state: DuelState, card: DuelCardInstance): PublicDuelCard 
     code: card.code,
     name: card.name,
     kind: card.kind,
+    ...(card.data.typeFlags === undefined ? {} : { typeFlags: card.data.typeFlags }),
     owner: card.owner,
     controller: card.controller,
     location: card.location,

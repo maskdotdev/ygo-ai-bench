@@ -26,8 +26,8 @@ export interface DuelResponseHandlers {
   pendulumSummon(state: DuelState, player: PlayerId, summonUids: string[]): void;
   specialSummonProcedure(session: DuelSession, player: PlayerId, uid: string, effectId: string, summonSequence?: number): void;
   setMonster(state: DuelState, player: PlayerId, uid: string, summonSequence?: number): void;
-  setSpellTrap(state: DuelState, player: PlayerId, uid: string): void;
-  activateEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string): void;
+  setSpellTrap(state: DuelState, player: PlayerId, uid: string, spellTrapSequence?: number): void;
+  activateEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, spellTrapSequence?: number): void;
   passChain(state: DuelState, player: PlayerId): void;
   passAttack(state: DuelState, player: PlayerId): void;
   passDamage(state: DuelState, player: PlayerId): void;
@@ -70,6 +70,9 @@ function responseForDispatch(canonicalResponse: DuelResponse, response: unknown)
   if (isSummonResponse(canonicalResponse) && isRecord(response) && typeof response.summonSequence === "number") {
     return { ...canonicalResponse, summonSequence: response.summonSequence };
   }
+  if (isSpellTrapPlacementResponse(canonicalResponse) && isRecord(response) && typeof response.spellTrapSequence === "number") {
+    return { ...canonicalResponse, spellTrapSequence: response.spellTrapSequence };
+  }
   return canonicalResponse;
 }
 
@@ -84,6 +87,10 @@ function isSummonResponse(response: DuelResponse): response is Extract<DuelRespo
     response.type === "ritualSummon" ||
     response.type === "setMonster" ||
     response.type === "specialSummonProcedure";
+}
+
+function isSpellTrapPlacementResponse(response: DuelResponse): response is Extract<DuelResponse, { spellTrapSequence?: number }> {
+  return response.type === "setSpellTrap" || response.type === "activateEffect";
 }
 
 function responsePlayer(response: unknown): PlayerId | undefined {
@@ -107,8 +114,8 @@ function dispatchDuelResponse(session: DuelSession, response: DuelResponse, hand
   else if (response.type === "pendulumSummon") handlers.pendulumSummon(session.state, response.player, response.summonUids);
   else if (response.type === "specialSummonProcedure") handlers.specialSummonProcedure(session, response.player, response.uid, response.effectId, response.summonSequence);
   else if (response.type === "setMonster") handlers.setMonster(session.state, response.player, response.uid, response.summonSequence);
-  else if (response.type === "setSpellTrap") handlers.setSpellTrap(session.state, response.player, response.uid);
-  else if (response.type === "activateEffect") handlers.activateEffect(session, response.player, response.uid, response.effectId);
+  else if (response.type === "setSpellTrap") handlers.setSpellTrap(session.state, response.player, response.uid, response.spellTrapSequence);
+  else if (response.type === "activateEffect") handlers.activateEffect(session, response.player, response.uid, response.effectId, response.spellTrapSequence);
   else if (response.type === "passChain") handlers.passChain(session.state, response.player);
   else if (response.type === "passAttack") handlers.passAttack(session.state, response.player);
   else if (response.type === "passDamage") handlers.passDamage(session.state, response.player);

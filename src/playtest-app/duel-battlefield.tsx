@@ -283,7 +283,11 @@ export interface DuelBattlefieldProps {
 }
 
 type ActionFlyout = { card: PublicDuelCard; actions: DuelAction[]; anchorX: number; anchorY: number };
-type PendingSummonZone = { action: Extract<DuelAction, { summonSequence?: number }>; player: PlayerId };
+type PendingZonePlacement = {
+  action: Extract<DuelAction, { summonSequence?: number } | { spellTrapSequence?: number }>;
+  player: PlayerId;
+  location: "monsterZone" | "spellTrapZone";
+};
 
 function CardActionFlyout(props: {
   flyout: ActionFlyout;
@@ -360,7 +364,7 @@ function CardActionFlyout(props: {
 export function DuelBattlefield(props: DuelBattlefieldProps) {
   const { state, viewer } = props;
   const [flyout, setFlyout] = useState<ActionFlyout | null>(null);
-  const [pendingSummonZone, setPendingSummonZone] = useState<PendingSummonZone | null>(null);
+  const [pendingZonePlacement, setPendingZonePlacement] = useState<PendingZonePlacement | null>(null);
   const opponent = opposite(viewer);
   const hideOppHand = true;
 
@@ -371,13 +375,16 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
   const cardGlowForUid = useCallback((uid: string) => cardActionGlow(actionByUid.get(uid)), [actionByUid]);
   const emptyZoneIsTarget = useCallback((player: PlayerId, location: DuelLocation, _sequence: number) => (
-    pendingSummonZone !== null && player === pendingSummonZone.player && location === "monsterZone"
-  ), [pendingSummonZone]);
+    pendingZonePlacement !== null && player === pendingZonePlacement.player && location === pendingZonePlacement.location
+  ), [pendingZonePlacement]);
   const handleEmptyZoneClick = useCallback((player: PlayerId, location: DuelLocation, sequence: number) => {
-    if (!pendingSummonZone || player !== pendingSummonZone.player || location !== "monsterZone") return;
-    props.onPlayAction?.({ ...pendingSummonZone.action, summonSequence: sequence });
-    setPendingSummonZone(null);
-  }, [pendingSummonZone, props]);
+    if (!pendingZonePlacement || player !== pendingZonePlacement.player || location !== pendingZonePlacement.location) return;
+    const action = pendingZonePlacement.location === "monsterZone"
+      ? { ...pendingZonePlacement.action, summonSequence: sequence }
+      : { ...pendingZonePlacement.action, spellTrapSequence: sequence };
+    props.onPlayAction?.(action as DuelAction);
+    setPendingZonePlacement(null);
+  }, [pendingZonePlacement, props]);
 
   const handleCardInteraction = useCallback(
     (card: PublicDuelCard, event: MouseEvent) => {
@@ -412,7 +419,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
   useEffect(() => {
     setFlyout(null);
-    setPendingSummonZone(null);
+    setPendingZonePlacement(null);
   }, [props.legalActions]);
 
   const triggerOrderLabel = triggerOrderPromptLabel(state);
@@ -555,7 +562,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
         </div>
 
         {/* ----- EMZ + turn strip ----- */}
-        <div className={`flex shrink-0 flex-col items-center gap-0.5 py-1 ${pendingSummonZone ? "pointer-events-none" : ""}`}>
+        <div className={`flex shrink-0 flex-col items-center gap-0.5 py-1 ${pendingZonePlacement ? "pointer-events-none" : ""}`}>
           <div className="flex items-center gap-3">
             <div className={ZONE}>
               <span className="text-[9px] font-bold text-white/20">EMZ</span>
@@ -633,7 +640,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
               </div>
             </div>
           ) : null}
-          {globalOrphanGroups.length > 0 && !pendingSummonZone && props.onPlayAction ? (
+          {globalOrphanGroups.length > 0 && !pendingZonePlacement && props.onPlayAction ? (
             <div className="relative z-50 flex max-w-[min(96vw,860px)] justify-center px-1">
               <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-cyan-500/20 bg-slate-900/60 px-2 py-1.5 [scrollbar-width:thin]">
                 {globalOrphanGroups.map((group) => (
@@ -763,7 +770,9 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
         images={props.cardImages}
         onPick={(action) => {
           if (isMonsterZoneSummonAction(action)) {
-            setPendingSummonZone({ action, player: action.player });
+            setPendingZonePlacement({ action, player: action.player, location: "monsterZone" });
+          } else if (isSpellTrapZonePlacementAction(action, flyout.card)) {
+            setPendingZonePlacement({ action, player: action.player, location: "spellTrapZone" });
           } else {
             props.onPlayAction?.(action);
           }
@@ -791,6 +800,16 @@ function isMonsterZoneSummonAction(action: DuelAction): action is Extract<DuelAc
     action.type === "ritualSummon" ||
     action.type === "setMonster" ||
     action.type === "specialSummonProcedure";
+}
+
+function isSpellTrapZonePlacementAction(action: DuelAction, card: PublicDuelCard): action is Extract<DuelAction, { spellTrapSequence?: number }> {
+  if (card.location !== "hand" || (card.kind !== "spell" && card.kind !== "trap")) return false;
+  if (isFieldSpell(card)) return false;
+  return action.type === "setSpellTrap" || action.type === "activateEffect";
+}
+
+function isFieldSpell(card: PublicDuelCard): boolean {
+  return card.kind === "spell" && ((card.typeFlags ?? 0) & 0x80000) !== 0;
 }
 
 export function DuelLogList(props: { entries: DuelLogEntry[] }) {

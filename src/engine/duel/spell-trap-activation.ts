@@ -1,3 +1,4 @@
+import { firstOpenFieldZoneSequence } from "#duel/disabled-field-zones.js";
 import { hasZoneSpace, moveDuelCard } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
 import type { DuelCardInstance, DuelEffectDefinition, DuelState, PlayerId } from "#duel/types.js";
@@ -9,14 +10,16 @@ const typeContinuous = 0x20000;
 const typeEquip = 0x40000;
 const typeField = 0x80000;
 
-export function placeActivatedSpellTrapCard(state: DuelState, player: PlayerId, source: DuelCardInstance, effect: DuelEffectDefinition): void {
+export function placeActivatedSpellTrapCard(state: DuelState, player: PlayerId, source: DuelCardInstance, effect: DuelEffectDefinition, spellTrapSequence?: number): void {
   if (!isSpellTrapCardActivation(source, effect)) return;
   if (source.location === "hand") {
     if (isPendulumCard(source) && !hasPendulumZoneSpace(state, player)) throw new Error(`${source.name} cannot be activated because the Pendulum Zones are full`);
     const targetLocation = isFieldSpell(source) ? "fieldZone" : "spellTrapZone";
     if (!hasZoneSpace(state, player, targetLocation)) throw new Error(`${source.name} cannot be activated because the ${targetLocation === "fieldZone" ? "Field Zone" : "Spell & Trap Zone"} is full`);
     if (targetLocation === "fieldZone") sendExistingFieldSpellToGraveyard(state, player, source.uid);
+    const sequence = targetLocation === "spellTrapZone" ? requireSpellTrapZoneSequence(state, player, spellTrapSequence) : undefined;
     moveDuelCard(state, source.uid, targetLocation, player, duelReason.rule, player);
+    if (sequence !== undefined) source.sequence = sequence;
     return;
   }
   if (source.location === "spellTrapZone" || source.location === "fieldZone") source.faceUp = true;
@@ -68,4 +71,12 @@ function isPendulumCard(source: DuelCardInstance): boolean {
 
 function hasPendulumZoneSpace(state: DuelState, player: PlayerId): boolean {
   return state.cards.filter((card) => card.controller === player && card.location === "spellTrapZone" && (card.sequence === 0 || card.sequence === 1)).length < 2;
+}
+
+function requireSpellTrapZoneSequence(state: DuelState, player: PlayerId, requestedSequence?: number): number | undefined {
+  if (requestedSequence === undefined) return undefined;
+  if (!Number.isSafeInteger(requestedSequence) || requestedSequence < 0 || requestedSequence > 4) throw new Error(`Invalid Spell & Trap Zone ${requestedSequence}`);
+  const sequence = firstOpenFieldZoneSequence(state, player, "spellTrapZone", [], 1 << requestedSequence);
+  if (sequence === undefined) throw new Error(`Spell & Trap Zone ${requestedSequence + 1} is not available`);
+  return sequence;
 }

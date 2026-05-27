@@ -102,7 +102,7 @@ export interface DuelActivationHandlers {
   specialSummonCard(state: DuelState, uid: string, player: PlayerId, summonTypeCode?: number, allowUnconditionalSpecialSummonCondition?: boolean, relatedEffectId?: number, summonPosition?: CardPosition, summonSequence?: number): DuelCardInstance;
 }
 
-export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers): void {
+export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: string, effectId: string, handlers: DuelActivationHandlers, spellTrapSequence?: number): void {
   const activation = findActivationEffectForSource(session.state, player, uid, effectId);
   if (!activation) throw new Error(`Effect ${effectId} is not registered`);
   const { effect, source } = activation;
@@ -141,7 +141,7 @@ export function activateDuelEffect(session: DuelSession, player: PlayerId, uid: 
   try {
     if (effect.cost && !effect.cost(ctx)) throw new Error(`Cost for ${effectId} could not be paid`);
     if (effect.target && !effect.target(ctx)) throw new Error(`Targets for ${effectId} are not legal`);
-    placeActivatedSpellTrapCard(session.state, player, source, effect);
+    placeActivatedSpellTrapCard(session.state, player, source, effect, spellTrapSequence);
     handlers.pushChainLink(
       session.state,
       player,
