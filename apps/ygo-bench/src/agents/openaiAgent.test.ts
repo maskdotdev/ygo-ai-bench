@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OpenAiAgent, chooseOpenAiLegalAction, parseAgentDecision } from "./openaiAgent.js";
+import { OpenAiAgent, checkOpenAiConnectivity, chooseOpenAiLegalAction, parseAgentDecision } from "./openaiAgent.js";
 
 describe("parseAgentDecision", () => {
   it("accepts actionId and reason JSON", () => {
@@ -80,6 +80,29 @@ describe("OpenAiAgent", () => {
     });
 
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toMatchObject({ model: "configured-model" });
+  });
+});
+
+describe("checkOpenAiConnectivity", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("checks the models endpoint with the configured key", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+    } as Response);
+
+    await expect(checkOpenAiConnectivity({ apiKey: "test-key", endpoint: "https://example.test/models" })).resolves.toEqual({
+      ok: true,
+      status: 200,
+    });
+    expect(fetchMock).toHaveBeenCalledWith("https://example.test/models", {
+      headers: {
+        Authorization: "Bearer test-key",
+      },
+    });
   });
 });
 

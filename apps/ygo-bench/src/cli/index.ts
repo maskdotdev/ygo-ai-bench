@@ -2,6 +2,7 @@ import { evalSuite } from "./eval.js";
 import { inspectTrace } from "./inspect.js";
 import { runScenario } from "./run.js";
 import { validateSuite } from "./validate.js";
+import { checkOpenAiConnectivity } from "../agents/openaiAgent.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
 import { cardDataPathFromEnv, DEFAULT_REAL_SUITE_PATH, LEGACY_REAL_SUITE_PATH, scriptRootFromEnv } from "../edopro-wasm/realDefaults.js";
 import type { RealAgentId } from "../edopro-wasm/realAgent.js";
@@ -93,6 +94,13 @@ async function main(argv: string[]): Promise<void> {
       cardDataPath: cardDataPathFromEnv(),
       scriptRoot: scriptRootFromEnv(),
     });
+    return;
+  }
+  if (command === "llm-check") {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) throw new Error("OPENAI_API_KEY is required for llm-check");
+    const result = await checkOpenAiConnectivity({ apiKey });
+    console.log(`OpenAI API reachable: HTTP ${result.status}`);
     return;
   }
   if (command === "serve-trace") {
@@ -243,6 +251,7 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent openai --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --model gpt-4o-mini --runs 1 --viewer
   pnpm --filter @ygo-bench/app bench real-validate ${LEGACY_REAL_SUITE_PATH}
+  pnpm --filter @ygo-bench/app bench llm-check
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mock-mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench run scenarios/real/smoke-duel.json --agent greedy --viewer

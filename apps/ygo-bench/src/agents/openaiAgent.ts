@@ -84,6 +84,21 @@ export function createOpenAiAgentFromEnv(model?: string): OpenAiAgent {
   });
 }
 
+export async function checkOpenAiConnectivity(args: {
+  apiKey: string;
+  endpoint?: string;
+}): Promise<{ ok: true; status: number }> {
+  const response = await fetch(args.endpoint ?? "https://api.openai.com/v1/models", {
+    headers: {
+      Authorization: `Bearer ${args.apiKey}`,
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`OpenAI API check failed: ${response.status} ${await response.text()}`);
+  }
+  return { ok: true, status: response.status };
+}
+
 export function parseAgentDecision(text: string): AgentDecision {
   const parsed = JSON.parse(text) as unknown;
   if (!isRecord(parsed) || typeof parsed.actionId !== "string") {
