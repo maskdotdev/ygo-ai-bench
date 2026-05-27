@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { evalSuite } from "./eval.js";
 import { runScenario } from "./run.js";
+import { validateSuite } from "./validate.js";
 
 async function main(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
@@ -34,6 +35,11 @@ async function main(argv: string[]): Promise<void> {
     const viewer = rest.includes("--viewer");
     const scores = await evalSuite(suitePath, agentIds, viewer);
     console.log(`Wrote ${scores.length} scores.`);
+    return;
+  }
+  if (command === "validate") {
+    const suitePath = rest[0] ?? "suites/mvp.json";
+    await validateSuite(suitePath);
     return;
   }
   if (command === "inspect") {
@@ -70,6 +76,7 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench smoke
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer
+  pnpm --filter @ygo-bench/app bench validate suites/mvp.json
   pnpm --filter @ygo-bench/app bench inspect benchmark-runs/<run>/trace.jsonl`);
 }
 

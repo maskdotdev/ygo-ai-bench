@@ -1,6 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { createAgent } from "../agents/agents.js";
+import { assertNoHiddenInfoLeak } from "../core/hiddenInfo.js";
 import { loadScenario } from "../core/scenario.js";
 import { scoreRun } from "../core/scoring.js";
 import { TraceWriter } from "../core/trace.js";
@@ -21,6 +22,7 @@ export async function runScenario(options: RunOptions): Promise<{ runDir: string
   const env = new MockYugiohEnv();
   const agent = createAgent(options.agentId, scenario);
   let observation = await env.reset(scenario);
+  assertNoHiddenInfoLeak(scenario, observation);
   let decisionsTaken = 0;
   let illegalActions = 0;
   let invalidJson = 0;
@@ -51,6 +53,7 @@ export async function runScenario(options: RunOptions): Promise<{ runDir: string
     const result = await env.step(decision.actionId);
     for (const frame of result.info.engineFrames) trace.push(frame);
     observation = result.observation;
+    assertNoHiddenInfoLeak(scenario, observation);
     finalResult = result;
     if (result.done) break;
   }

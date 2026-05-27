@@ -1,6 +1,8 @@
 {
   "id": "mvp",
   "scenarios": [
-    "scenarios/lethal/lethal-001.json"
+    "scenarios/lethal/lethal-001.json",
+    "scenarios/interruption/bait-001.json",
+    "scenarios/resource/resource-001.json"
   ]
 }

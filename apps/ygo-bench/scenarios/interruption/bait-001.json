@@ -1,0 +1,125 @@
+{
+  "id": "bait-001",
+  "name": "Bait interruption before committing key effect",
+  "family": "interruption",
+  "version": "1.0.0",
+  "seed": "bait-001-v1",
+  "maxDecisions": 4,
+  "hiddenInfoAssertions": ["Mirror Negate"],
+  "players": [
+    {
+      "lp": 8000,
+      "deck": [],
+      "hand": [
+        { "id": "h0", "code": 101, "name": "Starter Courier" },
+        { "id": "h1", "code": 102, "name": "Commitment Engine" }
+      ]
+    },
+    {
+      "lp": 8000,
+      "deck": [],
+      "hand": [
+        { "id": "oh0", "code": 201, "name": "Mirror Negate" }
+      ],
+      "spellsTraps": [
+        { "id": "os0", "code": 202, "name": "Set unknown card", "position": "set" }
+      ]
+    }
+  ],
+  "oracle": ["a_010", "a_013"],
+  "steps": [
+    {
+      "prompt": {
+        "type": "idle_command",
+        "player": 0,
+        "message": "Opponent has one unknown interaction. Choose the first action."
+      },
+      "actions": [
+        {
+          "id": "a_010",
+          "label": "Bait response with Starter Courier",
+          "model": {
+            "id": "a_010",
+            "type": "activate_effect",
+            "label": "Bait response with Starter Courier",
+            "card": { "id": "h0", "name": "Starter Courier", "zone": "HAND" }
+          },
+          "tags": ["bait", "activate"]
+        },
+        {
+          "id": "a_011",
+          "label": "Commit key effect immediately",
+          "model": {
+            "id": "a_011",
+            "type": "activate_effect",
+            "label": "Commit key effect immediately",
+            "card": { "id": "h1", "name": "Commitment Engine", "zone": "HAND" }
+          },
+          "tags": ["commit"]
+        },
+        {
+          "id": "a_012",
+          "label": "Pass",
+          "model": { "id": "a_012", "type": "pass", "label": "Pass" },
+          "tags": ["pass"]
+        }
+      ],
+      "eventsByAction": {
+        "a_010": [
+          { "event": "CHAINING", "player": 0, "text": "Player 0 activated Starter Courier." },
+          { "event": "CHAINING", "player": 1, "text": "Opponent responded with a hidden interaction." },
+          { "event": "CHAIN_SOLVING", "player": 0, "text": "Starter Courier was negated, clearing the way for the key effect." }
+        ],
+        "a_011": [
+          { "event": "CHAINING", "player": 0, "text": "Player 0 committed the key effect first." },
+          { "event": "CHAIN_SOLVING", "player": 1, "text": "The key effect was stopped by hidden interaction." }
+        ],
+        "a_012": [
+          { "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed without testing interaction.", "payload": { "phase": "END" } }
+        ]
+      },
+      "rewards": { "a_010": 0.25, "a_011": -0.5, "a_012": -0.25 },
+      "doneByAction": { "a_011": true, "a_012": true },
+      "winnerByAction": { "a_011": 1, "a_012": 1 }
+    },
+    {
+      "prompt": {
+        "type": "idle_command",
+        "player": 0,
+        "message": "The interruption has been spent. Choose the follow-up."
+      },
+      "actions": [
+        {
+          "id": "a_013",
+          "label": "Resolve Commitment Engine for lethal setup",
+          "model": {
+            "id": "a_013",
+            "type": "activate_effect",
+            "label": "Resolve Commitment Engine for lethal setup",
+            "card": { "id": "h1", "name": "Commitment Engine", "zone": "HAND" }
+          },
+          "tags": ["win", "activate"]
+        },
+        {
+          "id": "a_014",
+          "label": "Pass after bait",
+          "model": { "id": "a_014", "type": "pass", "label": "Pass after bait" },
+          "tags": ["pass"]
+        }
+      ],
+      "eventsByAction": {
+        "a_013": [
+          { "event": "CHAINING", "player": 0, "text": "Commitment Engine resolved after the response was spent." },
+          { "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 0.", "payload": { "player": 1, "lp": 0 } },
+          { "event": "WIN", "player": 0, "text": "Player 0 won." }
+        ],
+        "a_014": [
+          { "event": "NEW_PHASE", "player": 0, "text": "Player 0 passed and lost tempo.", "payload": { "phase": "END" } }
+        ]
+      },
+      "rewards": { "a_013": 1, "a_014": -0.25 },
+      "doneByAction": { "a_013": true, "a_014": true },
+      "winnerByAction": { "a_013": 0, "a_014": 1 }
+    }
+  ]
+}

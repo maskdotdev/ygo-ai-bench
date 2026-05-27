@@ -135,6 +135,7 @@ export interface Scenario {
   version: string;
   seed: string | number[];
   maxDecisions: number;
+  hiddenInfoAssertions?: string[];
   players: [ScenarioPlayer, ScenarioPlayer];
   steps: ScenarioStep[];
   oracle: string[];

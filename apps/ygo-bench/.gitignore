@@ -1,2 +1,3 @@
 dist/
 benchmark-runs/run-*/
+benchmark-runs/*-summary.json

@@ -14,7 +14,8 @@ export function scoreRun(args: {
   const finalState = args.finalResult.observation.publicState;
   const finalLpDelta = finalState.players[player].lp - finalState.players[opponent].lp;
   const won = args.finalResult.info.winner === player;
-  const objectiveScore = won ? 1 : Math.max(0, Math.min(0.75, finalLpDelta / 8000));
+  const lost = args.finalResult.info.winner === opponent;
+  const objectiveScore = won ? 1 : lost ? 0 : Math.max(0, Math.min(0.75, finalLpDelta / 8000));
 
   return {
     scenarioId: args.scenario.id,

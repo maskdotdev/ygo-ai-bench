@@ -54,7 +54,10 @@ class LlmStubAgent implements Agent {
 
   async chooseAction(observation: Observation): Promise<AgentDecision> {
     const action =
-      observation.legalActions.find((candidate) => /bait|force response|remove negation/i.test(candidate.label)) ??
+      observation.legalActions.find((candidate) => /preserve|resource/i.test(candidate.label)) ??
+      observation.legalActions.find(
+        (candidate) => candidate.type === "activate_effect" && /bait|force response|remove negation/i.test(candidate.label),
+      ) ??
       observation.legalActions.find((candidate) => /lethal|attack for game|win/i.test(candidate.label)) ??
       observation.legalActions.find((candidate) => candidate.type === "activate_effect") ??
       observation.legalActions[0];

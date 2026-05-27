@@ -1,0 +1,114 @@
+{
+  "id": "resource-001",
+  "name": "Preserve resource for next-turn win",
+  "family": "resource",
+  "version": "1.0.0",
+  "seed": "resource-001-v1",
+  "maxDecisions": 5,
+  "players": [
+    {
+      "lp": 8000,
+      "deck": [
+        { "id": "d0", "code": 301, "name": "Follow-Up Draw" }
+      ],
+      "hand": [
+        { "id": "h0", "code": 302, "name": "Small Attacker", "atk": 1600 },
+        { "id": "h1", "code": 303, "name": "Next Turn Extender" }
+      ]
+    },
+    {
+      "lp": 5000,
+      "deck": [],
+      "hand": [],
+      "monsters": [
+        { "id": "om0", "code": 304, "name": "Wall Token", "atk": 0, "position": "defense" }
+      ]
+    }
+  ],
+  "oracle": ["a_020", "a_023"],
+  "steps": [
+    {
+      "prompt": {
+        "type": "idle_command",
+        "player": 0,
+        "message": "Choose whether to spend the extender now or preserve it."
+      },
+      "actions": [
+        {
+          "id": "a_020",
+          "label": "Summon Small Attacker and preserve Next Turn Extender",
+          "model": {
+            "id": "a_020",
+            "type": "normal_summon",
+            "label": "Summon Small Attacker and preserve Next Turn Extender",
+            "card": { "id": "h0", "name": "Small Attacker", "zone": "HAND" }
+          },
+          "tags": ["resource", "summon"]
+        },
+        {
+          "id": "a_021",
+          "label": "Spend Next Turn Extender for non-lethal damage",
+          "model": {
+            "id": "a_021",
+            "type": "activate_effect",
+            "label": "Spend Next Turn Extender for non-lethal damage",
+            "card": { "id": "h1", "name": "Next Turn Extender", "zone": "HAND" }
+          },
+          "tags": ["overcommit"]
+        }
+      ],
+      "eventsByAction": {
+        "a_020": [
+          { "event": "SUMMONED", "player": 0, "text": "Player 0 summoned Small Attacker and preserved the extender." },
+          { "event": "NEW_PHASE", "player": 0, "text": "The duel advanced to the next turn with follow-up available.", "payload": { "phase": "MAIN1" } }
+        ],
+        "a_021": [
+          { "event": "CHAINING", "player": 0, "text": "Player 0 spent Next Turn Extender too early." },
+          { "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 1200.", "payload": { "player": 1, "lp": 1200 } }
+        ]
+      },
+      "rewards": { "a_020": 0.25, "a_021": -0.25 },
+      "doneByAction": { "a_021": true },
+      "winnerByAction": { "a_021": 1 }
+    },
+    {
+      "prompt": {
+        "type": "idle_command",
+        "player": 0,
+        "message": "Use the preserved extender to win next turn."
+      },
+      "actions": [
+        {
+          "id": "a_023",
+          "label": "Use preserved extender for next-turn win",
+          "model": {
+            "id": "a_023",
+            "type": "activate_effect",
+            "label": "Use preserved extender for next-turn win",
+            "card": { "id": "h1", "name": "Next Turn Extender", "zone": "HAND" }
+          },
+          "tags": ["win", "resource"]
+        },
+        {
+          "id": "a_024",
+          "label": "Attack without extender",
+          "model": { "id": "a_024", "type": "attack", "label": "Attack without extender" },
+          "tags": ["attack"]
+        }
+      ],
+      "eventsByAction": {
+        "a_023": [
+          { "event": "CHAIN_SOLVING", "player": 0, "text": "The preserved extender converted into lethal pressure." },
+          { "event": "LP_UPDATE", "player": 1, "text": "Player 1 LP became 0.", "payload": { "player": 1, "lp": 0 } },
+          { "event": "WIN", "player": 0, "text": "Player 0 won." }
+        ],
+        "a_024": [
+          { "event": "ATTACK", "player": 0, "text": "Player 0 attacked but failed to close the game." }
+        ]
+      },
+      "rewards": { "a_023": 1, "a_024": -0.25 },
+      "doneByAction": { "a_023": true, "a_024": true },
+      "winnerByAction": { "a_023": 0, "a_024": 1 }
+    }
+  ]
+}
