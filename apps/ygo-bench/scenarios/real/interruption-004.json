@@ -1,0 +1,13 @@
+{
+  "id": "real-interruption-004",
+  "name": "Real response-window race 004",
+  "family": "interruption",
+  "version": "1.0.0",
+  "seed": [397, 401, 409, 419],
+  "maxDecisions": 20,
+  "players": [
+    { "lp": 7500, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [49003308, 89631139, 70781052, 46986414, 89631139, 49003308, 70781052, 46986414] },
+    { "lp": 6000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [70781052, 46986414, 49003308, 89631139, 70781052, 46986414, 49003308, 89631139] }
+  ],
+  "scoring": { "primary": "lpDelta" }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "real-resource-005",
+  "name": "Real multi-turn resource race 005",
+  "family": "resource",
+  "version": "1.0.0",
+  "seed": [557, 563, 569, 571],
+  "maxDecisions": 26,
+  "players": [
+    { "lp": 6000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [49003308, 89631139, 46986414, 70781052, 89631139, 49003308, 46986414, 70781052] },
+    { "lp": 6000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [89631139, 70781052, 49003308, 46986414, 89631139, 70781052, 49003308, 46986414] }
+  ],
+  "scoring": { "primary": "lpDelta" }
+}

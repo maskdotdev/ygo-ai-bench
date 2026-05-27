@@ -1,0 +1,13 @@
+{
+  "id": "real-lethal-010",
+  "name": "Real lethal race 010",
+  "family": "lethal",
+  "version": "1.0.0",
+  "seed": [293, 307, 311, 313],
+  "maxDecisions": 18,
+  "players": [
+    { "lp": 7000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [89631139, 46986414, 89631139, 70781052, 49003308, 46986414, 89631139, 70781052] },
+    { "lp": 3600, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [70781052, 49003308, 46986414, 70781052, 49003308, 46986414, 70781052, 49003308] }
+  ],
+  "scoring": { "primary": "lpDelta" }
+}

@@ -17,7 +17,7 @@ export interface RealEvalOptions {
 }
 
 export interface RealEvalSummary {
-  suiteId: "real-mvp";
+  suiteId: string;
   generatedAt: string;
   records: Array<{
     score: ScenarioScore;
@@ -58,23 +58,23 @@ export async function evalRealSuite(options: RealEvalOptions): Promise<RealEvalS
           ...(options.viewer ? { viewerPath: `${result.runDir}/viewer.html` } : {}),
         });
         console.log(
-          `real-mvp ${agentId} ${result.score.scenarioId} run ${run + 1}: score=${result.score.objectiveScore.toFixed(2)} decisions=${result.score.decisionsTaken}`,
+          `${suite.id} ${agentId} ${result.score.scenarioId} run ${run + 1}: score=${result.score.objectiveScore.toFixed(2)} decisions=${result.score.decisionsTaken}`,
         );
       }
     }
   }
 
   const summary: RealEvalSummary = {
-    suiteId: "real-mvp",
+    suiteId: suite.id,
     generatedAt: new Date().toISOString(),
     records,
     scores: records.map((record) => record.score),
     aggregate: aggregateScores(records.map((record) => record.score)),
   };
   await mkdir(resolve("benchmark-runs"), { recursive: true });
-  await writeFile(resolve("benchmark-runs", "real-mvp-summary.json"), JSON.stringify(summary, null, 2) + "\n");
-  await writeFile(resolve("benchmark-runs", "real-mvp-summary.csv"), renderCsv(summary));
-  await writeFile(resolve("benchmark-runs", "real-mvp-report.html"), renderHtmlReport(summary));
+  await writeFile(resolve("benchmark-runs", `${suite.id}-summary.json`), JSON.stringify(summary, null, 2) + "\n");
+  await writeFile(resolve("benchmark-runs", `${suite.id}-summary.csv`), renderCsv(summary));
+  await writeFile(resolve("benchmark-runs", `${suite.id}-report.html`), renderHtmlReport(summary));
   return summary;
 }
 
@@ -143,7 +143,7 @@ function renderHtmlReport(summary: RealEvalSummary): string {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>YGO Bench Real MVP Report</title>
+  <title>YGO Bench ${escapeHtml(summary.suiteId)} Report</title>
   <style>
     body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #f5f7f8; color: #17212b; }
     main { max-width: 1180px; margin: 0 auto; padding: 28px; display: grid; gap: 22px; }
@@ -158,7 +158,7 @@ function renderHtmlReport(summary: RealEvalSummary): string {
 <body>
   <main>
     <header>
-      <h1>YGO Bench Real MVP Report</h1>
+      <h1>YGO Bench ${escapeHtml(summary.suiteId)} Report</h1>
       <p>Generated ${escapeHtml(summary.generatedAt)}.</p>
     </header>
     <section>

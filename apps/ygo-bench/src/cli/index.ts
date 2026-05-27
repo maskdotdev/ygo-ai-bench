@@ -83,7 +83,7 @@ async function main(argv: string[]): Promise<void> {
         `${row.agentId}: runs=${row.runs} winRate=${row.winRate.toFixed(2)} avgScore=${row.averageScore.toFixed(2)} avgDecisions=${row.averageDecisions.toFixed(1)} avgLpDelta=${row.averageLpDelta.toFixed(0)}`,
       );
     }
-    console.log("Summary: benchmark-runs/real-mvp-summary.json");
+    console.log(`Summary: benchmark-runs/${summary.suiteId}-summary.json`);
     return;
   }
   if (command === "real-validate") {
@@ -243,6 +243,7 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --model gpt-4o-mini --runs 1 --viewer
   pnpm --filter @ygo-bench/app bench real-validate suites/real-mvp.json
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
+  pnpm --filter @ygo-bench/app bench eval suites/mock-mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench run scenarios/real/smoke-duel.json --agent greedy --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench eval suites/real-mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer

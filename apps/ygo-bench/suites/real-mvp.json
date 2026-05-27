@@ -1,9 +1,25 @@
 {
-  "id": "real-mvp",
+  "id": "mvp",
   "scenarios": [
-    "scenarios/real/smoke-duel.json",
-    "scenarios/real/low-lp-race.json",
-    "scenarios/real/big-monster-race.json",
-    "scenarios/real/symmetric-race-alt-seed.json"
+    "scenarios/real/lethal-001.json",
+    "scenarios/real/lethal-002.json",
+    "scenarios/real/lethal-003.json",
+    "scenarios/real/lethal-004.json",
+    "scenarios/real/lethal-005.json",
+    "scenarios/real/lethal-006.json",
+    "scenarios/real/lethal-007.json",
+    "scenarios/real/lethal-008.json",
+    "scenarios/real/lethal-009.json",
+    "scenarios/real/lethal-010.json",
+    "scenarios/real/interruption-001.json",
+    "scenarios/real/interruption-002.json",
+    "scenarios/real/interruption-003.json",
+    "scenarios/real/interruption-004.json",
+    "scenarios/real/interruption-005.json",
+    "scenarios/real/resource-001.json",
+    "scenarios/real/resource-002.json",
+    "scenarios/real/resource-003.json",
+    "scenarios/real/resource-004.json",
+    "scenarios/real/resource-005.json"
   ]
 }

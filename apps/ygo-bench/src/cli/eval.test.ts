@@ -11,10 +11,10 @@ describe("evalSuite", () => {
     await mkdir(join(temp, "benchmark-runs"));
     try {
       process.chdir(join(cwd, "apps/ygo-bench"));
-      const scores = await evalSuite("suites/mvp.json", ["oracle"], true);
+      const scores = await evalSuite("suites/mock-mvp.json", ["oracle"], true);
       expect(scores.length).toBeGreaterThanOrEqual(7);
 
-      const summary = JSON.parse(await readFile("benchmark-runs/mvp-summary.json", "utf8")) as {
+      const summary = JSON.parse(await readFile("benchmark-runs/mock-mvp-summary.json", "utf8")) as {
         aggregate: Array<{ agentId: string; winRate: number }>;
         records: Array<{ viewerPath?: string }>;
       };
@@ -33,8 +33,8 @@ describe("evalSuite", () => {
         },
       ]);
       expect(summary.records.every((record) => record.viewerPath?.endsWith("/viewer.html"))).toBe(true);
-      await expect(readFile("benchmark-runs/mvp-summary.csv", "utf8")).resolves.toContain("viewerPath");
-      await expect(readFile("benchmark-runs/mvp-report.html", "utf8")).resolves.toContain("YGO Bench mvp Report");
+      await expect(readFile("benchmark-runs/mock-mvp-summary.csv", "utf8")).resolves.toContain("viewerPath");
+      await expect(readFile("benchmark-runs/mock-mvp-report.html", "utf8")).resolves.toContain("YGO Bench mock-mvp Report");
     } finally {
       process.chdir(cwd);
     }
