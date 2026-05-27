@@ -3,6 +3,7 @@ import { inspectTrace } from "./inspect.js";
 import { runScenario } from "./run.js";
 import { validateSuite } from "./validate.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
+import { cardDataPathFromEnv, DEFAULT_REAL_SUITE_PATH, LEGACY_REAL_SUITE_PATH, scriptRootFromEnv } from "../edopro-wasm/realDefaults.js";
 import type { RealAgentId } from "../edopro-wasm/realAgent.js";
 import { evalRealSuite } from "../edopro-wasm/realEval.js";
 import { getFirstRealPrompt, stringifyRealPrompt } from "../edopro-wasm/realPrompt.js";
@@ -30,8 +31,8 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === "real-smoke") {
     const result = await runRealEngineSmoke({
-      cardDataPath: "../../public/card-data/cdb-rows.json",
-      scriptRoot: "../../.upstream/ignis/script",
+      cardDataPath: cardDataPathFromEnv(),
+      scriptRoot: scriptRootFromEnv(),
       outPath: "benchmark-runs/real-smoke-messages.json",
     });
     console.log(`Loaded ocgcore ${result.version.join(".")}`);
@@ -46,8 +47,8 @@ async function main(argv: string[]): Promise<void> {
     const model = readFlag(rest, "--model");
     const result = await runRealDuel({
       agentId: readRealAgentFlag(rest, "--agent", "greedy"),
-      cardDataPath: "../../public/card-data/cdb-rows.json",
-      scriptRoot: "../../.upstream/ignis/script",
+      cardDataPath: cardDataPathFromEnv(),
+      scriptRoot: scriptRootFromEnv(),
       maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 12),
       viewer: rest.includes("--viewer"),
       scenarioPath,
@@ -60,8 +61,8 @@ async function main(argv: string[]): Promise<void> {
     const scenarioPath = readFlag(rest, "--scenario") ?? rest[0] ?? "scenarios/real/smoke-duel.json";
     const result = await getFirstRealPrompt({
       scenarioPath,
-      cardDataPath: "../../public/card-data/cdb-rows.json",
-      scriptRoot: "../../.upstream/ignis/script",
+      cardDataPath: cardDataPathFromEnv(),
+      scriptRoot: scriptRootFromEnv(),
     });
     console.log(stringifyRealPrompt(result));
     return;
@@ -71,11 +72,11 @@ async function main(argv: string[]): Promise<void> {
     const summary = await evalRealSuite({
       agentIds: readRealAgentList(rest, "--agents", ["random", "greedy"]),
       runsPerAgent: Number(readFlag(rest, "--runs") ?? 1),
-      cardDataPath: "../../public/card-data/cdb-rows.json",
-      scriptRoot: "../../.upstream/ignis/script",
+      cardDataPath: cardDataPathFromEnv(),
+      scriptRoot: scriptRootFromEnv(),
       maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 20),
       viewer: rest.includes("--viewer"),
-      suitePath: readFlag(rest, "--suite") ?? "suites/real-mvp.json",
+      suitePath: readFlag(rest, "--suite") ?? DEFAULT_REAL_SUITE_PATH,
       ...(model ? { model } : {}),
     });
     for (const row of summary.aggregate) {
@@ -88,9 +89,9 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === "real-validate") {
     await validateRealSuite({
-      suitePath: rest[0] ?? "suites/real-mvp.json",
-      cardDataPath: "../../public/card-data/cdb-rows.json",
-      scriptRoot: "../../.upstream/ignis/script",
+      suitePath: rest[0] ?? DEFAULT_REAL_SUITE_PATH,
+      cardDataPath: cardDataPathFromEnv(),
+      scriptRoot: scriptRootFromEnv(),
     });
     return;
   }
@@ -121,8 +122,8 @@ async function main(argv: string[]): Promise<void> {
     if (await isRealScenario(scenarioPath)) {
       const result = await runRealDuel({
         agentId: readRealAgentValue(agentId),
-        cardDataPath: "../../public/card-data/cdb-rows.json",
-        scriptRoot: "../../.upstream/ignis/script",
+        cardDataPath: cardDataPathFromEnv(),
+        scriptRoot: scriptRootFromEnv(),
         maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 12),
         viewer,
         scenarioPath,
@@ -145,8 +146,8 @@ async function main(argv: string[]): Promise<void> {
       const summary = await evalRealSuite({
         agentIds: agentIds.map((agentId) => readRealAgentValue(agentId)),
         runsPerAgent: Number(readFlag(rest, "--runs") ?? 1),
-        cardDataPath: "../../public/card-data/cdb-rows.json",
-        scriptRoot: "../../.upstream/ignis/script",
+        cardDataPath: cardDataPathFromEnv(),
+        scriptRoot: scriptRootFromEnv(),
         maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 20),
         viewer,
         suitePath,
@@ -164,8 +165,8 @@ async function main(argv: string[]): Promise<void> {
     if (await isRealSuite(suitePath)) {
       await validateRealSuite({
         suitePath,
-        cardDataPath: "../../public/card-data/cdb-rows.json",
-        scriptRoot: "../../.upstream/ignis/script",
+        cardDataPath: cardDataPathFromEnv(),
+        scriptRoot: scriptRootFromEnv(),
       });
       return;
     }
@@ -241,14 +242,14 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent greedy --viewer
   pnpm --filter @ygo-bench/app bench real-run --scenario scenarios/real/smoke-duel.json --agent openai --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --model gpt-4o-mini --runs 1 --viewer
-  pnpm --filter @ygo-bench/app bench real-validate suites/real-mvp.json
+  pnpm --filter @ygo-bench/app bench real-validate ${LEGACY_REAL_SUITE_PATH}
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mock-mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench run scenarios/real/smoke-duel.json --agent greedy --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
-  pnpm --filter @ygo-bench/app bench eval suites/real-mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
+  pnpm --filter @ygo-bench/app bench eval ${LEGACY_REAL_SUITE_PATH} --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench validate suites/mvp.json
-  pnpm --filter @ygo-bench/app bench validate suites/real-mvp.json
+  pnpm --filter @ygo-bench/app bench validate ${LEGACY_REAL_SUITE_PATH}
   pnpm --filter @ygo-bench/app bench inspect benchmark-runs/<run>/trace.jsonl
   pnpm --filter @ygo-bench/app bench serve-trace benchmark-runs/<run>/trace.jsonl --port 4173`);
 }
