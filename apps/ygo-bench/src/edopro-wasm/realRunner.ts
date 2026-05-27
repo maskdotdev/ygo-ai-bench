@@ -130,7 +130,40 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         lineQuality += decisionLineQuality;
         lineQualityDecisions += 1;
       }
-      transcript.push(`## Decision ${decisionsTaken}`, "", `Chosen: \`${chosen.action.id}\``, "", chosen.action.label, "", chosen.reason, "");
+      transcript.push(
+        `## Decision ${decisionsTaken}`,
+        "",
+        "### Prompt Observation",
+        "",
+        "```json",
+        JSON.stringify(chosen.observation, null, 2),
+        "```",
+        "",
+        "### Model Response",
+        "",
+        "```json",
+        JSON.stringify(
+          {
+            actionId: chosen.action.id,
+            reason: chosen.reason,
+            tokenCount: chosen.tokenCount,
+            invalidJson: chosen.invalidJson,
+            illegalActions: chosen.illegalActions,
+            modelErrors: chosen.modelErrors,
+            ...(chosen.rawError ? { error: chosen.rawError } : {}),
+          },
+          null,
+          2,
+        ),
+        "```",
+        "",
+        `Chosen: \`${chosen.action.id}\``,
+        "",
+        chosen.action.label,
+        "",
+        chosen.reason,
+        "",
+      );
       await pushTrace({
         type: "decision",
         player: typeof prompt?.player === "number" ? prompt.player : 0,
