@@ -14,6 +14,7 @@ import { loadRealSuite } from "../edopro-wasm/realSuite.js";
 import { validateRealSuite } from "../edopro-wasm/realValidate.js";
 import type { ScenarioScore } from "../core/types.js";
 import { startTraceViewerServer } from "../viewer/liveServer.js";
+import { startBenchUiServer } from "../viewer-ui/uiServer.js";
 
 async function main(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
@@ -111,6 +112,23 @@ async function main(argv: string[]): Promise<void> {
       port: Number(readFlag(rest, "--port") ?? 0),
     });
     console.log(`Trace viewer: ${server.url}`);
+    console.log("Press Ctrl-C to stop.");
+    const shutdown = async () => {
+      await server.close();
+      process.exit(0);
+    };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+    await new Promise(() => {});
+    return;
+  }
+  if (command === "ui") {
+    const openRunId = readFlag(rest, "--run");
+    const server = await startBenchUiServer({
+      port: Number(readFlag(rest, "--port") ?? 0),
+      ...(openRunId ? { openRunId } : {}),
+    });
+    console.log(`YGO Bench UI: ${server.url}`);
     console.log("Press Ctrl-C to stop.");
     const shutdown = async () => {
       await server.close();
@@ -252,6 +270,8 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench real-eval --agents random,greedy,openai --model gpt-4o-mini --runs 1 --viewer
   pnpm --filter @ygo-bench/app bench real-validate ${LEGACY_REAL_SUITE_PATH}
   pnpm --filter @ygo-bench/app bench llm-check
+  pnpm --filter @ygo-bench/app viewer:build
+  pnpm --filter @ygo-bench/app bench ui --port 4173
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mock-mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench run scenarios/real/smoke-duel.json --agent greedy --viewer

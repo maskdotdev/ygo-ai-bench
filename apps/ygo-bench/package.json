@@ -8,6 +8,7 @@
     "bench": "node dist/cli/index.js",
     "smoke": "node dist/cli/index.js smoke",
     "test": "vitest run --config vitest.config.ts",
+    "viewer:build": "vite build --config vite.viewer.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
