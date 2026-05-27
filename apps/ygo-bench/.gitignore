@@ -1,4 +1,5 @@
 dist/
 benchmark-runs/run-*/
+benchmark-runs/real-run-*/
 benchmark-runs/*-summary.json
 benchmark-runs/real-smoke-messages.json

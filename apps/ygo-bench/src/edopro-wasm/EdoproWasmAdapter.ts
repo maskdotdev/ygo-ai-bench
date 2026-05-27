@@ -168,6 +168,7 @@ function isPromptMessage(type: number, ocg: OcgRuntime): boolean {
     type === ocg.OcgMessageType.SELECT_BATTLECMD ||
     type === ocg.OcgMessageType.SELECT_CHAIN ||
     type === ocg.OcgMessageType.SELECT_CARD ||
+    type === ocg.OcgMessageType.SELECT_PLACE ||
     type === ocg.OcgMessageType.SELECT_YESNO ||
     type === ocg.OcgMessageType.SELECT_OPTION
   );

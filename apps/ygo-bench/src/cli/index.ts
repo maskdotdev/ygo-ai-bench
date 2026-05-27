@@ -4,6 +4,7 @@ import { evalSuite } from "./eval.js";
 import { runScenario } from "./run.js";
 import { validateSuite } from "./validate.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
+import { runRealDuel } from "../edopro-wasm/realRunner.js";
 
 async function main(argv: string[]): Promise<void> {
   const [command, ...rest] = argv;
@@ -31,6 +32,17 @@ async function main(argv: string[]): Promise<void> {
     console.log(`Status: ${result.status}`);
     console.log(`Prompt: ${result.promptType ?? "none"}`);
     console.log(`Messages: ${result.outPath}`);
+    return;
+  }
+  if (command === "real-run") {
+    const result = await runRealDuel({
+      agentId: (readFlag(rest, "--agent") as "random" | "greedy" | undefined) ?? "greedy",
+      cardDataPath: "../../public/card-data/cdb-rows.json",
+      scriptRoot: "../../.upstream/ignis/script",
+      maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 12),
+      viewer: rest.includes("--viewer"),
+    });
+    printRunResult(result);
     return;
   }
   if (command === "run") {
@@ -89,6 +101,7 @@ function printHelp(): void {
   console.log(`Usage:
   pnpm --filter @ygo-bench/app bench smoke
   pnpm --filter @ygo-bench/app bench real-smoke
+  pnpm --filter @ygo-bench/app bench real-run --agent greedy --viewer
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mvp.json --agents random,greedy,llm --viewer
   pnpm --filter @ygo-bench/app bench validate suites/mvp.json

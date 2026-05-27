@@ -78,7 +78,29 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
     return actions;
   }
 
+  if (prompt.type === ocg.OcgMessageType.SELECT_PLACE) {
+    const count = typeof prompt.count === "number" ? prompt.count : 1;
+    const mask = typeof prompt.field_mask === "number" ? prompt.field_mask : 0xffffffff;
+    const places = firstOpenMonsterZones(mask, typeof prompt.player === "number" ? prompt.player : 0, count);
+    return places.map((place, index) => ({
+      id: nextActionId(index),
+      type: "select_place",
+      label: `Place card in monster zone ${place.sequence + 1}`,
+      response: { type: ocg.OcgResponseType.SELECT_PLACE, places: [place] },
+    }));
+  }
+
   return [];
+}
+
+function firstOpenMonsterZones(fieldMask: number, player: number, count: number): Array<{ player: number; location: number; sequence: number }> {
+  const places: Array<{ player: number; location: number; sequence: number }> = [];
+  for (let sequence = 0; sequence < 5 && places.length < count; sequence += 1) {
+    if ((fieldMask & (1 << sequence)) === 0) {
+      places.push({ player, location: 4, sequence });
+    }
+  }
+  return places;
 }
 
 function nextActionId(index: number): string {
