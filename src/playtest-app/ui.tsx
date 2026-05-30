@@ -1,5 +1,6 @@
 import type { CardSummary, PlaytestLogEntry } from "#engine/types.js";
 import type { DuelAction } from "#duel/types.js";
+import { duelActionPresentation } from "./duel-action-presenter.js";
 
 export interface CardImageInfo {
   small: string;
@@ -158,14 +159,11 @@ export function CardZoom(props: {
               </p>
               <div className="mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
                 {actions.map((action) => (
-                  <button
+                  <ActionChoiceButton
                     key={JSON.stringify(action)}
-                    type="button"
-                    className="action-button w-full rounded-lg px-3 py-3 text-left text-xs font-semibold leading-snug sm:text-sm"
+                    action={action}
                     onClick={() => props.onAction?.(action)}
-                  >
-                    <span className="line-clamp-4">{action.label}</span>
-                  </button>
+                  />
                 ))}
               </div>
             </>
@@ -173,6 +171,23 @@ export function CardZoom(props: {
         </div>
       </div>
     </div>
+  );
+}
+
+function ActionChoiceButton(props: { action: DuelAction; onClick: () => void }) {
+  const presentation = duelActionPresentation(props.action);
+  return (
+    <button
+      type="button"
+      className={`action-button duel-action-choice duel-action-choice--${presentation.tone} w-full rounded-lg px-4 py-4 text-left`}
+      onClick={props.onClick}
+    >
+      <span className="duel-action-choice-head">
+        <span className="duel-action-choice-badge">{presentation.badge}</span>
+        <span className="duel-action-choice-title">{presentation.title}</span>
+      </span>
+      <span className="duel-action-choice-detail">{presentation.detail}</span>
+    </button>
   );
 }
 

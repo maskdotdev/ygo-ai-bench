@@ -1,14 +1,17 @@
 import "../browser-node-shims/process-global.js";
+import cardBackUrl from "../../assets/card-back.webp";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createDuel, getGroupedDuelLegalActions, getLegalActions, loadDecks, queryPublicState, startDuel } from "#duel/core.js";
-import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
+import type { ApplyDuelResponseResult, DuelAction, DuelCardReader, DuelLocation, DuelSession, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { LuaInitialEffectRegistrationResult, LuaScriptHost, LuaScriptLoadResult } from "#lua/host.js";
 import { parseYdk } from "#playtest/ydk.js";
 import { createBrowserCdbCardDataLoader, createBrowserCdbJsonManifestLoader, createBrowserCdbJsonRowsLoader, createBrowserDuelCardDataCache, getBrowserDuelCardReader } from "./duel-pvp-card-reader.js";
 import type { BrowserCdbRowsManifest, BrowserDuelCardDataCache, BrowserDuelCardDataPreloadResult } from "./duel-pvp-card-reader.js";
 import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader, createBrowserLuaScriptManifestLoader } from "./duel-pvp-script-cache.js";
 import type { BrowserLuaScriptCache, BrowserLuaScriptManifest, BrowserLuaScriptPreloadResult } from "./duel-pvp-script-cache.js";
-import { DuelBattlefield, DuelLogList } from "./duel-battlefield.js";
+import { DuelBattlefield, DuelLogList, isDuelCardVisibleToPlayer } from "./duel-battlefield.js";
+import type { DuelPileView } from "./duel-battlefield.js";
+import { cleanedDuelActionLabel } from "./duel-action-presenter.js";
 import { runDuelBattlefieldScript, runDuelBattlefieldScriptStep, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult, type DuelBattlefieldScriptStepResult } from "./duel-battlefield-script.js";
 import { duelActionAnchorUids } from "./duel-action-anchors.js";
 import { applyPvpAction } from "./pvp-apply-action.js";
@@ -332,7 +335,7 @@ export function PvpArena() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [zoomCard, setZoomCard] = useState<{ uid?: string; name: string; image: string } | null>(null);
-  const [pileModal, setPileModal] = useState<{ title: string; icon: string; cards: PublicDuelCard[] } | null>(null);
+  const [pileModal, setPileModal] = useState<DuelPileView | null>(null);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [imageRevision, setImageRevision] = useState(0);
   const [visibleFixtureRun, setVisibleFixtureRun] = useState<{ nextStep: number; running: boolean } | null>(null);
@@ -513,13 +516,14 @@ export function PvpArena() {
         return;
       }
       if (action.type === "activateEffect") {
+        const actionLabel = cleanedDuelActionLabel(action);
         const revealDetail = revealedCardDetail(session, previousEventCount);
         const detail = result.state.chain.length > 0
           ? `Chain Link ${result.state.chain.length} is pending. Player ${(result.state.waitingFor ?? action.player) + 1} must respond or pass.`
           : result.state.prompt
             ? `Player ${result.state.prompt.player + 1} must answer the prompt.`
             : revealDetail ?? "The effect was applied.";
-        notify("Effect activated", `${action.label}. ${detail}`, "success");
+        notify("Effect activated", `${actionLabel}. ${detail}`, "success");
       } else if (action.type === "passChain" && result.state.prompt) {
         notify("Chain resolved", `Player ${result.state.prompt.player + 1} must answer the prompt.`, "success");
       } else if (action.type === "passChain") {
@@ -541,10 +545,18 @@ export function PvpArena() {
   }, [publicState.status, session, waiting, revision]);
 
   const inspectCard = useCallback((card: PublicDuelCard) => {
+    if (!isDuelCardVisibleToPlayer(card, viewer)) {
+      notify("Hidden card", hiddenCardReason(card, viewer), "warning");
+      return;
+    }
     const image = cardImages.current.get(card.code);
     const url = image?.large || image?.small;
-    if (url) setZoomCard({ uid: card.uid, name: card.name, image: url });
-  }, [imageRevision]);
+    if (url) {
+      setZoomCard({ uid: card.uid, name: card.name, image: url });
+      return;
+    }
+    notify("Card image unavailable", `${card.name} is visible, but its scan has not loaded.`, "warning");
+  }, [imageRevision, notify, viewer]);
 
   const zoomActions = useMemo(() => {
     if (!zoomCard) return [];
@@ -564,49 +576,49 @@ export function PvpArena() {
   }, [publicState.chain.length, publicState.prompt, publicState.triggerOrderPrompt, waiting]);
 
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-slate-950 text-slate-200">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-cyan-500/30 bg-slate-900/90 shadow-[0_0_15px_rgba(34,211,238,0.1)] px-3 py-1.5 backdrop-blur-md">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#050403] text-[#f3ead2]">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-[#d4af37]/25 bg-black/80 px-3 py-1.5 shadow-[0_10px_24px_rgba(0,0,0,0.42)] backdrop-blur-md">
         <div className="flex min-w-0 items-center gap-2">
           <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-[#d4af37] to-[#9a7b2c] text-sm font-bold text-[#0a0c08]">⚔</div>
           <div className="min-w-0">
-            <p className="font-sans text-[9px] font-bold uppercase tracking-[0.22em] text-cyan-400/80">Duel Deck Studio</p>
-            <h1 className="truncate font-sans text-base font-bold leading-tight text-white drop-shadow-[0_0_5px_rgba(34,211,238,0.3)]">Two-player duel</h1>
+            <p className="font-sans text-[9px] font-bold uppercase tracking-[0.22em] text-[#d4af37]/80">Duel Deck Studio</p>
+            <h1 className="truncate font-sans text-base font-bold leading-tight text-[#fff7dc] drop-shadow-[0_0_8px_rgba(212,175,55,0.24)]">Two-player duel</h1>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
           <button
             type="button"
-            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${viewer === 0 ? "bg-cyan-500/20 text-cyan-100 border border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.2)]" : "bg-slate-800/50 text-slate-400 border border-slate-700/50"}`}
+            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${viewer === 0 ? "border border-[#d4af37]/40 bg-[#d4af37]/18 text-[#fff7dc] shadow-[0_0_8px_rgba(212,175,55,0.18)]" : "border border-[#d4af37]/14 bg-black/40 text-[#c7b98f]/70"}`}
             onClick={() => setViewer(0)}
           >
             Seat P1
           </button>
           <button
             type="button"
-            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${viewer === 1 ? "bg-cyan-500/20 text-cyan-100 border border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.2)]" : "bg-slate-800/50 text-slate-400 border border-slate-700/50"}`}
+            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${viewer === 1 ? "border border-[#d4af37]/40 bg-[#d4af37]/18 text-[#fff7dc] shadow-[0_0_8px_rgba(212,175,55,0.18)]" : "border border-[#d4af37]/14 bg-black/40 text-[#c7b98f]/70"}`}
             onClick={() => setViewer(1)}
           >
             Seat P2
           </button>
           <button
             type="button"
-            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${logOpen ? "bg-cyan-500/20 text-cyan-100 border border-cyan-500/30 shadow-[0_0_8px_rgba(34,211,238,0.2)]" : "bg-slate-800/50 text-slate-400 border border-slate-700/50"}`}
+            className={`rounded-md px-2 py-1 text-[11px] font-semibold ${logOpen ? "border border-[#d4af37]/40 bg-[#d4af37]/18 text-[#fff7dc] shadow-[0_0_8px_rgba(212,175,55,0.18)]" : "border border-[#d4af37]/14 bg-black/40 text-[#c7b98f]/70"}`}
             onClick={() => setLogOpen((open) => !open)}
           >
             Log
           </button>
-          <button type="button" className="rounded-md bg-black/40 px-2 py-1 text-[11px] font-semibold text-slate-400 hover:bg-cyan-500/15 hover:text-cyan-200" onClick={() => setMenuOpen(true)}>
+          <button type="button" className="rounded-md border border-[#d4af37]/14 bg-black/40 px-2 py-1 text-[11px] font-semibold text-[#c7b98f]/70 hover:bg-[#d4af37]/12 hover:text-[#fff7dc]" onClick={() => setMenuOpen(true)}>
             Decks
           </button>
-          <button type="button" className="rounded-md bg-black/40 px-2 py-1 text-[11px] font-semibold text-slate-400 hover:bg-cyan-500/15 hover:text-cyan-200" onClick={runVisibleFixture}>
+          <button type="button" className="rounded-md border border-[#d4af37]/14 bg-black/40 px-2 py-1 text-[11px] font-semibold text-[#c7b98f]/70 hover:bg-[#d4af37]/12 hover:text-[#fff7dc]" onClick={runVisibleFixture}>
             {visibleFixtureRun?.running ? `Fixture ${Math.min(visibleFixtureRun.nextStep + 1, pvpVisibleBattleFixtureScript.length)}/${pvpVisibleBattleFixtureScript.length}` : "Fixture"}
           </button>
         </div>
       </header>
 
       {publicState.status === "ended" ? (
-        <div className="shrink-0 border-b border-cyan-500/30 bg-slate-900/80 px-3 py-1.5 text-center font-sans text-sm font-bold text-cyan-50 shadow-[0_4px_12px_rgba(0,0,0,0.5)] backdrop-blur-md">
+        <div className="shrink-0 border-b border-[#d4af37]/25 bg-black/75 px-3 py-1.5 text-center font-sans text-sm font-bold text-[#fff7dc] shadow-[0_4px_12px_rgba(0,0,0,0.5)] backdrop-blur-md">
           {publicState.winner === "draw"
             ? "Match drawn"
             : publicState.winner !== undefined
@@ -617,9 +629,9 @@ export function PvpArena() {
 
       <div className="relative min-h-0 flex-1 overflow-hidden">
         <main className="h-full min-h-0 overflow-hidden px-2 pb-2 pt-1 sm:px-3">
-          <div className="mx-auto flex h-full max-w-[960px] flex-col overflow-hidden rounded-xl border border-cyan-500/20 bg-slate-900/60 px-2 py-1.5 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.6)]">
-            <p className="shrink-0 truncate text-center text-[10px] leading-tight text-slate-400">
-              <span className="font-semibold text-cyan-400">DuelSession</span> · P{waiting !== undefined ? waiting + 1 : "—"}
+          <div className="mx-auto flex h-full max-w-[1120px] flex-col overflow-hidden rounded-lg border border-[#d4af37]/18 bg-black/35 px-1.5 py-1.5 shadow-[0_0_24px_rgba(0,0,0,0.58)] backdrop-blur-md">
+            <p className="shrink-0 truncate text-center text-[10px] leading-tight text-[#c7b98f]/68">
+              <span className="font-semibold text-[#d4af37]/85">DuelSession</span> | P{waiting !== undefined ? waiting + 1 : "-"}
               {publicState.status !== "awaiting" ? ` · ${publicState.status}` : ""}
             </p>
             <div className="min-h-0 flex-1 overflow-hidden pt-1">
@@ -628,7 +640,7 @@ export function PvpArena() {
                 viewer={viewer}
                 cardImages={cardImages.current}
                 onCardInspect={inspectCard}
-                onViewPile={(title, icon, cards) => setPileModal({ title, icon, cards })}
+                onViewPile={setPileModal}
                 legalActions={legalActions}
                 legalActionGroups={legalActionGroups}
                 onPlayAction={apply}
@@ -728,44 +740,13 @@ export function PvpArena() {
       ) : null}
 
       {pileModal ? (
-        <div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/80 backdrop-blur-sm p-4" onClick={() => setPileModal(null)}>
-          <div className="bg-slate-900 border border-slate-700 shadow-[0_0_30px_rgba(0,0,0,0.8)] text-slate-200 relative max-h-[85vh] w-full max-w-[900px] overflow-y-auto rounded-xl p-5 shadow-2xl" onClick={(event) => event.stopPropagation()}>
-            <div className="mb-4 flex items-center justify-between border-b border-slate-700 pb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-2xl">{pileModal.icon}</span>
-                <h2 className="font-sans text-xl font-bold text-white tracking-wide">{pileModal.title}</h2>
-              </div>
-              <button type="button" className="text-2xl text-cyan-400" onClick={() => setPileModal(null)}>
-                ×
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-2 sm:grid-cols-5 md:grid-cols-6">
-              {pileModal.cards.map((card, index) => {
-                const image = cardImages.current.get(card.code);
-                const url = image?.large || image?.small;
-                const cardTypeClass =
-                  card.kind === "spell" ? "spell-card" : card.kind === "trap" ? "trap-card" : card.kind === "extra" ? "extra-card" : "";
-                return (
-                  <button
-                    key={`${card.uid}-${index}`}
-                    type="button"
-                    className={`rounded-lg p-1 text-left transition-colors hover:bg-slate-800 ${cardTypeClass}`}
-                    onClick={() => url && setZoomCard({ uid: card.uid, name: card.name, image: url })}
-                  >
-                    <div className="aspect-[59/86] w-full overflow-hidden rounded border border-slate-700 bg-slate-950">
-                      {url ? (
-                        <img className="h-full w-full object-contain" src={url} alt={card.name} loading="lazy" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center p-1 text-center text-[9px] font-bold text-cyan-400/70">{card.name}</div>
-                      )}
-                    </div>
-                    <span className="line-clamp-2 text-[10px] text-slate-300">{card.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <PileInspector
+          pile={pileModal}
+          viewer={viewer}
+          cardImages={cardImages.current}
+          onInspectCard={inspectCard}
+          onClose={() => setPileModal(null)}
+        />
       ) : null}
 
       <ToastStack toasts={toasts} />
@@ -783,6 +764,164 @@ export function PvpArena() {
       ) : null}
     </div>
   );
+}
+
+function PileInspector(props: {
+  pile: DuelPileView;
+  viewer: PlayerId;
+  cardImages: Map<string, CardImageInfo>;
+  onInspectCard: (card: PublicDuelCard) => void;
+  onClose: () => void;
+}) {
+  const orderedCards = orderedPileCards(props.pile, props.viewer);
+  const visibleCount = orderedCards.filter((card) => pileCardIdentityVisible(card, props.pile, props.viewer)).length;
+  const hiddenCount = orderedCards.length - visibleCount;
+  const orderHidden = pileOrderIsHidden(props.pile, props.viewer);
+
+  return (
+    <div className="fixed inset-0 z-40 grid place-items-center bg-slate-950/85 p-4 backdrop-blur-sm" onClick={props.onClose}>
+      <div
+        className="duel-pile-modal relative flex max-h-[88vh] w-full max-w-[1040px] flex-col overflow-hidden rounded-xl p-5 shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3 border-b border-[#d4af37]/20 pb-4">
+          <div className="flex min-w-0 items-start gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg border border-[#d4af37]/30 bg-[#d4af37]/12 text-sm font-black text-[#fff2b7]">
+              {props.pile.icon}
+            </span>
+            <div className="min-w-0">
+              <h2 className="truncate font-sans text-xl font-black tracking-wide text-[#fff7dc]">{props.pile.title}</h2>
+              <p className="mt-1 text-xs font-semibold leading-snug text-[#c7b98f]/76">{pileRuleNote(props.pile, props.viewer)}</p>
+              <div className="mt-2 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.1em]">
+                <span className="duel-pile-badge">{orderedCards.length} cards</span>
+                <span className="duel-pile-badge">{visibleCount} visible</span>
+                {hiddenCount > 0 ? <span className="duel-pile-badge duel-pile-badge--hidden">{hiddenCount} hidden</span> : null}
+                {orderHidden ? <span className="duel-pile-badge duel-pile-badge--order">Order hidden</span> : null}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="grid size-10 shrink-0 place-items-center rounded-full border border-[#d4af37]/35 bg-black/55 text-2xl font-bold text-[#fff7dc] hover:bg-[#d4af37]/15"
+            aria-label="Close pile viewer"
+            onClick={props.onClose}
+          >
+            x
+          </button>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+          {orderedCards.length === 0 ? (
+            <div className="empty-state rounded-lg px-4 py-10 text-center text-sm">No cards in this zone.</div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-8">
+              {orderedCards.map((card, index) => {
+                const visible = pileCardIdentityVisible(card, props.pile, props.viewer);
+                const image = props.cardImages.get(card.code);
+                const url = visible ? image?.large || image?.small : undefined;
+                const cardTypeClass =
+                  visible && card.kind === "spell" ? "spell-card" : visible && card.kind === "trap" ? "trap-card" : visible && card.kind === "extra" ? "extra-card" : "";
+                return (
+                  <button
+                    key={`${card.uid}-${index}`}
+                    type="button"
+                    disabled={!visible}
+                    className={`duel-pile-card-button ${cardTypeClass}`}
+                    onClick={() => visible && props.onInspectCard(card)}
+                  >
+                    <div className="aspect-[59/86] w-full overflow-hidden rounded border border-[#d4af37]/18 bg-slate-950">
+                      {url ? (
+                        <img className="h-full w-full object-contain" src={url} alt={card.name} loading="lazy" />
+                      ) : visible ? (
+                        <div className="flex h-full items-center justify-center p-1 text-center text-[9px] font-bold text-[#fff2b7]/80">{card.name}</div>
+                      ) : (
+                        <img className="h-full w-full object-contain opacity-90" src={cardBackUrl} alt="" loading="lazy" />
+                      )}
+                    </div>
+                    <span className="mt-1 block min-h-[2.1em] text-[10px] font-bold leading-tight text-[#f7ead0]">
+                      {visible ? card.name : "Hidden card"}
+                    </span>
+                    <small className="mt-0.5 block truncate text-[9px] font-semibold uppercase tracking-[0.08em] text-[#c7b98f]/58">
+                      {pileCardMeta(card, props.pile, props.viewer, index)}
+                    </small>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function pileCardIdentityVisible(card: PublicDuelCard, pile: DuelPileView, viewer: PlayerId): boolean {
+  if (pile.location === "deck" && pile.player === viewer) return true;
+  if (pile.location === "extraDeck" && pile.player === viewer) return true;
+  return isDuelCardVisibleToPlayer(card, viewer);
+}
+
+function pileOrderIsHidden(pile: DuelPileView, viewer: PlayerId): boolean {
+  return pile.location === "deck" || (pile.location === "extraDeck" && pile.player !== viewer);
+}
+
+function orderedPileCards(pile: DuelPileView, viewer: PlayerId): PublicDuelCard[] {
+  if (pile.location === "deck" && pile.player === viewer) {
+    return [...pile.cards].sort((left, right) => left.name.localeCompare(right.name) || left.code.localeCompare(right.code));
+  }
+  return [...pile.cards].sort((left, right) => left.sequence - right.sequence);
+}
+
+function pileRuleNote(pile: DuelPileView, viewer: PlayerId): string {
+  const owner = pile.player === viewer ? "your" : "opponent's";
+  switch (pile.location) {
+    case "deck":
+      return pile.player === viewer
+        ? "Your remaining Deck identities are shown alphabetically for planning; current Deck order stays hidden."
+        : "The opponent's Deck identities and order are hidden. Only the card count is public.";
+    case "extraDeck":
+      return pile.player === viewer
+        ? "You may inspect your own Extra Deck. Face-up Extra Deck cards are public information."
+        : "The opponent's face-down Extra Deck cards are hidden; face-up Extra Deck cards are public.";
+    case "graveyard":
+      return `Cards in ${owner} Graveyard are public information.`;
+    case "banished":
+      return `Face-up banished cards are public. Face-down banished cards stay hidden.`;
+    case "hand":
+      return pile.player === viewer ? "Your hand is private to you." : "The opponent's hand is hidden unless an effect reveals cards.";
+    default:
+      return "This zone follows normal card visibility rules.";
+  }
+}
+
+function pileCardMeta(card: PublicDuelCard, pile: DuelPileView, viewer: PlayerId, index: number): string {
+  if (pile.location === "deck") return pile.player === viewer ? "remaining deck" : `hidden #${index + 1}`;
+  if (pile.location === "hand") return pile.player === viewer || isDuelCardVisibleToPlayer(card, viewer) ? "in hand" : `hidden #${index + 1}`;
+  if (pile.location === "extraDeck" && pile.player !== viewer && !isDuelCardVisibleToPlayer(card, viewer)) return `hidden #${index + 1}`;
+  return `${locationDisplayName(card.location)} ${card.sequence + 1}${card.faceUp ? " face-up" : " face-down"}`;
+}
+
+function locationDisplayName(location: DuelLocation): string {
+  switch (location) {
+    case "monsterZone":
+      return "monster zone";
+    case "spellTrapZone":
+      return "spell/trap";
+    case "fieldZone":
+      return "field";
+    case "extraDeck":
+      return "extra";
+    default:
+      return location;
+  }
+}
+
+function hiddenCardReason(card: PublicDuelCard, viewer: PlayerId): string {
+  if (card.location === "deck") return card.controller === viewer ? "Deck order is hidden unless an effect reveals or searches it." : "The opponent's Deck is hidden by rule.";
+  if (card.location === "hand") return "The opponent's hand is hidden unless an effect reveals it.";
+  if (card.location === "extraDeck") return "The opponent's face-down Extra Deck cards are hidden.";
+  if (card.location === "banished" && !card.faceUp) return "Face-down banished cards are hidden.";
+  return "That face-down card is hidden information.";
 }
 
 function isAgentActionParams(value: unknown): value is { summonSequence?: number; spellTrapSequence?: number; summonUids?: string[] } {

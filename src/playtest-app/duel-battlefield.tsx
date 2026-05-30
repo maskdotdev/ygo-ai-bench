@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { DuelAction, DuelLocation, DuelLogEntry, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
+import { duelActionPlacementInstruction, duelActionPresentation } from "./duel-action-presenter.js";
 import { duelActionAnchorUids, duelActionUiGroupLabel, duelActionUiKey } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView } from "./duel-battlefield-actions.js";
 import { duelPromptView, splitPromptGroups } from "./duel-prompt-view.js";
@@ -19,8 +20,14 @@ function cardsInZone(state: PublicDuelState, player: PlayerId, location: DuelLoc
     .sort((a, b) => a.sequence - b.sequence);
 }
 
-function deckCount(state: PublicDuelState, player: PlayerId): number {
-  return state.cards.filter((c) => c.controller === player && c.location === "deck").length;
+export function isDuelCardVisibleToPlayer(card: PublicDuelCard, viewer: PlayerId): boolean {
+  if (card.controller === viewer && card.location === "hand") return true;
+  if (card.controller === viewer && (card.location === "monsterZone" || card.location === "spellTrapZone" || card.location === "fieldZone")) return true;
+  if (card.owner === viewer && card.location === "extraDeck") return true;
+  if (card.faceUp) return true;
+  if (card.location === "graveyard") return true;
+  if (card.location === "banished" && card.faceUp) return true;
+  return card.revealedToPlayers?.includes(viewer) ?? false;
 }
 
 function triggerOrderPromptLabel(state: PublicDuelState): string | undefined {
@@ -32,10 +39,6 @@ function triggerOrderPromptLabel(state: PublicDuelState): string | undefined {
   const count = bucket?.triggerIds.length ?? prompt.triggerIds.length;
   return `P${prompt.player + 1} choose trigger order (${count})`;
 }
-
-/** Zone tile scales with viewport — wider field uses horizontal space like Master Duel. */
-const ZONE =
-  "relative flex aspect-[59/86] h-[min(14vh,96px)] min-h-[60px] max-h-[110px] w-[min(12vw,66px)] shrink-0 items-center justify-center rounded-md border border-cyan-500/20 bg-slate-900/60 shadow-[inset_0_0_10px_rgba(34,211,238,0.05)] backdrop-blur-sm";
 
 type CardActionGlow = "none" | "activation" | "summonSet";
 
@@ -92,40 +95,42 @@ function ZoneRow(props: {
   const slots = Array.from({ length: 5 }, (_, i) => bySequence.get(i));
   const hasEmptyTarget = slots.some((card, i) => !card && props.emptyZoneIsTarget?.(props.player, props.location, i));
   return (
-    <div className={`flex w-full max-w-[min(92vw,720px)] items-center justify-center gap-[min(1.2vw,8px)] ${hasEmptyTarget ? "relative z-50" : ""}`}>
+    <div className={`duel-zone-row ${hasEmptyTarget ? "duel-zone-row--targeting" : ""}`}>
       {slots.map((card, i) => {
         const isEmptyTarget = !card && props.emptyZoneIsTarget?.(props.player, props.location, i);
         const glow = card ? props.cardGlowForUid(card.uid) : "none";
         return (
         <div
           key={i}
-          className={`${ZONE} ${isEmptyTarget ? "z-30" : ""} ${cardActionGlowClass(glow)}`}
+          className={`duel-mat-slot ${isEmptyTarget ? "duel-mat-slot--target" : ""} ${cardActionGlowClass(glow)}`}
         >
-          {card ? (
-            <button
-              type="button"
-              className="absolute inset-0.5 overflow-hidden rounded"
-              title={glow !== "none" ? `${card.name} — click for actions, Shift+click to zoom` : card.name}
-              onClick={(event) => props.onCardClick(card, event)}
-            >
-              <DuelCardFace card={card} images={props.images} />
-              {card.overlayCount > 0 ? (
-                <span className="absolute bottom-0.5 right-0.5 rounded bg-black/80 px-0.5 text-[8px] font-bold leading-none text-white">
-                  {card.overlayCount}
-                </span>
-              ) : null}
-            </button>
-          ) : isEmptyTarget ? (
-            <button
-              type="button"
-              className="absolute inset-0 z-30 rounded-md border border-cyan-300/70 bg-cyan-400/10 text-[8px] font-black uppercase tracking-[0.12em] text-cyan-100 shadow-[0_0_14px_rgba(34,211,238,0.3)]"
-              onClick={() => props.onEmptyZoneClick(props.player, props.location, i)}
-            >
-              Zone {i + 1}
-            </button>
-          ) : (
-            <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/15">{props.emptyHint}</span>
-          )}
+          <div className="duel-mat-slot-inner">
+            {card ? (
+              <button
+                type="button"
+                className="duel-card-hitbox"
+                title={glow !== "none" ? `${card.name} - click for actions, Shift+click to zoom` : card.name}
+                onClick={(event) => props.onCardClick(card, event)}
+              >
+                <DuelCardFace card={card} images={props.images} />
+                {card.overlayCount > 0 ? (
+                  <span className="duel-overlay-count">
+                    {card.overlayCount}
+                  </span>
+                ) : null}
+              </button>
+            ) : isEmptyTarget ? (
+              <button
+                type="button"
+                className="duel-empty-target"
+                onClick={() => props.onEmptyZoneClick(props.player, props.location, i)}
+              >
+                Zone {i + 1}
+              </button>
+            ) : (
+              <span className="duel-zone-label">{props.emptyHint}</span>
+            )}
+          </div>
         </div>
         );
       })}
@@ -142,19 +147,31 @@ function SingleZoneSlot(props: {
 }) {
   const glow = props.card ? props.cardGlowForUid(props.card.uid) : "none";
   return (
-    <div className={`${ZONE} ${cardActionGlowClass(glow)}`}>
-      {props.card ? (
-        <button
-          type="button"
-          className="absolute inset-0.5 overflow-hidden rounded"
-          title={glow !== "none" ? `${props.card.name} — click for actions, Shift+click to zoom` : props.card.name}
-          onClick={(event) => props.onCardClick(props.card!, event)}
-        >
-          <DuelCardFace card={props.card} images={props.images} />
-        </button>
-      ) : (
-        <span className="text-[8px] font-bold uppercase tracking-[0.12em] text-white/15">{props.label}</span>
-      )}
+    <div className={`duel-mat-slot ${cardActionGlowClass(glow)}`}>
+      <div className="duel-mat-slot-inner">
+        {props.card ? (
+          <button
+            type="button"
+            className="duel-card-hitbox"
+            title={glow !== "none" ? `${props.card.name} - click for actions, Shift+click to zoom` : props.card.name}
+            onClick={(event) => props.onCardClick(props.card!, event)}
+          >
+            <DuelCardFace card={props.card} images={props.images} />
+          </button>
+        ) : (
+          <span className="duel-zone-label">{props.label}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function StaticMatSlot(props: { label: string; tone?: string }) {
+  return (
+    <div className={`duel-mat-slot duel-mat-slot--static ${props.tone ? `duel-mat-slot--${props.tone}` : ""}`}>
+      <div className="duel-mat-slot-inner">
+        <span className="duel-zone-label">{props.label}</span>
+      </div>
     </div>
   );
 }
@@ -165,15 +182,15 @@ function DuelCardFace(props: { card: PublicDuelCard; images: Map<string, CardIma
   const unknownFaceDown = !props.card.faceUp && props.card.location !== "hand";
 
   if (unknownFaceDown || (props.card.location === "hand" && url === undefined && !props.card.faceUp)) {
-    return <img className="h-full w-full object-contain" src={cardBackUrl} alt="" />;
+    return <img className="duel-card-face" src={cardBackUrl} alt="" />;
   }
 
   if (url) {
-    return <img className="h-full w-full object-contain" src={url} alt={props.card.name} loading="lazy" />;
+    return <img className="duel-card-face" src={url} alt={props.card.name} loading="lazy" />;
   }
 
   return (
-    <div className="flex h-full w-full flex-col justify-between bg-gradient-to-b from-slate-800 to-slate-950 p-1 text-left">
+    <div className="duel-card-fallback">
       <span className="line-clamp-3 text-[7px] font-bold leading-tight text-slate-200">{props.card.name}</span>
       <span className="text-[7px] uppercase text-cyan-400/55">{props.card.kind}</span>
     </div>
@@ -185,12 +202,17 @@ function HandFan(props: {
   images: Map<string, CardImageInfo>;
   hidden: boolean;
   onCardClick: (card: PublicDuelCard, event: MouseEvent) => void;
+  onOpen?: () => void;
   align: "top" | "bottom";
   cardGlowForUid: (uid: string) => CardActionGlow;
 }) {
   if (props.hidden) {
     return (
-      <div className="flex h-[min(9vh,56px)] items-center justify-center gap-2">
+      <button
+        type="button"
+        className="flex h-[min(9vh,56px)] items-center justify-center gap-2 rounded-md border border-[#d4af37]/15 px-2 transition-colors hover:border-[#d4af37]/40 hover:bg-[#d4af37]/8"
+        onClick={props.onOpen}
+      >
         <div className="relative h-[min(7vh,44px)] w-[min(6vw,34px)]">
           <img className="h-full w-full rounded-md border border-slate-600 object-contain shadow-lg" src={cardBackUrl} alt="" />
           <span className="absolute -bottom-1 -right-1 rounded-md bg-slate-900/90 px-1.5 py-0.5 text-[11px] font-black tabular-nums text-white shadow">
@@ -198,7 +220,7 @@ function HandFan(props: {
           </span>
         </div>
         <span className="text-[11px] font-medium text-white/45">in hand</span>
-      </div>
+      </button>
     );
   }
 
@@ -241,33 +263,44 @@ function SidePile(props: {
   icon: string;
   disabled: boolean;
   onOpen: () => void;
+  rotated?: boolean;
+  tone?: "deck" | "extra" | "graveyard" | "banished";
 }) {
   return (
     <button
       type="button"
       disabled={props.disabled}
-      className="group flex w-10 flex-none flex-col items-center gap-0.5 rounded-md border border-cyan-500/20 bg-slate-900/70 backdrop-blur-sm px-0.5 py-1 transition-colors hover:border-cyan-400/60 hover:bg-slate-800/90 hover:shadow-[0_0_10px_rgba(34,211,238,0.2)] disabled:cursor-default disabled:opacity-40 sm:w-11"
+      className={`duel-mat-slot duel-pile-slot ${props.tone ? `duel-pile-slot--${props.tone}` : ""} ${props.rotated ? "duel-mat-slot--rotated" : ""}`}
+      aria-label={`${props.label}${props.count === undefined ? "" : `, ${props.count} cards`}`}
       onClick={() => !props.disabled && props.onOpen()}
     >
-      <span className="max-w-full truncate text-[7px] font-bold uppercase tracking-[0.08em] text-white/45">{props.label}</span>
-      {props.count !== undefined && props.count > 0 ? (
-        <div className="relative aspect-[59/86] w-[2.125rem] sm:w-9">
-          {props.faceDown ? (
-            <img className="h-full w-full rounded border border-slate-600 object-contain shadow-inner" src={cardBackUrl} alt="" />
-          ) : props.topCard ? (
-            <div className="h-full w-full overflow-hidden rounded border border-slate-600 shadow-inner">
+      <div className="duel-mat-slot-inner">
+        <span className="duel-zone-label">{props.label}</span>
+        {props.count !== undefined && props.count > 0 ? (
+          <div className="duel-pile-card">
+            {props.faceDown ? (
+              <img className="duel-card-face" src={cardBackUrl} alt="" />
+            ) : props.topCard ? (
               <DuelCardFace card={props.topCard} images={props.images} />
-            </div>
-          ) : null}
-          <span className="absolute bottom-0.5 left-1/2 z-10 min-w-[1.1rem] -translate-x-1/2 rounded bg-slate-900/95 px-0.5 py-px text-center text-[9px] font-black tabular-nums leading-none text-white ring-1 ring-cyan-500/30">
-            {props.count}
-          </span>
-        </div>
-      ) : (
-        <span className="grid h-9 w-7 place-items-center text-base text-white/22">{props.icon}</span>
-      )}
+            ) : null}
+            <span className="duel-pile-count">
+              {props.count}
+            </span>
+          </div>
+        ) : (
+          <span className="duel-pile-icon">{props.icon}</span>
+        )}
+      </div>
     </button>
   );
+}
+
+export interface DuelPileView {
+  title: string;
+  icon: string;
+  player: PlayerId;
+  location: DuelLocation;
+  cards: PublicDuelCard[];
 }
 
 export interface DuelBattlefieldProps {
@@ -275,7 +308,7 @@ export interface DuelBattlefieldProps {
   viewer: PlayerId;
   cardImages: Map<string, CardImageInfo>;
   onCardInspect: (card: PublicDuelCard) => void;
-  onViewPile: (title: string, icon: string, cards: PublicDuelCard[]) => void;
+  onViewPile: (pile: DuelPileView) => void;
   /** When set, legal responses are chosen from the field (cyan ring). Shift+click always zooms. */
   legalActions?: readonly DuelAction[];
   legalActionGroups?: readonly DuelLegalActionGroup[];
@@ -285,6 +318,7 @@ export interface DuelBattlefieldProps {
 type ActionFlyout = { card: PublicDuelCard; actions: DuelAction[]; anchorX: number; anchorY: number };
 type PendingZonePlacement = {
   action: Extract<DuelAction, { summonSequence?: number } | { spellTrapSequence?: number }>;
+  card: PublicDuelCard;
   player: PlayerId;
   location: "monsterZone" | "spellTrapZone";
 };
@@ -292,13 +326,16 @@ type PendingZonePlacement = {
 function CardActionFlyout(props: {
   flyout: ActionFlyout;
   images: Map<string, CardImageInfo>;
+  cardsByUid: ReadonlyMap<string, PublicDuelCard>;
+  cardVisible: boolean;
   onPick: (action: DuelAction) => void;
   onInspect: () => void;
   onClose: () => void;
 }) {
   const { flyout } = props;
   const image = props.images.get(flyout.card.code);
-  const imageUrl = image?.large || image?.small;
+  const imageUrl = props.cardVisible ? image?.large || image?.small : undefined;
+  const cardName = props.cardVisible ? flyout.card.name : "Hidden card";
 
   return createPortal(
     <>
@@ -313,6 +350,8 @@ function CardActionFlyout(props: {
           <div className="mx-auto aspect-[59/86] max-h-[min(42dvh,460px)] w-full max-w-[260px] overflow-hidden rounded-lg border border-slate-600 bg-slate-950 shadow-[0_18px_40px_rgba(0,0,0,0.45)]">
             {imageUrl ? (
               <img className="h-full w-full object-contain" src={imageUrl} alt={flyout.card.name} />
+            ) : !props.cardVisible ? (
+              <img className="h-full w-full object-contain" src={cardBackUrl} alt="" />
             ) : (
               <DuelCardFace card={flyout.card} images={props.images} />
             )}
@@ -321,21 +360,30 @@ function CardActionFlyout(props: {
 
         <div className="flex min-h-0 flex-col p-3">
           <div className="mb-3 border-b border-cyan-500/20 pb-3">
-            <p id="card-action-flyout-title" className="text-sm font-bold leading-snug text-white sm:text-base">{flyout.card.name}</p>
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/70">{flyout.card.kind} · choose an action</p>
+            <p id="card-action-flyout-title" className="text-sm font-bold leading-snug text-white sm:text-base">{cardName}</p>
+            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-300/70">
+              {props.cardVisible ? `${flyout.card.kind} · choose an action` : "face-down information hidden by rules"}
+            </p>
           </div>
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-            {flyout.actions.map((action) => (
-              <button
-                key={duelActionUiKey(action)}
-                type="button"
-                className="action-button w-full rounded-lg px-3 py-3 text-left text-xs font-semibold leading-snug sm:text-sm"
-                onClick={() => props.onPick(action)}
-              >
-                <span className="line-clamp-4">{action.label}</span>
-              </button>
-            ))}
+            {flyout.actions.map((action) => {
+              const presentation = duelActionPresentation(action, { card: flyout.card, cardVisible: props.cardVisible, cardsByUid: props.cardsByUid });
+              return (
+                <button
+                  key={duelActionUiKey(action)}
+                  type="button"
+                  className={`action-button duel-action-choice duel-action-choice--${presentation.tone} w-full rounded-lg px-4 py-4 text-left`}
+                  onClick={() => props.onPick(action)}
+                >
+                  <span className="duel-action-choice-head">
+                    <span className="duel-action-choice-badge">{presentation.badge}</span>
+                    <span className="duel-action-choice-title">{presentation.title}</span>
+                  </span>
+                  <span className="duel-action-choice-detail">{presentation.detail}</span>
+                </button>
+              );
+            })}
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2 border-t border-cyan-500/20 pt-3">
@@ -346,13 +394,17 @@ function CardActionFlyout(props: {
             >
               Cancel
             </button>
-            <button
-              type="button"
-              className="rounded-md border border-cyan-500/25 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/10"
-              onClick={props.onInspect}
-            >
-              Full zoom
-            </button>
+            {props.cardVisible ? (
+              <button
+                type="button"
+                className="rounded-md border border-cyan-500/25 px-3 py-2 text-xs font-semibold text-cyan-200 hover:bg-cyan-500/10"
+                onClick={props.onInspect}
+              >
+                Full zoom
+              </button>
+            ) : (
+              <span className="rounded-md border border-slate-700 px-3 py-2 text-center text-xs font-semibold text-slate-500">Hidden</span>
+            )}
           </div>
         </div>
       </div>
@@ -374,6 +426,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   }, [hideOppHand, props.legalActionGroups, props.legalActions, state, viewer]);
 
   const cardGlowForUid = useCallback((uid: string) => cardActionGlow(actionByUid.get(uid)), [actionByUid]);
+  const cardsByUid = useMemo(() => new Map(state.cards.map((card) => [card.uid, card])), [state.cards]);
   const emptyZoneIsTarget = useCallback((player: PlayerId, location: DuelLocation, _sequence: number) => (
     pendingZonePlacement !== null && player === pendingZonePlacement.player && location === pendingZonePlacement.location
   ), [pendingZonePlacement]);
@@ -418,6 +471,15 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   }, [flyout]);
 
   useEffect(() => {
+    if (!pendingZonePlacement) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setPendingZonePlacement(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pendingZonePlacement]);
+
+  useEffect(() => {
     setFlyout(null);
     setPendingZonePlacement(null);
   }, [props.legalActions]);
@@ -427,6 +489,13 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   const promptView = duelPromptView(state.prompt, splitOrphanGroups.promptGroups, state.luaOperationPrompt);
   const globalOrphanGroups = splitOrphanGroups.globalGroups;
   const triggerOrderView = duelTriggerOrderView(state.triggerOrderPrompt, props.legalActionGroups);
+  const placementInstruction = pendingZonePlacement
+    ? duelActionPlacementInstruction(pendingZonePlacement.action, pendingZonePlacement.location, {
+      card: pendingZonePlacement.card,
+      cardVisible: isDuelCardVisibleToPlayer(pendingZonePlacement.card, viewer),
+      cardsByUid,
+    })
+    : undefined;
 
   const oppMz = cardsInZone(state, opponent, "monsterZone");
   const oppSt = cardsInZone(state, opponent, "spellTrapZone");
@@ -435,7 +504,8 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   const oppGy = cardsInZone(state, opponent, "graveyard");
   const oppX = cardsInZone(state, opponent, "extraDeck");
   const oppBan = cardsInZone(state, opponent, "banished");
-  const oppDeck = deckCount(state, opponent);
+  const oppDeckCards = cardsInZone(state, opponent, "deck");
+  const oppDeck = oppDeckCards.length;
 
   const myMz = cardsInZone(state, viewer, "monsterZone");
   const mySt = cardsInZone(state, viewer, "spellTrapZone");
@@ -444,95 +514,45 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   const myGy = cardsInZone(state, viewer, "graveyard");
   const myX = cardsInZone(state, viewer, "extraDeck");
   const myBan = cardsInZone(state, viewer, "banished");
-  const myDeck = deckCount(state, viewer);
+  const myDeckCards = cardsInZone(state, viewer, "deck");
+  const myDeck = myDeckCards.length;
 
   const oppLp = state.players[opponent]?.lifePoints ?? 8000;
   const myLp = state.players[viewer]?.lifePoints ?? 8000;
 
   return (
     <>
-    <div className="relative flex h-full min-h-0 w-full flex-col overflow-hidden rounded-xl">
-      {/* Mat backdrop + faux perspective */}
-      <div
-        className="pointer-events-none absolute inset-0 rounded-xl bg-[radial-gradient(ellipse_120%_80%_at_50%_50%,#1e293b_0%,#020617_70%,#000000_100%)]"
-        aria-hidden
-      />
-      <div className="pointer-events-none absolute inset-x-[8%] top-[42%] h-px bg-gradient-to-r from-transparent via-cyan-400/50 to-transparent shadow-[0_0_15px_rgba(34,211,238,0.6)]" aria-hidden />
-
-      <div
-        className="relative z-10 flex h-full min-h-0 flex-col px-[min(2vw,12px)] py-1 pb-2"
-        style={{ perspective: "1400px" }}
-      >
-        {/* ----- Opponent half (far) ----- */}
-        <div className="flex min-h-0 flex-[1.05] flex-col items-center justify-end gap-1">
-          <div className="flex w-full max-w-[900px] items-start justify-between gap-2 px-1">
-            <div className="flex min-w-0 flex-1 flex-col items-start">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">Opponent · P{opponent + 1}</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-sans text-[clamp(1.25rem,4vw,2rem)] font-black tabular-nums leading-none tracking-tight text-white drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]">
-                  {oppLp}
-                </span>
-                <span className="text-[11px] font-semibold text-cyan-300/90">LP</span>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-nowrap gap-1 pt-1 sm:gap-1.5">
-              <SidePile
-                label="Extra"
-                count={oppX.length}
-                faceDown
-                images={props.cardImages}
-                icon="★"
-                disabled={oppX.length === 0}
-                onOpen={() => props.onViewPile("Extra (opponent)", "★", oppX)}
-              />
-              <SidePile
-                label="Deck"
-                count={oppDeck}
-                faceDown
-                images={props.cardImages}
-                icon="📚"
-                disabled={oppDeck === 0}
-                onOpen={() => {}}
-              />
-              <SidePile
-                label="GY"
-                count={oppGy.length}
-                topCard={oppGy[oppGy.length - 1]}
-                images={props.cardImages}
-                icon="☠"
-                disabled={oppGy.length === 0}
-                onOpen={() => props.onViewPile("GY (opponent)", "☠", oppGy)}
-              />
-              <SidePile
-                label="Banish"
-                count={oppBan.length}
-                topCard={oppBan[oppBan.length - 1]}
-                images={props.cardImages}
-                icon="⊘"
-                disabled={oppBan.length === 0}
-                onOpen={() => props.onViewPile("Banished (opponent)", "⊘", oppBan)}
-              />
-            </div>
+    <div className="duel-arena">
+      <div className="duel-arena-stage">
+        <div className="duel-player-band duel-player-band--opponent">
+          <div className="duel-player-meta">
+            <span>Opponent - P{opponent + 1}</span>
+            <strong>{oppLp}</strong>
+            <small>LP</small>
           </div>
-
           <HandFan
             cards={oppHand}
             images={props.cardImages}
             hidden={hideOppHand}
             onCardClick={handleCardInteraction}
+            onOpen={() => props.onViewPile({ title: `Hand (opponent P${opponent + 1})`, icon: "H", player: opponent, location: "hand", cards: oppHand })}
             align="top"
             cardGlowForUid={cardGlowForUid}
           />
+        </div>
 
-          <div className="flex w-full flex-col items-center gap-1">
-            <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/35">Spell / Trap</span>
-            <div className="flex w-full items-center justify-center gap-[min(1.2vw,8px)]">
-              <SingleZoneSlot
-                label="Field"
-                card={oppField}
+        <div className="duel-mat-shell">
+          <div className="duel-mat" aria-label="Duel field">
+            <div className="duel-mat-row duel-mat-row--opponent">
+              <SidePile
+                label="Deck Zone"
+                count={oppDeck}
+                faceDown
                 images={props.cardImages}
-                onCardClick={handleCardInteraction}
-                cardGlowForUid={cardGlowForUid}
+                icon="D"
+                disabled={oppDeckCards.length === 0}
+                tone="deck"
+                onOpen={() => props.onViewPile({ title: `Deck (opponent P${opponent + 1})`, icon: "D", player: opponent, location: "deck", cards: oppDeckCards })}
               />
               <ZoneRow
                 cards={oppSt}
@@ -541,151 +561,123 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
                 images={props.cardImages}
                 onCardClick={handleCardInteraction}
                 onEmptyZoneClick={handleEmptyZoneClick}
-                emptyHint="S/T"
+                emptyHint="Spell & Trap"
                 cardGlowForUid={cardGlowForUid}
                 emptyZoneIsTarget={emptyZoneIsTarget}
               />
+              <SidePile
+                label="Extra Deck Zone"
+                count={oppX.length}
+                faceDown
+                images={props.cardImages}
+                icon="ED"
+                disabled={oppX.length === 0}
+                tone="extra"
+                onOpen={() => props.onViewPile({ title: `Extra Deck (opponent P${opponent + 1})`, icon: "ED", player: opponent, location: "extraDeck", cards: oppX })}
+              />
             </div>
-            <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.25em] text-white/35">Monsters</span>
-            <ZoneRow
-              cards={oppMz}
-              player={opponent}
-              location="monsterZone"
-              images={props.cardImages}
-              onCardClick={handleCardInteraction}
-              onEmptyZoneClick={handleEmptyZoneClick}
-              emptyHint="M"
-              cardGlowForUid={cardGlowForUid}
-              emptyZoneIsTarget={emptyZoneIsTarget}
-            />
-          </div>
-        </div>
 
-        {/* ----- EMZ + turn strip ----- */}
-        <div className={`flex shrink-0 flex-col items-center gap-0.5 py-1 ${pendingZonePlacement ? "pointer-events-none" : ""}`}>
-          <div className="flex items-center gap-3">
-            <div className={ZONE}>
-              <span className="text-[9px] font-bold text-white/20">EMZ</span>
-            </div>
-            <div className={ZONE}>
-              <span className="text-[9px] font-bold text-white/20">EMZ</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-2 rounded-full border border-cyan-500/20 bg-slate-900/70 backdrop-blur-sm px-3 py-1 text-[10px] text-white/70 shadow-lg backdrop-blur-sm">
-            <span className="font-semibold text-cyan-200/90">Turn {state.turn}</span>
-            <span className="text-white/35">·</span>
-            <span className="font-bold uppercase tracking-[0.12em] text-violet-200/90">{state.phase}</span>
-            {state.chain.length > 0 ? (
-              <span className="rounded-full bg-amber-500/25 px-2 py-px text-[9px] font-bold text-amber-100">Chain {state.chain.length}</span>
-            ) : null}
-            {state.prompt ? <span className="rounded-full bg-violet-500/25 px-2 py-px text-[9px] font-bold text-violet-100">Prompt</span> : null}
-            {triggerOrderLabel ? <span className="rounded-full bg-fuchsia-500/25 px-2 py-px text-[9px] font-bold text-fuchsia-100">Order</span> : null}
-          </div>
-          {triggerOrderLabel ? (
-            <div className="max-w-[min(96vw,760px)] rounded-lg border border-fuchsia-400/30 bg-fuchsia-950/45 px-3 py-1.5 text-center text-[10px] font-semibold text-fuchsia-50 shadow-lg shadow-fuchsia-950/30">
-              {triggerOrderLabel}
-            </div>
-          ) : null}
-          {triggerOrderView && props.onPlayAction ? (
-            <div className="relative z-50 flex max-w-[min(96vw,820px)] justify-center px-1">
-              <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-fuchsia-400/35 bg-fuchsia-950/55 px-2.5 py-1.5 shadow-lg shadow-fuchsia-950/30 [scrollbar-width:thin]">
-                <div className="min-w-[150px] shrink-0 self-center pr-1">
-                  <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-fuchsia-100">{triggerOrderView.label}</p>
-                  <p className="truncate text-[10px] font-semibold text-fuchsia-50/65">{triggerOrderView.detail}</p>
-                </div>
-                {triggerOrderView.groups.flatMap((group) =>
-                  group.actions.map((action) => (
-                    <button
-                      key={`trigger-order-${group.key}-${duelActionUiKey(action)}`}
-                      type="button"
-                      className="shrink-0 rounded-md border border-fuchsia-300/35 bg-fuchsia-800/65 px-2.5 py-1 text-left text-[10px] font-bold leading-tight text-fuchsia-50 hover:border-fuchsia-200/70 hover:bg-fuchsia-700/75"
-                      onClick={() => props.onPlayAction?.(action)}
-                    >
-                      <span className="line-clamp-2 max-w-[220px]">{action.label}</span>
-                    </button>
-                  )),
-                )}
-              </div>
-            </div>
-          ) : null}
-          {promptView && props.onPlayAction ? (
-            <div className="relative z-50 flex max-w-[min(96vw,760px)] justify-center px-1">
-              <div className="flex max-w-full flex-wrap items-center justify-center gap-1.5 rounded-lg border border-violet-400/35 bg-violet-950/55 px-2.5 py-1.5 shadow-lg shadow-violet-950/30">
-                <div className="min-w-[140px] max-w-[260px] flex-1">
-                  <p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-violet-100">{promptView.label}</p>
-                  <p className="truncate text-[10px] font-semibold text-violet-50/65">{promptView.detail}</p>
-                </div>
-                {promptView.choices.map((choice) => (
-                  <button
-                    key={`prompt-${duelActionUiKey(choice.action)}`}
-                    type="button"
-                    className="shrink-0 rounded-md border border-violet-300/35 bg-violet-800/65 px-2.5 py-1 text-left text-[10px] font-bold leading-tight text-violet-50 hover:border-violet-200/70 hover:bg-violet-700/75"
-                    onClick={() => props.onPlayAction?.(choice.action)}
-                  >
-                    <span className="line-clamp-2 max-w-[220px]">{choice.action.label}</span>
-                  </button>
-                ))}
-                {!promptView.choices.length ? promptView.groups.flatMap((group) =>
-                  group.actions.map((action) => (
-                    <button
-                      key={`prompt-${group.key}-${duelActionUiKey(action)}`}
-                      type="button"
-                      className="shrink-0 rounded-md border border-violet-300/35 bg-violet-800/65 px-2.5 py-1 text-left text-[10px] font-bold leading-tight text-violet-50 hover:border-violet-200/70 hover:bg-violet-700/75"
-                      onClick={() => props.onPlayAction?.(action)}
-                    >
-                      <span className="line-clamp-2 max-w-[220px]">{action.label}</span>
-                    </button>
-                  )),
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-          {globalOrphanGroups.length > 0 && !pendingZonePlacement && props.onPlayAction ? (
-            <div className="relative z-50 flex max-w-[min(96vw,860px)] justify-center px-1">
-              <div className="flex max-w-full gap-1 overflow-x-auto rounded-lg border border-cyan-500/20 bg-slate-900/60 px-2 py-1.5 [scrollbar-width:thin]">
-                {globalOrphanGroups.map((group) => (
-                  <div key={group.key} className="flex shrink-0 items-center gap-1">
-                    <span className="shrink-0 self-center pr-1 text-[8px] font-bold uppercase tracking-[0.12em] text-white/35">{duelActionUiGroupLabel(group)}</span>
-                    {group.actions.map((action) => (
-                      <button
-                        key={`orphan-${group.key}-${duelActionUiKey(action)}`}
-                        type="button"
-                        className="shrink-0 rounded-md border border-cyan-500/25 bg-slate-800/80 px-2 py-1 text-left text-[9px] font-semibold leading-tight text-cyan-50/95 hover:border-cyan-400/50 hover:bg-cyan-900/35"
-                        onClick={() => props.onPlayAction?.(action)}
-                      >
-                        <span className="line-clamp-2 max-w-[200px]">{action.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </div>
-
-        {/* ----- Player half (near) ----- */}
-        <div className="flex min-h-0 flex-[1.15] flex-col items-center justify-start gap-0.5">
-          <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-1 overflow-visible">
-            <span className="text-[9px] font-bold uppercase tracking-[0.25em] text-white/35">Monsters</span>
-            <ZoneRow
-              cards={myMz}
-              player={viewer}
-              location="monsterZone"
-              images={props.cardImages}
-              onCardClick={handleCardInteraction}
-              onEmptyZoneClick={handleEmptyZoneClick}
-              emptyHint="M"
-              cardGlowForUid={cardGlowForUid}
-              emptyZoneIsTarget={emptyZoneIsTarget}
-            />
-            <span className="mt-0.5 text-[9px] font-bold uppercase tracking-[0.25em] text-white/35">Spell / Trap</span>
-            <div className="flex w-full items-center justify-center gap-[min(1.2vw,8px)]">
+            <div className="duel-mat-row duel-mat-row--opponent">
+              <SidePile
+                label="Graveyard"
+                count={oppGy.length}
+                topCard={oppGy[oppGy.length - 1]}
+                images={props.cardImages}
+                icon="GY"
+                disabled={oppGy.length === 0}
+                tone="graveyard"
+                onOpen={() => props.onViewPile({ title: `Graveyard (opponent P${opponent + 1})`, icon: "GY", player: opponent, location: "graveyard", cards: oppGy })}
+              />
+              <ZoneRow
+                cards={oppMz}
+                player={opponent}
+                location="monsterZone"
+                images={props.cardImages}
+                onCardClick={handleCardInteraction}
+                onEmptyZoneClick={handleEmptyZoneClick}
+                emptyHint="Monster"
+                cardGlowForUid={cardGlowForUid}
+                emptyZoneIsTarget={emptyZoneIsTarget}
+              />
               <SingleZoneSlot
-                label="Field"
+                label="Field Card Zone"
+                card={oppField}
+                images={props.cardImages}
+                onCardClick={handleCardInteraction}
+                cardGlowForUid={cardGlowForUid}
+              />
+            </div>
+
+            <div className="duel-mat-center-row">
+              <SidePile
+                label="Banished Zone"
+                count={oppBan.length}
+                topCard={oppBan[oppBan.length - 1]}
+                images={props.cardImages}
+                icon="X"
+                disabled={oppBan.length === 0}
+                rotated
+                tone="banished"
+                onOpen={() => props.onViewPile({ title: `Banished (opponent P${opponent + 1})`, icon: "X", player: opponent, location: "banished", cards: oppBan })}
+              />
+              <div className="duel-mat-spacer" />
+              <StaticMatSlot label="Extra Monster Zone" tone="emz" />
+              <div className="duel-mat-spacer" />
+              <StaticMatSlot label="Extra Monster Zone" tone="emz" />
+              <div className="duel-mat-spacer" />
+              <SidePile
+                label="Banished Zone"
+                count={myBan.length}
+                topCard={myBan[myBan.length - 1]}
+                images={props.cardImages}
+                icon="X"
+                disabled={myBan.length === 0}
+                tone="banished"
+                onOpen={() => props.onViewPile({ title: `Banished (you P${viewer + 1})`, icon: "X", player: viewer, location: "banished", cards: myBan })}
+              />
+            </div>
+
+            <div className="duel-mat-row">
+              <SingleZoneSlot
+                label="Field Card Zone"
                 card={myField}
                 images={props.cardImages}
                 onCardClick={handleCardInteraction}
                 cardGlowForUid={cardGlowForUid}
+              />
+              <ZoneRow
+                cards={myMz}
+                player={viewer}
+                location="monsterZone"
+                images={props.cardImages}
+                onCardClick={handleCardInteraction}
+                onEmptyZoneClick={handleEmptyZoneClick}
+                emptyHint="Monster"
+                cardGlowForUid={cardGlowForUid}
+                emptyZoneIsTarget={emptyZoneIsTarget}
+              />
+              <SidePile
+                label="Graveyard"
+                count={myGy.length}
+                topCard={myGy[myGy.length - 1]}
+                images={props.cardImages}
+                icon="GY"
+                disabled={myGy.length === 0}
+                tone="graveyard"
+                onOpen={() => props.onViewPile({ title: `Graveyard (you P${viewer + 1})`, icon: "GY", player: viewer, location: "graveyard", cards: myGy })}
+              />
+            </div>
+
+            <div className="duel-mat-row">
+              <SidePile
+                label="Extra Deck Zone"
+                count={myX.length}
+                faceDown
+                images={props.cardImages}
+                icon="ED"
+                disabled={myX.length === 0}
+                tone="extra"
+                onOpen={() => props.onViewPile({ title: `Extra Deck (you P${viewer + 1})`, icon: "ED", player: viewer, location: "extraDeck", cards: myX })}
               />
               <ZoneRow
                 cards={mySt}
@@ -694,73 +686,138 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
                 images={props.cardImages}
                 onCardClick={handleCardInteraction}
                 onEmptyZoneClick={handleEmptyZoneClick}
-                emptyHint="S/T"
+                emptyHint="Spell & Trap"
                 cardGlowForUid={cardGlowForUid}
                 emptyZoneIsTarget={emptyZoneIsTarget}
               />
-            </div>
-          </div>
-
-          <div className="shrink-0 pt-0.5">
-            <HandFan
-              cards={myHand}
-              images={props.cardImages}
-              hidden={false}
-              onCardClick={handleCardInteraction}
-              align="bottom"
-              cardGlowForUid={cardGlowForUid}
-            />
-          </div>
-
-          <div className="flex w-full max-w-[900px] shrink-0 flex-nowrap items-end justify-between gap-2 px-1 pb-1 pt-1">
-            <div className="flex min-w-0 flex-1 flex-col items-start">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-200/70">You · P{viewer + 1}</span>
-              <div className="flex items-baseline gap-1.5">
-                <span className="font-sans text-[clamp(1.35rem,4.2vw,2.1rem)] font-black tabular-nums leading-none tracking-tight text-white drop-shadow-[0_0_10px_rgba(34,211,238,0.6)]">
-                  {myLp}
-                </span>
-                <span className="text-[11px] font-semibold text-cyan-300/90">LP</span>
-              </div>
-            </div>
-            <div className="flex shrink-0 flex-nowrap gap-1 sm:gap-1.5">
               <SidePile
-                label="Extra"
-                count={myX.length}
-                faceDown
-                images={props.cardImages}
-                icon="★"
-                disabled={myX.length === 0}
-                onOpen={() => props.onViewPile("Extra Deck", "★", myX)}
-              />
-              <SidePile
-                label="Deck"
+                label="Deck Zone"
                 count={myDeck}
                 faceDown
                 images={props.cardImages}
-                icon="📚"
-                disabled={myDeck === 0}
-                onOpen={() => {}}
-              />
-              <SidePile
-                label="GY"
-                count={myGy.length}
-                topCard={myGy[myGy.length - 1]}
-                images={props.cardImages}
-                icon="☠"
-                disabled={myGy.length === 0}
-                onOpen={() => props.onViewPile("Graveyard", "☠", myGy)}
-              />
-              <SidePile
-                label="Banish"
-                count={myBan.length}
-                topCard={myBan[myBan.length - 1]}
-                images={props.cardImages}
-                icon="⊘"
-                disabled={myBan.length === 0}
-                onOpen={() => props.onViewPile("Banished", "⊘", myBan)}
+                icon="D"
+                disabled={myDeckCards.length === 0}
+                tone="deck"
+                onOpen={() => props.onViewPile({ title: `Deck (you P${viewer + 1})`, icon: "D", player: viewer, location: "deck", cards: myDeckCards })}
               />
             </div>
           </div>
+
+          <div className="duel-command-tray">
+            <div className="duel-status-pill">
+              <span>Turn {state.turn}</span>
+              <span>{state.phase}</span>
+              {state.chain.length > 0 ? <b>Chain {state.chain.length}</b> : null}
+              {state.prompt ? <b>Prompt</b> : null}
+              {triggerOrderLabel ? <b>Order</b> : null}
+            </div>
+            {triggerOrderLabel ? (
+              <div className="duel-response-note duel-response-note--order">
+                {triggerOrderLabel}
+              </div>
+            ) : null}
+            {placementInstruction ? (
+              <div className="duel-response-rail duel-response-rail--placement">
+                <div className="duel-response-copy duel-response-copy--placement">
+                  <p>{placementInstruction.title}</p>
+                  <small>{placementInstruction.detail}</small>
+                </div>
+                <button
+                  type="button"
+                  className="duel-response-button duel-response-button--cancel"
+                  onClick={() => setPendingZonePlacement(null)}
+                >
+                  <span className="line-clamp-2">Cancel</span>
+                </button>
+              </div>
+            ) : null}
+            {triggerOrderView && props.onPlayAction && !pendingZonePlacement ? (
+              <div className="duel-response-rail duel-response-rail--order">
+                <div className="duel-response-copy">
+                  <p>{triggerOrderView.label}</p>
+                  <small>{triggerOrderView.detail}</small>
+                </div>
+                {triggerOrderView.groups.flatMap((group) =>
+                  group.actions.map((action) => (
+                    <button
+                      key={`trigger-order-${group.key}-${duelActionUiKey(action)}`}
+                      type="button"
+                      className="duel-response-button"
+                      onClick={() => props.onPlayAction?.(action)}
+                    >
+                      <span className="line-clamp-2">{duelActionPresentation(action, { cardsByUid }).title}</span>
+                    </button>
+                  )),
+                )}
+              </div>
+            ) : null}
+            {promptView && props.onPlayAction && !pendingZonePlacement ? (
+              <div className="duel-response-rail duel-response-rail--prompt">
+                <div className="duel-response-copy">
+                  <p>{promptView.label}</p>
+                  <small>{promptView.detail}</small>
+                </div>
+                {promptView.choices.map((choice) => (
+                  <button
+                    key={`prompt-${duelActionUiKey(choice.action)}`}
+                    type="button"
+                    className="duel-response-button"
+                    onClick={() => props.onPlayAction?.(choice.action)}
+                  >
+                    <span className="line-clamp-2">{duelActionPresentation(choice.action, { cardsByUid }).title}</span>
+                  </button>
+                ))}
+                {!promptView.choices.length ? promptView.groups.flatMap((group) =>
+                  group.actions.map((action) => (
+                    <button
+                      key={`prompt-${group.key}-${duelActionUiKey(action)}`}
+                      type="button"
+                      className="duel-response-button"
+                      onClick={() => props.onPlayAction?.(action)}
+                      >
+                        <span className="line-clamp-2">{duelActionPresentation(action, { cardsByUid }).title}</span>
+                      </button>
+                    )),
+                ) : null}
+              </div>
+            ) : null}
+            {globalOrphanGroups.length > 0 && !pendingZonePlacement && props.onPlayAction ? (
+              <div className="duel-response-rail duel-response-rail--global">
+                {globalOrphanGroups.map((group) => (
+                  <div key={group.key} className="duel-response-group">
+                    <span>{duelActionUiGroupLabel(group)}</span>
+                    {group.actions.map((action) => (
+                      <button
+                        key={`orphan-${group.key}-${duelActionUiKey(action)}`}
+                        type="button"
+                        className="duel-response-button"
+                        onClick={() => props.onPlayAction?.(action)}
+                      >
+                        <span className="line-clamp-2">{duelActionPresentation(action, { cardsByUid }).title}</span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="duel-player-band duel-player-band--player">
+          <div className="duel-player-meta">
+            <span>You - P{viewer + 1}</span>
+            <strong>{myLp}</strong>
+            <small>LP</small>
+          </div>
+          <HandFan
+            cards={myHand}
+            images={props.cardImages}
+            hidden={false}
+            onCardClick={handleCardInteraction}
+            onOpen={() => props.onViewPile({ title: `Hand (you P${viewer + 1})`, icon: "H", player: viewer, location: "hand", cards: myHand })}
+            align="bottom"
+            cardGlowForUid={cardGlowForUid}
+          />
         </div>
       </div>
     </div>
@@ -768,11 +825,13 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
       <CardActionFlyout
         flyout={flyout}
         images={props.cardImages}
+        cardsByUid={cardsByUid}
+        cardVisible={isDuelCardVisibleToPlayer(flyout.card, viewer)}
         onPick={(action) => {
           if (isMonsterZoneSummonAction(action)) {
-            setPendingZonePlacement({ action, player: action.player, location: "monsterZone" });
+            setPendingZonePlacement({ action, card: flyout.card, player: action.player, location: "monsterZone" });
           } else if (isSpellTrapZonePlacementAction(action, flyout.card)) {
-            setPendingZonePlacement({ action, player: action.player, location: "spellTrapZone" });
+            setPendingZonePlacement({ action, card: flyout.card, player: action.player, location: "spellTrapZone" });
           } else {
             props.onPlayAction?.(action);
           }

@@ -36,57 +36,106 @@ export interface SplitPromptGroups {
   globalGroups: DuelActionUiGroup[];
 }
 
-export function promptViewLabel(prompt: DuelPromptState): string {
+export function promptViewLabel(prompt: DuelPromptState, luaPrompt?: LuaOperationPromptState["prompt"]): string {
   switch (prompt.type) {
     case "selectOption":
-      return "Option Prompt";
+      return optionPromptLabel(luaPrompt);
     case "selectYesNo":
-      return "Yes / No Prompt";
+      return yesNoPromptLabel(luaPrompt);
   }
   const exhaustive: never = prompt;
   return exhaustive;
 }
 
 export function promptViewDetail(prompt: DuelPromptState, luaPrompt?: LuaOperationPromptState["prompt"]): string {
-  const parts = [`P${prompt.player + 1}`, `Prompt ${prompt.id}`];
-  if (prompt.origin === "luaOperation") parts.push("Lua operation");
-  if (prompt.returnTo !== undefined) parts.push(`returns P${prompt.returnTo + 1}`);
-  if (luaPrompt !== undefined) {
-    parts.push(luaPrompt.api);
-    if (isLuaOptionPromptDecision(luaPrompt)) {
-      if (luaPrompt.returnKind !== undefined) parts.push(`return ${luaPrompt.returnKind}`);
-      if (luaPrompt.returnValues !== undefined) parts.push(`values ${formatLuaPromptReturnValues(luaPrompt.returnValues)}`);
-    }
-  }
-
   switch (prompt.type) {
     case "selectOption": {
-      parts.push(`options ${prompt.options.join(", ")}`);
-      if (prompt.descriptions?.length) parts.push(`text ${prompt.descriptions.join(", ")}`);
-      if (prompt.descriptionLists?.length) parts.push(`lists ${formatDescriptionLists(prompt.descriptionLists)}`);
-      break;
+      const count = prompt.options.length;
+      return optionPromptDetail(luaPrompt, count, prompt.player);
     }
     case "selectYesNo": {
-      if (prompt.description !== undefined) parts.push(`text ${prompt.description}`);
-      break;
+      return yesNoPromptDetail(luaPrompt, prompt.player);
     }
   }
 
-  return parts.join(" · ");
+  const exhaustive: never = prompt;
+  return String(exhaustive);
 }
 
-function formatDescriptionLists(descriptionLists: readonly (readonly number[])[]): string {
-  return descriptionLists.map((descriptions) => `[${descriptions.join(", ")}]`).join(", ");
+function optionPromptLabel(luaPrompt: LuaOperationPromptState["prompt"] | undefined): string {
+  if (!luaPrompt) return "Choose option";
+  switch (luaPrompt.api) {
+    case "SelectEffect":
+      return "Choose effect";
+    case "SelectOption":
+      return "Choose option";
+    case "SelectCardsFromCodes":
+      return "Choose card";
+    case "SelectDisableField":
+    case "SelectField":
+    case "SelectFieldZone":
+      return "Choose zone";
+    case "AnnounceCard":
+      return "Declare card";
+    case "AnnounceAttribute":
+      return "Declare attribute";
+    case "AnnounceRace":
+      return "Declare type";
+    case "AnnounceLevel":
+      return "Declare level";
+    case "AnnounceNumber":
+    case "AnnounceNumberRange":
+      return "Choose number";
+    case "AnnounceType":
+      return "Declare card type";
+    case "SelectYesNo":
+    case "SelectEffectYesNo":
+      return "Choose option";
+  }
 }
 
-function formatLuaPromptReturnValues(returnValues: readonly (readonly unknown[])[]): string {
-  return returnValues.map((values) => `[${values.map(formatLuaPromptReturnValue).join(", ")}]`).join(", ");
+function yesNoPromptLabel(luaPrompt: LuaOperationPromptState["prompt"] | undefined): string {
+  if (luaPrompt?.api === "SelectEffectYesNo") return "Activate optional effect?";
+  return "Confirm effect?";
 }
 
-function formatLuaPromptReturnValue(value: unknown): string {
-  if (typeof value !== "object" || value === null) return String(value);
-  if ("code" in value && "index" in value) return `${String(value.code)}#${String(value.index)}`;
-  return JSON.stringify(value);
+function optionPromptDetail(luaPrompt: LuaOperationPromptState["prompt"] | undefined, count: number, player: number): string {
+  const prefix = `P${player + 1}`;
+  if (!luaPrompt) return `${prefix}: choose one of ${count} legal options.`;
+  switch (luaPrompt.api) {
+    case "SelectEffect":
+      return `${prefix}: choose which available effect to apply.`;
+    case "SelectCardsFromCodes":
+      return `${prefix}: choose a revealed card for this effect.`;
+    case "SelectDisableField":
+    case "SelectField":
+    case "SelectFieldZone":
+      return `${prefix}: choose a legal zone for this effect.`;
+    case "AnnounceCard":
+      return `${prefix}: declare a card name for this effect.`;
+    case "AnnounceAttribute":
+      return `${prefix}: declare an Attribute for this effect.`;
+    case "AnnounceRace":
+      return `${prefix}: declare a Monster Type for this effect.`;
+    case "AnnounceLevel":
+      return `${prefix}: declare a Level for this effect.`;
+    case "AnnounceNumber":
+    case "AnnounceNumberRange":
+      return `${prefix}: choose a number for this effect.`;
+    case "AnnounceType":
+      return `${prefix}: declare a card type for this effect.`;
+    case "SelectOption":
+      return `${prefix}: choose one of ${count} legal options.`;
+    case "SelectYesNo":
+    case "SelectEffectYesNo":
+      return `${prefix}: choose an option for this effect.`;
+  }
+}
+
+function yesNoPromptDetail(luaPrompt: LuaOperationPromptState["prompt"] | undefined, player: number): string {
+  const prefix = `P${player + 1}`;
+  if (luaPrompt?.api === "SelectEffectYesNo") return `${prefix}: choose whether to activate this optional effect.`;
+  return `${prefix}: choose Yes or No to continue resolving the current effect.`;
 }
 
 export function splitPromptGroups(prompt: DuelPromptState | undefined, groups: readonly DuelActionUiGroup[]): SplitPromptGroups {
@@ -114,7 +163,7 @@ export function duelPromptView(
   if (!promptGroups.length) return undefined;
   const luaPrompt = matchingLuaPrompt(prompt, luaOperationPrompt);
   return {
-    label: promptViewLabel(prompt),
+    label: promptViewLabel(prompt, luaPrompt),
     detail: promptViewDetail(prompt, luaPrompt),
     prompt: copyPrompt(prompt),
     ...(luaPrompt === undefined ? {} : { luaPrompt: copyLuaPrompt(luaPrompt) }),
