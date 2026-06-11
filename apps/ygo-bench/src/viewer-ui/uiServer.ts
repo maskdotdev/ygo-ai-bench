@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 import { createReadStream, existsSync, statSync, watch, type FSWatcher } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
-import type { ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import type { Socket } from "node:net";
 import { extname, join, resolve } from "node:path";
+import { EvalManager } from "../eval/EvalManager.js";
 import { encodeWebSocketTextFrame } from "../viewer/liveServer.js";
 import { getRunArtifact, listRunArtifacts, listSummaryArtifacts, readRunFile, readRunTrace, readSummaryArtifact, resolveRunDir } from "./artifacts.js";
 
@@ -20,10 +21,26 @@ export async function startBenchUiServer(options: { port?: number; host?: string
   const root = options.root ?? "benchmark-runs";
   const staticDir = resolve(options.staticDir ?? "dist-viewer");
   const liveClients = new Map<string, Set<Socket>>();
+  const evalClients = new Map<string, Set<Socket>>();
   const watchers = new Map<string, FSWatcher>();
+  const evals = new EvalManager({ runRoot: root, onChange: (view) => broadcast(evalClients.get(view.id), { type: "eval", eval: view }) });
+  await evals.loadPersisted();
   const server = createServer(async (request, response) => {
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
     try {
+      if (request.method === "POST" && url.pathname === "/api/evals") return sendJson(response, evals.create((await readJson(request)) as Parameters<EvalManager["create"]>[0]));
+      if (request.method === "GET" && url.pathname === "/api/evals") return sendJson(response, evals.list());
+      const evalMatch = /^\/api\/evals\/([^/]+)(?:\/(.+))?$/.exec(url.pathname);
+      if (evalMatch) {
+        const id = decodeURIComponent(evalMatch[1] ?? "");
+        const child = evalMatch[2];
+        const view = evals.get(id);
+        if (!view) return notFound(response);
+        if (!child) return sendJson(response, view);
+        if (child === "summary") return view.summary ? sendJson(response, view.summary) : notFound(response);
+        if (child === "runs") return sendNullableJson(response, evals.runs(id));
+        if (request.method === "POST" && child === "cancel") return sendJson(response, evals.cancel(id));
+      }
       if (url.pathname === "/api/runs") return sendJson(response, await listRunArtifacts(root));
       const runMatch = /^\/api\/runs\/([^/]+)(?:\/(.+))?$/.exec(url.pathname);
       if (runMatch) {
@@ -50,6 +67,22 @@ export async function startBenchUiServer(options: { port?: number; host?: string
   server.on("upgrade", async (request, rawSocket) => {
     const socket = rawSocket as Socket;
     const url = new URL(request.url ?? "/", `http://${request.headers.host ?? "localhost"}`);
+    const evalMatch = /^\/api\/evals\/([^/]+)\/live$/.exec(url.pathname);
+    if (evalMatch) {
+      const id = decodeURIComponent(evalMatch[1] ?? "");
+      const view = evals.get(id);
+      if (!view) return socket.destroy();
+      const key = request.headers["sec-websocket-key"];
+      if (typeof key !== "string") return socket.destroy();
+      socket.write(["HTTP/1.1 101 Switching Protocols", "Upgrade: websocket", "Connection: Upgrade", `Sec-WebSocket-Accept: ${websocketAccept(key)}`, "\r\n"].join("\r\n"));
+      const clients = evalClients.get(id) ?? new Set<Socket>();
+      evalClients.set(id, clients);
+      clients.add(socket);
+      sendSocketJson(socket, { type: "eval", eval: view });
+      socket.on("close", () => clients.delete(socket));
+      socket.on("error", () => clients.delete(socket));
+      return;
+    }
     const match = /^\/api\/runs\/([^/]+)\/live$/.exec(url.pathname);
     if (!match) {
       socket.destroy();
@@ -92,12 +125,29 @@ export async function startBenchUiServer(options: { port?: number; host?: string
       new Promise((resolveClose, rejectClose) => {
         for (const watcher of watchers.values()) watcher.close();
         for (const clients of liveClients.values()) for (const client of clients) client.destroy();
+        for (const clients of evalClients.values()) for (const client of clients) client.destroy();
         server.close((error) => {
           if (error) rejectClose(error);
           else resolveClose();
         });
       }),
   };
+}
+
+function readJson(request: IncomingMessage): Promise<unknown> {
+  return new Promise((resolveRead, rejectRead) => {
+    let body = "";
+    request.setEncoding("utf8");
+    request.on("data", (chunk) => (body += chunk));
+    request.on("end", () => {
+      try {
+        resolveRead(body.trim() ? JSON.parse(body) : {});
+      } catch (error) {
+        rejectRead(error);
+      }
+    });
+    request.on("error", rejectRead);
+  });
 }
 
 async function sendStatic(response: ServerResponse, staticDir: string, pathName: string, openRunId?: string, openSummaryId?: string): Promise<void> {
@@ -211,6 +261,11 @@ function sendTraceLine(socket: Socket, line: string): void {
 
 function sendSocketJson(socket: Socket, value: unknown): void {
   if (!socket.destroyed) socket.write(encodeWebSocketTextFrame(JSON.stringify(value)));
+}
+
+function broadcast(clients: Set<Socket> | undefined, value: unknown): void {
+  if (!clients) return;
+  for (const client of clients) sendSocketJson(client, value);
 }
 
 function websocketAccept(key: string): string {

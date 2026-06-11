@@ -9,22 +9,24 @@ export function SuiteSummaryView({ summary, onSelectRun }: { summary: SuiteSumma
       </div>
       <div className="summary-grid">
         {summary.aggregate.map((row) => (
-          <div className="score-card" key={row.agentId}>
-            <span>{row.agentId}</span>
+          <div className="score-card" key={competitorLabel(row)}>
+            <span>{competitorLabel(row)}</span>
             <strong>{summaryScore(row).toFixed(3)}</strong>
-            <small>win {percent(row.winRate)} | avg {number(row.averageDecisions, 1)} decisions</small>
+            <small>
+              win {percent(row.winRate)} | plan {number(row.averagePlanConsistencyScore, 2)} | failed {row.failedRuns ?? 0}
+            </small>
           </div>
         ))}
       </div>
       <div className="heat-table">
         {summary.records.slice(0, 60).map((record) => (
           <button
-            key={`${record.score.agentId}-${record.score.scenarioId}-${record.runDir}`}
+            key={`${competitorLabelFromScore(record.score)}-${record.score.scenarioId}-${record.runDir}`}
             onClick={() => onSelectRun(record.runDir.split("/").pop() ?? record.runDir)}
             title={record.runDir}
           >
             <span>{record.score.scenarioId.replace("real-", "")}</span>
-            <b>{record.score.agentId}</b>
+            <b>{competitorLabelFromScore(record.score)}</b>
             <strong>{number(record.score.objectiveScore, 2)}</strong>
           </button>
         ))}
@@ -35,6 +37,14 @@ export function SuiteSummaryView({ summary, onSelectRun }: { summary: SuiteSumma
 
 function summaryScore(row: SuiteSummary["aggregate"][number]): number {
   return row.weightedObjectiveScore ?? row.averageScore ?? 0;
+}
+
+function competitorLabel(row: SuiteSummary["aggregate"][number]): string {
+  return row.competitorId ?? (row.model ? `${row.agentId}:${row.model}` : row.agentId);
+}
+
+function competitorLabelFromScore(score: SuiteSummary["records"][number]["score"]): string {
+  return score.competitorId ?? (score.model ? `${score.agentId}:${score.model}` : score.agentId);
 }
 
 function percent(value: number | undefined): string {

@@ -4,6 +4,7 @@ import { AgentComparison } from "./components/AgentComparison";
 import { AppShell } from "./components/AppShell";
 import { ReplayView } from "./components/ReplayView";
 import { RunList } from "./components/RunList";
+import { EvalView } from "./components/Eval/EvalView";
 import { PlayView } from "./components/Play/PlayView";
 import { SuiteSummaryView } from "./components/SuiteSummary";
 import type { RunDetails, RunIndexItem, SuiteSummary, TraceFrame } from "./types";
@@ -16,7 +17,10 @@ declare global {
 }
 
 export function App() {
-  const [mode, setMode] = useState<"replay" | "play">(() => (new URLSearchParams(window.location.search).get("mode") === "play" ? "play" : "replay"));
+  const [mode, setMode] = useState<"replay" | "play" | "eval">(() => {
+    const requested = new URLSearchParams(window.location.search).get("mode");
+    return requested === "play" || requested === "eval" ? requested : "replay";
+  });
   const [runs, setRuns] = useState<RunIndexItem[]>([]);
   const [summaryIds, setSummaryIds] = useState<string[]>([]);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -95,6 +99,9 @@ export function App() {
           <button className={mode === "replay" ? "active" : ""} onClick={() => setMode("replay")}>
             Replay
           </button>
+          <button className={mode === "eval" ? "active" : ""} onClick={() => setMode("eval")}>
+            Eval
+          </button>
           <button className={mode === "play" ? "active" : ""} onClick={() => setMode("play")}>
             Play
           </button>
@@ -104,6 +111,13 @@ export function App() {
       <main className="workspace">
         {mode === "play" ? (
           <PlayView />
+        ) : mode === "eval" ? (
+          <EvalView
+            onSelectRun={(id) => {
+              setSelectedRunId(id);
+              setMode("replay");
+            }}
+          />
         ) : (
           <>
             {runDetails ? (

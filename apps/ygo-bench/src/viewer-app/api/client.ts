@@ -1,4 +1,4 @@
-import type { RunDetails, RunIndexItem, SuiteSummary, TraceFrame } from "../types";
+import type { EvalCompetitor, EvalView, RunDetails, RunIndexItem, SuiteSummary, TraceFrame } from "../types";
 
 async function getJson<T>(path: string): Promise<T> {
   const response = await fetch(path);
@@ -30,4 +30,34 @@ export function listSummaries(): Promise<string[]> {
 
 export function getSummary(id: string): Promise<SuiteSummary> {
   return getJson<SuiteSummary>(`/api/summaries/${encodeURIComponent(id)}`);
+}
+
+export function listEvals(): Promise<EvalView[]> {
+  return getJson<EvalView[]>("/api/evals");
+}
+
+export async function createEval(body: {
+  suitePath: string;
+  competitors: EvalCompetitor[];
+  runsPerScenario: number;
+  maxDecisions: number;
+  viewer: boolean;
+}): Promise<EvalView> {
+  const response = await fetch("/api/evals", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
+  return (await response.json()) as EvalView;
+}
+
+export function getEval(id: string): Promise<EvalView> {
+  return getJson<EvalView>(`/api/evals/${encodeURIComponent(id)}`);
+}
+
+export async function cancelEval(id: string): Promise<EvalView> {
+  const response = await fetch(`/api/evals/${encodeURIComponent(id)}/cancel`, { method: "POST" });
+  if (!response.ok) throw new Error(`${response.status} ${response.statusText}: ${await response.text()}`);
+  return (await response.json()) as EvalView;
 }

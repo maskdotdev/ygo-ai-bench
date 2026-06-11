@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -30,6 +30,62 @@ describe("YGO Bench UI server", () => {
       await server.close();
     }
   });
+
+  it("starts and reports a browser-launched eval", async () => {
+    const root = await mkdtemp(join(tmpdir(), "ygo-ui-server-eval-runs-"));
+    const staticDir = await mkdtemp(join(tmpdir(), "ygo-ui-server-eval-static-"));
+    const suitePath = join(root, "one-scenario-suite.json");
+    await writeFile(join(staticDir, "index.html"), "<!doctype html><title>viewer</title></head><body>ok</body>");
+    await writeFile(
+      suitePath,
+      JSON.stringify({
+        id: "ui-eval-smoke",
+        scenarios: ["scenarios/real/smoke-duel.json"],
+      }),
+    );
+    process.env.YGO_BENCH_RUN_ROOT = root;
+    const server = await startServerIfAllowed(root, staticDir);
+    if (!server) {
+      delete process.env.YGO_BENCH_RUN_ROOT;
+      await rm(root, { recursive: true, force: true });
+      await rm(staticDir, { recursive: true, force: true });
+      return;
+    }
+    try {
+      const created = (await postJson(`${server.url}api/evals`, {
+        suitePath,
+        competitors: [{ agentId: "greedy", competitorId: "greedy" }],
+        runsPerScenario: 1,
+        maxDecisions: 2,
+        viewer: false,
+      })) as { id: string; status: string };
+      expect(created.id).toContain("eval-");
+
+      const finished = await waitForEval(server.url, created.id);
+      expect(finished.status).toBe("finished");
+      expect(finished.progress.completed).toBe(1);
+      expect(finished.summary?.aggregate[0]).toMatchObject({ competitorId: "greedy", runs: 1 });
+
+      const evalRuns = (await fetchJson(`${server.url}api/evals/${encodeURIComponent(created.id)}/runs`)) as Array<{
+        scenarioId: string;
+        competitorId: string;
+      }>;
+      expect(evalRuns).toEqual([expect.objectContaining({ scenarioId: "real-smoke-duel", competitorId: "greedy" })]);
+
+      await server.close();
+      const restored = await startServerIfAllowed(root, staticDir);
+      expect(restored).not.toBeNull();
+      if (!restored) return;
+      const evals = (await fetchJson(`${restored.url}api/evals`)) as Array<{ id: string; status: string; summary?: { aggregate: unknown[] } }>;
+      expect(evals.find((evalView) => evalView.id === created.id)).toMatchObject({ status: "finished" });
+      await restored.close();
+    } finally {
+      delete process.env.YGO_BENCH_RUN_ROOT;
+      await server.close().catch(() => {});
+      await rm(root, { recursive: true, force: true });
+      await rm(staticDir, { recursive: true, force: true });
+    }
+  });
 });
 
 async function startServerIfAllowed(root: string, staticDir: string): Promise<Awaited<ReturnType<typeof startBenchUiServer>> | null> {
@@ -51,6 +107,31 @@ async function fetchText(url: string): Promise<string> {
   const response = await fetch(url);
   expect(response.ok).toBe(true);
   return response.text();
+}
+
+async function postJson(url: string, body: unknown): Promise<unknown> {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  expect(response.ok).toBe(true);
+  return response.json();
+}
+
+async function waitForEval(url: string, id: string): Promise<{ status: string; progress: { completed: number }; summary?: { aggregate: unknown[] } }> {
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const view = (await fetchJson(`${url}api/evals/${encodeURIComponent(id)}`)) as {
+      status: string;
+      progress: { completed: number };
+      summary?: { aggregate: unknown[] };
+      error?: string;
+    };
+    if (view.status === "finished") return view;
+    if (view.status === "error") throw new Error(view.error ?? "eval failed");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  throw new Error("Timed out waiting for eval");
 }
 
 function score() {

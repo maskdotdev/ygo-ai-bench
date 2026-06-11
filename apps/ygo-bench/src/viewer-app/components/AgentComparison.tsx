@@ -10,10 +10,12 @@ export function AgentComparison({ summary }: { summary: SuiteSummary }) {
       </div>
       <div className="bar-list">
         {summary.aggregate.map((row) => (
-          <div className="bar-row" key={row.agentId}>
+          <div className="bar-row" key={competitorLabel(row)}>
             <div>
-              <strong>{row.agentId}</strong>
-              <span>WR {(row.winRate * 100).toFixed(0)}%</span>
+              <strong>{competitorLabel(row)}</strong>
+              <span>
+                WR {(row.winRate * 100).toFixed(0)}% | plan {number(row.averagePlanConsistencyScore, 2)}
+              </span>
             </div>
             <div className="bar-track">
               <div className="bar-fill" style={{ width: `${(summaryScore(row) / max) * 100}%` }} />
@@ -28,4 +30,12 @@ export function AgentComparison({ summary }: { summary: SuiteSummary }) {
 
 function summaryScore(row: SuiteSummary["aggregate"][number]): number {
   return row.weightedObjectiveScore ?? row.averageScore ?? 0;
+}
+
+function competitorLabel(row: SuiteSummary["aggregate"][number]): string {
+  return row.competitorId ?? (row.model ? `${row.agentId}:${row.model}` : row.agentId);
+}
+
+function number(value: number | undefined, digits: number): string {
+  return (value ?? 0).toFixed(digits);
 }

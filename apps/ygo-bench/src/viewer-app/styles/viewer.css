@@ -531,11 +531,95 @@ pre {
   color: #68706d;
 }
 
+.eval-layout {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.eval-setup {
+  align-self: start;
+}
+
+.eval-setup textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 92px;
+  border: 1px solid #c6cec4;
+  border-radius: 6px;
+  background: #fff;
+  color: #202520;
+  padding: 8px;
+  font: inherit;
+}
+
+.inline-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.check-row {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+
+.check-row input {
+  width: 16px;
+  height: 16px;
+}
+
+.eval-main {
+  display: grid;
+  gap: 14px;
+}
+
+.eval-progress {
+  display: grid;
+  gap: 8px;
+}
+
+.leaderboard-table {
+  display: grid;
+  gap: 6px;
+}
+
+.leaderboard-head,
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(5, minmax(70px, 92px));
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #d5d8d0;
+  border-radius: 6px;
+}
+
+.leaderboard-head {
+  background: #edf0ea;
+  color: #535c58;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.leaderboard-row {
+  background: #fff;
+}
+
+.leaderboard-row span,
+.leaderboard-row strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (max-width: 1180px) {
   .main-grid,
   .replay-layout,
   .summary-columns,
-  .play-layout {
+  .play-layout,
+  .eval-layout {
     grid-template-columns: 1fr;
   }
 
@@ -548,7 +632,10 @@ pre {
   .topbar,
   .left-rail,
   .lower-grid,
-  .zone-grid {
+  .zone-grid,
+  .inline-controls,
+  .leaderboard-head,
+  .leaderboard-row {
     grid-template-columns: 1fr;
   }
 
