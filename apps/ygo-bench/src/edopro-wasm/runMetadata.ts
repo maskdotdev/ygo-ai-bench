@@ -24,6 +24,9 @@ export interface RealRunMetadata {
     scenarioPath: string | null;
     scenarioHash: string | null;
     agentId: string;
+    model?: string;
+    competitorId?: string;
+    mode?: string;
     maxDecisions: number;
     createdAt: string;
   };
@@ -36,6 +39,9 @@ export async function buildRealRunMetadata(args: {
   scenarioId: string;
   scenarioPath?: string;
   agentId: string;
+  model?: string;
+  competitorId?: string;
+  mode?: string;
   maxDecisions: number;
 }): Promise<RealRunMetadata> {
   const packageJson = JSON.parse(
@@ -67,6 +73,9 @@ export async function buildRealRunMetadata(args: {
       scenarioPath,
       scenarioHash: scenarioPath ? await optionalSha256File(scenarioPath) : null,
       agentId: args.agentId,
+      ...(args.model ? { model: args.model } : {}),
+      ...(args.competitorId ? { competitorId: args.competitorId } : {}),
+      ...(args.mode ? { mode: args.mode } : {}),
       maxDecisions: args.maxDecisions,
       createdAt: new Date().toISOString(),
     },

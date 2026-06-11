@@ -3,9 +3,17 @@ import { OpenAiAgent, checkOpenAiConnectivity, chooseOpenAiLegalAction, parseAge
 
 describe("parseAgentDecision", () => {
   it("accepts actionId and reason JSON", () => {
-    expect(parseAgentDecision('{"actionId":"a_003","reason":"Preserve resources."}')).toEqual({
+    expect(parseAgentDecision('{"actionId":"a_003","reason":"Preserve resources.","plan":{"horizon":"2 turns","currentGoal":"Build advantage","futureLine":["set up","convert"],"resourcesToPreserve":["starter"],"risks":["negate"],"contingency":"pass with defense"}}')).toEqual({
       actionId: "a_003",
       reason: "Preserve resources.",
+      plan: {
+        horizon: "2 turns",
+        currentGoal: "Build advantage",
+        futureLine: ["set up", "convert"],
+        resourcesToPreserve: ["starter"],
+        risks: ["negate"],
+        contingency: "pass with defense",
+      },
     });
   });
 
@@ -23,7 +31,7 @@ describe("chooseOpenAiLegalAction", () => {
     const fetchMock = vi
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(responseWithText("not-json"))
-      .mockResolvedValueOnce(responseWithText('{"actionId":"a_002","reason":"Recovered."}', { total_tokens: 42 }));
+      .mockResolvedValueOnce(responseWithText(decisionJson("a_002", "Recovered."), { total_tokens: 42 }));
 
     await expect(
       chooseOpenAiLegalAction({
@@ -33,12 +41,12 @@ describe("chooseOpenAiLegalAction", () => {
         observationText: "{}",
         legalActionIds: ["a_001", "a_002"],
       }),
-    ).resolves.toEqual({ actionId: "a_002", reason: "Recovered.", tokenCount: 42 });
+    ).resolves.toMatchObject({ actionId: "a_002", reason: "Recovered.", tokenCount: 42, plan: { currentGoal: "Test plan" } });
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   it("rejects illegal action IDs without retrying", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(responseWithText('{"actionId":"a_999","reason":"Bad."}'));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(responseWithText(decisionJson("a_999", "Bad.")));
 
     await expect(
       chooseOpenAiLegalAction({
@@ -59,7 +67,7 @@ describe("OpenAiAgent", () => {
   });
 
   it("uses the configured model", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(responseWithText('{"actionId":"a_001","reason":"ok"}'));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(responseWithText(decisionJson("a_001", "ok")));
     const agent = new OpenAiAgent({ apiKey: "test-key", model: "configured-model", endpoint: "https://example.test/responses" });
 
     await agent.chooseAction({
@@ -83,7 +91,7 @@ describe("OpenAiAgent", () => {
   });
 
   it("sends strategic legal-action guidance to the model", async () => {
-    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(responseWithText('{"actionId":"a_001","reason":"ok"}'));
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(responseWithText(decisionJson("a_001", "ok")));
 
     await chooseOpenAiLegalAction({
       apiKey: "test-key",
@@ -94,7 +102,8 @@ describe("OpenAiAgent", () => {
     });
 
     const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)) as { input: Array<{ role: string; content: string }> };
-    expect(body.input.find((message) => message.role === "developer")?.content).toContain("If an attack is legal and profitable");
+    expect(body.input.find((message) => message.role === "developer")?.content).toContain("Optimize for long-term strategy");
+    expect(body.input.find((message) => message.role === "developer")?.content).toContain('"plan"');
   });
 });
 
@@ -126,4 +135,19 @@ function responseWithText(outputText: string, usage?: { input_tokens?: number; o
     ok: true,
     json: async () => ({ output_text: outputText, ...(usage ? { usage } : {}) }),
   } as Response;
+}
+
+function decisionJson(actionId: string, reason: string): string {
+  return JSON.stringify({
+    actionId,
+    reason,
+    plan: {
+      horizon: "2 turns",
+      currentGoal: "Test plan",
+      futureLine: ["develop", "convert"],
+      resourcesToPreserve: ["follow-up"],
+      risks: ["interruption"],
+      contingency: "switch to backup line",
+    },
+  });
 }

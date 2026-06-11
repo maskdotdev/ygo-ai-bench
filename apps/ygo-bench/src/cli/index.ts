@@ -6,7 +6,7 @@ import { checkOpenAiConnectivity } from "../agents/openaiAgent.js";
 import { runRealEngineSmoke } from "../edopro-wasm/EdoproWasmAdapter.js";
 import { cardDataPathFromEnv, DEFAULT_REAL_SUITE_PATH, LEGACY_REAL_SUITE_PATH, scriptRootFromEnv } from "../edopro-wasm/realDefaults.js";
 import type { RealAgentId } from "../edopro-wasm/realAgent.js";
-import { evalRealSuite } from "../edopro-wasm/realEval.js";
+import { evalRealSuite, type RealEvalCompetitor } from "../edopro-wasm/realEval.js";
 import { getFirstRealPrompt, stringifyRealPrompt } from "../edopro-wasm/realPrompt.js";
 import { runRealDuel } from "../edopro-wasm/realRunner.js";
 import { loadRealScenario } from "../edopro-wasm/realScenario.js";
@@ -72,8 +72,10 @@ async function main(argv: string[]): Promise<void> {
   }
   if (command === "real-eval") {
     const model = readFlag(rest, "--model");
+    const competitors = readRealCompetitors(rest, "--competitors");
     const summary = await evalRealSuite({
       agentIds: readRealAgentList(rest, "--agents", ["random", "greedy"]),
+      ...(competitors ? { competitors } : {}),
       runsPerAgent: Number(readFlag(rest, "--runs") ?? 1),
       cardDataPath: cardDataPathFromEnv(),
       scriptRoot: scriptRootFromEnv(),
@@ -84,10 +86,10 @@ async function main(argv: string[]): Promise<void> {
     });
     for (const row of summary.aggregate) {
       console.log(
-        `${row.agentId}: runs=${row.runs} winRate=${row.winRate.toFixed(2)} avgScore=${row.averageScore.toFixed(2)} avgDecisions=${row.averageDecisions.toFixed(1)} avgLpDelta=${row.averageLpDelta.toFixed(0)}`,
+        `${row.competitorId}: runs=${row.runs} winRate=${row.winRate.toFixed(2)} avgScore=${row.averageScore.toFixed(2)} avgDecisions=${row.averageDecisions.toFixed(1)} avgLpDelta=${row.averageLpDelta.toFixed(0)}`,
       );
     }
-    console.log(`Summary: benchmark-runs/${summary.suiteId}-summary.json`);
+    console.log(`Summary: ${process.env.YGO_BENCH_RUN_ROOT ?? "benchmark-runs"}/${summary.suiteId}-summary.json`);
     return;
   }
   if (command === "real-validate") {
@@ -197,8 +199,10 @@ async function main(argv: string[]): Promise<void> {
     const model = readFlag(rest, "--model");
     const viewer = rest.includes("--viewer");
     if (await isRealSuite(suitePath)) {
+      const competitors = readRealCompetitors(rest, "--competitors");
       const summary = await evalRealSuite({
         agentIds: agentIds.map((agentId) => readRealAgentValue(agentId)),
+        ...(competitors ? { competitors } : {}),
         runsPerAgent: Number(readFlag(rest, "--runs") ?? 1),
         cardDataPath: cardDataPathFromEnv(),
         scriptRoot: scriptRootFromEnv(),
@@ -258,6 +262,25 @@ function readRealAgentValue(value: string): RealAgentId {
   if (value === "llm") return "openai";
   if (value === "random" || value === "greedy" || value === "oracle" || value === "openai") return value;
   throw new Error(`Unsupported real agent: ${value}`);
+}
+
+function readRealCompetitors(args: string[], name: string): RealEvalCompetitor[] | undefined {
+  const value = readFlag(args, name);
+  if (!value) return undefined;
+  return value
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const [agentRaw, ...modelParts] = entry.split(":");
+      if (!agentRaw) throw new Error(`Invalid competitor entry: ${entry}`);
+      const agentId = readRealAgentValue(agentRaw);
+      const model = modelParts.join(":") || undefined;
+      return {
+        agentId,
+        ...(model ? { model, competitorId: `${agentId}:${model}` } : { competitorId: agentId }),
+      };
+    });
 }
 
 async function isRealScenario(scenarioPath: string): Promise<boolean> {

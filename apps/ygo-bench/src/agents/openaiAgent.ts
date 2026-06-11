@@ -1,5 +1,5 @@
 import { renderObservationJson } from "../core/renderObservation.js";
-import type { Agent, AgentDecision, Observation } from "../core/types.js";
+import { defaultStrategyPlan, type Agent, type AgentDecision, type Observation, type StrategyPlan } from "../core/types.js";
 
 interface ResponsesApiResult {
   output_text?: string;
@@ -107,6 +107,7 @@ export function parseAgentDecision(text: string): AgentDecision {
   return {
     actionId: parsed.actionId,
     reason: typeof parsed.reason === "string" ? parsed.reason : "",
+    plan: parseStrategyPlan(parsed.plan),
   };
 }
 
@@ -147,12 +148,13 @@ async function callResponsesApi(args: {
       input: [
         {
           role: "system",
-          content: "You are playing Yu-Gi-Oh. Choose exactly one legal action ID. Return JSON only.",
+          content:
+            "You are playing Yu-Gi-Oh. Choose exactly one legal action ID and maintain a compact multi-turn plan. Return JSON only.",
         },
         {
           role: "developer",
           content:
-            'You must return JSON only: { "actionId": string, "reason": string }. Play to win the current scenario, not merely to develop. If you already control an attacker and can go to battle, usually choose the battle action before summoning or setting more cards. If an attack is legal and profitable, usually attack.',
+            'You must return JSON only: { "actionId": string, "reason": string, "plan": { "horizon": string, "currentGoal": string, "futureLine": string[], "resourcesToPreserve": string[], "risks": string[], "contingency": string } }. Optimize for long-term strategy: preserve future options, manage resources, adapt to disruption, and convert advantage into a win. Do not tunnel on immediate actions unless they advance the plan.',
         },
         {
           role: "user",
@@ -167,7 +169,7 @@ async function callResponsesApi(args: {
           schema: {
             type: "object",
             additionalProperties: false,
-            required: ["actionId", "reason"],
+            required: ["actionId", "reason", "plan"],
             properties: {
               actionId: {
                 type: "string",
@@ -175,6 +177,28 @@ async function callResponsesApi(args: {
               },
               reason: {
                 type: "string",
+              },
+              plan: {
+                type: "object",
+                additionalProperties: false,
+                required: ["horizon", "currentGoal", "futureLine", "resourcesToPreserve", "risks", "contingency"],
+                properties: {
+                  horizon: { type: "string" },
+                  currentGoal: { type: "string" },
+                  futureLine: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  resourcesToPreserve: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  risks: {
+                    type: "array",
+                    items: { type: "string" },
+                  },
+                  contingency: { type: "string" },
+                },
               },
             },
           },
@@ -191,6 +215,22 @@ async function callResponsesApi(args: {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+function parseStrategyPlan(value: unknown): StrategyPlan {
+  if (!isRecord(value)) return defaultStrategyPlan();
+  return {
+    horizon: typeof value.horizon === "string" ? value.horizon : "current decision",
+    currentGoal: typeof value.currentGoal === "string" ? value.currentGoal : "",
+    futureLine: stringArray(value.futureLine),
+    resourcesToPreserve: stringArray(value.resourcesToPreserve),
+    risks: stringArray(value.risks),
+    contingency: typeof value.contingency === "string" ? value.contingency : "",
+  };
+}
+
+function stringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
 function isInvalidJsonError(error: unknown): boolean {

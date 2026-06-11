@@ -1,10 +1,10 @@
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
-import type { ScenarioScore } from "../core/types.js";
+import { competitorIdFor, type PromptCoverage, type ScenarioScore, type ScoreComponents, type StrategyPlan } from "../core/types.js";
 import { loadBrowserCardDatabase } from "./cardDb.js";
 import { buildRealLegalActions } from "./legalActions.js";
 import { loadOcgRuntime } from "./loadOcgRuntime.js";
-import { initialRealReducedState, normalizeMessages } from "./normalizedEvents.js";
+import { initialRealReducedState, normalizeMessages, type RealReducedState } from "./normalizedEvents.js";
 import type { OcgCoreSync, OcgDuelHandle, OcgMessage, OcgRuntime } from "./ocgTypes.js";
 import { chooseRealAgentAction, type RealAgentId } from "./realAgent.js";
 import { loadRealScenario, type RealScenario } from "./realScenario.js";
@@ -18,8 +18,12 @@ export interface RealRunOptions {
   scriptRoot: string;
   maxDecisions: number;
   viewer: boolean;
+  runRoot?: string;
   scenarioPath?: string;
   model?: string;
+  suiteId?: string;
+  runIndex?: number;
+  competitorId?: string;
 }
 
 export interface RealRunResult {
@@ -38,7 +42,8 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   });
   const handle = createScenarioDuel(core, ocg, scenario, cardDb, options.scriptRoot, errors);
   const maxDecisions = options.maxDecisions || scenario.maxDecisions;
-  const runDir = resolve("benchmark-runs", `real-run-${new Date().toISOString().replaceAll(":", "-")}-${scenario.id}-${options.agentId}`);
+  const runRoot = options.runRoot ?? process.env.YGO_BENCH_RUN_ROOT ?? "benchmark-runs";
+  const runDir = resolve(runRoot, `real-run-${new Date().toISOString().replaceAll(":", "-")}-${scenario.id}-${options.agentId}`);
   const tracePath = join(runDir, "trace.jsonl");
   await mkdir(runDir, { recursive: true });
   await writeFile(tracePath, "");
@@ -67,11 +72,16 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
   let tokenCountSeen = false;
   let lineQuality = 0;
   let lineQualityDecisions = 0;
+  let planCompleteness = 0;
+  let riskAwareness = 0;
+  let planDecisions = 0;
+  let status: ScenarioScore["status"] = "completed";
+  const promptCoverage = createPromptCoverage();
 
   try {
     core.startDuel(handle);
     for (let frame = 0; frame < 1000; frame += 1) {
-      const status = core.duelProcess(handle);
+      const processStatus = core.duelProcess(handle);
       const messages = core.duelGetMessage(handle);
       await pushTrace(
         ...messages.map((message) => ({
@@ -96,16 +106,25 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
       if (win?.player === 0 || win?.player === 1) winner = win.player;
       if (reducedState.winner !== null) winner = reducedState.winner;
 
-      if (status === ocg.OcgProcessResult.END) break;
-      if (status === ocg.OcgProcessResult.CONTINUE) continue;
-      if (autoRespond(core, handle, messages, ocg)) continue;
+      if (processStatus === ocg.OcgProcessResult.END) break;
+      if (processStatus === ocg.OcgProcessResult.CONTINUE) continue;
+      const autoPrompt = autoRespond(core, handle, messages, ocg);
+      if (autoPrompt) {
+        increment(promptCoverage.autoResponses, autoPrompt);
+        continue;
+      }
 
       const prompt = [...messages].reverse().find((message) => isPromptMessage(message.type, ocg));
+      const promptTypeName = prompt ? String(ocg.OcgMessageType[prompt.type]) : "UNKNOWN";
+      increment(promptCoverage.seen, promptTypeName);
       const legalActions = buildRealLegalActions(prompt, ocg, cardDb);
       if (legalActions.length === 0) {
-        await pushTrace({ type: "error", message: "Core requested a response, but no MVP legal action builder matched the prompt." });
+        status = "unsupported-prompt";
+        increment(promptCoverage.unsupported, promptTypeName);
+        await pushTrace({ type: "error", status, promptType: promptTypeName, message: "Core requested a response, but no legal action builder matched the prompt." });
         break;
       }
+      increment(promptCoverage.handled, promptTypeName);
 
       const decisionStartedAt = Date.now();
       const chosen = await chooseRealAgentAction({
@@ -113,7 +132,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         scenario,
         state: reducedState,
         prompt,
-        promptTypeName: prompt ? String(ocg.OcgMessageType[prompt.type]) : "UNKNOWN",
+        promptTypeName,
         legalActions,
         recentEvents: events,
         ...(options.model ? { model: options.model } : {}),
@@ -122,6 +141,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
       invalidJson += chosen.invalidJson;
       illegalActions += chosen.illegalActions;
       modelErrors += chosen.modelErrors;
+      if (chosen.rawError || chosen.reason.includes("fell back")) promptCoverage.fallbackActions += 1;
       if (chosen.tokenCount !== null) {
         tokenCount += chosen.tokenCount;
         tokenCountSeen = true;
@@ -132,6 +152,9 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         lineQuality += decisionLineQuality;
         lineQualityDecisions += 1;
       }
+      planCompleteness += scorePlanCompleteness(chosen.plan);
+      riskAwareness += scoreRiskAwareness(chosen.plan);
+      planDecisions += 1;
       transcript.push(
         `## Decision ${decisionsTaken}`,
         "",
@@ -148,6 +171,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
           {
             actionId: chosen.action.id,
             reason: chosen.reason,
+            plan: chosen.plan,
             tokenCount: chosen.tokenCount,
             invalidJson: chosen.invalidJson,
             illegalActions: chosen.illegalActions,
@@ -165,6 +189,10 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         "",
         chosen.reason,
         "",
+        "### Plan",
+        "",
+        renderPlan(chosen.plan),
+        "",
       );
       await pushTrace({
         type: "decision",
@@ -173,6 +201,7 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         chosen: {
           actionId: chosen.action.id,
           reason: chosen.reason,
+          plan: chosen.plan,
           tokenCount: chosen.tokenCount,
         },
         observation: chosen.observation,
@@ -188,11 +217,39 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     core.destroyDuel(handle);
   }
 
+  if (modelErrors > 0 && status === "completed") status = "model-error";
+  if (decisionsTaken >= maxDecisions && winner === null && status === "completed") status = "timeout";
+  const lineQualityAverage = lineQualityDecisions === 0 ? null : lineQuality / lineQualityDecisions;
+  const planCompletenessAverage = planDecisions === 0 ? 0 : planCompleteness / planDecisions;
+  const riskAwarenessAverage = planDecisions === 0 ? 0 : riskAwareness / planDecisions;
+  const components = scoreComponents({
+    scenario,
+    state: reducedState,
+    winner,
+    lpDelta: reducedState.players[0].lp - reducedState.players[1].lp,
+    lineQuality: lineQualityAverage,
+    planCompleteness: planCompletenessAverage,
+    riskAwareness: riskAwarenessAverage,
+    decisionsTaken,
+    illegalActions,
+    invalidJson,
+    modelErrors,
+    fallbackActions: promptCoverage.fallbackActions,
+    unsupportedPrompts: totalCount(promptCoverage.unsupported),
+  });
   const score: ScenarioScore = {
+    mode: "long-horizon-eval",
+    ...(options.suiteId ? { suiteId: options.suiteId } : {}),
     scenarioId: scenario.id,
     agentId: options.agentId,
+    ...(options.model ? { model: options.model } : {}),
+    competitorId: options.competitorId ?? competitorIdFor(options.agentId, options.model),
+    ...(typeof options.runIndex === "number" ? { runIndex: options.runIndex } : {}),
+    seed: scenario.seed.map(String).join(":"),
+    status,
     family: scenario.family,
     won: winner === 0,
+    winner,
     turnsTaken: reducedState.turn,
     decisionsTaken,
     illegalActions,
@@ -200,18 +257,18 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
     modelErrors,
     repeatedActions: 0,
     finalLpDelta: reducedState.players[0].lp - reducedState.players[1].lp,
-    objectiveScore: scoreObjective(
-      scenario,
-      winner,
-      reducedState.players[0].lp - reducedState.players[1].lp,
-      lineQualityDecisions === 0 ? null : lineQuality / lineQualityDecisions,
-    ),
+    objectiveScore: components.overallScore,
+    components,
+    scoreWeights: scoreWeightsForScenario(scenario),
+    ...(scenario.scoring?.rationale ? { scoreRationale: scenario.scoring.rationale } : {}),
+    promptCoverage,
     latencyMs,
     tokenCount: tokenCountSeen ? tokenCount : null,
     notes: [
       ...errors,
       ...(modelErrors === 0 ? [] : [`modelErrors=${modelErrors}`]),
-      ...(lineQualityDecisions === 0 ? [] : [`lineQuality=${(lineQuality / lineQualityDecisions).toFixed(3)}`]),
+      ...(lineQualityAverage === null ? [] : [`lineQuality=${lineQualityAverage.toFixed(3)}`]),
+      `status=${status}`,
     ],
   };
   await writeFile(join(runDir, "final-score.json"), JSON.stringify(score, null, 2) + "\n");
@@ -226,6 +283,9 @@ export async function runRealDuel(options: RealRunOptions): Promise<RealRunResul
         scenarioPath: options.scenarioPath ?? "scenarios/real/smoke-duel.json",
         agentId: options.agentId,
         maxDecisions,
+        ...(options.model ? { model: options.model } : {}),
+        ...(score.competitorId ? { competitorId: score.competitorId } : {}),
+        ...(score.mode ? { mode: score.mode } : {}),
       }),
       null,
       2,
@@ -312,21 +372,22 @@ function preloadProjectIgnisScripts(core: OcgCoreSync, handle: OcgDuelHandle, sc
   }
 }
 
-export function autoRespond(core: OcgCoreSync, handle: OcgDuelHandle, messages: OcgMessage[], ocg: OcgRuntime): boolean {
+export function autoRespond(core: OcgCoreSync, handle: OcgDuelHandle, messages: OcgMessage[], ocg: OcgRuntime): string | null {
   const prompt = [...messages].reverse().find((message) => isPromptMessage(message.type, ocg));
-  if (!prompt) return false;
+  if (!prompt) return null;
+  const promptTypeName = String(ocg.OcgMessageType[prompt.type]);
   if (prompt.type === ocg.OcgMessageType.SELECT_CHAIN) {
     const selects = Array.isArray(prompt.selects) ? prompt.selects : [];
     if (selects.length === 0) {
       core.duelSetResponse(handle, { type: ocg.OcgResponseType.SELECT_CHAIN, index: null });
-      return true;
+      return promptTypeName;
     }
   }
   if (prompt.type === ocg.OcgMessageType.SELECT_YESNO) {
     core.duelSetResponse(handle, { type: ocg.OcgResponseType.SELECT_YESNO, yes: false });
-    return true;
+    return promptTypeName;
   }
-  return false;
+  return null;
 }
 
 export function isPromptMessage(type: number, ocg: OcgRuntime): boolean {
@@ -336,6 +397,7 @@ export function isPromptMessage(type: number, ocg: OcgRuntime): boolean {
     type === ocg.OcgMessageType.SELECT_CHAIN ||
     type === ocg.OcgMessageType.SELECT_CARD ||
     type === ocg.OcgMessageType.SELECT_PLACE ||
+    type === ocg.OcgMessageType.SELECT_TRIBUTE ||
     type === ocg.OcgMessageType.SELECT_YESNO ||
     type === ocg.OcgMessageType.SELECT_OPTION ||
     type === ocg.OcgMessageType.SELECT_POSITION
@@ -351,11 +413,146 @@ export function jsonReplacer(_key: string, value: unknown): unknown {
   return typeof value === "bigint" ? value.toString() : value;
 }
 
-function scoreObjective(scenario: RealScenario, winner: 0 | 1 | null, lpDelta: number, lineQuality: number | null): number {
-  const base = baseObjective(scenario, winner, lpDelta);
-  const weight = scenario.scoring?.lineQualityWeight ?? 0;
-  if (weight === 0 || lineQuality === null) return base;
-  return Math.max(0, Math.min(1, base * (1 - weight) + lineQuality * weight));
+function scoreComponents(args: {
+  scenario: RealScenario;
+  state: RealReducedState;
+  winner: 0 | 1 | null;
+  lpDelta: number;
+  lineQuality: number | null;
+  planCompleteness: number;
+  riskAwareness: number;
+  decisionsTaken: number;
+  illegalActions: number;
+  invalidJson: number;
+  modelErrors: number;
+  fallbackActions: number;
+  unsupportedPrompts: number;
+}): ScoreComponents {
+  const winScore = baseObjective(args.scenario, args.winner, args.lpDelta);
+  const strategicProgressScore = args.lineQuality ?? winScore;
+  const resourceScore = scoreResourceState(args.state);
+  const adaptationScore = args.planCompleteness;
+  const planConsistencyScore = args.planCompleteness;
+  const riskManagementScore = args.riskAwareness;
+  const decisionDenominator = Math.max(1, args.decisionsTaken);
+  const executionPenalty = clamp(
+    (args.illegalActions + args.invalidJson + args.modelErrors + args.fallbackActions + args.unsupportedPrompts) / decisionDenominator,
+  );
+  const weights = scoreWeightsForScenario(args.scenario);
+  const weightTotal = weights.win + weights.strategicProgress + weights.resource + weights.adaptation + weights.planConsistency + weights.risk;
+  const overallScore = clamp(
+    (weights.win * winScore +
+      weights.strategicProgress * strategicProgressScore +
+      weights.resource * resourceScore +
+      weights.adaptation * adaptationScore +
+      weights.planConsistency * planConsistencyScore +
+      weights.risk * riskManagementScore) /
+      weightTotal -
+      executionPenalty,
+  );
+  return {
+    winScore,
+    strategicProgressScore,
+    resourceScore,
+    adaptationScore,
+    planConsistencyScore,
+    riskManagementScore,
+    executionPenalty,
+    overallScore,
+  };
+}
+
+function scoreWeightsForScenario(scenario: RealScenario): {
+  win: number;
+  strategicProgress: number;
+  resource: number;
+  adaptation: number;
+  planConsistency: number;
+  risk: number;
+} {
+  const weights = scenario.scoring?.weights ?? {};
+  return {
+    win: positiveWeight(weights.win, 0.3),
+    strategicProgress: positiveWeight(weights.strategicProgress, 0.25),
+    resource: positiveWeight(weights.resource, 0.15),
+    adaptation: positiveWeight(weights.adaptation, 0.1),
+    planConsistency: positiveWeight(weights.planConsistency, 0.1),
+    risk: positiveWeight(weights.risk, 0.1),
+  };
+}
+
+function positiveWeight(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function scoreResourceState(state: RealReducedState): number {
+  const player = resourceValue(state.players[0]);
+  const opponent = resourceValue(state.players[1]);
+  return clamp(0.5 + (player - opponent) / 20);
+}
+
+function resourceValue(player: RealReducedState["players"][number]): number {
+  return (
+    player.handCount * 1.1 +
+    player.monsters.length * 1.6 +
+    player.spellsTraps.length * 1.2 +
+    player.graveyard.length * 0.2 +
+    player.banished.length * 0.1 +
+    player.deckCount * 0.03 +
+    player.extraDeckCount * 0.05
+  );
+}
+
+function createPromptCoverage(): PromptCoverage {
+  return {
+    seen: {},
+    handled: {},
+    unsupported: {},
+    autoResponses: {},
+    fallbackActions: 0,
+  };
+}
+
+function increment(record: Record<string, number>, key: string): void {
+  record[key] = (record[key] ?? 0) + 1;
+}
+
+function totalCount(record: Record<string, number>): number {
+  return Object.values(record).reduce((sum, value) => sum + value, 0);
+}
+
+function scorePlanCompleteness(plan: StrategyPlan): number {
+  const parts = [
+    plan.horizon.trim(),
+    plan.currentGoal.trim(),
+    plan.futureLine.length > 0 ? "futureLine" : "",
+    plan.contingency.trim(),
+  ];
+  return parts.filter(Boolean).length / parts.length;
+}
+
+function scoreRiskAwareness(plan: StrategyPlan): number {
+  const parts = [
+    plan.resourcesToPreserve.length > 0 ? "resources" : "",
+    plan.risks.length > 0 ? "risks" : "",
+    plan.contingency.trim(),
+  ];
+  return parts.filter(Boolean).length / parts.length;
+}
+
+function renderPlan(plan: StrategyPlan): string {
+  return [
+    `Horizon: ${plan.horizon}`,
+    `Current goal: ${plan.currentGoal}`,
+    `Future line: ${plan.futureLine.length === 0 ? "none stated" : plan.futureLine.join(" -> ")}`,
+    `Resources to preserve: ${plan.resourcesToPreserve.length === 0 ? "none stated" : plan.resourcesToPreserve.join(", ")}`,
+    `Risks: ${plan.risks.length === 0 ? "none stated" : plan.risks.join(", ")}`,
+    `Contingency: ${plan.contingency || "none stated"}`,
+  ].join("\n");
+}
+
+function clamp(value: number): number {
+  return Math.max(0, Math.min(1, value));
 }
 
 function baseObjective(scenario: RealScenario, winner: 0 | 1 | null, lpDelta: number): number {

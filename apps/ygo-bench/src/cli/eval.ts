@@ -56,10 +56,11 @@ export async function evalSuite(suitePath: string, agentIds: string[], viewer: b
     records,
     aggregate: aggregateScores(records.map((record) => record.score)),
   };
-  await mkdir(resolve("benchmark-runs"), { recursive: true });
-  await writeFile(resolve("benchmark-runs", `${suite.id}-summary.json`), JSON.stringify(summary, null, 2) + "\n");
-  await writeFile(resolve("benchmark-runs", `${suite.id}-summary.csv`), renderCsv(summary));
-  await writeFile(resolve("benchmark-runs", `${suite.id}-report.html`), renderHtmlReport(summary));
+  const runRoot = process.env.YGO_BENCH_RUN_ROOT ?? "benchmark-runs";
+  await mkdir(resolve(runRoot), { recursive: true });
+  await writeFile(resolve(runRoot, `${suite.id}-summary.json`), JSON.stringify(summary, null, 2) + "\n");
+  await writeFile(resolve(runRoot, `${suite.id}-summary.csv`), renderCsv(summary));
+  await writeFile(resolve(runRoot, `${suite.id}-report.html`), renderHtmlReport(summary));
   return records.map((record) => record.score);
 }
 
@@ -182,16 +183,27 @@ function averageNullable(values: Array<number | null>): number | null {
 }
 
 function weightedObjectiveScore(scores: ScenarioScore[]): number {
-  const weights = { lethal: 0.3, interruption: 0.3, resource: 0.3, smoke: 0.1 } as const;
+  const weights: Record<string, number> = {
+    lethal: 0.15,
+    interruption: 0.15,
+    resource: 0.15,
+    smoke: 0.05,
+    "setup-payoff": 0.12,
+    "resource-grind": 0.12,
+    "bait-interruption": 0.12,
+    "delayed-lethal": 0.12,
+    recovery: 0.12,
+    "defensive-planning": 0.12,
+  };
   const presentFamilies = Object.keys(weights).filter((family) =>
     scores.some((score) => score.family === family),
-  ) as Array<keyof typeof weights>;
-  const totalWeight = presentFamilies.reduce((sum, family) => sum + weights[family], 0);
+  );
+  const totalWeight = presentFamilies.reduce((sum, family) => sum + (weights[family] ?? 0), 0);
   if (totalWeight === 0) return 0;
   return (
     presentFamilies.reduce((sum, family) => {
       const familyScores = scores.filter((score) => score.family === family);
-      return sum + average(familyScores.map((score) => score.objectiveScore)) * weights[family];
+      return sum + average(familyScores.map((score) => score.objectiveScore)) * (weights[family] ?? 0);
     }, 0) / totalWeight
   );
 }

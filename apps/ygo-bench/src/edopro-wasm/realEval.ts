@@ -1,19 +1,29 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { ScenarioScore } from "../core/types.js";
+import { competitorIdFor, type ScenarioScore } from "../core/types.js";
 import type { RealAgentId } from "./realAgent.js";
 import { runRealDuel } from "./realRunner.js";
 import { loadRealSuite } from "./realSuite.js";
 
 export interface RealEvalOptions {
   agentIds: RealAgentId[];
+  competitors?: RealEvalCompetitor[];
   runsPerAgent: number;
   maxDecisions: number;
   viewer: boolean;
   cardDataPath: string;
   scriptRoot: string;
+  runRoot?: string;
   suitePath: string;
   model?: string;
+  onRecord?: (record: RealEvalSummary["records"][number], progress: { completed: number; total: number }) => void | Promise<void>;
+  shouldStop?: () => boolean;
+}
+
+export interface RealEvalCompetitor {
+  agentId: RealAgentId;
+  model?: string;
+  competitorId?: string;
 }
 
 export interface RealEvalSummary {
@@ -26,11 +36,21 @@ export interface RealEvalSummary {
   }>;
   scores: ScenarioScore[];
   aggregate: Array<{
+    competitorId: string;
     agentId: string;
+    model?: string;
     runs: number;
+    completedRuns: number;
+    failedRuns: number;
     winRate: number;
     averageScore: number;
     weightedObjectiveScore: number;
+    averageStrategicProgressScore: number;
+    averageResourceScore: number;
+    averageAdaptationScore: number;
+    averagePlanConsistencyScore: number;
+    averageRiskManagementScore: number;
+    averageExecutionPenalty: number;
     averageDecisions: number;
     averageLpDelta: number;
     modelErrorRate: number;
@@ -42,28 +62,40 @@ export interface RealEvalSummary {
 export async function evalRealSuite(options: RealEvalOptions): Promise<RealEvalSummary> {
   const records: RealEvalSummary["records"] = [];
   const suite = await loadRealSuite(options.suitePath);
-  for (const agentId of options.agentIds) {
+  const competitors: RealEvalCompetitor[] =
+    options.competitors ?? options.agentIds.map((agentId) => ({ agentId, ...(options.model ? { model: options.model } : {}) }));
+  const totalRuns = competitors.length * suite.scenarios.length * options.runsPerAgent;
+  for (const competitor of competitors) {
     for (const scenarioPath of suite.scenarios) {
       for (let run = 0; run < options.runsPerAgent; run += 1) {
+        if (options.shouldStop?.()) break;
         const result = await runRealDuel({
-          agentId,
+          agentId: competitor.agentId,
           cardDataPath: options.cardDataPath,
           scriptRoot: options.scriptRoot,
           maxDecisions: options.maxDecisions,
           viewer: options.viewer,
+          ...(options.runRoot ? { runRoot: options.runRoot } : {}),
           scenarioPath,
-          ...(options.model ? { model: options.model } : {}),
+          suiteId: suite.id,
+          runIndex: run,
+          competitorId: competitor.competitorId ?? competitorIdFor(competitor.agentId, competitor.model ?? options.model),
+          ...(competitor.model ?? options.model ? { model: competitor.model ?? options.model } : {}),
         });
-        records.push({
+        const record = {
           score: result.score,
           runDir: result.runDir,
           ...(options.viewer ? { viewerPath: `${result.runDir}/viewer.html` } : {}),
-        });
+        };
+        records.push(record);
+        await options.onRecord?.(record, { completed: records.length, total: totalRuns });
         console.log(
-          `${suite.id} ${agentId} ${result.score.scenarioId} run ${run + 1}: score=${result.score.objectiveScore.toFixed(2)} decisions=${result.score.decisionsTaken}`,
+          `${suite.id} ${result.score.competitorId ?? competitor.agentId} ${result.score.scenarioId} run ${run + 1}: score=${result.score.objectiveScore.toFixed(2)} status=${result.score.status ?? "completed"} decisions=${result.score.decisionsTaken}`,
         );
       }
+      if (options.shouldStop?.()) break;
     }
+    if (options.shouldStop?.()) break;
   }
 
   const summary: RealEvalSummary = {
@@ -73,23 +105,35 @@ export async function evalRealSuite(options: RealEvalOptions): Promise<RealEvalS
     scores: records.map((record) => record.score),
     aggregate: aggregateScores(records.map((record) => record.score)),
   };
-  await mkdir(resolve("benchmark-runs"), { recursive: true });
-  await writeFile(resolve("benchmark-runs", `${suite.id}-summary.json`), JSON.stringify(summary, null, 2) + "\n");
-  await writeFile(resolve("benchmark-runs", `${suite.id}-summary.csv`), renderCsv(summary));
-  await writeFile(resolve("benchmark-runs", `${suite.id}-report.html`), renderHtmlReport(summary));
+  const runRoot = options.runRoot ?? process.env.YGO_BENCH_RUN_ROOT ?? "benchmark-runs";
+  await mkdir(resolve(runRoot), { recursive: true });
+  await writeFile(resolve(runRoot, `${suite.id}-summary.json`), JSON.stringify(summary, null, 2) + "\n");
+  await writeFile(resolve(runRoot, `${suite.id}-summary.csv`), renderCsv(summary));
+  await writeFile(resolve(runRoot, `${suite.id}-report.html`), renderHtmlReport(summary));
   return summary;
 }
 
 function aggregateScores(scores: ScenarioScore[]): RealEvalSummary["aggregate"] {
-  const agentIds = [...new Set(scores.map((score) => score.agentId))];
-  return agentIds.map((agentId) => {
-    const agentScores = scores.filter((score) => score.agentId === agentId);
+  const competitorIds = [...new Set(scores.map((score) => score.competitorId ?? competitorIdFor(score.agentId, score.model)))];
+  return competitorIds.map((competitorId) => {
+    const agentScores = scores.filter((score) => (score.competitorId ?? competitorIdFor(score.agentId, score.model)) === competitorId);
+    const representative = agentScores[0];
     return {
-      agentId,
+      competitorId,
+      agentId: representative?.agentId ?? competitorId,
+      ...(representative?.model ? { model: representative.model } : {}),
       runs: agentScores.length,
+      completedRuns: agentScores.filter((score) => (score.status ?? "completed") === "completed").length,
+      failedRuns: agentScores.filter((score) => (score.status ?? "completed") !== "completed").length,
       winRate: average(agentScores.map((score) => (score.won ? 1 : 0))),
       averageScore: average(agentScores.map((score) => score.objectiveScore)),
       weightedObjectiveScore: weightedObjectiveScore(agentScores),
+      averageStrategicProgressScore: average(agentScores.map((score) => score.components?.strategicProgressScore ?? score.objectiveScore)),
+      averageResourceScore: average(agentScores.map((score) => score.components?.resourceScore ?? 0)),
+      averageAdaptationScore: average(agentScores.map((score) => score.components?.adaptationScore ?? 0)),
+      averagePlanConsistencyScore: average(agentScores.map((score) => score.components?.planConsistencyScore ?? 0)),
+      averageRiskManagementScore: average(agentScores.map((score) => score.components?.riskManagementScore ?? 0)),
+      averageExecutionPenalty: average(agentScores.map((score) => score.components?.executionPenalty ?? 0)),
       averageDecisions: average(agentScores.map((score) => score.decisionsTaken)),
       averageLpDelta: average(agentScores.map((score) => score.finalLpDelta)),
       modelErrorRate: average(agentScores.map((score) => score.modelErrors)),
@@ -113,10 +157,19 @@ function renderCsv(summary: RealEvalSummary): string {
   const rows = [
     [
       "agentId",
+      "competitorId",
+      "model",
       "scenarioId",
+      "status",
       "won",
       "family",
       "objectiveScore",
+      "strategicProgressScore",
+      "resourceScore",
+      "adaptationScore",
+      "planConsistencyScore",
+      "riskManagementScore",
+      "executionPenalty",
       "decisionsTaken",
       "illegalActions",
       "invalidJson",
@@ -128,10 +181,19 @@ function renderCsv(summary: RealEvalSummary): string {
     ],
     ...summary.records.map((record) => [
       record.score.agentId,
+      record.score.competitorId ?? competitorIdFor(record.score.agentId, record.score.model),
+      record.score.model ?? "",
       record.score.scenarioId,
+      record.score.status ?? "completed",
       String(record.score.won),
       record.score.family,
       record.score.objectiveScore.toFixed(4),
+      String(record.score.components?.strategicProgressScore ?? ""),
+      String(record.score.components?.resourceScore ?? ""),
+      String(record.score.components?.adaptationScore ?? ""),
+      String(record.score.components?.planConsistencyScore ?? ""),
+      String(record.score.components?.riskManagementScore ?? ""),
+      String(record.score.components?.executionPenalty ?? ""),
       String(record.score.decisionsTaken),
       String(record.score.illegalActions),
       String(record.score.invalidJson),
@@ -172,14 +234,14 @@ function renderHtmlReport(summary: RealEvalSummary): string {
     <section>
       <h2>Aggregate</h2>
       <table>
-        <thead><tr><th>Agent</th><th>Runs</th><th>Win Rate</th><th>Avg Score</th><th>Weighted Score</th><th>Avg Decisions</th><th>Avg LP Delta</th><th>Model Errors</th><th>Avg Latency</th><th>Avg Tokens</th></tr></thead>
+        <thead><tr><th>Competitor</th><th>Runs</th><th>Failed</th><th>Win Rate</th><th>Avg Score</th><th>Weighted Score</th><th>Progress</th><th>Resource</th><th>Adapt</th><th>Plan</th><th>Risk</th><th>Penalty</th><th>Avg Decisions</th><th>Avg LP Delta</th><th>Model Errors</th><th>Avg Latency</th><th>Avg Tokens</th></tr></thead>
         <tbody>${summary.aggregate.map(renderAggregateRow).join("")}</tbody>
       </table>
     </section>
     <section>
       <h2>Runs</h2>
       <table>
-        <thead><tr><th>Agent</th><th>Scenario</th><th>Family</th><th>Won</th><th>Score</th><th>Decisions</th><th>LP Delta</th><th>Latency</th><th>Tokens</th><th>Viewer</th></tr></thead>
+        <thead><tr><th>Competitor</th><th>Scenario</th><th>Status</th><th>Family</th><th>Won</th><th>Score</th><th>Progress</th><th>Plan</th><th>Decisions</th><th>LP Delta</th><th>Latency</th><th>Tokens</th><th>Viewer</th></tr></thead>
         <tbody>${summary.records.map(renderRunRow).join("")}</tbody>
       </table>
     </section>
@@ -189,12 +251,12 @@ function renderHtmlReport(summary: RealEvalSummary): string {
 }
 
 function renderAggregateRow(row: RealEvalSummary["aggregate"][number]): string {
-  return `<tr><td>${escapeHtml(row.agentId)}</td><td>${row.runs}</td><td>${row.winRate.toFixed(2)}</td><td>${row.averageScore.toFixed(2)}</td><td>${row.weightedObjectiveScore.toFixed(2)}</td><td>${row.averageDecisions.toFixed(1)}</td><td>${row.averageLpDelta.toFixed(0)}</td><td>${row.modelErrorRate.toFixed(2)}</td><td>${row.averageLatencyMs.toFixed(0)} ms</td><td>${row.averageTokenCount === null ? "" : row.averageTokenCount.toFixed(0)}</td></tr>`;
+  return `<tr><td>${escapeHtml(row.competitorId)}</td><td>${row.runs}</td><td>${row.failedRuns}</td><td>${row.winRate.toFixed(2)}</td><td>${row.averageScore.toFixed(2)}</td><td>${row.weightedObjectiveScore.toFixed(2)}</td><td>${row.averageStrategicProgressScore.toFixed(2)}</td><td>${row.averageResourceScore.toFixed(2)}</td><td>${row.averageAdaptationScore.toFixed(2)}</td><td>${row.averagePlanConsistencyScore.toFixed(2)}</td><td>${row.averageRiskManagementScore.toFixed(2)}</td><td>${row.averageExecutionPenalty.toFixed(2)}</td><td>${row.averageDecisions.toFixed(1)}</td><td>${row.averageLpDelta.toFixed(0)}</td><td>${row.modelErrorRate.toFixed(2)}</td><td>${row.averageLatencyMs.toFixed(0)} ms</td><td>${row.averageTokenCount === null ? "" : row.averageTokenCount.toFixed(0)}</td></tr>`;
 }
 
 function renderRunRow(record: RealEvalSummary["records"][number]): string {
   const viewer = record.viewerPath ? `<a href="${escapeHtml(record.viewerPath)}">viewer</a>` : "";
-  return `<tr><td>${escapeHtml(record.score.agentId)}</td><td>${escapeHtml(record.score.scenarioId)}</td><td>${escapeHtml(record.score.family)}</td><td>${record.score.won ? "yes" : "no"}</td><td>${record.score.objectiveScore.toFixed(2)}</td><td>${record.score.decisionsTaken}</td><td>${record.score.finalLpDelta}</td><td>${record.score.latencyMs} ms</td><td>${record.score.tokenCount ?? ""}</td><td>${viewer}</td></tr>`;
+  return `<tr><td>${escapeHtml(record.score.competitorId ?? competitorIdFor(record.score.agentId, record.score.model))}</td><td>${escapeHtml(record.score.scenarioId)}</td><td>${escapeHtml(record.score.status ?? "completed")}</td><td>${escapeHtml(record.score.family)}</td><td>${record.score.won ? "yes" : "no"}</td><td>${record.score.objectiveScore.toFixed(2)}</td><td>${(record.score.components?.strategicProgressScore ?? record.score.objectiveScore).toFixed(2)}</td><td>${(record.score.components?.planConsistencyScore ?? 0).toFixed(2)}</td><td>${record.score.decisionsTaken}</td><td>${record.score.finalLpDelta}</td><td>${record.score.latencyMs} ms</td><td>${record.score.tokenCount ?? ""}</td><td>${viewer}</td></tr>`;
 }
 
 function csvCell(value: string): string {
@@ -206,16 +268,27 @@ function escapeHtml(value: string): string {
 }
 
 function weightedObjectiveScore(scores: ScenarioScore[]): number {
-  const weights = { lethal: 0.3, interruption: 0.3, resource: 0.3, smoke: 0.1 } as const;
+  const weights: Record<string, number> = {
+    lethal: 0.15,
+    interruption: 0.15,
+    resource: 0.15,
+    smoke: 0.05,
+    "setup-payoff": 0.12,
+    "resource-grind": 0.12,
+    "bait-interruption": 0.12,
+    "delayed-lethal": 0.12,
+    recovery: 0.12,
+    "defensive-planning": 0.12,
+  };
   const presentFamilies = Object.keys(weights).filter((family) =>
     scores.some((score) => score.family === family),
-  ) as Array<keyof typeof weights>;
-  const totalWeight = presentFamilies.reduce((sum, family) => sum + weights[family], 0);
+  );
+  const totalWeight = presentFamilies.reduce((sum, family) => sum + (weights[family] ?? 0), 0);
   if (totalWeight === 0) return 0;
   return (
     presentFamilies.reduce((sum, family) => {
       const familyScores = scores.filter((score) => score.family === family);
-      return sum + average(familyScores.map((score) => score.objectiveScore)) * weights[family];
+      return sum + average(familyScores.map((score) => score.objectiveScore)) * (weights[family] ?? 0);
     }, 0) / totalWeight
   );
 }

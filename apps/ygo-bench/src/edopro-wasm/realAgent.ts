@@ -1,4 +1,5 @@
 import { chooseOpenAiLegalAction } from "../agents/openaiAgent.js";
+import { defaultStrategyPlan, type StrategyPlan } from "../core/types.js";
 import type { RealLegalAction } from "./legalActions.js";
 import type { RealNormalizedEvent, RealReducedState } from "./normalizedEvents.js";
 import type { OcgMessage, OcgRuntime } from "./ocgTypes.js";
@@ -13,6 +14,7 @@ export interface RealAgentChoice {
   illegalActions: number;
   modelErrors: number;
   tokenCount: number | null;
+  plan: StrategyPlan;
   observation: RealModelObservation;
   rawError?: string | undefined;
 }
@@ -64,15 +66,42 @@ export async function chooseRealAgentAction(args: {
   const observation = buildRealModelObservation(args);
   if (observation.player === 1 && args.allowPlayerOneAgent !== true) {
     const action = chooseScriptedOpponentAction(args.legalActions);
-    return { action, reason: `scripted opponent selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
+    return {
+      action,
+      reason: `scripted opponent selected ${action.label}`,
+      invalidJson: 0,
+      illegalActions: 0,
+      modelErrors: 0,
+      tokenCount: null,
+      plan: heuristicPlan("scripted opponent", action),
+      observation,
+    };
   }
   if (args.agentId === "random") {
     const action = args.legalActions[Math.floor(Math.random() * args.legalActions.length)] ?? args.legalActions[0]!;
-    return { action, reason: `random selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
+    return {
+      action,
+      reason: `random selected ${action.label}`,
+      invalidJson: 0,
+      illegalActions: 0,
+      modelErrors: 0,
+      tokenCount: null,
+      plan: heuristicPlan("random baseline", action),
+      observation,
+    };
   }
   if (args.agentId === "greedy" || args.agentId === "oracle") {
     const action = args.agentId === "oracle" ? chooseOracleAction(args) : chooseGreedyAction(args.legalActions);
-    return { action, reason: `${args.agentId} selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
+    return {
+      action,
+      reason: `${args.agentId} selected ${action.label}`,
+      invalidJson: 0,
+      illegalActions: 0,
+      modelErrors: 0,
+      tokenCount: null,
+      plan: heuristicPlan(`${args.agentId} baseline`, action),
+      observation,
+    };
   }
 
   const apiKey = process.env.OPENAI_API_KEY;
@@ -94,10 +123,20 @@ export async function chooseRealAgentAction(args: {
         illegalActions: 1,
         modelErrors: 0,
         tokenCount: decision.tokenCount,
+        plan: decision.plan ?? defaultStrategyPlan(decision.reason),
         observation,
       };
     }
-    return { action, reason: decision.reason, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: decision.tokenCount, observation };
+    return {
+      action,
+      reason: decision.reason,
+      invalidJson: 0,
+      illegalActions: 0,
+      modelErrors: 0,
+      tokenCount: decision.tokenCount,
+      plan: decision.plan ?? defaultStrategyPlan(decision.reason),
+      observation,
+    };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     const fallback = args.legalActions[0]!;
@@ -108,6 +147,7 @@ export async function chooseRealAgentAction(args: {
       illegalActions: message.includes("illegal action id") ? 1 : 0,
       modelErrors: 1,
       tokenCount: null,
+      plan: defaultStrategyPlan(`Fallback after model failure: ${message}`),
       observation,
       rawError: message,
     };
@@ -147,9 +187,16 @@ export function buildRealModelObservation(args: {
 }
 
 function realScenarioObjective(scenario: RealScenario): string {
+  if (scenario.objective) return scenario.objective;
   if (scenario.family === "lethal") return "Win as player 0 as quickly as possible; prioritize battle damage when lethal or near-lethal is available.";
   if (scenario.family === "interruption") return "Win as player 0 while navigating response windows and using available interruptions when they help.";
   if (scenario.family === "resource") return "Win as player 0 while preserving enough board and cards to carry the line across multiple turns.";
+  if (scenario.family === "setup-payoff") return "Build toward a later payoff while preserving the resources needed to execute it.";
+  if (scenario.family === "resource-grind") return "Win a multi-turn resource exchange by preserving cards, trading efficiently, and converting advantage.";
+  if (scenario.family === "bait-interruption") return "Sequence actions to expose or avoid interruption before committing the key play.";
+  if (scenario.family === "delayed-lethal") return "Set up a future lethal line and switch to damage once the lethal window is available.";
+  if (scenario.family === "recovery") return "Recover after the first plan is disrupted and pivot to the best backup line.";
+  if (scenario.family === "defensive-planning") return "Choose defensive lines that preserve survival and future advantage over immediate pressure.";
   return "Win as player 0 using only legal action IDs.";
 }
 
@@ -166,6 +213,17 @@ function chooseGreedyAction(actions: RealLegalAction[]): RealLegalAction {
     actions.find((action) => action.type === "end_phase") ??
     actions[0]!
   );
+}
+
+function heuristicPlan(label: string, action: RealLegalAction): StrategyPlan {
+  return {
+    horizon: "current turn",
+    currentGoal: `${label} chose ${action.type}.`,
+    futureLine: [action.label],
+    resourcesToPreserve: [],
+    risks: [],
+    contingency: "Continue selecting legal actions from the current engine state.",
+  };
 }
 
 function chooseOracleAction(args: {

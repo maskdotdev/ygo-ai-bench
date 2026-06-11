@@ -5,7 +5,7 @@ import { assertNoHiddenInfoLeak } from "../core/hiddenInfo.js";
 import { loadScenario } from "../core/scenario.js";
 import { scoreRun } from "../core/scoring.js";
 import { TraceWriter } from "../core/trace.js";
-import type { Agent, AgentDecision, DecisionFrame, Observation, ScenarioScore, StepResult } from "../core/types.js";
+import { defaultStrategyPlan, type Agent, type AgentDecision, type DecisionFrame, type Observation, type ScenarioScore, type StepResult } from "../core/types.js";
 import { MockYugiohEnv } from "../env/YugiohEnv.js";
 import { writeViewerHtml } from "../viewer/html.js";
 
@@ -19,7 +19,8 @@ export interface RunOptions {
 
 export async function runScenario(options: RunOptions): Promise<{ runDir: string; score: ScenarioScore }> {
   const scenario = await loadScenario(options.scenarioPath);
-  const runDir = resolve("benchmark-runs", `run-${new Date().toISOString().replaceAll(":", "-")}-${scenario.id}-${options.agentId}`);
+  const runRoot = process.env.YGO_BENCH_RUN_ROOT ?? "benchmark-runs";
+  const runDir = resolve(runRoot, `run-${new Date().toISOString().replaceAll(":", "-")}-${scenario.id}-${options.agentId}`);
   const trace = new TraceWriter(runDir);
   const env = new MockYugiohEnv();
   const agent = options.agent ?? createAgent(options.agentId, scenario, options.model ? { model: options.model } : undefined);
@@ -98,6 +99,7 @@ async function chooseActionWithFallback(agent: Agent, observation: Observation):
     return {
       actionId: fallback.id,
       reason: `Agent returned invalid output; fell back to first legal action ${fallback.id}.`,
+      plan: defaultStrategyPlan("Fallback after invalid agent output."),
       fallbackReason: error instanceof Error ? error.message : String(error),
     };
   }
@@ -110,5 +112,6 @@ function normalizeDecision(decision: AgentDecisionWithFallback): AgentDecision {
   return {
     actionId: decision.actionId,
     reason: decision.reason ?? "",
+    plan: decision.plan ?? defaultStrategyPlan(decision.reason ?? ""),
   };
 }
