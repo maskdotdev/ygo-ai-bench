@@ -4,6 +4,7 @@ import { AgentComparison } from "./components/AgentComparison";
 import { AppShell } from "./components/AppShell";
 import { ReplayView } from "./components/ReplayView";
 import { RunList } from "./components/RunList";
+import { PlayView } from "./components/Play/PlayView";
 import { SuiteSummaryView } from "./components/SuiteSummary";
 import type { RunDetails, RunIndexItem, SuiteSummary, TraceFrame } from "./types";
 
@@ -15,6 +16,7 @@ declare global {
 }
 
 export function App() {
+  const [mode, setMode] = useState<"replay" | "play">(() => (new URLSearchParams(window.location.search).get("mode") === "play" ? "play" : "replay"));
   const [runs, setRuns] = useState<RunIndexItem[]>([]);
   const [summaryIds, setSummaryIds] = useState<string[]>([]);
   const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
@@ -89,18 +91,32 @@ export function App() {
       error={error}
     >
       <aside className="left-rail">
-        <RunList runs={runs} selectedRunId={selectedRunId} onSelectRun={setSelectedRunId} />
+        <div className="panel mode-switch">
+          <button className={mode === "replay" ? "active" : ""} onClick={() => setMode("replay")}>
+            Replay
+          </button>
+          <button className={mode === "play" ? "active" : ""} onClick={() => setMode("play")}>
+            Play
+          </button>
+        </div>
+        {mode === "replay" ? <RunList runs={runs} selectedRunId={selectedRunId} onSelectRun={setSelectedRunId} /> : null}
       </aside>
       <main className="workspace">
-        {runDetails ? (
-          <ReplayView details={runDetails} trace={trace} transcript={transcript} />
+        {mode === "play" ? (
+          <PlayView />
         ) : (
-          <div className="empty-block">Select a run to inspect its trace.</div>
+          <>
+            {runDetails ? (
+              <ReplayView details={runDetails} trace={trace} transcript={transcript} />
+            ) : (
+              <div className="empty-block">Select a run to inspect its trace.</div>
+            )}
+            <div className="summary-columns">
+              {summary ? <AgentComparison summary={summary} /> : <div className="empty-block">No suite summary loaded.</div>}
+              {summary ? <SuiteSummaryView summary={summary} onSelectRun={setSelectedRunId} /> : null}
+            </div>
+          </>
         )}
-        <div className="summary-columns">
-          {summary ? <AgentComparison summary={summary} /> : <div className="empty-block">No suite summary loaded.</div>}
-          {summary ? <SuiteSummaryView summary={summary} onSelectRun={setSelectedRunId} /> : null}
-        </div>
       </main>
     </AppShell>
   );

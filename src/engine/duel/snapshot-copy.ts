@@ -23,8 +23,8 @@ export function copyPublicChainLink(link: DuelState["chain"][number]): PublicCha
 }
 
 export function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }) };
-  return { ...prompt };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }), ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
+  return { ...prompt, ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
 }
 
 export function copyPendingTrigger(trigger: DuelState["pendingTriggers"][number]): DuelState["pendingTriggers"][number] { return copyEventPayload(trigger); }

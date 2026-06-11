@@ -59,9 +59,10 @@ export async function chooseRealAgentAction(args: {
   legalActions: RealLegalAction[];
   recentEvents: RealNormalizedEvent[];
   model?: string;
+  allowPlayerOneAgent?: boolean;
 }): Promise<RealAgentChoice> {
   const observation = buildRealModelObservation(args);
-  if (observation.player === 1) {
+  if (observation.player === 1 && args.allowPlayerOneAgent !== true) {
     const action = chooseScriptedOpponentAction(args.legalActions);
     return { action, reason: `scripted opponent selected ${action.label}`, invalidJson: 0, illegalActions: 0, modelErrors: 0, tokenCount: null, observation };
   }

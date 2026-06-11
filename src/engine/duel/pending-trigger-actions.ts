@@ -1,4 +1,5 @@
 import { findCard } from "#duel/card-state.js";
+import { duelEffectActionMetadata } from "#duel/effect-action-metadata.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
 import { pendingTriggerBucketsForState, setWaitingForPendingTriggerBucket } from "#duel/trigger-buckets.js";
 import type { DuelAction, DuelState, PlayerId } from "#duel/types.js";
@@ -15,8 +16,8 @@ export function getPendingTriggerActions(state: DuelState, player: PlayerId): Du
 
     const source = findCard(state, trigger.sourceUid);
     if (!source || !effect) continue;
-    if (canUseEffectCount(state, effect)) actions.push({ type: "activateTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `${source.name}: ${trigger.effectId}` });
-    if (effect?.optional !== false) declines.push({ type: "declineTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `Decline ${source.name}: ${trigger.effectId}` });
+    if (canUseEffectCount(state, effect)) actions.push({ type: "activateTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `${source.name}: ${trigger.effectId}`, ...duelEffectActionMetadata(effect) });
+    if (effect?.optional !== false) declines.push({ type: "declineTrigger", player, triggerId: trigger.id, triggerBucket: trigger.triggerBucket, uid: source.uid, effectId: trigger.effectId, label: `Decline ${source.name}: ${trigger.effectId}`, ...duelEffectActionMetadata(effect) });
   }
 
   return [...actions, ...declines];

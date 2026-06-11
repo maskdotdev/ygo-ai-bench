@@ -914,19 +914,141 @@
     white-space: normal;
   }
 
+  .duel-prompt-reveal-strip {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    max-width: min(48vw, 420px);
+    overflow-x: auto;
+    border-right: 1px solid rgba(244, 208, 63, 0.16);
+    padding-right: 8px;
+  }
+
+  .duel-prompt-reveal-card {
+    display: grid;
+    width: 72px;
+    flex: 0 0 72px;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .duel-prompt-reveal-card-frame {
+    aspect-ratio: 421 / 614;
+    overflow: hidden;
+    border: 1px solid rgba(125, 211, 252, 0.42);
+    border-radius: 4px;
+    background: rgba(15, 23, 42, 0.94);
+    box-shadow: 0 0 18px rgba(34, 211, 238, 0.18);
+  }
+
+  .duel-prompt-reveal-card-frame img,
+  .duel-prompt-reveal-card-fallback {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .duel-prompt-reveal-card-fallback {
+    display: grid;
+    place-items: center;
+    padding: 5px;
+    color: #e0f2fe;
+    font-size: 0.52rem;
+    font-weight: 900;
+    line-height: 1.1;
+  }
+
+  .duel-prompt-reveal-card > span {
+    overflow: hidden;
+    color: rgba(224, 242, 254, 0.92);
+    font-size: 0.58rem;
+    font-weight: 900;
+    line-height: 1.05;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .duel-response-button {
     flex: 0 0 auto;
-    min-height: 56px;
-    max-width: 260px;
+    display: grid;
+    min-height: 84px;
+    width: min(36vw, 340px);
+    min-width: 230px;
+    max-width: 360px;
+    align-content: center;
+    gap: 5px;
     border: 1px solid rgba(244, 208, 63, 0.24);
     border-radius: 7px;
-    background: rgba(80, 56, 13, 0.84);
-    padding: 13px 18px;
+    background:
+      linear-gradient(180deg, rgba(86, 58, 12, 0.9), rgba(43, 30, 8, 0.94));
+    padding: 10px 14px;
     color: #fff8dc;
-    font-size: 1.05rem;
-    font-weight: 800;
     line-height: 1.16;
     text-align: left;
+  }
+
+  .duel-response-button-badge {
+    width: max-content;
+    max-width: 100%;
+    overflow: hidden;
+    border: 1px solid rgba(244, 208, 63, 0.28);
+    border-radius: 999px;
+    background: rgba(244, 208, 63, 0.1);
+    padding: 2px 7px;
+    color: rgba(255, 242, 183, 0.86);
+    font-size: 0.56rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .duel-response-button-title,
+  .duel-response-button-detail {
+    display: -webkit-box;
+    overflow: hidden;
+    overflow-wrap: anywhere;
+    -webkit-box-orient: vertical;
+  }
+
+  .duel-response-button-title {
+    -webkit-line-clamp: 2;
+    color: #fff8dc;
+    font-size: 0.98rem;
+    font-weight: 900;
+  }
+
+  .duel-response-button-detail {
+    -webkit-line-clamp: 2;
+    color: rgba(255, 247, 220, 0.68);
+    font-size: 0.68rem;
+    font-weight: 700;
+  }
+
+  .duel-response-button--effect {
+    border-color: rgba(125, 211, 252, 0.38);
+    background:
+      linear-gradient(180deg, rgba(18, 68, 79, 0.92), rgba(7, 22, 30, 0.96));
+  }
+
+  .duel-response-button--chain,
+  .duel-response-button--prompt {
+    border-color: rgba(168, 85, 247, 0.34);
+    background:
+      linear-gradient(180deg, rgba(52, 36, 88, 0.9), rgba(20, 14, 37, 0.96));
+  }
+
+  .duel-response-button--attack {
+    border-color: rgba(248, 113, 113, 0.34);
+    background:
+      linear-gradient(180deg, rgba(73, 28, 24, 0.92), rgba(27, 10, 9, 0.96));
+  }
+
+  .duel-response-button--summon,
+  .duel-response-button--set {
+    border-color: rgba(34, 211, 238, 0.28);
   }
 
   .duel-response-button:hover,
@@ -1037,11 +1159,29 @@
       max-width: 190px;
     }
 
+    .duel-prompt-reveal-strip {
+      max-width: 72vw;
+    }
+
+    .duel-prompt-reveal-card {
+      width: 56px;
+      flex-basis: 56px;
+    }
+
     .duel-response-button {
-      min-height: 48px;
-      max-width: 190px;
+      min-height: 76px;
+      min-width: 190px;
+      width: min(68vw, 260px);
+      max-width: 280px;
       padding: 10px 12px;
-      font-size: 0.88rem;
+    }
+
+    .duel-response-button-title {
+      font-size: 0.86rem;
+    }
+
+    .duel-response-button-detail {
+      font-size: 0.62rem;
     }
 
     .duel-response-group > span {

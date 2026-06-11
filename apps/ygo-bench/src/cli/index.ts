@@ -13,6 +13,7 @@ import { loadRealScenario } from "../edopro-wasm/realScenario.js";
 import { loadRealSuite } from "../edopro-wasm/realSuite.js";
 import { validateRealSuite } from "../edopro-wasm/realValidate.js";
 import type { ScenarioScore } from "../core/types.js";
+import { startPlayServer } from "../play/playServer.js";
 import { startTraceViewerServer } from "../viewer/liveServer.js";
 import { startBenchUiServer } from "../viewer-ui/uiServer.js";
 
@@ -131,6 +132,31 @@ async function main(argv: string[]): Promise<void> {
       ...(openSummaryId ? { openSummaryId: artifactIdFromPath(openSummaryId, "summary") } : {}),
     });
     console.log(`YGO Bench UI: ${server.url}`);
+    console.log("Press Ctrl-C to stop.");
+    const shutdown = async () => {
+      await server.close();
+      process.exit(0);
+    };
+    process.once("SIGINT", shutdown);
+    process.once("SIGTERM", shutdown);
+    await new Promise(() => {});
+    return;
+  }
+  if (command === "play") {
+    const opponent = readRealAgentFlag(rest, "--opponent", process.env.OPENAI_API_KEY ? "openai" : "greedy");
+    if (opponent === "oracle") throw new Error("--opponent must be openai, greedy, or random");
+    const model = readFlag(rest, "--model");
+    const server = await startPlayServer({
+      port: Number(readFlag(rest, "--port") ?? 4173),
+      initialSession: {
+        scenarioPath: readFlag(rest, "--scenario") ?? "scenarios/real/smoke-duel.json",
+        humanPlayer: Number(readFlag(rest, "--human-player") ?? 0) === 1 ? 1 : 0,
+        opponentAgent: opponent,
+        maxDecisions: Number(readFlag(rest, "--max-decisions") ?? 80),
+        ...(model ? { model } : {}),
+      },
+    });
+    console.log(`YGO Bench Play: ${server.url}`);
     console.log("Press Ctrl-C to stop.");
     const shutdown = async () => {
       await server.close();
@@ -280,6 +306,7 @@ function printHelp(): void {
   pnpm --filter @ygo-bench/app bench llm-check
   pnpm --filter @ygo-bench/app viewer:build
   pnpm --filter @ygo-bench/app bench ui --port 4173
+  pnpm --filter @ygo-bench/app bench play --scenario scenarios/real/smoke-duel.json --opponent greedy --port 4173
   pnpm --filter @ygo-bench/app bench run scenarios/lethal/lethal-001.json --agent random --viewer
   pnpm --filter @ygo-bench/app bench eval suites/mock-mvp.json --agents random,greedy,llm --model gpt-4o-mini --viewer
   pnpm --filter @ygo-bench/app bench run scenarios/real/smoke-duel.json --agent greedy --viewer

@@ -61,7 +61,7 @@ export function createUpstreamNodeWorkspace(config: UpstreamSourceConfig): Upstr
       const databasePath = resolveWorkspacePath(upstreamDatabasePath(config, filename));
       if (!fs.existsSync(databasePath)) return [];
       const datas = readSqliteJson<RawCdbDataRow>(databasePath, "select id, alias, setcode, type, atk, def, level, race, attribute from datas");
-      const texts = readSqliteJson<RawCdbTextRow>(databasePath, "select id, name from texts");
+      const texts = readSqliteJson<RawCdbTextRow>(databasePath, cdbTextSelect(databasePath, "texts"));
       return mergeCardData(normalizeCdbRows(datas, texts), readSupplementalCards(config));
     },
     readBanlist(filename) {
@@ -80,6 +80,13 @@ function readSupplementalCards(config: UpstreamSourceConfig): DuelCardData[] {
     throw new Error(`Supplemental card data ${rowsPath} must contain datas and texts arrays`);
   }
   return normalizeCdbRows(parsed.datas as RawCdbDataRow[], parsed.texts as RawCdbTextRow[]);
+}
+
+function cdbTextSelect(databasePath: string, table: string): string {
+  const available = new Set(readSqliteJson<{ name: string }>(databasePath, `pragma table_info(${table})`).map((column) => column.name));
+  const fields = ["id", "name", "desc", "str1", "str2", "str3", "str4", "str5", "str6", "str7", "str8", "str9", "str10", "str11", "str12", "str13", "str14", "str15", "str16"]
+    .filter((field) => available.has(field));
+  return `select ${fields.join(", ")} from ${table}`;
 }
 
 function mergeCardData(primary: DuelCardData[], supplemental: DuelCardData[]): DuelCardData[] {

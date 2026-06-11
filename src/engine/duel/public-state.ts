@@ -112,8 +112,8 @@ function copyPrompt(prompt: DuelPromptState): DuelPromptState {
 }
 
 function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }) };
-  return { ...prompt };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }), ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
+  return { ...prompt, ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
 }
 
 function toPublicCard(state: DuelState, card: DuelCardInstance): PublicDuelCard {
@@ -122,6 +122,8 @@ function toPublicCard(state: DuelState, card: DuelCardInstance): PublicDuelCard 
     uid: card.uid,
     code: card.code,
     name: card.name,
+    ...(card.data.description === undefined ? {} : { description: card.data.description }),
+    ...(card.data.effectTexts === undefined ? {} : { effectTexts: [...card.data.effectTexts] }),
     kind: card.kind,
     ...(card.data.typeFlags === undefined ? {} : { typeFlags: card.data.typeFlags }),
     owner: card.owner,

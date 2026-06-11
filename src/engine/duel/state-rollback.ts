@@ -166,8 +166,8 @@ function copyPrompt(prompt: DuelPromptState): DuelPromptState {
 }
 
 function copyLuaOperationPromptDecision(prompt: NonNullable<DuelState["luaOperationPrompt"]>["prompt"]): NonNullable<DuelState["luaOperationPrompt"]>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }) };
-  return { ...prompt };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }), ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
+  return { ...prompt, ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
 }
 
 function copyCard(card: DuelCardInstance): DuelCardInstance {
@@ -208,6 +208,7 @@ function copyCardData(data: DuelCardData): DuelCardData {
     ...(data.ritualMaterials ? { ritualMaterials: [...data.ritualMaterials] } : {}),
     ...(data.listedNames ? { listedNames: [...data.listedNames] } : {}),
     ...(data.fitMonster ? { fitMonster: [...data.fitMonster] } : {}),
+    ...(data.effectTexts ? { effectTexts: [...data.effectTexts] } : {}),
   };
 }
 

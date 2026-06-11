@@ -16,6 +16,7 @@ import { fusionMaterialCountAllowed, fusionMaterialMatches, fusionMaterialSelect
 import { findSubGroupSelection, findSumGreaterSelection, findSumSelection } from "#lua/group-selection-utils.js";
 import { uniqueUids } from "#lua/group-uid-utils.js";
 import { locationMatchesCardMask, locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef, releaseOptionalFunctionRef } from "#lua/api-utils.js";
+import { buildUidSelectionPrompt } from "#lua/selection-prompt.js";
 import type { DuelCardInstance, DuelEffectContext, DuelLocation, DuelSession, DuelState, PlayerId } from "#duel/types.js";
 import type { LuaEffectRecord, LuaPromptDecision } from "#lua/host-types.js";
 
@@ -99,7 +100,7 @@ export function installDuelQueryApi(L: unknown, session: DuelSession, hostState:
   lua.lua_setfield(L, -2, to_luastring("CheckSubGroup"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectSubGroup(state, session));
   lua.lua_setfield(L, -2, to_luastring("SelectSubGroup"));
-  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session));
+  lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, { hostState }));
   lua.lua_setfield(L, -2, to_luastring("SelectMatchingCard"));
   lua.lua_pushcfunction(L, (state: unknown) => pushSelectedMatchingGroup(state, session, selectTargetOptions(hostState)));
   lua.lua_setfield(L, -2, to_luastring("SelectTarget"));
@@ -389,8 +390,15 @@ function pushSelectedMatchingGroup(L: unknown, session: DuelSession, options?: {
   const min = lua.lua_isnumber(L, 6) ? lua.lua_tointeger(L, 6) : 1;
   const max = lua.lua_isnumber(L, 7) ? lua.lua_tointeger(L, 7) : min;
   const matches = effectTargetableMatches(L, session, query, options?.hostState);
-  const selected = selectMatchingUids(matches, min, max);
   releaseOptionalFunctionRef(L, query.filterRef);
+  if (options?.hostState.promptBehavior === "yield" && !options.targetUids) {
+    const prompt = buildUidSelectionPrompt(session, options.hostState, "SelectCard", query.player, matches, min, max);
+    if (prompt) {
+      options.hostState.promptDecisions?.push(prompt);
+      return lua.lua_yield(L, 0);
+    }
+  }
+  const selected = selectMatchingUids(matches, min, max);
   if (options?.targetUids) appendSelectedTargetUids(options.targetUids, selected);
   pushGroupTable(L, selected);
   return 1;

@@ -16,7 +16,8 @@ body {
 }
 
 button,
-select {
+select,
+input {
   font: inherit;
 }
 
@@ -78,7 +79,9 @@ small {
 }
 
 .summary-picker select,
-.filters select {
+.filters select,
+.play-setup select,
+.play-setup input {
   height: 32px;
   border: 1px solid #c9cec5;
   border-radius: 6px;
@@ -296,6 +299,60 @@ small {
   margin-top: 10px;
 }
 
+.mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mode-switch button,
+.primary-action,
+.secondary-action {
+  min-height: 34px;
+  border: 1px solid #bfc7bd;
+  border-radius: 6px;
+  background: #fff;
+  color: #202326;
+}
+
+.mode-switch button.active,
+.primary-action {
+  border-color: #32746d;
+  background: #32746d;
+  color: #fff;
+}
+
+.play-layout {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.play-main,
+.play-setup,
+.action-group {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.play-setup label {
+  display: grid;
+  gap: 4px;
+  color: #535c58;
+  font-size: 12px;
+}
+
+.action-group {
+  padding-top: 4px;
+}
+
+.action-group b {
+  color: #535c58;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
 .bar-row {
   display: grid;
   grid-template-columns: 72px minmax(0, 1fr) 54px;
@@ -477,7 +534,8 @@ pre {
 @media (max-width: 1180px) {
   .main-grid,
   .replay-layout,
-  .summary-columns {
+  .summary-columns,
+  .play-layout {
     grid-template-columns: 1fr;
   }
 

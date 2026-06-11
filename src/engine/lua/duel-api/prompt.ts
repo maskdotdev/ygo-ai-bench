@@ -4,6 +4,7 @@ import { currentCardMatchesCode } from "#duel/card-code-state.js";
 import { readCardUid, readGroupUids } from "#lua/api-utils.js";
 import { cardTypeFlags } from "#lua/card-stat-api.js";
 import { cardSetcodes, isSetcodeMatch } from "#lua/card-code-utils.js";
+import { consumeConfirmedUids, nextLuaPromptId, revealedPromptFields } from "#lua/selection-prompt.js";
 import type { DuelSession } from "#duel/types.js";
 import type { LuaPromptDecision, LuaPromptOverride } from "#lua/host-types.js";
 
@@ -15,6 +16,7 @@ export interface LuaDuelPromptApiHostState {
   promptOverrides?: LuaPromptOverride[];
   nextPromptId?: number;
   promptBehavior?: "default" | "yield";
+  lastConfirmedUidsByPlayer?: Partial<Record<0 | 1, string[]>>;
 }
 
 export function installDuelPromptApi(L: unknown, session: DuelSession, hostState: LuaDuelPromptApiHostState): void {
@@ -67,7 +69,7 @@ function pushSelectOption(L: unknown, hostState: LuaDuelPromptApiHostState): num
   const player = readPromptPlayer(L, 1);
   if (top < 2 || (top === 2 && lua.lua_isboolean(L, 2))) {
     const returned = consumeOptionPromptOverride(hostState, "SelectOption", player, [], -1);
-    const decision: LuaPromptDecision = { id: nextLuaPromptId(hostState), api: "SelectOption", ...(player === undefined ? {} : { player }), options: [], descriptions: [], returned };
+    const decision: LuaPromptDecision = { id: nextLuaPromptId(hostState), api: "SelectOption", ...(player === undefined ? {} : { player }), options: [], descriptions: [], returned, ...revealedPromptFields(consumeConfirmedUids(hostState, player)) };
     hostState.promptDecisions?.push(decision);
     if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);
     lua.lua_pushinteger(L, returned);
@@ -77,7 +79,7 @@ function pushSelectOption(L: unknown, hostState: LuaDuelPromptApiHostState): num
   const descriptions = readSelectOptionValues(L, 2);
   const options = descriptions.map((_, index) => index + (hasLeadingBoolean ? 1 : 0));
   const returned = consumeOptionPromptOverride(hostState, "SelectOption", player, options, hasLeadingBoolean ? 1 : 0);
-  const decision: LuaPromptDecision = { id: nextLuaPromptId(hostState), api: "SelectOption", ...(player === undefined ? {} : { player }), options, descriptions, returned };
+  const decision: LuaPromptDecision = { id: nextLuaPromptId(hostState), api: "SelectOption", ...(player === undefined ? {} : { player }), options, descriptions, returned, ...revealedPromptFields(consumeConfirmedUids(hostState, player)) };
   hostState.promptDecisions?.push(decision);
   if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);
   lua.lua_pushinteger(L, returned);
@@ -92,17 +94,12 @@ function pushSelectYesNo(L: unknown, hostState: LuaDuelPromptApiHostState): numb
     ...(player === undefined ? {} : { player }),
     ...(lua.lua_isnumber(L, 2) ? { description: lua.lua_tointeger(L, 2) } : {}),
     returned: consumeYesNoPromptOverride(hostState, "SelectYesNo", player, true),
+    ...revealedPromptFields(consumeConfirmedUids(hostState, player)),
   };
   hostState.promptDecisions?.push(decision);
   if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);
   lua.lua_pushboolean(L, decision.returned);
   return 1;
-}
-
-function nextLuaPromptId(hostState: LuaDuelPromptApiHostState): string {
-  const id = hostState.nextPromptId ?? 1;
-  hostState.nextPromptId = id + 1;
-  return `lua-prompt-${id}`;
 }
 
 function readPromptPlayer(L: unknown, index: number): 0 | 1 | undefined {
@@ -137,6 +134,7 @@ function pushSelectEffectYesNo(L: unknown, hostState: LuaDuelPromptApiHostState)
     ...(player === undefined ? {} : { player }),
     ...(description === undefined ? {} : { description }),
     returned: consumeYesNoPromptOverride(hostState, "SelectEffectYesNo", player, true),
+    ...revealedPromptFields(consumeConfirmedUids(hostState, player)),
   };
   hostState.promptDecisions?.push(decision);
   if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);
@@ -167,6 +165,7 @@ function pushSelectEffect(L: unknown, hostState: LuaDuelPromptApiHostState): num
       enabledChoices.map((choice) => choice.option),
       firstEnabled.option,
     ),
+    ...revealedPromptFields(consumeConfirmedUids(hostState, player)),
   };
   hostState.promptDecisions?.push(decision);
   if (hostState.promptBehavior === "yield") return lua.lua_yield(L, 0);

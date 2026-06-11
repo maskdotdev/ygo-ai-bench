@@ -69,8 +69,13 @@ function optionPromptLabel(luaPrompt: LuaOperationPromptState["prompt"] | undefi
       return "Choose effect";
     case "SelectOption":
       return "Choose option";
+    case "SelectCard":
     case "SelectCardsFromCodes":
       return "Choose card";
+    case "SortDecktop":
+      return "Order Deck top";
+    case "SortDeckbottom":
+      return "Order Deck bottom";
     case "SelectDisableField":
     case "SelectField":
     case "SelectFieldZone":
@@ -105,8 +110,13 @@ function optionPromptDetail(luaPrompt: LuaOperationPromptState["prompt"] | undef
   switch (luaPrompt.api) {
     case "SelectEffect":
       return `${prefix}: choose which available effect to apply.`;
+    case "SelectCard":
     case "SelectCardsFromCodes":
       return `${prefix}: choose a revealed card for this effect.`;
+    case "SortDecktop":
+      return `${prefix}: choose the order for the top of the Deck.`;
+    case "SortDeckbottom":
+      return `${prefix}: choose the order for the bottom of the Deck.`;
     case "SelectDisableField":
     case "SelectField":
     case "SelectFieldZone":
@@ -256,9 +266,10 @@ function copyLuaPrompt(prompt: LuaOperationPromptState["prompt"]): LuaOperationP
       descriptions: [...prompt.descriptions],
       ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
       ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }),
+      ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }),
     };
   }
-  return { ...prompt };
+  return { ...prompt, ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
 }
 
 function copyLuaPromptReturnValue(value: LuaPromptResumeValue): LuaPromptResumeValue {

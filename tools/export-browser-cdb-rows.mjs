@@ -18,7 +18,7 @@ const datas = readSqliteJson(
 );
 const texts = readSqliteJson(
   options.database,
-  `select id, name from texts${where} order by id`,
+  `${cdbTextSelect(options.database, "texts")}${where} order by id`,
 );
 const localAliases = options.localAliases ? readLocalAliases(options.localAliases) : {};
 const selectedCodes = new Set(options.codes);
@@ -45,11 +45,11 @@ for (const [code, alias] of Object.entries(localAliases)) {
   );
   const aliasText = texts.find((row) => String(row.id) === alias) ?? supplementalRows.texts.find((row) => String(row.id) === alias) ?? readSingleSqliteJson(
     options.database,
-    `select id, name from texts where id = ${alias} limit 1`,
+    `${cdbTextSelect(options.database, "texts")} where id = ${alias} limit 1`,
   );
   if (!aliasData) fail(`Local alias ${code} points at missing CDB row ${alias}`);
   datas.push({ ...aliasData, id: Number(code), alias: Number(alias) });
-  texts.push({ id: Number(code), name: aliasText?.name ?? `Card ${code}` });
+  texts.push({ ...aliasText, id: Number(code), name: aliasText?.name ?? `Card ${code}` });
   supplementalAliasRows.push(code);
 }
 datas.sort((left, right) => Number(left.id) - Number(right.id));
@@ -113,6 +113,13 @@ function readSqliteJson(databasePath, query) {
     const detail = error instanceof Error ? error.message : String(error);
     throw new Error(`Failed to export CDB rows from ${databasePath}: ${detail}`);
   }
+}
+
+function cdbTextSelect(databasePath, table) {
+  const available = new Set(readSqliteJson(databasePath, `pragma table_info(${table})`).map((column) => column.name));
+  const fields = ["id", "name", "desc", "str1", "str2", "str3", "str4", "str5", "str6", "str7", "str8", "str9", "str10", "str11", "str12", "str13", "str14", "str15", "str16"]
+    .filter((field) => available.has(field));
+  return `select ${fields.join(", ")} from ${table}`;
 }
 
 function readSingleSqliteJson(databasePath, query) {

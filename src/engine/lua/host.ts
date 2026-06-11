@@ -37,6 +37,7 @@ export function createLuaScriptHost(session: DuelSession, scriptSource?: LuaScri
     promptOverrides: options.promptOverrides?.map((override) => ({ ...override })) ?? [],
     nextPromptId: 1,
     promptBehavior: "default",
+    lastConfirmedUidsByPlayer: {},
     activeTargetUids: undefined,
     activeLuaEffectId: undefined,
     activeContext: undefined,

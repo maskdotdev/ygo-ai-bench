@@ -12,6 +12,7 @@ import {
   requireZoneSpace,
 } from "#duel/card-state.js";
 import { duelReason } from "#duel/reasons.js";
+import { duelEffectActionMetadata } from "#duel/effect-action-metadata.js";
 import { pendulumSummonActions, pendulumSummonDuelCards as pendulumSummonDuelCardsWithHooks } from "#duel/pendulum-summon.js";
 import { isNoTributeSummonAllowed } from "#duel/no-tribute.js";
 import { availableForcedMonsterZoneCount, firstOpenForcedMonsterZoneSequence } from "#duel/forced-monster-zones.js";
@@ -419,7 +420,7 @@ export function getLegalActions(session: DuelSession, player: PlayerId): DuelAct
       if (effect.event === "quick" && effect.triggerEvent !== undefined && quickEffectEventContext(state, effect) === undefined) continue;
       if (!canUseEffectCount(state, effect)) continue;
       if (!canChooseEffect(state, effect, source, player) && !isRestoredEquippedIgnitionAction(effect, source)) continue;
-      actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
+      actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}`, ...duelEffectActionMetadata(effect) });
     }
     actions.push(...flipSummonActions(state, player).filter((action) => {
       if (action.type !== "flipSummon") return false;
@@ -1091,8 +1092,8 @@ function copyLuaOperationPromptChainLink(link: ChainLink): ChainLink {
 }
 
 function copyLuaOperationPromptDecision(prompt: Extract<LuaPromptCoroutineResult, { status: "yielded" }>["prompt"]): Extract<LuaPromptCoroutineResult, { status: "yielded" }>["prompt"] {
-  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }) };
-  return { ...prompt };
+  if (isLuaOptionPromptDecision(prompt)) return { ...prompt, options: [...prompt.options], descriptions: [...prompt.descriptions], ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }), ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }), ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
+  return { ...prompt, ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
 }
 
 function sendResolvedActivatedSpellTrapToGraveyard(state: DuelState, link: ChainLink, source: DuelCardInstance | undefined, effect: DuelEffectDefinition | undefined): void {

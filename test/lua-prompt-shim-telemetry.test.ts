@@ -127,9 +127,11 @@ describe("Lua prompt shim telemetry", () => {
     expect(luaYesNoPromptApis.every((api) => isLuaYesNoPromptApi(api) && !isLuaOptionPromptApi(api))).toBe(true);
     expect(isLuaOptionPromptApi("SelectYesNo")).toBe(false);
     expect(isLuaYesNoPromptApi("SelectOption")).toBe(false);
-    expect(isLuaOptionPromptApi("SelectCard")).toBe(false);
+    expect(isLuaOptionPromptApi("SelectCard")).toBe(true);
+    expect(isLuaOptionPromptApi("SortDecktop")).toBe(true);
+    expect(isLuaOptionPromptApi("SortDeckbottom")).toBe(true);
     expect(isLuaYesNoPromptApi("SelectCard")).toBe(false);
-    expect(optionPromptRoundTripCases.map(({ api }) => api)).toEqual(luaOptionPromptApis);
+    expect(optionPromptRoundTripCases.map(({ api }) => api)).toEqual(luaOptionPromptApis.filter((api) => api !== "SelectCard" && api !== "SortDecktop" && api !== "SortDeckbottom"));
     expect(yesNoPromptRoundTripCases.map(({ api }) => api)).toEqual(luaYesNoPromptApis);
   });
 

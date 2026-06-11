@@ -11,7 +11,7 @@ import { createBrowserLuaScriptCache, createBrowserLuaScriptFetchLoader, createB
 import type { BrowserLuaScriptCache, BrowserLuaScriptManifest, BrowserLuaScriptPreloadResult } from "./duel-pvp-script-cache.js";
 import { DuelBattlefield, DuelLogList, isDuelCardVisibleToPlayer } from "./duel-battlefield.js";
 import type { DuelPileView } from "./duel-battlefield.js";
-import { cleanedDuelActionLabel } from "./duel-action-presenter.js";
+import { cleanedDuelActionLabel, duelActionSourceCard } from "./duel-action-presenter.js";
 import { runDuelBattlefieldScript, runDuelBattlefieldScriptStep, type DuelBattlefieldActionSelector, type DuelBattlefieldScriptResult, type DuelBattlefieldScriptStepResult } from "./duel-battlefield-script.js";
 import { duelActionAnchorUids } from "./duel-action-anchors.js";
 import { applyPvpAction } from "./pvp-apply-action.js";
@@ -516,7 +516,15 @@ export function PvpArena() {
         return;
       }
       if (action.type === "activateEffect") {
-        const actionLabel = cleanedDuelActionLabel(action);
+        const cardsByUid = new Map(result.state.cards.map((card) => [card.uid, card]));
+        const cardsByCode = new Map(result.state.cards.map((card) => [card.code, card]));
+        const sourceCard = duelActionSourceCard(action, cardsByUid);
+        const actionLabel = cleanedDuelActionLabel(action, {
+          card: sourceCard,
+          cardVisible: sourceCard === undefined ? undefined : isDuelCardVisibleToPlayer(sourceCard, action.player),
+          cardsByUid,
+          cardsByCode,
+        });
         const revealDetail = revealedCardDetail(session, previousEventCount);
         const detail = result.state.chain.length > 0
           ? `Chain Link ${result.state.chain.length} is pending. Player ${(result.state.waitingFor ?? action.player) + 1} must respond or pass.`

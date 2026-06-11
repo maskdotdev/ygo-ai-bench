@@ -2,6 +2,8 @@ import fengari from "fengari";
 import { applyLuaExtraDeckProcedureMetadata } from "#lua/extra-deck-procedure-metadata-api.js";
 import { applyLuaNormalTributeMetadata } from "#lua/tribute-metadata-api.js";
 import { pushCardTable } from "#lua/card-api.js";
+import { applyLuaDeckOrderSelection } from "#lua/duel-api/deck.js";
+import { pushGroupTable } from "#lua/group-api.js";
 import type { DuelSession } from "#duel/types.js";
 import type { LuaHostState, LuaInitialEffectRegistrationResult, LuaPromptCoroutineResult, LuaPromptResumeValue, LuaScriptLoadResult } from "#lua/host-types.js";
 
@@ -145,8 +147,9 @@ function resumeLuaPromptCoroutine(L: unknown, thread: unknown, hostState: LuaHos
         prompt,
         resume(value) {
           const values = Array.isArray(value) ? value : [value];
-          for (const resumeValue of values) pushLuaResumeValue(thread, resumeValue);
-          return resumeLuaPromptCoroutine(L, thread, hostState, values.length);
+          let pushed = 0;
+          for (const resumeValue of values) pushed += pushLuaResumeValue(thread, hostState, resumeValue);
+          return resumeLuaPromptCoroutine(L, thread, hostState, pushed);
         },
       };
     }
@@ -157,10 +160,26 @@ function resumeLuaPromptCoroutine(L: unknown, thread: unknown, hostState: LuaHos
   }
 }
 
-function pushLuaResumeValue(L: unknown, value: LuaPromptResumeValue): void {
-  if (typeof value === "boolean") lua.lua_pushboolean(L, value);
-  else if (typeof value === "number") lua.lua_pushinteger(L, value);
-  else pushCodeIndexTable(L, value.code, value.index);
+function pushLuaResumeValue(L: unknown, hostState: LuaHostState, value: LuaPromptResumeValue): number {
+  if (typeof value === "boolean") {
+    lua.lua_pushboolean(L, value);
+    return 1;
+  }
+  if (typeof value === "number") {
+    lua.lua_pushinteger(L, value);
+    return 1;
+  }
+  if ("uids" in value) {
+    pushGroupTable(L, value.uids);
+    return 1;
+  }
+  if ("sortDeck" in value) {
+    applyLuaDeckOrderSelection(hostState.session, value.sortDeck.player, value.sortDeck.uids, value.sortDeck.edge);
+    hostState.operatedUids.splice(0, hostState.operatedUids.length, ...value.sortDeck.uids);
+    return 0;
+  }
+  pushCodeIndexTable(L, value.code, value.index);
+  return 1;
 }
 
 function pushCodeIndexTable(L: unknown, code: number, index: number): void {

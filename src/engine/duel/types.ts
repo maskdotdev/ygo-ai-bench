@@ -115,6 +115,8 @@ export interface DuelOptions {
 export interface DuelCardData {
   code: string;
   name: string;
+  description?: string;
+  effectTexts?: string[];
   kind: DuelCardKind;
   typeFlags?: number;
   alias?: string;
@@ -676,6 +678,12 @@ export interface DuelSession {
 
 export type DuelCardReader = (code: string) => DuelCardData | undefined;
 
+export interface DuelActionEffectMetadata {
+  effectDescription?: number;
+  effectLabel?: number;
+  effectLabels?: number[];
+}
+
 export type DuelAction = (
   | { type: "normalSummon"; player: PlayerId; uid: string; summonSequence?: number; label: string }
   | { type: "tributeSummon"; player: PlayerId; uid: string; tributeUids: string[]; effectId?: string; summonSequence?: number; label: string }
@@ -688,8 +696,8 @@ export type DuelAction = (
   | { type: "pendulumSummon"; player: PlayerId; summonUids: string[]; maxSummons: number; label: string }
   | { type: "setMonster"; player: PlayerId; uid: string; summonSequence?: number; label: string }
   | { type: "setSpellTrap"; player: PlayerId; uid: string; spellTrapSequence?: number; label: string }
-  | { type: "activateEffect"; player: PlayerId; uid: string; effectId: string; spellTrapSequence?: number; label: string }
-  | { type: "specialSummonProcedure"; player: PlayerId; uid: string; effectId: string; summonSequence?: number; label: string }
+  | ({ type: "activateEffect"; player: PlayerId; uid: string; effectId: string; spellTrapSequence?: number; label: string } & DuelActionEffectMetadata)
+  | ({ type: "specialSummonProcedure"; player: PlayerId; uid: string; effectId: string; summonSequence?: number; label: string } & DuelActionEffectMetadata)
   | { type: "passChain"; player: PlayerId; label: string }
   | { type: "passAttack"; player: PlayerId; label: string }
   | { type: "passDamage"; player: PlayerId; label: string }
@@ -697,8 +705,8 @@ export type DuelAction = (
   | { type: "cancelAttack"; player: PlayerId; attackerUid: string; label: string }
   | { type: "selectOption"; player: PlayerId; promptId: string; option: number; label: string }
   | { type: "selectYesNo"; player: PlayerId; promptId: string; yes: boolean; label: string }
-  | { type: "activateTrigger"; player: PlayerId; triggerId: string; triggerBucket: TriggerBucket; uid: string; effectId: string; label: string }
-  | { type: "declineTrigger"; player: PlayerId; triggerId: string; triggerBucket: TriggerBucket; uid: string; effectId: string; label: string }
+  | ({ type: "activateTrigger"; player: PlayerId; triggerId: string; triggerBucket: TriggerBucket; uid: string; effectId: string; label: string } & DuelActionEffectMetadata)
+  | ({ type: "declineTrigger"; player: PlayerId; triggerId: string; triggerBucket: TriggerBucket; uid: string; effectId: string; label: string } & DuelActionEffectMetadata)
   | { type: "flipSummon"; player: PlayerId; uid: string; label: string }
   | { type: "changePosition"; player: PlayerId; uid: string; position: CardPosition; label: string }
   | { type: "declareAttack"; player: PlayerId; attackerUid: string; targetUid?: string; directAttack?: true; label: string }
@@ -714,6 +722,8 @@ export interface PublicDuelCard {
   uid: string;
   code: string;
   name: string;
+  description?: string;
+  effectTexts?: string[];
   kind: DuelCardKind;
   typeFlags?: number;
   owner: PlayerId;

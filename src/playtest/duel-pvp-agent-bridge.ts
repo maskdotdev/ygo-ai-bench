@@ -418,7 +418,8 @@ function copyLuaPrompt(prompt: NonNullable<DuelPromptView["luaPrompt"]>): NonNul
       descriptions: [...prompt.descriptions],
       ...(prompt.descriptionLists === undefined ? {} : { descriptionLists: prompt.descriptionLists.map((descriptions) => [...descriptions]) }),
       ...(prompt.returnValues === undefined ? {} : { returnValues: prompt.returnValues.map(copyLuaPromptResumeValues) }),
+      ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }),
     };
   }
-  return { ...prompt };
+  return { ...prompt, ...(prompt.revealedUids === undefined ? {} : { revealedUids: [...prompt.revealedUids] }) };
 }

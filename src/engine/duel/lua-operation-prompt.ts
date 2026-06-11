@@ -1,5 +1,6 @@
 import type { DuelResponse, DuelState } from "#duel/types.js";
 import type { LuaPromptCoroutineResult } from "#lua/host-types.js";
+import { copyLuaOperationPromptDecision } from "#duel/snapshot-copy.js";
 import { isYieldedLuaPromptCoroutineResult, resolveDuelPromptAndResumeLuaCoroutine } from "#lua/prompt-state.js";
 
 type YieldedLuaPrompt = Extract<LuaPromptCoroutineResult, { status: "yielded" }>;
@@ -27,9 +28,11 @@ export function resolvePendingLuaOperationPrompt(state: DuelState, response: Ext
   const pending = pendingOperations.get(state) ?? pendingOperationFromSymbol(state);
   if (!pending) return false;
   const returnTo = state.prompt?.returnTo;
+  const chainLink = state.luaOperationPrompt?.chainLink;
   const result = resolveDuelPromptAndResumeLuaCoroutine(state, pending.yielded, response);
   if (isYieldedLuaPromptCoroutineResult(result)) {
     if (state.prompt) state.prompt = { ...state.prompt, origin: "luaOperation", ...(returnTo === undefined ? {} : { returnTo }) };
+    if (chainLink !== undefined) state.luaOperationPrompt = { chainLink: { ...chainLink }, prompt: copyLuaOperationPromptDecision(result.prompt) };
     setPendingLuaOperationPrompt(state, result, pending.onComplete);
     return true;
   }

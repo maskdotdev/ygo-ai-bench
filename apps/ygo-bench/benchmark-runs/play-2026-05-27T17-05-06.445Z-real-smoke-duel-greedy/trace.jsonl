@@ -1,0 +1,22 @@
+{"type":"engine","message":{"type":90,"player":0,"drawn":[{"code":70781052,"position":10},{"code":49003308,"position":10},{"code":46986414,"position":10},{"code":89631139,"position":10},{"code":70781052,"position":10}]},"typeName":"DRAW"}
+{"frame":1,"type":"event","turn":0,"phase":"UNKNOWN","event":"DRAW","player":0,"text":"Player 0 drew 5 card(s).","payload":{"count":5,"cards":[{"code":70781052,"position":10,"name":"Summoned Skull"},{"code":49003308,"position":10,"name":"Gagagigo"},{"code":46986414,"position":10,"name":"Dark Magician"},{"code":89631139,"position":10,"name":"Blue-Eyes White Dragon"},{"code":70781052,"position":10,"name":"Summoned Skull"}]}}
+{"type":"engine","message":{"type":90,"player":1,"drawn":[{"code":89631139,"position":10},{"code":46986414,"position":10},{"code":49003308,"position":10},{"code":70781052,"position":10},{"code":89631139,"position":10}]},"typeName":"DRAW"}
+{"frame":2,"type":"event","turn":0,"phase":"UNKNOWN","event":"DRAW","player":1,"text":"Player 1 drew 5 card(s).","payload":{"count":5,"cards":[{"code":89631139,"position":10,"name":"Blue-Eyes White Dragon"},{"code":46986414,"position":10,"name":"Dark Magician"},{"code":49003308,"position":10,"name":"Gagagigo"},{"code":70781052,"position":10,"name":"Summoned Skull"},{"code":89631139,"position":10,"name":"Blue-Eyes White Dragon"}]}}
+{"type":"engine","message":{"type":40,"player":0},"typeName":"NEW_TURN"}
+{"frame":3,"type":"event","turn":1,"phase":"UNKNOWN","event":"NEW_TURN","player":0,"text":"Turn 1: Player 0."}
+{"type":"engine","message":{"type":41,"phase":1},"typeName":"NEW_PHASE"}
+{"type":"engine","message":{"type":2,"hint_type":1,"player":0,"hint":"27"},"typeName":"HINT"}
+{"frame":4,"type":"event","turn":1,"phase":"DRAW","event":"NEW_PHASE","text":"Phase changed to DRAW.","payload":{"phase":1}}
+{"frame":5,"type":"event","turn":1,"phase":"DRAW","event":"HINT","player":0,"text":"HINT.","payload":{"type":2,"hint_type":1,"player":0,"hint":"27"}}
+{"type":"engine","message":{"type":90,"player":0,"drawn":[{"code":49003308,"position":10}]},"typeName":"DRAW"}
+{"frame":6,"type":"event","turn":1,"phase":"DRAW","event":"DRAW","player":0,"text":"Player 0 drew 1 card(s).","payload":{"count":1,"cards":[{"code":49003308,"position":10,"name":"Gagagigo"}]}}
+{"type":"engine","message":{"type":16,"player":0,"spe_count":0,"forced":false,"hint_timing":2162688,"hint_timing_other":2162688,"selects":[]},"typeName":"SELECT_CHAIN"}
+{"frame":7,"type":"event","turn":1,"phase":"DRAW","event":"SELECT_CHAIN","player":0,"text":"SELECT_CHAIN.","payload":{"type":16,"player":0,"spe_count":0,"forced":false,"hint_timing":2162688,"hint_timing_other":2162688,"selects":[]}}
+{"type":"engine","message":{"type":16,"player":1,"spe_count":0,"forced":false,"hint_timing":2162688,"hint_timing_other":2162688,"selects":[]},"typeName":"SELECT_CHAIN"}
+{"frame":8,"type":"event","turn":1,"phase":"DRAW","event":"SELECT_CHAIN","player":1,"text":"SELECT_CHAIN.","payload":{"type":16,"player":1,"spe_count":0,"forced":false,"hint_timing":2162688,"hint_timing_other":2162688,"selects":[]}}
+{"type":"engine","message":{"type":41,"phase":2},"typeName":"NEW_PHASE"}
+{"frame":9,"type":"event","turn":1,"phase":"STANDBY","event":"NEW_PHASE","text":"Phase changed to STANDBY.","payload":{"phase":2}}
+{"type":"engine","message":{"type":41,"phase":4},"typeName":"NEW_PHASE"}
+{"frame":10,"type":"event","turn":1,"phase":"MAIN1","event":"NEW_PHASE","text":"Phase changed to MAIN1.","payload":{"phase":4}}
+{"type":"engine","message":{"type":11,"player":0,"summons":[{"code":49003308,"controller":0,"location":2,"sequence":1},{"code":49003308,"controller":0,"location":2,"sequence":5}],"special_summons":[],"pos_changes":[],"monster_sets":[{"code":49003308,"controller":0,"location":2,"sequence":1},{"code":49003308,"controller":0,"location":2,"sequence":5}],"spell_sets":[],"activates":[],"to_bp":false,"to_ep":true,"shuffle":true},"typeName":"SELECT_IDLECMD"}
+{"frame":11,"type":"event","turn":1,"phase":"MAIN1","event":"SELECT_IDLECMD","player":0,"text":"SELECT_IDLECMD.","payload":{"type":11,"player":0,"summons":[{"code":49003308,"controller":0,"location":2,"sequence":1},{"code":49003308,"controller":0,"location":2,"sequence":5}],"special_summons":[],"pos_changes":[],"monster_sets":[{"code":49003308,"controller":0,"location":2,"sequence":1},{"code":49003308,"controller":0,"location":2,"sequence":5}],"spell_sets":[],"activates":[],"to_bp":false,"to_ep":true,"shuffle":true}}

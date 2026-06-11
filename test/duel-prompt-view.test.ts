@@ -14,8 +14,8 @@ describe("duel prompt view", () => {
       descriptions: [101, 303],
     };
 
-    expect(promptViewLabel(prompt)).toBe("Option Prompt");
-    expect(promptViewDetail(prompt)).toBe("P1 · Prompt prompt-a · returns P2 · options 1, 3 · text 101, 303");
+    expect(promptViewLabel(prompt)).toBe("Choose option");
+    expect(promptViewDetail(prompt)).toBe("P1: choose one of 2 legal options.");
   });
 
   it("surfaces option prompt description lists", () => {
@@ -28,7 +28,7 @@ describe("duel prompt view", () => {
       descriptionLists: [[101, 102], [201]],
     };
 
-    expect(promptViewDetail(prompt)).toBe("P1 · Prompt prompt-list · options 0, 1 · text 10, 20 · lists [101, 102], [201]");
+    expect(promptViewDetail(prompt)).toBe("P1: choose one of 2 legal options.");
   });
 
   it("labels yes/no prompts with description text id when present", () => {
@@ -39,8 +39,8 @@ describe("duel prompt view", () => {
       description: 42,
     };
 
-    expect(promptViewLabel(prompt)).toBe("Yes / No Prompt");
-    expect(promptViewDetail(prompt)).toBe("P2 · Prompt prompt-b · text 42");
+    expect(promptViewLabel(prompt)).toBe("Confirm effect?");
+    expect(promptViewDetail(prompt)).toBe("P2: choose Yes or No to continue resolving the current effect.");
   });
 
   it("marks Lua operation prompts in the visible detail", () => {
@@ -53,7 +53,7 @@ describe("duel prompt view", () => {
       origin: "luaOperation",
     };
 
-    expect(promptViewDetail(prompt)).toBe("P1 · Prompt lua-prompt · Lua operation · returns P2 · text 77");
+    expect(promptViewDetail(prompt)).toBe("P1: choose Yes or No to continue resolving the current effect.");
   });
 
   it("splits the active prompt controls from other global groups", () => {
@@ -81,8 +81,8 @@ describe("duel prompt view", () => {
       globalGroups: [globalGroup],
     });
     expect(duelPromptView(prompt, [promptGroup, globalGroup])).toMatchObject({
-      label: "Option Prompt",
-      detail: "P1 · Prompt prompt-a · options 1",
+      label: "Choose option",
+      detail: "P1: choose one of 1 legal options.",
       prompt,
       choices: [{ type: "selectOption", option: 1, action: promptGroup.actions[0] }],
       groups: [promptGroup],
@@ -178,11 +178,11 @@ describe("duel prompt view", () => {
 
     const view = duelPromptView(prompt, [promptGroup], luaOperationPrompt);
 
-    expect(view?.detail).toBe("P1 · Prompt lua-code-choice · Lua operation · SelectCardsFromCodes · return codeIndexTable · values [700#1], [800#2] · options 1, 2 · text 700, 800");
+    expect(view?.detail).toBe("P1: choose a revealed card for this effect.");
     expect(view?.luaPrompt).toEqual(luaOperationPrompt.prompt);
     if (!view?.luaPrompt || !("returnValues" in view.luaPrompt) || view.luaPrompt.returnValues === undefined) throw new Error("Expected Lua prompt return values");
     const returned = view.luaPrompt.returnValues[0]![0]!;
-    if (typeof returned !== "object" || returned === null) throw new Error("Expected copied code/index return value");
+    if (typeof returned !== "object" || returned === null || !("index" in returned)) throw new Error("Expected copied code/index return value");
     returned.index = 99;
 
     if (!("returnValues" in luaOperationPrompt.prompt)) throw new Error("Expected source Lua prompt return values");

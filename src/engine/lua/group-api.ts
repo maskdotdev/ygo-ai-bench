@@ -8,7 +8,9 @@ import { installGroupCompatibilityApi } from "#lua/group-compatibility-api.js";
 import { groupFieldNames } from "#lua/group-field-names.js";
 import { findSubGroupSelection, findSumGreaterSelection, findSumSelection, selectedWeightedEntries } from "#lua/group-selection-utils.js";
 import { sameUidSet, selectGroupUids, uniqueUids } from "#lua/group-uid-utils.js";
+import { buildUidSelectionPrompt } from "#lua/selection-prompt.js";
 import type { DuelSession, PlayerId } from "#duel/types.js";
+import type { LuaPromptDecision } from "#lua/host-types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -16,6 +18,10 @@ type LuaFilterArgs = { start: number; count: number };
 
 export interface LuaGroupApiState {
   selectedUids: string[];
+  promptDecisions?: LuaPromptDecision[];
+  nextPromptId?: number;
+  promptBehavior?: "default" | "yield";
+  lastConfirmedUidsByPlayer?: Partial<Record<PlayerId, string[]>>;
 }
 
 export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selectedUids: [] }, session?: DuelSession): void {
@@ -207,6 +213,14 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
         ? readGroupUids(state, 1).filter((uid) => !excluded.includes(uid))
         : readGroupUids(state, 1).filter((uid) => !excluded.includes(uid) && groupCardMatchesFilter(state, uid, filterRef, readFilterArgs(state, 7)));
     releaseOptionalFunctionRef(state, filterRef);
+    if (apiState.promptBehavior === "yield" && session) {
+      const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
+      const prompt = buildUidSelectionPrompt(session, apiState, "SelectCard", player, matches, min, max, readGroupUids(state, 1));
+      if (prompt) {
+        apiState.promptDecisions?.push(prompt);
+        return lua.lua_yield(state, 0);
+      }
+    }
     pushGroupTable(state, selectGroupUids(matches, min, max));
     return 1;
   });
@@ -239,7 +253,17 @@ export function installGroupApi(L: unknown, apiState: LuaGroupApiState = { selec
   lua.lua_pushcfunction(L, (state: unknown) => {
     const min = lua.lua_isnumber(state, 3) ? lua.lua_tointeger(state, 3) : 1;
     const max = lua.lua_isnumber(state, 4) ? lua.lua_tointeger(state, 4) : min;
-    pushGroupTable(state, selectGroupUids(readGroupUids(state, 1), min, max));
+    const excluded = readCardOrGroupUids(state, 5);
+    const matches = readGroupUids(state, 1).filter((uid) => !excluded.includes(uid));
+    if (apiState.promptBehavior === "yield" && session) {
+      const player = normalizePlayer(lua.lua_isnumber(state, 2) ? lua.lua_tointeger(state, 2) : session.state.turnPlayer);
+      const prompt = buildUidSelectionPrompt(session, apiState, "SelectCard", player, matches, min, max, readGroupUids(state, 1));
+      if (prompt) {
+        apiState.promptDecisions?.push(prompt);
+        return lua.lua_yield(state, 0);
+      }
+    }
+    pushGroupTable(state, selectGroupUids(matches, min, max));
     return 1;
   });
   lua.lua_setfield(L, -2, to_luastring("Select"));

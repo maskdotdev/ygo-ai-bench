@@ -12,11 +12,20 @@ export type LuaPromptCoroutineResult =
   | { status: "yielded"; prompt: LuaPromptDecision; resume: (value: LuaPromptResumePayload) => LuaPromptCoroutineResult }
   | { status: "error"; error: string };
 
-export type LuaPromptResumeValue = number | boolean | { code: number; index: number };
+export type LuaPromptResumeValue =
+  | number
+  | boolean
+  | { code: number; index: number }
+  | { uids: string[] }
+  | { sortDeck: { player: PlayerId; edge: "top" | "bottom"; uids: string[] } };
 export type LuaPromptResumePayload = LuaPromptResumeValue | LuaPromptResumeValue[];
 
 export function copyLuaPromptResumeValue(value: LuaPromptResumeValue): LuaPromptResumeValue {
-  if (typeof value === "object" && value !== null) return { ...value };
+  if (typeof value === "object" && value !== null) {
+    if ("uids" in value) return { uids: [...value.uids] };
+    if ("sortDeck" in value) return { sortDeck: { ...value.sortDeck, uids: [...value.sortDeck.uids] } };
+    return { ...value };
+  }
   return value;
 }
 
@@ -43,8 +52,8 @@ export interface LuaScriptHost {
 }
 
 export type LuaPromptDecision =
-  | { id: string; api: "SelectOption" | "SelectEffect" | "AnnounceNumber" | "AnnounceNumberRange" | "AnnounceCard" | "AnnounceType" | "AnnounceLevel" | "AnnounceRace" | "AnnounceAttribute" | "SelectCardsFromCodes" | "SelectDisableField" | "SelectField" | "SelectFieldZone"; player?: PlayerId; options: number[]; descriptions: number[]; descriptionLists?: number[][]; returned: number; returnKind?: "codeIndexTable"; returnValues?: LuaPromptResumeValue[][] }
-  | { id: string; api: "SelectYesNo" | "SelectEffectYesNo"; player?: PlayerId; description?: number; returned: boolean };
+  | { id: string; api: "SelectOption" | "SelectEffect" | "SelectCard" | "SortDecktop" | "SortDeckbottom" | "AnnounceNumber" | "AnnounceNumberRange" | "AnnounceCard" | "AnnounceType" | "AnnounceLevel" | "AnnounceRace" | "AnnounceAttribute" | "SelectCardsFromCodes" | "SelectDisableField" | "SelectField" | "SelectFieldZone"; player?: PlayerId; options: number[]; descriptions: number[]; descriptionLists?: number[][]; returned: number; returnKind?: "codeIndexTable"; returnValues?: LuaPromptResumeValue[][]; revealedUids?: string[] }
+  | { id: string; api: "SelectYesNo" | "SelectEffectYesNo"; player?: PlayerId; description?: number; returned: boolean; revealedUids?: string[] };
 
 export type LuaPromptOverride =
   | { api?: Extract<LuaPromptDecision, { options: number[] }>["api"]; player?: PlayerId; returned: number }
@@ -58,6 +67,9 @@ export interface LuaScriptHostOptions {
 export const luaOptionPromptApis: ReadonlyArray<Extract<LuaPromptDecision, { options: number[] }>["api"]> = [
   "SelectOption",
   "SelectEffect",
+  "SelectCard",
+  "SortDecktop",
+  "SortDeckbottom",
   "AnnounceNumber",
   "AnnounceNumberRange",
   "AnnounceCard",
@@ -159,6 +171,7 @@ export interface LuaHostState {
   promptOverrides: LuaPromptOverride[];
   nextPromptId: number;
   promptBehavior: "default" | "yield";
+  lastConfirmedUidsByPlayer: Partial<Record<PlayerId, string[]>>;
   activeTargetUids: string[] | undefined;
   activeLuaEffectId: number | undefined;
   activeContext: DuelEffectContext | undefined;

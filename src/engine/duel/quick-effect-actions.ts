@@ -1,5 +1,6 @@
 import { currentBattleWindowKind } from "#duel/battle-window-state.js";
 import { findCard } from "#duel/card-state.js";
+import { duelEffectActionMetadata } from "#duel/effect-action-metadata.js";
 import { quickEffectEventContext } from "#duel/effect-event-context.js";
 import { canUseEffectCount } from "#duel/effect-counts.js";
 import { createEffectContext } from "#duel/effect-context.js";
@@ -32,7 +33,7 @@ export function quickEffectActions(state: DuelState, player: PlayerId, canChoose
     if (!chainLimitsAllow(state, effect, player)) continue;
     if (!canUseEffectCount(state, effect)) continue;
     if (!canChooseEffect(state, effect, source, player)) continue;
-    actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}` });
+    actions.push({ type: "activateEffect", player, uid: source.uid, effectId: effect.id, label: `${source.name}: ${effect.id}`, ...duelEffectActionMetadata(effect) });
   }
   return actions;
 }

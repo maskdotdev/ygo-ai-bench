@@ -15,8 +15,10 @@ import { locationsFromMask, readCardUid, readGroupUids, readOptionalFunctionRef,
 import { luaEffectReasonPayload } from "#lua/duel-api/event-payload.js";
 import { markLuaOperationTimingBoundary, regroupLuaOperationEvent, type LuaOperationTimingBoundaryHostState } from "#lua/duel-api/move.js";
 import { shuffle } from "#engine/rng.js";
+import { buildDeckOrderPrompt, rememberConfirmedUids } from "#lua/selection-prompt.js";
 import type { DuelEventPayload } from "#duel/event-history.js";
 import type { DuelCardInstance, DuelSession, PlayerId } from "#duel/types.js";
+import type { LuaPromptDecision } from "#lua/host-types.js";
 
 const { lua, to_luastring } = fengari;
 
@@ -25,6 +27,10 @@ type LuaFilterArgs = { start: number; count: number };
 export interface LuaDuelDeckApiHostState extends LuaOperationTimingBoundaryHostState {
   messages: string[];
   operatedUids: string[];
+  promptDecisions?: LuaPromptDecision[];
+  nextPromptId?: number;
+  promptBehavior?: "default" | "yield";
+  lastConfirmedUidsByPlayer?: Partial<Record<PlayerId, string[]>>;
 }
 
 export function installDuelDeckApi(L: unknown, session: DuelSession, hostState: LuaDuelDeckApiHostState): void {
@@ -155,6 +161,7 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     const confirmedUids = readCardOrGroupUids(state, 2);
     const confirmed = confirmedCodes(session, confirmedUids);
     hostState.messages.push(`confirmed ${player}: ${confirmed.join(",")}`);
+    rememberConfirmedUids(hostState, player, confirmedUids);
     collectConfirmedEvent(session, confirmedUids, player);
     return 0;
   });
@@ -165,6 +172,7 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     const confirmedUids = topDeckUids(session, player, count);
     const confirmed = confirmedCodes(session, confirmedUids);
     hostState.messages.push(`confirmed decktop ${player}: ${confirmed.join(",")}`);
+    rememberConfirmedUids(hostState, player, confirmedUids);
     collectConfirmedEvent(session, confirmedUids, player);
     return 0;
   });
@@ -175,6 +183,7 @@ function installDeckQueryHelpers(L: unknown, session: DuelSession, hostState: Lu
     const confirmedUids = extraDeckSegmentUids(session, player, count);
     const confirmed = confirmedCodes(session, confirmedUids);
     hostState.messages.push(`confirmed extratop ${player}: ${confirmed.join(",")}`);
+    rememberConfirmedUids(hostState, player, confirmedUids);
     collectConfirmedEvent(session, confirmedUids, player);
     return 0;
   });
@@ -227,6 +236,7 @@ function pushGoatConfirm(L: unknown, session: DuelSession, hostState: LuaDuelDec
 function confirmUids(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId, uids: string[]): void {
   const confirmed = confirmedCodes(session, uids);
   hostState.messages.push(`confirmed ${player}: ${confirmed.join(",")}`);
+  rememberConfirmedUids(hostState, player, uids);
   collectConfirmedEvent(session, uids, player);
 }
 
@@ -252,11 +262,23 @@ function pushSortDeckSegment(L: unknown, session: DuelSession, hostState: LuaDue
     return 0;
   }
   const deckPlayer = normalizePlayer(lua.lua_isnumber(L, 2) ? lua.lua_tointeger(L, 2) : lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : session.state.turnPlayer);
+  const player = normalizePlayer(lua.lua_isnumber(L, 1) ? lua.lua_tointeger(L, 1) : deckPlayer);
   const count = Math.max(0, lua.lua_isnumber(L, 3) ? lua.lua_tointeger(L, 3) : 1);
   const sorted = deckSegmentUids(session, deckPlayer, count, edge);
-  resequenceDeck(session, deckPlayer, sorted, edge);
+  if (hostState.promptBehavior === "yield") {
+    const prompt = buildDeckOrderPrompt(session, hostState, edge === "top" ? "SortDecktop" : "SortDeckbottom", player, deckPlayer, edge, sorted);
+    if (prompt) {
+      hostState.promptDecisions?.push(prompt);
+      return lua.lua_yield(L, 0);
+    }
+  }
+  applyLuaDeckOrderSelection(session, deckPlayer, sorted, edge);
   setOperatedUids(hostState, sorted);
   return 0;
+}
+
+export function applyLuaDeckOrderSelection(session: DuelSession, player: PlayerId, segmentUids: readonly string[], edge: "top" | "bottom"): void {
+  resequenceDeck(session, player, [...segmentUids], edge);
 }
 
 function discardDeckCards(session: DuelSession, hostState: LuaDuelDeckApiHostState, player: PlayerId, count: number, reason: number): string[] {

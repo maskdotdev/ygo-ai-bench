@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from "react";
 import type { DuelAction, DuelLocation, DuelLogEntry, PlayerId, PublicDuelCard, PublicDuelState } from "#duel/types.js";
 import type { DuelLegalActionGroup } from "#duel/legal-action-groups.js";
-import { duelActionPlacementInstruction, duelActionPresentation } from "./duel-action-presenter.js";
+import { duelActionPlacementInstruction, duelActionPresentation, duelActionSourceCard, duelPromptChoicePresentation } from "./duel-action-presenter.js";
 import { duelActionAnchorUids, duelActionUiGroupLabel, duelActionUiKey } from "./duel-action-anchors.js";
 import { duelBattlefieldActionView } from "./duel-battlefield-actions.js";
 import { duelPromptView, splitPromptGroups } from "./duel-prompt-view.js";
@@ -327,6 +327,7 @@ function CardActionFlyout(props: {
   flyout: ActionFlyout;
   images: Map<string, CardImageInfo>;
   cardsByUid: ReadonlyMap<string, PublicDuelCard>;
+  cardsByCode: ReadonlyMap<string, PublicDuelCard>;
   cardVisible: boolean;
   onPick: (action: DuelAction) => void;
   onInspect: () => void;
@@ -368,7 +369,7 @@ function CardActionFlyout(props: {
 
           <div className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
             {flyout.actions.map((action) => {
-              const presentation = duelActionPresentation(action, { card: flyout.card, cardVisible: props.cardVisible, cardsByUid: props.cardsByUid });
+              const presentation = duelActionPresentation(action, { card: flyout.card, cardVisible: props.cardVisible, cardsByUid: props.cardsByUid, cardsByCode: props.cardsByCode });
               return (
                 <button
                   key={duelActionUiKey(action)}
@@ -413,6 +414,51 @@ function CardActionFlyout(props: {
   );
 }
 
+function DuelResponseActionButton(props: {
+  action: DuelAction;
+  presentation: ReturnType<typeof duelActionPresentation>;
+  onPlayAction?: ((action: DuelAction) => void) | undefined;
+}) {
+  return (
+    <button
+      type="button"
+      className={`duel-response-button duel-response-button--${props.presentation.tone}`}
+      onClick={() => props.onPlayAction?.(props.action)}
+    >
+      <span className="duel-response-button-badge">{props.presentation.badge}</span>
+      <span className="duel-response-button-title">{props.presentation.title}</span>
+      <span className="duel-response-button-detail">{props.presentation.detail}</span>
+    </button>
+  );
+}
+
+function DuelPromptRevealStrip(props: { cards: PublicDuelCard[]; images: Map<string, CardImageInfo> }) {
+  if (!props.cards.length) return null;
+  return (
+    <div className="duel-prompt-reveal-strip" aria-label="Revealed cards">
+      {props.cards.map((card, index) => (
+        <div key={`${card.uid}-${index}`} className="duel-prompt-reveal-card">
+          <div className="duel-prompt-reveal-card-frame">
+            <RevealedCardFace card={card} images={props.images} />
+          </div>
+          <span>{card.name}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RevealedCardFace(props: { card: PublicDuelCard; images: Map<string, CardImageInfo> }) {
+  const img = props.images.get(props.card.code);
+  const url = img?.small || img?.large;
+  if (url) return <img src={url} alt={props.card.name} loading="lazy" />;
+  return (
+    <div className="duel-prompt-reveal-card-fallback">
+      <span>{props.card.name}</span>
+    </div>
+  );
+}
+
 export function DuelBattlefield(props: DuelBattlefieldProps) {
   const { state, viewer } = props;
   const [flyout, setFlyout] = useState<ActionFlyout | null>(null);
@@ -427,6 +473,14 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
 
   const cardGlowForUid = useCallback((uid: string) => cardActionGlow(actionByUid.get(uid)), [actionByUid]);
   const cardsByUid = useMemo(() => new Map(state.cards.map((card) => [card.uid, card])), [state.cards]);
+  const cardsByCode = useMemo(() => new Map(state.cards.map((card) => [card.code, card])), [state.cards]);
+  const visibleCardUids = useMemo(() => new Set(state.cards.filter((card) => isDuelCardVisibleToPlayer(card, viewer)).map((card) => card.uid)), [state.cards, viewer]);
+  const actionPresentation = useCallback((action: DuelAction, card = duelActionSourceCard(action, cardsByUid)) => duelActionPresentation(action, {
+    card,
+    cardVisible: card === undefined ? undefined : isDuelCardVisibleToPlayer(card, viewer),
+    cardsByUid,
+    cardsByCode,
+  }), [cardsByCode, cardsByUid, viewer]);
   const emptyZoneIsTarget = useCallback((player: PlayerId, location: DuelLocation, _sequence: number) => (
     pendingZonePlacement !== null && player === pendingZonePlacement.player && location === pendingZonePlacement.location
   ), [pendingZonePlacement]);
@@ -487,6 +541,8 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
   const triggerOrderLabel = triggerOrderPromptLabel(state);
   const splitOrphanGroups = splitPromptGroups(state.prompt, orphanGroups);
   const promptView = duelPromptView(state.prompt, splitOrphanGroups.promptGroups, state.luaOperationPrompt);
+  const promptRevealedUids = useMemo(() => new Set(promptView?.luaPrompt?.revealedUids ?? []), [promptView?.luaPrompt?.revealedUids]);
+  const promptRevealedCards = useMemo(() => [...promptRevealedUids].map((uid) => cardsByUid.get(uid)).filter((card): card is PublicDuelCard => Boolean(card)), [cardsByUid, promptRevealedUids]);
   const globalOrphanGroups = splitOrphanGroups.globalGroups;
   const triggerOrderView = duelTriggerOrderView(state.triggerOrderPrompt, props.legalActionGroups);
   const placementInstruction = pendingZonePlacement
@@ -727,7 +783,8 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
                   className="duel-response-button duel-response-button--cancel"
                   onClick={() => setPendingZonePlacement(null)}
                 >
-                  <span className="line-clamp-2">Cancel</span>
+                  <span className="duel-response-button-title">Cancel</span>
+                  <span className="duel-response-button-detail">Stop choosing a zone.</span>
                 </button>
               </div>
             ) : null}
@@ -739,14 +796,12 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
                 </div>
                 {triggerOrderView.groups.flatMap((group) =>
                   group.actions.map((action) => (
-                    <button
+                    <DuelResponseActionButton
                       key={`trigger-order-${group.key}-${duelActionUiKey(action)}`}
-                      type="button"
-                      className="duel-response-button"
-                      onClick={() => props.onPlayAction?.(action)}
-                    >
-                      <span className="line-clamp-2">{duelActionPresentation(action, { cardsByUid }).title}</span>
-                    </button>
+                      action={action}
+                      presentation={actionPresentation(action)}
+                      onPlayAction={props.onPlayAction}
+                    />
                   )),
                 )}
               </div>
@@ -757,26 +812,23 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
                   <p>{promptView.label}</p>
                   <small>{promptView.detail}</small>
                 </div>
+                <DuelPromptRevealStrip cards={promptRevealedCards} images={props.cardImages} />
                 {promptView.choices.map((choice) => (
-                  <button
+                  <DuelResponseActionButton
                     key={`prompt-${duelActionUiKey(choice.action)}`}
-                    type="button"
-                    className="duel-response-button"
-                    onClick={() => props.onPlayAction?.(choice.action)}
-                  >
-                    <span className="line-clamp-2">{duelActionPresentation(choice.action, { cardsByUid }).title}</span>
-                  </button>
+                    action={choice.action}
+                    presentation={duelPromptChoicePresentation(choice, { cardsByUid, cardsByCode, luaPromptApi: promptView.luaPrompt?.api, revealedCardUids: promptRevealedUids, visibleCardUids })}
+                    onPlayAction={props.onPlayAction}
+                  />
                 ))}
                 {!promptView.choices.length ? promptView.groups.flatMap((group) =>
                   group.actions.map((action) => (
-                    <button
+                    <DuelResponseActionButton
                       key={`prompt-${group.key}-${duelActionUiKey(action)}`}
-                      type="button"
-                      className="duel-response-button"
-                      onClick={() => props.onPlayAction?.(action)}
-                      >
-                        <span className="line-clamp-2">{duelActionPresentation(action, { cardsByUid }).title}</span>
-                      </button>
+                      action={action}
+                      presentation={actionPresentation(action)}
+                      onPlayAction={props.onPlayAction}
+                    />
                     )),
                 ) : null}
               </div>
@@ -787,14 +839,12 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
                   <div key={group.key} className="duel-response-group">
                     <span>{duelActionUiGroupLabel(group)}</span>
                     {group.actions.map((action) => (
-                      <button
+                      <DuelResponseActionButton
                         key={`orphan-${group.key}-${duelActionUiKey(action)}`}
-                        type="button"
-                        className="duel-response-button"
-                        onClick={() => props.onPlayAction?.(action)}
-                      >
-                        <span className="line-clamp-2">{duelActionPresentation(action, { cardsByUid }).title}</span>
-                      </button>
+                        action={action}
+                        presentation={actionPresentation(action)}
+                        onPlayAction={props.onPlayAction}
+                      />
                     ))}
                   </div>
                 ))}
@@ -826,6 +876,7 @@ export function DuelBattlefield(props: DuelBattlefieldProps) {
         flyout={flyout}
         images={props.cardImages}
         cardsByUid={cardsByUid}
+        cardsByCode={cardsByCode}
         cardVisible={isDuelCardVisibleToPlayer(flyout.card, viewer)}
         onPick={(action) => {
           if (isMonsterZoneSummonAction(action)) {

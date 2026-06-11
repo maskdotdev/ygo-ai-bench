@@ -120,3 +120,20 @@ export interface ReplayFrame {
   frame: TraceFrame;
   state: RealReducedState | null;
 }
+
+export interface PlaySessionView {
+  id: string;
+  scenarioId: string;
+  humanPlayer: 0 | 1;
+  opponentAgent: "openai" | "greedy" | "random";
+  model?: string;
+  status: "starting" | "waiting_for_human" | "thinking" | "running" | "finished" | "error";
+  currentPrompt?: { type: string; player: 0 | 1 };
+  legalActions: Array<{ id: string; type: string; label: string; cardCode?: number; attack?: number }>;
+  reducedState: RealReducedState;
+  timeline: TraceFrame[];
+  lastOpponentDecision?: { actionId: string; label: string; reason: string; tokenCount: number | null };
+  score?: ScenarioScore;
+  runDir: string;
+  error?: string;
+}

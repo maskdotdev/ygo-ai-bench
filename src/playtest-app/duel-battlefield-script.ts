@@ -382,12 +382,20 @@ function sameLuaPromptReturnValues(a: readonly LuaPromptResumeValue[], b: readon
 
 function sameLuaPromptReturnValue(a: LuaPromptResumeValue, b: LuaPromptResumeValue | undefined): boolean {
   if (typeof a !== "object" || a === null) return a === b;
-  return typeof b === "object" && b !== null && a.code === b.code && a.index === b.index;
+  if (typeof b !== "object" || b === null) return false;
+  if ("code" in a) return "code" in b && a.code === b.code && a.index === b.index;
+  if ("uids" in a) return "uids" in b && sameStringMembers(a.uids, b.uids);
+  return "sortDeck" in b &&
+    a.sortDeck.player === b.sortDeck.player &&
+    a.sortDeck.edge === b.sortDeck.edge &&
+    sameStringMembers(a.sortDeck.uids, b.sortDeck.uids);
 }
 
 function formatPromptReturnValue(value: LuaPromptResumeValue): string {
   if (typeof value !== "object" || value === null) return String(value);
-  return `${value.code}#${value.index}`;
+  if ("code" in value) return `${value.code}#${value.index}`;
+  if ("uids" in value) return `cards:${value.uids.join("+")}`;
+  return `sort:${value.sortDeck.edge}:${value.sortDeck.uids.join(">")}`;
 }
 
 function isPendulumSummonSelection(candidates: readonly string[], selected: readonly string[], maxSummons: number): boolean {
