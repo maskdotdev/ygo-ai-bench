@@ -32,7 +32,8 @@ export async function createPlayArtifactWriter(args: {
   scenarioName: string;
   opponentAgent: PlayOpponentAgent;
 }): Promise<PlayArtifactWriter> {
-  const runDir = resolve("benchmark-runs", `play-${new Date().toISOString().replaceAll(":", "-")}-${args.scenarioId}-${args.opponentAgent}`);
+  const runRoot = process.env.YGO_BENCH_RUN_ROOT ?? "benchmark-runs";
+  const runDir = resolve(runRoot, `play-${new Date().toISOString().replaceAll(":", "-")}-${args.scenarioId}-${args.opponentAgent}`);
   const tracePath = join(runDir, "trace.jsonl");
   await mkdir(runDir, { recursive: true });
   await writeFile(tracePath, "");
@@ -60,6 +61,9 @@ export async function createPlayArtifactWriter(args: {
         scenarioPath: metadata.scenarioPath,
         agentId: metadata.opponentAgent,
         maxDecisions: metadata.maxDecisions,
+        mode: "human-vs-agent",
+        competitorId: `human-vs-${metadata.opponentAgent}${metadata.model ? `:${metadata.model}` : ""}`,
+        ...(metadata.model ? { model: metadata.model } : {}),
       });
       await writeFile(
         join(runDir, "metadata.json"),

@@ -1,4 +1,4 @@
-import type { ScenarioScore } from "../core/types.js";
+import { competitorIdFor, type ScenarioScore } from "../core/types.js";
 import { loadBrowserCardDatabase, type CardDatabase } from "../edopro-wasm/cardDb.js";
 import { buildRealLegalActions, type RealLegalAction } from "../edopro-wasm/legalActions.js";
 import { loadOcgRuntime } from "../edopro-wasm/loadOcgRuntime.js";
@@ -292,10 +292,14 @@ export class InteractiveDuelSession {
   private async finish(): Promise<void> {
     if (this.score) return;
     this.score = {
+      mode: "human-vs-agent",
       scenarioId: this.scenario.id,
-      agentId: this.opponentAgent,
+      agentId: "human",
+      competitorId: `human-vs-${competitorIdFor(this.opponentAgent, this.model)}`,
+      status: "completed",
       family: this.scenario.family,
       won: this.winner === this.humanPlayer,
+      winner: this.winner,
       turnsTaken: this.reducedState.turn,
       decisionsTaken: this.decisionsTaken,
       illegalActions: this.illegalActions,
@@ -304,6 +308,23 @@ export class InteractiveDuelSession {
       repeatedActions: 0,
       finalLpDelta: this.reducedState.players[0].lp - this.reducedState.players[1].lp,
       objectiveScore: this.winner === this.humanPlayer ? 1 : 0,
+      components: {
+        winScore: this.winner === this.humanPlayer ? 1 : 0,
+        strategicProgressScore: this.winner === this.humanPlayer ? 1 : 0,
+        resourceScore: Math.max(0, Math.min(1, 0.5 + (this.reducedState.players[0].lp - this.reducedState.players[1].lp) / 16000)),
+        adaptationScore: 0,
+        planConsistencyScore: 0,
+        riskManagementScore: 0,
+        executionPenalty: this.modelErrors + this.illegalActions + this.invalidJson > 0 ? 1 : 0,
+        overallScore: this.winner === this.humanPlayer ? 1 : 0,
+      },
+      promptCoverage: {
+        seen: {},
+        handled: {},
+        unsupported: {},
+        autoResponses: {},
+        fallbackActions: this.modelErrors,
+      },
       latencyMs: this.latencyMs,
       tokenCount: this.tokenCountSeen ? this.tokenCount : null,
       notes: this.errors,

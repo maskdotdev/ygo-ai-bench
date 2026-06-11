@@ -2,6 +2,7 @@ dist/
 dist-viewer/
 benchmark-runs/run-*/
 benchmark-runs/real-run-*/
+benchmark-runs/play-*/
 benchmark-runs/*-summary.json
 benchmark-runs/*-summary.csv
 benchmark-runs/*-report.html

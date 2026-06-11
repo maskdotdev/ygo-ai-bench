@@ -1,8 +1,23 @@
-import { describe, expect, test } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { cardDataPathFromEnv, scriptRootFromEnv } from "../edopro-wasm/realDefaults.js";
 import { InteractiveDuelSession } from "./PlaySession.js";
 
 describe("InteractiveDuelSession", () => {
+  let runRoot: string;
+
+  beforeEach(async () => {
+    runRoot = await mkdtemp(join(tmpdir(), "ygo-bench-play-"));
+    process.env.YGO_BENCH_RUN_ROOT = runRoot;
+  });
+
+  afterEach(async () => {
+    delete process.env.YGO_BENCH_RUN_ROOT;
+    await rm(runRoot, { recursive: true, force: true });
+  });
+
   test("pauses at a human prompt with public legal actions only", async () => {
     const session = await InteractiveDuelSession.create({
       id: "test-play-session",
