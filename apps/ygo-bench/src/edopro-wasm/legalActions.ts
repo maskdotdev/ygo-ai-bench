@@ -169,6 +169,32 @@ export function buildRealLegalActions(prompt: OcgMessage | undefined, ocg: OcgRu
     return actions;
   }
 
+  if (prompt.type === ocg.OcgMessageType.SELECT_TRIBUTE) {
+    const selects = arrayOfRecords(prompt.selects);
+    const min = typeof prompt.min === "number" ? prompt.min : 1;
+    const max = typeof prompt.max === "number" ? Math.min(prompt.max, selects.length) : min;
+    const choices = tributeChoices(selects, min, max);
+    const actions: RealLegalAction[] = choices.map((indices, index) => {
+      const firstIndex = indices[0];
+      return {
+        id: nextActionId(index),
+        type: "select_tribute",
+        label: `Tribute ${indices.map((choiceIndex) => cardName(selects[choiceIndex]?.code, cardDb)).join(" + ")}`,
+        ...(indices.length === 1 && firstIndex !== undefined ? cardActionFields(selects[firstIndex]?.code, cardDb) : {}),
+        response: { type: ocg.OcgResponseType.SELECT_TRIBUTE, indicies: indices },
+      };
+    });
+    if (prompt.can_cancel === true) {
+      actions.push({
+        id: nextActionId(actions.length),
+        type: "cancel",
+        label: "Cancel tribute selection",
+        response: { type: ocg.OcgResponseType.SELECT_TRIBUTE, indicies: null },
+      });
+    }
+    return actions;
+  }
+
   if (prompt.type === ocg.OcgMessageType.SELECT_YESNO) {
     const cardLabel = typeof prompt.code === "number" ? ` for ${cardName(prompt.code, cardDb)}` : "";
     return [
@@ -225,6 +251,35 @@ function firstOpenZones(fieldMask: number, player: number, count: number, ocg: O
     }
   }
   return places;
+}
+
+function tributeChoices(selects: Array<Record<string, unknown>>, min: number, max: number): number[][] {
+  const choices: number[][] = [];
+  const upper = Math.max(min, max);
+  for (let count = min; count <= upper; count += 1) {
+    collectCombinations(
+      Array.from({ length: selects.length }, (_, index) => index),
+      count,
+      0,
+      [],
+      choices,
+    );
+  }
+  return choices;
+}
+
+function collectCombinations(source: number[], size: number, start: number, current: number[], output: number[][]): void {
+  if (current.length === size) {
+    output.push([...current]);
+    return;
+  }
+  for (let index = start; index <= source.length - (size - current.length); index += 1) {
+    const value = source[index];
+    if (value === undefined) continue;
+    current.push(value);
+    collectCombinations(source, size, index + 1, current, output);
+    current.pop();
+  }
 }
 
 function nextActionId(index: number): string {

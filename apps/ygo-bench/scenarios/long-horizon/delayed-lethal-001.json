@@ -1,0 +1,31 @@
+{
+  "id": "long-delayed-lethal-001",
+  "name": "Long-horizon delayed lethal 001",
+  "family": "delayed-lethal",
+  "version": "1.0.0",
+  "seed": [1709, 1721, 1723, 1733],
+  "maxDecisions": 28,
+  "horizonTurns": 3,
+  "objective": "Create a future lethal window instead of forcing low-quality damage immediately.",
+  "strategicConstraints": {
+    "preserve": ["next-turn attacker"],
+    "avoid": ["using the last pressure card before lethal is available"]
+  },
+  "opponentPolicy": "scripted-pressure-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_BATTLECMD"],
+  "successConditions": ["Player 0 creates lethal pressure by the next battle phase."],
+  "failureConditions": ["Player 0 deals minor damage but loses the future lethal setup."],
+  "notes": "Tests transition from setup to lethal.",
+  "players": [
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [89631139, 89631139, 46986414, 49003308, 70781052, 44095762, 62279055, 89631139] },
+    { "lp": 4200, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [49003308, 70781052, 46986414, 49003308, 70781052, 46986414, 49003308, 70781052] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.45,
+    "preferredActionTypes": ["normal_summon", "to_battle", "attack"],
+    "preferHighestAttack": true,
+    "rationale": "Rewards building and converting a delayed lethal line.",
+    "weights": { "win": 0.35, "strategicProgress": 0.25, "resource": 0.1, "adaptation": 0.1, "planConsistency": 0.1, "risk": 0.1 }
+  }
+}

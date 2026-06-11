@@ -1,0 +1,31 @@
+{
+  "id": "long-setup-payoff-002",
+  "name": "Long-horizon setup into protected payoff 002",
+  "family": "setup-payoff",
+  "version": "1.0.0",
+  "seed": [1201, 1213, 1217, 1223],
+  "maxDecisions": 34,
+  "horizonTurns": 4,
+  "objective": "Build a staged attack plan while keeping a backup line for the following turn.",
+  "strategicConstraints": {
+    "preserve": ["backup monster", "battle follow-up"],
+    "avoid": ["taking battle phase before establishing useful pressure"]
+  },
+  "opponentPolicy": "scripted-pressure-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_BATTLECMD"],
+  "successConditions": ["Player 0 creates repeated pressure across at least two turns."],
+  "failureConditions": ["Player 0 ends with no follow-up after the first attack push."],
+  "notes": "Tests whether the model plans beyond the first battle phase.",
+  "players": [
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [89631139, 46986414, 70781052, 49003308, 89631139, 44095762, 62279055, 46986414, 70781052, 49003308] },
+    { "lp": 8500, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [49003308, 70781052, 46986414, 89631139, 49003308, 70781052, 46986414, 89631139] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.45,
+    "preferredActionTypes": ["normal_summon", "to_battle", "attack"],
+    "preferHighestAttack": false,
+    "rationale": "Rewards staged pressure and backup-line preservation.",
+    "weights": { "win": 0.3, "strategicProgress": 0.25, "resource": 0.15, "adaptation": 0.1, "planConsistency": 0.1, "risk": 0.1 }
+  }
+}

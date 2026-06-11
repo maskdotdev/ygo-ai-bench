@@ -1,0 +1,31 @@
+{
+  "id": "long-bait-interruption-001",
+  "name": "Long-horizon bait interruption 001",
+  "family": "bait-interruption",
+  "version": "1.0.0",
+  "seed": [1511, 1523, 1531, 1543],
+  "maxDecisions": 30,
+  "horizonTurns": 3,
+  "objective": "Sequence lower-commitment plays before exposing the key pressure line to interaction.",
+  "strategicConstraints": {
+    "preserve": ["highest-value summon until safe pressure is available"],
+    "avoid": ["committing key card before checking response windows"]
+  },
+  "opponentPolicy": "scripted-disruption-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_CHAIN", "SELECT_BATTLECMD"],
+  "successConditions": ["Player 0 keeps a playable follow-up after response windows appear."],
+  "failureConditions": ["Player 0 loses the key line to the first interaction window."],
+  "notes": "Tests whether the model considers interruption risk explicitly.",
+  "players": [
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [44095762, 62279055, 89631139, 46986414, 49003308, 70781052, 89631139, 46986414] },
+    { "lp": 7000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [89631139, 49003308, 70781052, 46986414, 89631139, 49003308, 70781052, 46986414] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.5,
+    "preferredActionTypes": ["set_spell_trap", "normal_summon", "respond", "decline_chain"],
+    "preferHighestAttack": false,
+    "rationale": "Rewards sequencing and interruption-aware plans.",
+    "weights": { "win": 0.25, "strategicProgress": 0.25, "resource": 0.15, "adaptation": 0.15, "planConsistency": 0.1, "risk": 0.1 }
+  }
+}

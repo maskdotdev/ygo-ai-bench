@@ -10,6 +10,18 @@ export type LegalActionType =
   | "respond"
   | "select_card";
 
+export type ScenarioFamily =
+  | "lethal"
+  | "interruption"
+  | "resource"
+  | "smoke"
+  | "setup-payoff"
+  | "resource-grind"
+  | "bait-interruption"
+  | "delayed-lethal"
+  | "recovery"
+  | "defensive-planning";
+
 export interface CardRef {
   id: string;
   code: number;
@@ -131,7 +143,7 @@ export interface ScenarioStep {
 export interface Scenario {
   id: string;
   name: string;
-  family: "lethal" | "interruption" | "resource" | "smoke";
+  family: ScenarioFamily;
   version: string;
   seed: string | number[];
   maxDecisions: number;
@@ -144,6 +156,7 @@ export interface Scenario {
 export interface AgentDecision {
   actionId: string;
   reason: string;
+  plan?: StrategyPlan;
 }
 
 export interface Agent {
@@ -151,11 +164,51 @@ export interface Agent {
   chooseAction(observation: Observation): Promise<AgentDecision>;
 }
 
+export type BenchmarkMode = "mock-eval" | "long-horizon-eval" | "human-vs-agent";
+
+export type RunStatus = "completed" | "failed" | "unsupported-prompt" | "model-error" | "timeout";
+
+export interface StrategyPlan {
+  horizon: string;
+  currentGoal: string;
+  futureLine: string[];
+  resourcesToPreserve: string[];
+  risks: string[];
+  contingency: string;
+}
+
+export interface ScoreComponents {
+  winScore: number;
+  strategicProgressScore: number;
+  resourceScore: number;
+  adaptationScore: number;
+  planConsistencyScore: number;
+  riskManagementScore: number;
+  executionPenalty: number;
+  overallScore: number;
+}
+
+export interface PromptCoverage {
+  seen: Record<string, number>;
+  handled: Record<string, number>;
+  unsupported: Record<string, number>;
+  autoResponses: Record<string, number>;
+  fallbackActions: number;
+}
+
 export interface ScenarioScore {
+  mode?: BenchmarkMode;
+  suiteId?: string;
   scenarioId: string;
   agentId: string;
-  family: "lethal" | "interruption" | "resource" | "smoke";
+  model?: string;
+  competitorId?: string;
+  runIndex?: number;
+  seed?: string;
+  status?: RunStatus;
+  family: ScenarioFamily;
   won: boolean;
+  winner?: PlayerId | null;
   turnsTaken: number;
   decisionsTaken: number;
   illegalActions: number;
@@ -164,7 +217,26 @@ export interface ScenarioScore {
   repeatedActions: number;
   finalLpDelta: number;
   objectiveScore: number;
+  components?: ScoreComponents;
+  scoreWeights?: Record<string, number>;
+  scoreRationale?: string;
+  promptCoverage?: PromptCoverage;
   latencyMs: number;
   tokenCount: number | null;
   notes: string[];
+}
+
+export function competitorIdFor(agentId: string, model?: string): string {
+  return model ? `${agentId}:${model}` : agentId;
+}
+
+export function defaultStrategyPlan(reason = ""): StrategyPlan {
+  return {
+    horizon: "current decision",
+    currentGoal: reason || "Choose a legal action.",
+    futureLine: [],
+    resourcesToPreserve: [],
+    risks: [],
+    contingency: "",
+  };
 }

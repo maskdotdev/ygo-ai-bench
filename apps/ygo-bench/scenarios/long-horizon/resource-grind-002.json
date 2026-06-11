@@ -1,0 +1,31 @@
+{
+  "id": "long-resource-grind-002",
+  "name": "Long-horizon resource grind 002",
+  "family": "resource-grind",
+  "version": "1.0.0",
+  "seed": [1409, 1423, 1427, 1429],
+  "maxDecisions": 42,
+  "horizonTurns": 5,
+  "objective": "Use conservative sequencing to outlast a symmetric resource exchange.",
+  "strategicConstraints": {
+    "preserve": ["follow-up attacker", "defensive option"],
+    "avoid": ["unnecessary extra commitment into an even board"]
+  },
+  "opponentPolicy": "scripted-resource-grind-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_BATTLECMD"],
+  "successConditions": ["Player 0 ends the horizon with a stronger board or hand position."],
+  "failureConditions": ["Player 0 gives up resource parity for negligible damage."],
+  "notes": "Tests long-term value judgment in a symmetric race.",
+  "players": [
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [46986414, 49003308, 89631139, 70781052, 46986414, 49003308, 89631139, 70781052, 44095762, 62279055] },
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [46986414, 89631139, 49003308, 70781052, 46986414, 89631139, 49003308, 70781052] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.35,
+    "preferredActionTypes": ["normal_summon", "set_spell_trap", "attack", "end_phase"],
+    "preferHighestAttack": false,
+    "rationale": "Rewards resource parity management and conservative commitment.",
+    "weights": { "win": 0.3, "strategicProgress": 0.2, "resource": 0.25, "adaptation": 0.1, "planConsistency": 0.1, "risk": 0.05 }
+  }
+}

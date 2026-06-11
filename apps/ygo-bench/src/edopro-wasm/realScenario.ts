@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import type { ScenarioFamily } from "../core/types.js";
 
 export interface RealScenarioPlayer {
   lp: number;
@@ -12,16 +13,26 @@ export interface RealScenarioPlayer {
 export interface RealScenario {
   id: string;
   name: string;
-  family: "smoke" | "lethal" | "interruption" | "resource";
+  family: ScenarioFamily;
   version: string;
   seed: [number, number, number, number];
   maxDecisions: number;
+  horizonTurns?: number;
+  objective?: string;
+  strategicConstraints?: Record<string, unknown>;
+  opponentPolicy?: string;
+  expectedDecisionWindows?: string[];
+  successConditions?: string[];
+  failureConditions?: string[];
+  notes?: string;
   players: [RealScenarioPlayer, RealScenarioPlayer];
   scoring?: {
     primary?: "win" | "lpDelta";
     lineQualityWeight?: number;
     preferredActionTypes?: string[];
     preferHighestAttack?: boolean;
+    rationale?: string;
+    weights?: Record<string, number>;
   };
 }
 
@@ -34,6 +45,7 @@ export async function loadRealScenario(path: string): Promise<RealScenario> {
 export function validateRealScenario(scenario: RealScenario, path = "real scenario"): void {
   if (!scenario.id) throw new Error(`${path}: missing id`);
   if (!scenario.name) throw new Error(`${path}: missing name`);
+  if (!isScenarioFamily(scenario.family)) throw new Error(`${path}: unsupported family ${String(scenario.family)}`);
   if (!Array.isArray(scenario.seed) || scenario.seed.length !== 4 || scenario.seed.every((value) => value === 0)) {
     throw new Error(`${path}: seed must be four non-zero-safe numbers`);
   }
@@ -54,4 +66,29 @@ export function validateRealScenario(scenario: RealScenario, path = "real scenar
   if (scenario.scoring?.preferredActionTypes !== undefined && !Array.isArray(scenario.scoring.preferredActionTypes)) {
     throw new Error(`${path}: scoring.preferredActionTypes must be an array`);
   }
+  if (scenario.horizonTurns !== undefined && (!Number.isInteger(scenario.horizonTurns) || scenario.horizonTurns <= 0)) {
+    throw new Error(`${path}: horizonTurns must be a positive integer`);
+  }
+  if (scenario.expectedDecisionWindows !== undefined && !Array.isArray(scenario.expectedDecisionWindows)) {
+    throw new Error(`${path}: expectedDecisionWindows must be an array`);
+  }
+  if (scenario.scoring?.weights !== undefined) {
+    const total = Object.values(scenario.scoring.weights).reduce((sum, value) => sum + (typeof value === "number" ? value : Number.NaN), 0);
+    if (!Number.isFinite(total) || total <= 0) throw new Error(`${path}: scoring.weights must contain positive numeric weights`);
+  }
+}
+
+function isScenarioFamily(value: unknown): value is ScenarioFamily {
+  return (
+    value === "smoke" ||
+    value === "lethal" ||
+    value === "interruption" ||
+    value === "resource" ||
+    value === "setup-payoff" ||
+    value === "resource-grind" ||
+    value === "bait-interruption" ||
+    value === "delayed-lethal" ||
+    value === "recovery" ||
+    value === "defensive-planning"
+  );
 }

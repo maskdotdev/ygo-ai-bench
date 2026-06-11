@@ -134,6 +134,39 @@ describe("buildRealLegalActions", () => {
     ]);
   });
 
+  it("maps SELECT_TRIBUTE to tribute combinations and cancel", () => {
+    const actions = buildRealLegalActions(
+      {
+        type: 20,
+        player: 0,
+        can_cancel: true,
+        min: 2,
+        max: 2,
+        selects: [
+          { code: 49003308, controller: 0, location: 4, sequence: 0 },
+          { code: 44095762, controller: 0, location: 4, sequence: 1 },
+        ],
+      },
+      testRuntime,
+      testCards,
+    );
+
+    expect(actions).toEqual([
+      {
+        id: "a_001",
+        type: "select_tribute",
+        label: "Tribute Gagagigo + Mirror Force",
+        response: { type: 12, indicies: [0, 1] },
+      },
+      {
+        id: "a_002",
+        type: "cancel",
+        label: "Cancel tribute selection",
+        response: { type: 12, indicies: null },
+      },
+    ]);
+  });
+
   it("maps SELECT_YESNO to explicit yes and no actions", () => {
     const actions = buildRealLegalActions({ type: 13, player: 0, code: 49003308 }, testRuntime, testCards);
 
@@ -242,6 +275,7 @@ const testRuntime = {
     SELECT_CARD: 15,
     SELECT_CHAIN: 16,
     SELECT_PLACE: 18,
+    SELECT_TRIBUTE: 20,
     SELECT_YESNO: 13,
     SELECT_OPTION: 14,
     SELECT_POSITION: 19,
@@ -252,6 +286,7 @@ const testRuntime = {
     SELECT_CARD: 5,
     SELECT_CHAIN: 8,
     SELECT_PLACE: 10,
+    SELECT_TRIBUTE: 12,
     SELECT_YESNO: 3,
     SELECT_OPTION: 4,
     SELECT_POSITION: 11,

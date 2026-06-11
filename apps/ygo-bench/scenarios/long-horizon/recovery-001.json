@@ -1,0 +1,31 @@
+{
+  "id": "long-recovery-001",
+  "name": "Long-horizon recovery after disruption 001",
+  "family": "recovery",
+  "version": "1.0.0",
+  "seed": [1901, 1907, 1913, 1931],
+  "maxDecisions": 36,
+  "horizonTurns": 4,
+  "objective": "Maintain a backup line after the first pressure plan is disrupted.",
+  "strategicConstraints": {
+    "preserve": ["backup summon", "defensive set"],
+    "avoid": ["repeating a failed line without changing board state"]
+  },
+  "opponentPolicy": "scripted-disruption-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_CHAIN", "SELECT_BATTLECMD"],
+  "successConditions": ["Player 0 recovers board presence after disruption."],
+  "failureConditions": ["Player 0 has no meaningful action after the initial line fails."],
+  "notes": "Tests adaptation and contingency execution.",
+  "players": [
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [44095762, 89631139, 46986414, 62279055, 49003308, 70781052, 89631139, 46986414, 49003308] },
+    { "lp": 7600, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [89631139, 49003308, 70781052, 46986414, 89631139, 49003308, 70781052, 46986414] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.4,
+    "preferredActionTypes": ["normal_summon", "set_spell_trap", "respond", "to_battle"],
+    "preferHighestAttack": false,
+    "rationale": "Rewards backup-line execution after disruption.",
+    "weights": { "win": 0.25, "strategicProgress": 0.2, "resource": 0.15, "adaptation": 0.25, "planConsistency": 0.1, "risk": 0.05 }
+  }
+}

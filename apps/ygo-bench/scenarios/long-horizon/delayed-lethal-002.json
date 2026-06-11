@@ -1,0 +1,31 @@
+{
+  "id": "long-delayed-lethal-002",
+  "name": "Long-horizon delayed lethal 002",
+  "family": "delayed-lethal",
+  "version": "1.0.0",
+  "seed": [1801, 1811, 1823, 1831],
+  "maxDecisions": 30,
+  "horizonTurns": 4,
+  "objective": "Preserve board and battle sequencing until a safe lethal push is available.",
+  "strategicConstraints": {
+    "preserve": ["high-attack body", "battle conversion"],
+    "avoid": ["premature end phase when battle setup is available"]
+  },
+  "opponentPolicy": "scripted-pressure-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_BATTLECMD"],
+  "successConditions": ["Player 0 converts setup into lethal or a dominant LP delta."],
+  "failureConditions": ["Player 0 misses the turn where pressure should become lethal."],
+  "notes": "Tests identifying the correct turn to pivot from development to damage.",
+  "players": [
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [46986414, 89631139, 70781052, 49003308, 89631139, 46986414, 70781052, 49003308] },
+    { "lp": 5000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [70781052, 49003308, 46986414, 70781052, 49003308, 46986414, 70781052, 49003308] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.45,
+    "preferredActionTypes": ["normal_summon", "to_battle", "attack"],
+    "preferHighestAttack": true,
+    "rationale": "Rewards timing the switch from setup to lethal pressure.",
+    "weights": { "win": 0.35, "strategicProgress": 0.25, "resource": 0.1, "adaptation": 0.1, "planConsistency": 0.1, "risk": 0.1 }
+  }
+}

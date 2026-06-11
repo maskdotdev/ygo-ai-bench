@@ -1,0 +1,31 @@
+{
+  "id": "long-setup-payoff-001",
+  "name": "Long-horizon setup into protected payoff 001",
+  "family": "setup-payoff",
+  "version": "1.0.0",
+  "seed": [1103, 1117, 1123, 1129],
+  "maxDecisions": 32,
+  "horizonTurns": 3,
+  "objective": "Develop a protected board over several turns before committing the highest-value attacker.",
+  "strategicConstraints": {
+    "preserve": ["follow-up normal summon", "defensive set"],
+    "avoid": ["emptying hand before battle pressure is established"]
+  },
+  "opponentPolicy": "scripted-pressure-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_BATTLECMD", "SELECT_CHAIN"],
+  "successConditions": ["Player 0 preserves at least one follow-up while converting board presence into damage."],
+  "failureConditions": ["Player 0 spends all development before creating a stable threat."],
+  "notes": "Tests whether the model values future setup over a locally large action.",
+  "players": [
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [46986414, 89631139, 49003308, 70781052, 44095762, 62279055, 89631139, 46986414, 49003308, 70781052] },
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [70781052, 49003308, 46986414, 89631139, 70781052, 49003308, 46986414, 89631139] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.45,
+    "preferredActionTypes": ["normal_summon", "set_spell_trap", "to_battle", "attack"],
+    "preferHighestAttack": false,
+    "rationale": "Rewards developing protected pressure before converting to damage.",
+    "weights": { "win": 0.3, "strategicProgress": 0.25, "resource": 0.15, "adaptation": 0.1, "planConsistency": 0.1, "risk": 0.1 }
+  }
+}

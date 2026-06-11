@@ -1,0 +1,15 @@
+{
+  "id": "long-horizon-v1",
+  "scenarios": [
+    "scenarios/long-horizon/setup-payoff-001.json",
+    "scenarios/long-horizon/setup-payoff-002.json",
+    "scenarios/long-horizon/resource-grind-001.json",
+    "scenarios/long-horizon/resource-grind-002.json",
+    "scenarios/long-horizon/bait-interruption-001.json",
+    "scenarios/long-horizon/bait-interruption-002.json",
+    "scenarios/long-horizon/delayed-lethal-001.json",
+    "scenarios/long-horizon/delayed-lethal-002.json",
+    "scenarios/long-horizon/recovery-001.json",
+    "scenarios/long-horizon/defensive-planning-001.json"
+  ]
+}

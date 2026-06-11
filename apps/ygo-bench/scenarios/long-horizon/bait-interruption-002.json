@@ -1,0 +1,31 @@
+{
+  "id": "long-bait-interruption-002",
+  "name": "Long-horizon bait interruption 002",
+  "family": "bait-interruption",
+  "version": "1.0.0",
+  "seed": [1601, 1607, 1609, 1613],
+  "maxDecisions": 30,
+  "horizonTurns": 3,
+  "objective": "Protect a future payoff by forcing or declining response windows at the right time.",
+  "strategicConstraints": {
+    "preserve": ["payoff monster", "follow-up spell/trap"],
+    "avoid": ["blindly accepting every optional chain"]
+  },
+  "opponentPolicy": "scripted-disruption-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_CHAIN"],
+  "successConditions": ["Player 0 reaches a later turn with payoff and interaction intact."],
+  "failureConditions": ["Player 0 burns interaction without improving future position."],
+  "notes": "Tests chain-window discipline and future payoff protection.",
+  "players": [
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [62279055, 44095762, 46986414, 89631139, 49003308, 70781052, 46986414, 89631139] },
+    { "lp": 7200, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [49003308, 70781052, 89631139, 46986414, 49003308, 70781052, 89631139, 46986414] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.5,
+    "preferredActionTypes": ["set_spell_trap", "normal_summon", "decline_chain", "respond"],
+    "preferHighestAttack": false,
+    "rationale": "Rewards response discipline and future-line preservation.",
+    "weights": { "win": 0.25, "strategicProgress": 0.25, "resource": 0.15, "adaptation": 0.15, "planConsistency": 0.1, "risk": 0.1 }
+  }
+}

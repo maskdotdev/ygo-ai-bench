@@ -1,0 +1,31 @@
+{
+  "id": "long-defensive-planning-001",
+  "name": "Long-horizon defensive planning 001",
+  "family": "defensive-planning",
+  "version": "1.0.0",
+  "seed": [2003, 2011, 2017, 2027],
+  "maxDecisions": 36,
+  "horizonTurns": 4,
+  "objective": "Choose a defensive line that survives pressure and keeps future advantage live.",
+  "strategicConstraints": {
+    "preserve": ["defensive interaction", "future attacker"],
+    "avoid": ["attacking into a losing race without protection"]
+  },
+  "opponentPolicy": "scripted-pressure-v1",
+  "expectedDecisionWindows": ["SELECT_IDLECMD", "SELECT_CHAIN", "SELECT_BATTLECMD"],
+  "successConditions": ["Player 0 survives the pressure horizon with a playable follow-up."],
+  "failureConditions": ["Player 0 chooses aggression that loses the resource or LP race."],
+  "notes": "Tests whether the model can choose defense over immediate pressure.",
+  "players": [
+    { "lp": 5200, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [62279055, 44095762, 46986414, 89631139, 49003308, 70781052, 46986414, 89631139] },
+    { "lp": 8000, "startingDrawCount": 5, "drawCountPerTurn": 1, "deck": [89631139, 89631139, 49003308, 70781052, 46986414, 89631139, 49003308, 70781052] }
+  ],
+  "scoring": {
+    "primary": "lpDelta",
+    "lineQualityWeight": 0.45,
+    "preferredActionTypes": ["set_spell_trap", "set_monster", "normal_summon", "decline_chain"],
+    "preferHighestAttack": false,
+    "rationale": "Rewards defensive resource preservation and survival planning.",
+    "weights": { "win": 0.2, "strategicProgress": 0.2, "resource": 0.2, "adaptation": 0.15, "planConsistency": 0.1, "risk": 0.15 }
+  }
+}
